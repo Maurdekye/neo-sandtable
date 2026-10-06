@@ -1,6 +1,6 @@
 # airlog-0004 — Differences between the Land/Air and Logistics sequences of play
 
-- **Cases:** airlog:33.0, airlog:48.0, airlog:56.32, airlog:56.31, land:5.2
+- **Cases:** airlog:33.0, airlog:48.0, airlog:56.32, airlog:56.31, land:5.2, land:20.72, land:20.21, land:20.78A, land:20.78B
 - **Status:** proposed
 - **Profile version:** v0.1
 - **Decided by:** rules-airlog, 2026-10-06
@@ -26,9 +26,11 @@ ruling.
 6. **Rail case reference.** 33.0 points to land 8.7, 48.0 to 8.9, for CW rail movement.
 
 ## Ruling
-1. Use the Land game's own CW replacement timing (land section 20); 48.0's "two months" is treated
-   as the authoritative Logistics text only if land section 20 agrees (rules-land to confirm; the
-   engine takes the lead time from data, not code).
+1. Use a ONE-month CW replacement lead time (33.0's reading); 48.0's "two months" is treated as a
+   misprint. Land agreement (confirmed by rules-land): land:20.72 plans production one month ahead
+   and uses the Production Table of the month of arrival, land:20.21 plans arrival in player-chosen
+   stages four Game-Turns ahead, and the land:20.78A/20.78B table notes say four Game-Turns hence;
+   four Game-Turns equal one month. The engine takes the lead time from data, not code.
 2. Replacement points may be moved in the Truck Convoy phase (33.0 wording).
 3. Reaction belongs to the non-phasing player (Player B).
 4. Patrols require both conditions: the phasing player made no assault, and no combat has
