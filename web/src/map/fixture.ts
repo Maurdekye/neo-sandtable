@@ -95,7 +95,7 @@ export const SYNTHETIC =
 export const HEXES = SYNTHETIC ? syntheticMap() : parseMap(hexCsv)
 export const MAP_LABEL = SYNTHETIC
   ? 'SYNTHETIC TERRAIN'
-  : 'REAL GRID · TERRAIN UNCLASSIFIED'
+  : `REAL GRID · ${HEXES.filter((h) => h.terrain !== 'unclassified').length.toLocaleString()} / ${HEXES.length.toLocaleString()} TERRAIN CLASSIFIED`
 export const HEX_BY_ID = new Map(HEXES.map((h) => [h.id, h]))
 const HEX_BY_COORD = new Map(HEXES.map((h) => [`${h.q},${h.r}`, h]))
 for (const row of aliasCsv.trim().split(/\r?\n/).slice(1)) {

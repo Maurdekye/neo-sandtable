@@ -13,8 +13,8 @@ npm run build
 
 Open http://127.0.0.1:5173. Development starts a deterministic synthetic campaign
 and three fake AI sessions. The default board consumes the real cartographer grid
-from `data/map/hexes.csv` (7,023 canonical hexes) and `aliases.csv`. Current terrain
-is explicitly **unclassified**; units, strengths, combat messages and transcripts
+from `data/map/hexes.csv` (7,023 canonical hexes) and `aliases.csv`. Published terrain classifications are rendered directly; missing terrain
+remains explicitly **unclassified**; units, strengths, combat messages and transcripts
 are demonstration data, not a faithful scenario or rule adjudication. No original
 art, source scans or rulebook prose are used. `?map=synthetic` switches to an
 independent 10,000-hex terrain fixture for development and measurement.
