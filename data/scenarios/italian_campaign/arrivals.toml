@@ -7,16 +7,16 @@ complete = true
 
 [[source]]
 file = "data/units/schedules/land_cw.toml"
-rows = "all rows with gt <= 20"
+rows = "exact GT rows inside the range, or monthly intervals overlapping the range"
 
 [[source]]
 file = "data/units/schedules/land_axis.toml"
-rows = "all rows with gt <= 20"
+rows = "exact GT rows inside the range, or monthly intervals overlapping the range"
 
 [[source]]
 file = "data/units/schedules/air_cw.toml"
-rows = "all rows with gt <= 20"
+rows = "exact GT rows inside the range, or monthly intervals overlapping the range"
 
 [[source]]
 file = "data/units/schedules/air_axis.toml"
-rows = "all rows with gt <= 20"
+rows = "exact GT rows inside the range, or monthly intervals overlapping the range"

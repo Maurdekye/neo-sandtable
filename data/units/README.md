@@ -367,7 +367,9 @@ units = [ { unit = "it.unassigned_guns.xxv_corps_artillery_regt" } ]
 src = ["land:4.43b"]
 ```
 
-One `[[arrival]]` / `[[withdrawal]]` / `[[replacement]]` row per printed schedule row; `att`/`less`
+Each printed schedule row becomes `[[arrival]]` / `[[withdrawal]]` / `[[replacement]]` events.
+A truck allotment restricted to one formation uses a separate arrival event for that formation
+(GT15 OpStage1: 2nd Armored Division), so other arrivals cannot take those trucks. `att`/`less`
 lists and weapon-type tags follow the printed legend; trucks arrive attached to units unless marked
 `alone`. Designed for the whole war; rows touching GT 1-20 are populated for both group-one scenarios.
 

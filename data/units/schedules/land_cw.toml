@@ -147,13 +147,20 @@ src = ["land:4.43a"]
 gt = 15
 opstage = 1
 location = "cairo"
+units = [ { unit = "cw.2_armd_div.2nd_armored_div_hq", subtree = true } ]
+trucks = { light = 4, medium = 72, heavy = 13 }
+note = "The printed truck allotment belongs to the 2nd Armored Division; other units on this source row are a separate event."
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 15
+opstage = 1
+location = "cairo"
 units = [
-  { unit = "cw.2_armd_div.2nd_armored_div_hq", subtree = true },
   { unit = "cw.unassigned_arty.1st_royal_horse_arty_regt" },
   { unit = "cw.unassigned_arty.51st_field_artillery_regt" },
   { unit = "cw.unassigned_aa.2nd_heavy_aa_regt" }
 ]
-trucks = { light = 4, medium = 72, heavy = 13 }
 src = ["land:4.43a"]
 
 [[arrival]]
