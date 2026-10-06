@@ -1414,8 +1414,18 @@ async fn trusted_credential_export_refreshes_atomically_and_restart_rotates_toke
     let handle = sandbox::create(dir.path(), &data(), request("human", true)).unwrap();
     let id = handle.projection(Perspective::Operator).meta.id;
     server.app.register(handle);
-    server.app.write_credentials(&file).unwrap();
+    // Inspect the automatic refresh before any explicit export could mask its failure.
     let exported: Value = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
+    assert!(
+        exported["campaigns"].get(&id).is_some(),
+        "registration did not refresh the credential document"
+    );
+    assert_eq!(exported["operator"], initial["operator"]);
+    // Independently prove an explicit export replaces a stale existing document.
+    std::fs::write(&file, serde_json::to_vec(&initial).unwrap()).unwrap();
+    server.app.write_credentials(&file).unwrap();
+    let replaced: Value = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
+    assert_eq!(replaced, exported);
     let caps = &exported["campaigns"][&id];
     let tokens: std::collections::BTreeSet<_> = caps["sides"]
         .as_object()
