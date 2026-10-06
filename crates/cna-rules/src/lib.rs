@@ -13,6 +13,7 @@
 
 pub mod content;
 pub mod land;
+pub mod logistics;
 pub mod ownership;
 pub mod seq;
 pub mod state;

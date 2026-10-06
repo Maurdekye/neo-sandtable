@@ -11,6 +11,7 @@ use cna_content::scenario::{Placement, Supplies};
 use cna_content::units::{Toe, Trucks};
 use cna_core::decision::{ActionSpace, Secrecy, Trigger};
 use cna_core::ids::{DecisionId, HexId, SeatId, UnitId};
+use cna_core::quantity::{AmmoPoints, FuelTenths};
 use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
 
@@ -124,11 +125,28 @@ pub enum DumpLocation {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LogisticsState {
+    /// Unit tanks, ready ammunition and first-line cargo (airlog:49-53).
+    /// Absent entries mean empty holdings; ratings remain in content.
+    #[serde(default)]
+    pub unit_supply: BTreeMap<UnitId, UnitSupply>,
     pub dumps: BTreeMap<String, Dump>,
     /// Supplies freely distributable among a side's airfields (`scen:60.34`, `scen:60.44`).
     pub air_supply_pool: BTreeMap<Side, Supplies>,
     /// Second- and third-line truck pools at set-up, by side, with their placement.
     pub truck_pools: Vec<TruckPool>,
+}
+
+/// Dynamic holdings belonging to one land unit.
+///
+/// Cases: airlog:49.14, airlog:50.17, airlog:53.1
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnitSupply {
+    /// Fuel already in vehicle tanks, retained exactly in tenths.
+    pub tank_fuel: FuelTenths,
+    /// Ammunition carried by the firing unit, apart from truck cargo.
+    pub ready_ammo: AmmoPoints,
+    /// Cargo on this unit's first-line trucks; not vehicle tanks.
+    pub carried: Supplies,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

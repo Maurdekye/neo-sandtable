@@ -376,6 +376,12 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "applicable_rule_cases": cases,
         },
         "your_forces": forces,
+        "logistics": {
+            "unit_supply": state.logistics.unit_supply.iter().filter(|(id, _)| {
+                state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
+            }).collect::<BTreeMap<_, _>>(),
+            "dumps": state.logistics.dumps.iter().filter(|(_, d)| sees_side(perspective, d.side)).collect::<BTreeMap<_, _>>(),
+        },
         "enemy_stack_hexes": enemy_stacks,
         "pending_decisions": view(content, state, perspective).pending,
         "result": state.result,
@@ -400,7 +406,14 @@ pub(crate) fn inspect(
             "location": unit.location,
             "attached_to": unit.attached_to,
             "toe": format!("{:?}", unit.toe),
+            "supplies": state.logistics.unit_supply.get(&unit.id).cloned().unwrap_or_default(),
         }));
+    }
+    if let Some(dump) = state.logistics.dumps.get(target) {
+        if !sees_side(perspective, dump.side) {
+            return Err(hidden());
+        }
+        return Ok(json!({ "dump": dump }));
     }
     let hex = HexId::new(target);
     if let Some(canonical) = content.map.canonical(&hex) {
