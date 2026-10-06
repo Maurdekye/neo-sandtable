@@ -1,0 +1,119 @@
+# The Italian Campaign (scen:60.23): same starting state as Graziani's Offensive, run through
+# Game-Turn 20, including Operation Compass. Record format: data/scenarios/README.md.
+# The starting set-up is NOT copied: `setup_from` names the scenario whose set-up files are reused.
+[scenario]
+id = "italian_campaign"
+name = "The Italian Campaign"
+src = ["scen:60.23"]
+start = { gt = 1, opstage = 1 }
+end = { gt = 20, opstage = 3 }
+systems = ["land", "air", "logistics"]
+estimated_play_hours = { min = 90, max = 150 }
+campaign_start_date = "1940-09-15"
+setup_from = "graziani"
+setup_files = [
+  "land_axis.toml", "land_cw.toml", "air_axis.toml", "air_cw.toml", "facilities.toml",
+  "supply.toml", "construction.toml", "fleet.toml",
+]
+files = ["arrivals.toml"]
+note = "Both scenarios of group one share the 60.3-60.7 set-up; only length, arrivals and victory differ."
+
+[initiative]
+gt1 = "axis"
+from_gt2 = "normal_rules"
+src = ["scen:60.6"]
+
+# Victory (scen:60.82): the higher point total wins. A place counts only while occupied by a combat
+# unit (non-parenthesized close assault rating) whose supply line is at most a Game-Turn long, ending at
+# a dump or city that in turn links to Cairo (Commonwealth) or Tripoli (Italian). Each place lists the
+# points for the Italians holding it and for the Commonwealth holding it.
+[victory_points]
+holder_requirements = [
+  { qualifying_unit = "combat_unit" },
+  { supply_trace = "one_game_turn_to_dump_or_city", chain_to_home = { commonwealth = "cairo", axis = "tripoli" } },
+]
+src = ["scen:60.82"]
+
+[[victory_points.place]]
+id = "mersa_matruh"
+name = "Mersa Matruh"
+hex = "D3714"
+italian_holds = 100
+commonwealth_holds = 0
+src = ["scen:60.82", "scen:60.7"]
+
+[[victory_points.place]]
+id = "tobruk"
+name = "Tobruk"
+hex = "C4807"
+italian_holds = 50
+commonwealth_holds = 25
+src = ["scen:60.82"]
+
+[[victory_points.place]]
+id = "derna"
+name = "Derna"
+italian_holds = 20
+commonwealth_holds = 30
+src = ["scen:60.82"]
+
+[[victory_points.place]]
+id = "giarabub"
+name = "Giarabub"
+italian_holds = 10
+commonwealth_holds = 10
+src = ["scen:60.82"]
+
+[[victory_points.place]]
+id = "siwa"
+name = "Siwa"
+hex = "C0127"
+italian_holds = 10
+commonwealth_holds = 10
+src = ["scen:60.82"]
+
+[[victory_points.place]]
+id = "benghazi"
+name = "Benghazi"
+italian_holds = 10
+commonwealth_holds = 50
+src = ["scen:60.82"]
+
+[[victory_points.place]]
+id = "agedabia"
+name = "Agadabia"
+hex = "A2629"
+italian_holds = 10
+commonwealth_holds = 50
+src = ["scen:60.82"]
+
+[[victory_points.place]]
+id = "mersa_brega"
+name = "Mersa Brega"
+hex = "A2021"
+italian_holds = 0
+commonwealth_holds = 50
+src = ["scen:60.82"]
+
+[[victory_points.override]]
+side = "commonwealth"
+level = "strategic"
+when = { no_italian_combat_unit_with_supply_line_on_game_map = true }
+note = "The Commonwealth wins strategically when no Italian combat unit has any supply line left on the game-map."
+src = ["scen:60.82"]
+
+[victory_points.otherwise]
+result = "simple_victory_to_higher_total"
+note = "All other outcomes are a plain victory for whoever has more points."
+src = ["scen:60.82"]
+
+[victory_notes]
+qualifying_unit = "A combat unit is one with a non-parenthesized close-assault rating (scen:60.82)."
+case_numbers = "The booklet numbers these conditions 60.81 (Graziani's) and 60.82 (Italian Campaign)."
+src = ["scen:60.82"]
+
+[[abstraction_note]]
+case = "60.9"
+note = "Same abstraction register as Graziani's Offensive (60.91, 60.92); none are used under full systems."
+used = false
+src = ["scen:60.9"]

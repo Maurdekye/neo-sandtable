@@ -1,0 +1,23 @@
+# Arrivals and withdrawals falling inside GT 1-20. Like the Graziani file, this only points at the rows
+# of the whole-war schedules in data/units/schedules/; it carries no unit definitions of its own.
+# STATUS: the schedules currently cover GT 1-6 only; GT 7-20 rows are being added (see data/units/GAPS.md U-006).
+[file]
+src = ["land:4.43a", "land:4.43b", "airlog:34.84", "airlog:34.87"]
+range = { from_gt = 1, to_gt = 20 }
+complete = false
+
+[[source]]
+file = "data/units/schedules/land_cw.toml"
+rows = "all rows with gt <= 20"
+
+[[source]]
+file = "data/units/schedules/land_axis.toml"
+rows = "all rows with gt <= 20"
+
+[[source]]
+file = "data/units/schedules/air_cw.toml"
+rows = "all rows with gt <= 20"
+
+[[source]]
+file = "data/units/schedules/air_axis.toml"
+rows = "all rows with gt <= 20"

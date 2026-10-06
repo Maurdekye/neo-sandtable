@@ -30,6 +30,23 @@ Hex ids are exactly the printed ids given by the cartographer's coordinate syste
 with a section letter in parentheses) use the map owner's ids for those and are logged in `GAPS.md`
 where the map data does not yet define them. Unit and weapon ids come from `data/units/`.
 
+## Reusing a set-up (`setup_from`)
+
+A scenario that starts from another's deployment does not copy its files. In `scenario.toml`:
+
+```toml
+[scenario]
+id = "italian_campaign"
+setup_from = "graziani"                      # folder name of the scenario whose set-up is reused
+setup_files = ["land_axis.toml", "land_cw.toml", "air_axis.toml", "air_cw.toml",
+               "facilities.toml", "supply.toml", "construction.toml", "fleet.toml"]
+files = ["arrivals.toml"]                    # this scenario's own files, loaded after the reused ones
+```
+
+The loader reads `setup_files` from `data/scenarios/<setup_from>/` first, then `files` from its own folder.
+A file named in both places in the own folder replaces the reused one (no merging). Clock, initiative,
+victory and arrivals always come from the scenario's own `scenario.toml` and `files`.
+
 ## Placement forms
 
 The set-ups mix exact hexes with freedom for the player. Every deployment record has a
