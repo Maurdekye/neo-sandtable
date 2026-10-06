@@ -129,6 +129,7 @@ fn hot_weather_loses_cargo_and_dump_stocks_but_not_tanks_or_offmap_stocks() {
         .logistics
         .dumps
         .insert(offmap.id.clone(), offmap.clone());
+    let air_before = state.logistics.air_supply_pool.clone();
     let (_, events) = run(&mut state, seed_for(WeatherKind::Hot));
     let holdings = state.logistics.unit_supply[&id].clone();
     assert_eq!(holdings.tank_fuel.get(), 31);
@@ -151,6 +152,13 @@ fn hot_weather_loses_cargo_and_dump_stocks_but_not_tanks_or_offmap_stocks() {
         }
     );
     assert_eq!(state.logistics.dumps["offmap_test"], offmap);
+    for (side, stock) in air_before {
+        let after = state.logistics.air_supply_pool[&side];
+        assert_eq!(after.fuel, stock.fuel - stock.fuel / 20);
+        assert_eq!(after.water, stock.water - stock.water / 20);
+        assert_eq!(after.ammo, stock.ammo);
+    }
+
     assert!(
         !events
             .iter()

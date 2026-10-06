@@ -67,6 +67,10 @@ pub fn determine(
     let mut next = state.logistics.clone();
     match weather.kind {
         WeatherKind::Hot => {
+            // Scenario air pools are restricted to on-map facilities (scen:59.52).
+            for stock in next.air_supply_pool.values_mut() {
+                hot_stock_loss(stock)?;
+            }
             for dump in next.dumps.values_mut() {
                 if matches!(dump.location, DumpLocation::Hex { .. }) {
                     hot_stock_loss(&mut dump.supplies)?;
