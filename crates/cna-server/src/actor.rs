@@ -77,6 +77,7 @@ struct Publisher {
     streams: BTreeMap<Perspective, broadcast::Sender<ServerMessage>>,
     seats: BTreeMap<SeatId, watch::Sender<SeatState>>,
     status: watch::Sender<CampaignStatus>,
+    transcript_cursors: BTreeMap<(Perspective, SeatId), u64>,
 }
 fn seat_state<R: Ruleset>(campaign: &Campaign<R>, seat: SeatId) -> SeatState {
     SeatState {
@@ -97,7 +98,7 @@ fn projection<R: Ruleset>(campaign: &Campaign<R>, p: Perspective) -> Result<Proj
     })
 }
 impl Publisher {
-    fn update<R: Ruleset>(&self, campaign: &Campaign<R>) -> Result<(), Error> {
+    fn update<R: Ruleset>(&mut self, campaign: &Campaign<R>) -> Result<(), Error> {
         for p in Perspective::all() {
             let previous_seq = self.projections[&p].borrow().seq;
             let next = projection(campaign, p)?;
@@ -122,6 +123,23 @@ impl Publisher {
                     }
                     // Sending is immediate even when nobody reads or every reader is lagged.
                     let _ = self.streams[&p].send(message);
+                }
+            }
+        }
+        // Both CLI ingestion and atomic scripted entries use the same persistent fanout.
+        // The writer never waits for viewers; each perspective retains its own seat cursors.
+        for ((perspective, seat), cursor) in &mut self.transcript_cursors {
+            loop {
+                let rows = campaign.transcripts_after(*perspective, *seat, *cursor, 512)?;
+                let done = rows.len() < 512;
+                for message in rows {
+                    if let ServerMessage::Transcript { tseq, .. } = &message {
+                        *cursor = *tseq;
+                    }
+                    let _ = self.streams[perspective].send(message);
+                }
+                if done {
+                    break;
                 }
             }
         }
@@ -190,11 +208,19 @@ impl CampaignHandle {
             seat_senders.insert(seat, send);
         }
         let (status_send, status_recv) = watch::channel(campaign.status().clone());
-        let publisher = Publisher {
+        let mut transcript_cursors = BTreeMap::new();
+        for seat in SeatId::all() {
+            let current = campaign.transcript_seq(seat)?;
+            for p in Perspective::all().filter(|p| p.can_see(&Audience::Seat(seat))) {
+                transcript_cursors.insert((p, seat), current);
+            }
+        }
+        let mut publisher = Publisher {
             projections: projection_senders,
             streams: streams.clone(),
             seats: seat_senders,
             status: status_send,
+            transcript_cursors,
         };
         let thread = std::thread::Builder::new()
             .name("campaign-writer".into())
@@ -208,7 +234,7 @@ impl CampaignHandle {
                                     let _ = envelope.reply.send(Ok(Value::Null));
                                     return Ok(());
                                 }
-                                dispatch_and_publish(&mut campaign, envelope, &publisher)?;
+                                dispatch_and_publish(&mut campaign, envelope, &mut publisher)?;
                             }
                             Err(mpsc::error::TryRecvError::Disconnected) => return Ok(()),
                             Err(mpsc::error::TryRecvError::Empty) => {}
@@ -225,7 +251,7 @@ impl CampaignHandle {
                                     let _ = envelope.reply.send(Ok(Value::Null));
                                     return Ok(());
                                 }
-                                dispatch_and_publish(&mut campaign, envelope, &publisher)?;
+                                dispatch_and_publish(&mut campaign, envelope, &mut publisher)?;
                             }
                             Err(_error)
                                 if matches!(campaign.status(), CampaignStatus::Stopped { .. }) =>
@@ -458,9 +484,9 @@ fn submit<R: Ruleset>(
 fn dispatch_and_publish<R: Ruleset>(
     campaign: &mut Campaign<R>,
     envelope: Envelope,
-    publisher: &Publisher,
+    publisher: &mut Publisher,
 ) -> Result<(), Error> {
-    let result = dispatch(campaign, envelope.op, publisher);
+    let result = dispatch(campaign, envelope.op);
     let publication = publisher.update(campaign);
     let fatal = match &result {
         Err(error @ (Error::Storage(_) | Error::Json(_) | Error::Recovery(_))) => {
@@ -477,11 +503,7 @@ fn dispatch_and_publish<R: Ruleset>(
         None => Ok(()),
     }
 }
-fn dispatch<R: Ruleset>(
-    campaign: &mut Campaign<R>,
-    op: Op,
-    publisher: &Publisher,
-) -> Result<Value, Error> {
+fn dispatch<R: Ruleset>(campaign: &mut Campaign<R>, op: Op) -> Result<Value, Error> {
     match op {
         Op::Pause(paused) => {
             campaign.set_paused(paused)?;
@@ -530,19 +552,7 @@ fn dispatch<R: Ruleset>(
             Ok(Value::Null)
         }
         Op::Inspect(seat, target) => campaign.inspect(seat, &target),
-        Op::Transcript(seat, at, entry) => {
-            let tseq = campaign.transcript(seat, &at, entry.clone())?;
-            for p in Perspective::all().filter(|p| p.can_see(&Audience::Seat(seat))) {
-                let _ = publisher.streams[&p].send(ServerMessage::Transcript {
-                    seat: seat.to_string(),
-                    tseq,
-                    at: at.clone(),
-                    game_seq: campaign.current_seq(p)?,
-                    entry: entry.clone(),
-                });
-            }
-            Ok(json!(tseq))
-        }
+        Op::Transcript(seat, at, entry) => Ok(json!(campaign.transcript(seat, &at, entry)?)),
         Op::Notebook(seat) => serialize(campaign.notebook(seat)?),
         Op::WriteNotebook(seat, mode, text) => {
             serialize(campaign.write_notebook(seat, mode, &text)?)

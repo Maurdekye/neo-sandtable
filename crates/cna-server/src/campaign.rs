@@ -119,6 +119,35 @@ fn seq(db: &Connection, perspective: Perspective) -> Result<u64, Error> {
     )?)
 }
 
+fn store_transcript(
+    db: &Connection,
+    seat: SeatId,
+    at: &str,
+    entry: &TranscriptEntry,
+) -> Result<u64, Error> {
+    let tseq: u64 = db.query_row(
+        "SELECT COALESCE(MAX(tseq), 0)+1 FROM transcripts WHERE seat=?",
+        [seat.to_string()],
+        |r| r.get(0),
+    )?;
+    db.execute(
+        "INSERT INTO transcripts VALUES (?, ?, ?, ?)",
+        params![seat.to_string(), tseq, at, json(entry)?],
+    )?;
+    for perspective in Perspective::all().filter(|p| p.can_see(&Audience::Seat(seat))) {
+        db.execute(
+            "INSERT INTO perspective_transcripts VALUES (?, ?, ?, ?)",
+            params![
+                perspective.to_string(),
+                seat.to_string(),
+                tseq,
+                seq(db, perspective)?
+            ],
+        )?;
+    }
+    Ok(tseq)
+}
+
 impl<R: Ruleset> Campaign<R> {
     pub fn create(
         path: &Path,
@@ -401,7 +430,29 @@ impl<R: Ruleset> Campaign<R> {
         let mut binding = self.binding(seat).clone();
         binding.paused = true;
         binding.failure = Some(reason.into());
-        self.store_binding(seat, &binding)
+        let report = binding != *self.binding(seat)
+            && binding
+                .controller
+                .as_ref()
+                .is_some_and(|c| c.kind == cna_protocol::ControllerKind::Scripted);
+        let tx = self.db.transaction()?;
+        tx.execute(
+            "UPDATE seats SET binding=? WHERE seat=?",
+            params![json(&binding)?, seat.to_string()],
+        )?;
+        if report {
+            store_transcript(
+                &tx,
+                seat,
+                &cna_seats::transcript::now_rfc3339(),
+                &TranscriptEntry::System {
+                    text: format!("Scripted controller paused: {reason}"),
+                },
+            )?;
+        }
+        tx.commit()?;
+        self.bindings.insert(seat, binding);
+        Ok(())
     }
     fn check_response(&self, response: &DecisionResponse) -> Result<(), Error> {
         if self.binding(response.seat).controller_epoch != response.controller_epoch {
@@ -517,6 +568,31 @@ impl<R: Ruleset> Campaign<R> {
             .ruleset
             .view(&self.content, &self.game.state, Perspective::Operator)
             .clock;
+        let scripted_transcript = match &command {
+            Command::Respond(response)
+                if self
+                    .binding(response.seat)
+                    .controller
+                    .as_ref()
+                    .is_some_and(|c| c.kind == cna_protocol::ControllerKind::Scripted) =>
+            {
+                Some((
+                    response.seat,
+                    cna_seats::transcript::now_rfc3339(),
+                    TranscriptEntry::DecisionSubmitted {
+                        decision_id: response.decision_id.to_string(),
+                        summary: format!(
+                            "{} accepted action {}",
+                            self.binding(response.seat).config["mode"]
+                                .as_str()
+                                .unwrap_or("scripted"),
+                            json(&response.action)?
+                        ),
+                    },
+                ))
+            }
+            _ => None,
+        };
         let tx = self.db.transaction()?;
         tx.execute(
             "INSERT INTO commands VALUES (?, ?, ?, ?, ?, ?)",
@@ -572,6 +648,11 @@ impl<R: Ruleset> Campaign<R> {
                 json(&status)?
             ],
         )?;
+        // Baseline transcripts commit with their accepted answer, so neither crash nor
+        // duplicate retry can lose or duplicate a decision_submitted entry.
+        if let Some((seat, at, entry)) = scripted_transcript {
+            store_transcript(&tx, seat, &at, &entry)?;
+        }
         if revision.is_multiple_of(CHECKPOINT_INTERVAL) {
             tx.execute(
                 "INSERT INTO checkpoints VALUES (?, ?, ?)",
@@ -663,28 +744,16 @@ impl<R: Ruleset> Campaign<R> {
         entry: TranscriptEntry,
     ) -> Result<u64, Error> {
         let tx = self.db.transaction()?;
-        let tseq: u64 = tx.query_row(
-            "SELECT COALESCE(MAX(tseq), 0)+1 FROM transcripts WHERE seat=?",
-            [seat.to_string()],
-            |r| r.get(0),
-        )?;
-        tx.execute(
-            "INSERT INTO transcripts VALUES (?, ?, ?, ?)",
-            params![seat.to_string(), tseq, at, json(&entry)?],
-        )?;
-        for perspective in Perspective::all().filter(|p| p.can_see(&Audience::Seat(seat))) {
-            tx.execute(
-                "INSERT INTO perspective_transcripts VALUES (?, ?, ?, ?)",
-                params![
-                    perspective.to_string(),
-                    seat.to_string(),
-                    tseq,
-                    seq(&tx, perspective)?
-                ],
-            )?;
-        }
+        let tseq = store_transcript(&tx, seat, at, &entry)?;
         tx.commit()?;
         Ok(tseq)
+    }
+    pub(crate) fn transcript_seq(&self, seat: SeatId) -> Result<u64, Error> {
+        Ok(self.db.query_row(
+            "SELECT COALESCE(MAX(tseq),0) FROM transcripts WHERE seat=?",
+            [seat.to_string()],
+            |r| r.get(0),
+        )?)
     }
     pub fn transcripts_after(
         &self,

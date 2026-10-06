@@ -48,6 +48,9 @@ that seat's authorized pending requests, observation or binding, including reiss
 handover. `mark_failure(seat, reason)` durably pauses a failed controller, retaining the reason.
 `handover` installs a controller and a new epoch and clears its pause. `shutdown` joins the
 writer thread. Submit receipts are stable acknowledgements; observations are fetched separately.
+Scripted baselines emit factual `decision_submitted` entries with the accepted action, and
+`system` entries when they pause; they do not generate model commentary. A scripted submission's
+entry commits atomically with its answer and is not duplicated on an idempotent retry.
 The legacy unscoped `GameBackend::game_seq()` returns zero; use a seat projection's sequence
 instead. Transcript alignment is assigned inside the persistent store.
 

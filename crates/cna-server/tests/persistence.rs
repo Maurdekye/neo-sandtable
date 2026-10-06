@@ -652,3 +652,74 @@ fn unsupported_scripted_configuration_is_not_an_implicit_random_fallback() {
     );
     assert_eq!(&binding, game.binding(seat));
 }
+
+#[test]
+fn scripted_transcript_is_atomic_with_answer_and_idempotent_on_retry() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("campaign.sqlite");
+    let mut game = campaign(&path, rules());
+    scripted(&mut game);
+    game.advance().unwrap();
+    let seat: SeatId = "axis.commander".parse().unwrap();
+    let order = response(&game, seat);
+    let before = game.state_hash().unwrap();
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch(
+        "CREATE TRIGGER fail_scripted_transcript BEFORE INSERT ON transcripts
+        BEGIN SELECT RAISE(ABORT,'injected transcript failure'); END;",
+    )
+    .unwrap();
+    assert!(matches!(game.submit(order.clone()), Err(Error::Storage(_))));
+    assert_eq!(game.state_hash().unwrap(), before);
+    assert_eq!(game.pending().len(), 10);
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM commands", [], |r| r.get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM transcripts", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+    db.execute_batch("DROP TRIGGER fail_scripted_transcript")
+        .unwrap();
+    game.submit(order.clone()).unwrap();
+    assert!(game.submit(order.clone()).unwrap().duplicate);
+    let rows = game
+        .transcripts_after(Perspective::Seat(seat), seat, 0, 512)
+        .unwrap();
+    assert_eq!(rows.len(), 1);
+    assert!(matches!(&rows[0], ServerMessage::Transcript {
+        tseq:1, entry:TranscriptEntry::DecisionSubmitted { decision_id, summary }, ..
+    } if decision_id == order.decision_id.as_str() && summary == "legal_random accepted action 2"));
+    let enemy: SeatId = "commonwealth.commander".parse().unwrap();
+    assert!(
+        game.transcripts_after(Perspective::Seat(enemy), seat, 0, 512)
+            .unwrap()
+            .is_empty()
+    );
+    let accepted_hash = game.state_hash().unwrap();
+    // A repeated identical pause produces only one factual system entry, also atomically.
+    game.pause_seat_with_reason(seat, "scripted budget exhausted")
+        .unwrap();
+    game.pause_seat_with_reason(seat, "scripted budget exhausted")
+        .unwrap();
+    let reported = game
+        .transcripts_after(Perspective::Seat(seat), seat, 0, 512)
+        .unwrap();
+    assert_eq!(reported.len(), 2);
+    assert!(matches!(&reported[1], ServerMessage::Transcript {
+        entry:TranscriptEntry::System { text }, ..
+    } if text == "Scripted controller paused: scripted budget exhausted"));
+    drop(game);
+    let restored = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+    assert_eq!(restored.state_hash().unwrap(), accepted_hash);
+    assert_eq!(
+        restored
+            .transcripts_after(Perspective::Seat(seat), seat, 0, 512)
+            .unwrap(),
+        reported
+    );
+}

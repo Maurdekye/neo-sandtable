@@ -573,3 +573,69 @@ async fn storage_operation_failure_reports_a_stop_without_claiming_success() {
     assert!(matches!(restored.status(), CampaignStatus::Stopped { .. }));
     restored.shutdown().await.unwrap();
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn scripted_baselines_emit_truthful_live_and_replayed_private_transcripts() {
+    for mode in ["legal_random", "pass_when_possible", "aggressive"] {
+        let dir = tempfile::tempdir().unwrap();
+        let handle = sandbox::create(dir.path(), &data(), request(mode, true)).unwrap();
+        let id = handle.projection(Perspective::Operator).meta.id;
+        let seat: SeatId = "axis.commander".parse().unwrap();
+        let enemy: SeatId = "commonwealth.commander".parse().unwrap();
+        let mut live = handle.subscribe(Perspective::Seat(seat));
+        handle.pause(false).await.unwrap();
+        let entry = tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                let message = live.recv().await.unwrap();
+                if matches!(message, ServerMessage::Transcript { .. }) {
+                    return message;
+                }
+            }
+        })
+        .await
+        .unwrap();
+        assert!(matches!(entry, ServerMessage::Transcript {
+            seat:ref received_seat, entry:TranscriptEntry::DecisionSubmitted { ref summary, .. }, ..
+        } if received_seat==&seat.to_string() && summary.starts_with(mode)));
+        finished(&handle).await;
+        let rows = handle
+            .replay()
+            .transcripts(Perspective::Seat(seat), seat, 0)
+            .unwrap();
+        assert!(!rows.is_empty());
+        assert!(
+            handle
+                .replay()
+                .transcripts(Perspective::Seat(enemy), seat, 0)
+                .unwrap()
+                .is_empty()
+        );
+        let server = Server::new(dir.path(), Some(handle.clone())).await;
+        let address = format!(
+            "{}/api/campaigns/{id}/stream",
+            server.url.replace("http://", "ws://")
+        );
+        let (mut socket, _) = tokio_tungstenite::connect_async(address).await.unwrap();
+        subscribe(&mut socket, &format!("seat:{seat}"), None).await;
+        assert!(matches!(
+            read(&mut socket).await,
+            ServerMessage::Hello { .. }
+        ));
+        assert!(matches!(
+            read(&mut socket).await,
+            ServerMessage::Snapshot { .. }
+        ));
+        assert_eq!(read(&mut socket).await, rows[0]);
+        socket.close(None).await.unwrap();
+        server.stop().await;
+        let restored = sandbox::recover(&dir.path().join(format!("{id}.sqlite")), &data()).unwrap();
+        assert_eq!(
+            restored
+                .replay()
+                .transcripts(Perspective::Seat(seat), seat, 0)
+                .unwrap(),
+            rows
+        );
+        restored.shutdown().await.unwrap();
+    }
+}
