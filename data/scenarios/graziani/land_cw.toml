@@ -3,7 +3,7 @@
 side = "commonwealth"
 src = ["scen:60.41"]
 transcribed_from = ["scenarios-booklet-2021.pdf p.27 (page image)"]
-verification = "single"
+verification = "double"
 
 [[broken_down_vehicles]]
 location = { kind = "city", city = "alexandria" }

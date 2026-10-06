@@ -6,7 +6,7 @@
 side = "axis"
 src = ["scen:60.31"]
 transcribed_from = ["scenarios-booklet-2021.pdf p.27 (page image)"]
-verification = "single"
+verification = "double"
 
 [[bonus_toe]]
 id = "it_autoblinda_40"

@@ -6,7 +6,7 @@ side = "commonwealth"
 theatre = "north_africa"
 src = ["scen:60.42", "scen:59.3"]
 transcribed_from = ["scenarios-booklet-2021.pdf pp.27-28 (page image)"]
-verification = "single"
+verification = "double"
 
 [[plane]]
 type = "cw.lysander_i"
