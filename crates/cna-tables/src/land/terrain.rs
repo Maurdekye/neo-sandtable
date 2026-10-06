@@ -392,14 +392,16 @@ impl Bound for TerrainEffects {
 
 impl TerrainEffects {
     /// Positive column shifts go right, negative shifts left. Restrictions are explicit variants.
-    /// Cases: land:8.37, interp:land-0002
+    /// Cases: land:8.37
+    /// Interpretations: interp:land-0002
     pub fn feature(&self, feature: TerrainFeature) -> &TerrainRow {
         &self.rows[&feature]
     }
 
     /// Track halves hex/hexside values. A vehicle descending an escarpment keeps both full costs.
     /// This supplies one feature contribution; movement procedures combine features and restrictions.
-    /// Cases: land:8.37, land:8.46, interp:land-0002
+    /// Cases: land:8.37, land:8.46
+    /// Interpretations: interp:land-0002
     pub fn track_values(
         &self,
         feature: TerrainFeature,
@@ -428,7 +430,8 @@ impl TerrainEffects {
         (cp.map(halve), row.breakdown.map(halve))
     }
 
-    /// Cases: land:8.37, interp:land-0002
+    /// Cases: land:8.37
+    /// Interpretations: interp:land-0002
     pub fn city_fortification(&self, alexandria_or_cairo: bool) -> &TerrainRow {
         self.feature(if alexandria_or_cairo {
             TerrainFeature::FortificationLevelThree

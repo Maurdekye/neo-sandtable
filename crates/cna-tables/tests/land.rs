@@ -58,7 +58,8 @@ fn section_six_worked_examples_use_the_chart_prices() {
     assert_eq!(5 + assault - 8, 2);
 }
 
-/// Cases: land:6.3, land:26.21, land:26.23, interp:land-0015
+/// Cases: land:6.3, land:26.21, land:26.23
+/// Interpretations: interp:land-0015
 #[test]
 fn engineer_minefield_prices_follow_the_summary() {
     let t = &tables().land.capability_expenditure;
@@ -92,7 +93,8 @@ fn engineer_minefield_prices_follow_the_summary() {
     );
 }
 
-/// Cases: land:6.3, interp:land-0006, interp:land-0018
+/// Cases: land:6.3
+/// Interpretations: interp:land-0006, interp:land-0018
 #[test]
 fn compressed_cp_entries_have_named_selections() {
     let t = &tables().land.capability_expenditure;
@@ -134,7 +136,8 @@ fn initiative_matches_all_chart_boundaries_and_axis_situations() {
     assert_eq!(t.axis_rating(false, false), 1);
 }
 
-/// Cases: land:8.37, interp:land-0002
+/// Cases: land:8.37
+/// Interpretations: interp:land-0002
 #[test]
 fn terrain_cells_distinguish_fractions_additions_and_restrictions() {
     let t = &tables().land.terrain_effects;
@@ -178,7 +181,8 @@ fn terrain_cells_distinguish_fractions_additions_and_restrictions() {
     );
 }
 
-/// Cases: land:8.37, land:8.46, interp:land-0002
+/// Cases: land:8.37, land:8.46
+/// Interpretations: interp:land-0002
 #[test]
 fn tracks_and_city_fortifications_use_corrected_footnotes() {
     let t = &tables().land.terrain_effects;

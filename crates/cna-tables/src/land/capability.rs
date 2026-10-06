@@ -307,7 +307,8 @@ impl CapabilityExpenditure {
         self.direct.get(&action).copied()
     }
 
-    /// Cases: land:6.3, land:26.21, land:26.23, interp:land-0015
+    /// Cases: land:6.3, land:26.21, land:26.23
+    /// Interpretations: interp:land-0015
     pub fn minefield_cost(
         &self,
         friendly: bool,
@@ -350,7 +351,8 @@ impl CapabilityExpenditure {
     }
 
     /// Selects the printed 3/2 alternatives by dump kind.
-    /// Cases: land:6.3, land:24.17, interp:land-0006, interp:land-0018
+    /// Cases: land:6.3, land:24.17
+    /// Interpretations: interp:land-0006, interp:land-0018
     pub fn supply_dump_cost(&self, real: bool) -> i32 {
         match self.direct[&CpAction::ConstructSupplyDump] {
             CpCost::Alternatives { cp, .. } => cp[usize::from(!real)],
@@ -359,7 +361,8 @@ impl CapabilityExpenditure {
     }
 
     /// Ship movement must be within its 100-hex stage limit. Terrain cost is still to be added.
-    /// Cases: land:6.3, land:27.73, land:30.15, interp:land-0006
+    /// Cases: land:6.3, land:27.73, land:30.15
+    /// Interpretations: interp:land-0006
     pub fn commando_landing_cost(&self, ship_hexes_this_stage: i32) -> Option<CpCost> {
         if !(0..=100).contains(&ship_hexes_this_stage) {
             return None;
