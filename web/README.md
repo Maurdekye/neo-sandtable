@@ -106,7 +106,7 @@ JSON go two directories above web, in the owning agent's scratch folder. Browser
 checks cover the inspector, pairing, System 1 sessions, perspective replacement,
 paused buffering, stepping, return to live, event focus and pan/zoom. The benchmark
 warms the caches, pans on every animation frame, zooms every 30 frames, and samples
-8 seconds with the mock stream and 18 counters active, with no overlays.
+8 seconds with the mock stream active and no overlays, for the ordinary 18-unit fixture and the dense 290-unit fixture.
 
 Measurement results are recorded below after running the benchmark. These are
 headless software-WebGL observations; they are not a hardware-GPU performance
@@ -123,6 +123,30 @@ not the installed RTX 3080 Ti GPU. Eight seconds each, warm-cache pan plus zoom.
 | Real 7,023 hexes       |    480 | 59.9 |      16.7 ms |   16.8 ms |
 | Synthetic 10,000 hexes |    437 | 54.5 |      16.7 ms |   16.8 ms |
 
-This measures navigation with the current 18-unit fixture. Dense full-campaign
-counters, high-DPR screens, overlays and ordinary hardware-GPU browsers still
-need profiling when their actual data is available.
+A later run with the dense synthetic fixture measured 53.6 FPS (430 frames over
+8,016 ms, median 16.7 ms, P95 16.8 ms), with 290 mapped units in 40 stacks and six
+unplaced/off-map units on the same published grid. The mock stream remained active.
+This is warm navigation under software WebGL; high event throughput, actual CNA
+campaign data, high-DPR screens, overlays and hardware GPU browsers still need profiling.
+
+## Dense formations and decision windows
+
+In development, `/?fixture=dense` opens the synthetic stress fixture; add
+`&paused=1` to inspect the initial positions before mock events start. This has no
+real CNA roster or rules values and is excluded from production. Select a stack to
+fan out up to 20 counter sprites in a bounded grid; ordinary stacks show at most
+three counters with a count badge. The inspector lists every disclosed member,
+scrolls independently and offers a name/id/type search for stacks larger than eight.
+
+The formations panel follows `UnitView.parent`, supports nested expansion and
+search, and retains ancestor paths for matched units. Missing parents retain their
+published ids; malformed cycles cannot hide units. Selection also works for
+server-disclosed units with no hex or an off-map box id. Locations not present in
+the map are labelled and inspected without panning to invented coordinates.
+Only projected units participate; undisclosed members are never inferred.
+
+The read-only pending panel displays the server's open decision windows, seat,
+kind and sequence. Rule citations and detailed off-map/setup locations await the
+lead-owned generated contract: the initial CNA view currently omits units outside
+mapped stacks and the initial PendingDecision type omits rules. No client field
+or rule citation is invented to fill those gaps.

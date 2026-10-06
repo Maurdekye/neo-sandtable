@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { GameEvent, Perspective } from './protocol'
 import { Board } from './map/Board'
-import { counterSvg } from './map/counters'
+import { Formations } from './Formations'
+import { locationLabel } from './location'
+import { StackList } from './StackList'
+import { PendingDecisions } from './PendingDecisions'
 import { HEX_BY_ID, INITIAL_HEX, TERRAIN } from './map/fixture'
 import {
   actions,
@@ -14,6 +17,9 @@ import { selectedFrame } from './stream/model'
 import { Transcripts } from './Transcripts'
 import { createSocketStream, streamUrl } from './stream/socket'
 import { CampaignControl, CampaignChooser } from './Campaigns'
+const denseFixture =
+  import.meta.env.DEV &&
+  new URLSearchParams(location.search).get('fixture') === 'dense'
 const campaignId = new URLSearchParams(location.search).get('campaign')
 const serverUrl =
   new URLSearchParams(location.search).get('server') ?? location.origin
@@ -21,6 +27,17 @@ const mockMode =
   import.meta.env.DEV &&
   !campaignId &&
   !new URLSearchParams(location.search).has('server')
+function sameLocation(a: string | null, b: string | null) {
+  return (
+    a === b ||
+    Boolean(
+      a &&
+      b &&
+      HEX_BY_ID.has(a) &&
+      HEX_BY_ID.get(a)?.id === HEX_BY_ID.get(b)?.id,
+    )
+  )
+}
 function eventText(event: GameEvent): string {
   switch (event.kind) {
     case 'stack_updated':
@@ -79,7 +96,9 @@ export function App() {
       bounds?: string[]
     } | null>(null)
   const [eventFilter, setEventFilter] = useState('all'),
-    [campaignPaused, setCampaignPaused] = useState(false),
+    [campaignPaused, setCampaignPaused] = useState(
+      mockMode && new URLSearchParams(location.search).get('paused') === '1',
+    ),
     [control, setControl] = useState<((paused: boolean) => void) | null>(null),
     [transportNote, setTransportNote] = useState(
       mockMode
@@ -130,8 +149,10 @@ export function App() {
     return () => window.clearInterval(timer)
   }, [state.speed])
   useEffect(() => {
-    if (!mockMode && view && !liveFocus) {
-      const hex = view.stacks[0]?.hex ?? view.markers[0]?.hex
+    if ((!mockMode || denseFixture) && view && !liveFocus) {
+      const hex =
+        view.stacks.find((s) => HEX_BY_ID.has(s.hex))?.hex ??
+        view.markers.find((m) => HEX_BY_ID.has(m.hex))?.hex
       if (hex) {
         setSelected(hex)
         setFocus({
@@ -147,9 +168,11 @@ export function App() {
     }
   }, [view, liveFocus])
   const hex = selected ? HEX_BY_ID.get(selected) : undefined,
-    stacks = view?.stacks.filter((s) => s.hex === selected) ?? []
+    stacks = view?.stacks.filter((s) => sameLocation(s.hex, selected)) ?? []
   const unit =
-    unitId && view?.units[unitId]?.hex === selected
+    unitId &&
+    view?.units[unitId] &&
+    sameLocation(view.units[unitId].hex, selected)
       ? view.units[unitId]
       : undefined
   const transcriptMessages = state.transcripts.filter(
@@ -176,6 +199,14 @@ export function App() {
     choose(id)
     setFocus({ hex: id, nonce: Date.now() })
   }
+  function chooseUnit(id: string) {
+    const unit = view?.units[id]
+    if (!unit) return
+    setSelected(unit.hex)
+    setUnitId(id)
+    if (unit.hex && HEX_BY_ID.has(unit.hex))
+      setFocus({ hex: unit.hex, nonce: Date.now() })
+  }
   return (
     <div className="app">
       <header className="topbar">
@@ -191,14 +222,23 @@ export function App() {
           <small>{transportNote}</small>
         </div>
         <div className="clock">
-          <span>{view?.clock.date ?? '—'}</span>
+          <span>{view?.clock.date || '—'}</span>
           <strong>
             TURN {view?.clock.game_turn ?? '—'} · OP{' '}
             {view?.clock.op_stage ?? '—'}
           </strong>
           <small>
             {view
-              ? `${view.clock.phase.replaceAll('_', ' ')} · ${view.clock.segment ?? view.clock.stage}`
+              ? [
+                  view.clock.stage,
+                  view.clock.phase,
+                  view.clock.segment,
+                  view.clock.step,
+                  view.clock.phasing,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+                  .replaceAll('_', ' ')
               : 'Connecting'}
           </small>
         </div>
@@ -274,29 +314,8 @@ export function App() {
           <div className="panel-heading">
             <span className="eyebrow">FORMATIONS</span>
           </div>
-          {['axis', 'commonwealth'].map((side) => (
-            <div className="formation" key={side}>
-              <h3>
-                <i className={`dot ${side}`} />
-                {side}
-              </h3>
-              {Object.values(view?.units ?? {})
-                .filter((u) => u.side === side)
-                .map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      if (u.hex) {
-                        locate(u.hex)
-                        setUnitId(u.id)
-                      }
-                    }}
-                  >
-                    {u.name}
-                  </button>
-                ))}
-            </div>
-          ))}
+          <Formations units={view?.units ?? {}} onUnit={chooseUnit} />
+          <PendingDecisions pending={view?.pending ?? []} />
           <section className="formation">
             <h3>Objectives & markers</h3>
             {view?.markers.map((marker) => (
@@ -333,7 +352,13 @@ export function App() {
           <div className="panel-heading">
             <span className="eyebrow">INSPECTOR</span>
           </div>
-          <h2>{selected ?? 'Select a hex'}</h2>
+          <h2>
+            {selected
+              ? locationLabel(selected)
+              : unit
+                ? 'Awaiting setup'
+                : 'Select a hex'}
+          </h2>
           {hex && (
             <>
               <p className="muted">
@@ -347,41 +372,17 @@ export function App() {
               </div>
             </>
           )}
-          {stacks.map((s) => (
-            <section key={s.side}>
-              <h3>
-                {s.side} · {s.visible_count ?? 'unknown'} units
-              </h3>
-              {!s.unit_ids.length && (
-                <p className="muted">
-                  Presence disclosed; composition unavailable.
-                </p>
-              )}
-              {s.unit_ids.map((id) => {
-                const u = view?.units[id]
-                return (
-                  u && (
-                    <button
-                      className={`unit-row ${unitId === id ? 'selected' : ''}`}
-                      key={id}
-                      onClick={() => setUnitId(id)}
-                    >
-                      <img
-                        alt={`${u.kind} ${u.size} counter`}
-                        src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(counterSvg(u))}`}
-                      />
-                      <span>
-                        {u.name}
-                        <small>{u.size}</small>
-                      </span>
-                    </button>
-                  )
-                )
-              })}
-            </section>
+          {stacks.map((stack) => (
+            <StackList
+              key={`${selected}:${stack.side}`}
+              stack={stack}
+              units={view!.units}
+              selected={unitId}
+              onSelect={setUnitId}
+            />
           ))}
           {view?.markers
-            .filter((marker) => marker.hex === selected)
+            .filter((marker) => sameLocation(marker.hex, selected))
             .map((marker) => (
               <section key={marker.id}>
                 <h3>{marker.label ?? marker.kind}</h3>
@@ -400,9 +401,26 @@ export function App() {
                 <dt>Nationality</dt>
                 <dd>{unit.nationality}</dd>
                 <dt>Formation</dt>
-                <dd>{unit.parent ?? '—'}</dd>
+                <dd>
+                  {unit.parent
+                    ? (view?.units[unit.parent]?.name ?? unit.parent)
+                    : '—'}
+                </dd>
+                <dt>Location</dt>
+                <dd>{locationLabel(unit.hex)}</dd>
               </dl>
-              <pre>{JSON.stringify(unit.detail, null, 2)}</pre>
+              <dl>
+                {Object.entries(unit.detail ?? {}).map(([key, value]) => (
+                  <div className="detail-field" key={key}>
+                    <dt>{key.replaceAll('_', ' ')}</dt>
+                    <dd>
+                      {typeof value === 'object'
+                        ? JSON.stringify(value)
+                        : String(value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </section>
           )}
         </aside>

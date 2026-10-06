@@ -11,7 +11,8 @@ import type {
   UnitView,
   ViewState,
 } from '../protocol'
-import { demoHex } from '../map/fixture'
+import { denseView } from './dense'
+import { HEX_BY_ID, demoHex } from '../map/fixture'
 import { applyEvent } from '../stream/model'
 const seats: SeatInfo[] = [
   {
@@ -129,6 +130,9 @@ export function project(view: ViewState, perspective: Perspective): ViewState {
   return {
     ...view,
     units,
+    markers: view.markers.map((m) =>
+      m.side && m.side !== side ? { ...m, label: null } : m,
+    ),
     stacks: view.stacks.map((s) =>
       s.side === side ? s : { ...s, unit_ids: [], visible_count: null },
     ),
@@ -141,9 +145,12 @@ export function project(view: ViewState, perspective: Perspective): ViewState {
 }
 export function createMockStream(deliver: (message: ServerMessage) => void) {
   let seq = 0,
-    view = fixtureView(),
+    view =
+      new URLSearchParams(location.search).get('fixture') === 'dense'
+        ? denseView(clock)
+        : fixtureView(),
     perspective: Perspective = 'operator',
-    paused = false
+    paused = new URLSearchParams(location.search).get('paused') === '1'
   const tseq: Record<string, number> = {}
   const allowedSeats = () =>
     seats.filter(
@@ -221,7 +228,9 @@ export function createMockStream(deliver: (message: ServerMessage) => void) {
     if (paused) return
     seq++
     const count = seq % 100000
-    const visibleUnits = Object.values(project(view, perspective).units)
+    const visibleUnits = Object.values(project(view, perspective).units).filter(
+      (u) => u.hex && HEX_BY_ID.has(u.hex),
+    )
     const unit = visibleUnits[count % visibleUnits.length],
       origin = unit.hex!,
       q = 14 + (count % 17),

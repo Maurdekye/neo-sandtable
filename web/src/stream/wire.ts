@@ -30,7 +30,9 @@ function unit(value: unknown) {
     ['id', 'side', 'name', 'kind', 'size', 'nationality'].every(
       (key) => typeof value[key] === 'string',
     ) &&
-    (value.hex === null || typeof value.hex === 'string')
+    (value.hex === null || typeof value.hex === 'string') &&
+    (value.parent === null || typeof value.parent === 'string') &&
+    (value.detail === null || object(value.detail))
   )
 }
 function marker(value: unknown) {

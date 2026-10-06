@@ -322,7 +322,7 @@ export function Board({ view, selected, focus, onSelect }: Props) {
         const h = HEX_BY_ID.get(stack.hex)
         if (!h) return
         const p = center(h),
-          expanded = selected === stack.hex
+          expanded = Boolean(selected && HEX_BY_ID.get(selected)?.id === h.id)
         if (!stack.unit_ids.length) {
           const marker = new Graphics()
             .roundRect(-17, -13, 34, 26, 3)
@@ -338,7 +338,7 @@ export function Board({ view, selected, focus, onSelect }: Props) {
           s!.counters.addChild(text)
           return
         }
-        stack.unit_ids.forEach((id, i) => {
+        stack.unit_ids.slice(0, expanded ? 20 : 3).forEach((id, i) => {
           const u = view!.units[id]
           if (!u) return
           const texture = s!.textures.get(counterSvg(u))
@@ -347,8 +347,8 @@ export function Board({ view, selected, focus, onSelect }: Props) {
           sprite.width = 38
           sprite.height = 31
           sprite.position.set(
-            p.x - 19 + (expanded ? i * 24 : i * 3),
-            p.y - 16 - (expanded ? i * 7 : i * 3),
+            p.x - 19 + (expanded ? (i % 4) * 42 : i * 3),
+            p.y - 16 + (expanded ? Math.floor(i / 4) * 35 : -i * 3),
           )
           s!.counters.addChild(sprite)
         })

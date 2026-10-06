@@ -5,7 +5,7 @@ test('records real and synthetic navigation timing', async ({
   browser,
 }) => {
   const results = []
-  for (const url of ['/', '/?map=synthetic']) {
+  for (const url of ['/', '/?map=synthetic', '/?fixture=dense']) {
     await page.goto(url)
     await expect(page.locator('.board canvas')).toBeVisible()
     await expect(page.getByTestId('fps')).not.toHaveText('0 FPS · WebGL')
@@ -89,8 +89,9 @@ test('records real and synthetic navigation timing', async ({
         userAgent: navigator.userAgent,
         viewport: [innerWidth, innerHeight],
         dpr: devicePixelRatio,
-        active_overlays:
-          'none; 18 generated counters, mock stream active, three seat tabs',
+        active_overlays: location.search.includes('dense')
+          ? 'none; 290 mapped units in 40 stacks plus six off-map/unplaced, mock active, three seat tabs'
+          : 'none; 18 generated counters, mock stream active, three seat tabs',
       }
     })
     await page.mouse.up()

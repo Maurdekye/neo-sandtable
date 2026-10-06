@@ -666,3 +666,93 @@ dd {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.formation-search,
+.stack-search {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  font-size: 10px;
+  color: #b6c7c5;
+}
+.formation-search input,
+.stack-search input {
+  width: 100%;
+  min-width: 0;
+  background: #19303a;
+  border: 1px solid #35505a;
+  border-radius: 3px;
+  padding: 7px;
+  color: #e4e9e5;
+}
+.oa-branch summary {
+  cursor: pointer;
+  font-size: 10px;
+  padding: 6px 0;
+  overflow-wrap: anywhere;
+}
+.oa-branch summary small {
+  display: block;
+  color: #8da4aa;
+  padding-left: 10px;
+  font-size: 9px;
+}
+.oa-children {
+  padding-left: 7px;
+  border-left: 1px solid #29404a;
+}
+.formation-unit small,
+.location-group button small {
+  display: block;
+  color: #8da4aa;
+  font-size: 9px;
+}
+.location-group {
+  padding: 10px;
+  border-bottom: 1px solid #29404a;
+  font-size: 10px;
+}
+.location-group summary {
+  cursor: pointer;
+}
+.location-group button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 10px;
+  margin-top: 5px;
+}
+.stack-unit-list {
+  max-height: 340px;
+  overflow-y: auto;
+}
+.pending-decisions {
+  padding: 12px 10px;
+  border-bottom: 1px solid #29404a;
+}
+.pending-decisions article {
+  margin-top: 8px;
+  padding: 8px;
+  background: #19303a;
+  border-left: 2px solid #d7be8c;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.pending-decisions small {
+  display: block;
+  margin-top: 4px;
+  color: #8da4aa;
+  font-size: 9px;
+}
+@media (min-width: 1250px) {
+  .workspace {
+    grid-template-columns: 210px minmax(300px, 1fr) 380px 280px;
+  }
+}
+
+.detail-field {
+  display: contents;
+}
+.unit-detail dd {
+  overflow-wrap: anywhere;
+}
