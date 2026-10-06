@@ -1,0 +1,18 @@
+[package]
+name = "cna-sandbox"
+description = "A small synthetic ruleset on the real CNA map grid, for integration testing of the neo-sandtable runner, seats and board. Not CNA rules."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cna-core.workspace = true
+cna-protocol.workspace = true
+cna-content.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

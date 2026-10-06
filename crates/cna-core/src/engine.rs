@@ -68,6 +68,23 @@ pub trait Ruleset {
         state: &Self::State,
         perspective: Perspective,
     ) -> cna_protocol::ViewState;
+
+    /// Authorized detail about one thing — a hex, a unit, a dump, an airfield — identified by
+    /// `target` (a hex id, unit id, or another id the ruleset documents), filtered for
+    /// `perspective`. Backs the AI seats' `inspect` tool. An unknown or unauthorized target is a
+    /// `Rejection::Illegal` whose message reveals nothing either way.
+    fn inspect(
+        &self,
+        content: &Self::Content,
+        state: &Self::State,
+        perspective: Perspective,
+        target: &str,
+    ) -> Result<Value, Rejection> {
+        let _ = (content, state, perspective, target);
+        Err(Rejection::Illegal {
+            message: "this ruleset does not support inspect".into(),
+        })
+    }
 }
 
 /// What a ruleset may touch while running a transition.

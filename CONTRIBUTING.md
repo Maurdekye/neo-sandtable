@@ -57,6 +57,8 @@ tests that pin it. The lead agent batches consequential interpretations for the 
   `core: …`, `rules: …`, `map: …`, `units: …`, `scenario: …`, `server: …`, `web: …`, `docs: …`,
   `ci: …`, `tools: …`.
 - CI must stay green. Do not push code that fails the checks below.
+- Lockfiles (`Cargo.lock`, `web/package-lock.json`) are generated: on a rebase conflict, take
+  either side and regenerate them mechanically (`cargo check`, `npm install`); no need to ask.
 
 ### Checks
 
