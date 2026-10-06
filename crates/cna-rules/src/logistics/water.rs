@@ -52,7 +52,13 @@ pub fn requirements(
         .checked_mul(multiplier)
         .ok_or(SupplyError::Invalid)?;
     let infantry = if rations::infantry(content, id)? {
-        multiplier
+        (multiplier
+            - if history.water_stage == Some(stage) {
+                history.infantry_water_received
+            } else {
+                0
+            })
+        .max(0)
     } else {
         0
     };
@@ -91,7 +97,7 @@ fn candidates(
             .logistics
             .rations
             .get(&unit.id)
-            .is_some_and(|r| r.water_stage == Some(stage))
+            .is_some_and(|r| r.water_issue_stage == Some(stage))
         {
             continue;
         }
@@ -153,7 +159,7 @@ pub fn enter(
     Ok(())
 }
 /// Cases: airlog:52.0, airlog:52.41, airlog:52.42, land:3.6
-fn open_menu(
+pub(super) fn open_menu(
     content: &CnaContent,
     state: &mut State,
     side: Side,
@@ -161,7 +167,8 @@ fn open_menu(
     strict: bool,
 ) -> Result<(), EngineError> {
     let ids = candidates(content, state, side, strict)?;
-    if ids.is_empty() {
+    let wells = super::wells::candidates(content, state, side);
+    if ids.is_empty() && wells.is_empty() {
         finalize(content, state, side, strict)?;
         return Ok(());
     }
@@ -173,6 +180,12 @@ fn open_menu(
         ids.into_iter()
             .map(|id| option(id.to_string(), format!("Distribute water to {id}"))),
     );
+    options.extend(wells.into_iter().map(|id| {
+        option(
+            format!("well:{id}"),
+            format!("Operate the verified water source at {id}"),
+        )
+    }));
     open(
         state,
         cx,
@@ -218,6 +231,10 @@ pub fn answer(
         if selected == "done" {
             finalize(content, state, side, strict).map_err(Rejection::Engine)?;
             return Ok("Water distribution finished; shortages recorded privately.".into());
+        }
+        if let Some(well_id) = selected.strip_prefix("well:") {
+            super::wells::select(content, state, &UnitId::new(well_id), pending.seat, cx)?;
+            return Ok("Selected a private well operation.".into());
         }
         let id = UnitId::new(selected);
         if !candidates(content, state, side, strict)
@@ -331,7 +348,7 @@ pub fn issue_unit(
             .logistics
             .rations
             .get(id)
-            .is_some_and(|r| r.water_stage == Some(stage))
+            .is_some_and(|r| r.water_issue_stage == Some(stage))
     {
         return Err(illegal("unit already assessed or not in play"));
     }
@@ -374,8 +391,12 @@ pub fn issue_unit(
         .or_default()
         .activity_water = WaterPoints::new(new);
     let history = state.logistics.rations.entry(id.clone()).or_default();
+    if history.water_stage != Some(stage) {
+        history.infantry_water_received = 0;
+    }
     history.water_stage = Some(stage);
-    history.infantry_water_received = infantry;
+    history.water_issue_stage = Some(stage);
+    history.infantry_water_received += infantry;
     if pasta {
         rations::receive_pasta(state, id);
     }
@@ -402,12 +423,17 @@ pub fn finalize(
         if state.land.units[&id].toe.is_none() && content.units.units[&id].class.is_none() {
             continue;
         }
-        let need = match requirements(content, state, &id) {
+        let _need = match requirements(content, state, &id) {
             Ok(r) => r,
             Err(SupplyError::Unsupported {
                 case: "airlog:52.42",
             }) if !strict => continue,
             Err(e) => return Err(engine(e)),
+        };
+        let full_body = if rations::infantry(content, &id).map_err(engine)? {
+            rations::hot_multiplier(content, state, &id).map_err(engine)?
+        } else {
+            0
         };
         let r = state.logistics.rations.entry(id.clone()).or_default();
         if r.water_finalized_stage == Some(stage) {
@@ -418,7 +444,7 @@ pub fn finalize(
             r.infantry_water_received = 0;
         }
         r.water_finalized_stage = Some(stage);
-        if r.infantry_water_received < need.infantry {
+        if r.infantry_water_received < full_body {
             r.consecutive_short_water_stages = if r
                 .last_short_water_stage
                 .is_some_and(|previous| previous.ordinal() + 1 == stage.ordinal())

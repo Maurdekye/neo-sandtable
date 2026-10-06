@@ -26,6 +26,8 @@
 //! Interpretations: interp:airlog-0001
 
 pub mod attrition;
+pub mod capacity;
+pub use capacity::{CargoPacking, cargo_bound, fuel_capacity, validate_packing};
 mod rations;
 mod segment;
 pub mod stores;
@@ -35,6 +37,7 @@ pub use segment::{
 };
 pub mod water;
 pub mod weather;
+pub mod wells;
 pub use supply::{
     SupplyDemand, SupplyDraw, SupplyError, SupplySource, ammunition_cost, available_sources,
     available_sources_at, available_sources_at_location, available_sources_at_with_content,

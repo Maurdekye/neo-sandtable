@@ -236,14 +236,20 @@ fn rain_refills_only_wells_in_affected_sections() {
         .unwrap()
         .id
         .clone();
-    state
-        .logistics
-        .wells
-        .insert(wet.clone(), WellState { depleted: true });
-    state
-        .logistics
-        .wells
-        .insert(dry.clone(), WellState { depleted: true });
+    state.logistics.wells.insert(
+        wet.clone(),
+        WellState {
+            depleted: true,
+            ..WellState::default()
+        },
+    );
+    state.logistics.wells.insert(
+        dry.clone(),
+        WellState {
+            depleted: true,
+            ..WellState::default()
+        },
+    );
     run(&mut state, seed);
     assert!(!state.logistics.wells[&wet].depleted);
     assert!(state.logistics.wells[&dry].depleted);

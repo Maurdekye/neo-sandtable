@@ -83,6 +83,9 @@ impl Cna {
             {
                 crate::logistics::water::answer(content, state, pending, action, cx, self.strict)
             }
+            kind if kind.starts_with(crate::logistics::wells::PREFIX) => {
+                crate::logistics::wells::answer(content, state, pending, action, cx, self.strict)
+            }
             crate::logistics::attrition::KIND => {
                 crate::logistics::attrition::answer(content, state, pending, action, cx)
             }

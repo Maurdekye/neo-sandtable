@@ -295,6 +295,22 @@ pub(crate) fn view(
             }),
         });
     }
+    // A well attempt reveals only its printed condition marker, never the secret roll or quantity.
+    // Cases: airlog:52.14, airlog:52.16
+    for hex in state.logistics.wells.keys() {
+        let known = crate::logistics::wells::condition(state, hex, perspective);
+        for condition in ["depleted", "poisoned"] {
+            if known.get(condition) == Some(&json!(true)) {
+                markers.push(wire::Marker {
+                    id: format!("well:{hex}:{condition}"),
+                    kind: format!("well_{condition}"),
+                    hex: hex.to_string(),
+                    side: None,
+                    label: Some(format!("{condition} well")),
+                });
+            }
+        }
+    }
     let pending = state
         .decisions
         .pending
@@ -386,6 +402,11 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
         },
         "your_forces": forces,
         "logistics": {
+            "well_conditions": state.logistics.wells.keys().filter_map(|hex| {
+                let condition=crate::logistics::wells::condition(state,hex,perspective);
+                (!condition.as_object().expect("condition object").is_empty()).then_some((hex,condition))
+            }).collect::<BTreeMap<_,_>>(),
+            "drawn_water": state.logistics.drawn_water.iter().filter(|(id,_)|state.land.units.get(*id).is_some_and(|u|sees_side(perspective,u.side))).collect::<BTreeMap<_,_>>(),
             "rations": state.logistics.rations.iter().filter(|(id, _)| {
                 state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
             }).collect::<BTreeMap<_, _>>(),
@@ -454,6 +475,8 @@ pub(crate) fn inspect(
         }
         return Ok(json!({
             "hex": canonical,
+            // Cases: airlog:52.14, airlog:52.16
+            "well": crate::logistics::wells::condition(state,canonical,perspective),
             "terrain": record.and_then(|r| r.terrain.clone()),
             "flags": record.map(|r| r.flags.clone()).unwrap_or_default(),
             "stacks": stacks,

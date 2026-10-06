@@ -91,6 +91,8 @@ pub fn determine(
             for (hex, well) in &mut next.wells {
                 if local_weather(content, &weather, hex)? == WeatherKind::Rainstorm {
                     well.depleted = false;
+                    well.depleted_known.clear();
+                    well.depleted_revealed = false;
                 }
             }
         }

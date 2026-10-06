@@ -49,6 +49,8 @@ pub struct Rations {
     #[serde(skip_serializing_if = "is_default")]
     pub water_stage: Option<WaterStage>,
     #[serde(skip_serializing_if = "is_default")]
+    pub water_issue_stage: Option<WaterStage>,
+    #[serde(skip_serializing_if = "is_default")]
     pub infantry_water_received: i32,
     #[serde(skip_serializing_if = "is_default")]
     pub last_short_water_stage: Option<WaterStage>,

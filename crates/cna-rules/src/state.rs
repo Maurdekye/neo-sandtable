@@ -53,8 +53,15 @@ pub struct WeatherState {
 
 /// Dynamic well conditions; depletion is not included in the public weather report.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct WellState {
     pub depleted: bool,
+    pub poisoned: bool,
+    pub depleted_known: BTreeSet<Side>,
+    pub poisoned_known: BTreeSet<Side>,
+    pub depleted_revealed: bool,
+    pub poisoned_revealed: bool,
+    pub poison_failed_stage: BTreeMap<Side, crate::logistics::water::WaterStage>,
 }
 
 /// Where a land unit is.
@@ -165,6 +172,15 @@ pub struct LogisticsState {
     pub fuel_segments: BTreeMap<UnitId, crate::logistics::FuelSegmentLedger>,
     #[serde(default)]
     pub wells: BTreeMap<HexId, WellState>,
+    /// Pipeline connectivity and destroyed status; construction procedures own updates.
+    #[serde(default)]
+    pub pipelines: BTreeMap<HexId, crate::logistics::wells::PipelineHex>,
+    /// Verified currently operating CW railroad water hexes; unknown routes are not filled.
+    #[serde(default)]
+    pub operating_rail_water: BTreeSet<HexId>,
+    /// Draw results await immediate owner allocation; never available to movement sources.
+    #[serde(default)]
+    pub drawn_water: BTreeMap<UnitId, crate::logistics::wells::DrawnWater>,
     /// Unit tanks, ready ammunition and first-line cargo (airlog:49-53).
     /// Absent entries mean empty holdings; ratings remain in content.
     #[serde(default)]
