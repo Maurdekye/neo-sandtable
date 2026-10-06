@@ -1,10 +1,10 @@
 # scen-0002 — Matruh Garrison: 1st Buffs and 1st Hampshires
 
 - **Cases:** scen:60.41, land:4.44b (item 2), land:4.45 (Selby Force sheet, British unassigned infantry sheet)
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0
 - **Decided by:** oob (proposed), 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The scenario lists three battalions attached to the Matruh Garrison at D3714 (1st Essex, 1st Durham

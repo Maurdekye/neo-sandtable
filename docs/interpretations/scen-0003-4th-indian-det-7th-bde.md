@@ -1,10 +1,10 @@
 # scen-0003 — 4th Indian Division "Det: 7th In Bde" before it has arrived
 
 - **Cases:** scen:60.41, land:4.43a, land:4.45 (4th Indian Division sheet)
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0
 - **Decided by:** oob (proposed), 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The scenario deploys the 4th Indian Division at D3615 with "Det: 31st Field Arty and 7th In Bde", but

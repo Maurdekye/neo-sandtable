@@ -1,10 +1,10 @@
 # airlog-0001 — Fuel burned for CP counts between chart rows
 
 - **Cases:** airlog:49.13, airlog:49.19 (Fuel Consumption Chart)
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-airlog, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Case 49.13 prices fuel per five CP "or fraction thereof" (its own example turns 12 CP into three

@@ -1,10 +1,10 @@
 # units-0001 — Saharan detachment row: what the printed "or" covers
 
 - **Cases:** land:19.32
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0
 - **Decided by:** oob (proposed), 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The Italian chart row for the Saharan detachment prints three infantry-battalion symbols, then the

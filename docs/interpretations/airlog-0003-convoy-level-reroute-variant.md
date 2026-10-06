@@ -1,10 +1,10 @@
 # airlog-0003 — Optional rerouting of the Axis convoy level letters
 
 - **Cases:** airlog:56.29 (and airlog:56.4)
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-airlog, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Case 56.29 is an addition offering players an alternative: choose each month's convoy level letter

@@ -1,10 +1,10 @@
 # land-0008 — Self-propelled guns absorbing Anti-Armor damage (14.47)
 
 - **Cases:** land:14.47, land:12.1
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Case 14.47 says SP guns absorb Anti-Armor Damage Points at Armor Protection plus Vulnerability; an attached correction says that is wrong and SP guns use Armor Protection only.

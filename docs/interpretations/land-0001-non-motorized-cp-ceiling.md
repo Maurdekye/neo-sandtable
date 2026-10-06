@@ -1,10 +1,10 @@
 # land-0001 — Non-motorized units' voluntary CP ceiling: 150% of CPA
 
 - **Cases:** land:8.17
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Case 8.17 limits how many CP a non-motorized unit (CPA 10 or less) may voluntarily spend in its own portion of an Operations Stage. Which percentage of base CPA is the ceiling?

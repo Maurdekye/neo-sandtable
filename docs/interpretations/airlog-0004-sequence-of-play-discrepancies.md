@@ -1,10 +1,10 @@
 # airlog-0004 — Differences between the Land/Air and Logistics sequences of play
 
 - **Cases:** airlog:33.0, airlog:48.0, airlog:56.32, airlog:56.31, land:5.2, land:20.72, land:20.21, land:20.78A, land:20.78B
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-airlog, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The Land/Air sequence (33.0) and the Logistics sequence (48.0) are two prints of one outline and

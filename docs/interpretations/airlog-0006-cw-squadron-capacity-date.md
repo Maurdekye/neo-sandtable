@@ -1,10 +1,10 @@
 # airlog-0006 — When Commonwealth squadron capacity increases
 
 - **Cases:** airlog:35.23 (Squadron Capacity Chart)
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-airlog, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The text of 35.23 says Commonwealth squadrons increase capacity starting with July 1941. The chart rows are

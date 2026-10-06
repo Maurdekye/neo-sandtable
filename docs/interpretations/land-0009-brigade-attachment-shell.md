@@ -1,10 +1,10 @@
 # land-0009 — Brigade attached to a division for shell status (15.55)
 
 - **Cases:** land:15.55, land:9.26
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 15.55 says a brigade counts as attached to a division only if the brigade HQ counter is attached, so a Commonwealth division with nine battalions and no brigade HQs is a shell in Close Assault. The designer's own note says the case is not understood. How is the division's shell test done?

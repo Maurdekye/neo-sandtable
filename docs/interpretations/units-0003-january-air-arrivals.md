@@ -1,10 +1,10 @@
 # January 1941 air totals
 
 - **Cases:** airlog:34.84, airlog:34.86
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** draft
 - **Decided by:** oob, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Does the worked example override the January schedule?

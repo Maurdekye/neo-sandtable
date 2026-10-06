@@ -1,10 +1,10 @@
 # land-0010 — Probe 50% test and stale cross-references in Close Assault
 
 - **Cases:** land:15.25, land:15.91, land:15.13, land:15.12
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 (1) What does "available TOE Strength Points" mean for the 50% test that turns an assault into a Probe, and is the test per hex or across all assaults the units make? (2) 15.13 and 15.12 cite Overrun in 15.86, which is the captured-points case; the Overrun loss rule is 15.84.

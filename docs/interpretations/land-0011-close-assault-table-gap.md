@@ -1,10 +1,10 @@
 # land-0011 — Close Assault table: defender +2 column has a gap at readings 34-36
 
 - **Cases:** land:15.79
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 In the defender half of the Close Assault Combat Results Table, the +2 column prints the 10% line as 24-33 and the 5% line as 41-52. Dice readings 34, 35 and 36 therefore have no printed result. Every other column of both halves covers all 36 readings exactly once, so this looks like a printing error of the kind the Sept 1979 errata already fixed for the +4 column.

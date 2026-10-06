@@ -4,7 +4,7 @@
 - **Status:** adopted
 - **Profile version:** geometry `vassal-2021`, map schema 1; no playable rules profile yet
 - **Decided by:** neo-sandtable, 2026-10-06
-- **Owner review:** reviewed by project lead 2026-10-06
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 

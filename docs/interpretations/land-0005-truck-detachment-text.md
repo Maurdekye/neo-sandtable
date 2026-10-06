@@ -1,10 +1,10 @@
 # land-0005 — Garbled text in truck attach/detach case (8.97)
 
 - **Cases:** land:8.97
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The second and third sentences of 8.97 are broken (a clause appears to be missing), and a clarification note says a line was dropped.

@@ -1,10 +1,10 @@
 # land-0006 — Slash entries on the Capability Point Expenditure Summary (6.3)
 
 - **Cases:** land:6.3, land:24.17, land:24.9, land:27.73, land:30.0
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Two rows of the CP Expenditure Summary use compressed notation: "Construct a Real or Dummy/Non-Dump Supply Dump: 3/2" and "Commando amphibious landing: 5 or 10 + TEC". What do the slash and the "or" select between?

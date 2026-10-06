@@ -1,10 +1,10 @@
 # airlog-0002 — Supply dump demolition rolls outside the printed columns
 
 - **Cases:** airlog:54.14, airlog:54.17 (Supply Dump Demolition Table)
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-airlog, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The die roll is modified by up to four cumulative groups of modifiers (about -4 to +5 or more from

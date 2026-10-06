@@ -1,10 +1,10 @@
 # map-0001 - VASSAL 2021 numbering versus original seam description
 
 - **Cases:** land:4.1, land:8.19, land:8.8, land:15.35, airlog:34.11, airlog:55.21, scen:60.31, scen:60.41, scen:60.44, scen:60.5
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** geometry `vassal-2021`, schema 1; no playable rules profile yet
 - **Decided by:** cartographer, 2026-10-06 (proposal authorized by neo-sandtable)
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 

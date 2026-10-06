@@ -1,10 +1,10 @@
 # land-0018 — Construction Chart versus the Section 24 case texts
 
 - **Cases:** land:24.17, land:24.35, land:24.44, land:24.73, land:24.83, land:24.84, land:24.9, land:6.3
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Several values in the Construction Chart (24.17) differ from the matching case texts, so the engine needs one source of truth per item.

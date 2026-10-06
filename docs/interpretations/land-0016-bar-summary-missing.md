@@ -1,10 +1,10 @@
 # land-0016 — Breakdown Adjustment Summary (21.14) is not in the sources
 
 - **Cases:** land:21.12, land:21.14
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Case 21.14 refers to a Breakdown Adjustment Summary chart listing the Breakdown Adjustment Rating (BAR) by vehicle type, with an asterisk for types listed individually on the Tank & Gun Characteristics Charts. The 2021 text and the VASSAL chart images contain no such chart, so the general-type BAR values are not available from our sources.

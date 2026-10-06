@@ -1,10 +1,10 @@
 # 22nd Guards arrival
 
 - **Cases:** land:4.43a, land:4.45
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** draft
 - **Decided by:** oob, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Which clock applies to the 22nd Guards headquarters?

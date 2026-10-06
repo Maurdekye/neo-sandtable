@@ -1,10 +1,10 @@
 # scen-0001 — Benghazi's hex id: A4827 or B4827
 
 - **Cases:** scen:60.31, scen:60.5, land:4.45 (Benghazi Garrison OA sheet)
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0
 - **Decided by:** oob (proposed), 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The Italian deployment line in the scenario booklet names "Benghazi (B4827)", but the Benghazi

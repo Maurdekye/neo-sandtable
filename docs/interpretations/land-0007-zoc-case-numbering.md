@@ -1,10 +1,10 @@
 # land-0007 — Case 10.6 is printed out of order
 
 - **Cases:** land:10.6, land:10.1
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The case that requires the non-phasing player to say whether a unit exerts a ZOC is numbered 10.6 but sits inside 10.1 (after 10.15) and before 10.2. Is it a misprint for 10.16?

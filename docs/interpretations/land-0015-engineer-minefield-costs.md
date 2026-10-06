@@ -1,10 +1,10 @@
 # land-0015 — Cost for engineers and stacked units to enter an enemy minefield
 
 - **Cases:** land:23.21, land:26.24, land:26.21, land:6.3, land:8.37
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Three places give different costs for a unit with an Engineer present entering an enemy minefield: 23.21 says six CP for motorized and three for non-motorized units; 26.24 says four additional CP; the Capability Point Cost Summary (6.3) says non-motorized with Engineers 2 + terrain, motorized with Engineers 4 + terrain, non-motorized without 4 + terrain, motorized without CPA + terrain. The Terrain Effects Chart gives +4 (non-motorized) and + CPA (motorized) with a footnote that Engineers reduce the cost.

@@ -1,10 +1,10 @@
 # land-0013 — Start date for upgrading Recce and Armored Car units (20.55)
 
 - **Cases:** land:20.55, land:20.5, land:20.51-20.54
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 20.55 says no unit may be upgraded before "(January) 1/1939", a date before the campaign starts (September 1940). The upgrade rule (adding light-tank TOE points to Recce/Armored Car units) matters for Graziani's Offensive because Italian units may be upgraded with M/11, L6/40 or armored recce points, and the two possible readings give different answers for September-October 1940.

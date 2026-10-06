@@ -1,10 +1,10 @@
 # scen-0004 — "3 CCNN Div" at Tripoli has no divisional HQ
 
 - **Cases:** scen:60.31, land:4.45 (3rd CCNN sheet), land:19.27
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0
 - **Decided by:** oob (proposed), 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Scenario 60.31 puts "3 CCNN Div (I)" at Tripoli, but the 3rd CCNN OA sheet states the division had

@@ -1,10 +1,10 @@
 # land-0004 — Reinforcements arriving in Tripoli/Tunis may move on arrival
 
 - **Cases:** land:8.86
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 Case 8.86 prints a ban on moving reinforcements/replacements out of Tunis or Tripoli in their arrival stage, followed by a correction note saying the ban is the reverse of what was meant.

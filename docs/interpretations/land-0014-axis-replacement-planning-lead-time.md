@@ -1,10 +1,10 @@
 # land-0014 — Axis replacement planning lead time (20.63)
 
 - **Cases:** land:20.63, land:20.21, land:20.6
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 20.63 prints a rewritten rule (schedule replacements at least two weeks ahead on the Axis naval convoys; points for the third week of a month are scheduled in the first week) followed by the original version (plan two Game-Turns ahead in the Naval Convoy Arrival Phase; June III planning arrives in July I). The two versions give different lead times in places, and 20.21 and the pool tables speak of arrival two Game-Turns after planning.

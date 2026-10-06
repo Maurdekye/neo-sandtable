@@ -1,10 +1,10 @@
 # land-0017 — Engineers and parenthesised strengths (23.11)
 
 - **Cases:** land:23.11, land:3.4
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 23.11 first lets Engineers use their parenthesised strength only when sharing a hex with a friendly combat unit, then a "correction and clarification" reverses this: the rating applies only when no friendly combat unit is present.

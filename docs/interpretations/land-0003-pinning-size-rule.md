@@ -1,10 +1,10 @@
 # land-0003 — Size comparison for pinning (8.54)
 
 - **Cases:** land:8.54, land:9.2
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 8.54 says a battalion-size unit can never pin a division and a company-size unit can never pin a brigade or larger, judged by size (stacking points and TOE), and tells players to use common sense or a coin flip when unclear. An engine needs a deterministic test.

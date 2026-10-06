@@ -1,10 +1,10 @@
 # land-0002 — Terrain Effects Chart: corrected footnotes and row naming
 
 - **Cases:** land:8.37, errata79:8.37, land:8.46
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 The 1979 chart attached footnote 4 (Alexandria/Cairo are Level Three fortified, other cities Level Two) to Swamp and printed 1 CP for tracks; the errata moves footnote 4 to Major City and says footnote 8 applies to tracks. Also: the table row is called Gravel while the terrain key calls the class Rock/Gravel.

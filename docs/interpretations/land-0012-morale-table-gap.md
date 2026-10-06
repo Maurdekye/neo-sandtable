@@ -1,10 +1,10 @@
 # land-0012 — Morale Modifier table: reading 56 uncovered in the -4 cohesion row
 
 - **Cases:** land:17.4, land:17.22
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 In the Morale Modifier Table the Cohesion Level -4 row prints no change 11-33, minus 1 for 34-41, minus 2 for 42-55 and minus 3 for 61-66. Dice reading 56 (a valid sequential reading) has no printed modifier. Every other row covers all 36 readings exactly once.

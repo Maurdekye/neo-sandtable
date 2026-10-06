@@ -1,10 +1,10 @@
 # airlog-0005 — Flak density column shift and the +2 TacAir kill example
 
 - **Cases:** airlog:46.0, airlog:46.3, airlog:46.4, airlog:45.3 (worked examples), airlog:45.5
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-airlog, 2026-10-06
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 1. The AA table notes (and the identical Flak Adjustment Chart, 46.4) shift the flak-point column to the

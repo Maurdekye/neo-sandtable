@@ -1,10 +1,10 @@
 # Italian artillery arrival AA loadouts versus class capacity
 
 - **Cases:** land:4.45, land:4.46b
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** draft
 - **Decided by:** oob, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-06 by the owner (batch review 1)
 
 ## Question
 How should the historical OA loadout be represented when its AA points exceed the reusable class capacity?
