@@ -1,4 +1,4 @@
-use cna_server::{http::App, sandbox};
+use cna_server::{campaigns as factory, http::App};
 use std::{path::PathBuf, sync::Arc};
 
 #[tokio::main]
@@ -20,23 +20,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::new(
         campaigns.clone(),
         port,
-        Arc::new(move |request, directory| sandbox::create(directory, &factory_data, request)),
+        Arc::new(move |request, directory| factory::create(directory, &factory_data, request)),
     );
-    for file in std::fs::read_dir(&campaigns)? {
-        let path = file?.path();
+    let files = std::fs::read_dir(&campaigns)?.collect::<Result<Vec<_>, _>>()?;
+    for file in files {
+        let path = file.path();
         if path.extension().is_some_and(|e| e == "sqlite") {
-            app.register(sandbox::recover(&path, &data)?);
+            match factory::recover(&path, &data) {
+                Ok(handle) => app.register(handle),
+                Err(error) => {
+                    app.shutdown().await;
+                    return Err(error.into());
+                }
+            }
         }
     }
-    println!("neo-sandtable local server http://127.0.0.1:{port} (sandbox-v1; synthetic, not CNA)");
+    println!(
+        "neo-sandtable local server http://127.0.0.1:{port} (sandbox-v1; cna-2021-dev/full on Graziani)"
+    );
     let shutdown = app.clone();
     let router = app.router(&root.join("../../web/dist"));
-    axum::serve(listener, router)
+    let result = axum::serve(listener, router)
         .with_graceful_shutdown(async move {
             let _ = tokio::signal::ctrl_c().await;
             shutdown.shutdown().await;
         })
-        .await?;
+        .await;
     app.shutdown().await;
+    result?;
     Ok(())
 }

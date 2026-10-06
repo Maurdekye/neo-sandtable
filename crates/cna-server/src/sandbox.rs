@@ -1,5 +1,9 @@
 //! Runnable synthetic campaigns on the lead's real-map sandbox ruleset.
-use crate::{Campaign, Error, Pins, actor::CampaignHandle, http::CreateRequest};
+use crate::{
+    Campaign, Error, Pins,
+    actor::CampaignHandle,
+    http::{CampaignKind, CreateRequest},
+};
 use cna_content::map::MapContent;
 use cna_core::{dice::CampaignRng, engine::Game, ids::SeatId};
 use cna_protocol::{CampaignMeta, ControllerInfo, ControllerKind, SeatInfo, SeatStatus};
@@ -41,7 +45,7 @@ pub fn create(
     data: &Path,
     request: CreateRequest,
 ) -> Result<CampaignHandle, Error> {
-    if request.rules_profile != cna_sandbox::PROFILE_ID {
+    if request.kind != CampaignKind::Sandbox || request.rules_profile != cna_sandbox::PROFILE_ID {
         return Err(Error::Invalid("only sandbox-v1 is implemented".into()));
     }
     let (kind, mode) = match request.controller.as_str() {

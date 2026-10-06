@@ -1,4 +1,4 @@
-﻿# cna-server
+# cna-server
 
 Run the local server from the repository:
 
@@ -12,15 +12,30 @@ folder and database folder. The default database folder is the agent scratch fol
 `campaigns/`, outside the repository. Browser requests require a loopback Host and an approved
 local Origin; the Vite origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed.
 
-Only `sandbox-v1` is implemented: a **synthetic game, not CNA**. Creation accepts JSON with
-`rules_profile`, `seed` (32 byte values), optional `title`, `paused` (default false) and
-`controller` (`legal_random`, `pass_when_possible`, `aggressive` / `scripted:aggressive`, or
-`human`). Use `paused: true` to attach viewers before starting a fast campaign. No LLM driver or
-paid provider is started by the server.
+Creation accepts JSON with `kind` (`sandbox`, the default, or `cna`), `rules_profile`, `seed`
+(32 byte values), optional `title` (default "Campaign"), `paused` (default false), and `controller`.
+Use `paused: true` to attach viewers before starting a fast campaign. No LLM driver or paid
+provider is started by the server.
+
+- `kind: "sandbox"`, `rules_profile: "sandbox-v1"` runs the **synthetic game**. Controllers:
+  `legal_random`, `pass_when_possible`, `aggressive` / `scripted:aggressive`, or `human`.
+- `kind: "cna"`, `rules_profile: "cna-2021-dev"` runs the real Graziani's Offensive setup and
+  sequence through the development ruleset. Currently it resolves initiative declarations and
+  skips unimplemented steps; reaching Finished does not mean all CNA rules are implemented.
+  Controllers: `legal_random`, `pass_when_possible`, or `human`.
+- `kind: "cna"`, `rules_profile: "cna-2021-full"` uses the strict ruleset and stops visibly at the
+  first unsupported applicable procedure. It never substitutes an order. Aggressive is available
+  only for the sandbox (including handover). Unknown kinds, profiles and mismatched pairs are rejected.
+
+For example, POST `/api/campaigns` with `{"kind":"cna","rules_profile":"cna-2021-dev",
+"seed":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"paused":true,"controller":"legal_random"}`. Rust callers supply
+`CreateRequest.kind: CampaignKind::Sandbox` or `CampaignKind::Cna`; legacy JSON without `kind`
+still creates a sandbox. `campaigns::create` dispatches both kinds; `sandbox::create` remains the
+sandbox-specific factory.
 
 | HTTP endpoint | Purpose |
 |---|---|
-| `GET/POST /api/campaigns` | List metadata / create a sandbox campaign |
+| `GET/POST /api/campaigns` | List metadata / create a campaign |
 | `GET /api/campaigns/{id}` | Inspect metadata, status and projected snapshot |
 | `POST /api/campaigns/{id}/pause` or `/resume` | Campaign control at a safe boundary |
 | `GET /api/campaigns/{id}/seats` | Seat metadata |
@@ -76,3 +91,15 @@ committed projections; replay pages use independent read-only SQLite connections
 The tests exercise rollback injection, recovery, stale epochs, exact duplicates, secret state,
 13-perspective filtering, a real-map sandbox reaching Finished with an unread lagged viewer,
 durable seat memory and HTTP/WebSocket snapshot/live/resume/switch/resync flows.
+
+CNA startup recovery dispatches from the persisted scenario/profile pair using a read-only
+metadata query before opening a writer. Its input fingerprint includes the map CSVs, the TOMLs
+actually read by the unit and Graziani setup loaders, every table TOML, and the `land`, `airlog`
+and `scen` registry folders. Unread files and notes do not affect it. Paths and bytes are hashed
+in sorted order; a change during loading is rejected. The CNA engine fingerprint is embedded at
+build time from the core, protocol, content, tables and rules Rust sources, their manifests and
+Cargo.lock. It is conservative: rebuilding with changed inputs requires matching saved pins;
+there is no migration or implicit profile fallback. Existing sandbox pinning remains unchanged.
+The real-scenario tests cover both baselines reaching Finished, private transcript replay,
+checkpoint plus tail recovery, strict-profile rollback, HTTP creation/control, input drift and
+mixed sandbox/CNA recovery. No provider invocation is needed for these tests.

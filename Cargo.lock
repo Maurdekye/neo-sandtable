@@ -235,6 +235,7 @@ dependencies = [
  "cna-content",
  "cna-core",
  "cna-protocol",
+ "cna-rules",
  "cna-sandbox",
  "cna-seats",
  "futures-util",

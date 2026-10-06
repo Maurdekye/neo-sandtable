@@ -66,6 +66,7 @@ struct Inner {
     seats: BTreeMap<SeatId, watch::Receiver<SeatState>>,
     status: watch::Receiver<CampaignStatus>,
     reader: ReplayReader,
+    supports_aggressive: bool,
     thread: Mutex<Option<std::thread::JoinHandle<Result<(), Error>>>>,
 }
 #[derive(Clone)]
@@ -222,6 +223,7 @@ impl CampaignHandle {
             status: status_send,
             transcript_cursors,
         };
+        let supports_aggressive = baseline.is_some();
         let thread = std::thread::Builder::new()
             .name("campaign-writer".into())
             .spawn(move || {
@@ -284,6 +286,7 @@ impl CampaignHandle {
                 seats,
                 status: status_recv,
                 reader: ReplayReader::new(path),
+                supports_aggressive,
                 thread: Mutex::new(Some(thread)),
             }),
         })
@@ -329,6 +332,14 @@ impl CampaignHandle {
         controller: Option<ControllerInfo>,
         config: Value,
     ) -> Result<Binding, Error> {
+        if !self.inner.supports_aggressive
+            && controller
+                .as_ref()
+                .is_some_and(|c| c.kind == cna_protocol::ControllerKind::Scripted)
+            && config["mode"].as_str() == Some("aggressive")
+        {
+            return Err(Error::Invalid("campaign has no aggressive baseline".into()));
+        }
         self.call(Op::Handover(seat, controller, config)).await
     }
     pub async fn pause_seat(&self, seat: SeatId) -> Result<(), Error> {

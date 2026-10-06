@@ -27,8 +27,17 @@ use tower_http::{
     services::{ServeDir, ServeFile},
 };
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CampaignKind {
+    #[default]
+    Sandbox,
+    Cna,
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CreateRequest {
+    #[serde(default)]
+    pub kind: CampaignKind,
     pub rules_profile: String,
     pub seed: [u8; 32],
     #[serde(default = "default_title")]
@@ -39,7 +48,7 @@ pub struct CreateRequest {
     pub controller: String,
 }
 fn default_title() -> String {
-    "Synthetic sandbox".into()
+    "Campaign".into()
 }
 fn default_mode() -> String {
     "legal_random".into()

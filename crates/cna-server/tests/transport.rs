@@ -29,6 +29,7 @@ fn data() -> PathBuf {
 }
 fn request(mode: &str, paused: bool) -> CreateRequest {
     CreateRequest {
+        kind: cna_server::http::CampaignKind::Sandbox,
         rules_profile: "sandbox-v1".into(),
         seed: [7; 32],
         title: "Integration".into(),

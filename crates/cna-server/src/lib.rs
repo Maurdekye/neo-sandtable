@@ -4,6 +4,8 @@ pub mod scripted;
 
 pub use campaign::{Binding, Campaign, CampaignStatus, Error, Pins, Receipt};
 pub mod actor;
+pub mod campaigns;
+pub mod cna;
 pub mod http;
 pub mod replay;
 pub mod sandbox;
