@@ -1,4 +1,5 @@
 layer,hex_id,neighbour_id,src,review_batch
+coastal,A4827,,land:8.37;scen:60.34;interp:scen-0001,benghazi-0001
 coastal,C2818,,land:8.37,graziani-0003
 coastal,C2819,,land:8.37,graziani-0003
 coastal,C2820,,land:8.37,graziani-0003
@@ -227,6 +228,7 @@ coastal,E1829,,land:8.37;land:17.32;scen:60.43,cairo-0001
 coastal,E1830,,land:8.37;land:17.32;scen:60.43,cairo-0001
 coastal,E1930,,land:8.37;land:17.32;scen:60.43,cairo-0001
 coastal,E1931,,land:8.37;land:17.32;scen:60.43,cairo-0001
+terrain,A4827,,land:8.37;scen:60.34;interp:scen-0001,benghazi-0001
 terrain,C2818,,land:8.37,graziani-0003
 terrain,C2819,,land:8.37,graziani-0003
 terrain,C2820,,land:8.37,graziani-0003

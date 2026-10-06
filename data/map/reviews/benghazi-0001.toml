@@ -1,0 +1,29 @@
+[batch]
+id = "benghazi-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+proposal_algorithm = "palette-v0.1"
+selection = "Benghazi building group A4827; 40 source-contained halo cells A45..51/24..31 inspected, then native city overview and shared-boundary enlargement"
+notes = "Single city-symbol group in A4827. Shared southeast side rechecked; no separate city building group in adjacent A4728 or A4828. El Berca village marker A4728 and Benina airfield A4829 are distinct. Port/training overprints do not extend city footprint. Source-profile verification only; no independent observer or original1979map comparison. Halo base terrain and port attributes are not published."
+
+[[hex]]
+hex_id = "A4827"
+status = "accepted"
+terrain = "major_city"
+flags = ["land", "coastal"]
+src = ["land:8.37", "scen:60.34", "interp:scen-0001"]
+proposed_terrain = "unclassified"
+note = "Benghazi city building group is on visible coastal land inside A4827. The whole native-scale group and neighboring boundaries were inspected; majority sea fill is not a terrain classifier. Adjacent village and airfield are excluded."
+
+[[place]]
+id = "city-benghazi-a4827"
+name = "Benghazi"
+hex_id = "A4827"
+type = "major_city"
+place_group = "benghazi"
+src = ["land:8.37", "scen:60.34", "interp:scen-0001"]
+note = "One source-profile city cell after surrounding-symbol audit; independent map confirmation of adopted garrison-id interpretation. No port capacity or training/facility attributes inferred."

@@ -50,6 +50,12 @@ class AreaTests(unittest.TestCase):
         self.assertEqual(set(self.lookup.members("cairo").hex_ids),{"E1930","E1931","E1829","E1830","E1730"})
         self.assertEqual(self.lookup.members("helwan").hex_ids,("E1430",))
 
+    def test_benghazi_uses_map_city_group_not_nearby_markers(self):
+        self.assertEqual(self.lookup.members("benghazi").hex_ids,("A4827",))
+        area=next(a for a in self.definitions["areas"] if a["id"]=="benghazi")
+        self.assertEqual(area["review_batch"],"benghazi-0001")
+        self.assertFalse({"A4728","A4829","B4827"}&set(self.lookup.members("benghazi").hex_ids))
+
     def test_unknown_location_cannot_publish(self):
         defs=copy.deepcopy(self.definitions)
         next(a for a in defs["areas"] if a["id"]=="tripoli")["location_ids"]=["invented"]

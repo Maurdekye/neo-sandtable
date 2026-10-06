@@ -161,6 +161,16 @@ membership_status = "resolved"
 hex_ids = []
 
 [[areas]]
+id = "benghazi"
+kind = "hexes"
+src = ["land:8.37", "scen:60.34", "interp:scen-0001"]
+hex_ids = ["A4827"]
+verification = "visual_single_pass"
+review_batch = "benghazi-0001"
+membership_status = "resolved"
+location_ids = []
+
+[[areas]]
 id = "cairo"
 kind = "hexes"
 src = ["land:17.32", "scen:60.43", "land:8.37"]

@@ -1,7 +1,7 @@
 # Map data: coordinate profile vassal-2021
 
 This first milestone supplies the discrete grid for all five A-E sections.
-**Terrain coverage: 227 classified cells; 6796 remain unclassified. One port and five Cairo city cells are recorded. This content is not yet playable.** The local map is a
+**Terrain coverage: 228 classified cells; 6795 remain unclassified. One port and six city cells (Cairo five, Benghazi one) are recorded. This content is not yet playable.** The local map is a
 2021 VASSAL re-rendering, not a scan of the original 1979 sheets. Scenario ids are
 our independent numbering anchors. The original seam description conflicts with
 this source; see [GAPS.md](GAPS.md) and the [interpretation proposal](../../docs/interpretations/map-0001-grid-numbering.md).
@@ -98,7 +98,7 @@ mean unknown, not false. Flags are pipe-delimited tokens. `sea` means entirely w
 with `land|coastal`, or `coastal` alone when the substrate remains unreadable.
 See [map-0002](../../docs/interpretations/map-0002-coastal-terrain.md).
 `port` is supplied by a separate reviewed place record, currently C4022.
-`major_city` is also a place-derived flag for the five Cairo city cells.
+`major_city` is also a place-derived flag for the five Cairo city cells and Benghazi A4827.
 These flags describe observed map surface, not complete facilities or movement
 permission. Missing a flag never establishes the absence of an unreviewed layer. CSV citations
 are semicolon-delimited case references. Current `src=land:4.1` identifies the
@@ -132,7 +132,7 @@ solely from `hexes.csv` and contains no raster or traced coastline.
 
 `places.toml`: `schema_version,coordinate_profile,complete,verification` plus
 `[[places]]` with `id,name,hex_id,type,src,note,review_batch`. Currently types
-`port` and `major_city` are verified; Cairo city entries share `place_group="cairo"`. Sollum's port is C4022; its nearby town dot is C4021, which
+`port` and `major_city` are verified; Cairo city entries share `place_group="cairo"`; Benghazi uses `place_group="benghazi"`. Sollum's port is C4022; its nearby town dot is C4021, which
 has not been published as a place. Missing capacities/attributes are unknown.
 The replay tool validates the coastal port location and matching city terrain and generates the place file and
 its generic SVG marker. This is an incomplete inventory, not all map facilities.
@@ -193,7 +193,7 @@ coverage but no terrain coverage. Place/facility absence has **no coverage mask
 yet**, so a missing place record always remains unknown. A later schema will
 pin facility-kind masks before certifying any absence there.
 
-Initial publication contains **227 terrain cells, 228 coastal-domain cells and
+Current publication contains **228 terrain cells, 229 coastal-domain cells and
 zero surveyed edges**. Line/hexside files have headers only, so they certify no
 roads, rails, pipelines or hexside absences anywhere. `tools/map/layers.py`
 validates canonical adjacency, coverage, duplicate keys and directional features;
@@ -280,6 +280,7 @@ geometric sets; unit-specific movement/placement restrictions still apply.
 | `offmap_abu_seier`, `offmap_deversoir`, `offmap_kabrit` | Off-map facilities with retained printed references |
 | `offmap_fayid`, `offmap_ismailia`, `offmap_port_said` | Other distinct off-map facilities |
 | `alexandria`, `helwan` | Cited ordinary hex sets; Helwan is E1430 |
+| `benghazi` | Verified city set A4827, source-locked review benghazi-0001; nearby El Berca/Benina excluded |
 | `cairo` | Verified city set: E1930, E1931, E1829, E1830, E1730; Helwan remains separate |
 | `any_air_facility` | Requires friendly control, construction and capacity state |
 

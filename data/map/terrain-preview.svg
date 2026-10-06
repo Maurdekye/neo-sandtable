@@ -965,7 +965,7 @@
 <polygon points="562.92,245.00 554.26,250.00 545.60,245.00 545.60,235.00 554.26,230.00 562.92,235.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>A4732: unclassified</title></polygon>
 <polygon points="580.24,245.00 571.58,250.00 562.92,245.00 562.92,235.00 571.58,230.00 580.24,235.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>A4733: unclassified</title></polygon>
 <polygon points="467.65,230.00 458.99,235.00 450.33,230.00 450.33,220.00 458.99,215.00 467.65,220.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>A4826: unclassified</title></polygon>
-<polygon points="484.97,230.00 476.31,235.00 467.65,230.00 467.65,220.00 476.31,215.00 484.97,220.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>A4827: unclassified</title></polygon>
+<polygon points="484.97,230.00 476.31,235.00 467.65,230.00 467.65,220.00 476.31,215.00 484.97,220.00" fill="#7b759b" stroke="#657281" stroke-width="0.35"><title>A4827: major_city</title></polygon>
 <polygon points="502.29,230.00 493.63,235.00 484.97,230.00 484.97,220.00 493.63,215.00 502.29,220.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>A4828: unclassified</title></polygon>
 <polygon points="519.62,230.00 510.95,235.00 502.29,230.00 502.29,220.00 510.95,215.00 519.62,220.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>A4829: unclassified</title></polygon>
 <polygon points="536.94,230.00 528.28,235.00 519.62,230.00 519.62,220.00 528.28,215.00 536.94,220.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>A4830: unclassified</title></polygon>
@@ -7024,6 +7024,7 @@
 <polygon points="2771.28,290.00 2762.62,295.00 2753.96,290.00 2753.96,280.00 2762.62,275.00 2771.28,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4427: unclassified</title></polygon>
 <polygon points="2788.60,290.00 2779.94,295.00 2771.28,290.00 2771.28,280.00 2779.94,275.00 2788.60,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4428: unclassified</title></polygon>
 <polygon points="2805.92,290.00 2797.26,295.00 2788.60,290.00 2788.60,280.00 2797.26,275.00 2805.92,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4429: unclassified</title></polygon>
+<circle cx="476.31" cy="225.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Benghazi: major_city</title></circle>
 <circle cx="2805.92" cy="690.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
 <circle cx="2797.26" cy="675.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
 <circle cx="2814.58" cy="675.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>

@@ -11,14 +11,14 @@
   details may differ. If original sheets become available, audit each section's
   terrain, coastline/boundary cells and every hexside/facility using a stratified
   sample before asserting correspondence to 1979; retain discrepancy records.
-- **Benghazi id (`scen:60.31`):** extracted text has `84827`. B4827 falls inland
-  in section B and cannot be Benghazi. The re-rendered city lies in A4827.
-  This likely concerns text extraction, but checking the page is needed before
-  publishing a corrected place id. Geometry includes both valid hexes and does
-  not silently rewrite scenario text.
+- **Benghazi:** adopted scen-0001 garrison correction is now map-confirmed:
+  city building group A4827, independently checked with 40 halo cells and a
+  shared-boundary enlargement. The city area contains only A4827. El Berca's
+  A4728 village and Benina A4829 airfield do not enlarge it. Original-map
+  comparison, port attributes and separate training/facility data remain pending.
 - **Water mask:** zone-contained centers include a narrow sea fringe; offshore
   image hexes outside A-E zones (and Malta) are not in this grid. Surface-domain flags
-  exist only for the 228 reviewed cells; the rest are unknown. Completeness refers only to the VASSAL A-E mask.
+  exist only for the 229 reviewed cells; the rest are unknown. Completeness refers only to the VASSAL A-E mask.
 - **Edge artifacts:** A includes partial column-00 hexes; E includes column 34.
   Confirm their playability and any off-map entry meanings against rules data.
 - **Boxes:** current inventory is names only. No distances, capacities, routes or
@@ -26,8 +26,8 @@
 
 ## Classification and rendering
 
-- Five review batches cover 228 distinct terrain cells: 227 classified (191 clear,
-  22 rough, seven sea, two salt marsh, five major city); 6796 remain unknown.
+- Six review batches cover 229 distinct terrain cells: 228 classified (191 clear,
+  22 rough, seven sea, two salt marsh, six major city); 6795 remain unknown.
 - **C4026 coastal fragment:** map-0002 resolves coastal semantics. Ten original
   coastal deferrals are now classified by land substrate. C4026 retains the
   coastal flag and unknown terrain because its tiny land fragment is unreadable.
@@ -40,10 +40,10 @@
   and major-city cells are visually identified; automated recognition remains
   unvalidated. Desert/gravel/vegetation/mountain/delta/swamp are not yet published.
 - Hexside features remain undigitized, including all_sea edges across bays.
-  One port and five Cairo city records are published; other facilities remain pending.
+  One port and six city records (Cairo five, Benghazi one) are published; other facilities remain pending.
 - Base TEC vocabulary is pinned; feature extraction still needs local verification.
 - `grid-preview.svg` remains a section-colored geometry preview;
-  `terrain-preview.svg` adds the 227 reviewed terrain fills and generic place markers. Hexside and facility
+  `terrain-preview.svg` adds the 228 reviewed terrain fills and generic place markers. Hexside and facility
   artwork remains pending.
 
 ## Scenario area memberships and off-map range
@@ -81,7 +81,7 @@ establish the intended source symbol/authority before national sets depend on it
 
 Schema1 now pins lines, directional hexsides and per-kind masks. No edges have
 been reviewed: empty line/hexside CSVs mean unknown everywhere. Terrain mask
-covers227 cells; coastal-domain mask covers228. No place-absence mask exists.
+covers228 cells; coastal-domain mask covers229. No place-absence mask exists.
 The approved Graziani priority window contains2933 canonical cells and8547
 internal edges, plus175 crossing edges; this is not a scenario boundary.
 Semi-automatic line/hexside classification and random error auditing remain

@@ -4,6 +4,16 @@ complete = false
 verification = "visual_single_pass"
 
 [[places]]
+id = "city-benghazi-a4827"
+name = "Benghazi"
+hex_id = "A4827"
+type = "major_city"
+place_group = "benghazi"
+src = ["land:8.37", "scen:60.34", "interp:scen-0001"]
+note = "One source-profile city cell after surrounding-symbol audit; independent map confirmation of adopted garrison-id interpretation. No port capacity or training/facility attributes inferred."
+review_batch = "benghazi-0001"
+
+[[places]]
 id = "city-cairo-e1730"
 name = "Cairo"
 hex_id = "E1730"

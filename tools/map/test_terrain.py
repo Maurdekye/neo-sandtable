@@ -34,7 +34,7 @@ class TerrainTests(unittest.TestCase):
         deferred = [h for h in decisions.values() if h["status"] == "deferred"]
         self.assertEqual([h["hex_id"] for h in deferred], ["C4026"])
         self.assertTrue(all(h["terrain"] == "unclassified" and h["flags"] == ["coastal"] for h in deferred))
-        self.assertEqual(sum(h["status"] == "accepted" for h in decisions.values()), 227)
+        self.assertEqual(sum(h["status"] == "accepted" for h in decisions.values()), 228)
         self.assertEqual(decisions["C4221"]["terrain"], "rough")
         self.assertEqual(decisions["C4022"]["flags"], ["land", "coastal"])
 
@@ -89,7 +89,7 @@ class TerrainTests(unittest.TestCase):
         self.assertEqual(decisions["D3414"]["terrain"],"salt_marsh")
         places=tomllib.loads((MAP/"places.toml").read_text())["places"]
         city={p["hex_id"] for p in places if p["type"]=="major_city"}
-        self.assertEqual(city,{"E1930","E1931","E1829","E1830","E1730"})
+        self.assertEqual(city,{"A4827","E1930","E1931","E1829","E1830","E1730"})
         self.assertTrue(all(decisions[h]["terrain"]=="major_city" for h in city))
 
     def test_contour_color_causes_abstention(self):
@@ -103,7 +103,7 @@ class TerrainTests(unittest.TestCase):
         with (MAP / "hexes.csv").open(newline="") as f:
             rows = list(csv.DictReader(f))
         classified = [r for r in rows if r["terrain"] != "unclassified"]
-        self.assertEqual(len(classified), 227)
+        self.assertEqual(len(classified), 228)
         for row in classified:
             entry = decisions[row["hex_id"]]
             self.assertEqual(entry["status"], "accepted")

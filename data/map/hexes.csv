@@ -963,7 +963,7 @@ A4731,A,47,31,23,16,unclassified,,land:4.1
 A4732,A,47,32,24,16,unclassified,,land:4.1
 A4733,A,47,33,25,16,unclassified,,land:4.1
 A4826,A,48,26,19,15,unclassified,,land:4.1
-A4827,A,48,27,20,15,unclassified,,land:4.1
+A4827,A,48,27,20,15,major_city,land|coastal|major_city,land:4.1;land:8.37;scen:60.34;interp:scen-0001
 A4828,A,48,28,21,15,unclassified,,land:4.1
 A4829,A,48,29,22,15,unclassified,,land:4.1
 A4830,A,48,30,23,15,unclassified,,land:4.1

@@ -210,3 +210,23 @@ Approved Graziani window2933 cells/8547 internal edges/175 crossing edges includ
 Tobruk, Bardia, Sollum, Matruh and both Alexandria city ids. This geometry-only
 window is not a national polygon or playable-boundary decision. Random per-layer
 classifier audits have not yet run; edge error rates remain unmeasured.
+
+## Benghazi city membership (2026-10-07)
+
+The native contact sheet contains40 actual source-contained cells from A
+first45..51/second24..31. All were inspected for neighboring city groups, then
+a city overview and shared-side enlargement checked the A4827/A4728/A4828
+boundaries. One city building-group symbol is anchored in A4827; no distinct
+city groups occur in the surrounding cells. El Berca village A4728 and Benina
+airfield A4829 stay separate. This is visual source-profile evidence beyond the
+garrison-id anchor, not inferred membership from scen-0001 alone. Building
+artwork touches the southeast boundary; that overprint was checked and does
+not supply a second city-symbol group in A4728. Port/training overprints do
+not enlarge the city. Original1979map and independent-observer checks remain
+unavailable. Benghazi area resolves to A4827 with review_batch=benghazi-0001.
+
+A4827 is major_city terrain on coastal land. Its palette proposal abstained.
+Only that city's terrain/place/area is accepted, not neighboring substrates or
+port/facility attributes. Current coverage228classified/7023,6795unknown:
+191clear,22rough,7sea,2salt_marsh,6major_city. Surface masks228terrain/229coastal;
+edge masks are still empty. Total229distinct terrain cells have decisions.

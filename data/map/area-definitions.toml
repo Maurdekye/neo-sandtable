@@ -331,3 +331,11 @@ id = "any_air_facility"
 kind = "dynamic_facilities"
 src = ["scen:59.35"]
 reason = "Requires campaign facility construction, control, friendly-side and capacity state; no static membership can satisfy this selector."
+
+[[areas]]
+id = "benghazi"
+kind = "hexes"
+src = ["land:8.37", "scen:60.34", "interp:scen-0001"]
+hex_ids = ["A4827"]
+verification = "visual_single_pass"
+review_batch = "benghazi-0001"
