@@ -137,14 +137,111 @@ has not been published as a place. Missing capacities/attributes are unknown.
 The replay tool validates the coastal port location and matching city terrain and generates the place file and
 its generic SVG marker. This is an incomplete inventory, not all map facilities.
 
-Planned feature deliverables, **not yet complete**:
-- `hexsides.csv`: canonical `hex_id,direction,neighbour_id,feature,high_side,src`;
-  one feature per row. `high_side` records a directional escarpment's high hex,
-  blank where inapplicable. Feature vocabulary will be pinned against the TEC.
-  Include `all_sea` for an entirely water edge under land:10.21; two coastal
-  endpoints do not by themselves prove this feature.
-- Extend `places.toml` with additional verified facility types and sourced
-  attributes. Printed structures and dynamic scenario state remain distinct.
+## Movement layers and coverage (schema 1)
+
+`layers.toml` pins `schema_version=1`, `coordinate_profile`, exact source/build
+hashes, `line_kinds`, `hexside_kinds`, `cell_layers`, `edge_coverage`,
+`unknown_policy` and `verification`. Existing geometry/hex CSV schemas stand.
+Source hashes identify the 2021 profile; they do not establish 1979 equivalence.
+
+`line_features.csv`: `from_hex,to_hex,kind,src,review_batch`.
+Kinds: `road`, `unfinished_road`, `track`, `railroad`, `unfinished_railroad`,
+`pipeline`. Each row connects adjacent canonical hexes through their shared
+side. Endpoints are lexicographically sorted (`from_hex < to_hex`); the line is
+undirected. A visible road somewhere in both hexes is insufficient: the same
+line must cross their shared boundary. Several kinds can coexist on an edge;
+one row per kind, no duplicate keys. Retain unfinished kinds as printed;
+movement applies land:8.47 and construction state separately. Pipeline is
+separate from railway (airlog:52.2); no pipeline is inferred from railroad
+presence. All rows have semicolon-separated case citations and a review batch.
+
+`hexsides.csv`: `hex_id,direction,neighbour_id,feature,high_side,src,review_batch`.
+Features: `escarpment`, `slope`, `ridge`, `wadi`, `major_river`, `minor_river`,
+`border`, `all_sea`. The canonical endpoints are lexicographically sorted;
+`hex_id` is the first endpoint, `neighbour_id` the second. Direction is one of
+the six published axial directions **from hex_id to neighbour_id**. Store each
+physical edge once; queries from the opposite side reuse that record. Multiple
+feature types may share it. `high_side` is a required endpoint id for slope or
+escarpment and blank for other features. Ascending means moving from the other
+endpoint to high_side; descending reverses it. The downhill splash identifies
+the lower side (land:8.35); unreadable direction cannot be accepted. Boundary
+edges without a neighbour in the grid are not movement connections and are not
+invented. `all_sea` means the full shared boundary is water (land:10.21); endpoint
+coastal flags do not prove it. Border identity remains unresolved where the
+source symbol conflicts with the key. Base feature kinds map to the TEC's
+up/down cost rows at movement time; those rows are not extra map features.
+
+`coverage.csv`: `layer,hex_id,neighbour_id,src,review_batch`.
+**Each row certifies a complete inspection for exactly one layer and domain.**
+The cell layers `terrain` and `coastal` have a blank neighbour. Edge layers are
+`line:<kind>` and `side:<feature>`, using the kinds above. Their endpoints are
+sorted canonical neighbours. Masks are explicit sets of these rows, never
+inferred from a bounding rectangle, a hex's land flag, another layer's mask,
+a high classifier score, or the presence of any nearby feature. Every positive
+line/side record must have matching coverage. Deferred/ambiguous edges stay
+outside the mask; rejected proposals do not certify feature absence.
+
+Inside a particular edge-layer mask, no matching feature row means **verified
+none for that kind**. Outside it the answer is **unknown**, even if the file is
+empty. Consumers must block or explicitly surface incomplete adjudication;
+unknown cannot fall back to clear ground, ordinary CP cost or zero hexside cost.
+A road mask says nothing about tracks, pipelines or escarpments. Within coastal
+cell coverage the flag is true if `coastal` exists, otherwise false (including
+All-Sea cells); outside it coastal status is unknown. Terrain coverage permits
+reading the accepted TEC class. The unreadable land fragment C4026 has coastal
+coverage but no terrain coverage. Place/facility absence has **no coverage mask
+yet**, so a missing place record always remains unknown. A later schema will
+pin facility-kind masks before certifying any absence there.
+
+Initial publication contains **227 terrain cells, 228 coastal-domain cells and
+zero surveyed edges**. Line/hexside files have headers only, so they certify no
+roads, rails, pipelines or hexside absences anywhere. `tools/map/layers.py`
+validates canonical adjacency, coverage, duplicate keys and directional features;
+`feature(family,kind,a,b)` returns a row, `None` for covered absence, or raises
+`UnknownCoverage`. It accepts display aliases at the query boundary only.
+Review batch ids on surface masks reference the existing source-locked reviews.
+Future edge reviews must explicitly accept both presence and absence with exact
+source hashes, observer/date, citations and confidence/evidence; proposals alone
+are not published. Confidence is a classifier score, not measured accuracy.
+
+### Approved Graziani digitization bounds
+
+`graziani-window.toml` is a reproducible **work-priority window**, not a legal
+movement boundary, a national region or a new scenario restriction. Its status
+is `approved_digitization_window`, approved by neo-sandtable on 2026-10-06. Use all
+source-contained rows with these inclusive printed-second-axis bounds:
+
+| Section | Columns | Canonical memberships before union |
+|---|---|---:|
+| C | 07 through 33 | 1218 |
+| D | 00 through 33 (entire section) | 1261 |
+| E | 00 through 14 | 486 |
+
+Resolve source aliases before union: **2933 canonical hexes**, **8547 internal
+neighbour edges**, plus **175 edges to grid cells outside the window**. Include
+those crossing edges in feature inspection, so a window limit cannot invent a
+broken route. The mask includes the source-contained sea fringe for coastal and
+All-Sea checking. Land extent is determined by review, not this window. E14
+includes Alexandria E3714 as well as E3613; C07 includes Tobruk C4807.
+The file pins exact canonical `hex_ids`, counts, section bounds and grid hash;
+`scenario_rule=false` keeps this scope distinct from play restrictions.
+
+### Semi-automatic verification plan
+
+Calibrate interior patches for terrain, bands around side midpoints for
+hexsides, and corridors between registered centres for connecting lines. Use
+multiple sample offsets to tolerate displaced symbols, labels and contour marks.
+Assign per-kind confidence and abstain on mixed/overlapping/unrecognized symbols;
+preserve unfinished lines and high-side direction as separate decisions. Keep
+pixel samples, labelled sheets and overlay images outside the repository.
+
+Review every low-confidence proposal and a reproducibly seeded random sample of
+high-confidence positives **and negatives** separately for each kind. Log the
+seed, population, sample ids, disagreements, abstentions and corrected records.
+Report observed errors with denominator and uncertainty per layer; report false
+positives and false negatives separately. If the sample finds systematic misses,
+expand review and recalibrate before increasing masks. Existing convenience
+samples are not random, and no edge-classifier accuracy has yet been measured.
 
 ## Area and off-map identities (schema 1)
 
@@ -201,6 +298,7 @@ Python 3.11+; stdlib suffices for data and preview. Run from the repository root
 $env:CNA_SOURCES = 'C:\Users\ncola_k8bx\AppData\Roaming\Orgtree v2\data\workspaces\maurdekye-works\cna-sources'
 py -3.12 tools/map/generate_grid.py
 py -3.12 tools/map/apply_terrain.py
+py -3.12 tools/map/publish_layer_schema.py
 py -3.12 tools/map/generate_areas.py
 py -3.12 -m unittest discover -s tools/map -v
 ```
@@ -233,3 +331,8 @@ resolves ten under map-0002; C4026 remains unreadable. Batch graziani-0003
 adds 70 inland cells at C first28..34/second18..27.
 `apply_terrain.py` rejects source changes, duplicate ids, non-TEC classes and
 unreviewed existing classifications that would otherwise be lost.
+
+`publish_layer_schema.py` rechecks local source hashes and visual surface decisions
+before regenerating the initial layer files and approved window. It refuses to
+erase nonempty edge features or edge coverage; replace this initialization step
+with the reviewed-edge replay at the first edge-data milestone.

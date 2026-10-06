@@ -18,7 +18,7 @@
   not silently rewrite scenario text.
 - **Water mask:** zone-contained centers include a narrow sea fringe; offshore
   image hexes outside A-E zones (and Malta) are not in this grid. Surface-domain flags
-  exist only for the 143 reviewed cells; the rest are unknown. Completeness refers only to the VASSAL A-E mask.
+  exist only for the 228 reviewed cells; the rest are unknown. Completeness refers only to the VASSAL A-E mask.
 - **Edge artifacts:** A includes partial column-00 hexes; E includes column 34.
   Confirm their playability and any off-map entry meanings against rules data.
 - **Boxes:** current inventory is names only. No distances, capacities, routes or
@@ -76,3 +76,13 @@ uses a different appearance. No border feature or country division has been
 published from this line. Local labeled section/whole-map inspection overviews
 are in cartographer scratch runs/frontier, outside the repo. Ask the lead to
 establish the intended source symbol/authority before national sets depend on it.
+
+## Movement-layer completeness
+
+Schema1 now pins lines, directional hexsides and per-kind masks. No edges have
+been reviewed: empty line/hexside CSVs mean unknown everywhere. Terrain mask
+covers227 cells; coastal-domain mask covers228. No place-absence mask exists.
+The approved Graziani priority window contains2933 canonical cells and8547
+internal edges, plus175 crossing edges; this is not a scenario boundary.
+Semi-automatic line/hexside classification and random error auditing remain
+pending. Existing palette proposals cannot certify edge absence or orientation.

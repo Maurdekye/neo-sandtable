@@ -1,0 +1,10 @@
+schema_version = 1
+coordinate_profile = "vassal-2021"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+line_kinds = ["pipeline", "railroad", "road", "track", "unfinished_railroad", "unfinished_road"]
+hexside_kinds = ["all_sea", "border", "escarpment", "major_river", "minor_river", "ridge", "slope", "wadi"]
+cell_layers = ["terrain", "coastal"]
+edge_coverage = "per_feature_kind"
+unknown_policy = "outside_mask_unknown"
+verification = "surface_single_observer_edges_unreviewed"

@@ -198,3 +198,15 @@ These are single-observer checks, not an independent second review or 1979-map
 verification. The failed D3315 proposal illustrates why palette agreement must
 never stand in for visual checking. The section-C frontier symbol discrepancy
 remains a gap; no national membership or border classification is claimed.
+
+## Movement schema / initial masks (2026-10-07)
+
+Source-bound terrain decisions regenerate227 terrain masks and228 coastal-domain
+masks; C4026 remains unreadable terrain despite known coastal status. No edge
+coverage or feature records are published. Per-kind unknown-versus-absent queries,
+canonical seam queries, adjacency, directional high-side data and duplicate-mask
+rejection are tested. Synthetic tests do not verify any map feature or classifier.
+Approved Graziani window2933 cells/8547 internal edges/175 crossing edges includes
+Tobruk, Bardia, Sollum, Matruh and both Alexandria city ids. This geometry-only
+window is not a national polygon or playable-boundary decision. Random per-layer
+classifier audits have not yet run; edge error rates remain unmeasured.
