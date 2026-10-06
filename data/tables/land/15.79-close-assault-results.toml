@@ -9,8 +9,9 @@ transcribed_from = ["vassal:15.79 The Close Assault Combat Results Table.png"]
 verification = "double"
 dice = "2d6_reading"
 notes = """
-Each side rolls two dice once. Losses use the sequential reading (11 to 66, larger die as tens); Engaged,
-Captured and Retreat use the plain sum of the same two dice (2 to 12). Both sides use the same column, the
+Each side rolls a designated dice pair once. First die gives tens and second gives units, so all 36 readings
+11-66 occur (interp:land-0022). Losses use this reading; Engaged, Captured and Retreat use the plain sum
+of the same two dice (2 to 12). Both sides use the same column, the
 Adjusted Assault Differential, but each its own half of the table: [[loss_row]] gives, for a side, the
 percentage of its Raw Assault Points lost for each dice-reading range; [[sum_result]] gives the sums that
 trigger Captured (go on to the Prisoners Captured table, land:15.89), Engaged (attacker half; ignored if

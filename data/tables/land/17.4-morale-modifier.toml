@@ -9,7 +9,8 @@ transcribed_from = ["vassal:17.4 Morale Modifier Table.png"]
 verification = "double"
 dice = "2d6_reading"
 notes = """
-Roll two dice read in sequence (larger die as tens, land:17.22) in the row for the unit's Cohesion Level
+Use the designated first die as tens and the second as units: all 36 readings 11-66 occur
+(land:17.22; interp:land-0022). Choose the row for the unit's Cohesion Level
 (Disorganization Level on the chart; plus is better). The column whose dice range contains the reading is
 the modifier added to the unit's Basic Morale for that combat: plus_4 to plus_1 raise it, no_change leaves
 it, minus_1 to minus_4 lower it, and surrender means all the units surrender (land:17.25; exception 17.26).

@@ -12,8 +12,7 @@ notes = """
 Column shifts for organizational size, always in favor of the side with the larger 'largest unit'. Each
 side's largest unit is the largest size-equivalent (by stacking points: 5 division, 3 super brigade, 2
 brigade, 1 battalion, 0 company or less) actually taking part in the combat in that hex; only the size of
-that single largest unit matters, not how many units there are. Pairs not listed (equal sizes, or 3 against
-1) have no entry on the chart. The 2021 text corrects a misplaced brigade entry from the original.
+that single largest unit matters, not how many units there are. Equal sizes require no adjustment. The combined 2-or-3 row includes 3 against 1. The 2021 text corrects a misplaced brigade entry from the original.
 """
 
 [[row]]

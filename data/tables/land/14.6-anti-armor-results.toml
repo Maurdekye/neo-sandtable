@@ -9,7 +9,7 @@ transcribed_from = ["vassal:14.6 Anti-Armor Fire Combat Results Table.png"]
 verification = "double"
 dice = "2d6_reading"
 notes = """
-Roll two dice read in sequence (larger die as tens). Find the row whose pair of readings contains the roll
+Use the designated first die as tens and the second as units; all 36 readings 11-66 occur (interp:land-0022). Find the row whose pair of readings contains the roll
 (each row covers two adjacent readings, for example 11 and 12) and the column for the Actual Anti-Armor
 Points fired at the hex after terrain column shifts; the cell is the number of Damage Points inflicted.
 Each row's damage_points_by_column omits columns where the printed cell is a dash (no damage). Column

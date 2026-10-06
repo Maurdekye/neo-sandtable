@@ -9,8 +9,8 @@ transcribed_from = ["vassal:12.6 Barrage Against Land Units Combat Results Table
 verification = "double"
 dice = "2d6_reading"
 notes = """
-Roll two dice and read them in sequence, the larger die as tens and the smaller as units (11 to 66, only
-digits 1 to 6; land:12.42). Use the column for the Actual Barrage Points fired at the target (after any
+Read a distinguishable pair in a designated order: first die for tens, second for units. All 36 readings
+from 11 to 66 occur, using digits 1 to 6 (land:12.42; interp:land-0022). Use the column for the Actual Barrage Points fired at the target (after any
 terrain column shift to the left, land:12.33) and find the cell whose inclusive dice range contains the
 reading, in the block for the target's class (Infantry, Armor, Gun; Truck is rolled separately for trucks in
 the hex, land:12.46). A column absent from a result's cells means that result cannot occur there (a printed
