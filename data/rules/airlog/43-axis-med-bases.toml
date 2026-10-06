@@ -132,7 +132,7 @@ applies = { graziani = "no", graziani_note = "German content." }
 [[case]]
 id = "43.25"
 title = ""
-summary = "Bombers based in Italy/Sicily may coordinate with African-based fighters for CAP and may raid Malta (44.0)."
+summary = "Bombers in Italy or Sicily can team up with fighters based in Africa for escort and may also raid Malta (44.0)."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

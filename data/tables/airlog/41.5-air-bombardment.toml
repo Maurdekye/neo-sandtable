@@ -224,16 +224,16 @@ rolls = [[],[],[],[],[],[],[],[],[],[],[64,66]]
 
 [[footnote]]
 id = "torpedo_points"
-meaning = "Use the torpedo row only when attacking ships of the Commonwealth Fleet. Attacks consisting of both bombs and torpedoes are performed as two attacks; planes armed with torpedoes attacking ports or Axis naval convoys use the Bomb Points row (41.7)."
+meaning = "Torpedo row is for attacks on CW fleet ships only; a mixed bomb and torpedo attack is two attacks; torpedo planes hitting ports or Axis convoys use the bomb row (41.7)."
 
 [[footnote]]
 id = "barrage_points"
-meaning = "Barrage points are calculated as for the Master Barrage Against Units CRT."
+meaning = "Barrage points are figured as for the master barrage CRT."
 
 [[footnote]]
-id = "results"
-meaning = "Airlanding strip: a result of 1 or more eliminates it. Airfield: that number of squadron ground support units may no longer use the airfield's readying capacity. Ports: reduce the port by that number of Efficiency Levels. Supply dump: eliminate that percentage of all supplies in the dump and also lose one Truck Point per 10% if possible, defender's choice. Trucks: that number of Truck Points and their cargo. Flak destruction: that number of TOE strength points eliminated. Combat units: that number of battalion-equivalents (then company-equivalents) pinned (41.9). Commonwealth fleet: that number of Damage Points. Axis naval convoys: that percentage of the shipping cargo destroyed. Fortification: reduced one level or not affected. Railroad: destroyed or not affected. Road: reduced to a track or not affected."
+id = "result_effects"
+meaning = "Result units per block are in each block's result_unit. Airfield results reduce usable SGSU readying capacity; strips are eliminated on any result of 1 or more; supply dump results also remove one unattached truck point per 10% (owner's choice); combat-unit results are pinned battalion- then company-equivalents (41.9); fleet results are Damage Points."
 
 [[footnote]]
 id = "modifications"
-meaning = "If at least 50% of the planes attacking an Axis naval convoy are armed with torpedoes, increase the total bomb points by 25%. Subtract one from the results of land-support bombing against armor units."
+meaning = "At least half the planes on an Axis convoy attack armed with torpedoes: bomb points +25%. Land-support bombing of armor: subtract one from the result."

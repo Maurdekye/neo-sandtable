@@ -272,7 +272,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "39.42"
 title = ""
-summary = "Only certain missions may be flown at night and only planes with night capability may take part (exceptions in 39.43)."
+summary = "Only some mission types can be flown at night, and only night-capable planes may do so (exceptions in 39.43)."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

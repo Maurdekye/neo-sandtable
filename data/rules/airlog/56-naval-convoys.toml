@@ -263,7 +263,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "56.32"
 title = ""
-summary = "Axis coastal shipping moves in the Truck Convoy Phase and only then."
+summary = "Axis coastal ship counters move only during the Truck Convoy Phase."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
@@ -275,7 +275,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "56.33"
 title = ""
-summary = "Axis coastal ships cannot be attacked from air or land, cannot enter a port neutralized to capacity zero, and can never enter an enemy-occupied port."
+summary = "Axis coastal ships are immune to air and land attack, may not enter a port reduced to zero capacity, and may never enter a port the enemy holds."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

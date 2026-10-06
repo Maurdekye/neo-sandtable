@@ -51,7 +51,7 @@ applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not u
 [[case]]
 id = "47.13"
 title = ""
-summary = "An SGSU may draw supplies from any friendly supply unit (32.16) or Cairo/Alexandria within 15 CP."
+summary = "An SGSU can take supplies from any friendly supply unit (32.16), or from Cairo or Alexandria, up to 15 CP away."
 kind = "rule"
 disposition = "none"
 seat = "none"

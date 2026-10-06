@@ -104,7 +104,7 @@ decision = { what = "For each moving unit, declare the distance to be moved and 
 [[case]]
 id = "49.17"
 title = ""
-summary = "In an emergency a unit may siphon fuel from another unit in the same hex (up to the receiver's capacity) at 3 CP to each; fuel may be siphoned from abandoned or broken-down enemy vehicles (referee tells the count) but not destroyed ones."
+summary = "In an emergency a unit can siphon fuel from another unit in its hex, up to the receiver's capacity, costing both units 3 CP. Abandoned or broken-down enemy vehicles can be siphoned too (the opponent states how much is there); destroyed ones cannot."
 kind = "procedure"
 disposition = "decision"
 seat = "either"

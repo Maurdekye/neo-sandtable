@@ -7,9 +7,8 @@ transcribed_from = ["vassal:45.4 Air-Air Combat Maneuver Adjustment Chart.png"]
 verification = "double"
 dice = "none"
 notes = """
-The maneuver differential is the absolute difference between the two planes' Maneuver Ratings; the
-adjustment is added to the TacAir differential of the plane with the higher Maneuver Rating and
-subtracted from that of the lower-rated plane.
+Differential = gap between the two planes' Maneuver Ratings. The adjustment from the matching row
+improves the TacAir differential of the more maneuverable plane and worsens the other's by the same amount.
 """
 
 [[row]]

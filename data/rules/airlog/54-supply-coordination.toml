@@ -41,7 +41,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "54.12"
 title = ""
-summary = "Dummy dumps hold nothing; the counter is revealed and removed only when an enemy unit enters the hex or bombs or strafes it."
+summary = "Dummy dumps hold nothing; the counter is revealed and taken off only when an enemy unit enters the hex or the hex is bombed or strafed."
 kind = "rule"
 disposition = "display"
 seat = "none"

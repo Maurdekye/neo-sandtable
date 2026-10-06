@@ -309,7 +309,7 @@ applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable 
 [[case]]
 id = "42.44"
 title = ""
-summary = "A recognizable land feature is a major city, a road (even unfinished or destroyed) or railroad hex, a village, an air facility or an oasis."
+summary = "Recognizable landmarks for drops: a major city, any road hex (even unfinished or destroyed), a railroad hex, a village, an air facility or an oasis."
 kind = "definition"
 disposition = "data"
 seat = "none"
@@ -356,7 +356,7 @@ applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable 
 [[case]]
 id = "42.48"
 title = ""
-summary = "No limit on TOE strength points dropped (given enough transports), but no unit may be airdropped more than once a month (every 12 OpStages)."
+summary = "There is no cap on TOE strength points dropped beyond available transports, but any given unit may be airdropped only once per month (12 OpStages)."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

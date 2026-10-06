@@ -133,7 +133,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "46.22"
 title = ""
-summary = "Infantry, recce and tank units fire AA only at the fighter-mission, strafing and/or dive-bombing target group."
+summary = "Ground infantry, recce and armor units can shoot at aircraft only in the group of fighter-type missions, strafers and dive bombers (target group e)."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

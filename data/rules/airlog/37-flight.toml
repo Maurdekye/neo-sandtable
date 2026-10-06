@@ -137,7 +137,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "37.22"
 title = ""
-summary = "No plane may fly into or out of a sandstorm or rainstorm hex."
+summary = "Aircraft cannot enter, leave or pass through a hex that has a sandstorm or rainstorm."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
@@ -185,7 +185,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "37.31"
 title = ""
-summary = "When an enemy land combat unit moves adjacent to a friendly air facility holding readied planes in danger of destruction or capture, those planes may attempt emergency flight, which is a transfer mission. Facilities in major cities are immune to adjacency and their planes may always fly missions."
+summary = "If an enemy ground combat unit ends a move beside a friendly air facility where readied planes are at risk of being destroyed or captured, those planes may try to escape by emergency flight, which counts as a transfer mission. Facilities in major cities are exempt from this adjacency threat, and their planes can fly missions as normal."
 kind = "rule"
 disposition = "decision"
 seat = "air"

@@ -174,7 +174,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "40.24"
 title = ""
-summary = "Any F-capable plane may fly CAP over any hex in range, but no plane based in Africa may fly CAP for or against Axis naval convoys; Malta-based CW planes may fly CAP against convoys only; Axis planes based in Italy, Sicily and Crete may fly CAP for convoys. A plane on CAP flies no other mission that stage."
+summary = "F-capable planes may fly CAP over any hex within their range, with convoy limits: African-based planes never fly CAP over Axis convoys, Malta-based CW planes may fly CAP over convoys only, and Axis planes from Italy, Sicily or Crete may protect convoys. A plane on CAP flies no second mission that stage."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
@@ -401,7 +401,7 @@ decision = { what = "As the strafed player, choose which truck points are lost, 
 [[case]]
 id = "40.63"
 title = ""
-summary = "Grounded aircraft: the Strafing Table result is the number of dice the strafer rolls, and the total rolled is the number of planes destroyed on the ground; strafed planes may be recovered (45.6)."
+summary = "Grounded aircraft: the Strafing Table result gives how many dice the strafer rolls, and the total of those dice is the number of planes destroyed on the ground; some of these may be recovered (45.6)."
 kind = "procedure"
 disposition = "automatic"
 seat = "none"
@@ -426,7 +426,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "40.65"
 title = ""
-summary = "Tanks: only planes with heavy cannon (Hurricane IID) can strafe tanks, using the second die to give the minimum Armour Protection Points removed; anything with an armour protection rating may be strafed, and a strafed dummy tank is removed."
+summary = "Tanks: only planes with heavy cannon (the Hurricane IID) can strafe tanks; the second die roll gives the minimum Armour Protection Points removed, any unit that has an armour protection rating is eligible, and a strafed dummy tank is simply removed."
 kind = "procedure"
 disposition = "automatic"
 seat = "none"
@@ -475,7 +475,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "40.71"
 title = ""
-summary = "Fighters may spend their TacAir strength to suppress enemy anti-aircraft fire before it is used on friendly planes."
+summary = "Fighters can use their TacAir strength to draw off enemy anti-aircraft fire before it hits friendly planes."
 kind = "rule"
 disposition = "decision"
 seat = "air"

@@ -458,7 +458,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "34.84"
 title = ""
-summary = "Airplane reinforcements arrive in the Naval Convoy Arrival Phase; the monthly totals per type are split as evenly as possible over the month's Game-Turns (planes arriving in a turn may all appear in its first OpStage), and the owner freely chooses which individual planes appear when."
+summary = "Plane reinforcements show up during the convoy-arrival phase. Each month's totals by plane type are spread across the month's Game-Turns as evenly as possible (a turn's planes may all land in its first OpStage), and the owner picks which specific planes come in when."
 kind = "rule"
 disposition = "decision"
 seat = "air"

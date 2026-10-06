@@ -114,7 +114,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "53.23"
 title = ""
-summary = "A combat unit at cohesion -5 or worse may not voluntarily detach its first-line trucks; second/third-line trucks attached as first line take on the parent unit's cohesion level."
+summary = "A combat unit whose cohesion is -5 or lower cannot choose to detach its first-line trucks; second- and third-line trucks attached as first line take on their parent unit's cohesion."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
@@ -138,7 +138,7 @@ decision = { what = "Load or unload supplies and men on named trucks, paying the
 [[case]]
 id = "53.25"
 title = ""
-summary = "Supplies or men passed from truck to truck in one movement segment count as having used the CP of the trucks that carried them and can never exceed the CPA of the first truck they started with that OpStage, so a cache cannot be relayed across the map in one segment."
+summary = "Cargo handed from truck to truck within one movement segment is treated as having spent the CP of every truck that carried it, and can never go beyond the CPA of its original carrier that OpStage, so a cache cannot be relayed across the map in a single segment."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

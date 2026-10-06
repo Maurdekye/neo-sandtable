@@ -89,7 +89,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "41.16"
 title = ""
-summary = "Dive-bombers may strafe and bomb the same target, and fighters with bombload and D capability may do both; ordinary fighter-bombers fly a bombing or a fighter mission, not both, and on a bombing mission carry a parenthesised TacAir unless they jettison the bombload."
+summary = "Dive-bombers can strafe and bomb one target together, as can fighters with a bombload and D capability. An ordinary fighter-bomber flies either a bombing mission or a fighter mission; while bombing it has a parenthesised TacAir rating unless it dumps its bombs."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
@@ -212,7 +212,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "41.35"
 title = ""
-summary = "Bombing supply dumps (B-SD): the result is the percentage of each supply type destroyed; for every 10% destroyed one unattached truck point in the hex is also lost (defender's choice, spread evenly), rounding all numbers up."
+summary = "Bombing supply dumps (B-SD): the result is a percentage of each supply type destroyed; each 10% destroyed also costs one unattached truck point in the hex (owner chooses, spread evenly), with all numbers rounded up."
 kind = "rule"
 disposition = "decision"
 seat = "either"
@@ -344,7 +344,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "41.46"
 title = ""
-summary = "Only night fighters may scramble against night bombing (40.9); other fighters may be put on offensive CAP versus a night raid but have no ZOC and may only search for and attack enemy planes with a mission in their own hex (41.47). Night fighters use the same search."
+summary = "Only night fighters may scramble against night bombers (40.9). Other fighters can be assigned offensive CAP against a night raid but project no ZOC and can only look for planes whose mission is in their own hex (41.47); night fighters use the same search."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
@@ -677,7 +677,7 @@ applies = { graziani = "yes" }
 [[case]]
 id = "41.86"
 title = ""
-summary = "Night missions may be flown against the port of Tripoli."
+summary = "The port of Tripoli can also be attacked by night missions."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
