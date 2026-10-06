@@ -19,6 +19,28 @@ test('watches a real sandbox server and uses operator HTTP controls', async ({
   })
   expect(created.ok()).toBeTruthy()
   const meta = await created.json()
+  const subscriptions: { from_seq: number | null; perspective: string }[] = []
+  page.on('websocket', (socket) =>
+    socket.on('framesent', (frame) => {
+      try {
+        const message = JSON.parse(String(frame.payload))
+        if (message.type === 'subscribe') subscriptions.push(message)
+      } catch {
+        /* Vite HMR is unrelated. */
+      }
+    }),
+  )
+  await page.addInitScript(() => {
+    const captured: WebSocket[] = []
+    Object.assign(window, { boardTestSockets: captured })
+    const NativeSocket = window.WebSocket
+    window.WebSocket = class extends NativeSocket {
+      constructor(url: string | URL, protocols?: string | string[]) {
+        super(url, protocols)
+        if (String(url).includes('/api/campaigns/')) captured.push(this)
+      }
+    }
+  })
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto(`/?server=${encodeURIComponent(server!)}`)
@@ -48,6 +70,20 @@ test('watches a real sandbox server and uses operator HTTP controls', async ({
     path: '../../board-live-transcripts.png',
     fullPage: true,
   })
+  await expect(page.locator('.viewbar [role="status"]')).toContainText(
+    'Campaign finished',
+    { timeout: 10000 },
+  )
+  const before = await page.locator('.entry-decision_submitted').count()
+  await page.evaluate(() => {
+    ;(window as unknown as { boardTestSockets: WebSocket[] }).boardTestSockets
+      .at(-1)!
+      .close()
+  })
+  await expect(page.getByTestId('playback-status')).toHaveText('CONNECTING')
+  await expect(page.getByTestId('playback-status')).toContainText('LIVE')
+  await expect(page.locator('.entry-decision_submitted')).toHaveCount(before)
+  expect(subscriptions.at(-1)?.from_seq).toBeGreaterThan(0)
   await page
     .getByLabel('Perspective', { exact: true })
     .selectOption('side:commonwealth')
