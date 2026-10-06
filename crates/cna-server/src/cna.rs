@@ -35,8 +35,21 @@ fn tomls(directory: &Path, recursive: bool, files: &mut Vec<PathBuf>) -> Result<
 // Notes, unused map metadata and unknown registry books are intentionally absent.
 fn content_files(data: &Path) -> Result<Vec<PathBuf>, Error> {
     let mut files = Vec::new();
-    for name in ["hexes.csv", "aliases.csv"] {
-        let path = data.join("map").join(name);
+    let map = data.join("map");
+    let mut map_sources = vec!["hexes.csv", "aliases.csv"];
+    let layers = [
+        "layers.toml",
+        "coverage.csv",
+        "line_features.csv",
+        "hexsides.csv",
+    ];
+    // The loader skips sections provenance when all movement-layer files are absent.
+    if layers.iter().any(|name| map.join(name).exists()) {
+        map_sources.extend(layers);
+        map_sources.push("sections.toml");
+    }
+    for name in map_sources {
+        let path = map.join(name);
         if path.exists() {
             files.push(path);
         }

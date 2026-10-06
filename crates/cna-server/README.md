@@ -131,8 +131,11 @@ The tests exercise rollback injection, recovery, stale epochs, exact duplicates,
 durable seat memory and HTTP/WebSocket snapshot/live/resume/switch/resync flows.
 
 CNA startup recovery dispatches from the persisted scenario/profile pair using a read-only
-metadata query before opening a writer. Its input fingerprint includes the map CSVs, the TOMLs
-actually read by the unit and Graziani setup loaders, every table TOML, and the `land`, `airlog`
+metadata query before opening a writer. Its input fingerprint includes map geometry/aliases,
+`layers.toml`, `coverage.csv`, `line_features.csv`, `hexsides.csv` and `sections.toml` provenance,
+when any movement-layer file exists. A legacy geometry-only map with none of those layer files
+retains unknown movement layers and does not read or pin sections provenance. The fingerprint also
+includes the TOMLs actually read by the unit and Graziani setup loaders, every table TOML, and the `land`, `airlog`
 and `scen` registry folders. Unread files and notes do not affect it. Paths and bytes are hashed
 in sorted order; a change during loading is rejected. Both CNA and sandbox use the same complete engine fingerprint, embedded at
 build time from core, protocol, content, tables, rules and sandbox Rust sources, their manifests,

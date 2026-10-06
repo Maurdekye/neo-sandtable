@@ -239,6 +239,11 @@ async fn recovery_pins_read_content_but_ignores_unread_notes_and_files() {
     let original = stored(&path);
     for file in [
         cloned_data.join("map/aliases.csv"),
+        cloned_data.join("map/layers.toml"),
+        cloned_data.join("map/coverage.csv"),
+        cloned_data.join("map/line_features.csv"),
+        cloned_data.join("map/hexsides.csv"),
+        cloned_data.join("map/sections.toml"),
         first_toml(&cloned_data.join("units/weapons")),
         cloned_data.join("scenarios/graziani/scenario.toml"),
         first_toml(&cloned_data.join("tables")),
@@ -452,4 +457,39 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
     app.shutdown().await;
     task.abort();
     let _ = task.await;
+}
+
+#[tokio::test]
+async fn legacy_geometry_only_map_does_not_pin_unread_layer_provenance() {
+    let directory = tempfile::tempdir().unwrap();
+    let cloned_data = directory.path().join("data");
+    copy(&data(), &cloned_data);
+    for file in [
+        "layers.toml",
+        "coverage.csv",
+        "line_features.csv",
+        "hexsides.csv",
+    ] {
+        fs::remove_file(cloned_data.join("map").join(file)).unwrap();
+    }
+    let handle = campaigns::create(
+        directory.path(),
+        &cloned_data,
+        request(cna_rules::PROFILE_DEV, "human", true),
+    )
+    .unwrap();
+    let path = directory.path().join(format!(
+        "{}.sqlite",
+        handle.projection(Perspective::Operator).meta.id
+    ));
+    handle.shutdown().await.unwrap();
+    let original = stored(&path);
+    fs::write(
+        cloned_data.join("map/sections.toml"),
+        "unread provenance and deliberately not TOML",
+    )
+    .unwrap();
+    let restored = campaigns::recover(&path, &cloned_data).unwrap();
+    restored.shutdown().await.unwrap();
+    assert_eq!(stored(&path), original);
 }
