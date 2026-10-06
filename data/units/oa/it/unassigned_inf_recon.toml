@@ -18,6 +18,7 @@ toe = "N"
 arrives = { gt = 11, opstage = 1 }
 arrives_raw = "1/11"
 basic_morale = 1
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -31,6 +32,7 @@ arrives = { gt = 11, opstage = 1 }
 arrives_raw = "1/11"
 parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
 basic_morale = 1
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -44,6 +46,7 @@ arrives = { gt = 11, opstage = 1 }
 arrives_raw = "1/11"
 parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
 basic_morale = 1
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -57,6 +60,7 @@ arrives = { gt = 11, opstage = 1 }
 arrives_raw = "1/11"
 parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
 basic_morale = 1
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -70,6 +74,7 @@ arrives = { gt = 10, opstage = 1 }
 arrives_raw = "1/10"
 basic_morale = 1
 note = "Sheet indentation suggests assignment to the 10th Bersaglieri Regt but the counter shows no parent; kept parentless (GAPS U-008)."
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -83,6 +88,7 @@ arrives = { gt = 62, opstage = 3 }
 arrives_raw = "3/62"
 basic_morale = 0
 note = "Possibly an Italian counterpart to the Commonwealth long-range desert units; treated as mounted in medium trucks for movement."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -96,6 +102,7 @@ arrives = { gt = 62, opstage = 3 }
 arrives_raw = "3/62"
 basic_morale = 0
 note = "Possibly an Italian counterpart to the Commonwealth long-range desert units; treated as mounted in medium trucks for movement."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -108,6 +115,7 @@ toe = "N"
 arrives = "D"
 basic_morale = -2
 note = "Airborne in name only (Gruppo Tonini); garrison duty stationed at Barce airfield; may not be paradropped; not a garrison unit."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -120,6 +128,7 @@ toe = "N"
 arrives = "D"
 parent = "it.unassigned_inf_recon.libyan_parachute_regt_hq"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -132,6 +141,7 @@ toe = "N"
 arrives = "D"
 parent = "it.unassigned_inf_recon.libyan_parachute_regt_hq"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -144,6 +154,7 @@ toe = "N"
 arrives = "D"
 basic_morale = -1
 note = "Apparently the HQ regiment of the (unrepresented) 10th Army headquarters; a single formation, not an HQ plus battalions."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -156,6 +167,7 @@ toe = "N"
 arrives = { gt = 51, opstage = 3 }
 arrives_raw = "3/51"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -168,4 +180,5 @@ toe = "N"
 arrives = { gt = 59, opstage = 2 }
 arrives_raw = "2/59"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]

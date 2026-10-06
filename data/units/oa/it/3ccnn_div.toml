@@ -17,6 +17,7 @@ class = "it.g"
 echelon = "brigade"
 toe = "N"
 arrives = "D"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.3ccnn_div.250th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.3ccnn_div.250th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -50,6 +53,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.3ccnn_div.250th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -60,6 +64,7 @@ class = "it.bb"
 echelon = "battalion"
 toe = "N"
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -70,6 +75,7 @@ class = "it.kk"
 echelon = "battalion"
 toe = [ { weapon = "it.75_18_gun_howitzer", n = 6 }, { weapon = "it.100_17_howitzer", n = 3 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -81,4 +87,5 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 never_arrived_parent = true
+stacking_points = 1
 src = ["land:4.45"]

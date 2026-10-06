@@ -17,6 +17,7 @@ class = "it.x"
 echelon = "battalion"
 toe = "N"
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -27,6 +28,7 @@ class = "it.tt"
 echelon = "battalion"
 toe = [ { weapon = "it.aa_light_i", n = 6 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -37,6 +39,7 @@ class = "it.ll"
 echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 6 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -47,4 +50,5 @@ class = "it.bb"
 echelon = "battalion"
 toe = "N"
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]

@@ -17,6 +17,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 engineer_hq = true
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -50,6 +53,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -61,6 +65,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 engineer_hq = true
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -72,6 +77,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -83,6 +89,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -94,6 +101,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -104,6 +112,7 @@ class = "it.f"
 echelon = "brigade"
 toe = "N"
 arrives = "D"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -115,6 +124,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.marine_regimental_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -126,6 +136,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.marine_regimental_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -137,6 +148,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.marine_regimental_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -147,6 +159,7 @@ class = "it.x"
 echelon = "battalion"
 toe = "N"
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -158,6 +171,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 2 } ]
 arrives = "D"
 group = "31 Gaf S di C Artiglieri (no HQ; not part of the 31st Gaf regiment)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -169,6 +183,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.149mm_vichy_french", n = 2 } ]
 arrives = "D"
 group = "31 Gaf S di C Artiglieri (no HQ; not part of the 31st Gaf regiment)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -180,6 +195,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.149_13_howitzer", n = 2 } ]
 arrives = "D"
 group = "31 Gaf S di C Artiglieri (no HQ; not part of the 31st Gaf regiment)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -192,6 +208,7 @@ toe = [ { weapon = "it.149_13_howitzer", n = 2, emplaced = true } ]
 arrives = "D"
 group = "Tobruk Coastal Defense Arty"
 immobile = true
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -204,6 +221,7 @@ toe = [ { weapon = "it.100_17_howitzer", n = 6, emplaced = true, barrage_land_ma
 arrives = "D"
 group = "Tobruk Coastal Defense Arty"
 immobile = true
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -216,6 +234,7 @@ toe = [ { weapon = "it.75_18_gun_howitzer", n = 4, emplaced = true }, { weapon =
 arrives = "D"
 group = "Tobruk Coastal Defense Arty"
 immobile = true
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -228,6 +247,7 @@ toe = [ { weapon = "it.105_28_gun", n = 6, emplaced = true, barrage_land_max = 2
 arrives = "D"
 group = "Tobruk Coastal Defense Arty"
 immobile = true
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -240,6 +260,7 @@ toe = [ { weapon = "it.149_13_howitzer", n = 6, emplaced = true, barrage_land_ma
 arrives = "D"
 group = "Tobruk Coastal Defense Arty"
 immobile = true
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -251,6 +272,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.aa_light_i", n = 8 } ]
 arrives = "D"
 group = "Tobruk Coastal Defense Arty"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]

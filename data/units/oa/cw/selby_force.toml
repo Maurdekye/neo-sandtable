@@ -17,6 +17,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 note = "Brigade-level HQ, administrative; Mersa Matruh Garrison HQ at the start. Deployed on 1/1 and not voluntarily movable until it becomes Selby Force (OpStage 2, GT 12) or is close-assaulted. No units may be assigned; up to six may be attached and count as garrison units. Disbanded in the Organization Phase of 3/21."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[mention]]

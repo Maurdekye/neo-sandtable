@@ -19,6 +19,7 @@ echelon = "brigade"
 toe = "N"
 arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -31,6 +32,7 @@ toe = "N"
 arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -43,6 +45,7 @@ toe = "N"
 arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -55,6 +58,7 @@ toe = "N"
 arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -67,6 +71,7 @@ toe = { under = 1 }
 arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -79,6 +84,7 @@ toe = "N"
 arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -91,6 +97,7 @@ toe = [ { weapon = "cw.2_pounder", n = 1 } ]
 arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -103,4 +110,5 @@ toe = [ { weapon = "cw.18_pounder_gun", n = 4 } ]
 arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
+stacking_points = 1
 src = ["land:4.45"]

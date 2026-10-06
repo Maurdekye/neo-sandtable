@@ -16,6 +16,7 @@ class = "it.b"
 echelon = "division"
 toe = "N"
 arrives = "D"
+stacking_points = 5
 src = ["land:4.44b"]
 
 [[unit]]
@@ -27,6 +28,7 @@ echelon = "brigade"
 toe = [ { weapon = "it.65_17_gun", n = 1 } ]
 arrives = "D"
 parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+stacking_points = 2
 src = ["land:4.44b"]
 
 [[unit]]
@@ -38,6 +40,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.62_marmarica_div.115th_infantry_regt_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[unit]]
@@ -49,6 +52,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.62_marmarica_div.115th_infantry_regt_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[unit]]
@@ -60,6 +64,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.62_marmarica_div.115th_infantry_regt_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[unit]]
@@ -71,6 +76,7 @@ echelon = "brigade"
 toe = [ { weapon = "it.65_17_gun", n = 1 } ]
 arrives = "D"
 parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+stacking_points = 2
 src = ["land:4.44b"]
 
 [[unit]]
@@ -82,6 +88,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.62_marmarica_div.116th_infantry_regt_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[unit]]
@@ -93,6 +100,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.62_marmarica_div.116th_infantry_regt_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[unit]]
@@ -104,6 +112,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.62_marmarica_div.116th_infantry_regt_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[unit]]
@@ -115,6 +124,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[unit]]
@@ -126,6 +136,7 @@ echelon = "company"
 toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
 arrives = "D"
 parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+stacking_points = 0
 src = ["land:4.44b"]
 
 [[unit]]
@@ -137,6 +148,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 6 }, { weapon = "it.105_28_gun", n = 3 }, { weapon = "it.aa_light_20mm", n = 3 } ]
 arrives = "D"
 parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[unit]]
@@ -148,6 +160,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+stacking_points = 1
 src = ["land:4.44b"]
 
 [[mention]]

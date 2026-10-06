@@ -18,6 +18,7 @@ toe = "N"
 arrives = "D"
 nationality = "british"
 note = "A British unit placed on the Indian sheet; its counter bears the same colouring as Indian units (scenario note, scen:60.41)."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -29,6 +30,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 29, opstage = 3 }
 arrives_raw = "3/29"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -40,6 +42,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 60, opstage = 1 }
 arrives_raw = "1/60"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -51,6 +54,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 60, opstage = 1 }
 arrives_raw = "1/60"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -64,6 +68,7 @@ arrives = { gt = 73, opstage = 2 }
 arrives_raw = "2/73"
 nationality = "british"
 note = "Historically a British unit misplaced on this sheet."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -75,6 +80,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 75, opstage = 3 }
 arrives_raw = "3/75"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -86,6 +92,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 75, opstage = 3 }
 arrives_raw = "3/75"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -97,6 +104,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 75, opstage = 3 }
 arrives_raw = "3/75"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -108,6 +116,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 76, opstage = 3 }
 arrives_raw = "3/76"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -119,6 +128,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 84, opstage = 1 }
 arrives_raw = "1/84"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -130,6 +140,7 @@ echelon = "battalion"
 toe = { over = 4 }
 arrives = { gt = 84, opstage = 3 }
 arrives_raw = "3/84"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -141,6 +152,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 87, opstage = 2 }
 arrives_raw = "2/87"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -152,6 +164,7 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 94, opstage = 2 }
 arrives_raw = "2/94"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -163,4 +176,5 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 86, opstage = 1 }
 arrives_raw = "1/86"
+stacking_points = 1
 src = ["land:4.45"]

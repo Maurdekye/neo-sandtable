@@ -17,6 +17,7 @@ echelon = "division"
 toe = "N"
 arrives = "D"
 engineer_hq = true
+stacking_points = 5
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "brigade"
 toe = [ { weapon = "it.65_17_gun", n = 1 } ]
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_infantry_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -50,6 +53,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -61,6 +65,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -72,6 +77,7 @@ echelon = "brigade"
 toe = [ { weapon = "it.65_17_gun", n = 1 } ]
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_infantry_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -83,6 +89,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.2nd_libyan_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -94,6 +101,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.2nd_libyan_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -105,6 +113,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.2nd_libyan_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -116,6 +125,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 6 } ]
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_infantry_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -127,4 +137,5 @@ echelon = "company"
 toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_infantry_hq"
+stacking_points = 0
 src = ["land:4.45"]

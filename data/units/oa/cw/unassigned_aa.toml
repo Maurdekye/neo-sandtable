@@ -17,6 +17,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 31, opstage = 1 }
 arrives_raw = "1/31"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 11, opstage = 2 }
 arrives_raw = "2/11"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 41, opstage = 2 }
 arrives_raw = "2/41"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -49,6 +52,7 @@ class = "cw.ee"
 echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -60,6 +64,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 43, opstage = 3 }
 arrives_raw = "3/43"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -71,6 +76,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 48, opstage = 2 }
 arrives_raw = "2/48"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -82,6 +88,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 28, opstage = 3 }
 arrives_raw = "3/28"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -93,6 +100,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 58, opstage = 2 }
 arrives_raw = "2/58"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -104,6 +112,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 30, opstage = 2 }
 arrives_raw = "2/30"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -115,6 +124,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 98, opstage = 1 }
 arrives_raw = "1/98"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -126,6 +136,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 12, opstage = 3 }
 arrives_raw = "3/12"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -137,6 +148,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 86, opstage = 1 }
 arrives_raw = "1/86"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -148,6 +160,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 89, opstage = 1 }
 arrives_raw = "1/89"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -158,6 +171,7 @@ class = "cw.ee"
 echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -169,6 +183,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 66, opstage = 1 }
 arrives_raw = "1/66"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -180,6 +195,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 45, opstage = 1 }
 arrives_raw = "1/45"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -191,6 +207,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 15, opstage = 1 }
 arrives_raw = "1/15"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -201,6 +218,7 @@ class = "cw.gg"
 echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -212,6 +230,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 43, opstage = 1 }
 arrives_raw = "1/43"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -223,6 +242,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 28, opstage = 1 }
 arrives_raw = "1/28"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -234,6 +254,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 59, opstage = 2 }
 arrives_raw = "2/59"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -245,6 +266,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 59, opstage = 2 }
 arrives_raw = "2/59"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -256,6 +278,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 12, opstage = 3 }
 arrives_raw = "3/12"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -267,6 +290,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 41, opstage = 2 }
 arrives_raw = "2/41"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -278,6 +302,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 42, opstage = 3 }
 arrives_raw = "3/42"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -289,6 +314,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 45, opstage = 1 }
 arrives_raw = "1/45"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -300,4 +326,5 @@ echelon = "battalion"
 toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
 arrives = { gt = 43, opstage = 3 }
 arrives_raw = "3/43"
+stacking_points = 1
 src = ["land:4.45"]

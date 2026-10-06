@@ -17,6 +17,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.3_7_inch_howitzer", n = 6 } ]
 arrives = { gt = 80, opstage = 2 }
 arrives_raw = "2/80"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 33, opstage = 1 }
 arrives_raw = "1/33"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -38,6 +40,7 @@ class = "cw.x"
 echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -49,6 +52,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 86, opstage = 1 }
 arrives_raw = "1/86"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -60,6 +64,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 38, opstage = 3 }
 arrives_raw = "3/38"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -71,6 +76,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 85, opstage = 1 }
 arrives_raw = "1/85"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -82,6 +88,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 15, opstage = 1 }
 arrives_raw = "1/15"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -93,6 +100,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 89, opstage = 3 }
 arrives_raw = "3/89"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -104,6 +112,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 48, opstage = 2 }
 arrives_raw = "2/48"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -115,6 +124,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 56, opstage = 1 }
 arrives_raw = "1/56"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -126,6 +136,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 83, opstage = 3 }
 arrives_raw = "3/83"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -137,6 +148,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.3_7_inch_howitzer", n = 6 } ]
 arrives = { gt = 60, opstage = 3 }
 arrives_raw = "3/60"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -149,6 +161,7 @@ toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 85, opstage = 1 }
 arrives_raw = "1/85"
 note = "Attached to the 18th Indian Brigade for a short time, then served with the 10th Indian Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -160,6 +173,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 28, opstage = 3 }
 arrives_raw = "3/28"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -171,6 +185,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 60, opstage = 3 }
 arrives_raw = "3/60"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -181,6 +196,7 @@ class = "cw.x"
 echelon = "battalion"
 toe = [ { weapon = "cw.60_pounder_gun", n = 6 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -191,6 +207,7 @@ class = "cw.x"
 echelon = "battalion"
 toe = [ { weapon = "cw.6_inch_howitzer", n = 1 }, { weapon = "cw.60_pounder_gun", n = 3 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -202,6 +219,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.4_5_inch_gun", n = 6 } ]
 arrives = { gt = 44, opstage = 2 }
 arrives_raw = "2/44"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -213,6 +231,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.4_5_inch_gun", n = 6 } ]
 arrives = { gt = 16, opstage = 1 }
 arrives_raw = "1/16"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -224,6 +243,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.155mm_howitzer", n = 6 } ]
 arrives = { gt = 55, opstage = 1 }
 arrives_raw = "1/55"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -235,6 +255,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.4_5_inch_gun", n = 6 } ]
 arrives = { gt = 44, opstage = 2 }
 arrives_raw = "2/44"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -246,6 +267,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.5_5_inch_gun_howitzer", n = 6 } ]
 arrives = { gt = 83, opstage = 3 }
 arrives_raw = "3/83"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -257,6 +279,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 15, opstage = 1 }
 arrives_raw = "1/15"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -268,6 +291,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.105mm_sp_howitzer", n = 6 } ]
 arrives = { gt = 89, opstage = 3 }
 arrives_raw = "3/89"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -280,6 +304,7 @@ toe = [ { weapon = "cw.sp_25_pounder_gun", n = 6 } ]
 arrives = { gt = 92, opstage = 3 }
 arrives_raw = "3/92"
 note = "A refitted version of the 11 RHA of the 1st Armored Division (Bishop-equipped); not a unit per se (see the printed refit note on the sheet)."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -291,6 +316,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 4 } ]
 arrives = { gt = 15, opstage = 2 }
 arrives_raw = "2/15"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -302,4 +328,5 @@ echelon = "battalion"
 toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 9, opstage = 3 }
 arrives_raw = "3/9"
+stacking_points = 1
 src = ["land:4.45"]

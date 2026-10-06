@@ -17,6 +17,7 @@ echelon = "division"
 toe = [ { weapon = "cw.mk_vi_light", n = 1 } ]
 arrives = "D"
 engineer_hq = true
+stacking_points = 5
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "brigade"
 toe = [ { weapon = "cw.mk_vi_light", n = 1 } ]
 arrives = "D"
 parent = "cw.7_armd_div.7th_armored_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.mk_vi_light", n = 10 } ]
 arrives = "D"
 parent = "cw.7_armd_div.4th_armored_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -50,6 +53,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.mk_vi_light", n = 10 } ]
 arrives = "D"
 parent = "cw.7_armd_div.4th_armored_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -61,6 +65,7 @@ echelon = "brigade"
 toe = [ { weapon = "cw.a9_cruiser", n = 1 } ]
 arrives = "D"
 parent = "cw.7_armd_div.7th_armored_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -73,6 +78,7 @@ toe = [ { weapon = "cw.a9_cruiser", n = 7 } ]
 arrives = "D"
 parent = "cw.7_armd_div.7th_armored_bde_hq"
 note = "Later assigned to the 22nd Armored Brigade."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -85,6 +91,7 @@ toe = [ { weapon = "cw.a10_cruiser", n = 7 } ]
 arrives = "D"
 parent = "cw.7_armd_div.7th_armored_bde_hq"
 note = "The 8th King's Royal Irish Hussars."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -96,6 +103,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 parent = "cw.7_armd_div.7th_armored_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -109,6 +117,7 @@ arrives = { gt = 68, opstage = 2 }
 arrives_raw = "2/68"
 parent = "cw.7_armd_div.7th_armored_div_hq"
 note = "Redesignation of the 7th Support Group in February 1942: the mechanized-infantry HQ counter is replaced by this motorized-infantry HQ counter."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -121,6 +130,7 @@ toe = "N"
 arrives = "D"
 parent = "cw.7_armd_div.7th_motor_bde_hq"
 note = "The 1st King's Royal Rifle Corps."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -132,6 +142,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.7_armd_div.7th_motor_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -143,6 +154,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.2_pounder", n = 6 } ]
 arrives = "D"
 parent = "cw.7_armd_div.7th_motor_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -154,6 +166,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.18_25_pounder_gun", n = 6 } ]
 arrives = "D"
 parent = "cw.7_armd_div.7th_motor_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -166,4 +179,5 @@ toe = { under = 6 }
 arrives = "D"
 parent = "cw.7_armd_div.7th_motor_bde_hq"
 note = "The 11th Prince Albert's Own Hussars; the RAF No. 2 Armored Car Company (Rolls Royce armored cars) served under it October 1940 to February 1941."
+stacking_points = 1
 src = ["land:4.45"]

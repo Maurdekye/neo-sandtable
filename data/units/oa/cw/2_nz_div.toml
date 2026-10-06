@@ -18,6 +18,7 @@ echelon = "division"
 toe = "N"
 arrives = "D"
 engineer_hq = true
+stacking_points = 5
 src = ["land:4.45"]
 
 [[unit]]
@@ -29,6 +30,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -40,6 +42,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -51,6 +54,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -62,6 +66,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -74,6 +79,7 @@ toe = "N"
 arrives = { gt = 35, opstage = 1 }
 arrives_raw = "1/35"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -86,6 +92,7 @@ toe = { under = 2 }
 arrives = { gt = 35, opstage = 1 }
 arrives_raw = "1/35"
 parent = "cw.2_nz_div.5th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -98,6 +105,7 @@ toe = { under = 2 }
 arrives = { gt = 35, opstage = 1 }
 arrives_raw = "1/35"
 parent = "cw.2_nz_div.5th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -110,6 +118,7 @@ toe = { under = 2 }
 arrives = { gt = 35, opstage = 1 }
 arrives_raw = "1/35"
 parent = "cw.2_nz_div.5th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -122,6 +131,7 @@ toe = { under = 2 }
 arrives = { gt = 35, opstage = 1 }
 arrives_raw = "1/35"
 parent = "cw.2_nz_div.5th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -134,6 +144,7 @@ toe = "N"
 arrives = { gt = 6, opstage = 3 }
 arrives_raw = "3/6"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -146,6 +157,7 @@ toe = "N"
 arrives = { gt = 6, opstage = 3 }
 arrives_raw = "3/6"
 parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -158,6 +170,7 @@ toe = "N"
 arrives = { gt = 6, opstage = 3 }
 arrives_raw = "3/6"
 parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -170,6 +183,7 @@ toe = "N"
 arrives = { gt = 6, opstage = 3 }
 arrives_raw = "3/6"
 parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -181,6 +195,7 @@ echelon = "battalion"
 toe = { under = 2 }
 arrives = "D"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -192,6 +207,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -204,6 +220,7 @@ toe = [ { weapon = "cw.2_pounder", n = 8 } ]
 arrives = { gt = 35, opstage = 1 }
 arrives_raw = "1/35"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -215,6 +232,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.3_7_inch_howitzer", n = 6 } ]
 arrives = "D"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -227,6 +245,7 @@ toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 35, opstage = 1 }
 arrives_raw = "1/35"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -239,6 +258,7 @@ toe = [ { weapon = "cw.18_25_pounder_gun", n = 6 } ]
 arrives = { gt = 2, opstage = 3 }
 arrives_raw = "3/2"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -251,4 +271,5 @@ toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
 arrives = { gt = 35, opstage = 1 }
 arrives_raw = "1/35"
 note = "Printed at the division HQ indentation level, not under the HQ."
+stacking_points = 1
 src = ["land:4.45"]

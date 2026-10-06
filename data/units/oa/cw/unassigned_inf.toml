@@ -17,6 +17,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 note = "Replaced the 1st Royal Fusiliers in the 5th Indian Brigade October through December 1941. Starts attached to / assigned to the Matruh Garrison (see land:4.44b item 2)."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 note = "Served under the 22nd Guards Brigade."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 note = "Sent to Malta early in February 1941. Starts attached to / assigned to the Matruh Garrison (see land:4.44b item 2)."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -50,6 +53,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 note = "Sent to Syria in June 1941 (3/36) to join the 161st Indian Motor Brigade."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -60,6 +64,7 @@ class = "cw.p"
 echelon = "battalion"
 toe = "N"
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -71,6 +76,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 note = "Served under the 22nd Guards Brigade."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -82,6 +88,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 note = "Sent to Malta July 1941."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -93,6 +100,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 note = "The 1st Battalion, Royal Northumberland Fusiliers."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -105,6 +113,7 @@ toe = "N"
 arrives = { gt = 19, opstage = 2 }
 arrives_raw = "2/19"
 note = "The Layforce commando unit: an abstract composite of several small commando units used at various times."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -117,6 +126,7 @@ toe = "N"
 arrives = { gt = 47, opstage = 2 }
 arrives_raw = "2/47"
 note = "May be paradropped (Air Game)."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -129,6 +139,7 @@ toe = "N"
 arrives = { gt = 65, opstage = 1 }
 arrives_raw = "1/65"
 note = "Attached to the 201st Guards Brigade; lost at Tobruk in June 1942."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -141,6 +152,7 @@ toe = "N"
 arrives = { gt = 70, opstage = 1 }
 arrives_raw = "1/70"
 note = "A unit raised by the Commonwealth from \"conquered\" countries; served as garrison at Mersa Matruh and other places."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -153,6 +165,7 @@ toe = "N"
 arrives = { gt = 89, opstage = 2 }
 arrives_raw = "2/89"
 note = "Part of the original 8th Support Group; see also the 8th Armored Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -165,4 +178,5 @@ toe = "N"
 arrives = { gt = 94, opstage = 1 }
 arrives_raw = "1/94"
 note = "Originally a horsed cavalry regiment of the 1st Cavalry Division, converted to a motor battalion before Alamein."
+stacking_points = 1
 src = ["land:4.45"]

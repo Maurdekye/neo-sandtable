@@ -18,6 +18,7 @@ toe = "N"
 arrives = { gt = 32, opstage = 1 }
 arrives_raw = "1/32"
 note = "Restricted engineering capabilities (railroad)."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -30,4 +31,5 @@ toe = "N"
 arrives = { gt = 50, opstage = 3 }
 arrives_raw = "3/50"
 note = "Restricted engineering capabilities (railroad)."
+stacking_points = 1
 src = ["land:4.45"]

@@ -17,6 +17,7 @@ class = "it.b"
 echelon = "division"
 toe = "N"
 arrives = "D"
+stacking_points = 5
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.maletti_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -50,6 +53,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -61,6 +65,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -72,6 +77,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.maletti_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -83,6 +89,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.5th_libyan_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -94,6 +101,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.5th_libyan_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -106,6 +114,7 @@ toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.maletti_div_hq"
 note = "A camel regiment in name only; assigned to the Maletti."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -117,6 +126,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.sahariano_camel_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -128,6 +138,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.sahariano_camel_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -139,6 +150,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.sahariano_camel_regt_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -150,6 +162,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 3 } ]
 arrives = "D"
 parent = "it.gruppo_maletti.maletti_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -161,6 +174,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_18_gun_howitzer", n = 2 } ]
 arrives = "D"
 parent = "it.gruppo_maletti.maletti_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[mention]]

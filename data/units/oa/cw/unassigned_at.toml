@@ -17,6 +17,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.6_pounder", n = 8 } ]
 arrives = { gt = 92, opstage = 2 }
 arrives_raw = "2/92"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.2_pounder", n = 6 } ]
 arrives = "D"
 note = "The Norfolk Yeomanry."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.18_pounder_gun", n = 2 }, { weapon = "cw.2_pounder", n = 8 } ]
 arrives = { gt = 27, opstage = 1 }
 arrives_raw = "1/27"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -50,6 +53,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.6_pounder", n = 8 } ]
 arrives = { gt = 75, opstage = 1 }
 arrives_raw = "1/75"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -61,6 +65,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.2_pounder", n = 8 } ]
 arrives = { gt = 60, opstage = 3 }
 arrives_raw = "3/60"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -73,6 +78,7 @@ toe = [ { weapon = "cw.2_pounder", n = 8 } ]
 arrives = { gt = 45, opstage = 1 }
 arrives_raw = "1/45"
 note = "The Northumberland Hussars (not the 102(NH) anti-tank/light AA unit). The only unit that may be refitted with Deacons (printed refit procedure)."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -83,6 +89,7 @@ class = "cw.aa"
 echelon = "battalion"
 toe = [ { weapon = "cw.2_pounder", n = 8 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -94,4 +101,5 @@ echelon = "battalion"
 toe = [ { weapon = "cw.2_pounder", n = 8 } ]
 arrives = { gt = 11, opstage = 1 }
 arrives_raw = "1/11"
+stacking_points = 1
 src = ["land:4.45"]

@@ -18,6 +18,7 @@ toe = "N"
 arrives = "D"
 engineer_hq = true
 note = "Counter text printed as \"32GaF\" on the sheet; counter file and unit number are 30 GaF."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -29,6 +30,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -40,6 +42,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -51,6 +54,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -62,6 +66,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 note = "Vittorio Emanuele cavalry machinegun battalion, 4th Squadron; equipped with pre-WWI machineguns."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -72,6 +77,7 @@ class = "it.qq"
 echelon = "battalion"
 toe = [ { weapon = "it.47_32_mod37", n = 6 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -83,6 +89,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 4 } ]
 arrives = "D"
 group = "30 Gaf S di C Artiglieri (no HQ)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -94,6 +101,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 4 }, { weapon = "it.75_27_gun", n = 2 } ]
 arrives = "D"
 group = "30 Gaf S di C Artiglieri (no HQ)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -105,6 +113,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.105_28_gun", n = 4 }, { weapon = "it.100_17_howitzer", n = 3 } ]
 arrives = "D"
 group = "30 Gaf S di C Artiglieri (no HQ)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -116,6 +125,7 @@ echelon = "company"
 toe = [ { weapon = "it.75_27_gun", n = 1, emplaced = true }, { weapon = "it.100_17_howitzer", n = 1, emplaced = true }, { weapon = "it.105_28_gun", n = 1, emplaced = true } ]
 arrives = "D"
 immobile = true
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -126,4 +136,5 @@ class = "it.ss"
 echelon = "battalion"
 toe = [ { weapon = "it.aa_light_20mm", n = 8 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]

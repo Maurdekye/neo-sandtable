@@ -18,6 +18,7 @@ toe = "N"
 arrives = "D"
 note = "A company of the 1st Free French Motor Marine Battalion. Arrival code corrected to D by land:4.44b item 3."
 nationality = "free_french"
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -31,4 +32,5 @@ arrives = { gt = 8, opstage = 3 }
 arrives_raw = "3/8"
 nationality = "czechoslovak"
 note = "Served as fortress troops at Tobruk with the 70th Infantry Division."
+stacking_points = 1
 src = ["land:4.45"]

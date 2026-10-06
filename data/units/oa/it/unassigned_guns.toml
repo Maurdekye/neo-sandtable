@@ -17,6 +17,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 3 } ]
 arrives = "D"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_18_gun_howitzer", n = 2 } ]
 arrives = "D"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 3 } ]
 arrives = "D"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -50,6 +53,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 4 } ]
 arrives = "D"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -61,6 +65,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.105_28_gun", n = 2 } ]
 arrives = "D"
 basic_morale = -2
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -72,6 +77,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 2 } ]
 arrives = "D"
 basic_morale = -1
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -83,6 +89,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 2 } ]
 arrives = "D"
 basic_morale = -1
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -96,6 +103,7 @@ arrives = { gt = 71, opstage = 3 }
 arrives_raw = "3/71"
 basic_morale = 0
 note = "Fast artillery assigned to the 133rd RC (Littorio) to replace units stripped for the Ariete."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -109,6 +117,7 @@ arrives = { gt = 71, opstage = 3 }
 arrives_raw = "3/71"
 basic_morale = 0
 note = "Fast artillery assigned to the 133rd RC (Littorio) to replace units stripped for the Ariete."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -120,6 +129,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 4 } ]
 arrives = "D"
 basic_morale = -1
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -131,6 +141,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 3 } ]
 arrives = "D"
 basic_morale = -1
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -144,6 +155,7 @@ arrives = { gt = 55, opstage = 1 }
 arrives_raw = "1/55"
 basic_morale = 0
 note = "Attached upon its arrival."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -156,6 +168,7 @@ toe = [ { weapon = "it.75_27_gun", n = 4 }, { weapon = "it.100_17_howitzer", n =
 arrives = { gt = 55, opstage = 1 }
 arrives_raw = "1/55"
 basic_morale = 0
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -168,6 +181,7 @@ toe = [ { weapon = "it.75_27_gun", n = 3 } ]
 arrives = "D"
 basic_morale = -1
 group = "1st Artillery Ragruppamento (no HQ; independent battalions)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -180,6 +194,7 @@ toe = [ { weapon = "it.75_18_gun_howitzer", n = 3 } ]
 arrives = "D"
 basic_morale = -1
 group = "1st Artillery Ragruppamento (no HQ; independent battalions)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -192,6 +207,7 @@ toe = [ { weapon = "it.105_28_gun", n = 3 } ]
 arrives = "D"
 basic_morale = -1
 group = "1st Artillery Ragruppamento (no HQ; independent battalions)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -204,6 +220,7 @@ toe = [ { weapon = "it.100_17_howitzer", n = 3 } ]
 arrives = "D"
 basic_morale = -1
 group = "1st Artillery Ragruppamento (no HQ; independent battalions)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -217,6 +234,7 @@ arrives = { gt = 26, opstage = 1 }
 arrives_raw = "1/26"
 basic_morale = -1
 group = "2nd Artillery Ragruppamento (no HQ; independent battalions)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -230,6 +248,7 @@ arrives = { gt = 26, opstage = 1 }
 arrives_raw = "1/26"
 basic_morale = -1
 group = "2nd Artillery Ragruppamento (no HQ; independent battalions)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -243,6 +262,7 @@ arrives = { gt = 26, opstage = 1 }
 arrives_raw = "1/26"
 basic_morale = -1
 group = "2nd Artillery Ragruppamento (no HQ; independent battalions)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -256,6 +276,7 @@ arrives = { gt = 26, opstage = 1 }
 arrives_raw = "1/26"
 basic_morale = -1
 group = "2nd Artillery Ragruppamento (no HQ; independent battalions)"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -268,6 +289,7 @@ toe = [ { weapon = "it.100_17_howitzer", n = 4 } ]
 arrives = "D"
 basic_morale = -2
 note = "Begins the campaign stationed at Soluch; not a garrison unit."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -279,6 +301,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 3 }, { weapon = "it.100_17_howitzer", n = 6 }, { weapon = "it.aa_light_20mm", n = 3 } ]
 arrives = "D"
 basic_morale = 0
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -290,6 +313,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 9 }, { weapon = "it.aa_light_20mm", n = 3 } ]
 arrives = "D"
 basic_morale = 0
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -301,6 +325,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 9 }, { weapon = "it.aa_light_20mm", n = 3 } ]
 arrives = "D"
 basic_morale = 0
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -313,6 +338,7 @@ toe = [ { weapon = "it.105_28_gun", n = 9 }, { weapon = "it.aa_light_20mm", n = 
 arrives = { gt = 9, opstage = 2 }
 arrives_raw = "2/9"
 basic_morale = 0
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -324,4 +350,5 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_27_gun", n = 9 }, { weapon = "it.aa_light_20mm", n = 3 } ]
 arrives = "D"
 basic_morale = 0
+stacking_points = 1
 src = ["land:4.45"]

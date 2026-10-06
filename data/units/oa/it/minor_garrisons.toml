@@ -17,6 +17,7 @@ class = "it.dd"
 echelon = "company"
 toe = "N"
 arrives = "D"
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -27,6 +28,7 @@ class = "it.q"
 echelon = "battalion"
 toe = { under = 2 }
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -37,6 +39,7 @@ class = "it.ee"
 echelon = "company"
 toe = "N"
 arrives = "D"
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -47,6 +50,7 @@ class = "it.uu"
 echelon = "company"
 toe = [ { weapon = "it.aa_light_20mm", n = 2 } ]
 arrives = "D"
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -57,6 +61,7 @@ class = "it.r"
 echelon = "battalion"
 toe = { under = 2 }
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -67,6 +72,7 @@ class = "it.rr"
 echelon = "company"
 toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
 arrives = "D"
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -77,4 +83,5 @@ class = "it.jj"
 echelon = "battalion"
 toe = [ { weapon = "it.100_17_howitzer", n = 12 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]

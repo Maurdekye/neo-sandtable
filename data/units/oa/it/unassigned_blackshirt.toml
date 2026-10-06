@@ -19,6 +19,7 @@ toe = "N"
 arrives = { gt = 25, opstage = 1 }
 arrives_raw = "1/25"
 note = "Arrives attached to the 55th Infantry Division."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -32,6 +33,7 @@ arrives = { gt = 25, opstage = 1 }
 arrives_raw = "1/25"
 parent = "it.unassigned_blackshirt.7th_ccnn_legion_hq"
 note = "Arrives attached to the 55th Infantry Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -44,6 +46,7 @@ toe = [ { weapon = "it.65_17_gun", n = 1 } ]
 arrives = { gt = 22, opstage = 2 }
 arrives_raw = "2/22"
 note = "Arrives attached to the 17th Infantry Division."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -57,6 +60,7 @@ arrives = { gt = 22, opstage = 2 }
 arrives_raw = "2/22"
 parent = "it.unassigned_blackshirt.9th_ccnn_legion_hq"
 note = "Arrives attached to the 17th Infantry Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -70,6 +74,7 @@ arrives = { gt = 22, opstage = 2 }
 arrives_raw = "2/22"
 parent = "it.unassigned_blackshirt.9th_ccnn_legion_hq"
 note = "Arrives attached to the 17th Infantry Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -82,6 +87,7 @@ toe = "N"
 arrives = { gt = 24, opstage = 1 }
 arrives_raw = "1/24"
 note = "Arrives attached to the 25th Infantry Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -94,6 +100,7 @@ toe = "N"
 arrives = { gt = 21, opstage = 2 }
 arrives_raw = "2/21"
 note = "Arrives attached to the 27th Infantry Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -106,6 +113,7 @@ toe = "N"
 arrives = { gt = 21, opstage = 2 }
 arrives_raw = "2/21"
 note = "Arrives attached to the 27th Infantry Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -117,4 +125,5 @@ echelon = "battalion"
 toe = "N"
 arrives = { gt = 13, opstage = 3 }
 arrives_raw = "3/13"
+stacking_points = 1
 src = ["land:4.45"]

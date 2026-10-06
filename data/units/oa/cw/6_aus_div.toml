@@ -19,6 +19,7 @@ echelon = "division"
 toe = "N"
 arrives = "D"
 engineer_hq = true
+stacking_points = 5
 src = ["land:4.45"]
 
 [[unit]]
@@ -30,6 +31,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.6th_australian_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -41,6 +43,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.16th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -52,6 +55,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.16th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -63,6 +67,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.16th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -74,6 +79,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.6th_australian_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -85,6 +91,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.17th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -96,6 +103,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.17th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -107,6 +115,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.17th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -119,6 +128,7 @@ toe = "N"
 arrives = { gt = 9, opstage = 2 }
 arrives_raw = "2/9"
 parent = "cw.6_aus_div.6th_australian_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -131,6 +141,7 @@ toe = "N"
 arrives = { gt = 9, opstage = 2 }
 arrives_raw = "2/9"
 parent = "cw.6_aus_div.19th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -143,6 +154,7 @@ toe = "N"
 arrives = { gt = 9, opstage = 2 }
 arrives_raw = "2/9"
 parent = "cw.6_aus_div.19th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -155,6 +167,7 @@ toe = "N"
 arrives = { gt = 9, opstage = 2 }
 arrives_raw = "2/9"
 parent = "cw.6_aus_div.19th_aus_infantry_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -166,6 +179,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.6_aus_div.6th_australian_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -178,6 +192,7 @@ toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
 arrives = { gt = 11, opstage = 1 }
 arrives_raw = "1/11"
 parent = "cw.6_aus_div.6th_australian_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -190,4 +205,5 @@ toe = [ { weapon = "cw.18_pounder_gun", n = 3 }, { weapon = "cw.4_5_inch_howitze
 arrives = { gt = 7, opstage = 1 }
 arrives_raw = "1/7"
 parent = "cw.6_aus_div.6th_australian_div_hq"
+stacking_points = 1
 src = ["land:4.45"]

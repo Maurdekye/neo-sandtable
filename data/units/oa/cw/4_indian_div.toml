@@ -18,6 +18,7 @@ echelon = "division"
 toe = "N"
 arrives = "D"
 engineer_hq = true
+stacking_points = 5
 src = ["land:4.45"]
 
 [[unit]]
@@ -29,6 +30,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.4th_indian_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -40,6 +42,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.5th_indian_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -51,6 +54,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.5th_indian_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -62,6 +66,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.5th_indian_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -74,6 +79,7 @@ toe = "N"
 arrives = { gt = 5, opstage = 1 }
 arrives_raw = "1/5"
 parent = "cw.4_indian_div.4th_indian_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -86,6 +92,7 @@ toe = "N"
 arrives = { gt = 5, opstage = 1 }
 arrives_raw = "1/5"
 parent = "cw.4_indian_div.7th_indian_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -98,6 +105,7 @@ toe = "N"
 arrives = { gt = 5, opstage = 1 }
 arrives_raw = "1/5"
 parent = "cw.4_indian_div.7th_indian_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -110,6 +118,7 @@ toe = "N"
 arrives = { gt = 5, opstage = 1 }
 arrives_raw = "1/5"
 parent = "cw.4_indian_div.7th_indian_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -121,6 +130,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.4th_indian_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -133,6 +143,7 @@ toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.11th_indian_bde_hq"
 note = "Full name: 2nd Battalion Queens Own Cameron Highlanders."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -144,6 +155,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.11th_indian_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -155,6 +167,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.11th_indian_bde_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -167,6 +180,7 @@ toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.4th_indian_div_hq"
 note = "Also the 21st King George V's Own Horse. Arrives without equipment except trucks; until trained it is treated as a motorized infantry unit (ID code l), then converts to the reconnaissance class kk as listed."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -179,6 +193,7 @@ toe = [ { weapon = "cw.18_25_pounder_gun", n = 6 } ]
 arrives = { gt = 3, opstage = 3 }
 arrives_raw = "3/3"
 parent = "cw.4_indian_div.4th_indian_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -190,6 +205,7 @@ echelon = "battalion"
 toe = [ { weapon = "cw.3_7_inch_howitzer", n = 6 } ]
 arrives = "D"
 parent = "cw.4_indian_div.4th_indian_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -201,4 +217,5 @@ echelon = "battalion"
 toe = [ { weapon = "cw.18_pounder_gun", n = 6 } ]
 arrives = "D"
 parent = "cw.4_indian_div.4th_indian_div_hq"
+stacking_points = 1
 src = ["land:4.45"]

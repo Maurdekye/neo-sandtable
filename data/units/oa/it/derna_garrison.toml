@@ -17,6 +17,7 @@ echelon = "brigade"
 toe = "N"
 arrives = "D"
 note = "A hodge-podge of local recruits given regimental status (no HQ plus battalions) because of poor training."
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -28,6 +29,7 @@ echelon = "company"
 toe = [ { weapon = "it.75_18_gun_howitzer", n = 5, emplaced = true } ]
 arrives = "D"
 immobile = true
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -39,6 +41,7 @@ echelon = "company"
 toe = [ { weapon = "it.75_18_gun_howitzer", n = 2, emplaced = true } ]
 arrives = "D"
 immobile = true
+stacking_points = 0
 src = ["land:4.45"]
 
 [[unit]]
@@ -49,4 +52,5 @@ class = "it.tt"
 echelon = "battalion"
 toe = [ { weapon = "it.aa_light_20mm", n = 6 } ]
 arrives = "D"
+stacking_points = 1
 src = ["land:4.45"]

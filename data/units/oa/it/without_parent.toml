@@ -19,6 +19,7 @@ arrives = "D"
 basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -32,6 +33,7 @@ arrives = "D"
 basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -46,6 +48,7 @@ arrives_raw = "2/10"
 basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -60,6 +63,7 @@ arrives_raw = "2/12"
 basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -74,6 +78,7 @@ arrives_raw = "2/15"
 basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -88,6 +93,7 @@ arrives_raw = "2/15"
 basic_morale = 0
 never_arrived_parent = true
 note = "Element of the 20th \"Friuli\" Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -102,6 +108,7 @@ arrives_raw = "3/94"
 basic_morale = -3
 never_arrived_parent = true
 note = "Element of the 7th \"Lupi di Toscana\" Division."
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -116,4 +123,5 @@ arrives_raw = "2/97"
 basic_morale = -2
 never_arrived_parent = true
 note = "Element of the 152nd \"Piceno\" Division."
+stacking_points = 1
 src = ["land:4.45"]

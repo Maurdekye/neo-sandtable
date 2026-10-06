@@ -16,6 +16,7 @@ class = "it.b"
 echelon = "division"
 toe = "N"
 arrives = "D"
+stacking_points = 5
 src = ["land:4.45"]
 
 [[unit]]
@@ -27,6 +28,7 @@ echelon = "brigade"
 toe = [ { weapon = "it.65_17_gun", n = 1 } ]
 arrives = "D"
 parent = "it.4ccnn_div.4th_ccnn_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -38,6 +40,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.4ccnn_div.240th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -49,6 +52,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.4ccnn_div.240th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -60,6 +64,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.4ccnn_div.240th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -71,6 +76,7 @@ echelon = "brigade"
 toe = [ { weapon = "it.65_17_gun", n = 1 } ]
 arrives = "D"
 parent = "it.4ccnn_div.4th_ccnn_div_hq"
+stacking_points = 2
 src = ["land:4.45"]
 
 [[unit]]
@@ -82,6 +88,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.4ccnn_div.270th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -93,6 +100,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.4ccnn_div.270th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -104,6 +112,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.4ccnn_div.270th_legion_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -115,6 +124,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.4ccnn_div.4th_ccnn_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -126,6 +136,7 @@ echelon = "battalion"
 toe = [ { weapon = "it.75_18_gun_howitzer", n = 6 }, { weapon = "it.105_28_gun", n = 3 }, { weapon = "it.aa_heavy_75_46", n = 2 } ]
 arrives = "D"
 parent = "it.4ccnn_div.4th_ccnn_div_hq"
+stacking_points = 1
 src = ["land:4.45"]
 
 [[unit]]
@@ -137,4 +148,5 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 parent = "it.4ccnn_div.4th_ccnn_div_hq"
+stacking_points = 1
 src = ["land:4.45"]

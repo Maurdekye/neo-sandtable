@@ -55,9 +55,13 @@ by `rules-airlog` (`data/tables/airlog/54.2-…`); scenario and schedule records
   `arrives_raw` when it is not `D`.
 - **TOE of a unit instance** (`toe`): `"N"` normal (= class maximum), `{ under = n }` (U@n),
   `{ over = n }` (O), or an explicit weapons list `toe = [{ weapon = "cw.mk_vi_light", n = 10 }]`.
-- **Stacking points** are *not* stored per unit: they come from `land:9.4` (table owned by
-  `rules-land`) by `echelon` + `shell` status. `echelon` is one of `company`, `battalion`,
-  `brigade`, `super_brigade`, `division`, `battle_group`.
+- **Stacking points** are stored per unit (`stacking_points`): the counters print the value
+  (`land:9.22`, `land:3.33`) and `land:9.4` maps it to the organizational level (division 5, super
+  brigade 3, brigade/regiment 2, battalion 1, company 0). Values here follow the echelon through that
+  table and were checked against the printed counters of every headquarters in the Graziani set-up
+  and a sample of the others; the only deviations from the plain table found are the two Libyan Tank
+  Command regiment HQs (Aresca, Trivioli: super brigade, 3). `echelon` is one of `company`, `battalion`,
+  `brigade`, `super_brigade`, `division`, `battle_group`. Shell values (`land:9.2`) are rule-driven and not stored.
 - **Ids** are lowercase snake_case, stable forever: `<nation>.<sheet>.<unit>` for units
   (`it.1ccnn_div.129th_infantry_bn`: sheet id + slug of the printed unit name; a counter suffix is added only if two names in a sheet collide), `<nation>.<weapon>` for weapons (`it.m13_40`),
   `<nation>.<code>` for ID-code classes (`it.x`). Counter text (`201`, `7 RTR`) is **not** an id —
