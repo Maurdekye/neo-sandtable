@@ -166,18 +166,25 @@ export function receive(
       cursor: null,
       playing: false,
       connection: 'resyncing' as const,
+      transcriptSeq: {},
     },
     subscribe: {
       type: 'subscribe' as const,
       perspective: state.perspective,
-      from_seq: state.lastSeq,
+      from_seq: null,
     },
   })
   if (message.type === 'resync') return resync()
   if (message.type === 'hello') {
     if (message.perspective !== state.perspective || message.protocol !== 1)
       return resync()
-    return { state: { ...state, campaign: message.campaign } }
+    return {
+      state: {
+        ...state,
+        campaign: message.campaign,
+        connection: state.frames.length ? 'live' : state.connection,
+      },
+    }
   }
   if (message.type === 'snapshot' && !state.campaign) return { state }
   if (message.type === 'snapshot')

@@ -13,8 +13,14 @@ import {
 import { selectedFrame } from './stream/model'
 import { Transcripts } from './Transcripts'
 import { createSocketStream, streamUrl } from './stream/socket'
+import { CampaignControl, CampaignChooser } from './Campaigns'
 const campaignId = new URLSearchParams(location.search).get('campaign')
-const mockMode = import.meta.env.DEV && !campaignId
+const serverUrl =
+  new URLSearchParams(location.search).get('server') ?? location.origin
+const mockMode =
+  import.meta.env.DEV &&
+  !campaignId &&
+  !new URLSearchParams(location.search).has('server')
 function eventText(event: GameEvent): string {
   switch (event.kind) {
     case 'stack_updated':
@@ -67,7 +73,11 @@ export function App() {
     view = frame?.view
   const [selected, setSelected] = useState<string | null>(INITIAL_HEX),
     [unitId, setUnitId] = useState<string | null>(null),
-    [focus, setFocus] = useState<{ hex: string; nonce: number } | null>(null)
+    [focus, setFocus] = useState<{
+      hex: string
+      nonce: number
+      bounds?: string[]
+    } | null>(null)
   const [eventFilter, setEventFilter] = useState('all'),
     [campaignPaused, setCampaignPaused] = useState(false),
     [control, setControl] = useState<((paused: boolean) => void) | null>(null),
@@ -83,12 +93,12 @@ export function App() {
       disconnect = () => {}
     if (campaignId) {
       try {
-        const server =
-          new URLSearchParams(location.search).get('server') ?? location.origin
+        const server = serverUrl
         const transport = createSocketStream({
           url: streamUrl(server, campaignId),
           deliver,
-          lastGoodSeq: () => getViewer().lastSeq,
+          lastGoodSeq: () =>
+            getViewer().frames.length ? getViewer().lastSeq : null,
           status: (status) => {
             if (!disposed) {
               setTransportNote(status.message)
@@ -101,7 +111,7 @@ export function App() {
       } catch (error) {
         setTransportNote(String(error))
       }
-    } else if (import.meta.env.DEV)
+    } else if (mockMode)
       void import('./mock/generator').then(({ createMockStream }) => {
         if (disposed) return
         const transport = createMockStream(deliver)
@@ -124,7 +134,14 @@ export function App() {
       const hex = view.stacks[0]?.hex ?? view.markers[0]?.hex
       if (hex) {
         setSelected(hex)
-        setFocus({ hex, nonce: Date.now() })
+        setFocus({
+          hex,
+          nonce: Date.now(),
+          bounds: [
+            ...view.stacks.map((s) => s.hex),
+            ...view.markers.map((m) => m.hex),
+          ],
+        })
         setLiveFocus(true)
       }
     }
@@ -223,23 +240,34 @@ export function App() {
             : 'Projection supplied by server'}
         </span>
         <span className="grow" />
-        <button
-          disabled={
-            state.perspective !== 'operator' ||
-            !control ||
-            state.cursor !== null
-          }
-          onClick={() => {
-            setCampaignPaused(!campaignPaused)
-            control?.(!campaignPaused)
-          }}
-        >
-          {!mockMode
-            ? 'Campaign control pending API'
-            : campaignPaused
-              ? 'Resume campaign (mock)'
-              : 'Pause campaign (mock)'}
-        </button>
+        {!mockMode && !campaignId && <CampaignChooser server={serverUrl} />}
+        {!mockMode && campaignId && (
+          <CampaignControl
+            server={serverUrl}
+            campaign={campaignId}
+            perspective={state.perspective}
+            history={state.cursor !== null}
+          />
+        )}
+        {mockMode && (
+          <button
+            disabled={
+              state.perspective !== 'operator' ||
+              !control ||
+              state.cursor !== null
+            }
+            onClick={() => {
+              setCampaignPaused(!campaignPaused)
+              control?.(!campaignPaused)
+            }}
+          >
+            {!mockMode
+              ? 'Campaign control pending API'
+              : campaignPaused
+                ? 'Resume campaign (mock)'
+                : 'Pause campaign (mock)'}
+          </button>
+        )}
       </div>
       <main className="workspace">
         <aside className="formations">

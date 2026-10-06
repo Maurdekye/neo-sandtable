@@ -6,6 +6,9 @@ test('uses the real adapter, renders objectives, and replaces server projections
   const errors: string[] = [],
     requests: Subscribe[] = []
   page.on('pageerror', (e) => errors.push(e.message))
+  await page.route('**/api/campaigns/fixture?perspective=*', (route) =>
+    route.fulfill({ json: { status: { state: 'paused' } } }),
+  )
   await page.routeWebSocket('**/api/campaigns/fixture/stream', (socket) => {
     socket.onMessage((data) => {
       const request = JSON.parse(String(data)) as Subscribe
@@ -129,7 +132,7 @@ test('uses the real adapter, renders objectives, and replaces server projections
     'side:commonwealth',
   ])
   await expect(
-    page.getByRole('button', { name: 'Campaign control pending API' }),
+    page.getByRole('button', { name: 'Resume campaign' }),
   ).toBeDisabled()
   await page.screenshot({
     path: '../../board-adapter-fixture.png',

@@ -22,7 +22,7 @@ import { counterSvg } from './counters'
 interface Props {
   view: ViewState | undefined
   selected: string | null
-  focus: { hex: string; nonce: number } | null
+  focus: { hex: string; nonce: number; bounds?: string[] } | null
   onSelect: (hex: string) => void
 }
 interface Scene {
@@ -380,7 +380,31 @@ export function Board({ view, selected, focus, onSelect }: Props) {
     const s = scene.current,
       h = focus ? HEX_BY_ID.get(focus.hex) : undefined
     if (!s || !h || !ready) return
-    const p = center(h)
+    let p = center(h)
+    const points =
+      focus?.bounds?.flatMap((id) => {
+        const hex = HEX_BY_ID.get(id)
+        return hex ? [center(hex)] : []
+      }) ?? []
+    if (points.length) {
+      const xs = points.map((p) => p.x),
+        ys = points.map((p) => p.y),
+        minX = Math.min(...xs),
+        maxX = Math.max(...xs),
+        minY = Math.min(...ys),
+        maxY = Math.max(...ys)
+      p = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+      s.world.scale.set(
+        Math.max(
+          0.35,
+          Math.min(
+            1.25,
+            (host.current!.clientWidth - 160) / (maxX - minX + 100),
+            (host.current!.clientHeight - 180) / (maxY - minY + 100),
+          ),
+        ),
+      )
+    }
     s.world.position.set(
       host.current!.clientWidth / 2 - p.x * s.world.scale.x,
       host.current!.clientHeight / 2 - p.y * s.world.scale.y,

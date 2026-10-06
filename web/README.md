@@ -31,7 +31,7 @@ Pause playback freezes the viewed frame while live events continue to buffer.
 Step, the history slider and Play history navigate retained frames; speed affects
 only replay. Return to live follows the newest frame. The HISTORY badge identifies
 a past view. Pause campaign is a separate, clearly labelled **mock** operator
-control. Live campaign controls remain disabled until the HTTP control API is published.
+control. Live operator controls use the HTTP pause/resume API and show acknowledgements or errors separately from playback. Controls are disabled in history and other perspectives.
 Overlays are disabled with a pending-data label until their data exists.
 
 Perspective changes clear previous authorized state and subscribe again. Filtering
@@ -45,7 +45,9 @@ Protocol structures are imported from lead-owned `src/generated/`; Rust
 `cna-protocol` generates them. `src/protocol/index.ts` only reexports types and adds
 UI aliases. Event sequences are contiguous per perspective and use JSON numbers.
 The store requires hello then snapshot, checks subsequent sequences, clears stale
-state on gaps and resubscribes from the last good sequence. Unknown event kinds
+state on gaps and requests a fresh snapshot with `from_seq: null`. A reconnect
+with intact state resumes from the last good sequence and applies event replay
+after hello, without requiring another snapshot. Unknown event kinds
 advance the cursor without applying an unknown transition. Buffers retain at most
 600 immutable frames and 1,200 transcript entries; history clamps to the earliest
 retained frame on eviction. Transcripts align to event frames via `game_seq`.
@@ -55,18 +57,32 @@ absent from the production build. To connect a campaign, open
 `/?campaign=<id>`. The adapter uses the page origin by default; when using Vite
 against a separate backend, add `&server=http://127.0.0.1:<port>` (URL-encode the
 server value). It connects to `/api/campaigns/{id}/stream`, using WSS for HTTPS.
-A bare production URL displays connection instructions until a campaign is chosen.
+A bare production URL lists existing campaigns for selection. In development,
+`/?server=<encoded URL>` opens the same campaign chooser; a bare development URL
+continues to use the mock fixture.
 
 The adapter guards incoming JSON before rendering and retries failed connections
 with a 500 ms to 10 s exponential delay, subscribing with the last good event
 sequence. A new socket is opened for every perspective change or resubscription,
 so queued messages from an old projection cannot populate the new view. Hello
-must acknowledge the requested perspective before the snapshot; unsupported
+must acknowledge the requested perspective before the snapshot or resume replay; unsupported
 protocol versions and malformed payloads produce a visible retry status.
 
-Transport tests use injected sockets and a browser WebSocket fixture. The actual
-server transport is still being implemented; an end-to-end sandbox run and HTTP
-campaign discovery/control integration remain to be verified when it lands.
+Transport tests use injected sockets and a browser WebSocket fixture. The real
+sandbox check connects to `cna-server`, verifies the nine-unit snapshot, three
+objectives, live events, perspective filtering, campaign discovery and HTTP
+pause/resume. Run it against a server from this checkout:
+
+```powershell
+$env:CNA_SMOKE_SERVER='http://127.0.0.1:3000'
+npm run smoke -- server.spec.ts
+```
+
+Campaign lifecycle status refreshes every five seconds through the projected
+HTTP inspection API. The current server's scripted baseline does not emit seat
+transcripts yet; the actual live transcript view is empty. The positive transcript
+path is verified through mock and WebSocket fixtures until real driver entries
+become available. The sandbox is synthetic and is not faithful CNA adjudication.
 
 ## Renderer and measurement
 

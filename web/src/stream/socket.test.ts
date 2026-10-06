@@ -193,7 +193,7 @@ describe('live transport', () => {
     expect(state.frames).toEqual([])
     expect(sockets).toHaveLength(2)
     sockets[1].open()
-    expect(sockets[1].sent[0].from_seq).toBe(7)
+    expect(sockets[1].sent[0].from_seq).toBeNull()
     sockets[1].message(hello)
     sockets[1].message({ ...snapshot, seq: 9 })
     expect(state.lastSeq).toBe(9)
@@ -209,6 +209,44 @@ describe('live transport', () => {
     vi.advanceTimersByTime(500)
     expect(h.sockets).toHaveLength(2)
     h.stream.close()
+  })
+  it('accepts event replay after a resume hello without another snapshot', () => {
+    const sockets: FakeSocket[] = []
+    let state = initialState()
+    const stream = createSocketStream({
+      url: 'ws://localhost/',
+      lastGoodSeq: () => (state.frames.length ? state.lastSeq : null),
+      status: (s) => {
+        if (s.phase !== 'connected')
+          state = { ...state, connection: 'connecting' }
+      },
+      factory: () => {
+        const s = new FakeSocket()
+        sockets.push(s)
+        return s
+      },
+      deliver: (m) => {
+        state = receive(state, m).state
+      },
+    })
+    stream.subscribe(subscribe)
+    sockets[0].message(hello)
+    sockets[0].message(snapshot)
+    sockets[0].closed()
+    vi.advanceTimersByTime(500)
+    sockets[1].open()
+    sockets[1].message(hello)
+    sockets[1].message({
+      type: 'event',
+      seq: 8,
+      clock,
+      event: { kind: 'note', text: 'Replayed' },
+    })
+    expect(state.lastSeq).toBe(8)
+    expect(state.frames).toHaveLength(2)
+    vi.advanceTimersByTime(30000)
+    expect(sockets).toHaveLength(2)
+    stream.close()
   })
   it('cancels all work after close, including queued callbacks', () => {
     const h = setup(),

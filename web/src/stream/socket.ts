@@ -119,7 +119,10 @@ export function createSocketStream(options: {
       options.deliver(message)
       // Delivery can synchronously replace this socket after a sequence gap.
       if (socket !== current || stopped) return
-      if (message.type === 'snapshot') {
+      if (
+        message.type === 'snapshot' ||
+        (message.type === 'hello' && request?.from_seq !== null)
+      ) {
         if (deadline !== null) {
           clearTimeout(deadline)
           deadline = null

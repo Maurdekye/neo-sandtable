@@ -76,7 +76,7 @@ describe('stream and replay invariants', () => {
     ).toHaveLength(0)
     expect(connected().connection).toBe('live')
   })
-  it('drops stale state on a gap and resumes from last good sequence', () => {
+  it('drops stale state on a gap and requests a fresh snapshot', () => {
     const s = receive(connected(), event(8)).state
     const gap = receive(s, event(10))
     expect(gap.state.frames).toEqual([])
@@ -84,7 +84,7 @@ describe('stream and replay invariants', () => {
     expect(gap.subscribe).toEqual({
       type: 'subscribe',
       perspective: 'operator',
-      from_seq: 8,
+      from_seq: null,
     })
   })
   it('ignores unknown kinds while advancing the contiguous sequence', () => {
