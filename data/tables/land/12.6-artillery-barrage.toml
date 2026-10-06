@@ -1,0 +1,239 @@
+# Artillery Barrage Table (land:12.6): "Barrage Against Land Units Combat Results Table".
+
+[table]
+id = "land.12.6.artillery_barrage"
+case = "12.6"
+title = "Barrage Against Land Units Combat Results Table"
+src = ["land:12.6"]
+transcribed_from = ["vassal:12.6 Barrage Against Land Units Combat Results Table.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+Roll two dice and read them in sequence, the larger die as tens and the smaller as units (11 to 66, only
+digits 1 to 6; land:12.42). Use the column for the Actual Barrage Points fired at the target (after any
+terrain column shift to the left, land:12.33) and find the cell whose inclusive dice range contains the
+reading, in the block for the target's class (Infantry, Armor, Gun; Truck is rolled separately for trucks in
+the hex, land:12.46). A column absent from a result's cells means that result cannot occur there (a printed
+dash). In every column the cells of one class cover all 36 readings exactly once (checked in two passes).
+Result codes: no_effect; pinned (unit loses nothing but is pinned: may not Retreat Before Assault and may not
+take part in Assault); lose_1 / lose_2 (one or two TOE strength points lost; infantry and armor also pinned
+on lose results; if infantry were in trucks, one truck point is eliminated; guns and trucks lose points
+without pinning). A Pin result does not occur against Gun-class units.
+"""
+
+[[column]]
+id = "1-2"
+barrage_points_min = 1
+barrage_points_max = 2
+[[column]]
+id = "3-4"
+barrage_points_min = 3
+barrage_points_max = 4
+[[column]]
+id = "5-6"
+barrage_points_min = 5
+barrage_points_max = 6
+[[column]]
+id = "7-8"
+barrage_points_min = 7
+barrage_points_max = 8
+[[column]]
+id = "9-10"
+barrage_points_min = 9
+barrage_points_max = 10
+[[column]]
+id = "11-12"
+barrage_points_min = 11
+barrage_points_max = 12
+[[column]]
+id = "13-14"
+barrage_points_min = 13
+barrage_points_max = 14
+[[column]]
+id = "15-16"
+barrage_points_min = 15
+barrage_points_max = 16
+[[column]]
+id = "17+"
+barrage_points_min = 17
+
+[[row]]
+target_class = "infantry"
+result = "no_effect"
+cells = [
+  { column = "1-2", dice = [11, 53] },
+  { column = "3-4", dice = [11, 44] },
+  { column = "5-6", dice = [11, 41] },
+  { column = "7-8", dice = [11, 34] },
+  { column = "9-10", dice = [11, 24] },
+  { column = "11-12", dice = [11, 16] },
+]
+
+[[row]]
+target_class = "infantry"
+result = "pinned"
+cells = [
+  { column = "1-2", dice = [54, 66] },
+  { column = "3-4", dice = [45, 66] },
+  { column = "5-6", dice = [42, 65] },
+  { column = "7-8", dice = [35, 64] },
+  { column = "9-10", dice = [25, 61] },
+  { column = "11-12", dice = [21, 44] },
+  { column = "13-14", dice = [11, 35] },
+  { column = "15-16", dice = [11, 32] },
+  { column = "17+", dice = [11, 31] },
+]
+
+[[row]]
+target_class = "infantry"
+result = "lose_1"
+cells = [
+  { column = "5-6", dice = [66, 66] },
+  { column = "7-8", dice = [65, 66] },
+  { column = "9-10", dice = [62, 66] },
+  { column = "11-12", dice = [45, 66] },
+  { column = "13-14", dice = [36, 64] },
+  { column = "15-16", dice = [33, 56] },
+  { column = "17+", dice = [32, 55] },
+]
+
+[[row]]
+target_class = "infantry"
+result = "lose_2"
+cells = [
+  { column = "13-14", dice = [65, 66] },
+  { column = "15-16", dice = [61, 66] },
+  { column = "17+", dice = [56, 66] },
+]
+
+[[row]]
+target_class = "armor"
+result = "no_effect"
+cells = [
+  { column = "1-2", dice = [11, 62] },
+  { column = "3-4", dice = [11, 54] },
+  { column = "5-6", dice = [11, 45] },
+  { column = "7-8", dice = [11, 36] },
+  { column = "9-10", dice = [11, 31] },
+  { column = "11-12", dice = [11, 22] },
+  { column = "13-14", dice = [11, 14] },
+]
+
+[[row]]
+target_class = "armor"
+result = "pinned"
+cells = [
+  { column = "1-2", dice = [63, 66] },
+  { column = "3-4", dice = [55, 66] },
+  { column = "5-6", dice = [46, 66] },
+  { column = "7-8", dice = [41, 66] },
+  { column = "9-10", dice = [32, 66] },
+  { column = "11-12", dice = [23, 66] },
+  { column = "13-14", dice = [15, 63] },
+  { column = "15-16", dice = [11, 62] },
+  { column = "17+", dice = [11, 54] },
+]
+
+[[row]]
+target_class = "armor"
+result = "lose_1"
+cells = [
+  { column = "13-14", dice = [64, 66] },
+  { column = "15-16", dice = [63, 66] },
+  { column = "17+", dice = [55, 66] },
+]
+
+[[row]]
+target_class = "gun"
+result = "no_effect"
+cells = [
+  { column = "1-2", dice = [11, 61] },
+  { column = "3-4", dice = [11, 54] },
+  { column = "5-6", dice = [11, 46] },
+  { column = "7-8", dice = [11, 36] },
+  { column = "9-10", dice = [11, 26] },
+  { column = "11-12", dice = [11, 22] },
+  { column = "13-14", dice = [11, 12] },
+]
+
+[[row]]
+target_class = "gun"
+result = "lose_1"
+cells = [
+  { column = "1-2", dice = [62, 66] },
+  { column = "3-4", dice = [55, 66] },
+  { column = "5-6", dice = [51, 66] },
+  { column = "7-8", dice = [41, 66] },
+  { column = "9-10", dice = [31, 66] },
+  { column = "11-12", dice = [23, 64] },
+  { column = "13-14", dice = [13, 56] },
+  { column = "15-16", dice = [11, 54] },
+  { column = "17+", dice = [11, 36] },
+]
+
+[[row]]
+target_class = "gun"
+result = "lose_2"
+cells = [
+  { column = "11-12", dice = [65, 66] },
+  { column = "13-14", dice = [61, 66] },
+  { column = "15-16", dice = [55, 66] },
+  { column = "17+", dice = [41, 66] },
+]
+
+[[row]]
+target_class = "truck"
+result = "no_effect"
+cells = [
+  { column = "1-2", dice = [11, 66] },
+  { column = "3-4", dice = [11, 64] },
+  { column = "5-6", dice = [11, 62] },
+  { column = "7-8", dice = [11, 56] },
+  { column = "9-10", dice = [11, 55] },
+  { column = "11-12", dice = [11, 53] },
+  { column = "13-14", dice = [11, 46] },
+  { column = "15-16", dice = [11, 42] },
+  { column = "17+", dice = [11, 32] },
+]
+
+[[row]]
+target_class = "truck"
+result = "lose_1"
+cells = [
+  { column = "3-4", dice = [65, 66] },
+  { column = "5-6", dice = [63, 66] },
+  { column = "7-8", dice = [61, 66] },
+  { column = "9-10", dice = [56, 63] },
+  { column = "11-12", dice = [54, 63] },
+  { column = "13-14", dice = [51, 61] },
+  { column = "15-16", dice = [43, 61] },
+  { column = "17+", dice = [33, 61] },
+]
+
+[[row]]
+target_class = "truck"
+result = "lose_2"
+cells = [
+  { column = "9-10", dice = [64, 66] },
+  { column = "11-12", dice = [64, 66] },
+  { column = "13-14", dice = [62, 66] },
+  { column = "15-16", dice = [62, 66] },
+  { column = "17+", dice = [62, 66] },
+]
+
+[[result_effect]]
+result = "pinned"
+pins_unit = true
+toe_points_lost = 0
+
+[[result_effect]]
+result = "lose_1"
+toe_points_lost = 1
+pins_unit_classes = ["infantry", "armor"]
+extra_for_infantry_in_trucks = "eliminate one truck point"
+
+[[result_effect]]
+result = "lose_2"
+toe_points_lost = 2
+pins_unit_classes = ["infantry", "armor"]
+extra_for_infantry_in_trucks = "eliminate one truck point"

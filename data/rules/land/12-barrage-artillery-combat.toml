@@ -1,0 +1,526 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "12.0"
+book = "land"
+title = "Barrage (Artillery Combat)"
+systems = ["land"]
+
+[[case]]
+id = "12.0"
+title = "General rule: Barrage"
+summary = "Barrage is the first combat step: any combat or HQ unit with a barrage rating and ammunition may fire at enemy units in adjacent hexes. Guns are first set Forward or Back for the segment. Players total Actual Barrage Points, name targets (by class and number, not by exact unit unless known), roll two dice read in sequence (larger die first) on the Barrage table for the target class, roll again for trucks, apply all results after every barrage is done, and spend ammunition. Holding-off barrages resolve the same way."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.position", "opstage.movement_and_combat.combat.barrage"]
+tables = ["land.12.6.artillery_barrage"]
+depends_on = ["12.1", "12.2", "10.3", "11.32"]
+src = ["land:12.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.1"
+title = "Artillery Positions"
+summary = "Heading for 12.11-12.19."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:12.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.11"
+title = "Forward or Back for whole unit"
+summary = "Every artillery unit in combat is set Forward or Back, and the entire unit takes one position even if it has several gun types."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.position"]
+depends_on = ["12.12"]
+src = ["land:12.11"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Set each gun unit Forward or Back for this Combat Segment"
+params = ["unit", "position"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "12.12"
+title = "Positions fixed for the segment"
+summary = "A gun unit's position may be changed only at the start of a Combat Segment, never during it."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.position"]
+src = ["land:12.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.13"
+title = "Forward guns may combine fire"
+summary = "Forward artillery from the same or different hexes may combine barrage strength against a target."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:12.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.14"
+title = "Italian combination limit"
+summary = "Italian units in a Forward position may combine fire only with units in the same hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:12.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.15"
+title = "Forward guns may split fire"
+summary = "Forward artillery may divide its TOE strength among several targets."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:12.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.16"
+title = "Back guns cannot combine or split"
+summary = "Back artillery cannot combine fire or split fire; a Heavy Weapons unit with barrage capability that is Back is wholly Back and cannot take part in Anti-Armor or Close Assault."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage", "opstage.movement_and_combat.combat.force_assignment"]
+src = ["land:12.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.17"
+title = "Guns subject to assault losses"
+summary = "All non-phasing Forward guns can take losses from Close Assault even when not participating; all non-phasing guns (Forward or Back) take them when the phasing assault is in the Overrun columns (15.84)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.84", "15.8"]
+src = ["land:12.17"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.18"
+title = "Forward guns may assault; vulnerability halved"
+summary = "Forward artillery may join Anti-Tank or Close Assault in the same segment if it has the ratings and ammunition, but offensive Close Assault halves its Vulnerability rating (rounded up; 7 becomes 4). Higher Vulnerability means less vulnerable."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor", "opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.84"]
+src = ["land:12.18"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.19"
+title = "Anti-armor role vulnerability 2"
+summary = "Artillery used in an Anti-Armor role is treated as Vulnerability 2."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["14.14"]
+src = ["land:12.19"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.2"
+title = "Target Selection"
+summary = "Heading for 12.21-12.24."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:12.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.21"
+title = "Parent formation as battalions"
+summary = "For targeting, a parent formation is a set of battalion- or company-sized units (the 90th Light Division is thirteen)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:12.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.22"
+title = "What can be targeted"
+summary = "Every counter with a stacking point indicator in a hex is a target, attached or not, including engineers but not trucks or SGSUs; excluded are HQs without TOE points or with only parenthesised close-assault points. Dummy tank formations and Commonwealth warships may be targets."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["16.4", "3.22"]
+src = ["land:12.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.23"
+title = "Target designation and class disclosure"
+summary = "The barraging player picks the firing hexes and a specific target unit; the opponent says how many target units are in each adjacent hex and their class (Gun, Armor or Infantry) without revealing strength or identity. A unit known through patrol or earlier combat may be named. Commonwealth warships are always known targets."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["3.22", "12.24", "16.0"]
+src = ["land:12.23"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Allocate Actual Barrage Points to targets in adjacent enemy hexes"
+params = ["firing units", "target hex", "target class and number", "points allotted"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "12.24"
+title = "Blind barrage bookkeeping"
+summary = "Except for known units and warships the barraging player fires blind, naming a target class and a per-step id (Infantry 1, Infantry 2, and so on) and the points directed at it."
+kind = "rule"
+disposition = "display"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["3.62"]
+src = ["land:12.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.3"
+title = "Effects of Terrain and Other Restrictions on Barrage"
+summary = "Heading for 12.31-12.35."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:12.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.31"
+title = "Barrage any adjacent occupied hex"
+summary = "Artillery may barrage enemy targets in any adjacent hex regardless of terrain but not unoccupied hexes (except facilities, 12.5)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["12.5"]
+src = ["land:12.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.32"
+title = "One barrage per target per adjacent hex"
+summary = "A target may be barraged at most once per Combat Segment from each adjacent enemy-occupied hex; Forward units combine in that one barrage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:12.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.33"
+title = "Terrain shifts the column"
+summary = "Terrain benefits the defender by shifting the barrage points column to the left a set number of columns (for example twelve points against a Level Two fortification resolve on the 7-8 column)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.37"]
+src = ["land:12.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.34"
+title = "Shifts not cumulative"
+summary = "Only the best defensive shift applies; a shift beyond the table's left edge means no effect."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:12.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.35"
+title = "No line of sight"
+summary = "Artillery may barrage any adjacent unit; there are no line-of-sight restrictions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:12.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.4"
+title = "Explanation of Artillery Barrage Results"
+summary = "Heading for 12.41-12.46."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:12.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.41"
+title = "One table for all targets"
+summary = "The Artillery Barrage Table covers personnel, armor and artillery targets with concurrent truck effects, and is used for every target type including facilities (12.5)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+tables = ["land.12.6.artillery_barrage"]
+src = ["land:12.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.42"
+title = "Reading the table"
+summary = "Two dice are read in sequence (target die first); the dice give the columns, the total Barrage Points give the rows, and results are in the target-type block."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+tables = ["land.12.6.artillery_barrage"]
+depends_on = ["12.43"]
+src = ["land:12.42"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.43"
+title = "Procedure"
+summary = "Note points fired, shift column left if needed, roll two dice and cross-reference under the right target type (personnel, tanks, artillery)."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+tables = ["land.12.6.artillery_barrage"]
+src = ["land:12.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.44"
+title = "Pinned result"
+summary = "A P result pins the targeted battalion-equivalent (not its whole parent): it cannot move for the rest of the segment nor use Anti-Armor or Close Assault, though it can take casualties; mark and remove at segment end. Pin never applies against Gun-class units or artillery HQs. Artillery fire is always against specific targets, never the hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+tables = ["land.12.6.artillery_barrage"]
+depends_on = ["15.12"]
+src = ["land:12.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.45"
+title = "Numeric result"
+summary = "A number is TOE strength points destroyed; casualties are taken after all barrages finish."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:12.45"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.46"
+title = "Trucks and barrage"
+summary = "Each barrage also rolls a second time on the truck row for trucks attached to the target or its parent in the hex; the defender chooses which trucks go but losses must be spread evenly over types and cargo. Barraging motorized infantry also destroys the carrying trucks beyond table results. Trucks get no terrain benefit."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+tables = ["land.12.6.artillery_barrage"]
+src = ["land:12.46"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose which truck points are removed from a barraged hex"
+params = ["truck points"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "12.5"
+title = "Barrage Against Facilities"
+summary = "Heading for 12.51-12.55."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:12.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.51"
+title = "Barrage against facilities"
+summary = "Artillery may barrage Major Cities, Fortifications, Roads, Railroads, Supply Dumps and Air Facilities instead of units."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["12.52"]
+src = ["land:12.51"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Direct a barrage at a facility instead of a unit"
+params = ["firing units", "facility hex and type", "points allotted"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "12.52"
+title = "Facility barrage follows normal barrage"
+summary = "Barrage against facilities uses all normal barrage rules with the facility as the named target."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:12.52"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.53"
+title = "Facilities other than dumps and airfields"
+summary = "Results come from the Air Bombardment Table (41.5), reading the Artillery Barrage Points column."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["airlog:41.5", "airlog:41.3"]
+src = ["land:12.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.54"
+title = "Dumps and air facilities use raw points"
+summary = "Barrage against supply dumps or air facilities uses the Air Bombardment Table (41.5) with Raw Barrage Points (not Actual) matched to the bombload column (78 Raw uses the 41-80 column)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["airlog:41.5"]
+src = ["land:12.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.55"
+title = "Off-shore bombardment on facilities"
+summary = "Off-shore bombardment may barrage facilities (see 30.12)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["30.12"]
+src = ["land:12.55"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "12.6"
+title = "Artillery Barrage Table"
+summary = "Table of barrage results by dice reading, Barrage Points and target class. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+tables = ["land.12.6.artillery_barrage"]
+src = ["land:12.6"]
+
+[case.applies]
+graziani = "yes"

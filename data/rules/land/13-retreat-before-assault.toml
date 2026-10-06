@@ -1,0 +1,164 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "13.0"
+book = "land"
+title = "Retreat Before Assault"
+systems = ["land"]
+
+[[case]]
+id = "13.0"
+title = "General rule: Retreat Before Assault"
+summary = "Retreat Before Assault happens after all barrages: any non-phasing unit that is not pinned may retreat. It is ordinary movement that costs CP and is distinct from Reaction."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault"]
+depends_on = ["8.5", "12.44"]
+src = ["land:13.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.1"
+title = "Which Units May Retreat Before Assault"
+summary = "Any non-phasing unit that is not pinned may retreat before assault; units at cohesion -26 or worse may not. The owner chooses which units retreat, and where."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault"]
+depends_on = ["6.26", "12.44"]
+src = ["land:13.1"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Retreat a non-phasing unit before assault, or stay"
+params = ["unit", "retreat path"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "13.2"
+title = "How to Retreat Before Assault"
+summary = "Heading for 13.21-13.28."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:13.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.21"
+title = "Voluntary movement rules apply"
+summary = "Retreat before assault is voluntary movement handled like any other: it costs CP and fuel, and vehicles are subject to Breakdown."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault"]
+depends_on = ["8.1", "21.0"]
+src = ["land:13.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.22"
+title = "Break-off costs apply"
+summary = "Non-phasing units in an enemy ZOC pay the Contact or Engaged break-off cost of 8.6 first."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault"]
+depends_on = ["8.6"]
+src = ["land:13.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.23"
+title = "Units adjacent to the enemy: unlimited CP"
+summary = "Non-phasing units that begin the step adjacent to an enemy combat unit may spend as many CP as they like retreating."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault"]
+src = ["land:13.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.24"
+title = "Units not adjacent: 4 CP limit"
+summary = "Non-phasing units not adjacent to an enemy combat unit at the step start may spend at most 4 CP (or move one hex, whichever is greater)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault"]
+src = ["land:13.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.25"
+title = "CP only for movement"
+summary = "During the retreat units may spend CP only to move, with the exception of blowing supply dumps (54.14 and 32.3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault"]
+depends_on = ["airlog:54.14", "32.3"]
+src = ["land:13.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.26"
+title = "ZOC limits"
+summary = "Units must stop on entering an enemy ZOC, may not retreat directly from one enemy ZOC to another, and may not retreat at all if they cannot avoid that."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault"]
+depends_on = ["10.24"]
+src = ["land:13.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.27"
+title = "Voluntary vs forced retreat"
+summary = "Retreat Before Assault is voluntary and handled differently from retreats mandated by the Close Assault table (15.82)."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["15.82"]
+src = ["land:13.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "13.28"
+title = "Retreating into a hex that is then attacked"
+summary = "Units that retreat into a friendly-occupied enemy-controlled hex, or any hex later attacked in the Anti-Armor and Close Assault steps, are affected by that combat: they take Anti-Armor fire but cannot fire back, add no Close Assault ratings, but their TOE points count when taking percentage losses."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor", "opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["14.12", "15.8"]
+src = ["land:13.28"]
+
+[case.applies]
+graziani = "yes"

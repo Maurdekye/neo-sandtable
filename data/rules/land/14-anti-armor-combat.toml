@@ -1,0 +1,559 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "14.0"
+book = "land"
+title = "Anti-Armor Combat"
+systems = ["land"]
+
+[[case]]
+id = "14.0"
+title = "General rule: Anti-Armor Combat"
+summary = "Direct fire by units with an Anti-Armor rating against enemy units with an Armor Protection rating. It happens before Close Assault and all its losses are taken first. TOE points may be assigned to Anti-Armor or Close Assault (a unit may be split by whole TOE points) but never to both in one segment; withheld units are not hit. Both sides fire simultaneously: totals for each target hex are rolled on the Anti-Armor table for Damage Points, which the fired-upon player applies to armor TOE points, leaving a Destroyed Tank marker."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+tables = ["land.14.6.anti_armor_results"]
+depends_on = ["14.1", "14.4"]
+src = ["land:14.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.1"
+title = "Which Units May Participate in Anti-Armor Combat"
+summary = "Heading for 14.11-14.15."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:14.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.11"
+title = "Only assigned units fire and are hit"
+summary = "Only units assigned to the Anti-Armor sub-step fire, and only units actually committed to Anti-Armor or Close Assault are affected; armor withheld from combat is not."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.force_assignment"]
+depends_on = ["14.12", "14.26"]
+src = ["land:14.11"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign TOE points to Anti-Armor, Close Assault or withhold"
+params = ["unit", "TOE points per role", "target hex"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "14.12"
+title = "Targets of Anti-Armor fire"
+summary = "The phasing player directs Anti-Armor fire at an entire adjacent enemy hex; the non-phasing player fires at phasing Armor-class units assaulting the hex. Units that retreated before assault in a targeted hex are affected but cannot fire and cannot be withheld."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["13.28"]
+src = ["land:14.12"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Designate the target hex for Anti-Armor fire"
+params = ["firing units", "target hex"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "14.13"
+title = "Back guns excluded"
+summary = "An artillery unit with Anti-Armor rating in a Back position neither fires nor is affected by Anti-Armor fire; Anti-Armor guns are always Forward when firing."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["12.1"]
+src = ["land:14.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.14"
+title = "Anti-Armor guns have Vulnerability 2"
+summary = "Artillery used in an Anti-Armor role has an automatic Vulnerability rating of 2."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["12.19"]
+src = ["land:14.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.15"
+title = "Parenthesised anti-armor ratings"
+summary = "A parenthesised Anti-Armor rating may be used only if no unit in the hex has TOE points with non-parenthesised Anti-Armor ratings; replacement points do not affect this."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.2"
+title = "Restrictions on Anti-Armor Combat"
+summary = "Heading for 14.21-14.27."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:14.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.21"
+title = "Withheld units not hit"
+summary = "Units withheld from both Anti-Armor and Assault are not affected by Anti-Armor fire (defenders withheld may still take Close Assault effects)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.22"
+title = "One Anti-Armor attack per hex"
+summary = "A hex is attacked by Anti-Armor fire at most once per segment, but units from different hexes may combine their strength into that one fire."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.23"
+title = "Blind fire and reassignment"
+summary = "The firing player may not know whether the target hex has armor. If the defender has no Armor Protection units in the hex the firer may reassign up to half (rounded down) of the Anti-Armor points to Close Assault for that segment."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["14.12"]
+src = ["land:14.23"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Reassign up to half of Anti-Armor points to Close Assault when no armor is present"
+params = ["points reassigned"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "14.24"
+title = "Ammunition"
+summary = "Ammunition for Anti-Armor fire is deducted as it is expended."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["50.0"]
+src = ["land:14.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.25"
+title = "Terrain adjusts column before firing"
+summary = "Terrain effects on Anti-Armor are on the Terrain Effects Chart and in 14.3; column adjustments are made before firing."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["14.3"]
+src = ["land:14.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.26"
+title = "Split TOE points between roles"
+summary = "A unit's TOE points may be divided between Anti-Armor and Assault but a point cannot do both in a segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.force_assignment"]
+src = ["land:14.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.27"
+title = "Sending TOE points to different hexes"
+summary = "The phasing player may send TOE points of one unit to different hexes whether they engage in Anti-Armor or Close Assault."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.force_assignment"]
+depends_on = ["14.11"]
+src = ["land:14.27"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Divide a unit's TOE points among target hexes"
+params = ["unit", "points per hex"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "14.3"
+title = "Terrain Effects on Anti-Armor Fire"
+summary = "Heading for 14.31-14.35."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:14.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.31"
+title = "Terrain and hexsides influence fire"
+summary = "Some terrain reduces Anti-Armor effectiveness and some hexsides make it impossible."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:14.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.32"
+title = "Defender column shift"
+summary = "Where defending armor sits in a terrain with an effect, the attacker's firepower column is shifted left (nine Actual points against Rough resolve on the eight column)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:14.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.33"
+title = "Terrain not cumulative within the hex"
+summary = "Terrain effects including fortifications do not stack; the defender takes the best, but hexside effects add to hex effects."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.34"
+title = "No Anti-Armor across certain hexsides"
+summary = "No Anti-Armor fire may be directed from or against phasing TOE points assaulting through a ridge not crossed by track or road, down a slope hexside not crossed by road or track, or down an escarpment not crossed by a track."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:14.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.35"
+title = "Floor at row zero"
+summary = "If shifts push the Anti-Armor strength row below 1, use the 0 row."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.4"
+title = "Assessing Anti-Armor Damage"
+summary = "Heading for 14.41-14.48."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:14.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.41"
+title = "Damage points"
+summary = "Results on the Anti-Armor table are Damage Points applied to the Armor Protection ratings of armor TOE points in the target hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+tables = ["land.14.6.anti_armor_results"]
+src = ["land:14.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.42"
+title = "Armor Protection absorbs damage"
+summary = "A TOE point's Armor Protection rating is the Damage Points it absorbs before being destroyed; all units containing armored points may take losses."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.42"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.43"
+title = "Owner removes enough points"
+summary = "The player undergoing fire removes at least enough TOE points to absorb the Damage Points, choosing which; higher-protection units absorb more. Example: 7 points absorbed by one M/13 (3) plus two M/11 (2 each)."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["14.44"]
+src = ["land:14.43"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose which armor TOE points absorb the damage"
+params = ["TOE points removed"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "14.44"
+title = "Armor losses from any armor units in the hex"
+summary = "Armor losses may come from any armor in the target hex whether assigned to Anti-Armor or Close Assault; armor withheld from both is not affected (see 13.28)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.45"
+title = "Excess damage ignored"
+summary = "Damage beyond what destroys all armor in the hex is ignored."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.45"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.46"
+title = "Destroyed Tank markers"
+summary = "Destroyed tanks are marked with immobile Destroyed Tank markers that can be retrieved in the Repair Segment; record exactly what each represents (14.5)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["14.5", "22.0"]
+src = ["land:14.46"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.47"
+title = "Self-propelled gun absorption"
+summary = "The printed rule (armor plus vulnerability) is declared wrong: self-propelled guns use their Armor Protection like any other armored unit, and an SP gun barraging Back cannot absorb nor be affected by Anti-Armor fire."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["12.1"]
+interp = ["land-0008"]
+src = ["land:14.47"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.48"
+title = "Halftrack-motorized infantry"
+summary = "If the only points in the hex that anti-armor can hit are halftracks (certain motorized Axis leg infantry), they double their Armor Protection; losing one also costs its transporting truck points; at most two TOE points of such units can be lost per Anti-Armor fire segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+src = ["land:14.48"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.5"
+title = "Capturing Enemy Destroyed Tanks"
+summary = "Heading for 14.51-14.55."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:14.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.51"
+title = "Only destroyed tanks may be captured"
+summary = "Enemy destroyed tanks may be captured and repaired; other destroyed vehicles are removed at once."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:14.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.52"
+title = "Entering a destroyed-tank hex"
+summary = "If an enemy enters a hex with a Destroyed Tank marker and no friendly combat units are there, he must decide immediately whether to eliminate the points permanently or treat them as captured."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["14.53"]
+src = ["land:14.52"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Eliminate or capture destroyed tanks in an entered hex"
+params = ["marker", "capture or eliminate"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "14.53"
+title = "Moving captured tanks"
+summary = "Captured destroyed tanks may be moved up to three hexes by the capturer at the moment of capture, avoiding enemy units, ZOCs and impassable terrain."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:14.53"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Move captured destroyed-tank markers up to three hexes"
+params = ["marker", "path"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "14.54"
+title = "Later treatment"
+summary = "Apart from 14.53, destroyed tanks are like other units marked for repair; they may be towed to a repair facility in the phasing player's Repair Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.towing"]
+depends_on = ["22.0"]
+src = ["land:14.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.55"
+title = "Destroyed tanks vs broken-down vehicles"
+summary = "Notes a subtle difference between capturing destroyed tanks and capturing broken-down vehicles, discussed in 21.5."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["21.5"]
+src = ["land:14.55"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "14.6"
+title = "Anti-Armor Combat Resultant"
+summary = "Table converting Actual Anti-Armor Points and dice reading into Damage Points. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor"]
+tables = ["land.14.6.anti_armor_results"]
+src = ["land:14.6"]
+
+[case.applies]
+graziani = "yes"

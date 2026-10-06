@@ -1,0 +1,147 @@
+# Anti-Armor Fire Combat Results Table (land:14.6).
+
+[table]
+id = "land.14.6.anti_armor_results"
+case = "14.6"
+title = "Anti-Armor Fire Combat Results Table"
+src = ["land:14.6"]
+transcribed_from = ["vassal:14.6 Anti-Armor Fire Combat Results Table.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+Roll two dice read in sequence (larger die as tens). Find the row whose pair of readings contains the roll
+(each row covers two adjacent readings, for example 11 and 12) and the column for the Actual Anti-Armor
+Points fired at the hex after terrain column shifts; the cell is the number of Damage Points inflicted.
+Each row's damage_points_by_column omits columns where the printed cell is a dash (no damage). Column
+'0*' is used only when the firer has 1 to 4 Raw Anti-Armor Points before any terrain effects; a column
+shift below zero uses the zero-points handling in the footnote. Column '16+' applies to 16 or more points.
+Modifier: the phasing player moves his dice roll up by one row (a roll of 11 or 12 is not changed). The
+table has been checked for non-decreasing values down every column and across every row.
+"""
+
+[[column]]
+id = "0*"
+actual_points_min = 0
+actual_points_max = 0
+only_if_raw_points_between = [1, 4]
+[[column]]
+id = "16+"
+actual_points_min = 16
+
+[[row]]
+dice_reading_range = "11-12"
+dice = [11, 12]
+damage_points_by_column = { "3" = 1, "4" = 2, "5" = 3, "6" = 4, "7" = 6, "8" = 8, "9" = 10, "10" = 11, "11" = 12, "12" = 14, "13" = 16, "14" = 18, "15" = 20, "16+" = 22 }
+
+[[row]]
+dice_reading_range = "13-14"
+dice = [13, 14]
+damage_points_by_column = { "3" = 1, "4" = 3, "5" = 4, "6" = 5, "7" = 6, "8" = 8, "9" = 10, "10" = 11, "11" = 13, "12" = 15, "13" = 17, "14" = 19, "15" = 20, "16+" = 22 }
+
+[[row]]
+dice_reading_range = "15-16"
+dice = [15, 16]
+damage_points_by_column = { "2" = 1, "3" = 1, "4" = 3, "5" = 4, "6" = 5, "7" = 7, "8" = 9, "9" = 10, "10" = 12, "11" = 13, "12" = 15, "13" = 17, "14" = 19, "15" = 21, "16+" = 23 }
+
+[[row]]
+dice_reading_range = "21-22"
+dice = [21, 22]
+damage_points_by_column = { "2" = 1, "3" = 2, "4" = 4, "5" = 5, "6" = 6, "7" = 8, "8" = 9, "9" = 11, "10" = 12, "11" = 14, "12" = 16, "13" = 18, "14" = 20, "15" = 21, "16+" = 23 }
+
+[[row]]
+dice_reading_range = "23-24"
+dice = [23, 24]
+damage_points_by_column = { "2" = 1, "3" = 2, "4" = 4, "5" = 5, "6" = 6, "7" = 8, "8" = 10, "9" = 11, "10" = 13, "11" = 14, "12" = 16, "13" = 18, "14" = 20, "15" = 22, "16+" = 24 }
+
+[[row]]
+dice_reading_range = "25-26"
+dice = [25, 26]
+damage_points_by_column = { "2" = 2, "3" = 3, "4" = 4, "5" = 6, "6" = 7, "7" = 9, "8" = 10, "9" = 12, "10" = 13, "11" = 15, "12" = 17, "13" = 19, "14" = 20, "15" = 22, "16+" = 24 }
+
+[[row]]
+dice_reading_range = "31-32"
+dice = [31, 32]
+damage_points_by_column = { "1" = 1, "2" = 2, "3" = 3, "4" = 5, "5" = 6, "6" = 8, "7" = 9, "8" = 11, "9" = 12, "10" = 14, "11" = 15, "12" = 17, "13" = 19, "14" = 21, "15" = 23, "16+" = 25 }
+
+[[row]]
+dice_reading_range = "33-34"
+dice = [33, 34]
+damage_points_by_column = { "1" = 1, "2" = 2, "3" = 3, "4" = 5, "5" = 7, "6" = 8, "7" = 10, "8" = 11, "9" = 13, "10" = 14, "11" = 16, "12" = 18, "13" = 20, "14" = 21, "15" = 23, "16+" = 25 }
+
+[[row]]
+dice_reading_range = "35-36"
+dice = [35, 36]
+damage_points_by_column = { "1" = 1, "2" = 3, "3" = 4, "4" = 5, "5" = 7, "6" = 9, "7" = 10, "8" = 12, "9" = 13, "10" = 15, "11" = 16, "12" = 18, "13" = 20, "14" = 22, "15" = 24, "16+" = 26 }
+
+[[row]]
+dice_reading_range = "41-42"
+dice = [41, 42]
+damage_points_by_column = { "1" = 2, "2" = 3, "3" = 4, "4" = 6, "5" = 7, "6" = 9, "7" = 11, "8" = 12, "9" = 14, "10" = 15, "11" = 17, "12" = 19, "13" = 21, "14" = 22, "15" = 24, "16+" = 26 }
+
+[[row]]
+dice_reading_range = "43-44"
+dice = [43, 44]
+damage_points_by_column = { "1" = 2, "2" = 3, "3" = 5, "4" = 6, "5" = 8, "6" = 10, "7" = 11, "8" = 13, "9" = 14, "10" = 16, "11" = 17, "12" = 19, "13" = 21, "14" = 23, "15" = 25, "16+" = 27 }
+
+[[row]]
+dice_reading_range = "45-46"
+dice = [45, 46]
+damage_points_by_column = { "1" = 2, "2" = 4, "3" = 5, "4" = 7, "5" = 8, "6" = 10, "7" = 12, "8" = 13, "9" = 15, "10" = 16, "11" = 18, "12" = 20, "13" = 22, "14" = 23, "15" = 25, "16+" = 27 }
+
+[[row]]
+dice_reading_range = "51-52"
+dice = [51, 52]
+damage_points_by_column = { "0*" = 1, "1" = 3, "2" = 4, "3" = 6, "4" = 7, "5" = 9, "6" = 11, "7" = 12, "8" = 14, "9" = 15, "10" = 17, "11" = 19, "12" = 20, "13" = 22, "14" = 24, "15" = 26, "16+" = 28 }
+
+[[row]]
+dice_reading_range = "53-54"
+dice = [53, 54]
+damage_points_by_column = { "0*" = 1, "1" = 3, "2" = 4, "3" = 6, "4" = 8, "5" = 9, "6" = 11, "7" = 13, "8" = 14, "9" = 16, "10" = 17, "11" = 20, "12" = 21, "13" = 23, "14" = 25, "15" = 27, "16+" = 29 }
+
+[[row]]
+dice_reading_range = "55-56"
+dice = [55, 56]
+damage_points_by_column = { "0*" = 1, "1" = 3, "2" = 5, "3" = 7, "4" = 8, "5" = 10, "6" = 12, "7" = 13, "8" = 15, "9" = 16, "10" = 19, "11" = 21, "12" = 22, "13" = 24, "14" = 26, "15" = 28, "16+" = 30 }
+
+[[row]]
+dice_reading_range = "61-62"
+dice = [61, 62]
+damage_points_by_column = { "0*" = 1, "1" = 4, "2" = 5, "3" = 7, "4" = 8, "5" = 10, "6" = 12, "7" = 14, "8" = 15, "9" = 17, "10" = 19, "11" = 22, "12" = 23, "13" = 25, "14" = 27, "15" = 29, "16+" = 31 }
+
+[[row]]
+dice_reading_range = "63-64"
+dice = [63, 64]
+damage_points_by_column = { "0*" = 1, "1" = 4, "2" = 6, "3" = 8, "4" = 9, "5" = 11, "6" = 13, "7" = 14, "8" = 16, "9" = 18, "10" = 21, "11" = 22, "12" = 24, "13" = 26, "14" = 28, "15" = 29, "16+" = 32 }
+
+[[row]]
+dice_reading_range = "65-66"
+dice = [65, 66]
+damage_points_by_column = { "0*" = 2, "1" = 4, "2" = 6, "3" = 8, "4" = 9, "5" = 11, "6" = 13, "7" = 15, "8" = 17, "9" = 19, "10" = 21, "11" = 23, "12" = 24, "13" = 26, "14" = 28, "15" = 30, "16+" = 32 }
+
+[[modifier]]
+id = "phasing_player_row_penalty"
+text = "The phasing player decreases his dice roll by one row; a roll of 11 or 12 is unaffected."
+
+[[terrain_column_shift]]
+shift_left = 1
+applies_when = "non-phasing units are in a Level 1 Fortification, Rough or Heavy Vegetation hex"
+[[terrain_column_shift]]
+shift_left = 2
+applies_when = "non-phasing units are in a Level 2 or Level 3 Fortification, or Mountain hex"
+[[terrain_column_shift]]
+shift_left = 1
+applies_when = "all attacking forces are attacking through a slope hexside (in addition to hex effects)"
+[[terrain_column_shift]]
+shift_left = 2
+applies_when = "all attacking forces are attacking through a ridge hexside (in addition to hex effects)"
+[[terrain_column_shift]]
+shift_left = 2
+applies_when = "the attacker is attacking down an escarpment hexside; his forces may not be harmed"
+
+[[footnote]]
+id = "zero_shift"
+text = "A shift to less than zero is treated as zero Anti-Armor Points."
+
+[[footnote]]
+id = "nr_meaning"
+text = "Nr, the cell value, is the number of Armor Protection Points that must be lost."
