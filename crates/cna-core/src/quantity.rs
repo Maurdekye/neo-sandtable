@@ -6,7 +6,7 @@
 
 use std::fmt;
 use std::iter::Sum;
-use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
 use serde::{Deserialize, Serialize};
 
@@ -105,6 +105,35 @@ quantity!(
     "fuel"
 );
 quantity!(
+    /// Fuel in tenths of a Fuel Point; 12 means 1.2 Fuel Points.
+    /// Costs retain fractions until the combined draw is rounded up.
+    /// airlog:49.19; interp:airlog-0001.
+    FuelTenths,
+    "fuel tenths"
+);
+
+impl FuelTenths {
+    /// The exact stored count of tenths. airlog:49.19; interp:airlog-0001.
+    pub const fn tenths(self) -> i32 {
+        self.0
+    }
+
+    /// Convert a combined fuel draw to whole Fuel Points, rounding upward once at withdrawal.
+    /// airlog:49.19; interp:airlog-0001.
+    pub fn ceil_points(self) -> FuelPoints {
+        // Divide first so even the largest stored quantity can round without overflowing.
+        FuelPoints::new(self.0.div_euclid(10) + i32::from(self.0.rem_euclid(10) != 0))
+    }
+}
+
+impl Mul<i32> for FuelTenths {
+    type Output = Self;
+    fn mul(self, rhs: i32) -> Self {
+        Self(self.0 * rhs)
+    }
+}
+
+quantity!(
     /// Ammunition points (`airlog:50`).
     AmmoPoints,
     "ammo"
@@ -153,6 +182,33 @@ quantity!(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fractional_fuel_rounds_the_combined_draw_once() {
+        let draw = FuelTenths::new(2) + FuelTenths::new(2);
+        assert_eq!(draw.tenths(), 4);
+        assert_eq!(draw.ceil_points(), FuelPoints::new(1));
+        assert_eq!((FuelTenths::new(2) * 6).ceil_points(), FuelPoints::new(2));
+        for (tenths, points) in [
+            (0, 0),
+            (1, 1),
+            (10, 1),
+            (11, 2),
+            (-11, -1),
+            (i32::MAX, 214_748_365),
+        ] {
+            assert_eq!(
+                FuelTenths::new(tenths).ceil_points(),
+                FuelPoints::new(points)
+            );
+        }
+        let serialized = serde_json::to_string(&draw).unwrap();
+        assert_eq!(serialized, "4");
+        assert_eq!(
+            serde_json::from_str::<FuelTenths>(&serialized).unwrap(),
+            draw
+        );
+    }
 
     #[test]
     fn arithmetic_stays_within_a_unit() {
