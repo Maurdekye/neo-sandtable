@@ -363,6 +363,36 @@ for p in sorted((units / "schedules").glob("*.toml")) if (units / "schedules").e
                 if pl.get("type") not in aircraft:
                     err(p, f"unknown aircraft type {pl.get('type')!r}")
 
+# Coastal rosters contain printed counter capacities, never procedural CP or cargo.
+ship_ids, ship_rosters = set(), set()
+for p in sorted((units / "ships").glob("*.toml")):
+    d = load(p)
+    ship_rosters.add(p.relative_to(units).as_posix())
+    meta = d.get("file", {})
+    check_fields(p, meta, ["src", "transcribed_from", "verification"],
+                 {"src", "transcribed_from", "verification"}, "ship file")
+    if not meta.get("src") or not meta.get("transcribed_from") or meta.get("verification") not in ("single", "double"):
+        err(p, "ship file requires citations, source filenames and verification")
+    if not d.get("ships"):
+        err(p, "empty ship roster")
+    for ship in d.get("ships", []):
+        check_fields(p, ship, ["id", "designation", "src", "transcribed_from"],
+                     {"id", "designation", "capacity_tons", "src", "transcribed_from"}, "ship")
+        sid = ship.get("id")
+        if not isinstance(sid, str) or not sid or sid in ship_ids:
+            err(p, f"missing or duplicate ship counter id {sid!r}")
+        ship_ids.add(sid)
+        if not ship.get("designation") or "airlog:56.31" not in ship.get("src", []) or not ship.get("transcribed_from"):
+            err(p, f"ship {sid!r} needs a printed designation and defining provenance")
+        capacity = ship.get("capacity_tons")
+        if capacity is not None and (type(capacity) is not int or capacity <= 0):
+            err(p, f"ship {sid!r} capacity_tons must be a positive integer or absent")
+
+for p in sorted(scen.glob("*/fleet.toml")):
+    shipping = load(p).get("axis_coastal_shipping", {})
+    if "roster" in shipping and shipping["roster"] not in ship_rosters:
+        err(p, f"unknown ship roster under data/units: {shipping['roster']!r}")
+
 # off-map location / area ids used by scenario files must exist in the cartographer's areas.toml
 areas_file = root / "data" / "map" / "areas.toml"
 if scen.exists() and areas_file.exists():

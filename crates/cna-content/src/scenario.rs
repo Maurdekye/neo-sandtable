@@ -497,6 +497,20 @@ impl ScenarioContent {
             path: self.dir.clone(),
             message,
         };
+        if let Some(value) = self
+            .fleet
+            .get("axis_coastal_shipping")
+            .and_then(|r| r.get("roster"))
+        {
+            let reference = value
+                .as_str()
+                .ok_or_else(|| invalid("coastal roster reference must be a string".into()))?;
+            if !units.coastal_rosters.contains_key(reference) {
+                return Err(invalid(format!(
+                    "unknown coastal roster under data/units: {reference}"
+                )));
+            }
+        }
         for file in &self.land {
             for group in &file.groups {
                 for entry in &group.units {

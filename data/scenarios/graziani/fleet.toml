@@ -5,6 +5,7 @@ transcribed_from = ["scenarios-booklet-2021.pdf pp.27-28 (page image)"]
 verification = "single"
 
 [axis_coastal_shipping]
+roster = "ships/axis_coastal.toml"
 location = { kind = "city", city = "tripoli" }
 note = "Every Axis coastal shipping counter is available to Italy and begins empty in Tripoli (scen:59.54)."
 src = ["scen:60.35", "scen:59.54"]

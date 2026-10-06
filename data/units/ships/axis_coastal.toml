@@ -1,0 +1,33 @@
+# Printed carrying capacities of the four distinct Axis coastal ship counters.
+[file]
+src = ["airlog:56.31"]
+transcribed_from = ["IT Supply Ship-1.svg", "IT Supply Ship-2.svg", "IT Supply Ship-3.svg", "IT Supply Ship-4.svg"]
+verification = "double"
+
+[[ships]]
+id = "axis.coastal.a"
+designation = "A"
+capacity_tons = 1000
+src = ["airlog:56.31"]
+transcribed_from = ["IT Supply Ship-1.svg"]
+
+[[ships]]
+id = "axis.coastal.b"
+designation = "B"
+capacity_tons = 1000
+src = ["airlog:56.31"]
+transcribed_from = ["IT Supply Ship-2.svg"]
+
+[[ships]]
+id = "axis.coastal.c"
+designation = "C"
+capacity_tons = 1000
+src = ["airlog:56.31"]
+transcribed_from = ["IT Supply Ship-3.svg"]
+
+[[ships]]
+id = "axis.coastal.d"
+designation = "D"
+capacity_tons = 2000
+src = ["airlog:56.31"]
+transcribed_from = ["IT Supply Ship-4.svg"]

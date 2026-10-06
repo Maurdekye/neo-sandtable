@@ -413,3 +413,13 @@ not identify the weapons or establish a consumption factor. Known weapon rates r
 weapon records, and airlog:49.13 separately gives the truck and reconnaissance rate. HQ TOE without
 identified equipment must stay unresolved for movement fuel; see GAPS U-025 and proposed
 interpretation units-0005. An omitted rate does not mean zero.
+
+
+## Coastal ship counters
+
+Files in ships/ hold the printed carrying capacities from airlog:56.31. File-level provenance
+uses src, transcribed_from and verification. Each ships record has a unique id for an actual
+counter, its printed designation, integer capacity_tons, defining src and source filenames.
+An unreadable capacity is omitted and recorded in GAPS; it is never zero. Movement allowances,
+loading costs and current cargo are procedural/state data and do not belong in this roster.
+A scenario fleet's axis_coastal_shipping.roster names the file relative to data/units.

@@ -13,10 +13,15 @@ use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
 
 use crate::{ContentError, read_toml, toml_files};
+mod ships;
+pub use ships::{CoastalShip, ShipRoster};
 
 /// Everything under `data/units/`.
 #[derive(Debug, Clone, Default)]
 pub struct UnitsContent {
+    pub coastal_ships: BTreeMap<String, CoastalShip>,
+    /// Validated relative data/units paths and their distinct counter ids.
+    pub coastal_rosters: BTreeMap<String, Vec<String>>,
     pub weapons: BTreeMap<String, Weapon>,
     pub classes: BTreeMap<String, UnitClass>,
     pub aircraft: BTreeMap<String, Aircraft>,
@@ -473,6 +478,19 @@ impl UnitsContent {
         for path in toml_files(&units_dir.join("aircraft"))? {
             for a in read_toml::<AircraftFile>(&path)?.aircraft {
                 insert_unique(&mut out.aircraft, a.id.clone(), a, &path)?;
+            }
+        }
+        for path in toml_files(&units_dir.join("ships"))? {
+            let roster = ShipRoster::load(&path)?;
+            let key = path
+                .strip_prefix(units_dir)
+                .expect("units child")
+                .to_string_lossy()
+                .replace('\\', "/");
+            out.coastal_rosters
+                .insert(key, roster.ships.keys().cloned().collect());
+            for ship in roster.ships.into_values() {
+                insert_unique(&mut out.coastal_ships, ship.id.clone(), ship, &path)?;
             }
         }
         let oa_dir = units_dir.join("oa");
