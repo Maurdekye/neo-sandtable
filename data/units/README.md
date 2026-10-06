@@ -400,3 +400,11 @@ Pilot/SGSU arrivals are player/rule driven (airlog:34.82 and airlog:34.83), not 
 Rommel is a classless `kind = "commander"` unit with `commander = true`, `cpa` and `vehicle`.
 OA class codes left blank by the source remain omitted (U-020); explicit weapon/TOE data still applies.
 OA file headers record verification separately from the cited sheet and unit records.
+
+## HQ movement fuel
+
+Unit Characteristics charts (land:4.46a-c) contain no fuel column. A class's normal TOE count does
+not identify the weapons or establish a consumption factor. Known weapon rates remain in the
+weapon records, and airlog:49.13 separately gives the truck and reconnaissance rate. HQ TOE without
+identified equipment must stay unresolved for movement fuel; see GAPS U-025 and proposed
+interpretation units-0005. An omitted rate does not mean zero.

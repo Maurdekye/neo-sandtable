@@ -27,3 +27,5 @@ Format: `U-NNN` · area · what is missing or unclear · source checked · statu
 - **U-022** · January 1941 air arrivals · airlog:34.84 narrative example mentions 59 planes (including 2 Wellingtons and 1 Maryland), but the schedule chart totals 57 (1 Wellington, no Maryland). The schedule chart supplies the data; narrative example is illustrative. · see interpretation units-0003
 - **U-023** ? Rommel ? CPA60 from land:31.0; GT20 OpStage2 from land:4.43b; original PNG counter confirms stacking 0. ? resolved
 - **U-024** ? 18th Australian Brigade ? counter and land:19.31 confirm stacking 3 despite the X brigade mark; entered as `super_brigade`, matching land:9.4. ? resolved
+
+- **U-025** - HQ movement fuel - land:4.46a/b/c charts (all three full images, HQ rows and legends) print no fuel consumption column or HQ default. Airlog:49.12 requires fuel for unparenthesized HQ TOE;49.13 prices identified vehicles and gives one only for trucks/Recce. Nine current OA HQ rows have normal TOE without equipment (six cw.e/f, three it.g). Rate and equipment remain unresolved; no class fuel_rate or zero default invented. See proposed interpretation units-0005. - open
