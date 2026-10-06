@@ -5,12 +5,14 @@ currently responsible; the lead agent updates this table when responsibility cha
 
 | Area | Paths | Owner |
 |---|---|---|
-| Project lead, docs, decisions | `docs/`, top-level files | neo-sandtable (lead agent) |
+| Project lead, docs, decisions, shared schemas (`data/*/README.md` envelopes, `docs/protocol.md`) | `docs/`, top-level files | neo-sandtable (lead agent) |
 | Engine core | `crates/cna-core/` | neo-sandtable |
 | Content loading and validation | `crates/cna-content/` | neo-sandtable |
-| Server, runner, persistence, MCP | `crates/cna-server/` | neo-sandtable |
-| Map data and map tooling | `data/map/`, `tools/map/` | *unassigned* |
-| Rules case registry and tables | `data/rules/`, `data/tables/` | *unassigned* |
-| Units, organization, equipment | `data/units/` | *unassigned* |
-| Scenarios | `data/scenarios/` | *unassigned* |
-| Live board | `web/` | *unassigned* |
+| Server, runner, persistence | `crates/cna-server/` | neo-sandtable |
+| AI seat drivers, MCP tool server, transcripts | `crates/cna-seats/` | seats |
+| Map data and map tooling | `data/map/`, `tools/map/` | cartographer |
+| Rule-case registry and tables: Land book | `data/rules/land/`, `data/tables/land/`, `tools/rules/` | rules-land |
+| Rule-case registry and tables: Air & Logistics book | `data/rules/airlog/`, `data/tables/airlog/` | rules-airlog |
+| Units, organization, equipment | `data/units/` | oob |
+| Scenarios | `data/scenarios/` | oob |
+| Live board | `web/` | board |
