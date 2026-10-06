@@ -4,7 +4,7 @@
 nation = "it"
 src = ["land:4.44b"]
 transcribed_from = ["vassal:4.44b Italian Aircraft.png"]
-verification = "single"
+verification = "double"
 partial = false
 
 [[aircraft]]

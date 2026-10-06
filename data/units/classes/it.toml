@@ -9,7 +9,7 @@
 nation = "it"
 src = ["land:4.46b"]
 transcribed_from = ["vassal:Italian Unit Characteristics Chart.png"]
-verification = "single"
+verification = "double"
 
 [[class]]
 id = "it.a"

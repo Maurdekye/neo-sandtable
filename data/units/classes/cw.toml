@@ -8,7 +8,7 @@
 nation = "cw"
 src = ["land:4.46a"]
 transcribed_from = ["vassal:Allied Unit Characteristics Chart.png"]
-verification = "single"
+verification = "double"
 
 [[class]]
 id = "cw.a"
