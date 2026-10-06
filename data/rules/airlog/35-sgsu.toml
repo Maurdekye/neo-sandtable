@@ -164,6 +164,7 @@ disposition = "data"
 seat = "none"
 timing = ["continuous"]
 tables = ["airlog.35.23.squadron_capacity"]
+interp = ["airlog-0006"]
 src = ["airlog:35.23"]
 applies = { graziani = "yes" }
 

@@ -306,6 +306,7 @@ disposition = "data"
 seat = "none"
 timing = ["opstage.land_support_air.air_combat"]
 tables = ["airlog.45.5.tacair_kill"]
+interp = ["airlog-0005"]
 src = ["airlog:45.5"]
 applies = { graziani = "yes" }
 

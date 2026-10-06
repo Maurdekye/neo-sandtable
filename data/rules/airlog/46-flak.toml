@@ -13,6 +13,7 @@ disposition = "automatic"
 seat = "none"
 timing = ["opstage.land_support_air.flak"]
 tables = ["airlog.46.3.aa_combat_results", "airlog.46.4.flak_adjustment"]
+interp = ["airlog-0005"]
 depends_on = ["46.26", "46.27"]
 src = ["airlog:46.0"]
 applies = { graziani = "yes" }
@@ -232,6 +233,7 @@ disposition = "superseded"
 seat = "none"
 timing = ["opstage.land_support_air.flak"]
 tables = ["airlog.46.4.flak_adjustment"]
+interp = ["airlog-0005"]
 errata = ["errata79:46.4"]
 src = ["airlog:46.4", "errata79:46.4"]
 applies = { graziani = "yes" }
