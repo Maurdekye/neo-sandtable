@@ -16,6 +16,7 @@ function Branch({
   const button = node.unit && (
     <button
       className="formation-unit"
+      data-unit-id={node.unit.id}
       onClick={() => onUnit(node.unit!.id)}
       title={node.unit.name}
     >

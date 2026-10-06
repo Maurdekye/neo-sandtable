@@ -314,8 +314,8 @@ export function App() {
           <div className="panel-heading">
             <span className="eyebrow">FORMATIONS</span>
           </div>
-          <Formations units={view?.units ?? {}} onUnit={chooseUnit} />
           <PendingDecisions pending={view?.pending ?? []} />
+          <Formations units={view?.units ?? {}} onUnit={chooseUnit} />
           <section className="formation">
             <h3>Objectives & markers</h3>
             {view?.markers.map((marker) => (
@@ -396,6 +396,8 @@ export function App() {
             <section className="unit-detail">
               <h3>{unit.name}</h3>
               <dl>
+                <dt>ID</dt>
+                <dd>{unit.id}</dd>
                 <dt>Kind</dt>
                 <dd>{unit.kind}</dd>
                 <dt>Nationality</dt>

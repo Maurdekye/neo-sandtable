@@ -47,6 +47,7 @@ export function StackList({
           <button
             className={`unit-row ${selected === u.id ? 'selected' : ''}`}
             key={u.id}
+            data-unit-id={u.id}
             onClick={() => onSelect(u.id)}
           >
             <img
