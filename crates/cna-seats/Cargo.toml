@@ -1,0 +1,26 @@
+[package]
+name = "cna-seats"
+description = "AI seat drivers for neo-sandtable: an MCP tool server plus long-lived Claude Code, Codex and Antigravity sessions with live transcript capture."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+rand_core.workspace = true
+rand_chacha.workspace = true
+serde.workspace = true
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "io-util", "time", "sync", "net", "fs", "signal"] }
+axum = "0.8"
+async-trait = "0.1"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+
+[dev-dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+
+[lints]
+workspace = true
