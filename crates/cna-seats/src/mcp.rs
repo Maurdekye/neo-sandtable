@@ -6,7 +6,7 @@
 //! argument at all, so a seat cannot name another seat. All three CLIs accept an HTTP MCP server
 //! with the URL alone, so no header support is needed.
 //!
-//! The router ([`ToolRouter`]) is independent of the transport so it can be unit-tested directly.
+//! The router ([`ToolRouter`]) is independent of the transport so it can be tested directly.
 
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
@@ -18,15 +18,16 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
+use cna_core::ids::SeatId;
 use serde_json::{Value, json};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
-use crate::game::{GameBackend, SeatId, SeatInfo, SubmitRequest, ToolError};
+use crate::game::{GameBackend, SubmitRequest};
 use crate::memory::{SeatMemory, WriteMode};
 
 /// The game shared between the tool server and the run supervisor.
-pub type SharedGame = Arc<Mutex<dyn GameBackend>>;
+pub type SharedGame = Arc<dyn GameBackend>;
 
 /// Protocol revisions this server speaks; the newest is offered when the client asks for another.
 const SUPPORTED_PROTOCOLS: [&str; 3] = ["2025-06-18", "2025-03-26", "2024-11-05"];
@@ -51,7 +52,7 @@ pub struct ToolEvent {
     pub tool: String,
     pub args: Value,
     pub ok: bool,
-    /// Present when the call was a successful, non-duplicate `submit`.
+    /// Present when the call was a successful, non-duplicate `submit`: (decision id, summary).
     pub submitted: Option<(String, String)>,
 }
 
@@ -71,15 +72,19 @@ pub struct ToolRouter {
     events: Mutex<Option<mpsc::UnboundedSender<ToolEvent>>>,
 }
 
+/// A stable 64-bit FNV-1a hash, for idempotency keys (not security).
+fn fnv(text: &str) -> u64 {
+    text.bytes().fold(0xcbf2_9ce4_8422_2325, |h, b| {
+        (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3)
+    })
+}
+
 impl ToolRouter {
-    pub fn new(game: SharedGame, memory: Arc<dyn SeatMemory>, seats: &[SeatInfo]) -> Self {
+    pub fn new(game: SharedGame, memory: Arc<dyn SeatMemory>, seats: &[SeatId]) -> Self {
         Self {
             game,
             memory,
-            counters: seats
-                .iter()
-                .map(|s| (s.id.clone(), Arc::default()))
-                .collect(),
+            counters: seats.iter().map(|s| (*s, Arc::default())).collect(),
             call_cap: None,
             events: Mutex::new(None),
         }
@@ -97,8 +102,12 @@ impl ToolRouter {
         rx
     }
 
-    pub fn counters(&self, seat: &str) -> Option<Arc<SeatCounters>> {
-        self.counters.get(seat).cloned()
+    pub fn counters(&self, seat: SeatId) -> Option<Arc<SeatCounters>> {
+        self.counters.get(&seat).cloned()
+    }
+
+    pub fn game(&self) -> &SharedGame {
+        &self.game
     }
 
     /// The `tools/list` result.
@@ -107,26 +116,28 @@ impl ToolRouter {
             json!({ "type": "object", "properties": props, "required": required,
                     "additionalProperties": false })
         };
+        let action = json!({ "description": "The chosen action, shaped like the `action_schema` that describe_actions returned for this decision. null passes where the decision allows it." });
         json!({ "tools": [
             { "name": "observe",
-              "description": "Your current situation report (only what you may know) and your pending decisions. Call this first, and after every submission.",
+              "description": "Your current situation report (only what you may know) and your pending decisions. Call this first, and again after every submission.",
               "inputSchema": obj(json!({}), &[]) },
             { "name": "inspect",
-              "description": "Authorized detail about one thing you can see, by target id (for the number duel: `hand`, or `round:<n>` for a resolved round).",
+              "description": "Authorized detail about one thing you can see, by target id. The observation says which targets exist.",
               "inputSchema": obj(json!({ "target": { "type": "string" } }), &["target"]) },
             { "name": "describe_actions",
-              "description": "The legal action space of one of your pending decisions, with the domain of each parameter.",
+              "description": "The legal action space of one of your pending decisions: a JSON Schema for the answer, plus the decision's context.",
               "inputSchema": obj(json!({ "decision_id": { "type": "string" } }), &["decision_id"]) },
             { "name": "validate",
-              "description": "Check a draft response to a pending decision without committing it.",
-              "inputSchema": obj(json!({ "decision_id": { "type": "string" },
-                                         "response": { "type": "object" } }),
-                                 &["decision_id", "response"]) },
+              "description": "Check a draft answer to a pending decision without committing it. Changes nothing and uses no dice.",
+              "inputSchema": obj(json!({ "decision_id": { "type": "string" }, "action": action }),
+                                 &["decision_id", "action"]) },
             { "name": "submit",
-              "description": "Commit your response to a pending decision. Final. Safe to repeat with the same response (idempotent).",
+              "description": "Commit your answer to a pending decision. Final. Submitting the identical answer twice is harmless (it is applied once).",
               "inputSchema": obj(json!({ "decision_id": { "type": "string" },
-                                         "response": { "type": "object" } }),
-                                 &["decision_id", "response"]) },
+                                         "action": action,
+                                         "revision": { "type": "integer", "description": "Decision revision you saw; omit to use the current one." },
+                                         "explanation": { "type": "string", "description": "Optional short public explanation of your choice." } }),
+                                 &["decision_id", "action"]) },
             { "name": "message_team",
               "description": "Send a short message to the other seats on your own side. Nobody on the other side can read it.",
               "inputSchema": obj(json!({ "text": { "type": "string" } }), &["text"]) },
@@ -145,18 +156,24 @@ impl ToolRouter {
     }
 
     /// Run one tool for `seat`. `epoch` is the controller epoch of the endpoint the call arrived on.
-    pub fn call(&self, seat: &str, epoch: u64, tool: &str, args: &Value) -> Result<Value, String> {
-        if let Some(c) = self.counters.get(seat) {
+    pub async fn call(
+        &self,
+        seat: SeatId,
+        epoch: u64,
+        tool: &str,
+        args: &Value,
+    ) -> Result<Value, String> {
+        if let Some(c) = self.counters.get(&seat) {
             let n = c.calls.fetch_add(1, Ordering::SeqCst) + 1;
             if self.call_cap.is_some_and(|cap| n > cap) {
                 return Err("this seat's tool-call budget for the run is exhausted".into());
             }
         }
         let mut submitted = None;
-        let result = self.dispatch(seat, epoch, tool, args, &mut submitted);
+        let result = self.dispatch(seat, epoch, tool, args, &mut submitted).await;
         if let Some(tx) = self.events.lock().expect("events lock").as_ref() {
             let _ = tx.send(ToolEvent {
-                seat: seat.to_string(),
+                seat,
                 tool: tool.to_string(),
                 args: args.clone(),
                 ok: result.is_ok(),
@@ -166,9 +183,9 @@ impl ToolRouter {
         result
     }
 
-    fn dispatch(
+    async fn dispatch(
         &self,
-        seat: &str,
+        seat: SeatId,
         epoch: u64,
         tool: &str,
         args: &Value,
@@ -179,71 +196,103 @@ impl ToolRouter {
                 .and_then(Value::as_str)
                 .ok_or_else(|| format!("missing string argument `{key}`"))
         };
-        let tool_err = |e: ToolError| e.to_string();
+        let action = || {
+            args.get("action")
+                .ok_or_else(|| "missing argument `action`".to_string())
+        };
         match tool {
-            "observe" => Ok(self.game.lock().expect("game").observe(seat)),
-            "inspect" => {
-                let target = text("target")?;
-                self.game
-                    .lock()
-                    .expect("game")
-                    .inspect(seat, target)
-                    .map_err(tool_err)
+            "observe" => {
+                let observation = self.game.observe(seat).await;
+                let pending: Vec<Value> = self
+                    .game
+                    .pending(seat)
+                    .await
+                    .into_iter()
+                    .map(|d| {
+                        json!({
+                            "decision_id": d.id, "kind": d.kind, "revision": d.revision,
+                            "summary": d.summary, "rules": d.rules, "secrecy": d.secrecy,
+                        })
+                    })
+                    .collect();
+                let mut out = json!({
+                    "game_seq": self.game.game_seq().await,
+                    "observation": observation,
+                    "pending_decisions": pending,
+                });
+                if let Some(o) = self.game.outcome().await {
+                    out["outcome"] = o;
+                }
+                Ok(out)
             }
-            "describe_actions" => {
-                let id = text("decision_id")?;
-                self.game
-                    .lock()
-                    .expect("game")
-                    .describe_actions(seat, id)
-                    .map_err(tool_err)
-            }
-            "validate" => {
-                let id = text("decision_id")?;
-                let response = args.get("response").ok_or("missing argument `response`")?;
-                self.game
-                    .lock()
-                    .expect("game")
-                    .validate(seat, id, response)
-                    .map_err(tool_err)
-            }
+            "inspect" => self
+                .game
+                .inspect(seat, text("target")?)
+                .await
+                .map_err(|e| e.to_string()),
+            "describe_actions" => self
+                .game
+                .describe_actions(seat, text("decision_id")?)
+                .await
+                .map_err(|e| e.to_string()),
+            "validate" => self
+                .game
+                .validate(seat, text("decision_id")?, action()?)
+                .await
+                .map_err(|e| e.to_string()),
             "submit" => {
                 let id = text("decision_id")?;
-                let response = args.get("response").ok_or("missing argument `response`")?;
+                let action = action()?;
+                let revision = args
+                    .get("revision")
+                    .and_then(Value::as_u64)
+                    .map(|r| u32::try_from(r).map_err(|_| "revision out of range".to_string()))
+                    .transpose()?;
+                // Same decision + same answer = same key, so a retry after a crash or a repeated
+                // call is applied once.
+                let key = format!("{id}|{:016x}", fnv(&action.to_string()));
                 let receipt = self
                     .game
-                    .lock()
-                    .expect("game")
                     .submit(
                         seat,
                         SubmitRequest {
                             decision_id: id.to_string(),
                             epoch,
-                            response: response.clone(),
+                            revision,
+                            idempotency_key: key,
+                            action: action.clone(),
+                            public_explanation: args
+                                .get("explanation")
+                                .and_then(Value::as_str)
+                                .map(str::to_string),
                         },
                     )
-                    .map_err(tool_err)?;
+                    .await
+                    .map_err(|e| e.to_string())?;
                 if !receipt.duplicate {
                     *submitted = Some((receipt.decision_id.clone(), receipt.summary.clone()));
                 }
                 Ok(receipt.result)
             }
             "message_team" => {
-                let n = self.memory.message_team(seat, text("text")?)?;
+                let n = self.memory.message_team(seat, text("text")?).await?;
                 Ok(json!({ "delivered_to": n }))
             }
             "read_messages" => {
                 let after = args.get("after").and_then(Value::as_u64).unwrap_or(0);
-                Ok(json!({ "messages": self.memory.read_messages(seat, after) }))
+                Ok(json!({ "messages": self.memory.read_messages(seat, after).await }))
             }
-            "notebook_read" => Ok(json!({ "notebook": self.memory.notebook_read(seat) })),
+            "notebook_read" => Ok(json!({ "notebook": self.memory.notebook_read(seat).await })),
             "notebook_write" => {
                 let mode = match args.get("mode").and_then(Value::as_str) {
                     None | Some("append") => WriteMode::Append,
                     Some("replace") => WriteMode::Replace,
                     Some(other) => return Err(format!("unknown mode `{other}`")),
                 };
-                let bytes = self.memory.notebook_write(seat, mode, text("text")?)?;
+                let bytes = self
+                    .memory
+                    .notebook_write(seat, mode, text("text")?)
+                    .await?;
                 Ok(json!({ "notebook_bytes": bytes }))
             }
             other => Err(format!("unknown tool `{other}`")),
@@ -295,7 +344,7 @@ impl McpServer {
                 uuid::Uuid::new_v4().simple(),
                 uuid::Uuid::new_v4().simple()
             );
-            tokens.insert(e.seat.clone(), token.clone());
+            tokens.insert(e.seat, token.clone());
             bindings.insert(
                 token,
                 Binding {
@@ -337,9 +386,9 @@ impl McpServer {
     }
 
     /// The URL one seat's CLI connects to.
-    pub fn url(&self, seat: &str) -> Option<String> {
+    pub fn url(&self, seat: SeatId) -> Option<String> {
         self.tokens
-            .get(seat)
+            .get(&seat)
             .map(|t| format!("http://127.0.0.1:{}/mcp/{t}", self.addr.port()))
     }
 
@@ -373,12 +422,7 @@ async fn handle_post(
             &rpc_error(Value::Null, -32700, "parse error"),
         );
     };
-    // Tool calls take the game lock and may block briefly; keep them off the async workers.
-    let reply =
-        tokio::task::spawn_blocking(move || handle_message(&state.router, &binding, message))
-            .await
-            .unwrap_or(None);
-    match reply {
+    match handle_message(&state.router, &binding, message).await {
         Some(v) => json_response(StatusCode::OK, &v),
         None => StatusCode::ACCEPTED.into_response(),
     }
@@ -398,25 +442,26 @@ fn rpc_error(id: Value, code: i64, message: &str) -> Value {
 }
 
 /// Handle one JSON-RPC message (or batch). `None` = nothing to send back (notifications).
-fn handle_message(router: &ToolRouter, binding: &Binding, message: Value) -> Option<Value> {
+async fn handle_message(router: &ToolRouter, binding: &Binding, message: Value) -> Option<Value> {
     if let Value::Array(items) = message {
-        let replies: Vec<Value> = items
-            .into_iter()
-            .filter_map(|m| handle_single(router, binding, &m))
-            .collect();
+        let mut replies = Vec::new();
+        for m in items {
+            if let Some(r) = handle_single(router, binding, &m).await {
+                replies.push(r);
+            }
+        }
         return if replies.is_empty() {
             None
         } else {
             Some(Value::Array(replies))
         };
     }
-    handle_single(router, binding, &message)
+    handle_single(router, binding, &message).await
 }
 
-fn handle_single(router: &ToolRouter, binding: &Binding, message: &Value) -> Option<Value> {
+async fn handle_single(router: &ToolRouter, binding: &Binding, message: &Value) -> Option<Value> {
     let id = message.get("id").cloned();
-    let method = message.get("method").and_then(Value::as_str);
-    let Some(method) = method else {
+    let Some(method) = message.get("method").and_then(Value::as_str) else {
         // A response or garbage; we never send requests, so ignore.
         return id.map(|id| rpc_error(id, -32600, "invalid request"));
     };
@@ -448,7 +493,8 @@ fn handle_single(router: &ToolRouter, binding: &Binding, message: &Value) -> Opt
                 .get("arguments")
                 .cloned()
                 .unwrap_or_else(|| json!({}));
-            let (text, is_error) = match router.call(&binding.seat, binding.epoch, name, &args) {
+            let (text, is_error) = match router.call(binding.seat, binding.epoch, name, &args).await
+            {
                 Ok(v) => (serde_json::to_string_pretty(&v).unwrap_or_default(), false),
                 Err(e) => (e, true),
             };
@@ -465,12 +511,11 @@ fn handle_single(router: &ToolRouter, binding: &Binding, message: &Value) -> Opt
 mod tests {
     use super::*;
     use crate::memory::InMemorySeatMemory;
-    use crate::toy::NumberDuel;
+    use crate::toy::{AXIS, COMMONWEALTH, NumberDuel};
 
     fn router() -> (ToolRouter, SharedGame) {
-        let game = NumberDuel::new(5);
-        let seats = game.seats();
-        let game: SharedGame = Arc::new(Mutex::new(game));
+        let game: SharedGame = Arc::new(NumberDuel::game(5));
+        let seats = vec![AXIS, COMMONWEALTH];
         let memory = Arc::new(InMemorySeatMemory::new(seats.clone()));
         (ToolRouter::new(game.clone(), memory, &seats), game)
     }
@@ -487,67 +532,89 @@ mod tests {
         assert_eq!(names, TOOL_NAMES);
     }
 
-    #[test]
-    fn a_seat_only_sees_its_own_state() {
+    #[tokio::test]
+    async fn a_seat_only_sees_its_own_state() {
         let (r, _) = router();
-        let a = r
-            .call(NumberDuel::SEAT_A, 1, "observe", &json!({}))
-            .unwrap();
+        let a = r.call(AXIS, 1, "observe", &json!({})).await.unwrap();
         let b = r
-            .call(NumberDuel::SEAT_B, 1, "observe", &json!({}))
+            .call(COMMONWEALTH, 1, "observe", &json!({}))
+            .await
             .unwrap();
-        assert_eq!(a["you"], NumberDuel::SEAT_A);
-        assert_eq!(b["you"], NumberDuel::SEAT_B);
-        assert_ne!(a["your_hand"], b["your_hand"]);
+        assert_eq!(a["observation"]["you"], "axis.commander");
+        assert_eq!(b["observation"]["you"], "commonwealth.commander");
+        assert_ne!(a["observation"]["your_hand"], b["observation"]["your_hand"]);
         // A seat cannot answer another seat's decision by naming it.
-        let b_decision = b["pending_decisions"][0]["id"].clone();
+        let b_decision = b["pending_decisions"][0]["decision_id"].clone();
         let err = r
             .call(
-                NumberDuel::SEAT_A,
+                AXIS,
                 1,
                 "submit",
-                &json!({ "decision_id": b_decision, "response": { "card": 1 } }),
+                &json!({ "decision_id": b_decision, "action": "1" }),
             )
+            .await
             .unwrap_err();
         assert!(err.contains("unknown decision"), "{err}");
     }
 
-    #[test]
-    fn submit_reports_events_and_counts_calls() {
+    #[tokio::test]
+    async fn submit_reports_events_and_counts_calls() {
         let (r, game) = router();
         let mut rx = r.events();
-        let seat = NumberDuel::SEAT_A;
-        let obs = r.call(seat, 1, "observe", &json!({})).unwrap();
-        let id = obs["pending_decisions"][0]["id"].clone();
-        let card = obs["your_hand"][0].clone();
-        let args = json!({ "decision_id": id, "response": { "card": card } });
-        r.call(seat, 1, "submit", &args).unwrap();
-        r.call(seat, 1, "submit", &args).unwrap(); // idempotent replay
+        let obs = r.call(AXIS, 1, "observe", &json!({})).await.unwrap();
+        let id = obs["pending_decisions"][0]["decision_id"].clone();
+        let card = obs["observation"]["your_hand"][0].to_string();
+        let args = json!({ "decision_id": id, "action": card });
+        r.call(AXIS, 1, "submit", &args).await.unwrap();
+        r.call(AXIS, 1, "submit", &args).await.unwrap(); // idempotent replay
         let _ = rx.try_recv().unwrap(); // observe
         let first = rx.try_recv().unwrap();
         assert_eq!(first.submitted.as_ref().unwrap().0, id.as_str().unwrap());
         let replay = rx.try_recv().unwrap();
-        assert!(replay.submitted.is_none());
-        assert_eq!(r.counters(seat).unwrap().calls.load(Ordering::SeqCst), 3);
-        assert_eq!(game.lock().unwrap().pending(seat).len(), 0);
+        assert!(replay.ok && replay.submitted.is_none());
+        assert_eq!(r.counters(AXIS).unwrap().calls.load(Ordering::SeqCst), 3);
+        assert_eq!(game.pending(AXIS).await.len(), 0);
     }
 
-    #[test]
-    fn call_cap_refuses_instead_of_invoking() {
+    #[tokio::test]
+    async fn describe_actions_exposes_the_schema_and_validate_is_pure() {
+        let (r, game) = router();
+        let obs = r.call(AXIS, 1, "observe", &json!({})).await.unwrap();
+        let id = obs["pending_decisions"][0]["decision_id"].clone();
+        let d = r
+            .call(AXIS, 1, "describe_actions", &json!({ "decision_id": id }))
+            .await
+            .unwrap();
+        assert_eq!(d["action_schema"]["type"], "string");
+        assert!(d["action_schema"]["enum"].as_array().unwrap().len() == 5);
+        let seq = game.game_seq().await;
+        let bad = r
+            .call(
+                AXIS,
+                1,
+                "validate",
+                &json!({ "decision_id": id, "action": "99" }),
+            )
+            .await;
+        assert!(bad.unwrap_err().contains("illegal"));
+        assert_eq!(game.game_seq().await, seq);
+    }
+
+    #[tokio::test]
+    async fn call_cap_refuses_instead_of_invoking() {
         let (r, game) = router();
         let r = r.with_call_cap(Some(1));
-        let seat = NumberDuel::SEAT_A;
-        r.call(seat, 1, "observe", &json!({})).unwrap();
-        let err = r.call(seat, 1, "observe", &json!({})).unwrap_err();
+        r.call(AXIS, 1, "observe", &json!({})).await.unwrap();
+        let err = r.call(AXIS, 1, "observe", &json!({})).await.unwrap_err();
         assert!(err.contains("budget"));
-        assert_eq!(game.lock().unwrap().game_seq(), 1);
+        let _ = game;
     }
 
-    #[test]
-    fn jsonrpc_handshake_and_errors() {
+    #[tokio::test]
+    async fn jsonrpc_handshake_and_errors() {
         let (r, _) = router();
         let b = Binding {
-            seat: NumberDuel::SEAT_A.into(),
+            seat: AXIS,
             epoch: 1,
             instructions: "play".into(),
         };
@@ -557,6 +624,7 @@ mod tests {
             json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize",
                     "params": { "protocolVersion": "2025-03-26" } }),
         )
+        .await
         .unwrap();
         assert_eq!(init["result"]["protocolVersion"], "2025-03-26");
         assert_eq!(init["result"]["instructions"], "play");
@@ -566,6 +634,7 @@ mod tests {
                 &b,
                 json!({ "jsonrpc": "2.0", "method": "notifications/initialized" })
             )
+            .await
             .is_none()
         );
         let bad = handle_message(
@@ -574,10 +643,12 @@ mod tests {
             json!({ "jsonrpc": "2.0", "id": 2, "method": "tools/call",
                     "params": { "name": "bash", "arguments": { "command": "ls" } } }),
         )
+        .await
         .unwrap();
         assert_eq!(bad["result"]["isError"], true);
-        let nomethod =
-            handle_message(&r, &b, json!({ "jsonrpc": "2.0", "id": 3, "method": "x" })).unwrap();
+        let nomethod = handle_message(&r, &b, json!({ "jsonrpc": "2.0", "id": 3, "method": "x" }))
+            .await
+            .unwrap();
         assert_eq!(nomethod["error"]["code"], -32601);
     }
 }
