@@ -5,12 +5,14 @@ use std::collections::BTreeMap;
 use cna_content::scenario::Supplies;
 use cna_content::units::Toe;
 use cna_core::ids::UnitId;
-use cna_core::quantity::{AmmoPoints, FuelTenths, StoresPoints, ToeStrengthPoints, WaterPoints};
+use cna_core::quantity::{
+    AmmoPoints, FuelPoints, FuelTenths, StoresPoints, ToeStrengthPoints, WaterPoints,
+};
 use cna_tables::airlog::supply::{AmmoAction, AmmoCost, AmmoMode};
 use serde::{Deserialize, Serialize};
 
 use crate::content::CnaContent;
-use crate::state::{DumpLocation, LandUnit, State};
+use crate::state::{DumpLocation, LandUnit, LogisticsState, State};
 
 /// Exact demand before any source-specific fuel rounding.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -46,6 +48,8 @@ pub struct SupplyDraw {
 pub enum SupplyError {
     Invalid,
     Insufficient,
+    /// No printed rate or identified equipment for an HQ (units gap U-025).
+    UnknownFuelRate,
     /// Required content or a separate rule procedure is not available yet.
     Unsupported {
         case: &'static str,
@@ -53,14 +57,14 @@ pub enum SupplyError {
 }
 
 impl SupplyDemand {
-    fn valid(self) -> bool {
+    pub(super) fn valid(self) -> bool {
         self.fuel.get() >= 0
             && self.ammo.get() >= 0
             && self.stores.get() >= 0
             && self.water.get() >= 0
     }
 
-    fn checked_add(self, other: Self) -> Result<Self, SupplyError> {
+    pub(super) fn checked_add(self, other: Self) -> Result<Self, SupplyError> {
         Ok(Self {
             fuel: FuelTenths::new(
                 self.fuel
@@ -134,7 +138,8 @@ pub fn toe_strength(
 /// costs are added exactly before a source draw is rounded. Non-movement CP must
 /// be excluded by the movement caller. Special patrols need their own procedure.
 /// Cases: airlog:49.12, airlog:49.13
-/// Interpretations: interp:airlog-0001
+/// Interpretations: interp:airlog-0001, interp:units-0005
+/// Unsupported: airlog:49.12 - HQ equipment without a known fuel rate (units gap U-025).
 pub fn movement_fuel_cost(
     content: &CnaContent,
     state: &State,
@@ -197,21 +202,14 @@ pub fn movement_fuel_cost(
         }
         _ if matches!(class.unit_type.as_str(), "infantry" | "engineer") => {}
         _ if class.unit_type == "headquarters" && class.max_toe_paren => {}
+        _ if class.unit_type == "headquarters" => return Err(SupplyError::UnknownFuelRate),
         _ => {
             return Err(SupplyError::Unsupported {
                 case: "airlog:49.12",
             });
         }
     }
-    let trucks = unit
-        .trucks
-        .light
-        .checked_add(unit.trucks.medium)
-        .and_then(|n| n.checked_add(unit.trucks.heavy))
-        .ok_or(SupplyError::Invalid)?;
-    if unit.trucks.light < 0 || unit.trucks.medium < 0 || unit.trucks.heavy < 0 {
-        return Err(SupplyError::Invalid);
-    }
+    let trucks = truck_count(unit)?;
     total = total
         .checked_add(cost(1, trucks)?)
         .ok_or(SupplyError::Invalid)?;
@@ -261,6 +259,17 @@ pub fn ammunition_cost(
     }
 }
 
+fn truck_count(unit: &LandUnit) -> Result<i32, SupplyError> {
+    if unit.trucks.light < 0 || unit.trucks.medium < 0 || unit.trucks.heavy < 0 {
+        return Err(SupplyError::Invalid);
+    }
+    unit.trucks
+        .light
+        .checked_add(unit.trucks.medium)
+        .and_then(|n| n.checked_add(unit.trucks.heavy))
+        .ok_or(SupplyError::Invalid)
+}
+
 fn stock_demand(stock: Supplies) -> Result<SupplyDemand, SupplyError> {
     let d = SupplyDemand {
         fuel: FuelTenths::new(stock.fuel.checked_mul(10).ok_or(SupplyError::Invalid)?),
@@ -280,6 +289,19 @@ fn stock_demand(stock: Supplies) -> Result<SupplyDemand, SupplyError> {
 pub fn available_sources(state: &State, unit_id: &UnitId) -> Result<Vec<SupplyDraw>, SupplyError> {
     let unit = state.land.units.get(unit_id).ok_or(SupplyError::Invalid)?;
     let hex = unit.location.hex().ok_or(SupplyError::Invalid)?;
+    available_sources_at(state, unit_id, hex)
+}
+
+/// Sources at a recorded segment origin, with the consuming unit's tanks always
+/// available. The caller obtains the origin from trusted movement state.
+/// Cases: airlog:49.15, airlog:49.16, airlog:50.15
+pub fn available_sources_at(
+    state: &State,
+    unit_id: &UnitId,
+    hex: &cna_core::ids::HexId,
+) -> Result<Vec<SupplyDraw>, SupplyError> {
+    let unit = state.land.units.get(unit_id).ok_or(SupplyError::Invalid)?;
+    unit.location.hex().ok_or(SupplyError::Invalid)?;
     let mut sources = Vec::new();
     if let Some(holdings) = state.logistics.unit_supply.get(unit_id) {
         if holdings.tank_fuel.get() < 0 || holdings.ready_ammo.get() < 0 {
@@ -306,7 +328,7 @@ pub fn available_sources(state: &State, unit_id: &UnitId) -> Result<Vec<SupplyDr
         };
         if carrier.side == unit.side
             && carrier.location.hex() == Some(hex)
-            && carrier.trucks.total() > 0
+            && truck_count(carrier)? > 0
         {
             sources.push(SupplyDraw {
                 source: SupplySource::UnitStock(id.clone()),
@@ -339,13 +361,26 @@ pub fn spend_for_unit(
     demand: SupplyDemand,
     draws: &[SupplyDraw],
 ) -> Result<(), SupplyError> {
-    if !demand.valid() {
-        return Err(SupplyError::Invalid);
-    }
-    let sources: BTreeMap<_, _> = available_sources(state, unit_id)?
+    let sources = available_sources(state, unit_id)?
         .into_iter()
         .map(|s| (s.source, s.amount))
         .collect();
+    state.logistics = apply_draws(state, unit_id, demand, draws, &sources, &BTreeMap::new())?;
+    Ok(())
+}
+
+/// Validate and stage all withdrawals, including a source's earlier rounded draw.
+pub(super) fn apply_draws(
+    state: &State,
+    unit_id: &UnitId,
+    demand: SupplyDemand,
+    draws: &[SupplyDraw],
+    sources: &BTreeMap<SupplySource, SupplyDemand>,
+    prior: &BTreeMap<SupplySource, FuelTenths>,
+) -> Result<LogisticsState, SupplyError> {
+    if !demand.valid() {
+        return Err(SupplyError::Invalid);
+    }
     let mut allocations = BTreeMap::<SupplySource, SupplyDemand>::new();
     let mut total = SupplyDemand::default();
     for draw in draws {
@@ -384,32 +419,56 @@ pub fn spend_for_unit(
                     .ok_or(SupplyError::Invalid)?
                     .ready_ammo -= amount.ammo
             }
-            SupplySource::UnitStock(id) => deduct_stock(
-                &mut next
-                    .unit_supply
-                    .get_mut(&id)
-                    .ok_or(SupplyError::Invalid)?
-                    .carried,
-                amount,
-            )?,
-            SupplySource::Dump(id) => deduct_stock(
-                &mut next
-                    .dumps
-                    .get_mut(&id)
-                    .ok_or(SupplyError::Invalid)?
-                    .supplies,
-                amount,
-            )?,
+            source => {
+                let before = prior.get(&source).copied().unwrap_or_default();
+                let after = FuelTenths::new(
+                    before
+                        .get()
+                        .checked_add(amount.fuel.get())
+                        .ok_or(SupplyError::Invalid)?,
+                );
+                let withdrawal = after.ceil_points() - before.ceil_points();
+                // Rounded fuel already paid for remains usable after its old source
+                // leaves the origin or changes hands. No fresh stock is taken then.
+                if withdrawal.is_zero()
+                    && amount.ammo.is_zero()
+                    && amount.stores.is_zero()
+                    && amount.water.is_zero()
+                {
+                    continue;
+                }
+                let stock = match source {
+                    SupplySource::UnitStock(id) => {
+                        &mut next
+                            .unit_supply
+                            .get_mut(&id)
+                            .ok_or(SupplyError::Invalid)?
+                            .carried
+                    }
+                    SupplySource::Dump(id) => {
+                        &mut next
+                            .dumps
+                            .get_mut(&id)
+                            .ok_or(SupplyError::Invalid)?
+                            .supplies
+                    }
+                    _ => unreachable!(),
+                };
+                deduct_stock(stock, amount, withdrawal)?;
+            }
         }
     }
-    state.logistics = next;
-    Ok(())
+    Ok(next)
 }
 
-fn deduct_stock(stock: &mut Supplies, amount: SupplyDemand) -> Result<(), SupplyError> {
+fn deduct_stock(
+    stock: &mut Supplies,
+    amount: SupplyDemand,
+    fuel_withdrawal: FuelPoints,
+) -> Result<(), SupplyError> {
     stock.fuel = stock
         .fuel
-        .checked_sub(amount.fuel.ceil_points().get())
+        .checked_sub(fuel_withdrawal.get())
         .filter(|n| *n >= 0)
         .ok_or(SupplyError::Insufficient)?;
     stock.ammo = stock

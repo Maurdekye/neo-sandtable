@@ -40,6 +40,7 @@ impl Cna {
                 open_initiative_declaration(state, cx);
                 Ok(())
             }
+            "opstage.weather" => crate::logistics::weather::determine(content, state, cx),
             "end_of_game" => self.end_of_game(content, state, cx),
             _ => self.unimplemented(content, anchor),
         }

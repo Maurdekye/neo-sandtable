@@ -424,3 +424,53 @@ fn owner_only_holdings_and_dump_inspection_do_not_leak_to_enemy() {
         state.logistics.unit_supply[&id]
     );
 }
+
+/// Cases: airlog:49.12
+/// Interpretations: interp:units-0005
+#[test]
+fn unknown_hq_fuel_rate_is_distinct_and_never_free() {
+    let (state, _) = state();
+    let hq = state
+        .land
+        .units
+        .values()
+        .find(|u| {
+            matches!(u.toe, Some(Toe::Normal(_)))
+                && content().units.units[&u.id]
+                    .class
+                    .as_ref()
+                    .and_then(|c| content().units.classes.get(c))
+                    .is_some_and(|c| c.unit_type == "headquarters" && !c.max_toe_paren)
+        })
+        .unwrap();
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &hq.id, 4),
+        Err(SupplyError::UnknownFuelRate)
+    );
+}
+
+/// Cases: airlog:49.13, airlog:49.16
+#[test]
+fn invalid_truck_quantities_reject_without_arithmetic_overflow() {
+    let (mut state, id) = state();
+    state
+        .logistics
+        .unit_supply
+        .insert(id.clone(), UnitSupply::default());
+    state.land.units.get_mut(&id).unwrap().trucks = Trucks {
+        light: i32::MAX,
+        medium: 1,
+        heavy: 0,
+    };
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &id, 4),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(available_sources(&state, &id), Err(SupplyError::Invalid));
+    state.land.units.get_mut(&id).unwrap().trucks = Trucks {
+        light: -1,
+        medium: 2,
+        heavy: 0,
+    };
+    assert_eq!(available_sources(&state, &id), Err(SupplyError::Invalid));
+}

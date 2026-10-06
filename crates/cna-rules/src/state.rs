@@ -13,6 +13,7 @@ use cna_core::decision::{ActionSpace, Secrecy, Trigger};
 use cna_core::ids::{DecisionId, HexId, SeatId, UnitId};
 use cna_core::quantity::{AmmoPoints, FuelTenths};
 use cna_protocol::Side;
+use cna_tables::land::weather::{MapSection, WeatherKind};
 use serde::{Deserialize, Serialize};
 
 use crate::content::CnaContent;
@@ -38,6 +39,22 @@ pub struct TurnState {
     pub initiative: Option<Side>,
     /// Player A of the current OpStage (`land:7.11`, `land:7.16`).
     pub player_a: Option<Side>,
+    /// Weather rolled for the current OpStage (land:29.1).
+    #[serde(default)]
+    pub weather: Option<WeatherState>,
+}
+
+/// Weather result and the selected storm sections, not a copy of the weather table.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WeatherState {
+    pub kind: WeatherKind,
+    pub storm_sections: Vec<MapSection>,
+}
+
+/// Dynamic well conditions; depletion is not included in the public weather report.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WellState {
+    pub depleted: bool,
 }
 
 /// Where a land unit is.
@@ -125,6 +142,11 @@ pub enum DumpLocation {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LogisticsState {
+    /// Movement fuel already charged in this unit's current segment.
+    #[serde(default)]
+    pub fuel_segments: BTreeMap<UnitId, crate::logistics::FuelSegmentLedger>,
+    #[serde(default)]
+    pub wells: BTreeMap<HexId, WellState>,
     /// Unit tanks, ready ammunition and first-line cargo (airlog:49-53).
     /// Absent entries mean empty holdings; ratings remain in content.
     #[serde(default)]
