@@ -8,7 +8,7 @@ theatre = "north_africa"
 refit_not_before = { gt = 1, opstage = 2 }
 src = ["scen:60.32", "scen:59.3"]
 transcribed_from = ["scenarios-booklet-2021.pdf p.27 (page image)"]
-verification = "single"
+verification = "double"
 
 [[plane]]
 type = "it.cr42"
