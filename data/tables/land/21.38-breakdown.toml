@@ -1,0 +1,137 @@
+# Breakdown Table (land:21.38).
+
+[table]
+id = "land.21.38.breakdown"
+case = "21.38"
+title = "Breakdown Table"
+src = ["land:21.38"]
+transcribed_from = ["vassal:21.38 Breakdown Table.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+Total the Breakdown Points a vehicle type accumulated (round fractions up), shift columns for the type's
+Breakdown Adjustment Rating (BAR) and for weather (right is worse), then roll two dice read in sequence
+(land:21.34). The cell containing the reading gives the percentage of that type of vehicle (TOE strength
+points, trucks counting as TOE points) that breaks down. Hot weather shifts one column right; Sandstorms shift
+one column right if at least 50% of the accumulated Breakdown Points were acquired in map sections with
+sandstorms. BAR and weather shifts are cumulative. The 71+ column is the last; adjustments cannot go higher.
+Motorcycles and artillery with inherent transport never break down. In every column the cells cover all 36
+dice readings exactly once (checked in two passes). A column absent from a row is a printed dash.
+"""
+
+
+[[column]]
+id = "bp_0_3"
+breakdown_points_min = 0
+breakdown_points_max = 3
+
+[[column]]
+id = "bp_4_10"
+breakdown_points_min = 4
+breakdown_points_max = 10
+
+[[column]]
+id = "bp_11_20"
+breakdown_points_min = 11
+breakdown_points_max = 20
+
+[[column]]
+id = "bp_21_30"
+breakdown_points_min = 21
+breakdown_points_max = 30
+
+[[column]]
+id = "bp_31_40"
+breakdown_points_min = 31
+breakdown_points_max = 40
+
+[[column]]
+id = "bp_41_50"
+breakdown_points_min = 41
+breakdown_points_max = 50
+
+[[column]]
+id = "bp_51_60"
+breakdown_points_min = 51
+breakdown_points_max = 60
+
+[[column]]
+id = "bp_61_70"
+breakdown_points_min = 61
+breakdown_points_max = 70
+
+[[column]]
+id = "bp_71_plus"
+breakdown_points_min = 71
+
+[[row]]
+percent_breakdown = 0
+cells = [
+  { column = "bp_0_3", dice = [11, 66] },
+  { column = "bp_4_10", dice = [11, 42] },
+  { column = "bp_11_20", dice = [11, 32] },
+  { column = "bp_21_30", dice = [11, 26] },
+  { column = "bp_31_40", dice = [11, 23] },
+  { column = "bp_41_50", dice = [11, 16] },
+  { column = "bp_51_60", dice = [11, 14] },
+]
+
+[[row]]
+percent_breakdown = 10
+cells = [
+  { column = "bp_4_10", dice = [43, 64] },
+  { column = "bp_11_20", dice = [33, 62] },
+  { column = "bp_21_30", dice = [31, 55] },
+  { column = "bp_31_40", dice = [24, 53] },
+  { column = "bp_41_50", dice = [21, 46] },
+  { column = "bp_51_60", dice = [15, 42] },
+  { column = "bp_61_70", dice = [11, 33] },
+  { column = "bp_71_plus", dice = [11, 25] },
+]
+
+[[row]]
+percent_breakdown = 25
+cells = [
+  { column = "bp_4_10", dice = [65, 65] },
+  { column = "bp_11_20", dice = [63, 64] },
+  { column = "bp_21_30", dice = [56, 62] },
+  { column = "bp_31_40", dice = [54, 61] },
+  { column = "bp_41_50", dice = [51, 56] },
+  { column = "bp_51_60", dice = [43, 54] },
+  { column = "bp_61_70", dice = [34, 52] },
+  { column = "bp_71_plus", dice = [26, 43] },
+]
+
+[[row]]
+percent_breakdown = 33
+cells = [
+  { column = "bp_4_10", dice = [66, 66] },
+  { column = "bp_11_20", dice = [65, 65] },
+  { column = "bp_21_30", dice = [63, 65] },
+  { column = "bp_31_40", dice = [62, 64] },
+  { column = "bp_41_50", dice = [61, 63] },
+  { column = "bp_51_60", dice = [55, 63] },
+  { column = "bp_61_70", dice = [53, 62] },
+  { column = "bp_71_plus", dice = [44, 55] },
+]
+
+[[row]]
+percent_breakdown = 50
+cells = [
+  { column = "bp_11_20", dice = [66, 66] },
+  { column = "bp_21_30", dice = [66, 66] },
+  { column = "bp_31_40", dice = [65, 66] },
+  { column = "bp_41_50", dice = [64, 65] },
+  { column = "bp_51_60", dice = [64, 65] },
+  { column = "bp_61_70", dice = [63, 64] },
+  { column = "bp_71_plus", dice = [56, 63] },
+]
+
+[[row]]
+percent_breakdown = 75
+cells = [
+  { column = "bp_41_50", dice = [66, 66] },
+  { column = "bp_51_60", dice = [66, 66] },
+  { column = "bp_61_70", dice = [65, 66] },
+  { column = "bp_71_plus", dice = [64, 66] },
+]

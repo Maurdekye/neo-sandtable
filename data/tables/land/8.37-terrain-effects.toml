@@ -342,7 +342,7 @@ text = "A garrison unit in its assigned hex takes no stacking space. Anti-aircra
 [[footnote]]
 id = 2
 applies_to = ["salt_marsh"]
-text = "Vehicles other than Light Trucks, Recce-type units and motorcycle infantry may enter or leave the hex only along a track. Motorized units may not fight into or out of Salt Marsh (land:8.44)."
+text = "Apart from Light Trucks, Recce-type units and motorcycle infantry, vehicles must use a track to enter or leave this hex. Motorized units may not fight into or out of Salt Marsh (land:8.44)."
 
 [[footnote]]
 id = 3

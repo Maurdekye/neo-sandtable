@@ -1,0 +1,64 @@
+# Destroyed Tanks Repair Table (land:22.44).
+
+[table]
+id = "land.22.44.destroyed_tanks_repair"
+case = "22.44"
+title = "Destroyed Tanks Repair Table"
+src = ["land:22.44"]
+transcribed_from = ["vassal:22.44 Destroyed Tanks Repair Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Roll one die for each destroyed tank TOE strength point (land:22.43); add one to the roll if repairing at a
+Minor Repair Facility (so a roll can reach 7). Columns: field repair (only a Commonwealth Tank Delivery
+Squadron on Commonwealth tanks or the German Mobile Tank Repair Squad on German tanks), the Axis repair
+facility by tank nationality (German, Italian, Commonwealth), and a Commonwealth repair facility for all
+nationalities. Results: R = the tank TOE point is repaired; J = junked (lost); none = no effect and another
+attempt may be made in a later Operations Stage.
+"""
+
+[[row]]
+die_min = 1
+die_max = 1
+field = "R"
+axis_facility = { german = "R", italian = "R", commonwealth = "R" }
+cw_facility_all_nationalities = "R"
+
+[[row]]
+die_min = 2
+die_max = 2
+field = "none"
+axis_facility = { german = "R", italian = "R", commonwealth = "R" }
+cw_facility_all_nationalities = "R"
+
+[[row]]
+die_min = 3
+die_max = 3
+field = "none"
+axis_facility = { german = "R", italian = "none", commonwealth = "none" }
+cw_facility_all_nationalities = "none"
+
+[[row]]
+die_min = 4
+die_max = 4
+field = "none"
+axis_facility = { german = "none", italian = "none", commonwealth = "none" }
+cw_facility_all_nationalities = "none"
+
+[[row]]
+die_min = 5
+die_max = 5
+field = "none"
+axis_facility = { german = "none", italian = "J", commonwealth = "none" }
+cw_facility_all_nationalities = "none"
+
+[[row]]
+die_min = 6
+die_max = 7
+field = "none"
+axis_facility = { german = "J", italian = "J", commonwealth = "J" }
+cw_facility_all_nationalities = "J"
+
+[[footnote]]
+id = "minor_facility_modifier"
+text = "Add one to the die roll if attempting repair through use of a Minor Repair Facility."

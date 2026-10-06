@@ -35,7 +35,7 @@ graziani = "yes"
 [[case]]
 id = "18.11"
 title = "Only the phasing player"
-summary = "Any unit of the phasing player may be placed in Reserve; the non-phasing player may not."
+summary = "Only the phasing player can put units in Reserve, and any of his units is eligible."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

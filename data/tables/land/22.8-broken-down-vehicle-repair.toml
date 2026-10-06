@@ -1,0 +1,74 @@
+# Broken Down Vehicle Repair Table (land:22.8).
+
+[table]
+id = "land.22.8.broken_down_vehicle_repair"
+case = "22.8"
+title = "Broken Down Vehicle Repair Table"
+src = ["land:22.8", "land:22.34", "errata79:22.8"]
+transcribed_from = ["vassal:22.8 Broken Down Vehicle Repair Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Roll one die per vehicle type. Field repair columns give repaired points: Truck column 1 = one Light or Medium
+truck point, 2 = one Heavy truck point or any combination of Medium and Light truck points equal to two; AC/R
+column = one armored car or recce TOE point; Tank/SPA/TD column and the facility columns give a percentage of
+that type repaired, rounding fractions up. A percentage marked star (10%*) is treated as zero if only a single
+TOE point is being repaired. 'na' means the die roll cannot be used in that column. Die roll modifications:
+subtract one if repairing a broken-down tank in the same hex as a Tank Delivery Squadron or the Mobile Tank
+Repair Squad; for a facility in a Major City, add one if the enemy reduced that city's fortification level by
+one and add two if by two or three (air bombardment and/or barrage). The errata says the last two sentences of
+the printed table explanation on die roll additions are wrong and land:22.34 gives the correct modifications;
+rolls therefore run from 0 (after modifiers) up to 8.
+"""
+
+[[row]]
+die_min = 0
+die_max = 1
+field = { truck = 2, armored_car_recce = 1, tank_spa_td_percent = 25 }
+facility = { temporary_percent = 50, major_percent = 75 }
+
+[[row]]
+die_min = 2
+die_max = 2
+field = { truck = 1, armored_car_recce = 0, tank_spa_td_percent = 10, tank_spa_td_star = true }
+facility = { temporary_percent = 33, major_percent = 50 }
+
+[[row]]
+die_min = 3
+die_max = 3
+field = { truck = 0, armored_car_recce = 0, tank_spa_td_percent = 10, tank_spa_td_star = true }
+facility = { temporary_percent = 25, major_percent = 50 }
+
+[[row]]
+die_min = 4
+die_max = 4
+field = { truck = 0, armored_car_recce = 0, tank_spa_td_percent = 10, tank_spa_td_star = true }
+facility = { temporary_percent = 25, major_percent = 50 }
+
+[[row]]
+die_min = 5
+die_max = 5
+field = { truck = 0, armored_car_recce = 0, tank_spa_td_percent = 0 }
+facility = { temporary_percent = 10, temporary_star = true, major_percent = 33 }
+
+[[row]]
+die_min = 6
+die_max = 6
+field = { truck = 0, armored_car_recce = 0, tank_spa_td_percent = 0 }
+facility = { temporary_percent = 10, temporary_star = true, major_percent = 33 }
+
+[[row]]
+die_min = 7
+die_max = 7
+field = { not_applicable = true }
+facility = { temporary_percent = 10, temporary_star = true, major_percent = 25 }
+
+[[row]]
+die_min = 8
+die_max = 8
+field = { not_applicable = true }
+facility = { temporary_percent = 10, temporary_star = true, major_percent = 10 }
+
+[[footnote]]
+id = "star"
+text = "10% marked with a star: if only attempting to repair a single TOE strength point, treat it as a zero result."

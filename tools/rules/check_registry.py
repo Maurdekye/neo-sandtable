@@ -45,7 +45,7 @@ SOURCE_TEXT_FIXES = {
     "airlog": [("[53.1)", "[53.1]"), ("[56.l]", "[56.1]"), ("[31.53]", "[34.53]")],
 }
 
-CASE_RE = re.compile(r"\[(\d+)[ ]?\.[ ]?(\d+[a-z]?)\]")
+CASE_RE = re.compile(r"\[(\d+)[ ]?\.[ ]?(\d+[a-z]?)(?:\]|\)(?!\]))")
 ID_RE = re.compile(r"^\d+\.\d+[a-z]?$")
 
 KINDS = {"rule", "procedure", "definition", "table", "example", "commentary",

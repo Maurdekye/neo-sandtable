@@ -1,0 +1,197 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "23.0"
+book = "land"
+title = "Engineers"
+systems = ["land"]
+
+[[case]]
+id = "23.0"
+title = "General rule: Engineers"
+summary = "Engineers help construct items, repair facilities and lay or remove minefields; three kinds of engineer unit: Engineer Battalions, Engineer Companies, and HQs with Engineering capability. Many engineer uses are abstracted."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:23.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.1"
+title = "Engineer Units"
+summary = "Heading for 23.11-23.15."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:23.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.11"
+title = "Engineer counters"
+summary = "Engineers have no real combat value, exert no ZOC, are not combat units, may not voluntarily enter enemy-controlled hexes (but may enter friendly-occupied enemy-controlled ones), and the corrected rule says they use parenthesised strengths only when NOT stacked with a friendly combat unit (the original wording said the opposite)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+interp = ["land-0017"]
+src = ["land:23.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.12"
+title = "Engineers can be rebuilt"
+summary = "Eliminated engineer units may be replaced, according to the 20.3 conversion chart."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+tables = ["land.20.3.replacement_point_conversion"]
+src = ["land:23.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.13"
+title = "Construction battalions"
+summary = "The Commonwealth has two New Zealand Railroad Construction Battalions (railroad work only) and the 1st South African Road Construction unit (road work only)."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["land:23.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.14"
+title = "HQs with Engineering capability"
+summary = "HQs with an E beside their stacking points have Engineering capability (Section 24) and are otherwise ordinary HQs."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:23.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.15"
+title = "Scorpion tank battalions"
+summary = "Via the Reinforcement Track the Commonwealth gets two tank battalions refitted with Scorpion tanks (42nd and 44th RTR); they count as engineer units, with only anti-minefield capability, while holding at least six Scorpion TOE points, which cannot be transferred out for any reason."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["26.0"]
+src = ["land:23.15"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Scorpion battalions arrive by the Reinforcement Track; check dates in the scenario schedule"
+
+[[case]]
+id = "23.2"
+title = "Uses of Engineers"
+summary = "Heading for 23.21-23.26."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:23.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.21"
+title = "Cheaper minefield entry"
+summary = "A unit stacked with an Engineer unit or an HQ with Engineering capability pays reduced minefield-entry cost: six CP for motorized and three CP for non-motorized units entering an enemy minefield."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects", "land.6.3.capability_point_expenditure_summary"]
+interp = ["land-0015"]
+src = ["land:23.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.22"
+title = "Clearing a minefield"
+summary = "An Engineer unit (or Engineering HQ) that stays in an enemy minefield hex for a whole Operations Stage spending no CP removes the minefield at the end of the stage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["24.38"]
+src = ["land:23.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.23"
+title = "Construction help"
+summary = "Engineer units and Engineering HQs assist with fortifications, bombed roads, Temporary Repair Facilities (including dismantling them), railroads and air facilities."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.0"]
+src = ["land:23.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.24"
+title = "Engineer assault bonus"
+summary = "If an unpinned Engineer Battalion or Engineering HQ is attached to units assaulting a fortified hex (not Major City), the assault differential column shifts one in the assaulters' favor."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.27"]
+src = ["land:23.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.25"
+title = "Other engineer capabilities"
+summary = "Engineers and Engineering HQs have a variety of minor capabilities elsewhere in the rules, such as minefields."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:23.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "23.26"
+title = "No bridges or escarpments"
+summary = "Engineers may not build or destroy bridges (river or wadi crossings) nor affect escarpments."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:23.26"]
+
+[case.applies]
+graziani = "yes"

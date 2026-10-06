@@ -263,7 +263,7 @@ graziani = "yes"
 [[case]]
 id = "11.33"
 title = "Tiny totals"
-summary = "Fewer than 5 Raw Points (under 0.5 Actual) count as zero Actual, but if both sides of a Close Assault or Probe have under ten Raw Points the Raw Points are used as if Actual. Raw Points are rating times TOE."
+summary = "Fewer than 5 Raw Points (under 0.5 Actual) count as zero Actual, but when each side of a Close Assault or Probe has under ten Raw Points, those Raw Points stand in for Actual Points. Raw Points are rating times TOE."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

@@ -1,0 +1,653 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "21.0"
+book = "land"
+title = "Breakdown"
+systems = ["land"]
+
+[[case]]
+id = "21.0"
+title = "General rule: Breakdown"
+summary = "Nearly all vehicles (not motorcycles, nor vehicles abstractly assigned to gun units) can break down. Moving vehicles accumulate Breakdown Points by terrain; when the unit stops, the player totals the points, shifts the Breakdown Table column for vehicle type (BAR) and weather, rolls two dice in sequence and learns the percentage of that vehicle type broken down. Broken-down vehicles cannot move, defend or attack, are shown by marker, and may be captured, retrieved, towed or repaired."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+tables = ["land.21.38.breakdown"]
+depends_on = ["21.1", "21.2", "21.3"]
+src = ["land:21.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.1"
+title = "Which Units Breakdown"
+summary = "Heading for 21.11-21.15."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:21.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.11"
+title = "Vehicles subject to Breakdown"
+summary = "Only Truck Points and tank, armored recce/armored car and self-propelled gun TOE points (including replacement points) can break down; TOE points that make up an HQ never do."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.12"
+title = "Breakdown Adjustment Rating"
+summary = "Each TOE point type has a BAR (Italian M 13/40 is 1R, Commonwealth Sherman 0; the original 2R was corrected to 1R), listed on the Tank & Gun Characteristics Charts."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+depends_on = ["4.47", "4.48", "4.49"]
+interp = ["land-0016"]
+src = ["land:21.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.13"
+title = "BAR shifts the column"
+summary = "The BAR moves the Breakdown Points column left (L, better) or right (R, worse) when rolling."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+tables = ["land.21.38.breakdown"]
+src = ["land:21.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.14"
+title = "Breakdown Adjustment Summary"
+summary = "Summary list of BARs by vehicle type (asterisked entries are listed on the Tank & Gun Characteristics charts). The summary itself is not present in the source texts or chart images available."
+kind = "table"
+disposition = "unresolved"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+interp = ["land-0016"]
+gaps = ["rule-gap-21.14"]
+src = ["land:21.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.15"
+title = "No checks in the Tripoli/Tunisia boxes"
+summary = "Vehicles never check for Breakdown when moving to, from or among the Axis off-map Tripoli/Tunisia boxes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+depends_on = ["8.8"]
+src = ["land:21.15"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if Axis vehicles move through the off-map boxes"
+
+[[case]]
+id = "21.2"
+title = "When Breakdown Occurs"
+summary = "Heading for 21.21-21.29."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:21.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.21"
+title = "Breakdown Point values"
+summary = "Each hex terrain, and some hexsides like wadis, has a Breakdown Point Value on the Terrain Effects Chart, accumulated when a motorized unit or vehicle enters it; weather can modify the values (Section 29)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["29.0"]
+src = ["land:21.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.22"
+title = "Combat causes none; all movement counts"
+summary = "Combat itself does not cause Breakdown, but any movement (retreat, reaction and so on) accumulates points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:21.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.23"
+title = "Stacks accumulate together"
+summary = "Every vehicle and motorized unit in a stack or parent formation collects the Breakdown Points for the terrain traversed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:21.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.24"
+title = "Check whenever movement ceases"
+summary = "Whenever a vehicular or motorized unit stops moving, whether finished for the stage or about to move again under continual movement, the owner must check for Breakdown."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.25"
+title = "Points accumulate for the whole stage"
+summary = "Breakdown Points accumulate until the end of the Operations Stage, across both players' portions, even after a check."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.26"
+title = "Rechecking"
+summary = "After a check in a stage, a unit rechecks only when it has accumulated enough points to reach a higher column of the Breakdown Table; checks happen when it stops and are not made once per column crossed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+tables = ["land.21.38.breakdown"]
+src = ["land:21.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.27"
+title = "Threshold"
+summary = "No check is made until more than three Breakdown Points are accumulated, whatever the BAR."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.28"
+title = "Separate rolls by type and BAR"
+summary = "Breakdown is determined separately for Trucks, Tanks (including SP guns) and armored recce/car vehicles; groups of tanks or guns in one stack with different BARs roll separately."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.28"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.29"
+title = "Separate rolls by column"
+summary = "Different vehicle types in a stack that sit in different Breakdown Point columns are checked separately (a recce unit with 38 points and one with 23 roll separately)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.29"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.3"
+title = "How Breakdown Is Determined"
+summary = "Heading for 21.31-21.38."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:21.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.31"
+title = "Breakdown Table columns"
+summary = "Each column of the Breakdown Table is a range of accumulated points (31-40 and so on, fractions rounded up) and the table uses two dice read in sequence."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+tables = ["land.21.38.breakdown"]
+src = ["land:21.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.32"
+title = "BAR and weather shifts add"
+summary = "The BAR and weather column adjustments are cumulative: a 2-column-left BAR plus a one-column-higher weather shift gives one column lower."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.33"
+title = "Column limits"
+summary = "More than 71 points uses the 71+ column, which cannot be adjusted higher and counts as one column for adjustment; a unit adjusted below the 4-10 column suffers no Breakdown. Adjustments are in columns, not points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.34"
+title = "Resolving the roll"
+summary = "After determining the column, roll two dice in sequence; the result is the percentage of TOE strength points (each truck counts as one) broken down in the units rolled for (separate rolls per 21.28 and 21.29). Worked example: 30 trucks and 20 Crusader I TOE points at 35 points, hot weather."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+tables = ["land.21.38.breakdown"]
+src = ["land:21.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.35"
+title = "Rounding"
+summary = "Breakdown fractions round up (6.7 becomes 7); a unit with a single TOE point ignores any 10% result."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.36"
+title = "Spread breakdowns evenly"
+summary = "Breakdowns must be distributed as evenly as possible among vehicle types and units (two Panzer battalions with different tank types each take a proportional share). The owner assigns the remaining points within that rule."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.36"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Allocate broken-down TOE points among units and vehicle types as evenly as possible"
+params = ["units", "types", "points"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "21.37"
+title = "Weather effects on Breakdown"
+summary = "Normal: none. Hot: shift one column higher (1R) for each check. Rainstorm: road Breakdown values are treated as track values. Sandstorm: if at least 50% of the unit's movement (in CP) in a phase or retreat or reaction was on a map with a sandstorm, shift one column higher."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+depends_on = ["29.0"]
+src = ["land:21.37"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.38"
+title = "Breakdown Table"
+summary = "Table of the percentage of vehicles broken down by accumulated Breakdown Points column and dice reading. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+tables = ["land.21.38.breakdown"]
+src = ["land:21.38"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.4"
+title = "Broken Down Vehicles"
+summary = "Heading for 21.41-21.45."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:21.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.41"
+title = "Where breakdowns are placed"
+summary = "Breakdowns are placed where the unit stopped; but if it began moving within two hexes of an enemy force bigger than one battalion (no friendly units, ZOCs or impassable terrain between), at least half of the broken-down points are placed in its starting hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.42"
+title = "Broken Down Vehicle markers"
+summary = "A numbered Broken Down Vehicle marker is placed where the breakdown occurs and details are recorded on the Broken Down Vehicles sheet."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.42"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.43"
+title = "Truck cargo"
+summary = "A truck's load stays with it when it breaks down unless spare trucks take it over; a motorized infantry battalion short even one truck that it cannot replace is no longer motorized."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:21.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.44"
+title = "Broken-down vehicles"
+summary = "Broken-down vehicles have no CPA and cannot fight; the enemy can capture them, or the owner can tow them away."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:21.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.45"
+title = "Transfers after breakdown"
+summary = "Supplies on broken-down trucks may move to working trucks in the same hex for 2 CP; infantry in broken-down trucks may dismount for 1 CP and walk, with CP already spent counting against their non-motorized allowance of 10 or 8 (capped at that allowance); pickup by trucks not attached at breakdown costs loading CP."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.breakdown"]
+depends_on = ["6.3"]
+src = ["land:21.45"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Transfer supplies or dismount infantry from broken-down trucks"
+params = ["cargo", "receiving trucks"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "21.5"
+title = "Capturing Broken Down Vehicles"
+summary = "Heading for 21.51-21.55."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:21.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.51"
+title = "Capture is distinct"
+summary = "Capture of broken-down vehicles differs from capture of destroyed tanks (14.5) and of abandoned vehicles."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["14.5"]
+src = ["land:21.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.52"
+title = "Capture by adjacency"
+summary = "Any friendly combat unit of battalion size or more that moves next to a Broken Down Vehicle marker captures the vehicles."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:21.52"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.53"
+title = "Protected vehicles"
+summary = "Vehicles sharing a hex with a friendly combat unit, HQ or Engineer, or lying in a friendly-controlled hex, cannot be captured."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:21.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.54"
+title = "Passable adjacency"
+summary = "The capturing unit and the vehicles must be adjacent through terrain passable to the capturer (a Panzer battalion below an escarpment cannot capture tanks above it)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:21.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.55"
+title = "Towing captured vehicles"
+summary = "Captured broken-down vehicles may be towed up to three hexes at the instant of capture, at no CP cost, not through enemy units, ZOCs or impassable terrain; the capturing unit pays nothing and may keep moving."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["14.53"]
+src = ["land:21.55"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Place captured broken-down vehicles up to three hexes away"
+params = ["marker", "destination"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "21.6"
+title = "Towing"
+summary = "Heading for 21.61-21.67."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:21.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.61"
+title = "Vehicles that may be towed"
+summary = "All vehicles scheduled for repair at a facility, including broken-down vehicles and destroyed tanks retrieved by the owner or captured, may be towed to a repair facility."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.towing"]
+src = ["land:21.61"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.62"
+title = "Towing only in the Repair Phase"
+summary = "Only vehicles not undergoing field repair may be towed, and towing happens in the Repair Stage, except at capture (21.55)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.towing"]
+src = ["land:21.62"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.63"
+title = "Towing rate"
+summary = "Each Broken Down Vehicle or Destroyed Tank marker may move 10 CP in the Repair Phase, only then (no Reaction or Retreat Before Combat), towed as a Medium Truck."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.repair.towing"]
+depends_on = ["22.6", "22.7"]
+src = ["land:21.63"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Tow broken-down vehicle or destroyed-tank markers toward a repair facility"
+params = ["markers", "path"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "21.64"
+title = "Not in enemy-controlled hexes"
+summary = "No vehicle may be towed from an enemy-controlled hex except at the instant of capture; friendly units cancel enemy ZOCs. Part of the vehicles in a hex may be towed, splitting the marker."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.towing"]
+depends_on = ["21.55", "14.53", "21.67"]
+src = ["land:21.64"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.65"
+title = "No supply cost; no breakdown while towed"
+summary = "Towing costs no fuel, stores or water, and towed vehicles do not break down."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.towing"]
+src = ["land:21.65"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.66"
+title = "Failed field repair bars towing"
+summary = "A broken-down vehicle that unsuccessfully attempts field repair cannot be towed that Repair Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.towing"]
+src = ["land:21.66"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "21.67"
+title = "Tow toward the nearest facility"
+summary = "Towed vehicles must go toward the nearest Temporary or Major Repair Facility; players should avoid scattering masses of markers."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.towing"]
+src = ["land:21.67"]
+
+[case.applies]
+graziani = "yes"

@@ -1,0 +1,53 @@
+# Vehicle Repair Supply Costs Chart (land:22.15).
+
+[table]
+id = "land.22.15.vehicle_repair_supply_costs"
+case = "22.15"
+title = "Vehicle Repair Supply Costs Chart"
+src = ["land:22.15", "land:22.35", "land:22.42", "land:22.26"]
+transcribed_from = ["vassal:22.15 Vehicle Repair Supply Costs Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Supplies that must be present in the hex and spent BEFORE each repair attempt (per TOE strength or truck
+point attempted), by location, state and vehicle type. Location: field, or a Major/Minor repair facility.
+State: bd = broken-down vehicle, de = destroyed tank (no other destroyed vehicle may be repaired). Combinations
+not listed cannot be repaired. This chart has no [22.15] case in the rules text; it summarizes 22.23, 22.24,
+22.26, 22.35 and 22.42. (Fuel and stores are Logistics-game supplies; in the Land Game see the abstract
+supply rules.)
+"""
+
+[[row]]
+location = "field"
+state = "bd"
+vehicle_types = ["truck", "armored_car", "recce"]
+supplies = { fuel = 0, stores = 0 }
+
+[[row]]
+location = "field"
+state = "bd"
+vehicle_types = ["tank", "self_propelled_artillery", "tank_destroyer"]
+supplies = { fuel = 1, stores = 0 }
+
+[[row]]
+location = "facility"
+state = "bd"
+vehicle_types = ["all"]
+supplies = { fuel = 1, stores = 1 }
+
+[[row]]
+location = "field"
+state = "de"
+vehicle_types = ["tank"]
+supplies = { fuel = 2, stores = 2 }
+footnotes = ["star"]
+
+[[row]]
+location = "facility"
+state = "de"
+vehicle_types = ["tank"]
+supplies = { fuel = 2, stores = 2 }
+
+[[footnote]]
+id = "star"
+text = "Field repair of destroyed tanks is possible only for destroyed Commonwealth tanks by a Tank Delivery Squadron and only for German tanks by the Mobile Tank Repair Squad."

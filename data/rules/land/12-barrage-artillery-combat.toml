@@ -8,7 +8,7 @@ systems = ["land"]
 [[case]]
 id = "12.0"
 title = "General rule: Barrage"
-summary = "Barrage is the first combat step: any combat or HQ unit with a barrage rating and ammunition may fire at enemy units in adjacent hexes. Guns are first set Forward or Back for the segment. Players total Actual Barrage Points, name targets (by class and number, not by exact unit unless known), roll two dice read in sequence (larger die first) on the Barrage table for the target class, roll again for trucks, apply all results after every barrage is done, and spend ammunition. Holding-off barrages resolve the same way."
+summary = "Barrage is the first combat step: units (combat or HQ) that have a barrage rating and ammunition can shell enemy units next to them. Guns are first set Forward or Back for the segment. Players total Actual Barrage Points, name targets (by class and number, not by exact unit unless known), roll two dice read in sequence (larger die first) on the Barrage table for the target class, roll again for trucks, apply all results after every barrage is done, and spend ammunition. Holding-off barrages resolve the same way."
 kind = "procedure"
 disposition = "automatic"
 seat = "none"
@@ -252,7 +252,7 @@ graziani = "yes"
 [[case]]
 id = "12.31"
 title = "Barrage any adjacent occupied hex"
-summary = "Artillery may barrage enemy targets in any adjacent hex regardless of terrain but not unoccupied hexes (except facilities, 12.5)."
+summary = "Terrain never prevents artillery from shelling an occupied adjacent hex; empty hexes cannot be barraged (facilities excepted, 12.5)."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

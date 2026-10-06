@@ -1,0 +1,584 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "22.0"
+book = "land"
+title = "Repair"
+systems = ["land"]
+
+[[case]]
+id = "22.0"
+title = "General rule: Repair"
+summary = "Broken-down vehicles and destroyed tanks may be repaired in the field or at Temporary or Major Repair Facilities in the Repair Phase, spending supplies. The phasing player rolls one die per vehicle type on the repair tables, getting TOE points repaired (field) or a percentage (facility); supplies are spent whether or not repairs succeed. Repaired vehicles return as truck points or replacement points."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.towing", "opstage.repair.maintenance"]
+tables = ["land.22.8.broken_down_vehicle_repair", "land.22.44.destroyed_tanks_repair", "land.22.15.vehicle_repair_supply_costs"]
+depends_on = ["22.1"]
+src = ["land:22.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.1"
+title = "Which Vehicles May Be Repaired"
+summary = "Heading for 22.11-22.14."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:22.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.11"
+title = "Any controlled vehicle"
+summary = "A player may try to repair any broken-down vehicle or tank destroyed in combat, of any nationality, that he controls."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.12"
+title = "Phasing player, Repair Phase"
+summary = "Repairs are made in the Repair Phase of each Operations Stage by the phasing player only."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.13"
+title = "When repairs are barred"
+summary = "No repair if the vehicles are in an enemy-controlled hex (except in a Major Repair Facility), if there are no supplies for it, if they were towed this phase, or if the weather in that hex is Rainstorm or Sandstorm (not for Major Repair Facilities)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+depends_on = ["29.0"]
+src = ["land:22.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.14"
+title = "Axis repairs by nationality"
+summary = "The Commonwealth repairs all vehicles together; the Axis repairs German and Italian vehicles separately, and captured vehicles separately."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.2"
+title = "Field Repairs"
+summary = "Heading for 22.21-22.28."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:22.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.21"
+title = "Broken-down only in the field"
+summary = "Broken-down vehicles can be repaired in the field; destroyed tanks cannot (exceptions 22.6 and 22.7)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.22"
+title = "Field repair hex"
+summary = "A field repair requires some friendly unit of any type, an SGSU included, in the hex with the broken-down vehicle (22.13a), and the vehicle must not have been towed this phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.23"
+title = "Field truck repair"
+summary = "Roll one die for the broken-down trucks in the hex: a 2 repairs one Light or Medium truck, a 1 repairs two Light or Medium (or one Heavy). No supplies are spent."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.8.broken_down_vehicle_repair", "land.22.15.vehicle_repair_supply_costs"]
+src = ["land:22.23"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt field repair of broken-down trucks in a hex"
+params = ["hex"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "22.24"
+title = "Field recce and armored car repair"
+summary = "Roll one die for all armored cars and recce points in the hex; a 1 repairs one TOE point. No supplies are spent."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.8.broken_down_vehicle_repair"]
+src = ["land:22.24"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt field repair of armored cars and recce in a hex"
+params = ["hex"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "22.25"
+title = "Field tank and SP repair"
+summary = "Use the Field Repair column of the Broken Down Vehicle Repair Table, one die per tank type in the hex; the result is the percentage of that type repaired, rounded up except that a lone TOE point ignores a 10% result."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.8.broken_down_vehicle_repair"]
+src = ["land:22.25"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt field repair of tanks and SP guns, by type"
+params = ["hex", "tank types"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "22.26"
+title = "Fuel for tank field repair"
+summary = "Each tank TOE point attempted needs one fuel point present and spent beforehand; only points paid for may be attempted."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.15.vehicle_repair_supply_costs"]
+depends_on = ["airlog:49.0"]
+src = ["land:22.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.27"
+title = "Weather"
+summary = "Weather affects field repair (22.13d)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.28"
+title = "Field repair is risky"
+summary = "Observation that field repairs are a risky proposition."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:22.28"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.3"
+title = "Facility Repairs"
+summary = "Heading for 22.31-22.38."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:22.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.31"
+title = "Repair facilities"
+summary = "Temporary Facilities are built by players (24.8) or given by the scenario; Major Facilities are Tripoli (the Tripoli box), Tobruk (whoever controls it), and Alexandria and Cairo (all hexes). Bombing (22.35, 39.37) and artillery barrage can reduce or neutralize them."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+depends_on = ["24.8", "airlog:39.37"]
+src = ["land:22.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.32"
+title = "Starting a Maintenance Segment in a facility"
+summary = "A broken-down vehicle or destroyed tank that begins the Maintenance Segment in a hex with a repair facility, and was not towed this stage, may be repaired."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.33"
+title = "Repair by vehicle type"
+summary = "Repair is done by type: truck points, recce/armored car points, broken-down tanks and guns by type, destroyed tanks by type."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.34"
+title = "Facility repair roll"
+summary = "For each broken-down vehicle type roll one die on the Broken Down Vehicle Repair Table under Temporary or Major Facility; the roll is modified by bombing of the city's fortification level: in a Major City add one if the enemy reduces the fortification level by one and two if by two or three (air or barrage); a facility outside a Major City is neutralized for the stage if bombs or barrage would reduce a fortification one level. The reference to 22.35 in the text is to be ignored."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.8.broken_down_vehicle_repair"]
+src = ["land:22.34"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt facility repair of broken-down vehicles, by type"
+params = ["facility hex", "vehicle types", "points attempted"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "22.35"
+title = "Supplies for facility repair"
+summary = "Each truck, gun or tank TOE point to be repaired needs one store point and one fuel point present and spent beforehand."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.15.vehicle_repair_supply_costs"]
+src = ["land:22.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.36"
+title = "Weather and facilities"
+summary = "Temporary facilities are affected by weather (22.13d); Major Facilities never are."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.36"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.37"
+title = "Enemy ZOC"
+summary = "A Temporary Facility in an enemy ZOC cannot be used unless it is in a Major City; Major Repair Facilities may be used in enemy ZOCs."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.37"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.38"
+title = "Building a facility"
+summary = "Cross-reference to 24.8 for building a Temporary Facility."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["24.8"]
+src = ["land:22.38"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.4"
+title = "Repairing Destroyed Tanks"
+summary = "Destroyed tanks, of either side, can be repaired by any player who gets them to a repair facility. Heading for 22.41-22.44."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["14.5"]
+src = ["land:22.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.41"
+title = "Facility only"
+summary = "Destroyed tanks are repaired only at facilities (exceptions 22.6 and 22.7)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.42"
+title = "Pre-paid supplies"
+summary = "Each destroyed tank TOE point attempted costs two stores and two fuel points (Logistics Game) present and spent before any roll; the player must decide the number of attempts and pre-pay all, success or not."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.15.vehicle_repair_supply_costs"]
+src = ["land:22.42"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Declare the number of destroyed-tank repair attempts and pre-pay supplies"
+params = ["facility hex", "tank points attempted"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "22.43"
+title = "Repair roll"
+summary = "One die is rolled per destroyed tank TOE point on the Destroyed Tank Repair Table; success repairs the point; failure either junks it or does nothing, letting a later attempt be made."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.44.destroyed_tanks_repair"]
+src = ["land:22.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.44"
+title = "Destroyed Tank Repair Table"
+summary = "Table of destroyed-tank repair results by die roll and facility or field. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.44.destroyed_tanks_repair"]
+src = ["land:22.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.5"
+title = "Repaired Vehicles"
+summary = "Repaired vehicles are treated as Replacement Points of their type (20.2): they need fuel to move and follow the replacement-point rules except they do not train."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+depends_on = ["20.2"]
+src = ["land:22.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.6"
+title = "The Desert Tank Delivery Organization"
+summary = "Background on Commonwealth Tank Delivery Squadrons, which sped recovery, repair and training of tank units and held reserves. Heading for 22.61-22.66."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:22.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "22.61"
+title = "Three Tank Delivery Squadrons"
+summary = "The Commonwealth receives three Tank Delivery Squadron counters (the Desert Tank Delivery Organization, a name rather than an HQ) during the game."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:22.61"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for arrival dates"
+
+[[case]]
+id = "22.62"
+title = "TDS as field repair facility"
+summary = "A broken-down tank in the same hex as a Tank Delivery Squadron gets -1 on its field repair roll; destroyed Commonwealth tanks are repaired by a TDS on a 1 (never junked); a TDS cannot repair enemy tanks."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.62"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for arrival dates"
+
+[[case]]
+id = "22.63"
+title = "TDS attributes"
+summary = "A TDS has no combat ratings or stacking points and CPA 25, may never voluntarily exceed it or enter an enemy ZOC, is eliminated if alone and ZOC'd by an enemy combat unit, and may return eight Game-Turns after elimination."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:22.63"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for arrival dates"
+
+[[case]]
+id = "22.64"
+title = "TDS reserve tanks"
+summary = "A TDS may hold up to three TOE points of tanks as reserves at stacking value 0; they are treated as tank replacement points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:22.64"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for arrival dates"
+
+[[case]]
+id = "22.65"
+title = "TDS towing"
+summary = "A TDS may tow broken-down or destroyed tanks at 20 CP (instead of 10), up to three TOE points plus reserves, still at stacking 0, but cannot field-repair in a turn it tows."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.repair.towing"]
+depends_on = ["21.63"]
+src = ["land:22.65"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for arrival dates"
+
+[case.decision]
+what = "Tow tanks with a Tank Delivery Squadron"
+params = ["TDS", "tank markers", "path"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "22.66"
+title = "TDS exceeding CPA"
+summary = "A TDS that exceeded its CPA in an OpStage cannot attempt repairs in the next OpStage, but may still tow."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:22.66"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for arrival dates"
+
+[[case]]
+id = "22.7"
+title = "German Mobile Tank Repair Squad"
+summary = "The German Mobile Tank Repair Squad (one counter) works exactly like a TDS except that it can repair only German tanks."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+depends_on = ["22.6"]
+src = ["land:22.7"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "German units do not appear in Graziani's Offensive"
+
+[[case]]
+id = "22.8"
+title = "Broken Down Vehicle Repair Table"
+summary = "Table of field and facility repair results for broken-down vehicles. Errata folded in: the last two sentences about die-roll additions on the table explanation are wrong; see 22.34. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+tables = ["land.22.8.broken_down_vehicle_repair"]
+depends_on = ["22.34"]
+errata = ["errata79:22.8"]
+src = ["land:22.8"]
+
+[case.applies]
+graziani = "yes"

@@ -70,7 +70,7 @@ interrupts = false
 [[case]]
 id = "16.13"
 title = "Two points per hex"
-summary = "No more than 2 TOE points may be assigned as Patrol Points from any one hex."
+summary = "A single hex can supply at most 2 TOE points as Patrol Points."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
@@ -164,7 +164,7 @@ graziani = "yes"
 [[case]]
 id = "16.22"
 title = "Patrol range"
-summary = "Patrol Points may reconnoiter any enemy-occupied hex within five hexes of their origin over a path passable to the patrol units and not through enemy-controlled or occupied hexes other than the target's own ZOC."
+summary = "Patrols reach enemy-occupied hexes up to five hexes from their origin, by a route passable to the patrol units that avoids enemy-controlled or occupied hexes (except the target's own ZOC hexes)."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
@@ -361,7 +361,7 @@ interrupts = false
 [[case]]
 id = "16.46"
 title = "Dummies are eliminated"
-summary = "A formation with a dummy that undergoes any Close Assault loses the dummy; so does one that undergoes Anti-Armor fire and has no armor or loses all its armor; Anti-Armor fire aimed at a hex whose only armor is dummies may not be switched to Assault."
+summary = "Dummies are lost when their formation is Close Assaulted, or when it is hit by Anti-Armor fire with no armor present or after its last armor is gone; Anti-Armor points aimed at a hex with only dummy armor cannot be redirected to Assault."
 kind = "rule"
 disposition = "automatic"
 seat = "none"

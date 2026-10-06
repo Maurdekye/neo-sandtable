@@ -8,7 +8,7 @@ systems = ["land"]
 [[case]]
 id = "19.0"
 title = "General rule: Organization and Reorganization"
-summary = "Every counter is independent or assigned and/or attached to a parent formation (companies, battalions and brigades can be; division HQs are always independent). Historical assignments are on the OA chart and may be altered within limits; attachments are more flexible. Formation limits are on the Formation Organization Chart (19.3) and extra attachments on the Maximum Attachment Chart (19.5). The commentary stresses reading the limits as guides to doctrine, with the charts giving maxima."
+summary = "Every counter is either independent or subordinate (assigned and/or attached) to a parent formation; only companies, battalions and brigades can be subordinate, and division HQs are always independent. Historical assignments are on the OA chart and may be altered within limits; attachments are more flexible. Formation limits are on the Formation Organization Chart (19.3) and extra attachments on the Maximum Attachment Chart (19.5). The commentary stresses reading the limits as guides to doctrine, with the charts giving maxima."
 kind = "commentary"
 disposition = "none"
 seat = "none"
@@ -171,7 +171,7 @@ interrupts = false
 [[case]]
 id = "19.25"
 title = "Commonwealth armored limits change"
-summary = "Assignment limits on Commonwealth armored divisions and brigades changed three times; the player may assign independent units when limits grow and must unassign excess units when they shrink."
+summary = "Commonwealth armored divisions and brigades had their assignment limits revised three times; the player may assign independent units when a limit rises and must drop excess units when it falls."
 kind = "rule"
 disposition = "decision"
 seat = "either"
@@ -507,7 +507,7 @@ graziani = "yes"
 [[case]]
 id = "19.63"
 title = "Rebuilding an eliminated HQ"
-summary = "An eliminated HQ counter can be rebuilt only if at least 50% of its assigned units still exist and are not attached elsewhere, using two Infantry Replacement Points; otherwise it is gone permanently."
+summary = "A destroyed HQ comes back only if half or more of its assigned units survive unattached elsewhere, at a cost of two Infantry Replacement Points; otherwise it is permanently lost."
 kind = "rule"
 disposition = "decision"
 seat = "either"
@@ -688,7 +688,7 @@ graziani_note = "Axis anti-tank replacement points for ad hoc batteries are like
 [[case]]
 id = "19.81"
 title = "HQ anti-tank capacity"
-summary = "Axis brigade-level HQs (including Battle Groups) with an infantry-type symbol may contain up to six TOE points of anti-tank guns."
+summary = "An Axis brigade-level HQ (Battle Groups included) bearing an infantry symbol can hold as many as six anti-tank gun TOE points."
 kind = "rule"
 disposition = "automatic"
 seat = "none"
