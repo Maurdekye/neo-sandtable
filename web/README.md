@@ -209,3 +209,11 @@ currently resolves initiative declarations and skips unimplemented procedures;
 Finished does not mean the full CNA rules are implemented. This check starts no
 paid LLM driver and makes no full-campaign throughput claim. Evidence files and
 screenshots are saved in the owning scratch folder.
+
+The same production check passed against authenticated server `b140784`, together
+with the human-held citation and sandbox control/reconnect checks. Fresh isolated
+side and seat browser contexts used actual server-issued capabilities: each
+selected its bound campaign/perspective, could not administer or cross campaigns
+(HTTP 403), and an attempted operator subscription closed with 1008 before any
+stream frames. No-capability API access returned 401. Five real integration checks
+passed; this run uses the factual scripted baseline, with no paid model driver.

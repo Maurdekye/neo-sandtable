@@ -172,7 +172,7 @@ test('uses the real adapter, renders objectives, and replaces server projections
       return count
     }, png.toString('base64'))
   }
-  await expect(page.getByTestId('fps')).not.toContainText('0 FPS')
+  await expect(page.getByTestId('fps')).toHaveText(/^[1-9]\d* FPS/)
   expect(await counterPixels()).toBeGreaterThan(20)
   await page
     .getByLabel('Perspective', { exact: true })

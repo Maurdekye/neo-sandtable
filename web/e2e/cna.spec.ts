@@ -80,7 +80,7 @@ test('watches actual Graziani positions and private scripted decisions in produc
     "Graziani's Offensive",
   )
   await expect(page.locator('.map-caption')).toContainText('7,023')
-  await expect(page.getByTestId('fps')).not.toContainText('0 FPS')
+  await expect(page.getByTestId('fps')).toHaveText(/^[1-9]\d* FPS/)
   async function select(id: string) {
     await page.getByLabel('Find formation or unit').fill(id)
     await page.locator(`.formation-unit[data-unit-id="${id}"]`).click()
@@ -130,6 +130,7 @@ test('watches actual Graziani positions and private scripted decisions in produc
   const side = await (
     await request.get(
       `${server}/api/campaigns/${meta.id}?perspective=side:axis`,
+      { headers },
     )
   ).json()
   expect(
@@ -180,7 +181,7 @@ test('watches actual Graziani positions and private scripted decisions in produc
     '../../graziani-browser-verification.json',
     JSON.stringify(
       {
-        adapter: '194c2fd',
+        adapter: 'b140784',
         campaign: meta.id,
         units: units.length,
         mapped_units: units.filter((u) => u.hex).length,
@@ -230,7 +231,7 @@ test('shows actual CNA decision citations while a human seat holds the window op
   await expect(page.locator('.pending-decisions')).toContainText('initiative')
   const visible = await page.locator('.pending-decisions').boundingBox()
   expect(visible!.y).toBeLessThan(250)
-  await expect(page.getByTestId('fps')).not.toContainText('0 FPS')
+  await expect(page.getByTestId('fps')).toHaveText(/^[1-9]\d* FPS/)
   await page.screenshot({
     path: '../../board-graziani-decisions.png',
     fullPage: true,

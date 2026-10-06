@@ -68,7 +68,7 @@ test('watches a real sandbox server and uses operator HTTP controls', async ({
   await expect(
     page.getByRole('button', { name: 'Resume campaign', exact: true }),
   ).toBeEnabled()
-  await expect(page.getByTestId('fps')).not.toContainText('0 FPS')
+  await expect(page.getByTestId('fps')).toHaveText(/^[1-9]\d* FPS/)
   await page.screenshot({
     path: '../../board-live-sandbox.png',
     fullPage: true,
