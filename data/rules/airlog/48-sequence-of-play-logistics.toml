@@ -1,0 +1,18 @@
+[section]
+id = "48.0"
+book = "airlog"
+title = "Sequence of Play: Logistics Game"
+systems = ["logistics", "air", "land"]
+
+[[case]]
+id = "48.0"
+title = "Sequence of Play (Logistics Game)"
+summary = "Game-Turn outline when the Logistics game is played. It repeats 33.0 and adds a Stores Expenditure Stage (IV: stores issued and expended, fuel and water spillage and evaporation applied) and, in each OpStage's Organization Phase, a Water Distribution Segment first and an Attrition Segment after Reorganization; hot-weather extra evaporation is applied when weather is determined. Air-only stages may be dropped without the Air game. Stage order: I initiative, II strategic air, III naval convoy, IV stores, V-VII OpStages, VIII strategic air recovery, IX end of turn."
+kind = "procedure"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["33.0"]
+interp = ["airlog-0004"]
+src = ["airlog:48.0"]
+applies = { graziani = "yes" }

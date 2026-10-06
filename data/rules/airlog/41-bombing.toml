@@ -1,0 +1,721 @@
+[section]
+id = "41.0"
+book = "airlog"
+title = "Bombing Missions"
+systems = ["air"]
+
+[[case]]
+id = "41.0"
+title = "General Rule and Procedure"
+summary = "Any plane with bombload above zero may bomb; targets vary by mission type, some planes can bomb at night (less chance of interception, less damage), and some can bomb and strafe together (39.2). The effect is found by totaling bomb tonnage and using the Air Bombardment table for the target type. In the Strategic Air Planning stage each player assigns bombers in writing either to land support (specific missions chosen later each OpStage) or to strategic convoy recon/bombing (CW only); Malta raids resolve at once and bombers used for them or for convoy missions are unavailable until the next Game-Turn."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["strategic_air.designation", "strategic_air.mission_assignment"]
+tables = ["airlog.41.5.air_bombardment"]
+depends_on = ["39.0", "39.16"]
+src = ["airlog:41.0"]
+applies = { graziani = "yes" }
+decision = { what = "In the Strategic Air Planning stage, designate each bomber squadron to land support, Malta raids (Axis), convoy protection (Axis) or convoy recon/bombing (CW).", params = ["squadron", "designation"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "41.1"
+title = "Restrictions on Bombers"
+summary = "Group heading; 'bombers' here means planes that need no pilot points."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:41.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.11"
+title = ""
+summary = "Bombers cannot scramble and have no air zone of control."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:41.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.12"
+title = ""
+summary = "A bomber hits only one target per mission, chosen before flight; spare bombs cannot be dropped on something else on the way back."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.completion"]
+src = ["airlog:41.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.13"
+title = ""
+summary = "Bombers may abort before dropping, but aborted or not their bombload (ammunition) is spent."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.completion"]
+depends_on = ["39.3", "38.45"]
+src = ["airlog:41.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.14"
+title = ""
+summary = "To fly any mission except transfer a bomber must be fueled, refitted and armed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:41.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.15"
+title = ""
+summary = "Bombers' TacAir ratings are parenthesised: they may be used only to fire back at attacking enemy fighters (45.0)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["45.0"]
+src = ["airlog:41.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.16"
+title = ""
+summary = "Dive-bombers may strafe and bomb the same target, and fighters with bombload and D capability may do both; ordinary fighter-bombers fly a bombing or a fighter mission, not both, and on a bombing mission carry a parenthesised TacAir unless they jettison the bombload."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.air_combat"]
+depends_on = ["39.2", "34.21"]
+src = ["airlog:41.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.17"
+title = ""
+summary = "Torpedoes may be used only against ships and ports."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["41.7"]
+src = ["airlog:41.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.2"
+title = "Land Support Mission Procedure"
+summary = "Group heading for land support bombing flow."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:41.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.21"
+title = ""
+summary = "Land support bombers receive a specific mission and hex in the Mission Assignment Segment (for example B-PF/Tobruk for bombing port facilities); one counter per bomber type per mission is placed in the target hex unless intercepted en route by enemy offensive CAP (40.27) or scramblers. The flight path therefore matters."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.deployment"]
+depends_on = ["37.12", "40.27"]
+src = ["airlog:41.21"]
+applies = { graziani = "yes" }
+decision = { what = "Assign each land-support bomber group a bombing mission code, target hex, target and flight path.", params = ["squadron or planes", "mission code", "target hex", "flight path"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "41.22"
+title = ""
+summary = "Once at the target hex, air-to-air combat is resolved, then flak, and then surviving bombers drop; the opposing player totals bomb tons against the target type's column on the Air Bombardment and Secondary Barrage Target table (two dice read sequentially) and applies the result; survivors return, exposed to interception on the way back."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.flak", "opstage.land_support_air.completion", "opstage.land_support_air.return"]
+tables = ["airlog.41.5.air_bombardment"]
+src = ["airlog:41.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.3"
+title = "Land Support Bombing Missions"
+summary = "All land-support bombing except mining harbors uses the Air Bombardment and Secondary Barrage Target table; mining uses the Mining Harbors by Plane table."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.41.5.air_bombardment", "airlog.41.39.mining_harbor_by_plane"]
+src = ["airlog:41.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.31"
+title = ""
+summary = "Bombing personnel (B-CU): the result is the number of battalion-equivalents pinned in the target hex (tanks and guns count double; AA units may be pinned in the way), chosen as for artillery barrage (12.2). Units in a major city cannot be bombed until its fortification is down to level 1 or less (not applying to fortification counters); units in level-2 fortifications elsewhere may be bombed with a one-column shift left."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["41.9", "12.2"]
+errata = ["errata79:41.31"]
+src = ["airlog:41.31"]
+applies = { graziani = "yes" }
+decision = { what = "As the bombed player, choose which units in the hex absorb the pin results, following the artillery barrage selection rule.", params = ["hex", "units pinned"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "41.32"
+title = ""
+summary = "Bombing truck convoys (B-TC): the result is truck units destroyed, split by the defender as evenly as possible among truck types and cargo types; trucks in a major city cannot be bombed until its fortification is zero; attached first-line trucks can be bombed only by planes with D capability."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["53.1"]
+src = ["airlog:41.32"]
+applies = { graziani = "yes" }
+decision = { what = "As the bombed player, choose which truck points are lost, spreading them evenly across truck and cargo types.", params = ["truck unit", "truck points lost by type and cargo"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "41.33"
+title = ""
+summary = "Flak destruction (B-FS): the result is the number of TOE strength points with an AA rating destroyed; it happens after flak fire (unlike fighter suppression). Per the errata the table row reads Flak Destruction."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+errata = ["errata79:41.5"]
+src = ["airlog:41.33"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.34"
+title = ""
+summary = "Bombing ships (B-CF): the result is Damage Points on the ships in the hex (30.34); the CW fleet cannot be bombed at night; torpedoes may be used (41.7); Axis coastal shipping can never be bombed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["30.34", "41.7"]
+src = ["airlog:41.34"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.35"
+title = ""
+summary = "Bombing supply dumps (B-SD): the result is the percentage of each supply type destroyed; for every 10% destroyed one unattached truck point in the hex is also lost (defender's choice, spread evenly), rounding all numbers up."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["54.1"]
+errata = ["errata79:41.35"]
+src = ["airlog:41.35"]
+applies = { graziani = "yes" }
+decision = { what = "As the bombed player, choose which unattached truck points in a bombed dump hex are lost.", params = ["hex", "truck points lost"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "41.36"
+title = ""
+summary = "Bombing air facilities (B-AF): the result is capacity levels destroyed, and for each level destroyed 10% of the planes on the ground are lost (rounded down)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["36.14"]
+src = ["airlog:41.36"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.37"
+title = ""
+summary = "Bombing major cities or fortifications (B-F/C): a major city or fortified hex may be bombed (major cities also at night), but only one fortification level may be destroyed per OpStage (22.35). The mission can also neutralize a temporary repair facility outside a major city for an OpStage on a one-level result."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["22.35", "41.4"]
+src = ["airlog:41.37"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.38"
+title = ""
+summary = "Bombing roads or railroads (B-R, B-RR): same table as cities with the road or rail row; roads in coastal hexes may be bombed at night; the result is the hex's road or railroad destroyed (railroads are easy to repair)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.41.5.air_bombardment"]
+src = ["airlog:41.38"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.39"
+title = "Mining Harbors and Bombing Ports"
+summary = "A. Mining (B-MH): roll once per six bombers on the Mining Harbors by Plane table (using average bombload); on success place a mine counter in the port, which acts like harbor blocking (55.27). B. Bombing ports (B-P): total bombload plus strafing delivered, use the Air Bombardment table; the result is efficiency levels lost by the port (41.8 for Tripoli), and torpedoes may be used."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.41.39.mining_harbor_by_plane", "airlog.41.5.air_bombardment"]
+depends_on = ["55.1", "55.27", "41.8"]
+src = ["airlog:41.39"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.4"
+title = "Night Bombing Missions"
+summary = "Group heading for night bombing."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:41.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.41"
+title = ""
+summary = "Bombers with capability code N or O in the capability column may bomb at night."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:41.41"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.42"
+title = ""
+summary = "Night bombing trades accuracy for safety, and only night-capable fighters may escort bombers at night."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:41.42"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.43"
+title = ""
+summary = "A bombing mission is designated night by notation such as B-P(N); the Air Mission Summary lists which missions may be flown at night."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment"]
+tables = ["airlog.39.5.aircraft_mission_summary"]
+depends_on = ["39.43"]
+src = ["airlog:41.43"]
+applies = { graziani = "yes" }
+decision = { what = "Designate a bombing mission as a night mission.", params = ["mission", "night flag"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "41.44"
+title = ""
+summary = "All regular missions resolve before night missions, and the defender must be told a mission is night before any mission, scramble and so on is resolved."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment", "opstage.land_support_air.air_combat"]
+src = ["airlog:41.44"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.45"
+title = ""
+summary = "Night bombers' bombload tonnage is halved (rounded down), and torpedoes cannot be used at night."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+src = ["airlog:41.45"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.46"
+title = ""
+summary = "Only night fighters may scramble against night bombing (40.9); other fighters may be put on offensive CAP versus a night raid but have no ZOC and may only search for and attack enemy planes with a mission in their own hex (41.47). Night fighters use the same search."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.deployment"]
+depends_on = ["40.9", "41.47"]
+src = ["airlog:41.46"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.47"
+title = ""
+summary = "Fighters on CAP and scrambling night fighters must search to find night bombers: roll one die per squadron, success on a 1, with 2 subtracted for night-fighter squadrons; failure means they go home. Air combat then proceeds normally."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:41.47"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.48"
+title = ""
+summary = "Flak/AA fire at night missions shifts one column left; already in the lowest column it is ineffective."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+tables = ["airlog.46.3.aa_combat_results"]
+depends_on = ["46.3"]
+src = ["airlog:41.48"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.49"
+title = ""
+summary = "Night bombers get no formation-flying benefit (45.36)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["45.36"]
+src = ["airlog:41.49"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.5"
+title = "Air Bombardment Tables"
+summary = "The Air Bombardment and Secondary Barrage Targets table and the Mining Harbors by Plane table. An erratum fixes the Barrage Points row: only two numbers per column, the last column reads 21+ and the Flak row reads Flak Destruction."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.41.5.air_bombardment", "airlog.41.39.mining_harbor_by_plane"]
+errata = ["errata79:41.5"]
+src = ["airlog:41.5", "errata79:41.5"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.51"
+title = "Air Bombardment & Secondary Barrage Table"
+summary = "Two-dice table of results by target type and bombload tonnage; also used for secondary barrage targets."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.41.5.air_bombardment"]
+src = ["airlog:41.51"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.52"
+title = "Mining Harbors by Plane Table"
+summary = "Table for laying mines in harbors by bombers."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.41.39.mining_harbor_by_plane"]
+src = ["airlog:41.52"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.6"
+title = "Strategic Phase Bombing Missions: Axis Naval Convoys"
+summary = "Group heading for CW bombing of Axis convoys."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:41.6"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.61"
+title = ""
+summary = "Axis convoys arrive on shipping lanes, each listing air-flight distances from key cities (56.18)."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.lane_assignment"]
+tables = ["airlog.56.18.axis_naval_convoy_air_distance"]
+depends_on = ["55.1", "56.18"]
+src = ["airlog:41.61"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.62"
+title = ""
+summary = "CW bombers assigned to the Strategic Air Phase (Africa- and Malta-based) may bomb convoys within range; from Africa a plane flies to a lane's listed city and then to the lane, the two distances adding."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["naval_convoy.lane_assignment"]
+tables = ["airlog.56.18.axis_naval_convoy_air_distance"]
+depends_on = ["41.64", "56.18"]
+src = ["airlog:41.62"]
+applies = { graziani = "yes" }
+decision = { what = "Assign CW bombing-reserve planes to bomb, CAP or flak-suppress a located convoy in a specific lane.", params = ["squadron or planes", "convoy lane", "mission"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "41.63"
+title = ""
+summary = "North-Africa-based Axis fighters cannot fly CAP for convoys, Mediterranean-based ones may for any lane in range; CW fighters may fly CAP or flak suppression to any lane in range; distances come from the Convoy Air Distance Chart and African planes must be able to reach a listed city plus the extra distance."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["naval_convoy.lane_assignment"]
+tables = ["airlog.56.18.axis_naval_convoy_air_distance"]
+depends_on = ["40.24", "56.18"]
+src = ["airlog:41.63"]
+applies = { graziani = "yes" }
+decision = { what = "Assign Axis Mediterranean fighters (convoy protection) or CW fighters to CAP or flak suppression in specific convoy lanes.", params = ["squadron or planes", "convoy lane", "mission"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "41.64"
+title = ""
+summary = "The CW may attack only convoys he has located, and convoys are located only by strategic convoy reconnaissance missions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.recon", "naval_convoy.lane_assignment"]
+depends_on = ["42.5"]
+src = ["airlog:41.64"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.65"
+title = ""
+summary = "Convoy attack sequence: (A) planes are split between land support and strategic missions, the Axis further into Malta raids and convoy protection; (B) CW naval recon (recon planes cannot be attacked by planes or AA); (C) Axis convoy-protection CAP assignments, CW CAP/flak suppression/bombing assignments to located lanes (no located convoy: planes stay home and need no readying); (D) air-to-air combat per lane; (E) flak suppression; (F) convoy AA fire; (G) CW bombing. Survivors return in the Strategic Air Recovery stage, and a finished convoy counts as landed."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.designation", "strategic_air.mission_assignment", "naval_convoy.recon", "naval_convoy.lane_assignment", "naval_convoy.bombing"]
+src = ["airlog:41.65"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.66"
+title = ""
+summary = "Convoy bombing uses the Air Bombardment table: total bomb points (adjusted for torpedoes, 41.7), roll two dice; the cross-indexed result is tens of percent of the convoy's cargo lost."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.bombing"]
+tables = ["airlog.41.5.air_bombardment"]
+depends_on = ["41.7"]
+src = ["airlog:41.66"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.67"
+title = ""
+summary = "Convoy losses apply the same percentage to every cargo type (rounding up); truck replacement points, Italian tanks, German tanks, Italian guns and German guns each count as one cargo type."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.bombing"]
+src = ["airlog:41.67"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.68"
+title = ""
+summary = "Convoy bombing never affects the arrival of scheduled reinforcements."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.bombing", "opstage.convoy_arrival"]
+src = ["airlog:41.68"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.7"
+title = "Torpedoes"
+summary = "Group heading for torpedo rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:41.7"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.71"
+title = ""
+summary = "Some planes carry torpedoes, effective against ships and port facilities (arming cost in 38.47)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance"]
+depends_on = ["38.47"]
+src = ["airlog:41.71"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.72"
+title = ""
+summary = "Axis torpedo planes against the CW fleet use the torpedo line of the table instead of the bombload line; a mixed bomb/torpedo force rolls twice, once for each kind."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.41.5.air_bombardment"]
+src = ["airlog:41.72"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.73"
+title = ""
+summary = "When at least half of CW planes attacking an Axis convoy carry torpedoes, the bomb tonnage used for the convoy bombing result is increased by 25% (rounded up); e.g. 160 tons with 17 of 30 planes torpedo-armed counts as 200."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.bombing"]
+depends_on = ["41.66"]
+src = ["airlog:41.73"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.74"
+title = ""
+summary = "Torpedoes used against port facilities count as ordinary bombs."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+src = ["airlog:41.74"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.75"
+title = ""
+summary = "Only planes with T capability can carry torpedoes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:41.75"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.8"
+title = "Bombing Tripoli"
+summary = "Group heading for raids on the Tripoli-Tunisia boxes."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:41.8"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.81"
+title = ""
+summary = "CW bombers may bomb the Tripoli-Tunisia boxes only to reduce port capacity level and destroy planes on the ground."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+src = ["airlog:41.81"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.82"
+title = ""
+summary = "Distances from map hexes to Tripoli and the other boxes are on the Air Distance Chart and are added to distance flown on the map."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+tables = ["airlog.37.4.air_distance"]
+src = ["airlog:41.82"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.83"
+title = ""
+summary = "Raids on the ports of Tripoli or Bizerta are conducted and resolved like other port bombing (41.39)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["41.39"]
+src = ["airlog:41.83"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.84"
+title = ""
+summary = "Raids on grounded Axis planes in Tripoli-Tunisia facilities are Bombing Air Facilities missions, ignoring the result against the facility itself."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["41.36"]
+src = ["airlog:41.84"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.85"
+title = ""
+summary = "Tripoli and the other boxes have constant, indestructible AA/flak printed in each box; CAP over a box is up to the Axis player and covers all targets in that box."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:41.85"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.86"
+title = ""
+summary = "Night missions may be flown against the port of Tripoli."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:41.86"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.9"
+title = "Pinned by Bombing"
+summary = "Pinned-by-bombing effects differ for the A and B player and supersede the older definition in land 3.1; see 41.91 and 41.92."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.combat"]
+depends_on = ["41.91", "41.92", "3.1"]
+src = ["airlog:41.9"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.91"
+title = ""
+summary = "A pinned unit of the A player (for that OpStage): may voluntarily use only half (rounded down) of its CPA; may not voluntarily enter an enemy ZOC; if pinned inside an enemy ZOC may not leave it; may not voluntarily fight (no barrage, offensive close assault or anti-armour). The effects end when the OpStage passes to the B player."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.combat"]
+src = ["airlog:41.91"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "41.92"
+title = ""
+summary = "A pinned unit of the B player cannot move or fight voluntarily during A's OpStage; when it becomes B's turn the 41.91 effects apply, and it becomes unpinned at the end of that OpStage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.combat"]
+depends_on = ["41.91"]
+src = ["airlog:41.92"]
+applies = { graziani = "yes" }

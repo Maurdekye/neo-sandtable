@@ -1,0 +1,319 @@
+[section]
+id = "39.0"
+book = "airlog"
+title = "Missions"
+systems = ["air"]
+
+[[case]]
+id = "39.0"
+title = "General Rule and Procedure"
+summary = "No plane flies without a specific mission (a short description of why it flies), and normally flies only one at a time; missions depend on plane class and target and may be aborted. Common order for every mission except transfer: (a) place planes in the target hex, (b) resolve interception and scramble, (c) fighter-vs-fighter air combat, (d) surviving CAP fighters may attack enemy non-fighters, (e) flak fire if enemy AA is present, (f) run each mission in any order the owner likes, (g) survivors return to base. Players may have to assign missions blind to what is in the hex."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.deployment", "opstage.land_support_air.air_combat", "opstage.land_support_air.flak", "opstage.land_support_air.completion", "opstage.land_support_air.return"]
+src = ["airlog:39.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.1"
+title = "Missions in General"
+summary = "Group heading for the general mission rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:39.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.11"
+title = ""
+summary = "Except emergency flight, a plane flies only with a specific assigned mission and never while an enemy land combat unit is adjacent to its facility (major-city facility excepted per the correction to 37.31)."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "strategic_air.mission_assignment"]
+depends_on = ["37.31"]
+errata = ["errata79:39.11"]
+src = ["airlog:39.11"]
+applies = { graziani = "yes" }
+decision = { what = "Assign each fueled and refitted plane or squadron a mission, target hex and (where relevant) target type for this stage.", params = ["squadron or planes", "mission code", "target hex", "target type", "night flag"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "39.12"
+title = ""
+summary = "Each player may use any shorthand to note missions; the Squadron Composition Sheet has a column for each plane's mission in an OpStage or Strategic Air Phase."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:39.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.13"
+title = ""
+summary = "Missions are strategic (CW missions against Axis naval convoys and Axis missions against Malta, flown only in the Strategic Air stage and only once per Game-Turn) or tactical land support."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["strategic_air.mission_assignment"]
+src = ["airlog:39.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.14"
+title = ""
+summary = "Tactical land-support missions happen in an Operations Stage and affect land (or naval) units; they may be flown three times per Game-Turn, once each OpStage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:39.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.15"
+title = ""
+summary = "Any number of planes may be assigned to one mission in one hex, but only if they have the capability for that mission (Aircraft Characteristics Charts)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["34.18"]
+src = ["airlog:39.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.16"
+title = ""
+summary = "Planes of different squadrons may share a mission or target, and one squadron's planes may be split among missions, but a squadron may not split between strategic and land support missions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.designation", "opstage.land_support_air.assignment"]
+src = ["airlog:39.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.17"
+title = ""
+summary = "There is no limit on the number or types of missions over one hex (apart from what is worth attacking there); players should keep each mission's planes separate."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:39.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.18"
+title = ""
+summary = "There are five mission families: fighter, bomber, transport, recon and transfer; transfer is the only one any plane may fly (42.1)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["42.1"]
+src = ["airlog:39.18"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.19"
+title = ""
+summary = "A plane flies at most one mission per OpStage or Strategic Phase (exceptions: combined missions, 39.2), and a plane that flies in an OpStage cannot fly in that Game-Turn's Strategic Phase or the reverse."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.designation", "opstage.land_support_air.assignment"]
+depends_on = ["39.2"]
+src = ["airlog:39.19"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.2"
+title = "Combined Missions"
+summary = "A plane with the dual capability D may strafe and bomb the same target in a single combined mission (some fighters with small bombloads, and Stuka-type dive bombers)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["34.34", "41.16"]
+src = ["airlog:39.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.3"
+title = "Voluntarily Aborted Missions"
+summary = "Group heading for abort rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:39.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.31"
+title = ""
+summary = "A mission is aborted if cancelled before any action (bombing, strafing or even air combat) has occurred; once any action has occurred it can no longer be voluntarily aborted."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.completion"]
+src = ["airlog:39.31"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.32"
+title = ""
+summary = "To abort voluntarily the player states so and returns the planes to base, if they qualify under 39.36 and 39.37."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.completion"]
+depends_on = ["39.35", "39.36", "39.37"]
+src = ["airlog:39.32"]
+applies = { graziani = "yes" }
+decision = { what = "Abort (some or all of) a mission's planes before any action has taken place, where the maneuver or screen conditions allow.", params = ["mission", "planes aborting"], trigger = "triggered", secrecy = "open", interrupts = true }
+
+[[case]]
+id = "39.33"
+title = ""
+summary = "Aborted missions still use their fuel, and bombers still expend their bombload unused."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.completion"]
+src = ["airlog:39.33"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.34"
+title = ""
+summary = "A player need not abort all planes of a mission; he may continue with some and send others back, within the limits below."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:39.34"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.35"
+title = ""
+summary = "A fighter (any plane with a pilot, fighter-bombers included) may abort voluntarily if its Maneuver Rating is not more than 10 below the best enemy fighter's on CAP in the target hex (enemy rating minus its own is at most 10); with no enemy CAP it may always abort (except see 40.26)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["40.26"]
+src = ["airlog:39.35"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.36"
+title = ""
+summary = "Non-fighters with a sufficient friendly fighter screen may abort; without it they may not, unless their maneuver rating beats the best enemy fighter's."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["39.37"]
+src = ["airlog:39.36"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.37"
+title = ""
+summary = "A sufficient fighter screen is friendly fighters (counted as planes, not ratings) numbering at least 25% of the enemy fighters on CAP in that hex; screening fighters may not abort, and fighters cannot screen fighters."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:39.37"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.38"
+title = ""
+summary = "Aircraft may also be aborted involuntarily, for example by flak results (46.3) or air combat results (45.14)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.flak"]
+depends_on = ["46.3", "45.14"]
+src = ["airlog:39.38"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.4"
+title = "Night Mission"
+summary = "Group heading for night missions."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:39.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.41"
+title = ""
+summary = "Night missions form a sub-phase of the Land Support Air Phase: night scramble, air combat, flak and land-support bombing are resolved separately from other land-support missions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air"]
+src = ["airlog:39.41"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.42"
+title = ""
+summary = "Only certain missions may be flown at night and only planes with night capability may take part (exceptions in 39.43)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+tables = ["airlog.39.5.aircraft_mission_summary"]
+src = ["airlog:39.42"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.43"
+title = ""
+summary = "Except for planes on offensive CAP or scramble, a plane flies at night only if specifically assigned a night mission; otherwise even a night-capable plane flies a regular day mission."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["39.42"]
+src = ["airlog:39.43"]
+applies = { graziani = "yes" }
+decision = { what = "Designate a mission as a night mission (night-capable planes only).", params = ["mission", "night flag"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "39.44"
+title = ""
+summary = "At night, planes cannot be intercepted, cannot engage in air-to-air combat, and face less effective flak; non-fighters get no formation-flying benefit."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.flak"]
+depends_on = ["45.36", "41.48"]
+src = ["airlog:39.44"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "39.5"
+title = "Aircraft Mission Summary"
+summary = "Chart listing the missions, their codes, who may fly them and which may be flown at night."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+tables = ["airlog.39.5.aircraft_mission_summary"]
+src = ["airlog:39.5"]
+applies = { graziani = "yes" }

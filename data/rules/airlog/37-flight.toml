@@ -1,0 +1,253 @@
+[section]
+id = "37.0"
+book = "airlog"
+title = "Flight"
+systems = ["air"]
+
+[[case]]
+id = "37.0"
+title = "General Rule"
+summary = "Flight is handled operationally: a plane is assigned to fly from a given hex to a target hex by any path within its range, and is simply placed in the target hex while the path is noted for CAP interception. Planes need fuel to fly and, except on transfer missions, a refit to fly again; ground units never obstruct flight except by flak."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+src = ["airlog:37.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.1"
+title = "The Mechanics of Flight"
+summary = "Group heading for how planes move."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:37.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.11"
+title = ""
+summary = "Range (34.11) bounds how far a plane may fly in one direction; a transfer mission may double it for the one-way flight."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["34.11"]
+src = ["airlog:37.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.12"
+title = ""
+summary = "The player notes the mission target hex and counts hexes by any path from the base to it; if within range the plane may fly there. Distance charts (37.4, 56.18) shorten the counting. The chosen path matters for CAP interception."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "strategic_air.mission_assignment", "naval_convoy.lane_assignment"]
+tables = ["airlog.37.4.air_distance", "airlog.37.42.land_distance", "airlog.56.18.axis_naval_convoy_air_distance"]
+depends_on = ["37.11", "37.4"]
+src = ["airlog:37.12"]
+applies = { graziani = "yes" }
+decision = { what = "Choose the target hex and flight path (hexes flown through) for each mission's planes.", params = ["squadron or planes", "target hex", "flight path"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "37.13"
+title = ""
+summary = "One aircraft counter per class of plane assigned to a mission is placed in the target hex and the player records each squadron's mission. Flight happens in the Mission Deployment Segment of the Land Support Air Phase, or in the Malta and Convoy Bombing segments of the Strategic Air Stage."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment", "strategic_air.malta_raid", "naval_convoy.bombing"]
+depends_on = ["34.73"]
+src = ["airlog:37.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.14"
+title = ""
+summary = "Scramble is a form of flight in which planes on the ground take off to counter a nearby air threat (40.3)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["40.3"]
+src = ["airlog:37.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.15"
+title = ""
+summary = "No plane flies without fuel; and apart from transfer missions none flies without having been refitted."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["38.3", "37.32"]
+src = ["airlog:37.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.16"
+title = ""
+summary = "A fueled plane that flies any distance uses all its fuel and must refuel before flying again."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["34.17"]
+src = ["airlog:37.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.17"
+title = ""
+summary = "Planes may fly without ammunition, though that is risky."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["38.4"]
+src = ["airlog:37.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.2"
+title = "Restrictions on Flight"
+summary = "Group heading for range, weather, return and capacity limits."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:37.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.21"
+title = ""
+summary = "No plane exceeds its range in one direction except on a transfer mission, which may double it for the one-way trip."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:37.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.22"
+title = ""
+summary = "No plane may fly into or out of a sandstorm or rainstorm hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.return"]
+depends_on = ["29.0"]
+src = ["airlog:37.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.23"
+title = ""
+summary = "Planes must return to their origin base; only if that facility was reduced so it cannot hold them may they try another, and if none can take them they crash-land near the nearest facility. On a die roll 1-3 plane and pilot survive and are recovered next OpStage (ready to fly the one after, pending refit); on 4-6 roll again: 1-2 the pilot survives and returns one Game-Turn later."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.return", "strategic_air_recovery.return_to_base"]
+depends_on = ["36.13"]
+src = ["airlog:37.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.24"
+title = ""
+summary = "Planes flown cannot exceed the air facility's capacity level nor an SGSU's ready capacity. For example five SGSUs on a field cut to capacity two means only two of them can refit and ready planes, and an Italian squadron can send at most nine planes whatever its reserve (the cited 33.23 is read as 35.23)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.maintenance"]
+tables = ["airlog.35.23.squadron_capacity"]
+depends_on = ["35.23", "36.12"]
+src = ["airlog:37.24"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.3"
+title = "Emergency Flight"
+summary = "Group heading for escaping planes from threatened air facilities."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:37.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.31"
+title = ""
+summary = "When an enemy land combat unit moves adjacent to a friendly air facility holding readied planes in danger of destruction or capture, those planes may attempt emergency flight, which is a transfer mission. Facilities in major cities are immune to adjacency and their planes may always fly missions."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["37.32", "37.33", "37.35"]
+errata = ["errata79:37.31"]
+src = ["airlog:37.31"]
+applies = { graziani = "yes" }
+decision = { what = "When an enemy unit moves adjacent to an air facility, decide whether readied planes there attempt emergency flight, and where to.", params = ["air facility", "planes", "destination facility"], trigger = "triggered", secrecy = "open", interrupts = true }
+
+[[case]]
+id = "37.32"
+title = ""
+summary = "Only fueled planes, reserves included, can make emergency flight."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["airlog:37.32"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.33"
+title = ""
+summary = "After assigning pilots the owner rolls one die per plane: a fighter or fighter-bomber escapes on 1-3, a bomber, recon or transport on 1-2; otherwise it stays on the ground."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["airlog:37.33"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.34"
+title = ""
+summary = "Emergency flight follows normal flight rules but happens out of sequence and may fly up to double range."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["airlog:37.34"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.35"
+title = ""
+summary = "The option must be exercised immediately: if another enemy unit moves before the owner rolls, all planes there are stuck on the ground."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["airlog:37.35"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "37.4"
+title = "Distance Charts"
+summary = "Air Distance Table (and Land Distance Chart) giving distances in hexes between major points to spare counting on the large map."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+tables = ["airlog.37.4.air_distance", "airlog.37.42.land_distance"]
+src = ["airlog:37.4"]
+applies = { graziani = "yes" }

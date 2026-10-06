@@ -1,0 +1,237 @@
+[section]
+id = "46.0"
+book = "airlog"
+title = "Anti-Aircraft Fire (Flak)"
+systems = ["air"]
+
+[[case]]
+id = "46.0"
+title = "General Rule and Procedure"
+summary = "Planes on missions undergo AA fire in a hex with enemy AA, after air combat and flak suppression. AA points are TOE strength times AA rating; fire spends ammunition. Planes are grouped into target groups and each group is attacked on the Anti-Aircraft Combat Results table (two dice read sequentially); non-fighter groups first adjust the column for plane density and roll separately for planes destroyed and planes aborted, the victims chosen by an agreed random method."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+tables = ["airlog.46.3.aa_combat_results", "airlog.46.4.flak_adjustment"]
+depends_on = ["46.26", "46.27"]
+src = ["airlog:46.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.1"
+title = "Flak/AA Units"
+summary = "Group heading for what can fire AA."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:46.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.11"
+title = ""
+summary = "Units with an AA rating may fire at enemy planes (see 46.22); most are flak units marked by their symbol (pure flak units), while others carry AA ratings that multiply TOE strength to give actual AA points."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:46.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.12"
+title = ""
+summary = "A flak unit with a parenthesised defense assault rating defends against assault only if alone in the hex; the German 88s and Italian 90mm are treated as artillery with assault ratings when attacked."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["airlog:46.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.13"
+title = ""
+summary = "Flak units are like artillery in having their own transport; those without need trucks, each point of AA towed by a medium or heavy Truck Point."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["airlog:46.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.14"
+title = ""
+summary = "Flak units need supplies like artillery and use ammunition when firing."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+tables = ["airlog.50.2.ammunition_consumption"]
+depends_on = ["50.0"]
+src = ["airlog:46.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.15"
+title = ""
+summary = "Some tank and recce units carry AA points per TOE strength point (5 Sherman TOE points = 5 AA points)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:46.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.16"
+title = ""
+summary = "Tanks may use AA points only against fighters strafing units in their hex or against dive bombers."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:46.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.17"
+title = ""
+summary = "Pure AA/flak units stack freely in major cities (not counting against stacking limits); one stacks freely in an air landing strip hex and three in an airfield."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:46.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.2"
+title = "Restrictions on Anti-Aircraft Fire"
+summary = "Group heading for limits on AA fire."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:46.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.21"
+title = ""
+summary = "AA fire can target only planes on missions in the same hex as the AA-capable units and facilities."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:46.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.22"
+title = ""
+summary = "Infantry, recce and tank units fire AA only at the fighter-mission, strafing and/or dive-bombing target group."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+depends_on = ["46.26"]
+src = ["airlog:46.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.23"
+title = ""
+summary = "AA fire follows all air combat and flak suppression."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:46.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.24"
+title = ""
+summary = "Fighters on flak suppression and planes on naval convoy reconnaissance cannot be fired on by AA."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak", "naval_convoy.bombing"]
+src = ["airlog:46.24"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.25"
+title = ""
+summary = "Opposing planes on missions in a hex are grouped into target groups for AA purposes; the player owning the planes declares the groups' numbers and types but not their missions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+depends_on = ["46.26"]
+src = ["airlog:46.25"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.26"
+title = ""
+summary = "Target groups: (a) enemy non-fighter-mission planes on day missions, one group per mission; (b) the same at night, per mission; (c) day CAP, scramble and interception fighters; (d) night CAP/scramble/interception fighters; (e) planes on strafing and/or dive-bombing missions."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:46.26"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.27"
+title = ""
+summary = "The owning player may fire AA at as many target groups as he wishes, in any order, naming which AA points and which TOE strength points of AA-rated units attack each group."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.land_support_air.flak"]
+tables = ["airlog.46.3.aa_combat_results"]
+depends_on = ["46.26", "46.0"]
+src = ["airlog:46.27"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which target groups to fire AA at, in what order, and which AA points and AA-rated units fire at each.", params = ["target group", "AA points or units", "order"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "46.28"
+title = ""
+summary = "Replacement Points have no AA ratings until absorbed by a unit."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:46.28"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.3"
+title = "Anti-Aircraft Combat Results Table"
+summary = "Table of planes destroyed and aborted by AA points, with notes at the bottom that supersede the Flak Adjustment chart."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+tables = ["airlog.46.3.aa_combat_results"]
+src = ["airlog:46.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "46.4"
+title = "Flak Adjustment Chart"
+summary = "Chart of column adjustments by density of enemy non-fighter planes; printed wrong, so the notes at the bottom of 46.3 govern instead."
+kind = "table"
+disposition = "superseded"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+tables = ["airlog.46.4.flak_adjustment"]
+errata = ["errata79:46.4"]
+src = ["airlog:46.4", "errata79:46.4"]
+applies = { graziani = "yes" }

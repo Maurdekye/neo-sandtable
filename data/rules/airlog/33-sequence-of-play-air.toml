@@ -1,0 +1,18 @@
+[section]
+id = "33.0"
+book = "airlog"
+title = "Sequence of Play: Air Game"
+systems = ["air", "land"]
+
+[[case]]
+id = "33.0"
+title = "Sequence of Play (Air Game)"
+summary = "Game-Turn outline for Land plus Air: I initiative; II strategic air planning (designation, Malta availability, mission assignment, Malta raids); III naval convoy (schedule, recon, lane assignment, bombing); three Operations Stages (declaration, weather, organization, convoy arrival, CW fleet, land-support air, then each player's reserve, movement and combat, convoy, rail, repair and patrol phases); VII strategic air recovery; VIII end of turn. Graziani uses the Logistics sequence (48.0); differences are in airlog-0004."
+kind = "procedure"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["48.0"]
+interp = ["airlog-0004"]
+src = ["airlog:33.0"]
+applies = { graziani = "yes" }

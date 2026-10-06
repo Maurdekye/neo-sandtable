@@ -1,0 +1,172 @@
+[section]
+id = "36.0"
+book = "airlog"
+title = "Air Facilities"
+systems = ["air"]
+
+[[case]]
+id = "36.0"
+title = "General Rule"
+summary = "Air facilities (airfields, air landing strips, flying boat basins, flying boat alighting areas) differ in how many planes they can launch and service. They are built (24.7), exist at scenario start as the scenario lists, can be damaged or destroyed by enemy bombardment, and the number of SGSUs and planes that can use one depends on its current capacity level."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["24.7"]
+src = ["airlog:36.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.1"
+title = "Airfields"
+summary = "Group heading for airfield rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:36.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.11"
+title = ""
+summary = "Airfields are fully equipped air facilities with shops and runway room for many squadrons, shown by an airfield counter in the hex where built (24.7)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:36.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.12"
+title = ""
+summary = "An airfield has maximum capacity level six: at most six squadrons at a time, and never more than six SGSUs in its hex (but see off-map facilities, 36.5)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["36.5"]
+src = ["airlog:36.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.13"
+title = ""
+summary = "An airfield that has landed six squadrons' worth of planes in an OpStage cannot take more, even in an emergency; extra planes must go elsewhere. Likewise no more than six squadrons' worth of planes can be readied there."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.return", "opstage.land_support_air.maintenance"]
+src = ["airlog:36.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.14"
+title = ""
+summary = "Enemy bombardment (air or artillery) lowers an airfield's capacity level, and only that many squadrons can operate until it is rebuilt, although all six SGSUs may stay. At level zero the airfield is destroyed for all purposes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion", "opstage.movement_and_combat.combat.barrage", "naval_convoy.bombing"]
+depends_on = ["41.5", "12.5"]
+src = ["airlog:36.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.15"
+title = ""
+summary = "Desert raiders can damage airfields; ordinary land units never do except by barrage, but a land combat unit entering the hex captures or destroys it entirely. Airfields are nationality-free and anyone may use them."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["36.14", "12.5"]
+src = ["airlog:36.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.16"
+title = ""
+summary = "The airfield provides maintenance capacity, but the SGSU actually does the maintenance (35.17)."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["35.17"]
+src = ["airlog:36.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.17"
+title = ""
+summary = "An airfield is a supply dump for its SGSUs' fuel, ammo, stores and so on, usable by any SGSU there; land units may draw on it only in an emergency of the player's definition."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["54.1"]
+src = ["airlog:36.17"]
+applies = { graziani = "yes" }
+decision = { what = "Declare an emergency to let a land unit draw supplies from an airfield dump.", params = ["land unit", "airfield", "supply type and amount"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "36.18"
+title = ""
+summary = "Every airfield has one intrinsic anti-aircraft strength point (plus any AA units present), usable only against planes strafing or dive-bombing."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+depends_on = ["46.1"]
+src = ["airlog:36.18"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.2"
+title = "Air Landing Strips"
+summary = "Strips are cleared and levelled ground with minimal maintenance, treated as airfields except that capacity is one squadron; if that capacity is destroyed the strip is removed from the map."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["36.1", "24.7"]
+src = ["airlog:36.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.3"
+title = "Flying Boat Basins"
+summary = "Basins are the airfields of flying boats, who must use basins or alighting areas for landing and maintenance. Capacity is three squadrons, they may be placed in any coastal hex, have the same one-point intrinsic AA, may not be used by normal aircraft, and need only trucks in the hex to supply."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["34.4", "36.18", "24.7"]
+src = ["airlog:36.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.4"
+title = "Flying Boat Alighting Areas"
+summary = "Like basins but capacity one squadron and immune to artillery barrage; still vulnerable to air bombardment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["36.3", "41.36"]
+src = ["airlog:36.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "36.5"
+title = "Off-Map Air Facilities"
+summary = "Off-map facilities (Tunisia boxes, CW facilities such as Deversoir on map E, and so on) work like on-map ones except that they have unlimited maintenance supplies, may hold more SGSUs up to the limit printed on the field, and can never be destroyed by bombing (only reduced to zero), being rebuilt via the Malta Air Facility Construction Table (one roll per Game-Turn for all CW facilities). Axis Mediterranean bases cannot be bombed. The Allied Off-Map Air Facilities Chart lists them."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.36.53.allied_offmap_air_facilities", "airlog.44.5.maltese_air_facility_construction"]
+depends_on = ["44.5"]
+src = ["airlog:36.5"]
+applies = { graziani = "yes" }

@@ -1,0 +1,408 @@
+[section]
+id = "45.0"
+book = "airlog"
+title = "Air-to-Air Combat"
+systems = ["air"]
+
+[[case]]
+id = "45.0"
+title = "General Rule and Procedure"
+summary = "Air combat is abstract and happens in one hex before flak and mission completion; only non-parenthesised fighters may initiate it, and offensive-CAP fighters must. Planes pair off one on one with rating = TacAir + pilot (fighters) or + formation bonus (bombers), then a differential adjusted by the Maneuver Adjustment chart. The minus-differential plane fires first (non-fighters always first against fighters), rolling two dice read sequentially against the TacAir Kill table; a miss lets the other fire. Non-fighters fire at each matched fighter; fighters fire at one plane."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+tables = ["airlog.45.4.maneuver_adjustment", "airlog.45.5.tacair_kill"]
+depends_on = ["45.2", "45.3", "45.36"]
+src = ["airlog:45.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.1"
+title = "How and When Air-to-Air Combat Occurs"
+summary = "Group heading for the triggers and ordering of air combat."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:45.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.11"
+title = ""
+summary = "Air-to-air combat occurs only between planes in the same hex, whatever air ZOCs exist; fighters with air ZOC may move into an adjacent hex to engage, and offensive-CAP fighters in a hex with no opposing planes must move into an adjacent controlled hex to fight."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["40.23"]
+src = ["airlog:45.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.12"
+title = ""
+summary = "Every plane in the hex is subject to air combat, but only fighters or fighter-bombers on a fighter mission may initiate it."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.13"
+title = ""
+summary = "Air-to-air combat precedes flak and mission completion, and any scramble or interception into the hex must be settled first."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.14"
+title = ""
+summary = "Offensive-CAP fighters in a hex automatically initiate combat against all enemy planes there. Otherwise each player secretly decides whether to initiate and reveals together; if either does, combat is joined, and if neither does, both sides' planes go home and all missions in that hex are cancelled (a free abort)."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["39.3", "40.26"]
+src = ["airlog:45.14"]
+applies = { graziani = "yes" }
+decision = { what = "When no offensive-CAP fighters are present, secretly choose whether to initiate air-to-air combat in a contested hex.", params = ["hex", "initiate or not"], trigger = "triggered", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "45.15"
+title = ""
+summary = "Once combat starts, planes flying a non-CAP mission with friendly defensive CAP are screened and set aside while fighters on CAP fight first; non-CAP planes without friendly defensive CAP are not screened."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.16"
+title = ""
+summary = "The player with more fighters (a count) is the Attacker; on a tie, the player with the Game-Turn initiative. Players may then attempt to abort missions (39.3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["39.3", "7.0"]
+src = ["airlog:45.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.17"
+title = ""
+summary = "A plane without ammunition (bombs aside) may not fire in air combat, but its ratings still apply to the enemy's fire."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["38.43"]
+src = ["airlog:45.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.18"
+title = ""
+summary = "The first wave of air combat (fighter vs fighter) is resolved first, then screened planes may be attacked in a similar way (45.3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.18"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.19"
+title = ""
+summary = "A plane assigned to a match-up may never be switched to another, even if its opponent is shot down before firing."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.19"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.2"
+title = "Fighter vs Fighter"
+summary = "Group heading for fighter combat."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:45.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.21"
+title = ""
+summary = "Fighter-vs-fighter combat follows the general procedure (45.0) plus the details below."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.22"
+title = ""
+summary = "The defender lays out his fighters and states each one's plane type without revealing pilot rating."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.22"]
+applies = { graziani = "yes" }
+decision = { what = "As defender, present each fighter's plane type (pilot rating hidden) and its squadron where needed.", params = ["fighter", "plane type"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "45.23"
+title = ""
+summary = "The attacker must assign at least one fighter to every defending fighter; once all are covered he may add more attackers to any defender, without limit."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["45.22"]
+src = ["airlog:45.23"]
+applies = { graziani = "yes" }
+decision = { what = "As attacker, match attacking fighters to defending fighters, covering every defender at least once, and set the order of multiple attacks on one defender.", params = ["attacking fighter", "defending fighter", "attack order"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "45.24"
+title = ""
+summary = "Each match-up is resolved individually in any order the players like: a defender fires at one attacker only, and multiple attackers each fire at the defender, but strengths are never added together."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+tables = ["airlog.45.5.tacair_kill"]
+src = ["airlog:45.24"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.25"
+title = ""
+summary = "After fighter vs fighter, surviving fighters may fire again at enemy bombers and other screened planes (45.3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["45.3"]
+src = ["airlog:45.25"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.3"
+title = "Fighter vs Non-Fighter (Screened Planes)"
+summary = "Group heading for attacks on screened planes."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:45.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.31"
+title = ""
+summary = "After fighter combat, remaining fighters may attack enemy screened planes if permitted by 45.32; they need not, even on offensive CAP, unless only non-fighters were in the hex to begin with, in which case offensive CAP fighters must attack the unscreened planes."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["45.32"]
+src = ["airlog:45.31"]
+applies = { graziani = "yes" }
+decision = { what = "Choose whether surviving fighters attack screened enemy planes.", params = ["hex", "attack or not"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "45.32"
+title = ""
+summary = "A player may attack screened planes only with the excess of his surviving fighters over the enemy's (19 Hurricanes against 5 Messerschmitts leaves 14 free to attack the bombers)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.32"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.33"
+title = ""
+summary = "The player with the screened planes is the defender and lays them out; the attacker may allocate his excess fighters among them as he likes, without having to cover every plane (all against one bomber, or spread)."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["45.22", "45.32"]
+src = ["airlog:45.33"]
+applies = { graziani = "yes" }
+decision = { what = "As attacker, allocate excess fighters among the defender's screened planes.", params = ["attacking fighter", "target screened plane"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "45.34"
+title = ""
+summary = "Fighter-vs-non-fighter combat resolves like fighter vs fighter, except that defending screened planes may fire at every fighter attacking them, not just one (a dive bomber fires at one attacker)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:45.34"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.35"
+title = ""
+summary = "Surviving screened planes proceed to flak fire and their missions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.flak"]
+src = ["airlog:45.35"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.36"
+title = ""
+summary = "Formation flying: with 6-17 bombers on a mission each bomber's TacAir gets +1; with 18 or more, +2 (not for dive bombers, transports or night bombers). Worked examples: CR 42 (pilot 3) vs Hurricane I (pilot 2) differential +/-2 after maneuver; three Hurricane IIB against a Ju 88D formation of 12 give +5 each."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["34.35", "41.49", "39.44"]
+src = ["airlog:45.36"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.4"
+title = "Maneuver Adjustment Chart"
+summary = "Chart giving the TacAir adjustment by difference in maneuver ratings."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+tables = ["airlog.45.4.maneuver_adjustment"]
+src = ["airlog:45.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.5"
+title = "TacAir Kill Table"
+summary = "Table of the two-dice kill ranges for each final TacAir differential."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+tables = ["airlog.45.5.tacair_kill"]
+src = ["airlog:45.5"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.6"
+title = "Plane and Pilot Recovery"
+summary = "Heading and chart for recovery of shot-down planes and pilots."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.completion"]
+tables = ["airlog.45.6.plane_and_pilot_recovery"]
+src = ["airlog:45.6"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.61"
+title = ""
+summary = "Fighters shot down in air combat, and planes strafed on the ground (40.63), may in certain cases be recovered."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.completion"]
+src = ["airlog:45.61"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.62"
+title = ""
+summary = "Strafed ground planes: spend 1 Stores and 1 Fuel Point per plane attempted, roll one die: 1-2 repairs it (supplies spent only on success), otherwise it is permanently destroyed; a repaired plane flies a full Game-Turn later."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.maintenance"]
+depends_on = ["40.63"]
+src = ["airlog:45.62"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which strafed grounded planes to attempt to repair, spending 1 Stores and 1 Fuel Point each.", params = ["plane", "SGSU or facility"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "45.63"
+title = ""
+summary = "For a fighter shot down by planes or flak the owner rolls one die: a 1 means it never went down and limps home (together with its pilot); a 2 means only the pilot returns."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.flak"]
+depends_on = ["45.66"]
+src = ["airlog:45.63"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.64"
+title = ""
+summary = "A fighter that returned under 45.63 must still be repaired with the 45.62 supplies (1 Stores and 1 Fuel Point), but no die roll is needed."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.maintenance"]
+depends_on = ["45.63", "45.62"]
+src = ["airlog:45.64"]
+applies = { graziani = "yes" }
+decision = { what = "Choose whether to pay the supplies to repair a fighter that limped home.", params = ["plane"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "45.65"
+title = ""
+summary = "Fighters recovered and repaired this way do not count as kills for the optional ace rule (40.18)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["40.18"]
+src = ["airlog:45.65"]
+applies = { graziani = "no", graziani_note = "Only relevant to the optional ace rule, which is not used." }
+
+[[case]]
+id = "45.66"
+title = ""
+summary = "For each fighter shot down the owner rolls a die: 1-2 the pilot bails out and is recovered wherever it fell, ready three OpStages later; otherwise he is killed."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.flak"]
+depends_on = ["40.17"]
+src = ["airlog:45.66"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "45.7"
+title = "Extended Range"
+summary = "A plane with several maneuver ratings must use the lower one on an extended-range mission unless the owner jettisons the extra tank, which allows the higher rating in air combat but forbids landing at any facility beyond normal range (a plane out of range of any friendly facility crash-lands if it survives). A fighter-bomber attacked on a bombing mission may jettison its bombs (no effect) to raise its maneuver rating."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["38.26", "37.23"]
+src = ["airlog:45.7"]
+applies = { graziani = "yes" }
+decision = { what = "Choose whether to jettison extra tanks or bombs in an air-combat hex to gain the higher maneuver rating.", params = ["plane or squadron", "tanks or bombs"], trigger = "triggered", secrecy = "open", interrupts = false }

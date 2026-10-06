@@ -1,0 +1,299 @@
+[section]
+id = "44.0"
+book = "airlog"
+title = "Malta"
+systems = ["air"]
+
+[[case]]
+id = "44.0"
+title = "Commentary and General Rule"
+summary = "Malta sits astride the Axis shipping lanes. The CW may base planes on its air facilities to hit convoys and bases; the Axis may try to reduce Malta by bombing, under policy limits abstracted into charts, and may not invade. Planes on Malta missions must be assigned a specific hex."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["strategic_air.malta_raid"]
+src = ["airlog:44.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.1"
+title = "The Maltese Airbases"
+summary = "Group heading for Malta's air facilities."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:44.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.11"
+title = ""
+summary = "The Malta map on game map A is not to the scale or position of the African maps; air distances to key African points are in the Malta Box. Only the air facilities and the port of Valetta matter."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:44.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.12"
+title = ""
+summary = "Maltese air facilities are printed on the map, permanent and immovable; none can be built or destroyed, but Axis bombing can reduce them to zero effectiveness."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:44.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.13"
+title = ""
+summary = "Initial Maltese capacity comes from each scenario; the CW may raise it to standard levels by rolling once per Game-Turn per Malta facility on the Maltese Air Facility Construction Table, with no supplies spent."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.repair", "opstage.convoy_arrival"]
+tables = ["airlog.44.5.maltese_air_facility_construction"]
+src = ["airlog:44.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.14"
+title = ""
+summary = "The CW uses no SGSUs on Malta; each facility level handles 18 planes of any type (a six-level airfield takes 108), though planes should be grouped like squadrons for convenience."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:44.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.15"
+title = ""
+summary = "Planes on Malta may move between fields without flying, at the start of the OpStage, outside the sequence and secretly; this is not a mission."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.initiative_declaration"]
+src = ["airlog:44.15"]
+applies = { graziani = "yes" }
+decision = { what = "Move squadrons or planes between Malta air facilities at the start of the OpStage, unseen by the enemy.", params = ["squadron or planes", "from facility", "to facility"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "44.16"
+title = ""
+summary = "Planes on Malta need no fuel or ammo (refueled and rearmed automatically each stage) but must be refitted like all planes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+depends_on = ["38.3"]
+src = ["airlog:44.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.17"
+title = ""
+summary = "CW planes may transfer between Malta and African fields if they have the range."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["42.1"]
+src = ["airlog:44.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.18"
+title = ""
+summary = "The CW may divert AA replacements to Malta: each light AA point diverted gives one AA point there, each heavy gives four, at most one AA replacement point (light or heavy) per month, and total Malta AA capped at 48. AA is noted per base (no counters on the Malta map), may move between Maltese fields like planes but never between Malta and the mainland."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["46.1"]
+src = ["airlog:44.18"]
+applies = { graziani = "yes" }
+decision = { what = "Divert a CW light or heavy AA replacement point to Malta (at most one per month) and place the resulting AA points.", params = ["AA replacement point", "Malta facility"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "44.2"
+title = "Axis Air Raids on Malta"
+summary = "Group heading for Axis raids on Malta."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:44.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.21"
+title = ""
+summary = "Axis bombers based in Italy/Sicily and any African-based Axis planes in range may raid Malta, bombing its air facilities to cut their ability to refit planes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.malta_raid"]
+src = ["airlog:44.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.22"
+title = ""
+summary = "In addition the Axis may draw on Italian and German aircraft permanently in Italy and Sicily, otherwise unavailable, as set by the Axis Malta Availability Levels (44.4)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.malta_availability"]
+tables = ["airlog.44.42.axis_malta_availability"]
+src = ["airlog:44.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.23"
+title = ""
+summary = "There are four Axis Malta Availability Levels, each listing how many Game-Turns of the campaign it may be used (shorter scenarios have their own lists); a level can never be used more turns than allowed, so the Axis plans raids to suit."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["strategic_air.malta_availability"]
+tables = ["airlog.44.41.axis_strategic_airforce_commitment", "airlog.44.42.axis_malta_availability"]
+depends_on = ["44.25", "44.29"]
+src = ["airlog:44.23"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which Axis Malta Availability Level (I to IV) to roll on this Game-Turn, within the remaining turns each level has.", params = ["availability level"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "44.24"
+title = ""
+summary = "Axis raids on Malta happen in the Strategic Air Phase, once per Game-Turn. The Axis picks planes by consulting his chosen portion of the Malta Availability Table, assigns each squadron to a Maltese airfield, and resolves bombing and/or strafing normally, including air combat and flak."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["strategic_air.mission_assignment", "strategic_air.malta_raid"]
+depends_on = ["44.25", "44.27"]
+src = ["airlog:44.24"]
+applies = { graziani = "yes" }
+decision = { what = "Assign each Malta-raid squadron (from tables and map bases) to a specific Maltese airfield and mission.", params = ["squadron or planes", "Maltese airfield", "mission"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "44.25"
+title = ""
+summary = "Planes available come from the Axis Malta Table (44.42: a share of the player's planes in Italy/Sicily plus extra planes not otherwise in the game), to which he may add African-based planes, up to the per-type maximums from the table. Choosing not to raid counts as Level I (unlimited)."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.malta_availability", "strategic_air.mission_assignment"]
+tables = ["airlog.44.42.axis_malta_availability"]
+src = ["airlog:44.25"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.26"
+title = ""
+summary = "The Axis assigns map-based planes only after determining how many it gets from the tables."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.mission_assignment"]
+src = ["airlog:44.26"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.27"
+title = ""
+summary = "No more planes of one type from map bases than the table gives of that type, and a plane type not given by the table cannot be added from the map. Worked example: Level III roll of 6 gives 50% of Italy/Sicily-based planes plus 100% extra, i.e. 150% of the Italy/Sicily total, and the Axis may add up to the same count again from Africa."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.mission_assignment"]
+tables = ["airlog.44.42.axis_malta_availability"]
+src = ["airlog:44.27"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.28"
+title = ""
+summary = "Losses are shared in proportion: compute the ratio of in-play planes used (African planes plus the left-of-slash percentage share) to the extra planes used (right of slash), apply that Actual Loss Percentage (rounding up) to total CRT losses, and take them only from planes actually in the game; the table-only extra planes never suffer losses."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.malta_raid"]
+src = ["airlog:44.28"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.29"
+title = ""
+summary = "After rolling on the table the Axis may call off the raid; the level is still used up that turn and no map-based planes may fly the raid."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["strategic_air.malta_availability", "strategic_air.malta_raid"]
+depends_on = ["44.23"]
+src = ["airlog:44.29"]
+applies = { graziani = "yes" }
+decision = { what = "After the availability roll, decide whether to carry out or cancel the Malta raid.", params = ["raid or cancel"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "44.3"
+title = "Invasion of Malta"
+summary = "Explains why the Axis may not invade Malta in this game (German High Command doubts, paratrooper losses on Crete, the Folgore's lack of airborne practice)."
+kind = "designer_note"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:44.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.4"
+title = "Strategic Air Raids on Malta"
+summary = "Heading for the Axis commitment and availability charts."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:44.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.41"
+title = "Axis Strategic Airforce Commitment Chart"
+summary = "Chart giving how many Game-Turns each of the four Axis Malta Availability Levels may be used, by campaign or scenario."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["strategic_air.malta_availability"]
+tables = ["airlog.44.41.axis_strategic_airforce_commitment"]
+src = ["airlog:44.41"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.42"
+title = "Axis Malta Availability Table"
+summary = "Table giving, by availability level and die roll, the share of Italy/Sicily planes and the extra planes available for Malta raids."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["strategic_air.malta_availability"]
+tables = ["airlog.44.42.axis_malta_availability"]
+src = ["airlog:44.42"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "44.5"
+title = "Malta Air Facility Construction Table"
+summary = "Table (kept in the Axis booklet, used by the CW) giving levels of Maltese air facility the CW may restore per roll."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+tables = ["airlog.44.5.maltese_air_facility_construction"]
+src = ["airlog:44.5"]
+applies = { graziani = "yes" }

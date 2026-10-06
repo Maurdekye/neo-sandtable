@@ -1,0 +1,142 @@
+[section]
+id = "43.0"
+book = "airlog"
+title = "Axis Italian-Aegean Air Bases"
+systems = ["air"]
+
+[[case]]
+id = "43.0"
+title = "General Rule"
+summary = "The northern Mediterranean shore was Axis-held, and Italy, Sicily, Greece and Crete based multipurpose bombers; the German player must base a share of his bombers in Italy, Sicily or Crete (boxes and distances are on the maps), with restrictions on fighter support for missions based there."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:43.0"]
+applies = { graziani = "no", graziani_note = "German bombers basing rules; no German air units appear in Graziani's Offensive." }
+
+[[case]]
+id = "43.1"
+title = "Axis Mediterranean Bomber Base Requirements"
+summary = "Group heading for German bomber basing quotas."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:43.1"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.11"
+title = ""
+summary = "At least 75% of German He 111, Ju 88D and FW 200 bombers must be based in Mediterranean bases."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:43.11"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.12"
+title = ""
+summary = "Until Game-Turn 35 of 1941, 75% of those German bombers must be based in Italy/Sicily."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+errata = ["errata79:43.12"]
+src = ["airlog:43.12"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.13"
+title = ""
+summary = "From Game-Turn 35 (June 1941) to the end, at least 50% of those bombers must be based in Crete; the rest may be in Sicily/Italy or Crete."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:43.13"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.14"
+title = ""
+summary = "Transferring between Italy, Sicily and Crete takes one OpStage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+src = ["airlog:43.14"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.2"
+title = "Mediterranean Base Restrictions & CAP Abilities"
+summary = "A note that the system is confusing: special planes drawn from percentages of those in the Italy/Sicily boxes appear that are used nowhere else."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:43.2"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.21"
+title = ""
+summary = "German bombers in Italy/Sicily and Crete need no SGSUs; the box supplies fuel and ammunition so the Axis spends none, but the planes still must be refitted (38.3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance"]
+depends_on = ["38.3"]
+src = ["airlog:43.21"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.22"
+title = ""
+summary = "For refit, the Axis divides all bombers in an area into groups of 6 to 12, each treated as a squadron."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.maintenance"]
+depends_on = ["38.34"]
+src = ["airlog:43.22"]
+applies = { graziani = "no", graziani_note = "German content." }
+decision = { what = "Divide Mediterranean-based bombers into pseudo-squadrons of 6 to 12 for refit rolls.", params = ["area", "group composition"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "43.23"
+title = ""
+summary = "Bombers based in Crete must be used to raid the Suez area each month, abstractly: in four OpStages of a month Crete flies no bombing missions, with no effect and no losses."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:43.23"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.24"
+title = ""
+summary = "Bombers flying from Crete may not receive CAP from planes in Africa."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:43.24"]
+applies = { graziani = "no", graziani_note = "German content." }
+
+[[case]]
+id = "43.25"
+title = ""
+summary = "Bombers based in Italy/Sicily may coordinate with African-based fighters for CAP and may raid Malta (44.0)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "strategic_air.malta_raid"]
+depends_on = ["44.2"]
+src = ["airlog:43.25"]
+applies = { graziani = "no", graziani_note = "German content." }

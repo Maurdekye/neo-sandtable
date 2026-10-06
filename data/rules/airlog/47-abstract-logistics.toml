@@ -1,0 +1,368 @@
+[section]
+id = "47.0"
+book = "airlog"
+title = "Abstract Logistics Rules"
+systems = ["logistics"]
+
+[[case]]
+id = "47.0"
+title = "Abstract Logistics Rules"
+summary = "Players use the abstract logistics and air rules of land section 32 except as modified in 47; this whole section replaces the Logistics game and is not used when it is played."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.0"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.1"
+title = "Supply Units and Supply"
+summary = "Group heading for supply units and depots in the abstract system."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.1"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.11"
+title = ""
+summary = "All off-map air facilities have unlimited maintenance supplies."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.11"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.12"
+title = ""
+summary = "Cairo and Alexandria have unlimited maintenance supplies for CW SGSUs in those hexes or within supply range (47.13)."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.12"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.13"
+title = ""
+summary = "An SGSU may draw supplies from any friendly supply unit (32.16) or Cairo/Alexandria within 15 CP."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.13"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.14"
+title = ""
+summary = "Players receive regular and Depot supply units; a Depot starts with 180 Fuel and 40 Ammo, stays a Depot until at most 60 Fuel remain, cannot absorb supplies, and may be drawn on only by SGSUs and motorization points transporting it."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.14"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.2"
+title = "Supply Expenditures"
+summary = "Group heading for abstract supply expenditures."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.2"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.21"
+title = ""
+summary = "Only gun-class units spend ammo to fire at planes: 1 Ammo Point per AA attack against a target group."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.21"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.22"
+title = ""
+summary = "Fighter and fighter-bomber squadrons need no ammo to use TacAir and Bombload; non-fighter squadrons are fully rearmed for 1 Ammo Point."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.22"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.23"
+title = ""
+summary = "Fighter squadrons refuel for 1 Fuel Point; Axis non-fighter squadrons for 2, CW non-fighter squadrons for 3."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.23"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.3"
+title = "Movement of Supply Units"
+summary = "Group heading for moving supply units in the abstract system."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.3"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.31"
+title = ""
+summary = "Transporting a depot takes 50 motorization points."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.31"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.32"
+title = ""
+summary = "A depot moves only in the Truck Convoy Movement Phase (it cannot attach to a combat unit)."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.32"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.33"
+title = ""
+summary = "A depot counts as two supply units on rail; the CW cannot ship a depot by sea."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.33"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.34"
+title = ""
+summary = "The Axis may ship a depot by coastal shipping, 3,000 tons each."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.34"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.35"
+title = ""
+summary = "Regular supply units can be airlifted: Axis 30 transport planes for a unit with up to 8 Ammo and 20 Fuel or 60 planes for any level; CW 20 planes for up to 10 Ammo and 25 Fuel or 50 planes for any; any 10 planes can move a dummy supply unit."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.35"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.4"
+title = "Availability of Supply Units"
+summary = "Group heading for depot availability."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.4"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.41"
+title = ""
+summary = "The Axis gets one Depot for each regular supply unit produced by its Simplified Supply Availability Table."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.41"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.42"
+title = ""
+summary = "The CW gets Depots on top of regular units: 1 per Game-Turn in time period I, 2 in II, 3 in III."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.42"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.5"
+title = "Motorization Points"
+summary = "Group heading for motorization points in the abstract system."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.5"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.51"
+title = ""
+summary = "Land cases 32.57 and 32.59 are ignored; motorization points may be strafed and bombed as trucks."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.51"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.52"
+title = ""
+summary = "Initial motorization points are computed as in 32.5, counting second/third-line trucks listed at air facilities."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.52"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.53"
+title = ""
+summary = "Motorization points arrive like truck replacements: each medium or heavy truck point equals one."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.53"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.6"
+title = "Simplified Axis Naval Convoys"
+summary = "Group heading; these rules replace land 32.6."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.6"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.61"
+title = ""
+summary = "In the abstract system a convoy carries all supply units, motorization points and replacement points for the Game-Turn, divisible among lanes, with no tonnage limits."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.61"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.62"
+title = ""
+summary = "At most three regular and three depot supply units and 25 motorization points per lane per Naval Convoy Stage, within replacement pool limits."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.62"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.63"
+title = ""
+summary = "A successful CW convoy recon reveals the convoy's composition by item type (supply units, depots, motorization points, replacement points by class)."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.63"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.64"
+title = ""
+summary = "Convoy attacks follow the Axis Naval Convoy Bombing rules."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.64"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.65"
+title = ""
+summary = "Convoy bombing results are modified: A/10% hits only motorization and replacement points; B/20% hits everything except depots (at least one regular supply unit and one point of each replacement class is lost); C/30% or more as B plus at least one supply unit of any type."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.65"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.7"
+title = "Bombardment of the Commonwealth Fleet"
+summary = "Ignore land 32.7; fleet bombardment follows the Air Game rules."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.7"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.8"
+title = "Stacking Modifications"
+summary = "Group heading for stacking changes."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.8"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.81"
+title = ""
+summary = "Road-and-track stacking point limits of section 9 are ignored."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.81"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }
+
+[[case]]
+id = "47.82"
+title = ""
+summary = "One Depot may stack in addition to the regular supply-unit stacking limits (32.14)."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:47.82"]
+applies = { graziani = "no", graziani_note = "Abstract Logistics rules are not used with the full Logistics game (decision D2)." }

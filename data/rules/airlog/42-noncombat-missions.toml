@@ -1,0 +1,447 @@
+[section]
+id = "42.0"
+book = "airlog"
+title = "Non-Combat Missions"
+systems = ["air"]
+
+[[case]]
+id = "42.1"
+title = "Transfer Missions"
+summary = "Group heading for transfer missions."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:42.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.11"
+title = ""
+summary = "A transfer mission flies a plane from one air facility to another."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+src = ["airlog:42.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.12"
+title = ""
+summary = "Fly transfers before other missions so they are not forgotten; they risk only interception by enemy CAP (40.27)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+depends_on = ["40.27"]
+src = ["airlog:42.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.13"
+title = ""
+summary = "Transfer planes may double their range; transfer is one-way and the planes do not return to their origin base."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment", "opstage.land_support_air.return"]
+depends_on = ["34.11"]
+src = ["airlog:42.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.14"
+title = ""
+summary = "A transferring plane needs no refit to fly, but must be refitted to fly another mission next stage or turn; transfers burn fuel and arming is optional."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+depends_on = ["38.3"]
+src = ["airlog:42.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.15"
+title = ""
+summary = "A transfer is assigned by writing the destination hex in the plane's mission box; the plane is placed there. Transfers are flown only in tactical Land Support phases of an OpStage."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.deployment"]
+depends_on = ["35.22", "37.12"]
+src = ["airlog:42.15"]
+applies = { graziani = "yes" }
+decision = { what = "Assign a transfer mission moving planes (or a squadron) to another air facility.", params = ["planes or squadron", "destination facility"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "42.2"
+title = "Reconnaissance Missions"
+summary = "Group heading for land reconnaissance."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:42.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.21"
+title = ""
+summary = "Any plane with Recon capability (R) may fly recon missions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.22"
+title = ""
+summary = "Recon finds out in general terms what an enemy has in a hex, so it must be flown over a hex containing an enemy unit, and never over major cities."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.22"]
+applies = { graziani = "yes" }
+decision = { what = "Assign recon planes to a specific enemy-occupied hex.", params = ["planes", "target hex"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "42.23"
+title = ""
+summary = "After air combat and flak, the recon planes in the hex are totaled and one die is rolled on the Air Reconnaissance table; the result is how many units in the hex the player learns about."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.42.27.air_recon_land_units"]
+depends_on = ["42.27"]
+src = ["airlog:42.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.24"
+title = ""
+summary = "For each battalion-sized unit learned, the opposing player must reveal its type and TOE strength: tank units first (dummy tank units count as strength 3), then infantry, then artillery. The reported strength may be falsified by up to 2 in either direction."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["42.23"]
+src = ["airlog:42.24"]
+applies = { graziani = "yes" }
+decision = { what = "As the reconnoitered player, report each revealed unit's type and a TOE strength within 2 of the true value.", params = ["unit", "reported strength"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "42.25"
+title = ""
+summary = "No recon may be flown over a hex undergoing air bombardment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.25"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.26"
+title = ""
+summary = "Land recon is flown in the Tactical Land Support Air Phase and the planes need refit; recon against Axis convoys is a Strategic Air Phase mission."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "naval_convoy.recon"]
+src = ["airlog:42.26"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.27"
+title = "Air Reconnaissance of Land Units Table"
+summary = "One-die table giving units revealed by number of recon planes."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.42.27.air_recon_land_units"]
+src = ["airlog:42.27"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.3"
+title = "Transport Missions"
+summary = "Group heading for air transport missions."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:42.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.31"
+title = ""
+summary = "Transport-capable planes can carry personnel or supplies by air; cargo capacity is on the Aircraft Characteristics Chart in TOE strength points or supply tons."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.31"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.32"
+title = ""
+summary = "Cargo must start the OpStage in the transport's hex. The transport then either (a) flies to the target hex, lands the cargo and returns, or (b) flies to the target hex and stays there, using its doubled transfer range."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.deployment"]
+depends_on = ["42.33", "34.52"]
+src = ["airlog:42.32"]
+applies = { graziani = "yes" }
+decision = { what = "Assign a transport mission: cargo, destination, and whether the transport returns (a) or stays (b).", params = ["transport planes", "cargo", "destination facility", "return or stay"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "42.33"
+title = ""
+summary = "Transport missions must go to friendly air facilities because the planes land; airdrops are the exception (42.4)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.33"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.34"
+title = ""
+summary = "Personnel flown in cannot voluntarily move that OpStage (their CPA is used); they may land in an enemy ZOC but cannot attack there (they may defend), and they can never voluntarily exceed basic CPA by reaction or retreat before assault."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion", "opstage.movement_and_combat.movement"]
+src = ["airlog:42.34"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.35"
+title = ""
+summary = "Air-landed supplies become usable only after being assigned to a dump or units in the Organization Phase, not directly off the plane."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.supply_distribution"]
+src = ["airlog:42.35"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.36"
+title = ""
+summary = "Transport missions are flown only in Operations Stages, and the planes need refit."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.36"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.37"
+title = ""
+summary = "Only infantry without trucks, motorcycle infantry/recce and airborne units may be airlifted (plus dead camels, never live ones)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.37"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.4"
+title = "Airdrop Missions (Paratroops)"
+summary = "Hypothetical rules for airborne drops (there were no major airborne missions in the desert campaign); group heading."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:42.4"]
+applies = { graziani = "conditional", graziani_note = "Only if an airdrop-capable unit appears on the OA sheets in the window; none is expected." }
+
+[[case]]
+id = "42.41"
+title = ""
+summary = "Units that can be airdropped are marked on the OA sheets and may be dropped by transport planes in a tactical Land Support Air Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.41"]
+applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable unit in the OA sheets." }
+
+[[case]]
+id = "42.42"
+title = ""
+summary = "An airborne mission is a transport mission of type (a) except that units are dropped rather than landed, so no air facility is needed at the target; the transports must start from a friendly facility."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.completion"]
+depends_on = ["42.32"]
+src = ["airlog:42.42"]
+applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable unit in the OA sheets." }
+decision = { what = "Assign an airdrop mission: units or supplies, transports, drop hex.", params = ["transport planes", "cargo", "drop hex"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "42.43"
+title = ""
+summary = "Drops may land in clear, gravel or desert hexes only; not in major cities, not on hexes with enemy units or in an enemy ZOC, though a friendly-occupied hex (within stacking) outside an enemy ZOC is fine; and the hex must be within two hexes of a recognizable land feature."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["42.44"]
+src = ["airlog:42.43"]
+applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable unit in the OA sheets." }
+
+[[case]]
+id = "42.44"
+title = ""
+summary = "A recognizable land feature is a major city, a road (even unfinished or destroyed) or railroad hex, a village, an air facility or an oasis."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.44"]
+applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable unit in the OA sheets." }
+
+[[case]]
+id = "42.45"
+title = ""
+summary = "No airdrops in sandstorms or rainstorms; there is no drift (units land on the target hex) and no casualties."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+src = ["airlog:42.45"]
+applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable unit in the OA sheets." }
+
+[[case]]
+id = "42.46"
+title = ""
+summary = "Dropped units need supplies like any unit. Only ammunition and stores may be airdropped (never fuel), by the same drop rules, though supplies may also drop into a friendly-occupied hex inside an enemy ZOC without the landmark rule; dropped supplies are usable at once."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["42.43", "42.35"]
+errata = ["errata79:42.46"]
+src = ["airlog:42.46"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.47"
+title = ""
+summary = "Airdropped combat units move and fight normally but may not voluntarily exceed CPA in the dropping OpStage; they count as having spent 5 CP already."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+errata = ["errata79:42.47"]
+src = ["airlog:42.47"]
+applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable unit in the OA sheets." }
+
+[[case]]
+id = "42.48"
+title = ""
+summary = "No limit on TOE strength points dropped (given enough transports), but no unit may be airdropped more than once a month (every 12 OpStages)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:42.48"]
+applies = { graziani = "conditional", graziani_note = "Needs an airdrop-capable unit in the OA sheets." }
+
+[[case]]
+id = "42.5"
+title = "Naval Convoy Reconnaissance Missions"
+summary = "Group heading for CW recon of Axis convoy lanes."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:42.5"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.51"
+title = ""
+summary = "The CW may fly recon in convoy lanes to find out whether an Axis convoy is assigned there and how big."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.recon"]
+src = ["airlog:42.51"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.52"
+title = ""
+summary = "Each recon plane (R capability) is assigned to a specific lane within range; from North Africa its range must cover the distance to a key city on the chart plus the city-to-lane distance."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["strategic_air.mission_assignment", "naval_convoy.recon"]
+tables = ["airlog.56.18.axis_naval_convoy_air_distance"]
+depends_on = ["56.18"]
+src = ["airlog:42.52"]
+applies = { graziani = "yes" }
+decision = { what = "Assign each CW recon plane to a convoy lane.", params = ["recon plane", "convoy lane"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "42.53"
+title = ""
+summary = "Naval recon resolves on the Air Reconnaissance of Axis Naval Convoys table; on a successful recon the Axis must say whether a convoy is assigned to the lane this Game-Turn and its approximate tonnage. (The chart is in the CW Chart Booklet.)"
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.recon"]
+tables = ["airlog.42.53.air_recon_axis_convoys"]
+errata = ["errata79:42.53"]
+src = ["airlog:42.53", "errata79:42.53"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.54"
+title = ""
+summary = "Planes flying naval recon cannot be attacked by air-to-air combat or AA fire."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.recon"]
+src = ["airlog:42.54"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.55"
+title = ""
+summary = "Naval recon missions are strategic missions flown in the Naval Convoy stage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.recon"]
+src = ["airlog:42.55"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "42.56"
+title = ""
+summary = "Naval recon is assigned in the Strategic Mission Assignment Phase (any number of planes per lane) and resolved in the Naval Convoy Reconnaissance Segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["strategic_air.mission_assignment", "naval_convoy.recon"]
+src = ["airlog:42.56"]
+applies = { graziani = "yes" }

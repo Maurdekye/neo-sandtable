@@ -1,0 +1,626 @@
+[section]
+id = "40.0"
+book = "airlog"
+title = "Fighter Combat"
+systems = ["air"]
+
+[[case]]
+id = "40.0"
+title = "General Rule and Procedure"
+summary = "Fighters fly combat air patrol (CAP), strafing, flak suppression and scramble, and those with bombloads can join bombing missions. Each fighter has a pilot whose rating affects air combat. A fighter flies one mission per OpStage (three per Game-Turn) or one per Game-Turn in the Strategic Air stage. Missions are assigned to a hex, and specific targets within the type (which enemy planes to attack, which trucks to strafe) are chosen only after arrival and after air combat and flak."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.completion"]
+depends_on = ["39.0"]
+src = ["airlog:40.0"]
+applies = { graziani = "yes" }
+decision = { what = "After planes reach the target hex and air combat and flak are done, assign each plane or squadron to a specific target of the declared target type.", params = ["plane or squadron", "specific target"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "40.1"
+title = "Pilots"
+summary = "Group heading for pilot rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:40.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.11"
+title = ""
+summary = "Pilots are not counters: they enter via the reinforcement track as numbers equal to their rating and are assigned to squadrons as they arrive (see the Pilot Arrival Tables)."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.organization.reorganization"]
+tables = ["airlog.34.86.commonwealth_pilot_arrival", "airlog.34.89a.italian_pilot_arrival", "airlog.34.89b.german_pilot_arrival"]
+depends_on = ["34.83"]
+src = ["airlog:40.11"]
+applies = { graziani = "yes" }
+decision = { what = "Assign newly arrived pilots (by rating) to squadrons.", params = ["pilot rating", "squadron"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "40.12"
+title = ""
+summary = "A pilot becomes available to his squadron in the first OpStage of the turn he arrives, and is trained on that squadron's plane type."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["airlog:40.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.13"
+title = ""
+summary = "Pilots may be reassigned between squadrons at any time by moving them on the Composition Lists; a reassigned pilot cannot fly in the OpStage or Strategic Phase of reassignment."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.organization.reorganization"]
+src = ["airlog:40.13"]
+applies = { graziani = "yes" }
+decision = { what = "Reassign a pilot to another squadron.", params = ["pilot", "to squadron"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "40.14"
+title = ""
+summary = "A pilot moved to a squadron flying a different plane type needs one Game-Turn (three OpStages) of training before flying."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.training"]
+depends_on = ["40.13"]
+src = ["airlog:40.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.15"
+title = ""
+summary = "Pilot ratings run 1, 2, 3, 4 or 6 (6 is the German ace Marseille); the rating is added to the plane's TacAir rating in air-to-air combat (a Bf109F with Marseille rates 12, corrected from 14)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+errata = ["errata79:40.15"]
+src = ["airlog:40.15"]
+applies = { graziani = "conditional", graziani_note = "Ratings 1-4 apply to Italian and CW pilots; the 6-rated German ace does not appear." }
+
+[[case]]
+id = "40.16"
+title = ""
+summary = "A squadron's pilots may fly any plane in it; a plane with no pilot assigned for a mission has a zero-rated pilot, and zero-rated pilots are unlimited."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["40.14"]
+src = ["airlog:40.16"]
+applies = { graziani = "yes" }
+decision = { what = "Match the squadron's pilots to the planes flying each mission (unmatched planes get zero-rated pilots).", params = ["squadron", "pilot", "plane"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "40.17"
+title = ""
+summary = "A pilot of a shot-down fighter may have bailed out and be recovered (45.65); if so he may fly again three OpStages after recovery, returning to his own squadron."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "strategic_air_recovery.return_to_base"]
+depends_on = ["45.65"]
+src = ["airlog:40.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.18"
+title = ""
+summary = "Optional ace rule for full campaigns: all pilots start at zero rating with no pilot reinforcements, and each five kills raises a pilot's rating by one with no cap; unsuitable for short scenarios."
+kind = "addendum"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:40.18"]
+applies = { graziani = "no", graziani_note = "Optional rule; not used in the short Graziani scenario." }
+
+[[case]]
+id = "40.2"
+title = "Combat Air Patrol (CAP)"
+summary = "Group heading for CAP rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:40.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.21"
+title = ""
+summary = "Any plane with fighter (F) capability may fly CAP, recorded as CAP and the target hex, marked offensive (CAP-O) or defensive (CAP-D)."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "strategic_air.mission_assignment", "naval_convoy.lane_assignment"]
+depends_on = ["40.22"]
+src = ["airlog:40.21"]
+applies = { graziani = "yes" }
+decision = { what = "Assign fighters to CAP over a hex and declare it offensive (CAP-O) or defensive (CAP-D).", params = ["squadron or planes", "target hex", "CAP-O or CAP-D"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "40.22"
+title = ""
+summary = "Offensive CAP flies to a hex to shoot down enemy planes; defensive CAP escorts friendly bombers or transports or guards an installation."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:40.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.23"
+title = ""
+summary = "Three or more fighters on offensive CAP in a hex hold an air zone of control over that hex and its six neighbors, and may engage enemy planes entering any of the seven."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:40.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.24"
+title = ""
+summary = "Any F-capable plane may fly CAP over any hex in range, but no plane based in Africa may fly CAP for or against Axis naval convoys; Malta-based CW planes may fly CAP against convoys only; Axis planes based in Italy, Sicily and Crete may fly CAP for convoys. A plane on CAP flies no other mission that stage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "naval_convoy.lane_assignment"]
+depends_on = ["41.63"]
+src = ["airlog:40.24"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.25"
+title = "Example of CAP Missions"
+summary = "Worked example: an Axis raid on Tobruk by two Ju88 squadrons escorted by Bf109E and CR 42 squadrons meets two CW Hurricane squadrons on defensive CAP over Tobruk."
+kind = "example"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:40.25"]
+applies = { graziani = "no", graziani_note = "Example only; it uses German aircraft." }
+
+[[case]]
+id = "40.26"
+title = ""
+summary = "Defensive CAP has no air ZOC and does not automatically start combat, but raiders must get through it; offensive CAP has the ZOC and may initiate combat, and must attack any enemy planes entering its hex or ZOC to perform a mission there (only enemy planes in one such hex need be attacked); defensive CAP may decline combat and abort, offensive CAP may not."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["40.23"]
+src = ["airlog:40.26"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.27"
+title = ""
+summary = "After all mission counters are placed but before plane numbers are revealed, a player with offensive CAP fighters may ask to see an enemy path of flight and, if it crosses his CAP hex or ZOC, intercept the mission there; air combat follows and survivors may continue. Offensive CAP fighters may intercept only one mission per OpStage, and a mission can be intercepted repeatedly if each interception hex differs."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.deployment", "opstage.land_support_air.air_combat"]
+depends_on = ["40.23", "37.12"]
+errata = ["errata79:40.27"]
+src = ["airlog:40.27"]
+applies = { graziani = "yes" }
+decision = { what = "Ask to see an enemy mission's flight path and choose whether to intercept it with fighters on offensive CAP.", params = ["enemy mission", "intercepting CAP group", "interception hex"], trigger = "triggered", secrecy = "open", interrupts = true }
+
+[[case]]
+id = "40.3"
+title = "Scramble"
+summary = "Scramble lets a player keep fighters on the ground, saving fuel and keeping flexibility, to take off against enemy aircraft that come within range."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+src = ["airlog:40.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.31"
+title = ""
+summary = "Only scramble-capable planes may be given a scramble mission (marked SC, no hex), and only in Land Support Air Phases."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:40.31"]
+applies = { graziani = "yes" }
+decision = { what = "Assign scramble-capable fighters a scramble (SC) mission.", params = ["squadron or planes"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "40.32"
+title = ""
+summary = "Scramble happens at the end of the Mission Deployment Segment, once all other planes are placed; assigned fighters may take off against enemy planes in scramble range (farther is less likely to succeed). Scrambling is voluntary, but only planes assigned to it may scramble."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+depends_on = ["40.31"]
+src = ["airlog:40.32"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.33"
+title = ""
+summary = "A scrambling squadron names its target hex and rolls one die on the Scramble Table by hex distance from its base (the path may not cross a hex with other enemy fighters except the target). Success puts it on offensive CAP attacking the enemy there; failure means it flew and must refuel and refit. All scramble decisions are secret and revealed together."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.deployment"]
+tables = ["airlog.40.4.scramble"]
+depends_on = ["40.4", "40.34"]
+src = ["airlog:40.33"]
+applies = { graziani = "yes" }
+decision = { what = "Choose whether each scramble-assigned squadron scrambles and to which hex.", params = ["squadron", "target hex"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "40.34"
+title = ""
+summary = "Each squadron rolls separately for scramble, even toward the same target, and squadrons cannot be split between hexes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+src = ["airlog:40.34"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.4"
+title = "Scramble Table"
+summary = "Table of die-roll results for scramble success by distance in hexes."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+tables = ["airlog.40.4.scramble"]
+src = ["airlog:40.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.5"
+title = "Strafing"
+summary = "Group heading for strafing rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:40.5"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.51"
+title = ""
+summary = "Planes with strafing capability (STR, mostly fighters) may strafe ground forces and certain targets; strafing is a mission that excludes other missions, except for planes with STR/B capability (dive-bombers bomb and strafe one target)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.completion"]
+depends_on = ["39.2"]
+src = ["airlog:40.51"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.52"
+title = ""
+summary = "A strafing mission is assigned a target hex and a target type (written e.g. STR/Cl234/dump) and follows the general mission course (39.0)."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["40.54"]
+src = ["airlog:40.52"]
+applies = { graziani = "yes" }
+decision = { what = "Assign strafing fighters a target hex and target type.", params = ["squadron or planes", "target hex", "target type"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "40.53"
+title = ""
+summary = "Each plane strafes only one target in a hex, and strafing is one attack per target, not a series; a group assigned to infantry may hit separate battalions as long as no plane hits more than one."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+src = ["airlog:40.53"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.54"
+title = ""
+summary = "Strafable targets: infantry-type units, trucks in convoy, attached first-line trucks, supply dumps, grounded aircraft, tanks (only Hurricane IID), ports, water pipelines."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:40.54"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.55"
+title = ""
+summary = "Strafing is not allowed in major city hexes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:40.55"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.6"
+title = "Strafing Procedures"
+summary = "Group heading for resolving strafing against each target type."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:40.6"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.61"
+title = ""
+summary = "Infantry units: total TacAir points (no pilot ratings), assign them to battalions or companies (one target per plane), roll two dice on the Strafing Table by the TacAir points applied; the result is TOE strength points eliminated, and any trucks carrying them are lost too."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.40.8.strafing"]
+src = ["airlog:40.61"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.62"
+title = ""
+summary = "Truck convoys (and attached first-line trucks, by strafing the parent unit) are resolved like infantry with losses in Truck Points; the strafed player chooses which trucks are lost, spread as evenly as possible across cargo types."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.40.8.strafing"]
+depends_on = ["40.61"]
+src = ["airlog:40.62"]
+applies = { graziani = "yes" }
+decision = { what = "As the strafed player, choose which truck points are lost, spreading losses evenly across cargo types.", params = ["truck unit", "truck points lost by cargo type"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "40.63"
+title = ""
+summary = "Grounded aircraft: the Strafing Table result is the number of dice the strafer rolls, and the total rolled is the number of planes destroyed on the ground; strafed planes may be recovered (45.6)."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.40.8.strafing"]
+depends_on = ["45.6"]
+src = ["airlog:40.63"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.64"
+title = ""
+summary = "Supply dumps: the Strafing Table result is the percentage of the dump's supplies destroyed (result 1 = 10%, 2 = 20%, and so on)."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.40.8.strafing"]
+src = ["airlog:40.64"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.65"
+title = ""
+summary = "Tanks: only planes with heavy cannon (Hurricane IID) can strafe tanks, using the second die to give the minimum Armour Protection Points removed; anything with an armour protection rating may be strafed, and a strafed dummy tank is removed."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.40.8.strafing"]
+src = ["airlog:40.65"]
+applies = { graziani = "no", graziani_note = "Hurricane IID is a late-campaign aircraft." }
+
+[[case]]
+id = "40.66"
+title = ""
+summary = "Ports: strafing is part of a bombing raid on the port: halve (round down) the total strafing TacAir points and add them to the bombload delivered, then use the Air Bombardment Table."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.41.5.air_bombardment"]
+depends_on = ["41.39"]
+src = ["airlog:40.66"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.67"
+title = ""
+summary = "Water pipeline: strafing it with the Strafing Table destroys it on any result of 2 or more."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.40.8.strafing"]
+depends_on = ["52.25"]
+src = ["airlog:40.67"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.7"
+title = "Fighter Flak Suppression"
+summary = "Group heading for fighter flak suppression."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:40.7"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.71"
+title = ""
+summary = "Fighters may spend their TacAir strength to suppress enemy anti-aircraft fire before it is used on friendly planes."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:40.71"]
+applies = { graziani = "yes" }
+decision = { what = "Assign fighters to a flak suppression mission over a target hex.", params = ["squadron or planes", "target hex"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }
+
+[[case]]
+id = "40.72"
+title = ""
+summary = "Suppression causes no losses for either side: it diverts flak fire to cover other planes, but unsuppressed flak may still fire at any plane in the hex, suppression fighters included. It is a mission."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:40.72"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.73"
+title = ""
+summary = "Fighter flak suppression is flown after air-to-air combat but before any flak fire at planes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+src = ["airlog:40.73"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.74"
+title = ""
+summary = "Every three suppressing fighters neutralize one AA point for that OpStage; only light AA and ship AA can be suppressed by fighters, not heavy AA."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+depends_on = ["46.1"]
+src = ["airlog:40.74"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.75"
+title = ""
+summary = "Fighters on flak suppression expend ammunition, and the flak units neutralized also expend ammunition (they are firing at the fighters)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak"]
+tables = ["airlog.50.2.ammunition_consumption"]
+src = ["airlog:40.75"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.76"
+title = ""
+summary = "Anti-aircraft units can only be destroyed by bombing (41.3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["41.33"]
+src = ["airlog:40.76"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.77"
+title = ""
+summary = "Planes may strafe ships as a normal flak suppression run but cannot damage a ship by strafing; ships are damaged by bombs and torpedoes (41.34). Combined missions rules (39.2) still apply."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.flak", "opstage.land_support_air.completion"]
+depends_on = ["41.34", "39.2"]
+src = ["airlog:40.77"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.8"
+title = "Strafing Table"
+summary = "Two-dice table of strafing results by TacAir points applied."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+tables = ["airlog.40.8.strafing"]
+src = ["airlog:40.8"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.9"
+title = "Night Fighters"
+summary = "Group heading for night fighters."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:40.9"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.91"
+title = ""
+summary = "Night fighters (marked on the characteristics chart) behave as regular fighters, and may scramble against night bombing missions with +2 added to the scramble roll."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+tables = ["airlog.40.4.scramble"]
+src = ["airlog:40.91"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.92"
+title = ""
+summary = "By day, the Blenheim IVF, Bf 110 and Ju 88C night fighters have their Maneuver Ratings lowered by 4."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:40.92"]
+applies = { graziani = "conditional", graziani_note = "Applies only if a Blenheim IVF squadron is in play; Bf 110 and Ju 88C are German." }
+
+[[case]]
+id = "40.93"
+title = ""
+summary = "Planes on offensive CAP have no air zone of control at night (typo corrected in the retype)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+errata = ["errata79:40.93"]
+src = ["airlog:40.93"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "40.94"
+title = ""
+summary = "Any CAP must be declared as flown at night, and such night CAP/escort affects only night missions, not day missions."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment"]
+errata = ["errata79:40.94"]
+src = ["airlog:40.94"]
+applies = { graziani = "yes" }
+decision = { what = "Declare whether a CAP or escort assignment is flown at night.", params = ["CAP or escort group", "night flag"], trigger = "scheduled", secrecy = "secret_simultaneous", interrupts = false }

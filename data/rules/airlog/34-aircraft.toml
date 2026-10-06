@@ -1,0 +1,527 @@
+[section]
+id = "34.0"
+book = "airlog"
+title = "The Aircraft"
+systems = ["air"]
+
+[[case]]
+id = "34.0"
+title = "General Rule"
+summary = "Planes are handled individually; there are seven types (fighter, fighter-bomber, bomber, dive-bomber, transport, pure recon, flying boat) flying patrol, combat, recon or transport missions. Each plane belongs to a squadron based on an SGSU at an air facility, has ratings for range, TacAir, bombload or transport capacity, maneuver, fuel use and missions, and fighters have pilots. Planes are useful only when fueled and refitted after a mission."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:34.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.1"
+title = "Aircraft Capabilities"
+summary = "Group heading for the rating columns of the aircraft characteristics charts."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:34.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.11"
+title = "Range"
+summary = "A plane's range is the most hexes it may fly to a mission hex and also the most it may fly back from it, both counted separately (unused outbound hexes are not saved for the return); it must return to its base of origin. Transfer missions may fly twice the range."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.return"]
+depends_on = ["37.1", "42.1"]
+src = ["airlog:34.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.12"
+title = ""
+summary = "Planes with several printed ranges (bigger tanks or bombload) may be flown with whichever range load the player chooses."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "strategic_air.mission_assignment"]
+depends_on = ["34.11"]
+src = ["airlog:34.12"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which printed range/load option a plane flies a mission with.", params = ["plane", "range option"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "34.13"
+title = "Tactical Air Combat (TacAir)"
+summary = "The plane's air-to-air combat rating, from its armament; a parenthesised TacAir rating means the plane cannot initiate air-to-air combat."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+src = ["airlog:34.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.14"
+title = "Bombload Capacity"
+summary = "Bomb Points (called tonnage, not real tons) a plane can carry; torpedo capability is listed with it."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+src = ["airlog:34.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.15"
+title = "Transport Capacity"
+summary = "What a plane can carry, in infantry TOE strength points and/or tons of supplies (tonnage equivalents in 54.5)."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+tables = ["airlog.54.5.equivalent_weights"]
+src = ["airlog:34.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.16"
+title = "Maneuver"
+summary = "An abstract rating of speed, altitude and agility used only relative to other planes, to modify basic TacAir differentials."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+tables = ["airlog.45.4.maneuver_adjustment"]
+src = ["airlog:34.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.17"
+title = "Fuel Consumption"
+summary = "Fuel Points a plane burns for any mission or emergency flight; all of them are spent whatever the mission type or distance."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "strategic_air.mission_assignment"]
+depends_on = ["37.3", "38.2"]
+src = ["airlog:34.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.18"
+title = "Mission Capability"
+summary = "The mission types a plane may fly; it may only undertake those it is capable of (see 39.0)."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["39.0"]
+src = ["airlog:34.18"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.19"
+title = ""
+summary = "All aircraft ratings are on the Aircraft Characteristics Charts (34.6); aircraft counters carry no numbers, players track ratings on sheets."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:34.19"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.2"
+title = "Fighters"
+summary = "Group heading for fighter and fighter-bomber rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:34.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.21"
+title = ""
+summary = "Fighters include fighters (F) and fighter-bombers (FB). A fighter-bomber flies either as a fighter or as a bomber, not both at once, so one on a bombing mission cannot break off to start air combat (it may defend)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.air_combat"]
+src = ["airlog:34.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.22"
+title = ""
+summary = "Fighters usually fly Combat Air Patrol protecting bombers or a ground facility; some may strafe enemy units or facilities."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["40.2", "40.5"]
+src = ["airlog:34.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.23"
+title = ""
+summary = "Every fighter and fighter-bomber is assigned a pilot (40.1) whose rating affects its air combat strength."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["40.1"]
+src = ["airlog:34.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.24"
+title = ""
+summary = "Some fighters and fighter-bombers may fly reconnaissance, but on recon they may not start air combat or bomb."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["42.2"]
+src = ["airlog:34.24"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.3"
+title = "Bombers"
+summary = "Group heading for bomber classes and abilities."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:34.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.31"
+title = ""
+summary = "The bomber class includes bombers, dive-bombers and fighter-bombers."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:34.31"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.32"
+title = ""
+summary = "Most bombing missions drop bombs on targets to destroy, reduce or incapacitate them; bomber types differ in how well."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["41.0"]
+src = ["airlog:34.32"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.33"
+title = ""
+summary = "A bomber may be one or more of: Bomber, Night Bomber (NB), Dive Bomber (DB), Torpedo Bomber (TB)."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:34.33"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.34"
+title = ""
+summary = "Dive-bombers are ordinary bombers that can fly two missions at once: they may both bomb and strafe the same target."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["40.5"]
+src = ["airlog:34.34"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.35"
+title = ""
+summary = "Bombers may never initiate air-to-air combat, only defend; they may raise their TacAir rating by flying in large formations (45.36)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["45.36"]
+src = ["airlog:34.35"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.36"
+title = ""
+summary = "Some bombers can also carry personnel or supplies (TT)."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:34.36"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.4"
+title = "Flying Boats (Seaplanes)"
+summary = "Flying boats have the normal capabilities but cannot base in, take off from or land at airfields or landing strips; they need flying boat basins or alighting areas."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["36.3", "36.4"]
+src = ["airlog:34.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.5"
+title = "Transports"
+summary = "Group heading for transport aircraft."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:34.5"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.51"
+title = ""
+summary = "Both sides have low-combat-value transport planes (TT) for carrying personnel and/or supplies."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:34.51"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.52"
+title = ""
+summary = "Transport capacity is in TOE strength points or supply tons (a Ju52 carries 20 Fuel Points or 1 infantry TOE point); transports can never carry vehicles or motorized units, except motorcycle units."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion"]
+depends_on = ["42.3"]
+src = ["airlog:34.52"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.53"
+title = ""
+summary = "Transports may never start air-to-air combat, get no formation-flying bonus and need heavy CAP to arrive safely. (Printed as 31.53 in the retype; read as 34.53.)"
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["45.36"]
+src = ["airlog:34.53"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.6"
+title = "Aircraft Characteristics Charts"
+summary = "The per-nation aircraft characteristics charts (owned by the units data area, 4.44a-c)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:34.6"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.7"
+title = "Aircraft Counters"
+summary = "Group heading for what aircraft counters stand for."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:34.7"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.71"
+title = ""
+summary = "Aircraft counters do not represent individual planes; they mark locations of planes and help air-to-air combat."
+kind = "definition"
+disposition = "display"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+src = ["airlog:34.71"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.72"
+title = ""
+summary = "Grounded planes are tracked on Squadron Composition Sheets and the SGSU stands for where they are; no aircraft counters are used on the ground."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:34.72"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.73"
+title = ""
+summary = "In the target hex, one lettered aircraft counter per class (fighter, bomber, transport) shows planes of that class are present, and the letter links back to squadrons on the player's sheet."
+kind = "procedure"
+disposition = "display"
+seat = "none"
+timing = ["opstage.land_support_air.deployment"]
+src = ["airlog:34.73"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.74"
+title = ""
+summary = "Plane losses are recorded by changing totals on the sheet; the counter stays in place."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.air_combat", "opstage.land_support_air.flak"]
+src = ["airlog:34.74"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.75"
+title = ""
+summary = "During air-to-air combat players may use spare aircraft counters to picture individual planes; purely an aid."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:34.75"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.8"
+title = "Airforce Reinforcements and Withdrawals"
+summary = "Players receive airforce reinforcements as individual pilots, planes and SGSUs: low-rated pilots as needed, higher-rated ones at random, SGSUs as needed, and planes on a fixed schedule; the Commonwealth must also withdraw certain squadrons."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["airlog:34.8"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.81"
+title = ""
+summary = "CW air reinforcements may be placed at any air facility on Malta, Cairo, Alexandria or off-map (not Ethiopia), split as the CW likes, except at most 10% of a month's planes go to Malta and none may exceed a facility's current squadron capacity. The Axis divides its reinforcements among Tripoli-Tunisia boxes and Italy/Sicily/Crete subject to the German bomber basing rules (43.1)."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["43.1", "36.5"]
+src = ["airlog:34.81"]
+applies = { graziani = "yes" }
+decision = { what = "Choose where arriving air reinforcements are based among the permitted air facilities.", params = ["plane type and count", "air facility"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "34.82"
+title = ""
+summary = "SGSUs arrive in the Naval Convoy Arrival Phase (Axis in any Tripoli-Tunisia box, CW in any Alexandria or Cairo hex), at the owner's discretion, but a lost SGSU cannot be replaced for a full Game-Turn; CW US SGSUs not before August 1942; CW SGSU total capped at (planes at on-map facilities / 12) + 2; German SGSUs capped at on-map German planes / 10 (Italian likewise); counters may be created beyond a shortage only under stated conditions."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["35.13", "34.84"]
+src = ["airlog:34.82"]
+applies = { graziani = "yes" }
+decision = { what = "Bring in SGSUs (within the caps) at an allowed arrival location.", params = ["SGSU", "arrival hex"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "34.83"
+title = ""
+summary = "Pilots rated 1-6 arrive in the Naval Convoy Arrival Phase of each month's first OpStage: the owner makes one two-dice roll (separately for German and Italian pilots) on the nationality's Pilot Arrival Table to get the count of each rating; zero-rated pilots are always available; a named German ace arrives automatically."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+tables = ["airlog.34.86.commonwealth_pilot_arrival", "airlog.34.89a.italian_pilot_arrival", "airlog.34.89b.german_pilot_arrival"]
+depends_on = ["34.88", "34.89"]
+src = ["airlog:34.83"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.84"
+title = ""
+summary = "Airplane reinforcements arrive in the Naval Convoy Arrival Phase; the monthly totals per type are split as evenly as possible over the month's Game-Turns (planes arriving in a turn may all appear in its first OpStage), and the owner freely chooses which individual planes appear when."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.convoy_arrival"]
+src = ["airlog:34.84"]
+applies = { graziani = "yes" }
+decision = { what = "Choose how each month's arriving plane totals are divided across the month's Game-Turns.", params = ["plane type", "count per game-turn"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "34.85"
+title = ""
+summary = "The Commonwealth must withdraw the squadrons named on the schedule at the start of the indicated month, from any Malta facility or game-map section E; all that squadron's planes and pilots leave, but SGSUs go only if above the 34.82 cap."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["34.86", "34.82"]
+src = ["airlog:34.85"]
+applies = { graziani = "yes" }
+decision = { what = "Select which facility's squadrons satisfy a scheduled withdrawal.", params = ["scheduled withdrawal", "squadron", "facility"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "34.86"
+title = "Commonwealth Airplane Reinforcement and Squadron Withdrawal Schedule"
+summary = "The schedule (owned by the units/OOB data area) of CW plane arrivals and squadron withdrawals by month."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["airlog:34.86"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.87"
+title = "Axis Airplane Reinforcement Schedule"
+summary = "The schedule (owned by the units/OOB data area) of Axis plane arrivals by month."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["airlog:34.87"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.88"
+title = "Commonwealth Pilot Arrival Table"
+summary = "Two-dice table of CW pilot arrivals by rating (chart image filed as 34.86)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+tables = ["airlog.34.86.commonwealth_pilot_arrival"]
+src = ["airlog:34.88"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "34.89"
+title = "Axis Pilot Arrival Tables"
+summary = "Two-dice tables of Italian (34.89a) and German (34.89b) pilot arrivals by rating."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+tables = ["airlog.34.89a.italian_pilot_arrival", "airlog.34.89b.german_pilot_arrival"]
+src = ["airlog:34.89"]
+applies = { graziani = "yes" }

@@ -1,0 +1,327 @@
+[section]
+id = "38.0"
+book = "airlog"
+title = "Aircraft Maintenance"
+systems = ["air", "logistics"]
+
+[[case]]
+id = "38.0"
+title = "General Rule"
+summary = "To fly, a plane must be readied: refitted and fueled (arming is optional but greatly aids survival). SGSUs ready planes, limited by each air facility's current squadron capacity; refueling and rearming work at any SGSU without penalty, but refitting is most efficient at the plane's own squadron SGSU."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+src = ["airlog:38.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.1"
+title = "Readying Aircraft"
+summary = "Readying is maintenance of three kinds: fuel (needed to fly), refit (repairing wear from the last mission) and arming (ammunition for air combat, bombs for bombing)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+src = ["airlog:38.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.2"
+title = "Refueling Aircraft"
+summary = "Group heading for refueling rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:38.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.21"
+title = ""
+summary = "A plane needs fuel to fly; the amount is its Fuel Consumption Rating, enough for one mission of any kind."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+depends_on = ["34.17"]
+src = ["airlog:38.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.22"
+title = ""
+summary = "The SGSU does the refueling; the airfield or strip only limits how many SGSUs can operate."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+src = ["airlog:38.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.23"
+title = ""
+summary = "An SGSU may refuel planes of any squadron but never more planes than its own maximum capacity (ready plus reserve); for example an Italian SGSU handles at most 12 planes per OpStage or per Strategic Maintenance Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+depends_on = ["35.23"]
+src = ["airlog:38.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.24"
+title = ""
+summary = "Fuel for a plane must be in the air facility's hex (which acts as dump); it is deducted and the plane marked refueled on the Squadron Composition Sheet, in the Tactical Maintenance Segment or the Strategic Maintenance Phase depending on mission class."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+depends_on = ["36.17", "49.0"]
+src = ["airlog:38.24"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which planes (ready or reserve) are refueled at each SGSU, spending fuel from the facility dump.", params = ["SGSU", "plane", "fuel source"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "38.25"
+title = ""
+summary = "Refueling is optional and refueled planes need not fly; reserves may be refueled and fuel never goes stale."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance"]
+src = ["airlog:38.25"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.26"
+title = ""
+summary = "Some planes carry extra tanks for longer range at reduced maneuverability. Tanks may be jettisoned on entering air-to-air combat, which restores the full maneuver rating but also reverts the plane to its shorter range (risking the trip home)."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.air_combat"]
+depends_on = ["34.12", "45.0"]
+src = ["airlog:38.26"]
+applies = { graziani = "yes" }
+decision = { what = "Jettison extra fuel tanks when a plane enters air-to-air combat.", params = ["plane or squadron"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "38.3"
+title = "Refitting Aircraft"
+summary = "Refitting repairs and maintains planes so they can fly again; any mission other than transfer needs a refitted plane."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+src = ["airlog:38.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.31"
+title = ""
+summary = "At scenario start all planes count as refitted unless stated; any mission except transfer makes a plane need refitting again, and an unrefitted plane can only fly transfers even if fueled."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup", "opstage.land_support_air.completion"]
+src = ["airlog:38.31"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.32"
+title = ""
+summary = "Refitting occurs in the Tactical Maintenance Segment for tactical-mission planes and in the Strategic Maintenance Phase for strategic-mission planes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+src = ["airlog:38.32"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.33"
+title = ""
+summary = "SGSUs refit planes at air facilities; the SGSU's capacity governs (ready plus reserve), the facility only limits SGSU count. An SGSU may refit another squadron's planes but adds one to the refit roll for them."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+depends_on = ["35.17"]
+src = ["airlog:38.33"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.34"
+title = ""
+summary = "Refit is not guaranteed: one die is rolled per squadron undergoing refit (outside planes are rolled separately), adjusted per 38.35, on the Aircraft Refit Table, giving the percentage refitted, fractions rounded up."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+tables = ["airlog.38.37.aircraft_refit"]
+depends_on = ["38.35", "38.38"]
+src = ["airlog:38.34"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.35"
+title = ""
+summary = "Refit roll modifiers: +1 if the planes are not of the refitting SGSU's squadron, +2 for Italian planes (whichever player owns them), +1 for German planes; cumulative."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+tables = ["airlog.38.37.aircraft_refit"]
+src = ["airlog:38.35"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.36"
+title = ""
+summary = "Each squadron attempting refit, successful or not, costs one Stores Point that must be present; a player need not attempt to refit any plane."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+depends_on = ["38.34", "51.0"]
+src = ["airlog:38.36"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which squadrons (and which outside planes) attempt refit this maintenance segment, paying one Stores Point each.", params = ["squadron", "SGSU doing the work", "planes"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "38.37"
+title = ""
+summary = "In a hex with a sandstorm, 20% (rounded up) of the refitted planes on the ground must be refitted again, spread as evenly as possible. (The Aircraft Refit Table is filed under 38.37 as an image.)"
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+tables = ["airlog.38.37.aircraft_refit"]
+depends_on = ["29.0"]
+src = ["airlog:38.37"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.38"
+title = "Aircraft Refit Table"
+summary = "Table giving the percentage of planes refitted by die roll."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+tables = ["airlog.38.37.aircraft_refit"]
+src = ["airlog:38.38"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.39"
+title = ""
+summary = "Optional per-plane refit method: roll two dice for each plane; the Commonwealth refits on 2-8, Axis German planes on 2-7 and Italian on 2-6, with the wrong-squadron modifier raised to +2. Described as the playtesters' (unpopular) method."
+kind = "addendum"
+disposition = "none"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance"]
+depends_on = ["38.35"]
+src = ["airlog:38.39"]
+applies = { graziani = "no", graziani_note = "Optional alternative; the standard squadron-roll method is used." }
+
+[[case]]
+id = "38.4"
+title = "Arming Aircraft"
+summary = "Group heading for arming rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:38.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.41"
+title = ""
+summary = "Arming gives planes ammunition for combat and bombing; it is not needed to fly, but is needed to fly a bombing mission and for safety."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+src = ["airlog:38.41"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.42"
+title = ""
+summary = "SGSUs rearm planes under the same limits as refueling, drawing ammunition from the air facility dump."
+kind = "procedure"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+tables = ["airlog.50.2.ammunition_consumption"]
+depends_on = ["38.23", "50.0"]
+src = ["airlog:38.42"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which planes are rearmed (guns and/or bombs), spending ammunition from the facility dump.", params = ["SGSU", "plane", "armament"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "38.43"
+title = ""
+summary = "Each squadron needs one Ammunition Point to let its planes use their TacAir rating; without it each plane's TacAir is zero and it may not fire at enemy planes (46.21)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "opstage.land_support_air.air_combat"]
+tables = ["airlog.50.2.ammunition_consumption"]
+depends_on = ["46.21"]
+src = ["airlog:38.43"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.44"
+title = ""
+summary = "One Ammunition Point loads all the bombs a plane carries, however large the load (a 15-tonnage bomber still pays one point)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance"]
+tables = ["airlog.50.2.ammunition_consumption"]
+depends_on = ["41.22"]
+src = ["airlog:38.44"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.45"
+title = ""
+summary = "A plane's bombload is spent during a mission, used or not (including emergency flight): unused bombs were dumped before landing."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.completion", "opstage.land_support_air.return"]
+src = ["airlog:38.45"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.46"
+title = ""
+summary = "Plane armament status may be recorded on the Squadron Composition Sheet."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:38.46"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "38.47"
+title = ""
+summary = "Loading a bomber with mines (41.39) or torpedoes (41.7) costs one Ammunition Point."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance"]
+tables = ["airlog.50.2.ammunition_consumption"]
+depends_on = ["41.39", "41.7"]
+src = ["airlog:38.47"]
+applies = { graziani = "yes" }

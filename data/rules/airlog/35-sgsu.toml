@@ -1,0 +1,238 @@
+[section]
+id = "35.0"
+book = "airlog"
+title = "Squadron Ground Support Units"
+systems = ["air"]
+
+[[case]]
+id = "35.0"
+title = "Commentary and General Rule"
+summary = "Every plane belongs to a squadron whose base is a Squadron Ground Support Unit (SGSU) counter; each squadron keeps its planes, pilots and supplies on a Composition Sheet and is the basic Air-game unit. An SGSU holds one class of plane, limited in number, is a medium-truck-type vehicle with its own CPA and no combat values, and services its planes."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:35.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.1"
+title = "SGSU Characteristics"
+summary = "Group heading for what an SGSU is and does."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:35.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.11"
+title = ""
+summary = "An SGSU counter is the base of its squadron's planes (mechanics, trucks, equipment, not planes) and sits on the map, normally at an air facility; it is not an air unit."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:35.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.12"
+title = ""
+summary = "SGSUs are vehicles with a printed CPA that move in the Truck Convoy phase, have no stacking value and may stack freely, and have no combat strength; one left without a friendly combat unit when an enemy combat unit moves adjacent may react if possible, else is eliminated. Plane handling is limited by the facility's capacity level."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement", "opstage.movement_and_combat.movement"]
+depends_on = ["8.6"]
+src = ["airlog:35.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.13"
+title = ""
+summary = "SGSUs arrive when the player orders (34.8); each bears a historical squadron number that carries no historical meaning in play. An eliminated SGSU may return one Game-Turn later."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["34.82"]
+src = ["airlog:35.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.14"
+title = ""
+summary = "Each SGSU needs one Stores Point per Game-Turn and one Fuel Point and one Water Point per OpStage for itself; without them it cannot repair its planes (plane fuel and ammo are extra)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["logistics.stores_expenditure", "opstage.organization.water_distribution"]
+depends_on = ["51.0", "52.0"]
+src = ["airlog:35.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.15"
+title = ""
+summary = "Trucks may be attached to an SGSU as first-line transport to carry the supplies it needs."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["53.11"]
+src = ["airlog:35.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.16"
+title = ""
+summary = "SGSUs may build air landing facilities and flying boat alighting areas under the construction rules (24.7)."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.7"]
+src = ["airlog:35.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.17"
+title = ""
+summary = "Only SGSUs can refuel and refit planes. Planes may refuel at any SGSU but should refit at their own squadron's SGSU (otherwise +1 on the refit roll), and never beyond the capacity of the air facility."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+depends_on = ["38.2", "38.3", "36.12"]
+src = ["airlog:35.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.18"
+title = ""
+summary = "US Army Air Force SGSUs may not be used before 1 August 1942."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["airlog:35.18"]
+applies = { graziani = "no", graziani_note = "The window is autumn 1940; USAAF units appear from August 1942." }
+
+[[case]]
+id = "35.2"
+title = "Squadron Composition"
+summary = "Group heading for what a squadron may contain."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:35.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.21"
+title = ""
+summary = "A squadron holds one class of aircraft (bomber, fighter or transport; recon planes may go anywhere, fighter-bombers into either); one plane type per squadron is recommended, not required."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["airlog:35.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.22"
+title = ""
+summary = "Planes may change squadron only if their SGSU was eliminated (they may join another squadron or reserve) or their squadron fell below 50% ready capacity (other squadrons may then top it up above 50%). Reassigned planes fly a transfer mission to the new base unless it is in the same hex."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.organization.reorganization", "opstage.land_support_air.deployment"]
+depends_on = ["35.25", "42.1"]
+src = ["airlog:35.22"]
+applies = { graziani = "yes" }
+decision = { what = "Reassign planes between squadrons when permitted (SGSU lost or squadron below half capacity).", params = ["plane", "from squadron", "to squadron"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "35.23"
+title = ""
+summary = "A squadron's limit on ready planes depends on its nationality (and rises for Commonwealth squadrons from July 1941); it may also hold one third of that capacity extra in reserve, so a capacity of 12 allows 16 planes. The capacities are on the Squadron Capacity Chart (initial British numbers were corrected)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.35.23.squadron_capacity"]
+src = ["airlog:35.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.24"
+title = ""
+summary = "Fighter and fighter-bomber pilots belong to squadrons, not to planes; the Composition Sheet lists them and they are matched to planes when flying missions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.assignment"]
+depends_on = ["40.1"]
+src = ["airlog:35.24"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.25"
+title = ""
+summary = "Plane assignment or transfer that needs no flying is done in the Organization Phase; otherwise it is done as a transfer mission in the Mission Deployment Segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization", "opstage.land_support_air.deployment"]
+src = ["airlog:35.25"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.26"
+title = ""
+summary = "A squadron may keep planes in reserve beyond its ready capacity; they can be readied and armed but fly only when ready planes are not available to fill the capacity (they supplement unreadied planes), cannot scramble, and may use emergency flight."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.land_support_air.assignment", "opstage.land_support_air.maintenance"]
+depends_on = ["35.23", "37.3"]
+src = ["airlog:35.26"]
+applies = { graziani = "yes" }
+decision = { what = "Decide which of a squadron's planes count as ready and which as reserve, and which reserve planes to ready or arm.", params = ["squadron", "plane", "ready or reserve"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "35.27"
+title = ""
+summary = "If an SGSU is eliminated, planes on the ground with it are captured; the enemy may use them one Game-Turn later or destroy them."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["35.12"]
+src = ["airlog:35.27"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "35.28"
+title = ""
+summary = "Italian and German planes never share a squadron (separate maintenance); an Italian squadron may hold only German planes, not the reverse."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["airlog:35.28"]
+applies = { graziani = "no", graziani_note = "No German planes in Graziani's Offensive." }
+
+[[case]]
+id = "35.29"
+title = ""
+summary = "Historical note: German SGSUs were tied to plane types (JG fighters, DG dive bombers, KG bombers, ZG fighter-bombers, H and F recon); players need not follow this."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:35.29"]
+applies = { graziani = "no", graziani_note = "German content." }

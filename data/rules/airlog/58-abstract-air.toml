@@ -1,0 +1,109 @@
+[section]
+id = "58.0"
+book = "airlog"
+title = "Abstract Air Rules"
+systems = ["air"]
+
+[[case]]
+id = "58.0"
+title = "Commentary"
+summary = "Rules for playing the Land and Logistics games without the Air game; play is little affected, with the adjustments made to the players' trucking ability. Not used when the full Air game is played."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:58.0"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
+
+[[case]]
+id = "58.1"
+title = "Effect on Axis Naval Units"
+summary = "Attacks on Axis convoys follow the Basic Logistics and Air procedure of land section 32, with the convoy now itemised; Axis coastal shipping and tactical shipping cannot be attacked."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["32.0"]
+src = ["airlog:58.1"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
+
+[[case]]
+id = "58.2"
+title = "Commonwealth Fleet Bombardment"
+summary = "The Axis may attack the CW fleet using the Basic Logistics and Air procedure of land section 32."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["32.0"]
+src = ["airlog:58.2"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
+
+[[case]]
+id = "58.3"
+title = "Effect on Supplies"
+summary = "The Axis loses three quarters of all fuel brought into a port at the moment of unloading (assumed used by aircraft), before evaporation is computed."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:58.3"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
+
+[[case]]
+id = "58.4"
+title = "Effect on Trucks"
+summary = "Group heading for abstract truck reductions."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:58.4"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
+
+[[case]]
+id = "58.41"
+title = ""
+summary = "Initial setups are reduced by the Truck Points that would serve the air facilities."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:58.41"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
+
+[[case]]
+id = "58.42"
+title = ""
+summary = "Both players suffer extra truck losses standing for air attack on trucks, computed like motorization point losses (32.57) with the Abstract Truck Loss Chart; the owner removes lost points anywhere but proportionally by truck type and by convoy versus attached."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+tables = ["airlog.58.5.abstract_truck_loss"]
+depends_on = ["32.57", "32.59"]
+src = ["airlog:58.42"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
+
+[[case]]
+id = "58.43"
+title = ""
+summary = "Each player loses 10% (fractions up) of truck points arriving in North Africa via the CW Truck Production Table and the Axis Replacement Pool, on arrival; trucks on the reinforcement track are unaffected."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:58.43"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
+
+[[case]]
+id = "58.44"
+title = "Abstract Truck Loss Chart"
+summary = "Chart of monthly percentage truck (motorization point) losses by side, 1940-1943."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = []
+tables = ["airlog.58.5.abstract_truck_loss"]
+src = ["airlog:58.44"]
+applies = { graziani = "no", graziani_note = "Abstract Air rules are not used with the full Air game (decision D2)." }
