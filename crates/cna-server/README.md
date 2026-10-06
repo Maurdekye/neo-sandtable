@@ -63,6 +63,13 @@ provider is started by the server.
   first unsupported applicable procedure. It never substitutes an order. Aggressive is available
   only for the sandbox (including handover). Unknown kinds, profiles and mismatched pairs are rejected.
 
+Legal-random samples enumerable schemas and preserves ruleset-provided hex/path candidate hooks.
+Without such a hook, a schema containing unenumerated hexes or paths uses its declared pass as
+an explicit baseline policy. If no pass exists, the seat pauses immediately with the decision
+kind and missing-domain reason. A rejected pass also pauses without retries; generation or
+execution failures never trigger a substitute order. Controller sampling does not consume
+campaign adjudication RNG.
+
 For example, POST `/api/campaigns` with `{"kind":"cna","rules_profile":"cna-2021-dev",
 "seed":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"paused":true,"controller":"legal_random"}`. Rust callers supply
 `CreateRequest.kind: CampaignKind::Sandbox` or `CampaignKind::Cna`; legacy JSON without `kind`

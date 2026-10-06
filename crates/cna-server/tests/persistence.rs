@@ -725,3 +725,189 @@ fn scripted_transcript_is_atomic_with_answer_and_idempotent_on_retry() {
         reported
     );
 }
+
+struct Unenumerated {
+    pass: bool,
+    reject_pass: bool,
+    calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+}
+impl Ruleset for Unenumerated {
+    type State = State;
+    type Content = ();
+    fn profile_id(&self) -> &str {
+        "tiny-v1"
+    }
+    fn advance(&self, c: &(), s: &mut State, cx: &mut Cx<'_>) -> Result<Progress, EngineError> {
+        rules().advance(c, s, cx)
+    }
+    fn respond(
+        &self,
+        c: &(),
+        s: &mut State,
+        r: &DecisionResponse,
+        cx: &mut Cx<'_>,
+    ) -> Result<(), Rejection> {
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if self.reject_pass || !r.action.is_null() {
+            return Err(Rejection::Illegal {
+                message: "declared pass rejected by test ruleset".into(),
+            });
+        }
+        let mut response = r.clone();
+        response.action = json!(0);
+        rules().respond(c, s, &response, cx)
+    }
+    fn pending(&self, c: &(), s: &State) -> Vec<DecisionRequest> {
+        rules()
+            .pending(c, s)
+            .into_iter()
+            .map(|mut r| {
+                r.kind = "test.unenumerated".into();
+                r.space = ActionSpace::new(ActionSchema::List {
+                    item: Box::new(ActionSchema::Hex { among: None }),
+                    min: 1,
+                    max: 4096,
+                });
+                if self.pass {
+                    r.space.pass = Some("done".into());
+                }
+                r
+            })
+            .collect()
+    }
+    fn observe(&self, c: &(), s: &State, p: Perspective) -> Value {
+        rules().observe(c, s, p)
+    }
+    fn view(&self, c: &(), s: &State, p: Perspective) -> ViewState {
+        rules().view(c, s, p)
+    }
+}
+#[test]
+fn unavailable_scripted_domain_passes_or_durably_pauses_without_retrying() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    for (pass, reject_pass, expected_calls) in
+        [(false, false, 0), (true, false, 1), (true, true, 1)]
+    {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("domain.sqlite");
+        let calls = Arc::new(AtomicUsize::new(0));
+        let mut game = Campaign::create(
+            &path,
+            Unenumerated {
+                pass,
+                reject_pass,
+                calls: calls.clone(),
+            },
+            (),
+            Game {
+                state: State::default(),
+                rng: CampaignRng::from_seed([7; 32]).state(),
+            },
+            CampaignMeta {
+                id: "domain".into(),
+                scenario_id: "domain".into(),
+                rules_profile: "tiny-v1".into(),
+                title: "Domain".into(),
+                seats: vec![],
+            },
+            pins(),
+        )
+        .unwrap();
+        let seat = SeatId::all().next().unwrap();
+        game.handover(
+            seat,
+            Some(ControllerInfo {
+                kind: ControllerKind::Scripted,
+                label: "legal-random".into(),
+            }),
+            json!({"mode":"legal_random"}),
+        )
+        .unwrap();
+        game.advance().unwrap();
+        let before = game.state_hash().unwrap();
+        let db = rusqlite::Connection::open(&path).unwrap();
+        let rng_before: String = db
+            .query_row("SELECT rng FROM campaign", [], |r| r.get(0))
+            .unwrap();
+        let step = game.step(&NoCandidates).unwrap();
+        assert_eq!(calls.load(Ordering::SeqCst), expected_calls);
+        let succeeds = pass && !reject_pass;
+        assert_eq!(
+            db.query_row("SELECT COUNT(*) FROM commands", [], |r| r.get::<_, u64>(0))
+                .unwrap(),
+            if succeeds { 2 } else { 1 }
+        );
+        assert_eq!(
+            rng_before,
+            db.query_row("SELECT rng FROM campaign", [], |r| r.get::<_, String>(0))
+                .unwrap()
+        );
+        let rows = game
+            .transcripts_after(Perspective::Seat(seat), seat, 0, 10)
+            .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert!(
+            game.transcripts_after(
+                Perspective::Side(SeatId::all().find(|s| s.side != seat.side).unwrap().side),
+                seat,
+                0,
+                10
+            )
+            .unwrap()
+            .is_empty()
+        );
+        if succeeds {
+            assert!(matches!(step, Step::Responded {seat: s} if s == seat));
+            assert!(matches!(
+                &rows[0],
+                ServerMessage::Transcript {
+                    entry: TranscriptEntry::DecisionSubmitted { .. },
+                    ..
+                }
+            ));
+        } else {
+            let Step::SeatPaused { error, .. } = step else {
+                panic!("must pause")
+            };
+            assert!(error.contains(if pass {
+                "declared pass rejected"
+            } else {
+                "no declared pass"
+            }));
+            assert_eq!(before, game.state_hash().unwrap());
+            assert!(game.binding(seat).paused);
+            assert!(matches!(
+                &rows[0],
+                ServerMessage::Transcript {
+                    entry: TranscriptEntry::System { .. },
+                    ..
+                }
+            ));
+            assert!(matches!(game.step(&NoCandidates).unwrap(), Step::Idle));
+            assert_eq!(calls.load(Ordering::SeqCst), expected_calls);
+            drop(game);
+            let restored = Campaign::recover(
+                &path,
+                Unenumerated {
+                    pass,
+                    reject_pass,
+                    calls: calls.clone(),
+                },
+                (),
+                &pins(),
+            )
+            .unwrap();
+            assert!(restored.binding(seat).paused);
+            assert_eq!(before, restored.state_hash().unwrap());
+            assert_eq!(
+                rows,
+                restored
+                    .transcripts_after(Perspective::Seat(seat), seat, 0, 10)
+                    .unwrap()
+            );
+        }
+    }
+}

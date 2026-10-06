@@ -52,6 +52,28 @@ fn stored(path: &Path) -> (u64, String, String) {
     )
     .unwrap()
 }
+fn resolved_decisions(path: &Path) -> Vec<cna_core::decision::DecisionRequest> {
+    let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+    let mut statement = db
+        .prepare("SELECT request FROM decisions WHERE resolved_revision IS NOT NULL ORDER BY id")
+        .unwrap();
+    statement
+        .query_map([], |row| row.get::<_, String>(0))
+        .unwrap()
+        .map(|row| serde_json::from_str(&row.unwrap()).unwrap())
+        .collect()
+}
+fn assert_initiative_and_transcript_count(path: &Path, transcript_count: usize) {
+    let requests = resolved_decisions(path);
+    assert_eq!(
+        requests
+            .iter()
+            .filter(|d| d.kind == "cna.initiative_declaration")
+            .count(),
+        18
+    );
+    assert_eq!(transcript_count, requests.len());
+}
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn real_graziani_baselines_finish_with_private_transcripts_and_exact_recovery() {
     let directory = tempfile::tempdir().unwrap();
@@ -104,7 +126,7 @@ async fn real_graziani_baselines_finish_with_private_transcripts_and_exact_recov
                     .is_empty()
             );
         }
-        assert_eq!(count, 18); // Current CNA initiative declarations: two seats, nine OpStages.
+        assert_initiative_and_transcript_count(&path, count);
         handle.shutdown().await.unwrap();
         let before = stored(&path);
         let db = Connection::open(&path).unwrap();
@@ -431,7 +453,7 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
     .await
     .unwrap();
     let mut count = 0;
-    for seat in ["axis.commander", "commonwealth.commander"] {
+    for seat in SeatId::all() {
         let rows: Vec<ServerMessage> = client
             .get(format!(
                 "{base}/api/campaigns/{id}/transcripts?perspective=operator&seat={seat}"
@@ -444,7 +466,7 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
             .unwrap();
         count += rows.len();
     }
-    assert_eq!(count, 18);
+    assert_initiative_and_transcript_count(&directory.path().join(format!("{id}.sqlite")), count);
     let denied:Vec<Value> = client.get(format!("{base}/api/campaigns/{id}/transcripts?perspective=side:axis&seat=commonwealth.commander"))
         .send().await.unwrap().json().await.unwrap();
     assert!(denied.is_empty());

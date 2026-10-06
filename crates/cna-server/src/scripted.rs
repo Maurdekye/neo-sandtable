@@ -14,6 +14,11 @@ use crate::{Campaign, CampaignStatus, Error};
 /// The ruleset/content adapter supplies candidates for unenumerated hexes and paths.
 /// Candidate generation may only use the owning seat's authorized knowledge.
 pub trait Candidates {
+    /// Whether this adapter supplies unenumerated hex/path domains. Existing hooks
+    /// retain their behavior; a missing hook declares the limitation before sampling.
+    fn has_unenumerated_domains(&self) -> bool {
+        true
+    }
     fn candidate(
         &self,
         request: &DecisionRequest,
@@ -23,6 +28,9 @@ pub trait Candidates {
 }
 pub struct NoCandidates;
 impl Candidates for NoCandidates {
+    fn has_unenumerated_domains(&self) -> bool {
+        false
+    }
     fn candidate(&self, _: &DecisionRequest, _: &ActionSchema, _: u32) -> Option<Value> {
         None
     }
@@ -122,6 +130,21 @@ impl Generator<'_> {
     }
 }
 
+fn requires_candidates(schema: &ActionSchema) -> bool {
+    match schema {
+        ActionSchema::Hex { among: None } | ActionSchema::Path { .. } => true,
+        ActionSchema::Record { fields } => fields
+            .iter()
+            .any(|field| requires_candidates(&field.schema)),
+        ActionSchema::List { item, max, .. } => *max > 0 && requires_candidates(item),
+        _ => false,
+    }
+}
+
+fn unavailable_domain(request: &DecisionRequest, candidates: &dyn Candidates) -> bool {
+    !candidates.has_unenumerated_domains() && requires_candidates(&request.space.schema)
+}
+
 pub fn answer(
     request: &DecisionRequest,
     epoch: u64,
@@ -137,8 +160,17 @@ pub fn answer(
         candidates,
         attempt,
     };
+    let unavailable = unavailable_domain(request, candidates);
+    if unavailable && request.space.pass.is_none() {
+        return Err(Error::Invalid(format!(
+            "scripted action domain unavailable for {}: ruleset candidate hook required and no declared pass",
+            request.kind
+        )));
+    }
+    // A declared pass is this baseline's policy for an unavailable domain. It is
+    // selected before generation, never substituted after an execution failure.
     let pass = request.space.pass.is_some()
-        && (mode == Mode::PassWhenPossible || sample(&mut generator.rng, 5)? == 0);
+        && (unavailable || mode == Mode::PassWhenPossible || sample(&mut generator.rng, 5)? == 0);
     let action = if pass {
         Value::Null
     } else {
@@ -194,7 +226,13 @@ impl<R: Ruleset> Campaign<R> {
             };
             let epoch = binding.controller_epoch;
             let mut last_error = "scripted retry budget exhausted".to_owned();
-            for attempt in 0..64 {
+            // Do not retry a domain we cannot generate, including a rejected pass.
+            let attempts = if unavailable_domain(&request, candidates) {
+                1
+            } else {
+                64
+            };
+            for attempt in 0..attempts {
                 let response = match answer(&request, epoch, mode, attempt, candidates) {
                     Ok(r) => r,
                     Err(e) => {
@@ -356,6 +394,62 @@ mod tests {
                 .unwrap()
                 .action
                 .is_null()
+        );
+    }
+    #[test]
+    fn nested_unenumerated_domains_choose_declared_pass_before_generation() {
+        let mut req = request(ActionSchema::List {
+            item: Box::new(ActionSchema::Record {
+                fields: vec![FieldSchema {
+                    name: "path".into(),
+                    doc: String::new(),
+                    optional: false,
+                    schema: ActionSchema::List {
+                        item: Box::new(ActionSchema::Hex { among: None }),
+                        min: 1,
+                        max: 4096,
+                    },
+                }],
+            }),
+            min: 0,
+            max: 4096,
+        });
+        req.kind = "test.movement".into();
+        let error = answer(&req, 0, Mode::LegalRandom, 0, &NoCandidates).unwrap_err();
+        assert!(error.to_string().contains("test.movement"));
+        assert!(error.to_string().contains("no declared pass"));
+        req.space.pass = Some("done".into());
+        for attempt in 0..20 {
+            assert!(
+                answer(&req, 0, Mode::LegalRandom, attempt, &NoCandidates)
+                    .unwrap()
+                    .action
+                    .is_null()
+            );
+        }
+        // An existing domain provider is still used even when pass is available.
+        req.space.schema = ActionSchema::Path {
+            from: "C4218".into(),
+            max_steps: 2,
+        };
+        assert!((0..20).any(|attempt| {
+            answer(&req, 0, Mode::LegalRandom, attempt, &Hook)
+                .unwrap()
+                .action
+                == json!(["C4219"])
+        }));
+        // A zero-length list never needs its item's domain.
+        req.space.pass = None;
+        req.space.schema = ActionSchema::List {
+            item: Box::new(ActionSchema::Hex { among: None }),
+            min: 0,
+            max: 0,
+        };
+        assert_eq!(
+            answer(&req, 0, Mode::LegalRandom, 0, &NoCandidates)
+                .unwrap()
+                .action,
+            json!([])
         );
     }
 }
