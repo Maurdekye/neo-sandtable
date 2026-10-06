@@ -8,11 +8,11 @@ import type { ViewState } from "./ViewState";
 /**
  * Messages the server sends over the WebSocket.
  */
-export type ServerMessage = { "type": "hello", protocol: number, campaign: CampaignMeta, perspective: string, } | { "type": "snapshot", seq: bigint, view: ViewState, } | { "type": "event", seq: bigint, clock: Clock, event: GameEvent, } | { "type": "transcript", seat: string, 
+export type ServerMessage = { "type": "hello", protocol: number, campaign: CampaignMeta, perspective: string, } | { "type": "snapshot", seq: number, view: ViewState, } | { "type": "event", seq: number, clock: Clock, event: GameEvent, } | { "type": "transcript", seat: string, 
 /**
  * Per-seat transcript sequence, strictly increasing.
  */
-tseq: bigint, 
+tseq: number, 
 /**
  * Wall-clock capture time (RFC 3339), for display only.
  */
@@ -20,4 +20,4 @@ at: string,
 /**
  * The latest game event `seq` when this entry was captured, to align replays.
  */
-game_seq: bigint, entry: TranscriptEntry, } | { "type": "resync" };
+game_seq: number, entry: TranscriptEntry, } | { "type": "resync" };

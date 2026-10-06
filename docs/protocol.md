@@ -45,6 +45,12 @@ Campaign control (pause/resume campaign, seat handover, …) goes over HTTP (`PO
 ```
 
 ### `event` — one game event after the snapshot, strictly increasing `seq`
+
+**Sequence numbers are per perspective.** Each perspective has its own contiguous event sequence
+(1, 2, 3, …) containing only the events it may see. A global counter with gaps would let a side
+infer how much hidden enemy activity happened, which `land:3.6` forbids. Snapshots and `from_seq`
+refer to the same per-perspective sequence. All sequence numbers are JSON numbers (typed `number`
+in TypeScript) and stay well below 2^53.
 ```jsonc
 { "type": "event", "seq": 1235, "clock": Clock, "event": GameEvent }
 ```

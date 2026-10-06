@@ -3,4 +3,4 @@
 /**
  * Messages a viewer sends over the WebSocket.
  */
-export type ClientMessage = { "type": "subscribe", perspective: string, from_seq: bigint | null, };
+export type ClientMessage = { "type": "subscribe", perspective: string, from_seq: number | null, };

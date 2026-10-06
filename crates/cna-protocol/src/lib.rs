@@ -10,6 +10,9 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+/// Sequence numbers (`seq`, `tseq`, `game_seq`, …) are `u64` in Rust but travel as JSON numbers
+/// and are typed `number` in TypeScript; they stay far below 2^53.
+///
 /// Bumped whenever a breaking change is made to these types.
 pub const PROTOCOL_VERSION: u32 = 1;
 
@@ -46,6 +49,7 @@ pub enum ClientMessage {
     /// Start (or resume) a stream. `from_seq: None` asks for a fresh snapshot.
     Subscribe {
         perspective: Perspective,
+        #[ts(type = "number | null")]
         from_seq: Option<u64>,
     },
 }
@@ -60,9 +64,14 @@ pub enum ServerMessage {
         perspective: Perspective,
     },
     /// The full projected state as of event `seq`.
-    Snapshot { seq: u64, view: ViewState },
+    Snapshot {
+        #[ts(type = "number")]
+        seq: u64,
+        view: ViewState,
+    },
     /// One game event; `seq` increases by exactly one each time.
     Event {
+        #[ts(type = "number")]
         seq: u64,
         clock: Clock,
         event: GameEvent,
@@ -71,10 +80,12 @@ pub enum ServerMessage {
     Transcript {
         seat: SeatId,
         /// Per-seat transcript sequence, strictly increasing.
+        #[ts(type = "number")]
         tseq: u64,
         /// Wall-clock capture time (RFC 3339), for display only.
         at: String,
         /// The latest game event `seq` when this entry was captured, to align replays.
+        #[ts(type = "number")]
         game_seq: u64,
         entry: TranscriptEntry,
     },
@@ -201,6 +212,7 @@ pub struct PendingDecision {
     pub seat: SeatId,
     pub kind: String,
     pub summary: String,
+    #[ts(type = "number")]
     pub opened_seq: u64,
 }
 
