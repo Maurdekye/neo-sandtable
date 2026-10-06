@@ -156,6 +156,7 @@ impl MapContent {
 }
 
 fn read_csv<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<Vec<T>, ContentError> {
+    crate::note_read(path);
     let file = std::fs::File::open(path).map_err(|error| ContentError::Io {
         path: path.to_path_buf(),
         error,

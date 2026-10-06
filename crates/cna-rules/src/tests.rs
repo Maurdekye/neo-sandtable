@@ -268,3 +268,60 @@ fn rejects_a_wrong_seat_and_a_stale_revision_without_change() {
         Err(Rejection::Illegal { .. })
     ));
 }
+
+#[test]
+fn source_files_lists_exactly_what_the_loaders_read() {
+    let data = cna_content::repo_data_dir();
+    let base = cna_content::normalize(&data);
+    let files = crate::content::source_files(&data, "graziani").unwrap();
+    let rel: Vec<String> = files
+        .iter()
+        .map(|p| {
+            p.strip_prefix(&base)
+                .unwrap_or(p)
+                .to_string_lossy()
+                .replace('\\', "/")
+        })
+        .collect();
+    let has = |f: &str| rel.iter().any(|r| r == f);
+    for f in [
+        "map/hexes.csv",
+        "map/areas.toml",
+        "map/coverage.csv",
+        "units/oa/it/1_libyan_div.toml",
+        "scenarios/graziani/scenario.toml",
+        "scenarios/graziani/land_axis.toml",
+        "tables/land/14.6-anti-armor-results.toml",
+        "rules/land/07-initiative.toml",
+    ] {
+        assert!(has(f), "{f} is read but not listed: {rel:?}");
+    }
+    for f in [
+        "map/README.md",
+        "map/GAPS.md",
+        "scenarios/italian_campaign/scenario.toml",
+    ] {
+        assert!(!has(f), "{f} is not read but is listed");
+    }
+    // Sorted, deduplicated and stable.
+    let mut sorted = files.clone();
+    sorted.sort();
+    sorted.dedup();
+    assert_eq!(files, sorted);
+    assert_eq!(
+        files,
+        crate::content::source_files(&data, "graziani").unwrap()
+    );
+    // A scenario reusing another's set-up lists the reused files.
+    let italian = crate::content::source_files(&data, "italian_campaign").unwrap();
+    assert!(
+        italian
+            .iter()
+            .any(|p| p.ends_with("graziani/land_axis.toml"))
+    );
+    assert!(
+        italian
+            .iter()
+            .any(|p| p.ends_with("italian_campaign/scenario.toml"))
+    );
+}

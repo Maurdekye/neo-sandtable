@@ -55,8 +55,43 @@ pub fn repo_data_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data")
 }
 
+thread_local! {
+    static READS: std::cell::RefCell<Option<std::collections::BTreeSet<PathBuf>>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// Record that `path` was read as content, when a [`record_reads`] scope is active on this
+/// thread. Every loader reads through `read_toml` or the map's CSV reader, which call this.
+pub(crate) fn note_read(path: &Path) {
+    READS.with(|reads| {
+        if let Some(set) = reads.borrow_mut().as_mut() {
+            set.insert(normalize(path));
+        }
+    });
+}
+
+/// The same path with platform separators throughout, so one file never appears twice.
+pub fn normalize(path: &Path) -> PathBuf {
+    path.components().collect()
+}
+
+/// Run `f` and return its result with every content file it read, sorted and deduplicated.
+/// Scopes nest: an inner scope's reads also count for the outer one.
+pub fn record_reads<T>(f: impl FnOnce() -> T) -> (T, Vec<PathBuf>) {
+    let outer = READS.with(|reads| reads.replace(Some(Default::default())));
+    let out = f();
+    let inner = READS.with(|reads| reads.replace(outer)).unwrap_or_default();
+    READS.with(|reads| {
+        if let Some(set) = reads.borrow_mut().as_mut() {
+            set.extend(inner.iter().cloned());
+        }
+    });
+    (out, inner.into_iter().collect())
+}
+
 /// Parse one TOML file into `T`, naming the file in any error.
 pub(crate) fn read_toml<T: DeserializeOwned>(path: &Path) -> Result<T, ContentError> {
+    note_read(path);
     let text = std::fs::read_to_string(path).map_err(|error| ContentError::Io {
         path: path.to_path_buf(),
         error,
