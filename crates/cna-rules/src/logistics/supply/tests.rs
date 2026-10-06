@@ -189,6 +189,7 @@ fn tanks_are_exact_and_repeated_dump_draws_round_once() {
     state.logistics.unit_supply.insert(
         id.clone(),
         UnitSupply {
+            activity_water: WaterPoints::ZERO,
             tank_fuel: FuelTenths::new(3),
             ..UnitSupply::default()
         },
@@ -305,6 +306,7 @@ fn first_line_cargo_and_ready_ammo_are_distinct_from_tanks() {
     state.logistics.unit_supply.insert(
         carrier.clone(),
         UnitSupply {
+            activity_water: WaterPoints::ZERO,
             tank_fuel: FuelTenths::new(999),
             carried: Supplies {
                 ammo: 8,
@@ -369,6 +371,7 @@ fn owner_only_holdings_and_dump_inspection_do_not_leak_to_enemy() {
     state.logistics.unit_supply.insert(
         id.clone(),
         UnitSupply {
+            activity_water: WaterPoints::ZERO,
             tank_fuel: FuelTenths::new(98765),
             ..UnitSupply::default()
         },

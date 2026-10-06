@@ -18,7 +18,9 @@
 //! Cases: airlog:49.13, airlog:49.15, airlog:49.16, airlog:50.13, airlog:50.15
 //! Interpretations: interp:airlog-0001
 
+mod rations;
 mod segment;
+pub mod stores;
 mod supply;
 pub use segment::{
     FuelDraw, FuelSegmentLedger, SegmentFuelPlan, SegmentKey, plan_segment_fuel, spend_segment_fuel,
@@ -26,5 +28,10 @@ pub use segment::{
 pub mod weather;
 pub use supply::{
     SupplyDemand, SupplyDraw, SupplyError, SupplySource, ammunition_cost, available_sources,
-    available_sources_at, movement_fuel_cost, spend_for_unit, toe_strength,
+    available_sources_at, available_sources_at_location, movement_fuel_cost, spend_for_unit,
+    toe_strength,
+};
+
+pub use rations::{
+    MovementRestrictions, PrisonerGroup, Rations, movement_restrictions, spend_activity_water,
 };

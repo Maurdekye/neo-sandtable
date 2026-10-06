@@ -12,7 +12,7 @@ use cna_tables::airlog::supply::{AmmoAction, AmmoCost, AmmoMode};
 use serde::{Deserialize, Serialize};
 
 use crate::content::CnaContent;
-use crate::state::{DumpLocation, LandUnit, LogisticsState, State};
+use crate::state::{DumpLocation, LandUnit, Location, LogisticsState, State};
 
 /// Exact demand before any source-specific fuel rounding.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -288,8 +288,7 @@ fn stock_demand(stock: Supplies) -> Result<SupplyDemand, SupplyError> {
 /// Cases: airlog:49.15, airlog:49.16, airlog:50.15
 pub fn available_sources(state: &State, unit_id: &UnitId) -> Result<Vec<SupplyDraw>, SupplyError> {
     let unit = state.land.units.get(unit_id).ok_or(SupplyError::Invalid)?;
-    let hex = unit.location.hex().ok_or(SupplyError::Invalid)?;
-    available_sources_at(state, unit_id, hex)
+    available_sources_at_location(state, unit_id, &unit.location)
 }
 
 /// Sources at a recorded segment origin, with the consuming unit's tanks always
@@ -302,6 +301,24 @@ pub fn available_sources_at(
 ) -> Result<Vec<SupplyDraw>, SupplyError> {
     let unit = state.land.units.get(unit_id).ok_or(SupplyError::Invalid)?;
     unit.location.hex().ok_or(SupplyError::Invalid)?;
+    available_sources_at_location(state, unit_id, &Location::Hex { hex: hex.clone() })
+}
+
+/// Friendly stocks in the same map hex or off-map location.
+/// Cases: airlog:51.15, airlog:49.15, land:8.84
+pub fn available_sources_at_location(
+    state: &State,
+    unit_id: &UnitId,
+    location: &Location,
+) -> Result<Vec<SupplyDraw>, SupplyError> {
+    let unit = state.land.units.get(unit_id).ok_or(SupplyError::Invalid)?;
+    if !matches!(
+        unit.location,
+        Location::Hex { .. } | Location::OffMap { .. }
+    ) || !matches!(location, Location::Hex { .. } | Location::OffMap { .. })
+    {
+        return Err(SupplyError::Invalid);
+    }
     let mut sources = Vec::new();
     if let Some(holdings) = state.logistics.unit_supply.get(unit_id) {
         if holdings.tank_fuel.get() < 0 || holdings.ready_ammo.get() < 0 {
@@ -326,10 +343,7 @@ pub fn available_sources_at(
         let Some(carrier) = state.land.units.get(id) else {
             continue;
         };
-        if carrier.side == unit.side
-            && carrier.location.hex() == Some(hex)
-            && truck_count(carrier)? > 0
-        {
+        if carrier.side == unit.side && &carrier.location == location && truck_count(carrier)? > 0 {
             sources.push(SupplyDraw {
                 source: SupplySource::UnitStock(id.clone()),
                 amount: stock_demand(holdings.carried)?,
@@ -340,7 +354,11 @@ pub fn available_sources_at(
         if dump.side == unit.side
             && dump.active
             && !dump.dummy
-            && matches!(&dump.location, DumpLocation::Hex { hex: h } if h == hex)
+            && match (&dump.location, location) {
+                (DumpLocation::Hex { hex: a }, Location::Hex { hex: b }) => a == b,
+                (DumpLocation::OffMap { id: a }, Location::OffMap { id: b }) => a == b,
+                _ => false,
+            }
         {
             sources.push(SupplyDraw {
                 source: SupplySource::Dump(id.clone()),

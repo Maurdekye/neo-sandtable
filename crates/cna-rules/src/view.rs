@@ -386,6 +386,10 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
         },
         "your_forces": forces,
         "logistics": {
+            "rations": state.logistics.rations.iter().filter(|(id, _)| {
+                state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
+            }).collect::<BTreeMap<_, _>>(),
+            "prisoners": state.logistics.prisoners.iter().filter(|(_, p)| sees_side(perspective, p.owner)).collect::<BTreeMap<_, _>>(),
             "unit_supply": state.logistics.unit_supply.iter().filter(|(id, _)| {
                 state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
             }).collect::<BTreeMap<_, _>>(),
@@ -420,6 +424,7 @@ pub(crate) fn inspect(
             "location": unit.location,
             "attached_to": unit.attached_to,
             "toe": format!("{:?}", unit.toe),
+            "rations": state.logistics.rations.get(&unit.id).cloned().unwrap_or_default(),
             "supplies": state.logistics.unit_supply.get(&unit.id).cloned().unwrap_or_default(),
         }));
     }

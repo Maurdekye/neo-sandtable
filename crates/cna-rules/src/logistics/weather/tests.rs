@@ -2,7 +2,7 @@
 use super::*;
 use crate::state::{Location, UnitSupply, WellState};
 use cna_core::dice::CampaignRng;
-use cna_core::quantity::FuelTenths;
+use cna_core::quantity::{FuelTenths, WaterPoints};
 use cna_core::visibility::Audience;
 use std::sync::OnceLock;
 
@@ -97,6 +97,7 @@ fn hot_weather_loses_cargo_and_dump_stocks_but_not_tanks_or_offmap_stocks() {
     state.logistics.unit_supply.insert(
         id.clone(),
         UnitSupply {
+            activity_water: WaterPoints::ZERO,
             tank_fuel: FuelTenths::new(31),
             carried: Supplies {
                 fuel: 99,

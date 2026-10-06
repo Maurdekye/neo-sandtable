@@ -11,7 +11,7 @@ use cna_content::scenario::{Placement, Supplies};
 use cna_content::units::{Toe, Trucks};
 use cna_core::decision::{ActionSpace, Secrecy, Trigger};
 use cna_core::ids::{DecisionId, HexId, SeatId, UnitId};
-use cna_core::quantity::{AmmoPoints, FuelTenths};
+use cna_core::quantity::{AmmoPoints, FuelTenths, WaterPoints};
 use cna_protocol::Side;
 use cna_tables::land::weather::{MapSection, WeatherKind};
 use serde::{Deserialize, Serialize};
@@ -148,6 +148,14 @@ pub enum DumpLocation {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LogisticsState {
+    /// Private ration and water history; absent entries have not been supplied.
+    #[serde(default)]
+    pub rations: BTreeMap<UnitId, crate::logistics::Rations>,
+    /// Captured infantry and their separately formed guard points.
+    #[serde(default)]
+    pub prisoners: BTreeMap<String, crate::logistics::PrisonerGroup>,
+    #[serde(default)]
+    pub stores_started_gt: Option<u16>,
     /// Movement fuel already charged in this unit's current segment.
     #[serde(default)]
     pub fuel_segments: BTreeMap<UnitId, crate::logistics::FuelSegmentLedger>,
@@ -169,6 +177,9 @@ pub struct LogisticsState {
 /// Cases: airlog:49.14, airlog:50.17, airlog:53.1
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnitSupply {
+    /// Water reserved for vehicle activity; idle vehicles retain their reserve.
+    #[serde(default)]
+    pub activity_water: WaterPoints,
     /// Fuel already in vehicle tanks, retained exactly in tenths.
     pub tank_fuel: FuelTenths,
     /// Ammunition carried by the firing unit, apart from truck cargo.
