@@ -28,3 +28,12 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 float_arithmetic = "warn"
+
+# Keep each clone's target/ small: several agents build in parallel on one disk, and full debug
+# info plus incremental caches cost several GB per clone. Line tables keep backtraces readable.
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.dev.package."*"]
+debug = false

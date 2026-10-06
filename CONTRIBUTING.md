@@ -65,13 +65,21 @@ tests that pin it. The lead agent batches consequential interpretations for the 
 - Before every push: `git pull --rebase origin main`, re-run the checks, then push. Never
   force-push `main`. If a rebase conflicts in a file you do not own, stop and ask the owner of that
   area (see §4) instead of resolving it yourself.
-- **Landing slot.** Pushes to `main` are serialized through the orgtree reservation
-  `resource='main'`. Agents use `orgtree_reservation`; humans need not. Commit locally and rebase.
-  Then `acquire` with `base` = the `origin/main` commit you rebased onto, `candidate` = your
-  `HEAD`, `lease_s` ≈ 180 and your docket item. If someone else holds the slot, do other work and
-  retry; never push while it is held by someone else. While holding it: rebase again if `main`
-  moved, re-run the checks, push, then `land` and `release`. `renew` if the checks will outlast
-  the lease. Hold the slot only for rebase, check and push, never while editing.
+- **Landing lock.** Pushes to `main` are serialized by a lock on the remote, the
+  `landing-lock` branch, managed by `tools/land.py`:
+  ```sh
+  python tools/land.py acquire --who <your-name>   # waits while someone else holds it
+  git pull --rebase origin main                    # then re-run the checks
+  git push origin HEAD:main
+  python tools/land.py release --who <your-name>   # always, even if the push failed
+  ```
+  Hold the lock only for rebase, checks and push, never while editing. A lock older than 15
+  minutes counts as abandoned and the next `acquire` breaks it. `python tools/land.py status`
+  shows who holds it. Never push to `main` while someone else holds the lock. The lock branch is
+  the one ref `tools/land.py` may force-update (with a lease); never force-push `main`.
+- **Disk.** All agents build on one machine. Keep a single clone, build with the workspace
+  profile (small debug info, no incremental cache), and run `cargo clean` in your clone if its
+  `target/` grows past a few GB.
 - Keep commits small and focused, with a prefix naming the area:
   `core: …`, `rules: …`, `map: …`, `units: …`, `scenario: …`, `server: …`, `web: …`, `docs: …`,
   `ci: …`, `tools: …`.
