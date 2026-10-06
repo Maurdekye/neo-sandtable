@@ -130,6 +130,7 @@ pub(crate) fn open(
                 kind: kind.to_owned(),
                 summary: summary.clone(),
                 opened_seq: 0,
+                rules: rules.iter().map(|r| (*r).to_owned()).collect(),
             },
         },
     ));

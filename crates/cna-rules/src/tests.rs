@@ -192,6 +192,17 @@ fn limited_intelligence_hides_enemy_stack_contents() {
         assert!(s.unit_ids.is_empty() && s.visible_count.is_none(), "{s:?}");
     }
     assert!(axis.units.values().all(|u| u.side == Side::Axis));
+    // Own units off the map (e.g. the Tripoli box) are listed with their location.
+    let off_map = axis
+        .units
+        .values()
+        .filter(|u| u.hex.is_none())
+        .filter_map(|u| u.detail.as_ref()?.get("location"))
+        .count();
+    assert!(
+        off_map > 0,
+        "axis units in off-map boxes or awaiting set-up are listed"
+    );
     // The operator sees both sides in full.
     let op = ruleset.view(content, &state, Perspective::Operator);
     assert!(op.units.values().any(|u| u.side == Side::Commonwealth));

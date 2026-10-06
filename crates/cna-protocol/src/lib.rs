@@ -308,6 +308,9 @@ pub struct PendingDecision {
     pub summary: String,
     #[ts(type = "number")]
     pub opened_seq: u64,
+    /// Rule citations governing the decision (`land:7.11`); empty when the ruleset gives none.
+    #[serde(default)]
+    pub rules: Vec<String>,
 }
 
 /// Game events as seen by a perspective. Viewers must ignore kinds they do not know.

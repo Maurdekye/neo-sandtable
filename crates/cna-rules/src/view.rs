@@ -231,6 +231,23 @@ pub(crate) fn view(
             });
         }
     }
+    // Own units in play but not on a map hex: in an off-map box, or deployed and awaiting the
+    // owner's set-up placement. `hex` is null and `detail.location` says which.
+    for u in state.land.units.values() {
+        if !sees_side(perspective, u.side) {
+            continue;
+        }
+        let location = match &u.location {
+            Location::OffMap { id } => json!({ "at": "off_map", "id": id }),
+            Location::AwaitingSetup { group } => json!({ "at": "awaiting_setup", "group": group }),
+            Location::Hex { .. } | Location::NotArrived | Location::Eliminated => continue,
+        };
+        let mut view = unit_view(content, u);
+        if let Some(detail) = view.detail.as_mut() {
+            detail.insert("location".to_owned(), location);
+        }
+        units.insert(u.id.to_string(), view);
+    }
     let mut markers = Vec::new();
     for dump in state.logistics.dumps.values() {
         let DumpLocation::Hex { hex } = &dump.location else {
@@ -267,6 +284,7 @@ pub(crate) fn view(
             kind: p.kind.clone(),
             summary: p.summary.clone(),
             opened_seq: 0,
+            rules: p.rules.clone(),
         })
         .collect();
     wire::ViewState {

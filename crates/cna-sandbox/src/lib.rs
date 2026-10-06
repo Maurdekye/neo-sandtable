@@ -542,6 +542,7 @@ impl Sandbox {
                     kind: kind.to_owned(),
                     summary: summary.clone(),
                     opened_seq: 0,
+                    rules: Vec::new(),
                 },
             },
         ));
@@ -1685,6 +1686,7 @@ impl Ruleset for Sandbox {
                 kind: p.kind.clone(),
                 summary: p.summary.clone(),
                 opened_seq: 0,
+                rules: Vec::new(),
             })
             .collect();
         wire::ViewState {
