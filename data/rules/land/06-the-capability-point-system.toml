@@ -1,0 +1,285 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "6.0"
+book = "land"
+title = "The Capability Point System"
+systems = ["land"]
+
+[[case]]
+id = "6.0"
+title = "General rule: Capability Points"
+summary = "Every land-unit action costs part of the unit's Capability Point Allowance (CPA); a unit may exceed its CPA at the price of Disorganization Points that eventually lower morale. Players track CP spent and cohesion per unit."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["6.1", "6.2"]
+src = ["land:6.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.1"
+title = "How the CPA System Works"
+summary = "Heading for the CPA cases 6.11-6.17."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:6.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.11"
+title = "Unit CPA and zero-CPA guns"
+summary = "Each unit's CPA comes from its OA sheet. Guns with a CPA of 0 are treated as CPA 10 for everything except movement."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.45"]
+src = ["land:6.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.12"
+title = "Everything costs CP"
+summary = "Every function a unit performs costs CP per the Capability Point Cost Summary (6.3), except where a rule says otherwise."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+tables = ["land.6.3.capability_point_expenditure_summary"]
+depends_on = ["6.3"]
+src = ["land:6.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.13"
+title = "CPA is the allowance per Operations Stage"
+summary = "The CPA is how many CP a unit may spend in one Operations Stage without earning Disorganization Points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["6.21"]
+src = ["land:6.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.14"
+title = "CP accrue across both players' portions"
+summary = "A unit's CP for an Operations Stage count both players' portions of that stage, so CP spent retreating or reacting during the enemy's portion count against the same CPA."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["8.5", "13.0"]
+src = ["land:6.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.15"
+title = "Parent formation CPA"
+summary = "A parent formation's CPA is the lowest CPA among its component units, regardless of faster ones."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.32"]
+src = ["land:6.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.16"
+title = "CP do not carry over or transfer"
+summary = "Unused CP are lost at the Stage boundary (cohesion levels, unlike CP, persist) and cannot be moved between units, except that a motorized infantry unit takes on its truck's CPA."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.initiative_declaration"]
+depends_on = ["6.17"]
+src = ["land:6.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.17"
+title = "Motorization changes CPA"
+summary = "Infantry with basic CPA 10 or less may be carried by trucks and then use the truck CPA (for example 8 becomes 20 with medium trucks). Anti-air units with CPA 0+ are motorized by assigning one medium or heavy truck point per TOE point of artillery."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["8.9"]
+src = ["land:6.17"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.2"
+title = "Cohesion"
+summary = "Cohesion is a unit's exhaustion or elation: 0 is normal, negative is disorganization, positive is reorganization; it adjusts morale at the instant of combat (17.0)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["17.2"]
+src = ["land:6.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.21"
+title = "Disorganization Points"
+summary = "One Disorganization Point per CP spent beyond the CPA; a parent formation and all its units that lose 30% or more in a single Close Assault also earn 3 DP. Combat can also give DPs."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["15.29", "6.13"]
+src = ["land:6.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.22"
+title = "DPs lower Cohesion immediately"
+summary = "DPs reduce the Cohesion Level at once, within the segment, and persist until offset by RPs; the new level applies to any morale calculation in a combat triggered by that same action."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["17.0"]
+src = ["land:6.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.23"
+title = "Reorganization Points and the +10 cap"
+summary = "Cohesion can be raised by Reorganization Points (RP), applied immediately and capped at +10."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:6.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.24"
+title = "Sources of RPs"
+summary = "A unit that spends no CP in an Operations Stage (training or conducting training excepted) gains 5 RP, but never above level 0 by this route; a unit that wins a Close Assault by making the defender vacate the hex (not by Reaction or Retreat Before Assault) gains 3 RP."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["18.3", "15.0"]
+src = ["land:6.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.25"
+title = "Cohesion adjusts morale"
+summary = "A positive cohesion level can raise, and a negative one lower, a unit's Basic Morale in a Close Assault (details in 17.2)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["17.2"]
+src = ["land:6.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.26"
+title = "Cohesion -26 or worse"
+summary = "A unit at -26 or worse cannot move, attack or defend and surrenders if an enemy combat unit moves adjacent; it still refuels and consumes stores and water. A single action may push a unit beyond -26."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["15.88"]
+src = ["land:6.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.27"
+title = "Cohesion of a mixed assault force"
+summary = "When units with differing cohesion take part in one Close Assault, the largest unit (by stacking points) sets the level; if several are tied for largest, their levels are averaged over the contributing counters (round to nearest)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["9.4"]
+src = ["land:6.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.28"
+title = "Cohesion of a mixed parent formation"
+summary = "For a parent formation of units with different levels, the largest unit inside prevails, with nested averaging as in 6.27."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["6.27"]
+src = ["land:6.28"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.29"
+title = "Cohesion tracked per unit"
+summary = "Notwithstanding the shared-level shortcuts, every unit's cohesion is tracked individually."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:6.29"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "6.3"
+title = "Capability Point Cost Summary"
+summary = "Table reference: the CP cost of each action (movement, combat, loading, construction and so on). Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["land.6.3.capability_point_expenditure_summary"]
+depends_on = ["6.12"]
+src = ["land:6.3"]
+
+[case.applies]
+graziani = "yes"

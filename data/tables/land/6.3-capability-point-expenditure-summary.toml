@@ -1,0 +1,206 @@
+# Capability Point Expenditure Summary (land:6.3).
+
+[table]
+id = "land.6.3.capability_point_expenditure_summary"
+case = "6.3"
+title = "Capability Point Expenditure Summary"
+src = ["land:6.3"]
+transcribed_from = ["vassal:6.3 Capability Point Expediture Summary.png"]
+verification = "double"
+dice = "none"
+notes = """
+One row per action. 'cost' shapes: { cp = N } flat CP; { tec = true } the Terrain Effects Chart cost
+of the hex entered (land:8.37); { cp = N, plus_tec = true } N CP plus the chart cost; { cpa_plus_tec =
+true } the unit's whole CPA plus chart cost; { cpa_fraction = [1, 3] } that fraction of the unit's
+CPA; { cp_pair = [a, b] } two printed alternatives separated by a slash, in the order printed (see
+the notes on rows construct_supply_dump and commando_amphibious_landing). Rows with 'sub' list
+several sub-cases of one action. TEC means the chart cost for the hex's terrain type; Eng means an
+Engineer unit is present. The CP costs apply to units spending CP; some actions that cost no CP still
+restrict a unit's ability to spend CP (printed remark).
+"""
+
+[[row]]
+id = "detach_unit"
+action = "Detach a unit (parent formation and detaching unit)"
+cost = { cp = 1 }
+
+[[row]]
+id = "attach_assigned_unit"
+action = "Attach an assigned unit (parent formation and attaching unit)"
+cost = { cp = 1 }
+
+[[row]]
+id = "attach_unassigned_unit"
+action = "Attach an unassigned unit (parent formation and attaching unit)"
+cost = { cp = 2 }
+
+[[row]]
+id = "absorb_two_toe_replacement_points"
+action = "Absorb 2 TOE replacement strength points (parent formation plus absorbing unit)"
+cost = { cp = 1 }
+
+[[row]]
+id = "enter_non_minefield_hex"
+action = "Enter a non-minefield hex"
+cost = { tec = true }
+
+[[row]]
+id = "enter_friendly_minefield_hex"
+action = "Enter a friendly minefield hex"
+[[row.sub]]
+who = "any unit with an Eng unit"
+cost = { cp = 0, plus_tec = true }
+[[row.sub]]
+who = "non-motorized unit, no Eng unit"
+cost = { cp = 1, plus_tec = true }
+[[row.sub]]
+who = "motorized unit, no Eng unit"
+cost = { cp = 4, plus_tec = true }
+
+[[row]]
+id = "enter_enemy_minefield_hex"
+action = "Enter an enemy minefield hex"
+[[row.sub]]
+who = "non-motorized unit with an Eng unit"
+cost = { cp = 2, plus_tec = true }
+[[row.sub]]
+who = "motorized unit with an Eng unit"
+cost = { cp = 4, plus_tec = true }
+[[row.sub]]
+who = "non-motorized unit, no Eng unit"
+cost = { cp = 4, plus_tec = true }
+[[row.sub]]
+who = "motorized unit, no Eng unit"
+cost = { cpa_plus_tec = true }
+
+[[row]]
+id = "break_contact"
+action = "Break Contact"
+cost = { cp = 2 }
+
+[[row]]
+id = "disengage"
+action = "Disengage"
+cost = { cp = 4 }
+
+[[row]]
+id = "be_placed_in_reserve"
+action = "Be placed in Reserve"
+cost = { cp = 0 }
+
+[[row]]
+id = "phasing_unit"
+action = "Phasing unit"
+[[row.sub]]
+who = "Barrage and/or an Assault other than a Probe"
+cost = { cp = 5 }
+[[row.sub]]
+who = "Undergo a Barrage"
+cost = { cp = 3 }
+[[row.sub]]
+who = "Probe"
+cost = { cp = 2 }
+
+[[row]]
+id = "non_phasing_unit"
+action = "Non-Phasing unit"
+[[row.sub]]
+who = "Barrage and/or undergo a Barrage and/or defend against an Assault other than a Probe"
+cost = { cp = 3 }
+footnotes = ["star"]
+[[row.sub]]
+who = "Defend against a Probe"
+cost = { cp = 2 }
+footnotes = ["star"]
+
+[[row]]
+id = "patrol"
+action = "Patrol"
+cost = { cp = 0 }
+
+[[row]]
+id = "desert_raider_raid"
+action = "Desert Raider Raid"
+cost = { cp = 5 }
+
+[[row]]
+id = "attempt_to_poison_water_source"
+action = "Attempt to Poison a water source"
+cost = { cp = 1 }
+
+[[row]]
+id = "attempt_to_sweeten_poisoned_water_source"
+action = "Attempt to sweeten a poisoned water source"
+cost = { cp = 5 }
+
+[[row]]
+id = "attempt_to_blow_supply_dump"
+action = "Attempt to blow a supply dump"
+cost = { cpa_fraction = [1, 3] }
+
+[[row]]
+id = "draw_water_load_unload_in_organization_phase"
+action = "Draw water, load/unload troops and/or supplies on trucks during an Organization Phase"
+cost = { cp = 0 }
+
+[[row]]
+id = "draw_water_other_than_organization_phase"
+action = "Draw Water other than during an Organization Phase"
+cost = { cp = 1 }
+
+[[row]]
+id = "load_unload_other_than_organization_phase"
+action = "Load/Unload troops and/or supplies on trucks other than during an Organization Phase"
+cost = { cp = 2 }
+
+[[row]]
+id = "construct_supply_dump"
+action = "Construct a Real or Dummy/Non-Dump Supply Dump"
+cost = { cp_pair = [3, 2] }
+note = "Printed as 3/2 against the label 'Real or Dummy/Non-Dump'; the pairing of 3 and 2 with the two kinds is not stated on the chart (see land 24.0 and interpretation land-0006)."
+
+[[row]]
+id = "construct_demolish_other_items"
+action = "Construction/Demolition of items other than Supply Dumps"
+cost = { cp = 0 }
+
+[[row]]
+id = "rail_or_inter_port_transport_of_troops"
+action = "Railroad or inter-port transport of troops"
+cost = { cp = 0 }
+
+[[row]]
+id = "transport_of_troops_by_air"
+action = "Transport of troops by air"
+cost = { cp = 0 }
+
+[[row]]
+id = "paradrop_paratroops"
+action = "Paradrop paratroops"
+cost = { cp = 0 }
+
+[[row]]
+id = "paradrop_commandos"
+action = "Paradrop commandos"
+cost = { cp = 5 }
+
+[[row]]
+id = "commando_amphibious_landing"
+action = "Commando amphibious landing"
+cost = { cp_pair = [5, 10], plus_tec = true }
+note = "Printed as '5 or 10 + TEC'; which of the two applies is decided in land 30.0 (see interpretation land-0006)."
+
+[[row]]
+id = "ready_airplanes"
+action = "Ready airplanes"
+cost = { cp = 10 }
+
+[[footnote]]
+id = "star"
+applies_to = ["non_phasing_unit"]
+text = "If the final adjusted differential is -4 or worse, the defending units get back two of the CP they spent defending, provided they were neither barraged nor engaged in a barrage."
+
+[[footnote]]
+id = "restriction_remark"
+applies_to = ["table"]
+text = "Some actions that cost no CP nonetheless limit a unit's ability to spend CP."

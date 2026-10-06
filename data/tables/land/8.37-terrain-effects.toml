@@ -1,0 +1,416 @@
+# Terrain Effects Chart (land:8.37). Transcribed from the chart image; every cell cites the footnote
+# numbers printed on it. See the notes field for how to read the cell shapes.
+
+[table]
+id = "land.8.37.terrain_effects"
+case = "8.37"
+title = "Terrain Effects Chart"
+src = ["land:8.37", "errata79:8.37"]
+transcribed_from = ["vassal:TEC.png"]
+verification = "double"
+dice = "none"
+notes = """
+Cell shapes. CP and breakdown amounts are stored doubled (suffix _x2) so that half points are exact
+integers: enter_x2 = 4 means a flat cost of 2 CP; enter_x2 = 1 means one half CP. 'enter' is a cost
+paid to enter the hex; 'add' is an extra cost paid on top of the hex cost when crossing a hexside
+feature (printed with a plus sign). 'value' in the breakdown column is the printed number as is.
+{ none = true } is a printed dash (no effect or no value). { prohibited = true } is a printed P.
+Combat shifts are column shifts on the relevant combat results table: dir 'L' shifts left, dir 'R'
+right, n columns; { dir = 'none' } is a dash. The chart image already carries the 1979 corrections
+(footnote 4 on Major City, footnote 8 on Track). The row 'gravel' is labelled Gravel in the table
+and Rock/Gravel in the terrain key. Rows with same_as_terrain_all_purposes use whatever other
+terrain is in the hex. Map classes with no row here (sea, coast, port, airfield, flying boat basin
+and alighting area, training area, off-map airbases, border, unfinished road, unfinished railroad)
+carry no cost on this chart; see [[legend]] and land:8.47 for unfinished road and railroad.
+"""
+
+[[row]]
+id = "clear"
+label = "Clear"
+group = "hex_terrain"
+cp_non_mot = { enter_x2 = 4 }
+cp_mot = { enter_x2 = 4 }
+breakdown = { value_x2 = 8 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "none" }
+stacking_limit = { value = 6 }
+
+[[row]]
+id = "gravel"
+label = "Gravel"
+group = "hex_terrain"
+cp_non_mot = { enter_x2 = 4 }
+cp_mot = { enter_x2 = 4 }
+breakdown = { value_x2 = 12 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "none" }
+stacking_limit = { value = 6 }
+
+[[row]]
+id = "salt_marsh"
+label = "Salt Marsh"
+group = "hex_terrain"
+footnotes = [2]
+cp_non_mot = { enter_x2 = 6 }
+cp_mot = { enter_x2 = 4 }
+breakdown = { value_x2 = 12 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "R", n = 1 }
+stacking_limit = { value = 6 }
+
+[[row]]
+id = "heavy_vegetation"
+label = "Heavy Vegetation"
+group = "hex_terrain"
+cp_non_mot = { enter_x2 = 6 }
+cp_mot = { enter_x2 = 6 }
+breakdown = { value_x2 = 6 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "L", n = 1 }
+close_assault_shift = { dir = "L", n = 1 }
+stacking_limit = { value = 6 }
+
+[[row]]
+id = "rough"
+label = "Rough"
+group = "hex_terrain"
+cp_non_mot = { enter_x2 = 6 }
+cp_mot = { enter_x2 = 8 }
+breakdown = { value_x2 = 16 }
+barrage_shift = { dir = "L", n = 1 }
+anti_armor_shift = { dir = "L", n = 1 }
+close_assault_shift = { dir = "L", n = 2 }
+stacking_limit = { value = 6 }
+
+[[row]]
+id = "mountain"
+label = "Mountain"
+group = "hex_terrain"
+cp_non_mot = { enter_x2 = 8 }
+cp_mot = { enter_x2 = 12 }
+breakdown = { value_x2 = 24 }
+barrage_shift = { dir = "L", n = 2 }
+anti_armor_shift = { dir = "L", n = 2 }
+close_assault_shift = { dir = "L", n = 3 }
+stacking_limit = { value = 3 }
+
+[[row]]
+id = "delta"
+label = "Delta"
+group = "hex_terrain"
+cp_non_mot = { enter_x2 = 4 }
+cp_mot = { enter_x2 = 8 }
+breakdown = { value_x2 = 4 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "none" }
+stacking_limit = { value = 6 }
+
+[[row]]
+id = "desert"
+label = "Desert"
+group = "hex_terrain"
+cp_non_mot = { enter_x2 = 6 }
+cp_mot = { enter_x2 = 8, footnotes = [3] }
+breakdown = { value_x2 = 48 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "none" }
+stacking_limit = { value = 6 }
+
+[[row]]
+id = "major_city"
+label = "Major City"
+group = "hex_terrain"
+footnotes = [4]
+cp_non_mot = { enter_x2 = 2 }
+cp_mot = { enter_x2 = 1 }
+breakdown = { value_x2 = 1 }
+barrage_shift = { see_fortifications = true }
+anti_armor_shift = { see_fortifications = true }
+close_assault_shift = { see_fortifications = true }
+stacking_limit = { value = 8 }
+
+[[row]]
+id = "swamp"
+label = "Swamp"
+group = "hex_terrain"
+cp_non_mot = { enter_only_on_road_or_railroad = true }
+cp_mot = { enter_only_on_road_or_railroad = true }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "none" }
+stacking_limit = { value = 6 }
+
+[[row]]
+id = "village_bir_oasis"
+label = "Village/Bir/Oasis"
+group = "hex_terrain"
+same_as_terrain_all_purposes = true
+
+[[row]]
+id = "railroad"
+label = "Railroad"
+group = "linear_feature"
+footnotes = [5]
+same_as_terrain_all_purposes = true
+
+[[row]]
+id = "road"
+label = "Road"
+group = "linear_feature"
+cp_non_mot = { enter_x2 = 2, footnotes = [6] }
+cp_mot = { enter_x2 = 1, footnotes = [6] }
+breakdown = { value_x2 = 1, footnotes = [6] }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "none" }
+stacking_limit = { value = 5, footnotes = [7] }
+
+[[row]]
+id = "track"
+label = "Track"
+group = "linear_feature"
+cp_non_mot = { modifier = "halve_feature_costs", footnotes = [8] }
+cp_mot = { modifier = "halve_feature_costs", footnotes = [8] }
+breakdown = { modifier = "halve_feature_costs", footnotes = [8] }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "none" }
+stacking_limit = { value = 5, footnotes = [7] }
+
+[[row]]
+id = "ridge"
+label = "Ridge"
+group = "hexside_feature"
+cp_non_mot = { add_x2 = 4 }
+cp_mot = { add_x2 = 8 }
+breakdown = { value_x2 = 4 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "L", n = 2 }
+close_assault_shift = { dir = "L", n = 2 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "up_slope"
+label = "Up Slope"
+group = "hexside_feature"
+cp_non_mot = { add_x2 = 4 }
+cp_mot = { add_x2 = 8 }
+breakdown = { value_x2 = 4 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "L", n = 1 }
+close_assault_shift = { dir = "L", n = 2 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "down_slope"
+label = "Down Slope"
+group = "hexside_feature"
+cp_non_mot = { add_x2 = 2 }
+cp_mot = { add_x2 = 4 }
+breakdown = { value_x2 = 4 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "L", n = 1 }
+close_assault_shift = { dir = "R", n = 1 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "up_escarpment"
+label = "Up Escarpment"
+group = "hexside_feature"
+cp_non_mot = { add_x2 = 12 }
+cp_mot = { prohibited = true }
+breakdown = { none = true }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { prohibited = true }
+close_assault_shift = { dir = "L", n = 3 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "down_escarpment"
+label = "Down Escarpment"
+group = "hexside_feature"
+cp_non_mot = { add_x2 = 8 }
+cp_mot = { add_x2 = 16, footnotes = [9] }
+breakdown = { add_x2 = 12 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "L", n = 2 }
+close_assault_shift = { dir = "R", n = 1 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "wadi"
+label = "Wadi"
+group = "hexside_feature"
+cp_non_mot = { add_x2 = 2, footnotes = [10] }
+cp_mot = { add_x2 = 8, footnotes = [10] }
+breakdown = { add_x2 = 16 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "L", n = 1 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "major_river"
+label = "Major River"
+group = "hexside_feature"
+cp_non_mot = { add_x2 = 16 }
+cp_mot = { prohibited = true, footnotes = [11] }
+breakdown = { none = true }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "L", n = 6 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "minor_river"
+label = "Minor River"
+group = "hexside_feature"
+cp_non_mot = { add_x2 = 6 }
+cp_mot = { add_x2 = 12 }
+breakdown = { add_x2 = 2 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "L", n = 2 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "fortification_level_one"
+label = "Fortifications, Level One"
+group = "fortification"
+same_as_terrain_for_cp_and_breakdown = true
+barrage_shift = { dir = "L", n = 1, footnotes = [12] }
+anti_armor_shift = { dir = "L", n = 1 }
+close_assault_shift = { dir = "L", n = 2 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "fortification_level_two"
+label = "Fortifications, Level Two"
+group = "fortification"
+same_as_terrain_for_cp_and_breakdown = true
+barrage_shift = { dir = "L", n = 2, footnotes = [12] }
+anti_armor_shift = { dir = "L", n = 2 }
+close_assault_shift = { dir = "L", n = 3 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "fortification_level_three"
+label = "Fortifications, Level Three"
+group = "fortification"
+same_as_terrain_for_cp_and_breakdown = true
+barrage_shift = { dir = "L", n = 2, footnotes = [12] }
+anti_armor_shift = { dir = "L", n = 2 }
+close_assault_shift = { dir = "L", n = 4 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "friendly_minefield"
+label = "Friendly Minefield"
+group = "minefield"
+footnotes = [13]
+cp_non_mot = { add_x2 = 2 }
+cp_mot = { add_x2 = 8 }
+breakdown = { value_x2 = 0 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "L", n = 1 }
+close_assault_shift = { dir = "L", n = 1 }
+stacking_limit = { none = true }
+
+[[row]]
+id = "enemy_minefield"
+label = "Enemy Minefield"
+group = "minefield"
+footnotes = [13]
+cp_non_mot = { add_x2 = 8 }
+cp_mot = { add_cpa = true }
+breakdown = { add_x2 = 4 }
+barrage_shift = { dir = "none" }
+anti_armor_shift = { dir = "none" }
+close_assault_shift = { dir = "none" }
+stacking_limit = { none = true }
+
+[[footnote]]
+id = 1
+applies_to = ["stacking_limit"]
+text = "A garrison unit in its assigned hex takes no stacking space. Anti-aircraft units are free in a Major City hex (no limit on how many); up to three are free in an Airfield hex and one in an Air Landing Strip hex."
+
+[[footnote]]
+id = 2
+applies_to = ["salt_marsh"]
+text = "Vehicles other than Light Trucks, Recce-type units and motorcycle infantry may enter or leave the hex only along a track. Motorized units may not fight into or out of Salt Marsh (land:8.44)."
+
+[[footnote]]
+id = 3
+applies_to = ["desert.cp_mot"]
+text = "Light Trucks, motorcycle reconnaissance units and motorcycle infantry may not enter Desert hexes at all, even along a track."
+
+[[footnote]]
+id = 4
+applies_to = ["major_city"]
+text = "Major City hexes of Alexandria and Cairo are Level Three fortifications; every other Major City is Level Two."
+
+[[footnote]]
+id = 5
+applies_to = ["railroad"]
+text = "Commonwealth units may be able to use Rail Movement (land:8.7)."
+
+[[footnote]]
+id = 6
+applies_to = ["road"]
+text = "A road cancels every hexside terrain-feature entry cost and Breakdown Point value."
+
+[[footnote]]
+id = 7
+applies_to = ["road.stacking_limit", "track.stacking_limit"]
+text = "The limit applies only to the units and truck points in that hex at that moment."
+
+[[footnote]]
+id = 8
+applies_to = ["track"]
+text = "A track halves all terrain-feature entry costs and all hex and hexside Breakdown Point values, except the CP spent and the Breakdown incurred by moving a vehicle down an escarpment."
+
+[[footnote]]
+id = 9
+applies_to = ["down_escarpment.cp_mot"]
+text = "Motorized units and trucks may cross a down escarpment only on a track."
+
+[[footnote]]
+id = 10
+applies_to = ["wadi.cp_non_mot", "wadi.cp_mot"]
+text = "During a Rainstorm a wadi hexside may be crossed only where a road or railroad (treated as a road) crosses it, at two additional CP."
+
+[[footnote]]
+id = 11
+applies_to = ["major_river.cp_mot"]
+text = "May be crossed only where a road or railroad crosses the hexside; a motorized unit crossing that way pays no additional CP or Breakdown Points."
+
+[[footnote]]
+id = 12
+applies_to = ["fortification_level_one.barrage_shift", "fortification_level_two.barrage_shift", "fortification_level_three.barrage_shift"]
+text = "Armor targets get the Barrage defensive benefit only if the hex is a Major City hex."
+
+[[footnote]]
+id = 13
+applies_to = ["friendly_minefield", "enemy_minefield"]
+text = "Engineer units reduce the cost to enter (land:26.2). If assaulting forces stand in an enemy minefield, the non-phasing forces receive L1 shifts for Anti-Armor and Close Assault unless already getting them for occupying a friendly minefield."
+
+[[legend]]
+kind = "hex_terrain"
+ids = ["clear", "salt_marsh", "desert", "rock_gravel", "rough", "mountain", "heavy_vegetation", "delta", "swamp", "sea", "coast", "port", "major_city", "village_bir", "oasis"]
+
+[[legend]]
+kind = "linear_feature"
+ids = ["road", "unfinished_road", "track", "railroad", "unfinished_railroad"]
+
+[[legend]]
+kind = "hexside_feature"
+ids = ["ridge", "escarpment", "slope", "wadi", "border", "major_river", "minor_river"]
+
+[[legend]]
+kind = "point_feature"
+ids = ["airfield", "flying_boat_basin", "flying_boat_alighting_area", "training_area", "off_map_airbases"]

@@ -1,0 +1,67 @@
+# Off-Map Land Unit Movement Distance Chart (land:8.89).
+
+[table]
+id = "land.8.89.off_map_movement_distance"
+case = "8.89"
+title = "Off-Map Land Unit Movement Distance Chart"
+src = ["land:8.89"]
+transcribed_from = ["vassal:8.89 Off-Map Land Unit Movement Distance Chart.png", "vassal:TEC.png"]
+verification = "double"
+dice = "none"
+notes = """
+Number of Operations Stages of continuous movement a unit needs to travel between two places. The chart is a
+triangle, so each unordered pair of places appears once. Each cell has three numbers, for units with a CPA of
+25 or more, 15 to 20, and less than 15 respectively. A unit may not exceed its Basic CPA during off-map
+movement (land:8.83). 'Nofilia' is the printed place name for the map-side end of the route (see land:8.85
+for hex A2802).
+"""
+
+[[row]]
+from = "tunis"
+to = "gabes"
+stages_by_cpa = { cpa_25_or_more = 1, cpa_15_to_20 = 2, cpa_under_15 = 5 }
+
+[[row]]
+from = "tunis"
+to = "tripoli"
+stages_by_cpa = { cpa_25_or_more = 2, cpa_15_to_20 = 3, cpa_under_15 = 8 }
+
+[[row]]
+from = "tunis"
+to = "tripolitania"
+stages_by_cpa = { cpa_25_or_more = 3, cpa_15_to_20 = 4, cpa_under_15 = 11 }
+
+[[row]]
+from = "tunis"
+to = "nofilia"
+stages_by_cpa = { cpa_25_or_more = 4, cpa_15_to_20 = 5, cpa_under_15 = 14 }
+
+[[row]]
+from = "gabes"
+to = "tripoli"
+stages_by_cpa = { cpa_25_or_more = 1, cpa_15_to_20 = 1, cpa_under_15 = 3 }
+
+[[row]]
+from = "gabes"
+to = "tripolitania"
+stages_by_cpa = { cpa_25_or_more = 2, cpa_15_to_20 = 2, cpa_under_15 = 6 }
+
+[[row]]
+from = "gabes"
+to = "nofilia"
+stages_by_cpa = { cpa_25_or_more = 3, cpa_15_to_20 = 3, cpa_under_15 = 9 }
+
+[[row]]
+from = "tripoli"
+to = "tripolitania"
+stages_by_cpa = { cpa_25_or_more = 1, cpa_15_to_20 = 1, cpa_under_15 = 3 }
+
+[[row]]
+from = "tripoli"
+to = "nofilia"
+stages_by_cpa = { cpa_25_or_more = 2, cpa_15_to_20 = 2, cpa_under_15 = 6 }
+
+[[row]]
+from = "tripolitania"
+to = "nofilia"
+stages_by_cpa = { cpa_25_or_more = 1, cpa_15_to_20 = 1, cpa_under_15 = 3 }

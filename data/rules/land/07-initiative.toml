@@ -1,0 +1,138 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "7.0"
+book = "land"
+title = "Initiative"
+systems = ["land"]
+
+[[case]]
+id = "7.0"
+title = "General rule: Initiative"
+summary = "Initiative is an abstract rating of strategic leadership that decides who chooses whether to act first in an Operations Stage."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:7.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "7.1"
+title = "The Mechanics of Initiative"
+summary = "Heading for 7.11-7.16."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:7.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "7.11"
+title = "Initiative holder chooses move order"
+summary = "The side with Initiative chooses, for each Operations Stage, whether to move first (Player A) or last (Player B)."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.initiative_declaration"]
+depends_on = ["7.12", "7.16"]
+src = ["land:7.11"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Declare whether to be Player A or Player B for this Operations Stage"
+params = ["operations stage", "player order"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "7.12"
+title = "Initiative lasts the whole Game-Turn"
+summary = "Initiative is determined once per Game-Turn and held through all three Operations Stages, so the holder could move first, last, then first again (two turns in a row)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["initiative"]
+depends_on = ["7.14"]
+src = ["land:7.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "7.13"
+title = "Initiative ratings depend on date"
+summary = "Each side has an Initiative Rating that depends on the Game-Turn date (Initiative Ratings Chart 7.2)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["initiative"]
+tables = ["land.7.2.initiative_ratings"]
+depends_on = ["7.2"]
+src = ["land:7.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "7.14"
+title = "Initiative determination roll"
+summary = "Each side rolls one die and adds its rating; higher total wins, ties are rerolled. The winner then chooses move order each Operations Stage."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["initiative"]
+depends_on = ["7.13", "7.15"]
+src = ["land:7.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "7.15"
+title = "First-turn initiative from the scenario"
+summary = "For the first Game-Turn of a scenario, who holds the Initiative is usually fixed by the scenario."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+depends_on = ["scen:60.22"]
+src = ["land:7.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "7.16"
+title = "Player A and Player B"
+summary = "Definition: the side that moves first in an Operations Stage is Player A and the other Player B (used throughout the sequence of play)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["5.2"]
+src = ["land:7.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "7.2"
+title = "Initiative Ratings Chart"
+summary = "Table giving each side's initiative rating by date, as separate sheet data. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["initiative"]
+tables = ["land.7.2.initiative_ratings"]
+src = ["land:7.2"]
+
+[case.applies]
+graziani = "yes"

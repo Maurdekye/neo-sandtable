@@ -1,0 +1,72 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "2.0"
+book = "land"
+title = "How to Play the Game"
+systems = ["land"]
+
+[[case]]
+id = "2.0"
+title = "How to Play the Game"
+summary = "Orientation commentary introducing how the game is organised and played; no mechanics of its own."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:2.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "2.1"
+title = "Organization of the Rules and How They Should Be Read"
+summary = "Reading guide: glossary (3.0), equipment (4.0), sequence of play (5.0), then the Land Game (6.0-32.0), Air Game (33.0-47.0), Logistics Game (48.0-58.0) and scenarios (59.0-65.0). States that Land can be played alone or combined with Air and/or Logistics. Section map only."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:2.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "2.2"
+title = "How the Game Is Set Up"
+summary = "General advice on preparation: compile each unit's organization and status onto TOE log sheets (one per counter), have pencils, paper and time. No engine rule; confirms that unit status lives outside the counter."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = ["setup"]
+depends_on = ["4.52"]
+src = ["land:2.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "2.3"
+title = "How to Run a Game of CNA"
+summary = "Playtest advice on dividing labour among players: Commander-in-Chief (intelligence, strategy, Raids on Rommel), Logistics, Rear Area (reserves, prisoners, construction), Air, and Front-Line Commanders. Informs the default seat model but is not itself a rule."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:2.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "2.4"
+title = "Playing Time"
+summary = "Commentary on how long a full campaign takes. No engine effect."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:2.4"]
+
+[case.applies]
+graziani = "yes"

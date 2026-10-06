@@ -1,0 +1,343 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "4.0"
+book = "land"
+title = "Game Equipment"
+systems = ["land"]
+
+[[case]]
+id = "4.1"
+title = "The Game-Maps"
+summary = "Describes the five map sections A-E laid west to east so that the 01xx hex row of each section overlays the 39xx row of the section to its west; seam hexes therefore have two printed ids. Geometry is owned by the map area."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+depends_on = ["4.0"]
+src = ["land:4.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.25"
+title = "Counter Deployment"
+summary = "A unit attached to another is not shown by its own counter; the parent's counter stands for it. Assigned units that begin a scenario in the parent's hex are treated as attached to it."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.1", "3.31"]
+src = ["land:4.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.26"
+title = "Holding Boxes"
+summary = "Crowded hexes are represented by off-map holding boxes that hold the counters actually in that hex. A presentation device that maps to a map-area location."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["land:4.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.3"
+title = "Charts and Tables"
+summary = "Notes that the charts live mostly in the Charts and Tables booklet, with a few on separate sheets or on the maps."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:4.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.4"
+title = "Organization and Arrival System"
+summary = "Overview of how units enter play: initial deployment, reinforcement schedules and replacement points (20.2). Heading for 4.41-4.49."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:4.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.41"
+title = "Charts used to learn about units"
+summary = "Names the three information sources for land units: Characteristics Charts, Organization at Arrival (OA) sheets and the Reinforcement Schedules; air units have their own arrival tables."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:4.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.42"
+title = "Arrival procedure"
+summary = "To bring units in: read the Reinforcement Schedule for the current Operations Stage, find each arriving unit's OA sheet, read each subunit's characteristics code, then open a TOE sheet. A parent arrives with every unit on its OA sheet unless that unit has a later date or is excluded on the track. Engine builds the arriving formation records from data."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival", "setup"]
+depends_on = ["4.43", "4.45", "4.46", "20.1"]
+src = ["land:4.42"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.43"
+title = "Reinforcement Schedules"
+summary = "Data: the land reinforcement schedules by Game-Turn and Operations Stage (units and withdrawals). Errata folded in: two schedule lines omitted from the original (42nd RTR at GT 28/2; 32nd Army Tank Brigade withdrawal at 64/2 with transport) and the reference in 76/2 to 2/68 is to be ignored. Owned by the units area."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["4.42"]
+errata = ["errata79:4.43a"]
+src = ["land:4.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.44"
+title = "Aircraft Characteristics Charts"
+summary = "Data: the Commonwealth and Italian (and German) aircraft characteristics charts, one row per plane line; planes with several rows let the owner choose a row each time the plane is readied. Rating meanings are in 34.1. Owned by the units area."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+depends_on = ["34.1"]
+src = ["land:4.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.44a"
+title = "Gladiator fuel consumption"
+summary = "Errata: the Gladiator's fuel consumption rating is 1 (omitted in the printed chart)."
+kind = "addendum"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+depends_on = ["4.44"]
+errata = ["errata79:4.44a"]
+src = ["land:4.44a"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.44b"
+title = "OA chart and schedule corrections"
+summary = "Errata bundle: Sirte, Cirene and Marmarica Italian division OA sheets were omitted (relevant only to scenarios before Feb 1941); the 1st Buffs and 1st Hampshires start assigned to the Matruh Garrison; the French Motor Marine Company arrives on \"D\"; the CW air chart legend should read R for reconnaissance; the Re.2000 is never used; the 362 Artillery Battery has ID code x. A later same-numbered addition gives the Z506 a range of 110."
+kind = "addendum"
+disposition = "data"
+seat = "none"
+timing = ["setup", "opstage.convoy_arrival"]
+depends_on = ["4.44", "4.45"]
+errata = ["errata79:4.44b", "errata79:4.4b"]
+src = ["land:4.44b"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.44c"
+title = "German aircraft corrections"
+summary = "Errata: the Bf.109E has no D capability and the Bf.110 as a fighter has maneuver rating 32 only on night missions, otherwise 30."
+kind = "addendum"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+depends_on = ["4.44"]
+errata = ["errata79:4.44c"]
+src = ["land:4.44c"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "German air units do not appear in Graziani's Offensive"
+
+[[case]]
+id = "4.45"
+title = "Organization At Arrival Charts (OA)"
+summary = "Describes the three OA charts (Allied, German, Italian), laid out in sheets per formation: units, counter abbreviation, ID code, TOE/weapons systems, and arrival stage. The OA sheets also fix which units are assigned to which parent. Owned by the units area."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["setup", "opstage.convoy_arrival"]
+depends_on = ["4.46", "19.0"]
+src = ["land:4.45"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.46"
+title = "Unit Characteristics Charts"
+summary = "Describes the three Unit Characteristics Charts: for each ID code, the maximum TOE strength and each rating. Multi-weapon tank/gun/HQ units act using each TOE point's own ratings and move at the slowest CPA present; parenthesised HQ maximums give parenthesised values; British tank regiments made only of American tanks have a TOE maximum of 9 from early 1942. Data owned by the units area."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.4", "3.5"]
+src = ["land:4.46"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.47"
+title = "Commonwealth Tank and Gun Characteristics Chart"
+summary = "Data: per-TOE-point values for Commonwealth tanks and guns. Errata: the A9 Cruiser's Armor Protection Rating is 1 (missing on the Axis booklet copy). Owned by the units area."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.5", "21.14"]
+src = ["land:4.47"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.48"
+title = "Italian Tank and Gun Characteristics Chart"
+summary = "Data: per-TOE-point values for Italian tanks and guns. Owned by the units area."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.5"]
+src = ["land:4.48"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.49"
+title = "German Tank and Gun Characteristics Chart"
+summary = "Data: per-TOE-point values for German tanks and guns. Errata: the 7.62cm Pak(R) has CPA 15 and the Marder 25; the Pz III E line reads 25 1 - 4 - 3 4/4 3 0. Owned by the units area."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.5"]
+errata = ["errata79:4.49"]
+src = ["land:4.49"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "German units do not appear in Graziani's Offensive"
+
+[[case]]
+id = "4.5"
+title = "Log Sheets"
+summary = "Describes the player-kept log sheets that hold all unit status the counters do not show; the engine's world state replaces them. Heading for 4.51-4.55."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["2.2"]
+src = ["land:4.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.51"
+title = "Log sheet groups"
+summary = "Log sheets are grouped by the commander who normally uses them; this does not restrict who may actually use them."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:4.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.52"
+title = "Field Commander's Group"
+summary = "Describes the Field Commander Control Sheet (CP spent, CPA, cohesion, actual points, ammo and fuel reserves per map counter) and the three TOE log sheets (Brigade, Infantry Division, Armored/German Division) with sections for counter identity, maneuver elements, divisional assets, augmentation, first-line logistics, combat information and notes. Defines what unit state the engine must track: per-subunit CPA, fuel and breakdown rate, TOE strength, ratings, assigned vs detached status, attached trucks and supplies."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["19.0", "6.0"]
+src = ["land:4.52"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.53"
+title = "Rear Area Commander's Group"
+summary = "Names the Rear Area sheets: Vehicle Repair Control Sheet, Naval Convoy Log Sheet (also for tactical shipping), POW Control Sheet."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["22.0", "28.0"]
+src = ["land:4.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.54"
+title = "Air Marshal's Group"
+summary = "Names the air sheets: Squadron Ground Support Unit Sheet (six squadrons per airfield) and Air Mission Log Sheet."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["34.0"]
+src = ["land:4.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.55"
+title = "Logistics Commander's Group"
+summary = "Names the logistics sheets: Trucks and Major End Items Control Sheet, Supply Dumps Control Sheet, General Supply Net Sheet, Supply Requisition Form."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["48.0"]
+src = ["land:4.55"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "4.6"
+title = "Inventory of Game Parts"
+summary = "Lists the components of the boxed game. No engine effect."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:4.6"]
+
+[case.applies]
+graziani = "yes"

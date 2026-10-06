@@ -1,0 +1,239 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "3.0"
+book = "land"
+title = "Glossary and Unit Definitions"
+systems = ["land"]
+
+[[case]]
+id = "3.1"
+title = "Definitions of Terms"
+summary = "Glossary of game terms (Actual vs Raw points, Assigned vs Attached, Breakdown, Cohesion, Pinned, Reaction, Sequential Dice Roll, TOE Strength Point, ZOC and so on). Each term's mechanics live in the section it points to; the entries clarify that Parent Unit/Parent Formation are used interchangeably, that Pinned from artillery bars voluntary movement and combat for the rest of the Combat Phase, and that CNA uses a rigid, active ZOC."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["6.2", "9.1", "10.1", "19.0", "21.0"]
+src = ["land:3.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.2"
+title = "Unit Differentiation"
+summary = "Heading for the unit-category cases 3.21-3.23."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:3.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.21"
+title = "Unit categories"
+summary = "Lists the twelve unit categories (Infantry, Tank, Recce, Artillery, Anti-Tank, Anti-Aircraft, HQ, Engineers, Tank Recovery Squadron, SGSU, Dummy Tank Formation, Truck); counter membership is fixed by the Counter Manifest. Dummy Tank Formations have no counter."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.22"]
+src = ["land:3.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.22"
+title = "Target classes for Barrage and air attack"
+summary = "Defines the four classes used when choosing targets and applying results of Barrage, Strafing and Bombardment: Infantry-class, Armor-class, Gun-class, Truck-class, each by which unit types and which armour-protection status they cover. A gun unit mixing armoured and unarmoured TOE points counts as two units for targeting."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["12.2", "41.5", "40.8"]
+src = ["land:3.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.23"
+title = "Combat units"
+summary = "Defines combat units as Infantry-, Tank-, Recce-, Artillery-, Anti-Tank- and Anti-Aircraft-type; some non-combat units count as combat units for ZOC, reconnaissance, Barrage and Bombardment purposes."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["10.1"]
+src = ["land:3.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.3"
+title = "Headquarters Units"
+summary = "Heading for the HQ cases 3.31-3.36; HQs coordinate subordinate units and stand for everything attached to them on the map."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:3.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.31"
+title = "HQ stands for attached units"
+summary = "An HQ counter represents every unit and truck attached to it; if any combat unit is attached the HQ is itself a combat unit and fights with the combined strengths."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.1"]
+src = ["land:3.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.32"
+title = "HQ/parent CPA is the slowest attached unit"
+summary = "An HQ or any parent unit's CPA equals that of the slowest unit attached to it."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["6.15"]
+src = ["land:3.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.33"
+title = "HQ stacking points and empty HQs"
+summary = "An HQ's printed stacking points assume a full complement (a division HQ is 5); reduced strength is handled by the unit-equivalent rules. An HQ with no combat units attached occupies zero stacking points, may use its parenthesised ratings, is not a combat unit and cannot voluntarily attack."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["9.2", "9.4"]
+src = ["land:3.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.34"
+title = "Regimental HQs with assigned guns"
+summary = "Certain HQs, mostly Italian, have guns directly under them: they fight with those strengths and take gun losses normally, but when the last gun TOE point is lost the HQ survives as a non-combat HQ."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:3.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.35"
+title = "Armored HQ tank platoons"
+summary = "Armoured division/brigade HQs carry a small tank element that may fight only when the HQ has no combat units attached, cannot be transferred, is replaced by the first available tank replacements, and exempts the HQ from Breakdown while present."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["21.0", "20.0"]
+src = ["land:3.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.36"
+title = "Instant capture of bare HQs"
+summary = "An HQ with no combat values at all, alone in a hex with no combat units, is captured with no CP cost the moment an enemy combat unit puts it in its ZOC; it yields one prisoner point. HQs with parenthesised values defend instead (see 15.17)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["10.2", "15.17", "28.0"]
+src = ["land:3.36"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.4"
+title = "Combat Units"
+summary = "Narrative survey of unit types: motorized/mechanized/motorcycle infantry, heavy weapons, garrison infantry (stack free in the garrison city), airborne, recce and armoured cars, artillery (own transport, uses fuel and water, no Breakdown), self-propelled artillery, coastal defence guns (A in-name-only, B sited 0+, C emplaced 0), anti-tank, AA/flak and parenthesised-strength units. The parenthesised-strength clarification: those values apply only when the unit is attacked alone or only with other parenthesised units."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["8.9", "9.4", "12.1", "21.0", "3.5"]
+src = ["land:3.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.5"
+title = "Unit Characteristics"
+summary = "Explains each rating printed or listed for a unit: CPA, Barrage, Vulnerability, Anti-Armor, Armor Protection, Offensive and Defensive Close Assault, Anti-Aircraft, Maximum TOE Strength, Basic Morale, Fuel Rate, Breakdown Adjustment Rating. Values themselves are unit data owned by the units area."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:3.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.6"
+title = "Limited Intelligence"
+summary = "Statement of the information-hiding principle: almost everything about a unit is secret from the opponent and even in land combat only totals are revealed."
+kind = "definition"
+disposition = "display"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.61", "3.62"]
+src = ["land:3.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.61"
+title = "Limited intelligence default"
+summary = "Players may know nothing about an opposing counter's status, composition or attributes except where a rule expressly allows it."
+kind = "rule"
+disposition = "display"
+seat = "none"
+timing = ["continuous"]
+src = ["land:3.61"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "3.62"
+title = "Information available to the opponent"
+summary = "Partial list of disclosures: the map (stacks of counters) is open; anti-armor reveals tank/SP types and presence of recce or halftracks, not numbers or origin hexes; close assault reveals participating unit types only; prisoners, broken-down/destroyed/abandoned vehicle contents, POW camps and guards, construction, trucks and replacement points are secret; patrol and air recon reveal very little; aircraft makes are known in air combat but pilot ratings are not."
+kind = "rule"
+disposition = "display"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["14.0", "15.0", "16.0", "28.0", "42.27"]
+src = ["land:3.62"]
+
+[case.applies]
+graziani = "yes"

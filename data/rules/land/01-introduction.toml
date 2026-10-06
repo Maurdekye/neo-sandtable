@@ -1,0 +1,20 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "1.0"
+book = "land"
+title = "Introduction"
+systems = ["land"]
+
+[[case]]
+id = "1.0"
+title = "Introduction"
+summary = "Orientation to the game: a heavily logistics-oriented operational simulation of Libya and Egypt 1940-43, best played by a multi-person team per side. States the scale: roughly eight kilometres per hex, one week per Game-Turn, units from companies up to divisions."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["2.0"]
+src = ["land:1.0"]
+
+[case.applies]
+graziani = "yes"

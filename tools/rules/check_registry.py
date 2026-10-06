@@ -40,7 +40,7 @@ BOOKS = {
     "scen": {"text": "scenarios-2021.txt", "dir": "scen"},
 }
 
-CASE_RE = re.compile(r"\[(\d+\.\d+[a-z]?)\]")
+CASE_RE = re.compile(r"\[(\d+)[ ]?\.[ ]?(\d+[a-z]?)\]")
 ID_RE = re.compile(r"^\d+\.\d+[a-z]?$")
 
 KINDS = {"rule", "procedure", "definition", "table", "example", "commentary",
@@ -68,11 +68,11 @@ def source_cases(text: str) -> tuple[list[str], list[str], dict[str, int]]:
     line_start: set[str] = set()
     for line in text.split("\n"):
         stripped = line.lstrip("\x0c ")
-        m0 = re.match(r"^(?:\(addition:?\)\s*)?\[(\d+\.\d+[a-z]?)\]", stripped)
+        m0 = CASE_RE.match(re.sub(r"^\(addition:?\)\s*", "", stripped))
         if m0:
-            line_start.add(m0.group(1))
+            line_start.add(f"{m0.group(1)}.{m0.group(2)}")
         for m in CASE_RE.finditer(line):
-            cid = m.group(1)
+            cid = f"{m.group(1)}.{m.group(2)}"
             counts[cid] += 1
             if cid not in ids:
                 ids.append(cid)

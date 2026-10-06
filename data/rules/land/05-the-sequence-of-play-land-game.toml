@@ -1,0 +1,34 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "5.0"
+book = "land"
+title = "The Sequence of Play (Land Game)"
+systems = ["land"]
+
+[[case]]
+id = "5.1"
+title = "The Game-Turn"
+summary = "A Game-Turn is about a week, split into three Operations Stages of two to three days; some activities happen only at turn start, but movement and combat all happen inside an Operations Stage, which is the basic unit of game time."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:5.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "5.2"
+title = "Land Game Game-Turn Sequence Outline"
+summary = "The Land-only turn: I Initiative; II Naval Convoy (schedule, tactical shipping); then three Operations Stages each running A initiative declaration, B weather, C organization (reorganization, construction, training), D convoy arrival, E Commonwealth fleet, then for Player A and again for Player B phases F-L: reserve designation, Movement and Combat (movement, breakdown, combat steps, reserve release; repeatable under continual movement), truck convoys, rail movement, repair, patrol. VI end of turn. Defines the Land-profile phase machine."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["initiative", "opstage.initiative_declaration", "opstage.weather", "opstage.organization", "opstage.convoy_arrival", "opstage.cw_fleet.assignment", "opstage.reserve_designation", "opstage.movement_and_combat", "opstage.truck_convoy_movement", "opstage.cw_rail_movement", "opstage.repair", "opstage.patrol", "end_of_turn"]
+depends_on = ["7.0", "8.2", "29.0", "18.0"]
+src = ["land:5.2"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Full-systems play (Graziani's Offensive) runs airlog:33.0 and 48.0 instead; this outline is the Land-only subset and its Land phases are the same"

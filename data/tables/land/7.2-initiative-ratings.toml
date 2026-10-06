@@ -1,0 +1,56 @@
+# Initiative Ratings Chart (land:7.2).
+
+[table]
+id = "land.7.2.initiative_ratings"
+case = "7.2"
+title = "Initiative Ratings Chart"
+src = ["land:7.2"]
+transcribed_from = ["vassal:7.2 Initiative Ratings Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Each side's rating for the initiative roll (land:7.14). Commonwealth rating depends on the Game-Turn
+(inclusive ranges). Axis rating depends on which German forces are on the game maps; the Tripoli/Tunisia
+holding boxes on map A do not count as part of the game maps for this purpose (footnote 1). The three
+Axis situations are exclusive and tested in the order rommel, german_units_only, none.
+"""
+
+[[row]]
+player = "commonwealth"
+situation = "game_turns"
+game_turn_range = [1, 42]
+rating = 3
+
+[[row]]
+player = "commonwealth"
+situation = "game_turns"
+game_turn_range = [43, 90]
+rating = 4
+
+[[row]]
+player = "commonwealth"
+situation = "game_turns"
+game_turn_range = [91, 111]
+rating = 5
+
+[[row]]
+player = "axis"
+situation = "rommel_counter_on_game_maps"
+rating = 6
+footnotes = [1]
+
+[[row]]
+player = "axis"
+situation = "german_land_combat_units_without_rommel_counter_on_game_maps"
+rating = 3
+footnotes = [1]
+
+[[row]]
+player = "axis"
+situation = "no_german_combat_units_or_rommel_counter_on_game_maps"
+rating = 1
+footnotes = [1]
+
+[[footnote]]
+id = 1
+text = "The Tripoli/Tunisia holding boxes on game map A are not part of the game maps for this purpose."

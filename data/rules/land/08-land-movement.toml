@@ -1,0 +1,1198 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "8.0"
+book = "land"
+title = "Land Movement"
+systems = ["land"]
+
+[[case]]
+id = "8.0"
+title = "General rule: Land Movement"
+summary = "Movement is paid for out of a unit's CPA. During the Movement Segment the phasing player may move any units, singly or in stacks, along contiguous hexes, paying terrain costs from the Terrain Effects Chart on each hex or hexside entered; limits come from CPA, enemy ZOCs, terrain bans, fuel and Breakdown. The non-phasing side may move only for Reaction and Retreat Before Assault."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.37", "21.0"]
+src = ["land:8.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.1"
+title = "How to Move Units"
+summary = "Heading for the movement basics 8.11-8.19."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:8.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.11"
+title = "Voluntary movement only in Movement Segments"
+summary = "Units move voluntarily only in Movement Segments (and in the Retreat Before Assault step); never out of sequence. Every move costs CP and vehicles must check for Breakdown. Units may pass through friendly units except for road/track traffic (8.34). The player chooses which units and stacks move and by what path."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.combat.retreat_before_assault"]
+depends_on = ["8.34", "21.0"]
+src = ["land:8.11"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Order a unit or stack to move along a path of adjacent hexes"
+params = ["unit or stack", "path", "ending hex"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "8.12"
+title = "Involuntary movement costs CP too"
+summary = "Forced retreat after combat is involuntary movement but still costs CP and requires Breakdown checks."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault", "opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["13.0", "15.0"]
+src = ["land:8.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.13"
+title = "No entering enemy-occupied hexes; consecutive hexes"
+summary = "A unit may never enter a hex holding an enemy unit (except as 27.4 allows for desert raiders) and must move through consecutive adjacent hexes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["27.4"]
+src = ["land:8.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.14"
+title = "Stop on entering an enemy ZOC"
+summary = "A unit that moves into an enemy zone of control must stop immediately and will usually have to attack the unit exerting it."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["10.0"]
+src = ["land:8.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.15"
+title = "Leaving an enemy ZOC"
+summary = "A unit starting in an enemy ZOC may leave and keep moving if its first step does not go directly into another enemy ZOC (but see 10.24) and it pays 2 CP if in Contact or 4 CP if Engaged."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.62", "8.63", "10.24", "8.24"]
+src = ["land:8.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.16"
+title = "Move and fight as long as desired"
+summary = "Units may keep moving and fighting indefinitely subject to 8.2, and may exceed CPA at the cost of cohesion."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.2", "6.21"]
+src = ["land:8.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.17"
+title = "Non-motorized units limited to 150% of CPA"
+summary = "A non-motorized unit (CPA 10 or less) may never voluntarily spend more than 150% of its CPA in its own portion of an Operations Stage (8 may reach 12, 10 may reach 15). Reaction and Retreat Before Assault happen in the other side's portion, so they do not count. Units at cohesion -26 or worse cannot move. The 2021 text corrects 50% to 150%."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["6.26", "8.5"]
+interp = ["land-0001"]
+src = ["land:8.17"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.18"
+title = "Truck convoys have their own phase"
+summary = "Second- and Third-Line Trucks (truck convoys) move only in the Truck Convoy Movement Phase; only trucks attached to a combat unit or HQ move in the normal Movement Segments. Trucks attach or detach during the Organization Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.truck_convoy_movement"]
+depends_on = ["8.9", "8.98"]
+src = ["land:8.18"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.19"
+title = "Commonwealth units never west of Marble Arch"
+summary = "No Commonwealth land unit may ever be moved west of Marble Arch (hex A2109)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:8.19"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.2"
+title = "The Concept of Continual Movement"
+summary = "Explains CNA's continual movement: no fixed movement allowance, units may move and fight repeatedly, paying CP and cohesion for exceeding the CPA. Heading for 8.21-8.25."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["8.21"]
+src = ["land:8.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.21"
+title = "Unlimited moves and attacks per stage"
+summary = "Apart from 6.26, 8.17 and 8.23, units may move and engage in combat any number of times in an Operations Stage, paying CP for everything."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat"]
+depends_on = ["6.26", "8.17", "8.23"]
+src = ["land:8.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.22"
+title = "Movement/Combat segment cycle"
+summary = "Within one Movement and Combat Phase the phasing player moves, then resolves all combat, then may repeat movement and combat as often as he wants; no combat occurs until all movement in a cycle has stopped. The decision is whether to start another cycle."
+kind = "procedure"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat"]
+depends_on = ["5.2", "8.23"]
+src = ["land:8.22"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Repeat the movement and combat segments again, or end the phase"
+params = ["repeat or stop"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "8.23"
+title = "Only units finishing within two hexes of an enemy may move again"
+summary = "A phasing unit that ends a Movement Segment more than two hexes from an enemy combat unit may not move again in that phase regardless of CP left, except units in Reserve Status."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["18.0"]
+src = ["land:8.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.24"
+title = "Breaking contact costs"
+summary = "A phasing unit beginning a Movement/Combat Phase in an enemy ZOC (Contact) pays 2 CP to move, or 4 CP if the position came from an Engaged combat result (ZOC then does not matter)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.65", "8.66"]
+src = ["land:8.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.25"
+title = "Repeated attacks without movement"
+summary = "A unit may attack the same enemy repeatedly in a stage without anyone moving, provided it has the ammunition and CP; each combat follows the cessation of movement."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["8.22", "11.2"]
+src = ["land:8.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.3"
+title = "Terrain Effects on Movement"
+summary = "Heading for 8.31-8.37."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:8.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.31"
+title = "Variable terrain costs"
+summary = "Entry costs vary by unit type and terrain: from half a CP for road movement by motorized units up to +8 for a vehicle moving down an escarpment by track or infantry crossing the Nile without a bridge. All values come from the Terrain Effects Chart."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.37"]
+src = ["land:8.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.32"
+title = "Terrain prohibited to some units"
+summary = "Some hex and hexside types are closed to some unit types (for example certain vehicles in salt marsh unless on road or track)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.44", "8.45"]
+src = ["land:8.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.33"
+title = "Roads and tracks"
+summary = "Road or track benefit applies only when moving from a road/track hex directly into an adjacent connected road/track hex across a road/track hexside; the unit then ignores other terrain in the hex or hexside (except vehicles crossing escarpments, 8.42)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.42", "8.46"]
+src = ["land:8.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.34"
+title = "Vehicles on roads passing friendly units"
+summary = "A unit with vehicles moving along a road or track is restricted in passing through friendly units on it (see 9.33), but it may always bypass them through the hex's terrain and rejoin the road in the next hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["9.33"]
+src = ["land:8.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.35"
+title = "Slopes, ridges and escarpments"
+summary = "Illustrates the three relief types: slopes and escarpments have an up side and a down side (the splash contour marks the down side); ridges are two-sided slopes with no direction."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["8.37"]
+src = ["land:8.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.36"
+title = "Terrain also affects combat"
+summary = "Combat benefits and restrictions of terrain are covered in the combat sections and summarised on the Terrain Effects Chart."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["15.3"]
+src = ["land:8.36"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.37"
+title = "Terrain Effects Chart"
+summary = "Table of movement CP costs, Breakdown costs, prohibitions and combat effects by terrain and hexside type. Errata folded in: footnote 4 belongs with Major City (not Swamp); footnote 8 is right where the chart shows 1, because tracks halve the cost of the terrain rather than costing 1 CP. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.combat"]
+tables = ["land.8.37.terrain_effects"]
+errata = ["errata79:8.37"]
+interp = ["land-0002"]
+src = ["land:8.37"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.4"
+title = "Special Terrain Effects on Movement"
+summary = "Commentary on unusual North African terrain; heading for 8.41-8.49."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:8.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.41"
+title = "Wadis"
+summary = "All units pay CP to cross a wadi hexside and vehicles incur 8 Breakdown Points (the Wadi Natrun is treated as salt marsh). A road negates a wadi (road breakdown rate of one half), a track halves the cost and gives 4 BP. In rainstorm weather wadis in affected map sections are impassable except by road, where the crossing costs +2 CP with no extra breakdown."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["29.5", "21.0"]
+src = ["land:8.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.42"
+title = "Escarpments"
+summary = "Costs are on the Terrain Effects Chart. No vehicle may cross an escarpment going up; where a track crosses an escarpment vehicles may use it to go down (+8 CP and 6 Breakdown Points)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:8.42"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.43"
+title = "Slopes and ridges"
+summary = "All units may cross slope and ridge hexsides at costs listed on the Terrain Effects Chart."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.35"]
+src = ["land:8.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.44"
+title = "Salt marsh"
+summary = "Most vehicles (not Light Trucks, Recce-type or motorcycle infantry) may enter or leave a salt marsh hex only on a road or track; one that does so otherwise is Abandoned (see 5.33 as cited). Because of this, no motorized unit or AFV may Assault units defending in a salt marsh. The Italian camel unit moves as infantry in non-track salt marsh."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["21.0"]
+src = ["land:8.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.45"
+title = "Desert"
+summary = "Desert hexes (soft sand) are closed to Light Trucks, motorcycle infantry and motorcycle Recce units whether or not a track crosses them. Other costs come from the chart."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:8.45"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.46"
+title = "Tracks"
+summary = "Tracks cost 1 CP per hex, halve most hexside crossing costs, and halve the Breakdown cost of the hex."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.33"]
+src = ["land:8.46"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.47"
+title = "Railroads and roads not yet built"
+summary = "Many railroad and some road hexes do not exist at the start and must be constructed; scenarios list those already built. Unconstructed rail hexes are ignored entirely and unconstructed roads count as tracks."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "setup"]
+depends_on = ["24.6"]
+src = ["land:8.47"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.48"
+title = "Oases"
+summary = "Oases have no movement effect but act as non-diminishing water and stores supply dumps."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["airlog:52.0"]
+src = ["land:8.48"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.49"
+title = "Terrain also affects combat"
+summary = "Cross-reference: terrain effects on combat are in the combat sections, especially 15.3."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["15.3"]
+src = ["land:8.49"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.5"
+title = "Reaction"
+summary = "Defines Reaction: movement by the non-phasing player to get out of the way of an attack. Heading for 8.51-8.56."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:8.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.51"
+title = "Reaction trigger"
+summary = "A friendly non-phasing unit may react when an enemy combat unit moves adjacent to it; reaction follows normal movement rules except as stated in 8.5x."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.53", "8.55"]
+src = ["land:8.51"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose whether and where a non-phasing unit reacts to an adjacent enemy move"
+params = ["unit", "destination path"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = true
+
+[[case]]
+id = "8.52"
+title = "Repeated reactions"
+summary = "A unit may react as often as the player wishes in a stage, paying CP but not the break-contact cost."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.24"]
+src = ["land:8.52"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.53"
+title = "Who may not react"
+summary = "Non-motorized units, SGSUs and truck convoys not stacked with friendly combat units may never react. A unit also may not react if the moving enemy unit's CPA is six or more higher and its owner announces a Close Assault; if already in an enemy ZOC; or if in combat or Engaged. Each unit is judged individually, so trucks stacked with a motorized battalion may still retreat."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["13.0", "10.0"]
+src = ["land:8.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.54"
+title = "Size limits on pinning"
+summary = "A battalion-size unit can never pin a division and a company-size unit can never pin a brigade or larger; size is judged by stacking points and TOE, so a skeleton division counts as small. Disputed cases fall back to common sense or a coin flip (candidate interpretation)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["9.2"]
+interp = ["land-0003"]
+src = ["land:8.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.55"
+title = "Reaction cannot enter enemy ZOC"
+summary = "Reacting units may not enter an enemy ZOC and have no limit on distance otherwise."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:8.55"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.56"
+title = "Detaching to react"
+summary = "A unit attached to a parent may react after paying CP for detachment. A brigade HQ cannot be detached unless all its attached units also detach; detachment may not leave the parent a pinned shell; attached trucks may be split freely. A parent may not shed slow units merely to become able to react."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["19.4", "8.54"]
+src = ["land:8.56"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Detach an attached unit (with trucks) so that it can react"
+params = ["unit to detach", "trucks assigned"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = true
+
+[[case]]
+id = "8.6"
+title = "Breaking Off"
+summary = "Heading for 8.61-8.68."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:8.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.61"
+title = "Breaking off defined"
+summary = "Breaking Off applies to a unit that starts a friendly Movement Segment in Contact or Engaged with an enemy combat unit; markers show the status."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.24", "15.81"]
+src = ["land:8.61"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.62"
+title = "Contact"
+summary = "Units are in Contact if they begin a Movement Segment in an enemy ZOC."
+kind = "definition"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:8.62"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.63"
+title = "Engaged"
+summary = "Engaged status results directly from a Close Assault result and does not require being in an enemy ZOC."
+kind = "definition"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.7"]
+src = ["land:8.63"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.64"
+title = "Break-off before moving"
+summary = "A unit in Contact or Engaged at the start of a Movement Segment or Retreat Before Assault (not Reaction) may not move until it pays to break off. First Line Trucks detaching from such a parent must pay the detachment CP; Second/Third Line Trucks attaching to such a unit pay nothing extra."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.combat.retreat_before_assault"]
+depends_on = ["8.65", "8.66"]
+src = ["land:8.64"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.65"
+title = "Contact costs 2 CP"
+summary = "Breaking off from Contact costs 2 CP before moving."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:8.65"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.66"
+title = "Engaged costs 4 CP"
+summary = "Breaking off from an Engaged state costs 4 CP before moving."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:8.66"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.67"
+title = "End of Contact/Engaged"
+summary = "When all friendly units that were in Contact or Engaged with an enemy unit have broken off, none remain in that status."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:8.67"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.68"
+title = "Markers affect only units present"
+summary = "Contact and Engaged markers apply only to the combat units in the hex when placed; units later entering the hex are unaffected."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:8.68"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.7"
+title = "Rail Movement of Land Units"
+summary = "Heading for 8.71-8.78."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:8.7"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only the Commonwealth rail line from Alexandria matters; check which hexes exist at the scenario start"
+
+[[case]]
+id = "8.71"
+title = "The two rail lines"
+summary = "There are two lines: Alexandria-Mersa Matruh is active and Commonwealth-only (extendable by construction, 24.6); Soluch-Benghazi-Barce is decorative on the map. The Axis may use rail only under 54.4."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["24.6", "airlog:54.4"]
+src = ["land:8.71"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.72"
+title = "Commonwealth rail movement frequency"
+summary = "The Commonwealth may use rail movement once per Operations Stage, in its Rail Movement Phase, moving one stack of units and/or supplies any distance in each direction along the line."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.cw_rail_movement"]
+depends_on = ["8.73", "8.74", "8.75"]
+src = ["land:8.72"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Plan the rail moves for the stage (units or supplies, each direction)"
+params = ["stack", "start hex", "destination hex"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "8.73"
+title = "Rail eligibility"
+summary = "A unit must start the stage on a rail hex, have spent no CP that stage, and be outside any enemy ZOC; it may not enter an enemy ZOC or enemy-occupied hex while on rail. A unit travelling by rail earns no reorganization points that stage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+depends_on = ["6.24"]
+src = ["land:8.73"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.74"
+title = "One stack each way"
+summary = "The railroad may be used once in each direction per stage, for example one stack eastward and a second stack or supplies westward."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+src = ["land:8.74"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.75"
+title = "Two stacking points by rail"
+summary = "At most two stacking points may be carried by rail in a movement; large brigades must be split. Supply maximums are in 49.3."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+depends_on = ["9.0", "airlog:49.3"]
+src = ["land:8.75"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.76"
+title = "Destroyed or unbuilt rail hexes"
+summary = "Rail movement cannot enter bombed rail hexes until repaired nor hexes not yet constructed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+depends_on = ["8.47", "24.6"]
+src = ["land:8.76"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.77"
+title = "Pickup and drop-off along the line"
+summary = "Units may be picked up and dropped anywhere on the line as long as stacking and direction limits hold and no unit using rail has spent CP that stage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+src = ["land:8.77"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.78"
+title = "Axis-held rail blocks westward rail"
+summary = "No rail hex west of any rail hex occupied by an Axis combat unit may be used by the Allied player."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+src = ["land:8.78"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.8"
+title = "Tripoli and Tunisia"
+summary = "Heading for 8.81-8.89: the off-map staging boxes at the western edge of map section A."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:8.8"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only relevant if Axis units or supplies move through the off-map Tripoli/Tunisia boxes in the Graziani window"
+
+[[case]]
+id = "8.81"
+title = "The Tripoli/Tunisia boxes"
+summary = "Four large boxes (Tripolitania, Tripoli, Gabes, Tunis) plus smaller in-transit boxes on the west edge of map A stand for Axis entry regions and transit."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["land:8.81"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[[case]]
+id = "8.82"
+title = "Only Axis units enter"
+summary = "Only Axis units (and Commonwealth aircraft) may enter the Tripoli/Tunisia region; no Commonwealth land or sea unit ever may."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:8.82"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[[case]]
+id = "8.83"
+title = "Off-map movement is abstracted"
+summary = "Land movement to, from and among the boxes is abstracted: the distance is a count of Operations Stages in which a unit spends exactly its full CPA. Motorized units burn fuel but do not check Breakdown in this region. Air movement follows the Air Distance Chart."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.89.off_map_movement_distance"]
+depends_on = ["8.84", "airlog:37.4"]
+src = ["land:8.83"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[[case]]
+id = "8.84"
+title = "Stages needed to cross"
+summary = "Stages required depend on the unit's CPA and come from the Off-Map Movement Distance Chart; a unit that cannot finish in one stage is shifted one In Transit box per stage, need not move each stage, and may turn back."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.89.off_map_movement_distance"]
+depends_on = ["8.89"]
+src = ["land:8.84"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[case.decision]
+what = "Advance, hold or reverse an in-transit unit between the Tripoli/Tunisia boxes"
+params = ["unit", "direction"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "8.85"
+title = "Entering and leaving the map"
+summary = "To leave the map toward Tripolitania a unit must start the stage in hex A2802; units entering are placed on the road hex nearest the Tripolitania box, with more than five stacking points strung along consecutive road hexes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["9.0"]
+src = ["land:8.85"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[[case]]
+id = "8.86"
+title = "Arrivals may move the same stage"
+summary = "The printed ban on moving reinforcements and replacements out of Tunis/Tripoli on the stage they arrive is declared a mistake; the corrected rule lets them move in their arrival stage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+interp = ["land-0004"]
+src = ["land:8.86"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[[case]]
+id = "8.87"
+title = "Boxes have no stacking limit and unlimited water"
+summary = "The boxes have no stacking restrictions, unlimited water, and enough air facilities, non-transferable supplies and maintenance crews for every Axis plane."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:8.87"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[[case]]
+id = "8.88"
+title = "Boxes are unlimited supply dumps"
+summary = "The boxes act as supply dumps of unlimited capacity; a truck or motorization point cannot move in the stage it loads or unloads supplies."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["airlog:54.0"]
+src = ["land:8.88"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[[case]]
+id = "8.89"
+title = "Off-Map Land Units Movement Distance Chart"
+summary = "Table: how many Operations Stages of CPA-sized movement are needed between the off-map boxes and the map, by unit CPA. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.89.off_map_movement_distance"]
+src = ["land:8.89"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Used only if Axis arrivals or movement route through the off-map boxes"
+
+[[case]]
+id = "8.9"
+title = "Motorized Units/Trucks"
+summary = "Heading for 8.91-8.99."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:8.9"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.91"
+title = "Motorized units"
+summary = "A motorized unit always has enough vehicles to carry the whole unit; this includes tracked, truck and motorcycle units. Some are inherently motorized (vehicles cannot normally be removed); others are carried by assigned truck points."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:8.91"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.92"
+title = "Motorizing and demotorizing"
+summary = "Non-motorized units (leg infantry and a few guns, not the camel unit) become motorized by adding enough truck points and revert by removing them; while carried they take the CPA of the carrying truck rating."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["6.17"]
+src = ["land:8.92"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign or remove truck points to motorize or demotorize a unit"
+params = ["unit", "truck points by class"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "8.93"
+title = "Historically motorizable infantry (+ CPA)"
+summary = "Infantry shown with a + after their CPA on the Characteristics Chart were normally supplied with enough vehicles to motorize fully; they differ only slightly from historically foot units."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["19.9", "32.54"]
+src = ["land:8.93"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.94"
+title = "Motorized CPA persists for impossible actions"
+summary = "A motorized unit keeps its CPA even when performing an action it could not do while mounted (towed artillery barraging, infantry using fortifications, assault into salt marsh)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:8.94"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.95"
+title = "Truck points carry troops or supplies"
+summary = "Truck points may be assigned to carry TOE points or supplies, individually even when represented by a parent's counter. Trucks are never required to carry anything."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["8.92"]
+src = ["land:8.95"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign specific truck points to carry units or supplies"
+params = ["truck points", "cargo"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "8.96"
+title = "Truck attachment and ownership"
+summary = "Truck points may attach to any historically designated unit and are automatically under the control of the highest parent formation to which they are attached; they need not be divided among its components."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["8.97"]
+src = ["land:8.96"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "8.97"
+title = "Attaching and detaching trucks"
+summary = "Trucks attach to such a unit only in the Organization Phase (unless the unit itself is being attached to a parent that stage), and detach only then, or when a parent detaches subordinate units during Movement and Combat and sends a share of trucks with them. A unit at cohesion -5 or worse cannot detach all its trucks."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.4"]
+interp = ["land-0005"]
+src = ["land:8.97"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attach or detach truck points to or from a unit"
+params = ["unit", "truck points", "direction"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "8.98"
+title = "Truck movement"
+summary = "Attached trucks move with their unit in the Movement and Combat Phase; unattached trucks move in the Truck Convoy Phase and may be reacted/retreated in the opponent's phase. In the convoy phase they cannot exceed CPA (involuntary overrun means capture), may move in any order and split freely, except that points starting and ending in the same hex on the same path move as a group."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement", "opstage.truck_convoy_movement"]
+depends_on = ["8.18", "28.0"]
+src = ["land:8.98"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Move unattached truck points in the Truck Convoy phase"
+params = ["truck points", "path"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "8.99"
+title = "Truck markers"
+summary = "A truck marker may stand for unattached truck points in a hex unless they are all carrying infantry replacement points; it may also represent replacement points or repaired vehicles there. The text calls this mostly a suggestion about marker use."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+src = ["land:8.99"]
+
+[case.applies]
+graziani = "yes"
