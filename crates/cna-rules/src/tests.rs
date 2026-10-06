@@ -56,6 +56,7 @@ fn play(
         let request = ruleset.pending(content, &game.state).remove(0);
         let action = match &request.space.schema {
             ActionSchema::Choice { options } => json!(options[0].id),
+            _ if request.space.pass.is_some() => Value::Null,
             other => panic!("no test answer for {other:?}"),
         };
         let response = DecisionResponse {
@@ -135,7 +136,8 @@ fn dev_profile_plays_graziani_to_the_end_with_initiative_decisions() {
     assert!(summary.contains("Graziani"), "{summary}");
     assert!(game.state.cursor.is_finished());
     // 6 game-turns x 3 OpStages, one initiative declaration each.
-    assert_eq!(answered, 18);
+    assert!(answered > 18);
+    assert_eq!(events.iter().filter(|e| matches!(&e.event, GameEvent::DecisionOpened {decision} if decision.kind == "cna.initiative_declaration")).count(),18);
     // GT1 initiative is fixed by the scenario; GT2-6 are rolled (two dice per roll at least).
     let initiative_rolls = events
         .iter()

@@ -111,11 +111,17 @@ pub struct LandUnit {
     pub setup_group: Option<String>,
     /// First-line truck points with the unit (`airlog:53`); set-up pools start on the group's HQ.
     pub trucks: Trucks,
+    /// First-line trucks explicitly allocated to moving this unit, not to supply cargo.
+    #[serde(default)]
+    pub transport_trucks: Trucks,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LandState {
     pub units: BTreeMap<UnitId, LandUnit>,
+    /// Only facts disclosed in the current Movement Segment, not enemy strength.
+    #[serde(default)]
+    pub movement: crate::land::movement::MovementState,
     /// First-line trucks a set-up group brought, not yet distributed among its units
     /// (`scen:59.42`), by group id.
     pub undistributed_trucks: BTreeMap<String, Trucks>,
@@ -290,6 +296,7 @@ impl State {
                             detached: false,
                             setup_group: Some(group.id.clone()),
                             trucks: Trucks::default(),
+                            transport_trucks: Trucks::default(),
                         };
                         if land.units.insert(id.clone(), unit).is_some() {
                             return Err(format!("unit {id} is placed twice (group {})", group.id));
@@ -322,6 +329,7 @@ impl State {
                 detached: false,
                 setup_group: None,
                 trucks: Trucks::default(),
+                transport_trucks: Trucks::default(),
             });
         }
 

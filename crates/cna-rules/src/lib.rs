@@ -11,6 +11,7 @@
 //! `EngineError::Unsupported` at the first applicable case it cannot play. How to add rules:
 //! `docs/engine.md`.
 
+pub mod baseline;
 pub mod content;
 pub mod land;
 pub mod logistics;
@@ -193,6 +194,6 @@ impl Ruleset for Cna {
         perspective: Perspective,
         target: &str,
     ) -> Result<Value, Rejection> {
-        view::inspect(content, state, perspective, target)
+        view::inspect(content, state, perspective, target, self.strict)
     }
 }

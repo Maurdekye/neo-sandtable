@@ -40,6 +40,9 @@ impl Cna {
                 open_initiative_declaration(state, cx);
                 Ok(())
             }
+            "opstage.movement_and_combat.movement" => {
+                crate::land::movement::enter(content, state, self.strict, cx)
+            }
             "opstage.weather" => crate::logistics::weather::determine(content, state, cx),
             "end_of_game" => self.end_of_game(content, state, cx),
             _ => self.unimplemented(content, anchor),
@@ -50,13 +53,16 @@ impl Cna {
     /// checked against the response (id, seat, revision) and removed from the pending list.
     pub(crate) fn respond_to(
         &self,
-        _content: &CnaContent,
+        content: &CnaContent,
         state: &mut State,
         pending: &Pending,
         action: &Value,
         cx: &mut Cx<'_>,
     ) -> Result<String, Rejection> {
         match pending.kind.as_str() {
+            crate::land::movement::KIND => {
+                crate::land::movement::answer(content, state, pending, action, self.strict, cx)
+            }
             KIND_INITIATIVE_DECLARATION => {
                 answer_initiative_declaration(state, pending, action, cx)
             }

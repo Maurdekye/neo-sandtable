@@ -35,6 +35,7 @@ pub enum EntryError {
 /// Motorized marsh exceptions and light-truck/motorcycle desert restrictions remain explicit.
 /// Cases: land:8.31, land:8.32, land:8.33, land:8.35, land:8.37, land:8.41, land:8.42
 /// Cases: land:8.43, land:8.44, land:8.45, land:8.46, land:8.47, land:8.48
+/// Cases: land:29.55, land:29.56
 /// Interpretations: interp:land-0002
 pub fn entry_cost(table: &TerrainEffects, entry: Entry<'_>) -> Result<i32, EntryError> {
     let Entry {
@@ -58,9 +59,10 @@ pub fn entry_cost(table: &TerrainEffects, entry: Entry<'_>) -> Result<i32, Entry
     if terrain == F::Desert && desert_prohibited {
         return Err(EntryError::Prohibited);
     }
-    let road = route == Route::Road;
-    let track = matches!(route, Route::Track | Route::UnfinishedRoad);
-    let bridge = road || route == Route::Railroad;
+    let road = route == Route::Road && !rainstorm;
+    let real_track = matches!(route, Route::Track | Route::UnfinishedRoad);
+    let track = real_track || (route == Route::Road && rainstorm);
+    let bridge = route == Route::Road || route == Route::Railroad;
     // The printed marsh vehicle cell is for the limited vehicles allowed off the network.
     if terrain == F::SaltMarsh && motorized && !salt_marsh_exception && !road && !track {
         return Err(EntryError::Prohibited);
@@ -100,7 +102,7 @@ pub fn entry_cost(table: &TerrainEffects, entry: Entry<'_>) -> Result<i32, Entry
         if motorized && edge == F::UpEscarpment {
             return Err(EntryError::Prohibited);
         }
-        if motorized && edge == F::DownEscarpment && !track {
+        if motorized && edge == F::DownEscarpment && !real_track {
             return Err(EntryError::Prohibited);
         }
         let extra = if edge == F::Wadi && rainstorm {
@@ -153,7 +155,7 @@ mod tests {
             },
         )
     }
-    /// Cases: land:8.31, land:8.37, land:8.41, land:8.43, land:8.46
+    /// Cases: land:8.31, land:8.37, land:8.41, land:8.43, land:8.46, land:29.56
     /// Interpretations: interp:land-0002
     #[test]
     fn hand_checked_plain_road_track_and_wadi_prices_are_exact() {
@@ -169,7 +171,7 @@ mod tests {
         );
         assert_eq!(
             cost(F::Clear, Route::Road, Some(F::Wadi), true, true),
-            Ok(10)
+            Ok(12)
         );
         assert_eq!(
             cost(F::Clear, Route::Track, Some(F::Wadi), true, true),

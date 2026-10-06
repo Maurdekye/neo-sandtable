@@ -394,6 +394,7 @@ pub(crate) fn inspect(
     state: &State,
     perspective: Perspective,
     target: &str,
+    strict: bool,
 ) -> Result<Value, Rejection> {
     let hidden = || illegal(format!("{target}: unknown or not visible"));
     if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
@@ -403,6 +404,10 @@ pub(crate) fn inspect(
         let view = unit_view(content, unit);
         return Ok(json!({
             "unit": view,
+            "reachable": crate::land::movement::reachable(content,state,&unit.id,strict),
+            "movement_allowance": crate::land::formation::allowance(content,state,&unit.id).map(|a| json!({"cpa":a.cpa,"motorized":a.motorized})),
+            "command_role": crate::ownership::seat_for_unit(content,state,&unit.id),
+            "moved_this_segment": state.land.movement.moved.contains(&unit.id),
             "location": unit.location,
             "attached_to": unit.attached_to,
             "toe": format!("{:?}", unit.toe),
