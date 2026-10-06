@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use cna_core::ids::UnitId;
 use cna_protocol::Side;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{ContentError, read_toml, toml_files};
 
@@ -191,7 +191,7 @@ pub struct OaSheet {
 
 /// A unit's TOE at the start: `"N"` (normal = class maximum), under/over strength, or an
 /// explicit weapons list.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Toe {
     Normal(NormalToe),
@@ -201,19 +201,19 @@ pub enum Toe {
 }
 
 /// The literal `"N"`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NormalToe {
     N,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WeaponPoints {
     pub weapon: String,
     pub n: i32,
 }
 
 /// When a unit enters play: deployed at the start (`"D"`) or a game-turn and OpStage.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Arrival {
     Deployed(DeployedCode),
@@ -221,7 +221,7 @@ pub enum Arrival {
 }
 
 /// The literal `"D"`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DeployedCode {
     D,
 }
@@ -342,7 +342,7 @@ pub struct WithdrawnSquadrons {
 }
 
 /// Truck points by type (`airlog:53`, `airlog:54.2`). Omitted types are zero.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Trucks {
     #[serde(default)]
     pub light: i32,

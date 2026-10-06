@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 
 use cna_core::ids::{HexId, UnitId};
 use cna_protocol::Side;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::units::{Trucks, UnitsContent};
 use crate::{ContentError, read_toml};
@@ -35,7 +35,7 @@ pub struct ScenarioContent {
 }
 
 /// A point in the game clock: game-turn and OpStage.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct GtOpStage {
     pub gt: u16,
     pub opstage: u8,
@@ -93,7 +93,7 @@ pub struct VictoryClause {
 }
 
 /// Where something is placed at the start. Anything but `Hex` leaves a choice to the player.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Placement {
     /// Exactly this hex.
@@ -121,7 +121,7 @@ impl Placement {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Exclusion {
     /// No enemy unit within this many hexes.
     pub enemy_unit_within_hexes: Option<u32>,
@@ -248,7 +248,7 @@ pub struct PlaneSetup {
 }
 
 /// Pilots by quality rating.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Pilots {
     #[serde(default)]
     pub three: i32,
@@ -307,7 +307,7 @@ fn yes() -> bool {
 }
 
 /// Supply points by type. Omitted types are zero.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Supplies {
     #[serde(default)]
     pub ammo: i32,

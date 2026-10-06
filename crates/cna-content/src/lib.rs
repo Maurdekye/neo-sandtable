@@ -5,6 +5,7 @@
 //! that the data does not contain.
 
 pub mod map;
+pub mod registry;
 pub mod scenario;
 pub mod units;
 
@@ -132,5 +133,14 @@ mod tests {
         assert_eq!(scenario.air.len(), 2);
         assert!(!scenario.supply.dumps.is_empty());
         assert!(!scenario.facilities.facilities.is_empty());
+    }
+
+    #[test]
+    fn registry_loads_both_books_with_timing() {
+        let reg = registry::Registry::load(&repo_data_dir().join("rules")).unwrap();
+        assert!(reg.cases.contains_key("land:7.14"));
+        assert!(reg.cases.contains_key("airlog:49.13"));
+        let at_initiative: Vec<_> = reg.procedural_at("initiative", "graziani").collect();
+        assert!(!at_initiative.is_empty());
     }
 }
