@@ -20,6 +20,18 @@ fn every_table_file_loads_and_binds() {
 /// Table ids that have a file but no typed binding yet. Empty means every table is bound; a new
 /// table file that is not bound fails `every_table_file_has_a_binding`.
 const PENDING_BINDINGS: &[&str] = &[
+    "land.24.17.construction",
+    "land.24.18.demolition",
+    "land.27.91.desert_raider_raids",
+    "land.27.92.raid_on_rommel",
+    "land.27.93.sas_brigade_raid",
+    "land.29.6.weather",
+    "land.29.7.foul_weather_location",
+    "land.30.46.chariot_raid",
+    "land.30.6.cw_fleet_reinforcement",
+    "land.32.46.axis_supply_availability",
+    "land.32.47.cw_supply_availability",
+    "land.32.66.axis_convoy_bombing",
     "airlog.34.86.commonwealth_pilot_arrival",
     "airlog.34.89a.italian_pilot_arrival",
     "airlog.34.89b.german_pilot_arrival",
