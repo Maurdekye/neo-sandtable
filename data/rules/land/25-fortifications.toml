@@ -1,0 +1,184 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "25.0"
+book = "land"
+title = "Fortifications"
+systems = ["land"]
+
+[[case]]
+id = "25.0"
+title = "General rule: Fortifications"
+summary = "All major cities count as fortifications and players can build more (24.4). Most have two levels; Cairo and Alexandria have three. Fortifications give defensive benefits to units in the hex."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["24.4"]
+src = ["land:25.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.1"
+title = "Fortification Levels"
+summary = "Heading for 25.11-25.16."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:25.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.11"
+title = "Increasing benefit by level"
+summary = "Each fortification level gives a larger defensive benefit, shown on the Terrain Effects Chart."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:25.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.12"
+title = "Level of cities"
+summary = "Each major city is a Level 2 fortification; Cairo and Alexandria are Level 3; villages are not fortifications."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["land:25.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.13"
+title = "Level of built fortifications"
+summary = "Constructed fortifications are Level 1 or 2, never higher except in Cairo or Alexandria (the text misspells Cairo); counters are double-sided."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["24.48"]
+src = ["land:25.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.14"
+title = "Reducing fortifications"
+summary = "Only air bombardment (39.37) or artillery barrage (12.5) reduce fortification levels; reduced fortifications may be rebuilt."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["12.5", "airlog:39.37"]
+src = ["land:25.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.15"
+title = "Effect on repair rates"
+summary = "Reduced fortification levels in a city affect the repair rate of a repair facility there (22.34)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+depends_on = ["22.34"]
+src = ["land:25.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.16"
+title = "Zero level"
+summary = "Cities and fortifications may be reduced to level zero; in the Land Game that only makes rebuilding easier (but see the Strafing Table, 40.8)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["airlog:40.8"]
+src = ["land:25.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.2"
+title = "Effects of Fortifications"
+summary = "Heading for 25.21-25.24."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:25.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.21"
+title = "No effect on movement or breakdown"
+summary = "Fortifications do not affect movement or breakdown."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:25.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.22"
+title = "Combat effects"
+summary = "The Terrain Effects Chart lists what a fortified hex does for a defender in each kind of combat."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:25.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.23"
+title = "Air attacks against fortified units"
+summary = "Air bombardment and strafing of units, trucks, flak and supply dumps in fortifications is treated like artillery barrage for column adjustments, except that air bombardment has no effect on those targets in a Level 3 city until the city is reduced to Level 2."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["airlog:41.0", "airlog:40.8"]
+src = ["land:25.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "25.24"
+title = "Level 3 cities ignore pins"
+summary = "All units in a Level 3 city ignore Pinned results from any type of combat."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["12.44"]
+src = ["land:25.24"]
+
+[case.applies]
+graziani = "yes"

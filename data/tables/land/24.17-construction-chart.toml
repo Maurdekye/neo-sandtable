@@ -1,0 +1,180 @@
+# Construction Chart (land:24.17).
+
+[table]
+id = "land.24.17.construction"
+case = "24.17"
+title = "Construction Chart"
+src = ["land:24.17"]
+transcribed_from = ["vassal:24.17 Construction Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+One row per buildable item and situation. 'units' lists the unit combinations that can do the work (alternatives
+labelled a and b where the chart gives them); 'supplies' are spent at the start of the Construction Segment and
+must be present in the hex; 'op_stages' is the number of Operations Stages of construction including the stage
+it begins in (land:24.11); a 'cp_cost' is a Capability Point cost instead (supply dumps). Unit codes: any_e = any
+engineer battalion, company or HQ with engineering capability; e_bn = engineer battalion; e_coy = engineer
+company; hq_e = any HQ with engineering capability; chq_e = Allied HQ with engineering capability; sgsu = any
+Squadron Ground Support Unit; csgsu = Allied SGSU; nzrrc = New Zealand Railroad Construction company;
+inf_bn_3 = an infantry-type battalion with at least three TOE strength points. Footnote marks: dagger, an item may
+not be built in an enemy ZOC unless stated otherwise; star, in hexes hit by Hot Weather each item under
+construction other than a supply dump needs 10 extra Water Points; double dagger, only one may be built,
+rebuilt or blocked at a time. Several values here differ from the case texts of Section 24; see interpretation
+land-0018.
+"""
+
+[[row]]
+item = "fortification_level"
+situation = "build_or_rebuild"
+footnotes = ["dagger_enemy_zoc", "double_dagger_one_at_a_time", "star_hot_weather_water"]
+units = [["any_e", "inf_bn_3"]]
+supplies = { stores = 30 }
+op_stages = 3
+terrain_forbidden = ["salt_marsh", "delta", "major_city"]
+restrictions = ["may be rebuilt in a Major City hex that is in an enemy ZOC", "no other construction, except construction or demolition of ports and flying boat facilities, may take place in the same hex at the same time"]
+
+[[row]]
+item = "real_minefield"
+situation = "build"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units = [["e_bn"], ["e_coy"], ["chq_e"]]
+supplies = { ammo = 15, stores = 15 }
+op_stages = 1
+terrain_allowed = ["clear", "sand_gravel", "salt_marsh"]
+
+[[row]]
+item = "fake_minefield"
+situation = "build"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units = [["e_bn"], ["e_coy"], ["chq_e"]]
+supplies = { stores = 3 }
+op_stages = 1
+terrain_allowed = ["clear", "sand_gravel", "salt_marsh"]
+
+[[row]]
+item = "railroad"
+situation = "build"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units = [["nzrrc"]]
+supplies = { stores = 1 }
+op_stages = 1
+restrictions = ["building is limited to the head of track"]
+
+[[row]]
+item = "railroad"
+situation = "rebuild"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units = [["any_e"]]
+supplies = { stores_per_hex = 1 }
+op_stages = 1
+restrictions = ["one hex and any two adjacent hexes may be rebuilt at the same time"]
+
+[[row]]
+item = "road"
+situation = "build_or_rebuild"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units_a = [["inf_bn_3"], ["e_coy"], ["hq_e"]]
+units_b = [["e_bn"], ["e_coy", "inf_bn_3"], ["hq_e", "inf_bn_3"]]
+supplies = { stores_per_hex = 2 }
+op_stages = 1
+restrictions = ["only unfinished-road hexes may be built", "option a: only the hex the unit occupies", "option b: the hex occupied and any two adjacent hexes", "building and rebuilding may be combined except as restricted above"]
+
+[[row]]
+item = "temporary_repair_facility"
+situation = "build"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units = [["any_e"]]
+supplies = { fuel = 50, stores = 250 }
+op_stages = 1
+terrain_allowed = ["major_city", "village_town"]
+
+[[row]]
+item = "repair_facility"
+situation = "rebuild_1_level"
+footnotes = ["double_dagger_one_at_a_time", "star_hot_weather_water"]
+units = [["any_e"]]
+supplies = { fuel = 10, stores = 50 }
+op_stages = 1
+restrictions = ["may be rebuilt in an enemy ZOC"]
+
+[[row]]
+item = "water_pipeline"
+situation = "build_or_rebuild"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units = [["e_bn"], ["chq_e"]]
+supplies = { stores = 10 }
+op_stages = 1
+restrictions = ["may only be built from a Major City hex", "building is limited to the head of the pipe"]
+
+[[row]]
+item = "airfield"
+situation = "build"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units = [["e_bn"], ["csgsu"]]
+supplies = { fuel = 50, stores = 100 }
+op_stages = 3
+terrain_allowed = ["clear", "major_city", "desert", "sand_gravel"]
+
+[[row]]
+item = "airfield_or_air_landing_strip"
+situation = "rebuild_1_level_airfield_or_build_strip"
+footnotes = ["dagger_enemy_zoc", "double_dagger_one_at_a_time", "star_hot_weather_water"]
+units = [["e_bn"], ["e_coy"], ["sgsu"]]
+supplies = { fuel = 10, stores = 20 }
+op_stages = 1
+restrictions = ["same terrain restrictions as the airfield"]
+
+[[row]]
+item = "flying_boat_basin"
+situation = "build"
+footnotes = ["dagger_enemy_zoc", "star_hot_weather_water"]
+units = [["e_bn"], ["csgsu"]]
+supplies = { fuel = 25, stores = 50 }
+op_stages = 3
+restrictions = ["only in a coastal hex, whatever the terrain"]
+
+[[row]]
+item = "flying_boat_basin_or_alighting_area"
+situation = "rebuild_1_level_basin_or_build_alighting_area"
+footnotes = ["dagger_enemy_zoc", "double_dagger_one_at_a_time", "star_hot_weather_water"]
+units = [["e_bn"], ["e_coy"], ["sgsu"]]
+supplies = { fuel = 10, stores = 10 }
+op_stages = 1
+restrictions = ["same restrictions as the flying boat basin"]
+
+[[row]]
+item = "port"
+situation = "block_1_level"
+footnotes = ["double_dagger_one_at_a_time", "star_hot_weather_water"]
+units = [["e_bn"], ["chq_e"]]
+supplies_by_port = { tobruk = { ammo = 50, stores = 25 }, other = { ammo = 25, stores = 10 } }
+op_stages = 1
+restrictions = ["the ports of Tripoli, Bizerta (Tunis), Alexandria (E3613), Aboukir (E3815) and Rosetta (E4019) may not be blocked"]
+
+[[row]]
+item = "real_supply_dump"
+situation = "build"
+units = [["any_unit_1_toe"]]
+supplies = { stores = 10 }
+cp_cost = 3
+restrictions = []
+
+[[row]]
+item = "fake_supply_dump"
+situation = "build"
+units = [["any_unit_1_toe"]]
+supplies = {}
+cp_cost = 2
+restrictions = ["may not be built if the percentage of fake dumps in play is, or would become, more than 50% of the real dumps in play"]
+
+[[footnote]]
+id = "dagger_enemy_zoc"
+text = "Unless otherwise stated, an item may not be constructed in an enemy ZOC."
+
+[[footnote]]
+id = "star_hot_weather_water"
+text = "If the hex is affected by Hot Weather, an additional 10 Water Points are required for each item under construction, other than a supply dump."
+
+[[footnote]]
+id = "double_dagger_one_at_a_time"
+text = "Only one may be built, rebuilt or blocked at a time."

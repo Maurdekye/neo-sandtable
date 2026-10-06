@@ -1,0 +1,45 @@
+# Foul Weather Location Table (land:29.7).
+
+[table]
+id = "land.29.7.foul_weather_location"
+case = "29.7"
+title = "Foul Weather Location Table"
+src = ["land:29.7", "land:29.1"]
+transcribed_from = ["vassal:Weather.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+After a sandstorm or rainstorm result on the Weather Table, roll one die to find which map sections have that
+storm; the other sections have normal weather. A sandstorm that lands on a Nile Delta hex counts as normal weather
+there. Sandstorms stop at the coast. Malta, Italy, Sicily, Crete and Tunisia/Tripoli are never affected by
+weather (land:29.1).
+"""
+
+[[row]]
+die = 1
+map_sections = ["A", "B"]
+
+[[row]]
+die = 2
+map_sections = ["C", "D"]
+
+[[row]]
+die = 3
+map_sections = ["D", "E"]
+footnotes = ["delta_sandstorm"]
+
+[[row]]
+die = 4
+map_sections = ["B", "C"]
+
+[[row]]
+die = 5
+map_sections = ["B", "D"]
+
+[[row]]
+die = 6
+map_sections = ["B", "C", "D"]
+
+[[footnote]]
+id = "delta_sandstorm"
+text = "A sandstorm occurring on a (Nile) Delta hex is treated as normal weather."

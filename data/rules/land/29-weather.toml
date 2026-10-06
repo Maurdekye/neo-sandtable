@@ -1,0 +1,404 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "29.0"
+book = "land"
+title = "Weather"
+systems = ["land"]
+
+[[case]]
+id = "29.0"
+title = "General rule: Weather"
+summary = "Weather is determined for each Operations Stage and is one of normal, hot, sandstorm or rainstorm; probability depends on season and map area; weather affects movement and breakdown."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["29.1"]
+src = ["land:29.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.1"
+title = "Weather Determination"
+summary = "The player with Initiative rolls two dice (read in sequence) on the Weather Table row for the season (for example 53 in summer gives Hot Weather); a sandstorm or rainstorm then needs a roll on the Foul Weather Location Table to find the affected map sections, the rest staying normal. Weather never affects Malta, Italy, Sicily, Crete or Tripoli/Tunisia; map E weather does affect off-map Allied airfields. Seasons follow the Game-Turn ranges on the table (Spring starts the 3rd week of March by the clarification)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+tables = ["land.29.6.weather", "land.29.7.foul_weather_location"]
+depends_on = ["7.12"]
+src = ["land:29.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.2"
+title = "Normal Weather"
+summary = "Normal weather has no effect on play; its effects are already built in."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+src = ["land:29.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.3"
+title = "Hot Weather"
+summary = "Heading for 29.31-29.35."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:29.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.31"
+title = "Hot weather everywhere"
+summary = "When hot weather occurs it applies on all sections of all maps."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+src = ["land:29.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.32"
+title = "Construction water"
+summary = "Construction sites need water rations in hot weather (24.21)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.21"]
+src = ["land:29.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.33"
+title = "Breakdown shift"
+summary = "Hot weather shifts the Breakdown column one to the right (21.37)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+depends_on = ["21.37"]
+src = ["land:29.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.34"
+title = "Evaporation"
+summary = "In hot weather all fuel and water levels (not wells or oases) lose 5%, in dumps and in trucks but not what units are actually consuming; this is done in the Weather Determination Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+depends_on = ["airlog:49.0", "airlog:52.0"]
+src = ["land:29.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.35"
+title = "Doubled water use"
+summary = "In hot weather all units' water requirements double."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.supply_distribution"]
+depends_on = ["airlog:52.0"]
+src = ["land:29.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.4"
+title = "Sandstorms"
+summary = "Sandstorms (blinding grit that halts action). Heading for 29.41-29.47."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:29.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.41"
+title = "Where sandstorms occur"
+summary = "Sandstorms occur only on certain map sections (Weather Table) and never over delta hexes on map E; other maps have normal weather."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+tables = ["land.29.7.foul_weather_location"]
+src = ["land:29.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.42"
+title = "No construction"
+summary = "No construction may occur in a hex in a sandstorm (24.22)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.22"]
+src = ["land:29.42"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.43"
+title = "No flying"
+summary = "No aircraft may fly into or out of a sandstorm hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+src = ["land:29.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.44"
+title = "Doubled movement costs"
+summary = "All movement costs in sandstorm hexes are doubled."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:29.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.45"
+title = "Breakdown shift"
+summary = "A unit spending 50% or more of its movement CP in sandstorm hexes in a Movement Phase shifts its Breakdown column one to the right (21.37)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+depends_on = ["21.37"]
+src = ["land:29.45"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.46"
+title = "Coastal limit"
+summary = "Sandstorms stop at the coastal hexes and do not extend into the Mediterranean."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+src = ["land:29.46"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.47"
+title = "Aircraft damage"
+summary = "Sandstorms may damage grounded aircraft (38.5)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+depends_on = ["airlog:38.5"]
+src = ["land:29.47"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.5"
+title = "Rainstorms"
+summary = "Rainstorms are more common than supposed and affect movement. Heading for 29.51-29.58."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:29.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.51"
+title = "Where rainstorms occur"
+summary = "Rainstorms occur only on certain map sections; others have normal weather."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+tables = ["land.29.7.foul_weather_location"]
+src = ["land:29.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.52"
+title = "No flying"
+summary = "Aircraft cannot enter or leave a hex under a rainstorm, and rainstorms do reach the northern map edge over the sea."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+src = ["land:29.52"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.53"
+title = "Wells fill"
+summary = "All depleted wells are filled by a rainstorm."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+depends_on = ["airlog:52.0"]
+src = ["land:29.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.54"
+title = "No construction"
+summary = "No construction may occur during a rainstorm (24.22)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.22"]
+src = ["land:29.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.55"
+title = "Wadis impassable"
+summary = "During a rainstorm all wadi hexsides are uncrossable except by road (29.56), and wadis cannot be used to draw water."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.41", "29.56"]
+src = ["land:29.55"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.56"
+title = "Roads become tracks"
+summary = "During rainstorms road hexes have the movement cost and breakdown rate of tracks; tracks stay as tracks, apart from 29.55."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.breakdown"]
+src = ["land:29.56"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.57"
+title = "River hexsides"
+summary = "In a rainstorm a river hexside can be crossed only where a road or railroad crosses it."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:29.57"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.58"
+title = "Deltas"
+summary = "A rainstorm bars vehicles and motorized units from delta hexes except along roads or railroads, and units already in a delta hex when it starts are stuck there for the stage unless on a road or railroad."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:29.58"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.6"
+title = "Weather Table"
+summary = "Table of the weather by season and two-dice reading. Transcribed in data/tables/land (printed as 29.61 on the chart image)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.weather"]
+tables = ["land.29.6.weather"]
+interp = ["land-0019"]
+src = ["land:29.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.61"
+title = "Weather Table correction"
+summary = "Errata: the original chart had its seasons the wrong way round; the season order given in 29.1 governs (Spring runs from the 4th week of March to the 3rd week of June, and so on)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.weather"]
+tables = ["land.29.6.weather"]
+errata = ["errata79:29.61"]
+interp = ["land-0019"]
+src = ["land:29.61"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "29.7"
+title = "Foul Weather Location Table"
+summary = "Table of the map sections hit by a storm by die roll. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.weather"]
+tables = ["land.29.7.foul_weather_location"]
+src = ["land:29.7"]
+
+[case.applies]
+graziani = "yes"

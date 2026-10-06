@@ -1,0 +1,1001 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "24.0"
+book = "land"
+title = "Construction"
+systems = ["land", "logistics", "air"]
+
+[[case]]
+id = "24.0"
+title = "General rule: Construction"
+summary = "Fortifications, minefields, air and repair facilities, roads, railroads and supply dumps are built by manpower under engineers, spending time and supplies, in the Construction Segment of the Organization Phase; weather can interfere. Units doing construction may spend no CP in the stage or the work stops."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.1", "24.17"]
+src = ["land:24.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.1"
+title = "How Construction Works"
+summary = "Heading for 24.11-24.18."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.11"
+title = "Starting and finishing projects"
+summary = "All construction starts and is worked in the Construction Segment of each Operations Stage and completes at the start of the Construction Segment of a later stage, after the number of stages shown on the Construction Chart (counting the starting stage)."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+src = ["land:24.11"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Start a construction project with a named unit, item and hex"
+params = ["item", "hex", "units assigned"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.12"
+title = "Spending CP halts construction"
+summary = "If a unit involved in construction spends any CP in the stage, the work halts and that stage does not count; units in construction do not affect road/track stacking limits."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["6.3"]
+src = ["land:24.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.13"
+title = "Supplies must be present and spent"
+summary = "The supplies listed for an item must be in the hex at the start of the Construction Segment and are spent then, even if the builders are later forced to move or fight."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+src = ["land:24.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.14"
+title = "Normal supplies still needed"
+summary = "Units doing construction still consume their normal supplies (stores, fuel and so on)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["airlog:50.0"]
+src = ["land:24.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.15"
+title = "One project per unit"
+summary = "A unit can work on only one project at a time, and units in construction obey stacking rules."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.16"
+title = "Voluntary cessation"
+summary = "A unit may stop construction whenever it wants, with the only penalty that construction is halted."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+src = ["land:24.16"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Halt a construction project"
+params = ["project"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.17"
+title = "Construction Chart"
+summary = "Table of what each item needs: unit types, supplies, number of stages and terrain restrictions. Transcribed in data/tables/land. Several of its values differ from the case texts below (see interpretation land-0018)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+interp = ["land-0018"]
+src = ["land:24.17"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.18"
+title = "Demolition Chart"
+summary = "Table of how items are reduced, cleared, destroyed, dismantled or unblocked. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.18.demolition"]
+src = ["land:24.18"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.2"
+title = "Adverse Effects on Construction"
+summary = "Heading for 24.21-24.24."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.21"
+title = "Hot weather water cost"
+summary = "In Hot Weather each construction site needs 10 extra Water Points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["29.3"]
+src = ["land:24.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.22"
+title = "Storms halt the clock"
+summary = "No construction counts toward time in a hex with a sandstorm or rainstorm; but if a builder leaves the hex during a storm the construction is treated as stopped completely and must restart from the beginning."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["29.0"]
+src = ["land:24.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.23"
+title = "Pinned units cannot build"
+summary = "Units pinned by artillery or air bombardment may not engage in construction, with effects like 24.22."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["12.44"]
+src = ["land:24.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.24"
+title = "Other friendly units irrelevant"
+summary = "Friendly units not engaged in construction do not affect it, though stacking limits still apply."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.3"
+title = "Constructing Minefields"
+summary = "Heading for 24.31-24.38."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.31"
+title = "Who lays minefields"
+summary = "Any engineering unit (or Commonwealth HQ with engineers) may lay real or dummy minefields; the counter's reverse tells which."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+depends_on = ["26.0", "24.11"]
+src = ["land:24.31"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Lay a real or dummy minefield"
+params = ["hex", "real or dummy", "engineers"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.32"
+title = "One stage to lay"
+summary = "A minefield, real or dummy, takes one full Operations Stage to lay and completes at the next Construction Segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.33"
+title = "Real minefield cost"
+summary = "A real minefield needs an engineering unit plus 15 Stores and 15 Ammunition Points in the hex, spent at the start; an Under Construction marker shows the work."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+src = ["land:24.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.34"
+title = "Dummy minefield cost"
+summary = "A dummy minefield is built the same way but costs no Ammunition and only 3 Stores."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+src = ["land:24.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.35"
+title = "Terrain for minefields"
+summary = "Minefields may be built in clear, sand/gravel or rough hexes (the chart says clear, sand/gravel or salt marsh), one per hex, never in major cities."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+interp = ["land-0018"]
+src = ["land:24.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.36"
+title = "No minefields in enemy-controlled hexes"
+summary = "Minefields may not be built in enemy-controlled hexes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.36"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.37"
+title = "Minefield effects"
+summary = "See Section 26.0 for the effects of minefields."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["26.0"]
+src = ["land:24.37"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.38"
+title = "Clearing minefields"
+summary = "Staying a full Operations Stage in a hex holding a real minefield, friendly or enemy, lets an Engineer unit or Engineering HQ clear it; dummy fields disappear once they are revealed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["23.22"]
+src = ["land:24.38"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.4"
+title = "Constructing Fortifications"
+summary = "Heading for 24.41-24.48."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.41"
+title = "Fortification levels"
+summary = "Fortifications (cemented emplacements) are shown by Level 1 or Level 2 counters; major cities have built-in levels that engineers can rebuild when destroyed."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["25.0"]
+src = ["land:24.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.42"
+title = "Building one level"
+summary = "One level needs a unit with Engineering capability plus an infantry battalion of at least three TOE points, who spend three full Construction Segments in the hex under an Under Construction marker without spending CP; at the start of the fourth the level counter is placed."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+src = ["land:24.42"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Start building one fortification level"
+params = ["hex", "engineer unit", "infantry battalion"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.43"
+title = "Stores cost"
+summary = "The player also needs 30 Stores in the hex at the start of construction, which are spent."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.44"
+title = "Where fortifications may be built"
+summary = "The text bars new fortifications from mountain, salt marsh, desert, major city and delta hexes (the chart bars only salt marsh, delta and major city) and from starting in an enemy ZOC."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+interp = ["land-0018"]
+src = ["land:24.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.45"
+title = "Rebuilding destroyed levels"
+summary = "Fortification levels, including major-city levels, reduced by air bombardment or barrage may be rebuilt under the same rules, except that rebuilding may occur in an enemy ZOC."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.42", "24.43"]
+src = ["land:24.45"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.46"
+title = "Exclusive hex"
+summary = "No other construction of any kind may take place in a hex undergoing fortification construction."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.46"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.47"
+title = "Fortifications cannot be removed"
+summary = "Once built, fortifications cannot be removed voluntarily; only air bombardment or barrage reduce them. Other combat does not affect them though they affect combat (Section 25)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["25.0"]
+src = ["land:24.47"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.48"
+title = "One level at a time; caps"
+summary = "Fortifications are built or rebuilt one level at a time; a major city may not exceed its original Level 2 (Alexandria and Cairo are Level 3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.48"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.5"
+title = "Road Construction"
+summary = "Background on the Via Balbia, its unfinished sections, the Derna Bypass and the Mersa Matruh to Siwa track converted to road. Heading for 24.51-24.56."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.51"
+title = "Only unfinished road hexes"
+summary = "Only sections shown as unfinished road on the map may be built; no new stretches may be invented; any destroyed actual road hex may be rebuilt."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["8.47"]
+src = ["land:24.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.52"
+title = "Unfinished and destroyed roads are tracks"
+summary = "Unfinished and destroyed road hexes (marked) are treated as tracks for all purposes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.47"]
+src = ["land:24.52"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.53"
+title = "Who builds roads and how many hexes"
+summary = "A road hex per Construction Stage by any infantry battalion with 3 or more TOE points; or by any Engineer company or Engineering HQ; or three hexes (the hex occupied plus any two adjacent) per Construction Segment by an Engineer battalion alone, or an Engineer company/HQ plus a 3-TOE infantry unit."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+src = ["land:24.53"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Build or rebuild road hexes with a named unit"
+params = ["hexes", "builders"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.54"
+title = "Road stores"
+summary = "Each road hex built or rebuilt costs two Stores in the constructing units' hex at the start of the Construction Segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.55"
+title = "No enemy-controlled hexes"
+summary = "Road work is impossible in a hex the enemy controls."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.55"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.56"
+title = "End of Road marker"
+summary = "An End of Road marker may show how far new road extends; finished stretches are simply noted."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.56"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.6"
+title = "Building & Repairing Railroads"
+summary = "Two railroad systems exist: the Nile Delta complex extending toward Mersa Matruh (eventually to Tobruk) and a defunct Benghazi-Barce line included for history only. Heading for 24.61-24.67."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.61"
+title = "Who builds track"
+summary = "Only the two New Zealand railroad construction companies (10th and 13th) can build new track (railroad work only); all engineer battalions and companies, and Commonwealth-only Engineering HQs, may repair destroyed track."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["8.47", "23.13"]
+src = ["land:24.61"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.62"
+title = "Build time"
+summary = "One NZRRC company needs two OpStages to build one new hex; two companies in the same hex build one hex per OpStage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.62"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.63"
+title = "Rebuilding destroyed track"
+summary = "An Engineer unit can restore up to three wrecked railroad hexes per Construction Segment, namely its own hex and two neighbours."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.63"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.64"
+title = "Railroad stores"
+summary = "Each railroad hex built or rebuilt needs one Store Point present with the Engineer unit and spent in the Construction Segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.64"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.65"
+title = "No enemy hexes"
+summary = "Railroad work is impossible in hexes the enemy controls or occupies."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.65"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.66"
+title = "Destroying railroad"
+summary = "Railroad hexes may be destroyed by air bombardment or barrage, or by an Engineer unit, Engineering HQ or 3-TOE infantry unit that spends a whole OpStage in the hex spending no CP; a Destroyed RR Hex marker is placed."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.18.demolition"]
+src = ["land:24.66"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Demolish a railroad hex with a unit that stays in it for a stage"
+params = ["hex", "unit"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.67"
+title = "Alexandria-Matruh-Tobruk line direction"
+summary = "The line may be built only westward from the last completed hex out of Mersa Matruh toward Tobruk, no hex skipped, marked by a Railhead marker; unbuilt hexes do not exist."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["8.71"]
+src = ["land:24.67"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.7"
+title = "Constructing Air Facilities (Air Game Only)"
+summary = "Heading for 24.71-24.79."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.7"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.71"
+title = "Air facility types"
+summary = "Airfields, air landing strips, flying boat basins and alighting areas; their use is in the Air Rules."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:24.71"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.72"
+title = "Who builds air facilities"
+summary = "Airfields and flying boat basins only by Engineer battalions; strips and alighting areas by Engineer battalions, companies or SGSUs; Commonwealth SGSUs and Engineering HQs may also build airfields and basins."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+src = ["land:24.72"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Build an air facility"
+params = ["facility type", "hex", "builders"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.73"
+title = "Terrain for air facilities"
+summary = "Airfields or strips may be built in clear, rough, major cities, desert or sand/gravel hexes (the chart omits rough) and not in enemy-controlled hexes; flying boat facilities only in coastal hexes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+interp = ["land-0018"]
+src = ["land:24.73"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.74"
+title = "Construction time"
+summary = "Airfields and flying boat basins need three Construction Segments, strips and alighting areas one."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.74"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.75"
+title = "Supply requirements"
+summary = "Supplies for new air facilities are on the Construction Chart."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+src = ["land:24.75"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.76"
+title = "Damage and rebuilding"
+summary = "Bombing can reduce an airfield's capacity or destroy facilities; strips and flying boat facilities must be rebuilt from scratch, airfields are rebuilt capacity level by level, each costing the same as a landing strip and one level at a time."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["airlog:36.12"]
+src = ["land:24.76"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.77"
+title = "Facility counters"
+summary = "Air facilities are represented by lettered counters placed when built; none is printed on the map except as in 24.78, unless provided by a scenario."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:24.77"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.78"
+title = "Printed facilities"
+summary = "Some air facilities are printed on the map and need no counters: every Cairo hex is an airfield, Malta's are on the Malta map, and facilities exist in the Tripoli-Tunis boxes, off-map Commonwealth bases (Deversoir on map E), Crete, Italy and Sicily."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["land:24.78"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.79"
+title = "One of each; upgrades"
+summary = "At most one flying boat facility and one other air facility per hex; strips and alighting areas can be upgraded to airfield and basin, but are unusable during the upgrade and get no construction reduction."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.79"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.8"
+title = "Constructing Repair Facilities"
+summary = "Heading for 24.81-24.88."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:24.8"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.81"
+title = "Only temporary facilities are new"
+summary = "Only temporary repair facilities can be built new; major facilities already exist (22.31). Both kinds can be reduced or neutralized by bombing or barrage; temporary ones can be destroyed by enemy presence, major ones cannot."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["22.31"]
+src = ["land:24.81"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.82"
+title = "Who works on them"
+summary = "All Engineer units, HQs included, may build, rebuild or dismantle temporary facilities or rebuild major ones."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.82"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.83"
+title = "Cost of a new temporary facility"
+summary = "Needs a single Engineer unit of any size working three Construction Segments, with 250 Stores and 150 Fuel on hand and spent immediately (the chart says 50 Fuel and one stage)."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction"]
+interp = ["land-0018"]
+src = ["land:24.83"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Build a temporary repair facility"
+params = ["hex", "engineer", "supplies"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.84"
+title = "Rebuilding a bombed city facility"
+summary = "A repair facility in a major city whose city level was reduced is rebuilt by first rebuilding the city level (24.4) then spending 50 Stores and 30 Fuel (the chart says 10 Fuel) with an Engineer unit for one Construction Segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.4"]
+interp = ["land-0018"]
+src = ["land:24.84"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.85"
+title = "Where and how many"
+summary = "A temporary facility may be built in any major city or village hex; a player may never have more than two at once."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.85"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.86"
+title = "Dismantling"
+summary = "One unit with Engineering capability needs one Construction Segment to dismantle a temporary facility, after which the player has 120 Stores and 25 Fuel in the hex; the facility is gone and any new one starts from scratch."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.18.demolition"]
+src = ["land:24.86"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Dismantle a temporary repair facility"
+params = ["facility hex", "engineer"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "24.87"
+title = "Enemy-controlled hexes"
+summary = "Temporary facilities cannot be built in enemy-controlled hexes, but all repair facilities may be rebuilt or dismantled there."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["land:24.87"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.88"
+title = "Dismantling facility unusable"
+summary = "A temporary facility being dismantled cannot be used."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+src = ["land:24.88"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "24.9"
+title = "Constructing Supply Dumps & Dummy Supply Dumps"
+summary = "A supply dump (ammo and fuel only in the Land Game) is built by any one TOE point of any type spending three CP and 20 Stores (Logistics Game only) in the hex; a dummy dump needs only three CP; the hex is then designated a dump. Supplies may sit in a hex with no dump, but convoy trucks cannot load from it (limits are in the Logistics Game). The chart gives 10 Stores for a real dump and 2 CP for a fake one."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.construction"]
+tables = ["land.24.17.construction", "land.6.3.capability_point_expenditure_summary"]
+depends_on = ["airlog:54.1"]
+interp = ["land-0006", "land-0018"]
+src = ["land:24.9"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Build a real or dummy supply dump"
+params = ["hex", "unit"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false

@@ -1,0 +1,51 @@
+# Raid on Rommel Table (land:27.92; the chart image is titled [27.54], corrected to 27.92 by land:27.63).
+
+[table]
+id = "land.27.92.raid_on_rommel"
+case = "27.92"
+title = "Raid on Rommel Table"
+src = ["land:27.92", "land:27.63"]
+transcribed_from = ["vassal:27.54 Raid on Rommel Table.png"]
+verification = "double"
+dice = "2d6_sum"
+notes = """
+Roll two dice and add them (land:27.63). Results: lrdg_eliminated = the Desert Raider unit is eliminated unless
+there are no combat and/or HQ units in the hex; ai_temp_3 = the Axis Initiative Rating is 3 for the Initiative
+determination of the next two Game-Turns; ai_perm_3 = the Rommel counter is removed from the game maps. The
+chart also gives flavor text for 2, 4, 10 and 12 (not data).
+"""
+
+[[row]]
+dice_min = 2
+dice_max = 2
+result = "ai_temp_3"
+
+[[row]]
+dice_min = 3
+dice_max = 3
+result = "lrdg_eliminated"
+
+[[row]]
+dice_min = 4
+dice_max = 8
+result = "no_effect"
+
+[[row]]
+dice_min = 9
+dice_max = 9
+result = "lrdg_eliminated"
+
+[[row]]
+dice_min = 10
+dice_max = 10
+result = "no_effect"
+
+[[row]]
+dice_min = 11
+dice_max = 11
+result = "lrdg_eliminated"
+
+[[row]]
+dice_min = 12
+dice_max = 12
+result = "ai_perm_3"

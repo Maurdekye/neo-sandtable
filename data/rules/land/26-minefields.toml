@@ -1,0 +1,196 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "26.0"
+book = "land"
+title = "Minefields"
+systems = ["land"]
+
+[[case]]
+id = "26.0"
+title = "General rule: Minefields"
+summary = "In CNA minefields are obstacles, not killers: units pay more CP to enter them and casualties are rare. They grew from sparing use early in the war to ubiquitous at El Alamein."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["26.1", "26.2"]
+src = ["land:26.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.1"
+title = "Types of Minefields"
+summary = "Heading for 26.11-26.15."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:26.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.11"
+title = "Real and dummy"
+summary = "There are real and dummy minefields; all counters have the same front and the reverse reveals the type."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:26.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.12"
+title = "Friendly and enemy minefields"
+summary = "For movement, friendly minefields (whose paths are known) differ from enemy minefields."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:26.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.13"
+title = "Removing real minefields"
+summary = "An Engineer unit or unit with Engineer capability that starts the stage in the minefield hex, spends no CP and remains there at the stage's end removes it, friendly or enemy."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["24.38", "23.22"]
+src = ["land:26.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.14"
+title = "Removing dummy minefields"
+summary = "An enemy unit that pays the CP to enter a dummy minefield causes its removal when that Movement Segment ends."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["26.23"]
+src = ["land:26.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.15"
+title = "Flipping on entry"
+summary = "A friendly minefield is flipped to reveal real or dummy as soon as an enemy unit enters it."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:26.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.2"
+title = "Effects of Minefields"
+summary = "Heading for 26.21-26.26."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:26.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.21"
+title = "Cost to enter"
+summary = "Entry costs are on the Terrain Effects Chart; a motorized unit or vehicle entering an enemy minefield pays CP proportional to its CPA (an artillery unit pays 15)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects", "land.6.3.capability_point_expenditure_summary"]
+src = ["land:26.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.22"
+title = "Costs are additional"
+summary = "Minefield costs are in addition to the hex terrain cost; units without Engineers may spend far over their CPA."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:26.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.23"
+title = "Dummy minefield entry"
+summary = "Entering an enemy dummy minefield costs the same as a real one and reveals it, but it is removed only at the end of that Movement Phase, so every unit moving in that phase still pays."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["26.14"]
+src = ["land:26.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.24"
+title = "Engineer reductions"
+summary = "Engineers, and combat units sharing a hex with an Engineer battalion or a Commonwealth Engineering HQ, add just four CP to enter an enemy minefield and nothing extra for a friendly one. This conflicts with the other minefield cost statements (see interpretation land-0015)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["23.21"]
+interp = ["land-0015"]
+src = ["land:26.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.25"
+title = "Mine casualties"
+summary = "Vehicles entering an enemy minefield with no Engineer battalion or Commonwealth Engineering HQ along may be hit: one die per battalion-size or smaller combat unit, plus one covering all second- and third-line trucks; a 5 or 6 destroys a TOE point of tanks or motorized infantry, or an unattached truck point."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:26.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "26.26"
+title = "Minefield combat shift"
+summary = "In Anti-Armor or Close Assault where the attackers are in an enemy minefield, or a Close Assault is made against an enemy unit in an enemy minefield, the defender shifts all columns one in his favor; not against artillery bombardment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.anti_armor", "opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:26.26"]
+
+[case.applies]
+graziani = "yes"

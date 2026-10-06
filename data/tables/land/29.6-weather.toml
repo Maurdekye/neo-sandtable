@@ -1,0 +1,54 @@
+# Weather Table (land:29.6; printed as [29.61] on the chart image, with errata land:29.61).
+
+[table]
+id = "land.29.6.weather"
+case = "29.6"
+title = "Weather Table"
+src = ["land:29.6", "land:29.61", "land:29.1"]
+transcribed_from = ["vassal:Weather.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+The player with Initiative rolls two dice read in sequence each Operations Stage (land:29.1) in the row for the
+season of the current Game-Turn; the cell containing the reading gives the weather. A sandstorm or rainstorm
+result sends the player to the Foul Weather Location Table (29.7, printed on the chart as 29.62) to see which map
+sections are affected; unaffected sections have normal weather. In each row the four weather columns cover all 36
+dice readings exactly once. Game-Turn ranges give the season of each turn (they follow the corrected
+season order of land:29.1, with spring running from late March to mid-June). The chart
+is transcribed as it appears in the 2021 retype; the weather probabilities per season look unusual (no hot
+weather in summer, rain 53-66 in summer, hot weather common in winter) and are flagged in interpretation
+land-0019.
+"""
+
+[[row]]
+season = "fall"
+game_turns = [[1, 12], [49, 60], [97, 108]]
+normal = [11, 42]
+hot = [43, 55]
+sandstorm = [56, 64]
+rainstorm = [65, 66]
+
+[[row]]
+season = "winter"
+game_turns = [[13, 24], [61, 72], [109, 110]]
+normal = [11, 23]
+hot = [24, 55]
+sandstorm = [56, 66]
+
+[[row]]
+season = "spring"
+game_turns = [[25, 36], [73, 84]]
+normal = [11, 35]
+hot = [36, 54]
+sandstorm = [55, 61]
+rainstorm = [62, 66]
+
+[[row]]
+season = "summer"
+game_turns = [[37, 48], [85, 96]]
+normal = [11, 52]
+rainstorm = [53, 66]
+
+[[footnote]]
+id = "foul_weather"
+text = "Sandstorm and rainstorm results proceed to the Foul Weather Location Table."

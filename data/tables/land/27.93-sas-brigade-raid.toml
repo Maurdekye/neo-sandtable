@@ -1,0 +1,38 @@
+# Special Air Service Brigade Raid Table (land:27.93).
+
+[table]
+id = "land.27.93.sas_brigade_raid"
+case = "27.93"
+title = "Special Air Service Brigade Raid Table"
+src = ["land:27.93", "land:27.86"]
+transcribed_from = ["vassal:27.93 SAS Brigade Raid Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Roll one die; the cell is the percentage of the planes on the ground in the raided hex that are destroyed (each
+type and make, land:27.86).
+"""
+
+[[row]]
+die = 1
+percent_planes_destroyed = 0
+
+[[row]]
+die = 2
+percent_planes_destroyed = 10
+
+[[row]]
+die = 3
+percent_planes_destroyed = 25
+
+[[row]]
+die = 4
+percent_planes_destroyed = 25
+
+[[row]]
+die = 5
+percent_planes_destroyed = 33
+
+[[row]]
+die = 6
+percent_planes_destroyed = 50

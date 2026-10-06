@@ -1,0 +1,274 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "28.0"
+book = "land"
+title = "Prisoners"
+systems = ["land"]
+
+[[case]]
+id = "28.0"
+title = "General rule: Prisoners"
+summary = "A surrendering unit becomes prisoners, one Prisoner Point per infantry TOE point. Prisoners must be fed, held and eventually marched to a Departure Point; guard units can be formed; prisoners may not be massacred."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:28.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.1"
+title = "The Care and Feeding of Prisoners"
+summary = "Heading for 28.11-28.18."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:28.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.11"
+title = "Prisoner Points"
+summary = "Each infantry TOE point (not tanks or guns) that surrenders becomes a Prisoner Point, shown by counters that work like change."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.86", "17.51"]
+src = ["land:28.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.12"
+title = "Immediate free move"
+summary = "Right after surrender the capturing player may move all the Prisoner Points up to three hexes in any direction, not into enemy-controlled or occupied hexes nor through impassable terrain."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:28.12"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Move newly captured prisoners up to three hexes"
+params = ["prisoner points", "destination"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "28.13"
+title = "Prisoner movement"
+summary = "Prisoners have a CPA of 8 used only for movement, in the captor's convoy movement segment, never exceeding it; they cannot fight and stand still if their guards are forced to retreat."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["8.98"]
+src = ["land:28.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.14"
+title = "Hex capacity and camps"
+summary = "At most 40 Prisoner Points per hex; with more than five standing there a POW Detention Camp marker may be placed; prisoner markers stay on the map until they reach a Point of Departure."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:28.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.15"
+title = "Feeding"
+summary = "For every five Prisoner Points in a hex the captor spends one Store Point per Operations Stage (not Game-Turn), before other stores are allocated; the stores need not be present but are taken from the nearest dump."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.supply_distribution"]
+depends_on = ["airlog:51.0"]
+src = ["land:28.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.16"
+title = "Departure Points"
+summary = "Prisoners may be handled as the captor likes if fed and kept alive, but are best marched off the map: the Axis Departure Point is the Sirte box on map A, the Commonwealth Alexandria or Cairo; on arrival Prisoner Points leave the game permanently."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.truck_convoy_movement"]
+src = ["land:28.16"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "March prisoners toward a Departure Point"
+params = ["prisoner points", "path"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "28.17"
+title = "Guard requirements"
+summary = "Each detention camp needs one Guard Point; moving prisoners need one per 5 Prisoner Points (the original 1 was corrected to 5); unguarded prisoners escape."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["28.2", "28.23"]
+src = ["land:28.17"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.18"
+title = "Truck transport"
+summary = "Prisoners may be carried by trucks."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.truck_convoy_movement"]
+src = ["land:28.18"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Transport prisoners by truck"
+params = ["prisoner points", "trucks"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "28.2"
+title = "Guards and Escapes"
+summary = "Heading for 28.21-28.26."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:28.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.21"
+title = "Guards"
+summary = "Guards are needed to watch and escort prisoners."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:28.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.22"
+title = "Forming guards"
+summary = "Guards are made from any infantry-type unit by trading a TOE point for a guard counter (one infantry TOE point, assault 0/1, CPA 10 but normally marching at 8 with the prisoners); they can fight and react, though prisoners do not move when their guards do; spare guard points can rejoin their unit."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.reorganization"]
+src = ["land:28.22"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Form or release Guard Points"
+params = ["unit", "guard points"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "28.23"
+title = "Abandoned prisoners escape"
+summary = "If guards abandon prisoners, or prisoners exceed the guard requirement, the excess prisoners escape."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+src = ["land:28.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.24"
+title = "Escapee handling"
+summary = "Escapees within eight CP of a friendly unit (ignoring enemy ZOCs and units) join it and are removed from play, returning a month later as replacement points for training (never to assign or attach). Farther away they move toward friendly units, needing only water; for each OpStage without water they lose 10% (round up); they stop at a friendly unit or friendly major city or if recaptured; they move in the Truck Convoy Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["20.2"]
+src = ["land:28.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.25"
+title = "Escapees cannot fight or be attacked"
+summary = "Escapees have no combat values and cannot be attacked; they are recaptured automatically if an enemy unit moves into a hex containing only them."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:28.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.26"
+title = "Common-sense note"
+summary = "The escape rules are meant lightly and should be used with common sense."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:28.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "28.3"
+title = "Captured Equipment"
+summary = "Captured equipment, unlike prisoners, may be used against its former owner once repaired."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.repair.maintenance"]
+depends_on = ["22.0"]
+src = ["land:28.3"]
+
+[case.applies]
+graziani = "yes"

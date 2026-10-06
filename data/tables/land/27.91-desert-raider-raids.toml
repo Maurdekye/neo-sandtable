@@ -1,0 +1,74 @@
+# Desert Raider Raids Table (land:27.91).
+
+[table]
+id = "land.27.91.desert_raider_raids"
+case = "27.91"
+title = "Desert Raider Raids Table"
+src = ["land:27.91", "land:27.52", "land:27.53", "land:27.54", "land:27.55", "land:27.58"]
+transcribed_from = ["vassal:27.91 Desert Raiders Raids Table.png"]
+verification = "double"
+dice = "other"
+notes = """
+One block per raid target. Die ranges are for one die unless 'two_dice_sum' is given. All raids cost the raider
+5 CP; no target in a Major City hex may be raided. The raiding player may combine an airfield attack and an
+attack on the planes on the ground at that airfield into a single raid, costing the raider 10 CP, resolving the
+airfield attack first. A raider may not repeat the same raid in the same hex, or attack the same truck convoy,
+more than once per OpStage.
+"""
+
+[[target]]
+id = "water_pipeline"
+results = [
+  { die = [1, 4], effect = "target_destroyed" },
+  { die = [5, 6], effect = "no_effect" },
+]
+notes = "Each Desert Raider is limited to one attempt per OpStage."
+
+[[target]]
+id = "airfield"
+results = [
+  { die = [1, 2], effect = "reduce_one_level_of_effectiveness" },
+  { die = [3, 6], effect = "no_effect" },
+]
+notes = "May not be raided if any combat units are present; an airfield may not be raided more than once per Game-Turn."
+
+[[target]]
+id = "airplanes_on_the_ground"
+results = [
+  { die = [1, 2], effect = "ten_percent_of_planes_destroyed_raider_chooses" },
+  { die = [3, 5], effect = "no_effect" },
+  { die = [6, 6], effect = "planes_unaffected_raider_eliminated" },
+]
+notes = "May not be raided if combat units are present. Flying boats are never affected."
+
+[[target]]
+id = "rommel"
+results = []
+notes = "Only by Commonwealth Long Range Desert Groups; see the Raid on Rommel Table (27.92)."
+
+[[target]]
+id = "supply_dump_with_combat_units_in_hex"
+two_dice_sum = true
+results = [
+  { condition = "sum_at_least_total_raw_defensive_close_assault_points_of_guards", effect = "raider_survives_and_attacks_as_below" },
+  { condition = "sum_below_that_total", effect = "raider_eliminated" },
+]
+notes = "Parenthesised strengths are ignored when calculating the guards' strength."
+
+[[target]]
+id = "supply_dump_without_combat_units_or_raider_survived"
+results = [
+  { die = [1, 2], effect = "ten_percent_of_supplies_destroyed" },
+  { die = [3, 5], effect = "no_effect" },
+  { die = [6, 6], effect = "supplies_unaffected_raider_eliminated_if_combat_units_present" },
+]
+notes = "If the raider completes the raid without being eliminated, the opposing player must tell the raider whether the dump is real, a non-dump, or a dummy."
+
+[[target]]
+id = "trucks_in_convoy"
+results = [
+  { die = [1, 2], effect = "one_truck_point_eliminated" },
+  { die = [3, 5], effect = "no_effect" },
+  { die = [6, 6], effect = "trucks_unaffected_reroll_if_infantry_replacement_points_carried" },
+]
+notes = "The raided player picks the truck type; the raider then picks the cargo eliminated, replacement points only if unavoidable. With infantry replacement points aboard, on a 6 roll again: a 5 or 6 eliminates the raider. If all trucks carry infantry replacement points the raider is eliminated automatically without determining truck effects."

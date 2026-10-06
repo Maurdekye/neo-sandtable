@@ -1,0 +1,952 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "27.0"
+book = "land"
+title = "Desert Raiders & Commandos"
+systems = ["land"]
+
+[[case]]
+id = "27.0"
+title = "General rule: Desert Raiders and Commandos"
+summary = "Commentary: the Long Range Desert Group and Die Sonderkommando Almasy had small operational effect but add fun, useful for harassment raids on dumps and convoys; the rule calls for honesty because raiders move secretly."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.1"
+title = "The Long Range Desert Group"
+summary = "Heading for 27.11-27.16."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.11"
+title = "Two LRDG units"
+summary = "The Commonwealth has two LRDG counters and never more than two in play."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["land:27.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.12"
+title = "Only fully trained units"
+summary = "Only units in play that have trained up to their top Basic Morale qualify as the source of an LRDG."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["17.3"]
+src = ["land:27.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.13"
+title = "Forming an LRDG"
+summary = "LRDGs are formed in the Organization Phase from Recce and Armored Car TOE points only: remove the TOE point from the Recce/AC unit and place an LRDG unit on the map; it can never go back to Recce/AC status."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.organization.reorganization"]
+src = ["land:27.13"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Form an LRDG from a Recce or armored car TOE point"
+params = ["source unit", "hex"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "27.14"
+title = "LRDG attributes"
+summary = "An LRDG has CPA 50, no combat ratings, takes no normal combat (see 27.3) and has no stacking points."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["land:27.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.15"
+title = "No CP to form"
+summary = "Forming an LRDG costs no CP."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:27.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.16"
+title = "Re-forming after loss"
+summary = "An eliminated LRDG can be re-formed (as in 27.13) four Game-Turns after its elimination (the example's dating style is obsolete)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["27.13"]
+src = ["land:27.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.2"
+title = "Die Sonderkommando Almasy"
+summary = "The Axis raider group (DSA) is handled like an LRDG, but only one can exist and its source must be German armored recce or armored car TOE points, not Italian."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["27.1"]
+src = ["land:27.2"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Formed only from German armored recce/car units, which are not in Graziani's Offensive"
+
+[[case]]
+id = "27.3"
+title = "How Desert Raiders Are Used"
+summary = "Heading for 27.31-27.38."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.31"
+title = "Counters with hidden movement"
+summary = "Desert raiders are real counters but their movement is mostly hidden."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:27.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.32"
+title = "Secret movement"
+summary = "After formation the raider's location and movement are recorded secretly on paper, and it follows normal movement rules (as a Recce-type vehicle unit) while usually off the map."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.0"]
+src = ["land:27.32"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Move a hidden desert raider and record its path"
+params = ["raider", "path"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.33"
+title = "When raiders appear"
+summary = "A raider stays hidden until it raids (27.5) or is spotted (27.4); then its counter goes on the map in the hex where that happened."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.34"
+title = "No ZOC; may enter enemy ZOC"
+summary = "Raiders exert no ZOC and need not stop on entering an enemy ZOC (though they risk being spotted); entering an enemy-occupied hex is a raid."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["27.41"]
+src = ["land:27.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.35"
+title = "Raider supply"
+summary = "Each Game-Turn (not stage) a raider must visit a friendly supply dump, oasis or bir, drawing one Ammunition and two Fuel points from a dump; without that fuel it cannot travel. Water comes from any oasis or bir, and a raider with no water by the end of the Game-Turn is eliminated."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["airlog:49.0", "airlog:52.0"]
+src = ["land:27.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.36"
+title = "Raiders may react"
+summary = "Raiders have Reaction capability (27.44), including after any spotting attempt."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["27.44", "8.5"]
+src = ["land:27.36"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "React with a desert raider after a spotting attempt"
+params = ["raider", "path"]
+trigger = "triggered"
+secrecy = "secret"
+interrupts = true
+
+[[case]]
+id = "27.37"
+title = "CPA limit"
+summary = "A raider may never exceed its CPA of 50; if forced to, it is eliminated."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.37"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.38"
+title = "No fuel use or breakdown"
+summary = "Raiders do not consume fuel (apart from 27.35) and do not break down."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:27.38"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.4"
+title = "Spotting Desert Raiders"
+summary = "Heading for 27.41-27.44."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.41"
+title = "When spotting may occur"
+summary = "A raider entering an enemy-controlled hex, or an enemy combat unit entering a hex holding a friendly raider, gives a chance to be spotted."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.42"
+title = "No entry into enemy-occupied hexes except to raid"
+summary = "Raiders may enter enemy-occupied hexes only to raid."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.42"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.43"
+title = "Spotting roll"
+summary = "The raider's owner announces the event and rolls one die; a 6 means the raider is spotted and eliminated; other rolls change nothing."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.44"
+title = "Enemy cost to spot"
+summary = "A moving enemy unit entering the raider's hex pays 1 CP to try to spot it, even though the owner knows it is there (the mover may choose not to pursue); a phasing unit may try to spot a raider only once per Operations Stage."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.44"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Spend 1 CP to try to spot a raider when entering its hex"
+params = ["unit", "hex"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "27.5"
+title = "Raids"
+summary = "Raids are mostly harassment behind enemy lines, with an exception for 27.6. Heading for 27.51-27.59."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.51"
+title = "Raid types"
+summary = "The type of raid depends on the objective; most are harassment because they cause little damage, and take place behind enemy lines."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.52"
+title = "Water pipeline raid"
+summary = "A raider entering a pipeline hex with no enemy combat units there may announce a raid, appear, and roll one die (1-4 pipe blown, 5-6 safe); once per stage, costs 5 CP, and the raider may move on afterward; includes pipeline in railroad hexes."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.91.desert_raider_raids"]
+src = ["land:27.52"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt a raid on a water pipeline"
+params = ["raider", "hex"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.53"
+title = "Airfield raid"
+summary = "A raider may enter an enemy airfield hex with no enemy combat units (SGSUs do not count), reveal itself, and roll: a 1 or 2 reduces the airfield's capacity one level; costs 5 CP, no casualties; once per airfield per Game-Turn; may be combined with a plane raid; air landing strips and airfields in major cities are immune."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.91.desert_raider_raids"]
+depends_on = ["airlog:36.12"]
+src = ["land:27.53"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt a raid on an enemy airfield"
+params = ["raider", "hex"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.54"
+title = "Raid on grounded planes"
+summary = "A raider may attack planes on the ground at an airfield or strip (not flying boats, not where combat units are present or in major cities): it spends 5 CP and rolls; 1-2 destroys at least 10% of the planes (raider chooses), 3-6 fails, and a 6 also eliminates the raider; may combine with 27.53 if all CP are paid."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.91.desert_raider_raids"]
+src = ["land:27.54"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt a raid on planes on the ground"
+params = ["raider", "hex"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.55"
+title = "Raid on a supply dump"
+summary = "A raider may attack any dump except in a major city, even a guarded one: it enters, reveals itself and spends 5 CP; unguarded, a roll of 1-2 destroys 10% of supplies; guarded, two dice are summed and compared with the guards' Raw Defensive Assault strength: higher lets the raid proceed as unguarded (but a 6 then eliminates the raider), otherwise the raider is eliminated."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.91.desert_raider_raids"]
+src = ["land:27.55"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt a raid on a supply dump"
+params = ["raider", "hex"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.56"
+title = "Revealing a dummy dump"
+summary = "If a surviving raider's target is a dummy dump, that is revealed and the supply destruction is off, though guard and elimination results stand."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.56"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.57"
+title = "Raids on convoys"
+summary = "Raiders may attack unescorted truck convoys by entering the convoy's hex, or by interception during the opposing Truck Convoy Movement Phase (27.59)."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement", "opstage.truck_convoy_movement"]
+depends_on = ["27.58", "27.59"]
+src = ["land:27.57"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attempt a raid on a truck convoy"
+params = ["raider", "hex"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.58"
+title = "Convoy raid mechanics"
+summary = "The raider spends 5 CP, enters, and rolls: 1-2 destroys one truck TOE point and its cargo (the defender picks the truck type, the raider the cargo); 3-6 fails. If any truck carries replacement points the raider adds one to the roll and a 6 eliminates it; if all carry replacement points it is eliminated automatically with no truck losses."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.truck_convoy_movement"]
+tables = ["land.27.91.desert_raider_raids"]
+src = ["land:27.58"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.59"
+title = "Interception"
+summary = "If a truck convoy passes within four CP of a raider during the Truck Convoy Movement Phase, the raider's owner may halt and attack it using the convoy rules; the convoy uses 5 CP (not exceeding its CPA) as does the raider, which may then spend up to 5 more to leave."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["27.58"]
+src = ["land:27.59"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Intercept a passing truck convoy with a raider"
+params = ["raider", "convoy"]
+trigger = "triggered"
+secrecy = "secret"
+interrupts = true
+
+[[case]]
+id = "27.6"
+title = "Raid on Rommel"
+summary = "Heading for 27.61-27.65: an optional historical raid on General Rommel."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.6"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Rommel is not on the map in Graziani's Offensive"
+
+[[case]]
+id = "27.61"
+title = "Raid on Rommel allowed"
+summary = "A Commonwealth LRDG may try a Raid on Rommel to kill or seize him."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.61"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Rommel is not on the map in Graziani's Offensive"
+
+[[case]]
+id = "27.62"
+title = "Entering Rommel's hex"
+summary = "The raid is performed by the LRDG entering Rommel's hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.62"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Rommel is not on the map in Graziani's Offensive"
+
+[[case]]
+id = "27.63"
+title = "Raid on Rommel roll"
+summary = "The Commonwealth rolls two dice on the Raid on Rommel Table (printed as 27.54, now 27.92); the raid costs 10 CP and an LRDG with no CP left is eliminated."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.92.raid_on_rommel"]
+src = ["land:27.63"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Rommel is not on the map in Graziani's Offensive"
+
+[[case]]
+id = "27.64"
+title = "Raid limits"
+summary = "At most four raids on Rommel per Campaign Game and one in any shorter scenario."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.64"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Rommel is not on the map in Graziani's Offensive"
+
+[[case]]
+id = "27.65"
+title = "Joke modifier"
+summary = "A humorous rule giving +1 to players related to certain adventure authors and actors; no engine effect."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.65"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Rommel is not on the map in Graziani's Offensive"
+
+[[case]]
+id = "27.7"
+title = "Commandos: \"Layforce\""
+summary = "Heading for 27.71-27.77."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.7"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Layforce arrives at Game-Turn 19, after the Graziani window"
+
+[[case]]
+id = "27.71"
+title = "Layforce"
+summary = "Identifies the \"A\" Battalion of the Special Service Brigade (Layforce, Lt. Col. Laycock)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:27.71"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Layforce arrives at Game-Turn 19, after the Graziani window"
+
+[[case]]
+id = "27.72"
+title = "Special placement"
+summary = "Layforce counts as normal infantry, with one exception: starting a stage in Alexandria, it can be set down in any coastal hex that stage."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["27.73", "27.77"]
+src = ["land:27.72"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Layforce arrives at Game-Turn 19, after the Graziani window"
+
+[case.decision]
+what = "Land Layforce from Alexandria in a coastal hex"
+params = ["coastal hex"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.73"
+title = "Alexandria wait and landing cost"
+summary = "Layforce must spend a full Game-Turn in Alexandria before landing; landing costs 5 CP for every 50 hexes the transporting ships move that OpStage plus the hex terrain cost."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.6.3.capability_point_expenditure_summary"]
+src = ["land:27.73"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Layforce arrives at Game-Turn 19, after the Graziani window"
+
+[[case]]
+id = "27.74"
+title = "Supply after landing"
+summary = "Layforce needs no supplies for three Operations Stages after landing (including the landing stage), then is supplied normally."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.74"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Layforce arrives at Game-Turn 19, after the Graziani window"
+
+[[case]]
+id = "27.75"
+title = "No trucks on commando raids"
+summary = "Trucks may not be loaded with Layforce while it is on a commando raid."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.75"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Layforce arrives at Game-Turn 19, after the Graziani window"
+
+[[case]]
+id = "27.76"
+title = "Layforce replacements"
+summary = "Replacing a lost point takes three Infantry Replacement Points trained for 12 OpStages with Layforce in Alexandria."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+tables = ["land.17.6.training_chart"]
+src = ["land:27.76"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Layforce arrives at Game-Turn 19, after the Graziani window"
+
+[[case]]
+id = "27.77"
+title = "Ship retreat and re-embarking"
+summary = "Layforce may be carried by a Commonwealth Fleet unit; if the ship stays in the landing hex, Layforce may retreat into it (satisfying any mandated retreat) or re-embark freely, after which the ship returns to Alexandria at once."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["30.0"]
+src = ["land:27.77"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Layforce arrives at Game-Turn 19, after the Graziani window"
+
+[case.decision]
+what = "Retreat or re-embark Layforce onto its ship"
+params = ["ship", "Layforce"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "27.8"
+title = "Commandos: The Special Air Service Brigade"
+summary = "Background: the SAS raided airfields and planes by land, sea or air, working with the LRDG. Heading for 27.81-27.89."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.8"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[[case]]
+id = "27.81"
+title = "SAS Brigade basics"
+summary = "The SAS Brigade is a battalion-size infantry unit with CPA 15; it may be motorized except when carried by air or sea; it can act as normal infantry or as a Commando."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.45"]
+src = ["land:27.81"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[[case]]
+id = "27.82"
+title = "SAS airfield raids"
+summary = "The SAS raids enemy airfields, guarded or not, but completes the raid (and rolls for plane destruction) only if no Axis combat units are in the hex, so guards must first be eliminated or driven off by normal combat."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.82"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[[case]]
+id = "27.83"
+title = "SAS movement and transport"
+summary = "The SAS moves by land like any combat unit, or by one Commonwealth ship to any coastal hex at 5 CP per 50 ship movement points (or fraction), or by airdrop (42.4) for 5 CP."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["airlog:42.4"]
+src = ["land:27.83"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[case.decision]
+what = "Choose land, sea or air transport for the SAS Brigade"
+params = ["mode", "destination"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.84"
+title = "SAS supply"
+summary = "By land, normal supply rules apply; by sea or airdrop it is in supply for three consecutive OpStages (including the transport stage), then on its own."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.84"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[[case]]
+id = "27.85"
+title = "Plane-destruction raid"
+summary = "The SAS may try to destroy planes at any Axis air facility with no Axis combat units present, in any Movement/Combat Segment."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["27.82"]
+src = ["land:27.85"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[case.decision]
+what = "Attempt an SAS raid on grounded planes"
+params = ["facility hex"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "27.86"
+title = "SAS raid result"
+summary = "The Commonwealth rolls on the SAS Raid Table and removes that percentage of each plane type present; the SAS's TOE strength is irrelevant."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.93.sas_brigade_raid"]
+src = ["land:27.86"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[[case]]
+id = "27.87"
+title = "Raid cost and frequency"
+summary = "A raid costs the SAS 3 CP beyond anything else spent that stage; only one raid per month, with at least six OpStages between raids."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:27.87"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[[case]]
+id = "27.88"
+title = "Moving after a raid; joining an LRDG"
+summary = "The SAS may move as far as continual movement and cohesion allow after a raid; if stacked with an LRDG at any time it gets CPA 30, becomes hidden and moves as an LRDG, and the LRDG must escort it back to where it is placed on the map."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["27.32"]
+src = ["land:27.88"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[[case]]
+id = "27.89"
+title = "SAS replacements"
+summary = "Eliminated TOE points are replaced by three Infantry Replacement Points trained 12 OpStages each; if the whole SAS is eliminated it is gone for good."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:27.89"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"
+
+[[case]]
+id = "27.9"
+title = "Desert Raider Raids Tables"
+summary = "Heading for 27.91-27.93."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:27.9"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.91"
+title = "Desert Raider Raid Table"
+summary = "Table of results of each type of raid by die roll. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.91.desert_raider_raids"]
+src = ["land:27.91"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "27.92"
+title = "Raid on Rommel Table"
+summary = "Table of Raid on Rommel results by two-dice sum. Transcribed in data/tables/land (chart image titled 27.54)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.92.raid_on_rommel"]
+src = ["land:27.92"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Rommel is not on the map in Graziani's Offensive"
+
+[[case]]
+id = "27.93"
+title = "Special Air Service Brigade Raid Table"
+summary = "Table of the percentage of grounded planes destroyed by die roll. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.27.93.sas_brigade_raid"]
+src = ["land:27.93"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Check the scenario reinforcement schedule for when the SAS Brigade arrives"

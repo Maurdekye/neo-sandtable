@@ -1,0 +1,109 @@
+# Demolition Chart (land:24.18).
+
+[table]
+id = "land.24.18.demolition"
+case = "24.18"
+title = "Demolition Chart"
+src = ["land:24.18"]
+transcribed_from = ["vassal:24.18 Demolition Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+How each item can be reduced, cleared, destroyed, dismantled or unblocked. 'units' lists the unit that may do it
+(any_e = any engineer battalion, company or HQ with engineering capability; e_bn = engineer battalion; hq_e =
+any HQ with engineering capability; chq_e = Allied HQ with engineering capability; inf_bn_3 = infantry-type unit
+with at least 3 TOE strength points; scorpion_bn = tank battalion with at least 6 TOE points of Scorpions);
+'not_allowed' means no unit may do it. 'op_stages' is the number of Operations Stages needed.
+"""
+
+[[row]]
+item = "fortification"
+situation = "reduce_1_level"
+units = ["not_allowed"]
+restrictions = ["may be reduced by air bombardment or barrage"]
+
+[[row]]
+item = "fake_minefield"
+situation = "clear"
+units = ["any_unit"]
+op_stages = 1
+restrictions = ["cleared at the end of the Movement Segment in which it is entered"]
+
+[[row]]
+item = "real_minefield"
+situation = "clear"
+units = ["any_e", "scorpion_bn"]
+op_stages = 1
+
+[[row]]
+item = "railroad"
+situation = "destroy"
+units = ["any_e", "inf_bn_3"]
+op_stages = 1
+restrictions = ["may also be destroyed by air bombardment or barrage"]
+
+[[row]]
+item = "road"
+situation = "destroy"
+units = ["not_allowed"]
+op_stages = 1
+restrictions = ["may only be destroyed by air bombardment or barrage"]
+
+[[row]]
+item = "repair_facility"
+situation = "dismantle"
+units = ["any_e"]
+op_stages = 1
+recovered_supplies = { fuel = 25, stores = 120 }
+restrictions = ["may also be reduced by barrage or air bombardment"]
+
+[[row]]
+item = "water_pipeline"
+situation = "destroy"
+units = ["hq_e", "any_unit_1_toe"]
+op_stages = 1
+restrictions = ["may also be destroyed by barrage, strafing and desert raider raids"]
+
+[[row]]
+item = "air_facility"
+situation = "reduce_1_level"
+units = ["not_allowed"]
+restrictions = ["airfields may be reduced, but not destroyed, by desert raider raids, and may be reduced by air bombardment"]
+
+[[row]]
+item = "port_of_tobruk"
+situation = "unblock_1_level"
+units = ["e_bn", "chq_e"]
+op_stages = 1
+supplies = { ammo = 25, stores = 10 }
+restrictions = ["otherwise as an 'other' port"]
+
+[[row]]
+item = "port_of_benghazi"
+situation = "unblock_1_level"
+units = ["two_e_bn_and_or_chq_e_total"]
+op_stages = 1
+supplies = { ammo = 100, stores = 50 }
+restrictions = ["otherwise as an 'other' port"]
+
+[[row]]
+item = "port_other"
+situation = "unblock_1_level"
+units = ["e_bn", "chq_e"]
+op_stages = 1
+supplies = { ammo = 50, stores = 25 }
+restrictions = ["applies whether the port was blocked by mines or by ships", "air bombardment damage is automatic"]
+
+[[row]]
+item = "fake_supply_dump"
+situation = "destroy"
+units = ["any_unit"]
+op_stages_note = "upon entry"
+restrictions = ["may also be eliminated by a desert raider"]
+
+[[row]]
+item = "real_supply_dump"
+situation = "blow"
+units = ["any_unit"]
+cp_note = "a percentage of the unit's CP"
+restrictions = ["may be damaged by a desert raider raid, air bombardment or barrage"]
