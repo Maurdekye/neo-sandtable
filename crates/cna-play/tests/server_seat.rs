@@ -67,11 +67,18 @@ impl SeatDriver for FakeCli {
                 "actions",
             )
             .await;
-        // Choose first from the authorized initiative options.
+        // Test driver chooses the first option exposed by the authoritative schema.
+        // No sandbox-specific answer is hard-coded into the CNA integration flow.
+        let request: cna_core::decision::DecisionRequest =
+            serde_json::from_value(pending["request"].clone()).unwrap();
+        let cna_core::decision::ActionSchema::Choice { options } = request.space.schema else {
+            panic!("this test driver expects a choice window");
+        };
+        let action = options.first().unwrap().id.clone();
         let id = pending["request"]["id"].as_str().unwrap();
         self.call(
             "submit",
-            json!({"decision_id":id,"action":"first"}),
+            json!({"decision_id":id,"action":action}),
             &mut e,
             "submit",
         )
@@ -777,4 +784,316 @@ async fn writer_loss_during_control_preserves_cli_error_and_drains_captures() {
         }
         assert!(combined.contains("unconfirmed captures saved"));
     }
+}
+
+async fn configured(config: cna_play::config::LaunchConfig) -> (tempfile::TempDir, Demo) {
+    let root = tempfile::tempdir().unwrap();
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let demo = Demo::with_config(
+        root.path(),
+        &repo.join("data"),
+        &repo.join("web/dist"),
+        config,
+    )
+    .await
+    .unwrap();
+    (root, demo)
+}
+#[tokio::test]
+async fn cna_binding_uses_real_observation_and_current_action_schema() {
+    use cna_play::config::{GameKind, LaunchConfig};
+    let config = LaunchConfig::resolve(
+        GameKind::Cna,
+        &[
+            "axis.commander=claude:haiku".into(),
+            "*=scripted:legal_random".into(),
+        ],
+    )
+    .unwrap();
+    let (_root, demo) = configured(config).await;
+    let meta = demo
+        .handle
+        .projection(cna_core::visibility::Perspective::Operator)
+        .meta;
+    assert_eq!(meta.scenario_id, "graziani");
+    assert_eq!(meta.rules_profile, "cna-2021-dev");
+    assert!(!demo.prompts.system_prompt(demo.seat).contains("sandbox-v1"));
+    demo.handle
+        .write_notebook(
+            demo.seat,
+            cna_seats::memory::WriteMode::Replace,
+            "Persisted commander plan",
+        )
+        .await
+        .unwrap();
+    let prompt = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+    let mut driver = TrackedCli {
+        inner: FakeCli {
+            url: demo.mcp.url(demo.seat).unwrap(),
+            sink: demo.sink.clone(),
+            seat: demo.seat,
+            fail: false,
+            stopped: false,
+        },
+        hang: false,
+        stopped: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        prompt: Some(prompt.clone()),
+    };
+    demo.play(&mut driver, 1).await.unwrap();
+    assert!(prompt.lock().unwrap().contains("Persisted commander plan"));
+    let rows = demo.transcript();
+    assert!(rows.iter().any(|m| matches!(
+        m,
+        ServerMessage::Transcript {
+            entry: TranscriptEntry::DecisionSubmitted { .. },
+            ..
+        }
+    )));
+    assert!(rows.iter().any(|m| {
+        match m {
+            ServerMessage::Transcript {
+                entry:
+                    TranscriptEntry::ToolResult {
+                        detail: Some(value),
+                        ..
+                    },
+                ..
+            } => value["pending_decisions"]
+                .as_array()
+                .is_some_and(|p| p.iter().any(|d| d["kind"] == "cna.initiative_declaration")),
+            _ => false,
+        }
+    }));
+    assert!(matches!(
+        demo.handle.status(),
+        cna_server::CampaignStatus::Paused | cna_server::CampaignStatus::Finished { .. }
+    ));
+    demo.shutdown().await.unwrap();
+}
+#[tokio::test]
+async fn cna_scripted_only_runs_and_recovers_without_any_driver_endpoint() {
+    use cna_play::config::{GameKind, LaunchConfig};
+    let config = LaunchConfig::resolve(GameKind::Cna, &["*=scripted:legal_random".into()]).unwrap();
+    let (root, demo) = configured(config).await;
+    assert!(demo.epochs.is_empty());
+    assert!(demo.mcp.url(demo.seat).is_none());
+    demo.play_sessions(&mut [], 1).await.unwrap();
+    assert!(matches!(
+        demo.handle.status(),
+        cna_server::CampaignStatus::Finished { .. }
+    ));
+    let id = demo.campaign_id();
+    let expected = demo
+        .handle
+        .projection(cna_core::visibility::Perspective::Operator);
+    demo.shutdown().await.unwrap();
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let recovered = cna_server::campaigns::recover(
+        &root.path().join(format!("{id}.sqlite")),
+        &repo.join("data"),
+    )
+    .unwrap();
+    assert_eq!(
+        recovered.projection(cna_core::visibility::Perspective::Operator),
+        expected
+    );
+    recovered.shutdown().await.unwrap();
+}
+
+struct TrackedCli {
+    inner: FakeCli,
+    hang: bool,
+    stopped: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    prompt: Option<std::sync::Arc<std::sync::Mutex<String>>>,
+}
+#[async_trait]
+impl SeatDriver for TrackedCli {
+    fn kind(&self) -> CliKind {
+        self.inner.kind()
+    }
+    async fn start(&mut self, r: Option<&str>) -> Result<SessionInfo, DriverError> {
+        self.inner.start(r).await
+    }
+    async fn run_turn(&mut self, p: &str, l: Duration) -> Result<TurnOutcome, DriverError> {
+        if let Some(prompt) = &self.prompt {
+            *prompt.lock().unwrap() = p.into();
+        }
+        if self.hang {
+            std::future::pending().await
+        } else {
+            self.inner.run_turn(p, l).await
+        }
+    }
+    fn session_id(&self) -> Option<String> {
+        self.inner.session_id()
+    }
+    fn is_alive(&mut self) -> bool {
+        self.inner.is_alive()
+    }
+    async fn stop(&mut self) {
+        self.inner.stop().await;
+        self.stopped
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+#[tokio::test]
+async fn bounded_peer_completion_or_failure_stops_all_sessions_without_fallbacks() {
+    use cna_play::config::{GameKind, LaunchConfig};
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+    for fail in [false, true] {
+        let config = LaunchConfig::resolve(
+            GameKind::Sandbox,
+            &[
+                "axis.commander=claude:haiku".into(),
+                "commonwealth.commander=claude:haiku".into(),
+            ],
+        )
+        .unwrap();
+        let (_root, demo) = configured(config).await;
+        let flags = [
+            Arc::new(AtomicBool::new(false)),
+            Arc::new(AtomicBool::new(false)),
+        ];
+        let seats: Vec<_> = demo.epochs.keys().copied().collect();
+        assert_ne!(demo.mcp.url(seats[0]), demo.mcp.url(seats[1]));
+        let mut drivers: Vec<_> = seats
+            .iter()
+            .enumerate()
+            .map(|(index, seat)| {
+                (
+                    *seat,
+                    Box::new(TrackedCli {
+                        inner: FakeCli {
+                            url: demo.mcp.url(*seat).unwrap(),
+                            sink: demo.sink.clone(),
+                            seat: *seat,
+                            fail: index == 0 && fail,
+                            stopped: false,
+                        },
+                        hang: index == 1,
+                        stopped: flags[index].clone(),
+                        prompt: None,
+                    }) as Box<dyn SeatDriver>,
+                )
+            })
+            .collect();
+        let result =
+            tokio::time::timeout(Duration::from_secs(8), demo.play_sessions(&mut drivers, 1))
+                .await
+                .expect("bounded peer must not idle until wall timeout");
+        assert_eq!(result.is_err(), fail);
+        assert!(flags.iter().all(|flag| flag.load(Ordering::SeqCst)));
+        assert!(demo.handle.seat(seats[1]).binding.failure.is_none());
+        assert!(matches!(
+            demo.handle.status(),
+            cna_server::CampaignStatus::Paused
+        ));
+        assert!(
+            demo.transcript_for(seats[1])
+                .unwrap()
+                .iter()
+                .all(|m| !matches!(
+                    m,
+                    ServerMessage::Transcript {
+                        entry: TranscriptEntry::DecisionSubmitted { .. },
+                        ..
+                    }
+                ))
+        );
+        demo.shutdown().await.unwrap();
+    }
+}
+
+struct PairedCli {
+    inner: FakeCli,
+    answered: std::sync::Arc<tokio::sync::Barrier>,
+}
+#[async_trait]
+impl SeatDriver for PairedCli {
+    fn kind(&self) -> CliKind {
+        self.inner.kind()
+    }
+    async fn start(&mut self, r: Option<&str>) -> Result<SessionInfo, DriverError> {
+        self.inner.start(r).await
+    }
+    async fn run_turn(&mut self, p: &str, l: Duration) -> Result<TurnOutcome, DriverError> {
+        let result = self.inner.run_turn(p, l).await;
+        // Both seats must actually answer through their own endpoints before either
+        // completes its bounded allocation and triggers sibling cancellation.
+        self.answered.wait().await;
+        result
+    }
+    fn session_id(&self) -> Option<String> {
+        self.inner.session_id()
+    }
+    fn is_alive(&mut self) -> bool {
+        self.inner.is_alive()
+    }
+    async fn stop(&mut self) {
+        self.inner.stop().await;
+    }
+}
+#[tokio::test]
+async fn two_active_seats_submit_through_separate_scoped_endpoints() {
+    use cna_play::config::{GameKind, LaunchConfig};
+    let config = LaunchConfig::resolve(
+        GameKind::Sandbox,
+        &[
+            "axis.commander=claude:haiku".into(),
+            "commonwealth.commander=claude:haiku".into(),
+        ],
+    )
+    .unwrap();
+    let (_root, demo) = configured(config).await;
+    let answered = std::sync::Arc::new(tokio::sync::Barrier::new(2));
+    let seats: Vec<_> = demo.epochs.keys().copied().collect();
+    let mut drivers: Vec<_> = seats
+        .iter()
+        .map(|seat| {
+            (
+                *seat,
+                Box::new(PairedCli {
+                    inner: FakeCli {
+                        url: demo.mcp.url(*seat).unwrap(),
+                        sink: demo.sink.clone(),
+                        seat: *seat,
+                        fail: false,
+                        stopped: false,
+                    },
+                    answered: answered.clone(),
+                }) as Box<dyn SeatDriver>,
+            )
+        })
+        .collect();
+    tokio::time::timeout(Duration::from_secs(8), demo.play_sessions(&mut drivers, 1))
+        .await
+        .unwrap()
+        .unwrap();
+    for seat in seats {
+        let rows = demo.transcript_for(seat).unwrap();
+        assert!(rows.iter().all(|m| matches!(m, ServerMessage::Transcript { seat: owner, .. } if owner == &seat.to_string())));
+        assert_eq!(
+            rows.iter()
+                .filter(|m| matches!(
+                    m,
+                    ServerMessage::Transcript {
+                        entry: TranscriptEntry::DecisionSubmitted { .. },
+                        ..
+                    }
+                ))
+                .count(),
+            1
+        );
+        assert!(rows.iter().any(|m| matches!(
+            m,
+            ServerMessage::Transcript {
+                entry: TranscriptEntry::ToolResult { ok: true, .. },
+                ..
+            }
+        )));
+    }
+    demo.shutdown().await.unwrap();
 }

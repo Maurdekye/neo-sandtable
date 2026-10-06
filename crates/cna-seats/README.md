@@ -42,7 +42,7 @@ text is invented. Quota and usage values are parsed separately from game adjudic
 `SeatRunner` caps concurrent sessions, tool calls, run wall time and turn time; missing
 answers and exhausted limits pause decisions. Parking sessions between windows retains
 the CLI session id while releasing the concurrency slot. The server-backed bounded
-probe is in [cna-play](../cna-play/README.md); full server watch/binding scheduling is pending.
+launcher is in [cna-play](../cna-play/README.md), supporting both sandbox and Graziani development campaigns with per-seat bindings. Campaign-long scheduling/restart remains pending.
 
 ## Verification
 

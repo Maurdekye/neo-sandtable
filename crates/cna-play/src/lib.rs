@@ -1,4 +1,5 @@
 //! Bounded integration probe, not the production campaign scheduler.
+pub mod config;
 use cna_core::{ids::SeatId, visibility::Perspective};
 use cna_protocol::{ControllerInfo, ControllerKind, ServerMessage};
 use cna_seats::{
@@ -10,11 +11,14 @@ use cna_seats::{
 use cna_server::{
     CampaignStatus,
     actor::CampaignHandle,
+    campaigns,
     http::{App, CreateRequest},
-    sandbox,
 };
+use config::{Controller, GameKind, LaunchConfig};
+use futures_util::{StreamExt, stream::FuturesUnordered};
 use serde_json::json;
 use std::{
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
@@ -27,6 +31,8 @@ pub const TURN_LIMIT: Duration = Duration::from_secs(60);
 
 pub struct Demo {
     pub handle: CampaignHandle,
+    pub config: LaunchConfig,
+    pub epochs: BTreeMap<SeatId, u64>,
     pub seat: SeatId,
     pub epoch: u64,
     pub router: Arc<ToolRouter>,
@@ -41,57 +47,105 @@ pub struct Demo {
 
 impl Demo {
     pub async fn new(directory: &Path, data: &Path, dist: &Path) -> Self {
-        let handle = sandbox::create(
+        Self::with_config(directory, data, dist, LaunchConfig::default())
+            .await
+            .expect("create demo")
+    }
+
+    pub async fn with_config(
+        directory: &Path,
+        data: &Path,
+        dist: &Path,
+        config: LaunchConfig,
+    ) -> Result<Self, String> {
+        config.validate()?;
+        let handle = campaigns::create(
             directory,
             data,
             CreateRequest {
-                kind: cna_server::http::CampaignKind::Sandbox,
-                rules_profile: "sandbox-v1".into(),
+                kind: match config.kind {
+                    GameKind::Sandbox => cna_server::http::CampaignKind::Sandbox,
+                    GameKind::Cna => cna_server::http::CampaignKind::Cna,
+                },
+                rules_profile: config.profile().into(),
                 seed: [7; 32],
-                title: "Haiku seat integration (synthetic sandbox)".into(),
+                title: format!("AI integration ({})", config.profile()),
                 paused: true,
-                controller: "aggressive".into(),
+                controller: "human".into(),
             },
         )
-        .expect("create campaign");
-        let seat: SeatId = "axis.commander".parse().unwrap();
-        let binding = handle
-            .handover(
-                seat,
-                Some(ControllerInfo {
-                    kind: ControllerKind::LlmCli,
-                    label: "Claude Code / haiku".into(),
-                }),
-                json!({"model":"haiku","max_turns":2,"max_tool_calls":CALL_CAP,
-            "max_wall_s":WALL_LIMIT.as_secs(),"turn_timeout_s":TURN_LIMIT.as_secs()}),
-            )
-            .await
-            .expect("handover");
+        .map_err(|e| e.to_string())?;
+        let mut epochs = BTreeMap::new();
+        for (seat, controller) in &config.seats {
+            let (info, settings) = match controller {
+                Controller::Claude(model) => (
+                    ControllerInfo {
+                        kind: ControllerKind::LlmCli,
+                        label: format!("Claude Code / {model}"),
+                    },
+                    json!({"model":model,"max_turns":config.max_turns,"max_tool_calls":config.tool_calls,
+                        "max_wall_s":WALL_LIMIT.as_secs(),"turn_timeout_s":TURN_LIMIT.as_secs()}),
+                ),
+                Controller::Scripted(mode) => (
+                    ControllerInfo {
+                        kind: ControllerKind::Scripted,
+                        label: format!("scripted:{mode}"),
+                    },
+                    json!({"mode":mode}),
+                ),
+                Controller::Human => (
+                    ControllerInfo {
+                        kind: ControllerKind::Human,
+                        label: "Human".into(),
+                    },
+                    json!({"mode":"human"}),
+                ),
+            };
+            let binding = handle
+                .handover(*seat, Some(info), settings)
+                .await
+                .map_err(|e| e.to_string())?;
+            if matches!(controller, Controller::Claude(_)) {
+                epochs.insert(*seat, binding.controller_epoch);
+            }
+        }
+        let seat = epochs
+            .keys()
+            .next()
+            .copied()
+            .unwrap_or_else(|| "axis.commander".parse().unwrap());
+        let epoch = handle.seat(seat).binding.controller_epoch;
         let shared = Arc::new(handle.clone());
+        let seats: Vec<_> = epochs.keys().copied().collect();
         let router = Arc::new(
-            ToolRouter::new(shared.clone(), shared.clone(), &[seat]).with_call_cap(Some(CALL_CAP)),
+            ToolRouter::new(shared.clone(), shared.clone(), &seats)
+                .with_call_cap(Some(config.tool_calls)),
         );
-        let prompts = DefaultPrompts {
-            game_description: "This is sandbox-v1, a synthetic integration game. Call observe for its complete rules summary.".into(),
-        };
-        let mcp = McpServer::start(
-            router.clone(),
-            vec![SeatEndpoint {
-                seat,
-                epoch: binding.controller_epoch,
-                instructions: prompts.system_prompt(seat),
-            }],
-        )
-        .await
-        .expect("MCP server");
+        let prompts = DefaultPrompts { game_description: match config.kind {
+            GameKind::Sandbox => "This is sandbox-v1, a synthetic integration game. Call observe for its complete rules summary.",
+            GameKind::Cna => "This is The Campaign for North Africa, Graziani's Offensive, under the development rules profile. Only implemented procedures are offered. Read the current observation, decision context and legal action schema through your tools. Future windows may ask for different orders; never assume initiative is the only kind. Unimplemented procedures are skipped by this profile; this is not a complete rules simulation.",
+        }.into() };
+        let endpoints = epochs
+            .iter()
+            .map(|(seat, epoch)| SeatEndpoint {
+                seat: *seat,
+                epoch: *epoch,
+                instructions: prompts.system_prompt(*seat),
+            })
+            .collect();
+        let mcp = McpServer::start(router.clone(), endpoints)
+            .await
+            .map_err(|e| e.to_string())?;
         let sink = TranscriptSink::new(shared);
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let port = listener.local_addr().unwrap().port();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .map_err(|e| e.to_string())?;
+        let port = listener.local_addr().map_err(|e| e.to_string())?.port();
         let data: PathBuf = data.into();
         let app = App::new(
             directory.into(),
             port,
-            Arc::new(move |r, dir| sandbox::create(dir, &data, r)),
+            Arc::new(move |r, dir| campaigns::create(dir, &data, r)),
         );
         app.register(handle.clone());
         let routes = app.router(dist);
@@ -99,21 +153,22 @@ impl Demo {
             axum::serve(listener, routes).await.unwrap();
         });
         let campaign_id = handle.projection(Perspective::Operator).meta.id;
-        Self {
+        Ok(Self {
             handle,
+            config,
+            epochs,
             seat,
-            epoch: binding.controller_epoch,
+            epoch,
             router,
             sink,
             prompts,
             mcp,
             base_url: format!("http://127.0.0.1:{port}"),
-            outbox: directory.join(format!("{}.{}.unconfirmed.jsonl", campaign_id, seat)),
+            outbox: directory.join(format!("{campaign_id}.unconfirmed.jsonl")),
             app,
             http,
-        }
+        })
     }
-
     pub fn campaign_id(&self) -> String {
         self.handle.projection(Perspective::Operator).meta.id
     }
@@ -128,11 +183,99 @@ impl Demo {
         )
     }
 
-    /// At most two turns in one CLI process. Errors pause durably; no fallback orders.
-    /// Epoch changes cancel the old process and its MCP endpoint remains bound to the old epoch.
+    /// Compatibility helper for the original single-seat probe.
     pub async fn play(&self, driver: &mut dyn SeatDriver, turns: usize) -> Result<(), String> {
-        let mut state = self.handle.watch_seat(self.seat);
-        let epoch = self.epoch;
+        if self.epochs.len() != 1 {
+            return Err("use play_sessions for zero or multiple Claude bindings".into());
+        }
+        let start = self.handle.pause(false).await.map_err(|e| e.to_string());
+        let result = if start.is_ok() {
+            let (_cancel, stop) = tokio::sync::watch::channel(false);
+            self.run_session(self.seat, self.epoch, driver, turns, stop)
+                .await
+        } else {
+            driver.stop().await;
+            start
+        };
+        self.finish_run(result).await
+    }
+
+    /// All configured CLI seats run concurrently (at most two); a completed or failed bounded session stops siblings.
+    /// Human/scripted-only runs launch no CLI and need no paid opt-in.
+    pub async fn play_sessions(
+        &self,
+        drivers: &mut [(SeatId, Box<dyn SeatDriver>)],
+        turns: usize,
+    ) -> Result<(), String> {
+        let provided: BTreeSet<_> = drivers.iter().map(|(seat, _)| *seat).collect();
+        let expected: BTreeSet<_> = self.epochs.keys().copied().collect();
+        if provided != expected
+            || provided.len() != drivers.len()
+            || drivers
+                .iter()
+                .any(|(_, driver)| driver.kind() != cna_seats::driver::CliKind::Claude)
+        {
+            return Err(
+                "exactly one confined Claude driver is required for each Claude binding".into(),
+            );
+        }
+        let start = self.handle.pause(false).await.map_err(|e| e.to_string());
+        if start.is_err() {
+            for (_, driver) in drivers {
+                driver.stop().await;
+            }
+            return self.finish_run(start).await;
+        }
+        let result = if drivers.is_empty() {
+            let mut state = self.handle.watch_status();
+            tokio::time::timeout(WALL_LIMIT, async {
+                loop {
+                    match state.borrow_and_update().clone() {
+                        CampaignStatus::Running => {}
+                        CampaignStatus::Finished { .. } => return Ok(()),
+                        other => {
+                            return Err(format!("campaign stopped before completion: {other:?}"));
+                        }
+                    }
+                    state.changed().await.map_err(|e| e.to_string())?;
+                }
+            })
+            .await
+            .unwrap_or_else(|_| Err("bounded campaign wall-clock budget exhausted".into()))
+        } else {
+            let (cancel, stop) = tokio::sync::watch::channel(false);
+            let mut tasks = FuturesUnordered::new();
+            for (seat, driver) in drivers {
+                let seat = *seat;
+                let epoch = self.epochs[&seat];
+                let stop = stop.clone();
+                tasks.push(async move {
+                    (
+                        seat,
+                        self.run_session(seat, epoch, driver.as_mut(), turns, stop)
+                            .await,
+                    )
+                });
+            }
+            let mut result = Ok(());
+            while let Some((seat, outcome)) = tasks.next().await {
+                let _ = cancel.send(true);
+                result = combine_results(result, outcome.map_err(|e| format!("{seat}: {e}")));
+            }
+            result
+        };
+        self.finish_run(result).await
+    }
+
+    async fn run_session(
+        &self,
+        seat: SeatId,
+        epoch: u64,
+        driver: &mut dyn SeatDriver,
+        turns: usize,
+        mut stop: tokio::sync::watch::Receiver<bool>,
+    ) -> Result<(), String> {
+        let mut state = self.handle.watch_seat(seat);
         let invalidated = async {
             loop {
                 {
@@ -146,26 +289,44 @@ impl Demo {
                 }
             }
         };
+        let cancelled = async {
+            while !*stop.borrow_and_update() {
+                if stop.changed().await.is_err() {
+                    break;
+                }
+            }
+        };
         let work = async {
             driver.start(None).await.map_err(|e| e.to_string())?;
-            self.handle.pause(false).await.map_err(|e| e.to_string())?;
-            for turn in 0..turns.min(2) {
-                let mut windows = self.handle.watch_seat(self.seat);
+            for turn in 0..turns.min(self.config.max_turns) {
+                let mut windows = self.handle.watch_seat(seat);
                 let pending = loop {
                     let p = windows.borrow_and_update().pending.clone();
                     if !p.is_empty() {
                         break p;
                     }
-                    if matches!(self.handle.status(), CampaignStatus::Finished { .. }) {
-                        return Ok(());
+                    match self.handle.status() {
+                        CampaignStatus::Finished { .. } => return Ok(()),
+                        CampaignStatus::Stopped { .. } | CampaignStatus::Paused => {
+                            return Err("campaign is no longer running".into());
+                        }
+                        CampaignStatus::Running => {}
                     }
                     windows.changed().await.map_err(|e| e.to_string())?;
                 };
                 let prompt = if turn == 0 {
-                    self.prompts.first_turn(self.seat, "", &pending)
+                    let notebook = self
+                        .handle
+                        .notebook(seat)
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    self.prompts.first_turn(seat, &notebook, &pending)
                 } else {
-                    self.prompts.window_turn(self.seat, &pending)
+                    self.prompts.window_turn(seat, &pending)
                 };
+                let prompt = format!(
+                    "{prompt}\n\nThis is a bounded probe. Answer only the decision IDs listed in this request, then end your turn even if a later observation reveals new windows. Do not chase later windows in this turn."
+                );
                 let outcome = driver
                     .run_turn(&prompt, TURN_LIMIT)
                     .await
@@ -173,7 +334,7 @@ impl Demo {
                 if !outcome.ok {
                     return Err(outcome.error.unwrap_or_else(|| "CLI refused turn".into()));
                 }
-                let now = self.handle.seat(self.seat);
+                let now = self.handle.seat(seat);
                 if pending
                     .iter()
                     .any(|old| now.pending.iter().any(|new| new.id == old.id))
@@ -181,7 +342,7 @@ impl Demo {
                     return Err("CLI ended without answering its pending decisions".into());
                 }
                 self.sink.system(
-                    self.seat,
+                    seat,
                     format!(
                         "bounded demo turn {} complete; usage {:?}",
                         turn + 1,
@@ -193,53 +354,52 @@ impl Demo {
         };
         let mut result = tokio::select! {
             _ = invalidated => Err("controller binding changed; old session stopped".into()),
-            result = tokio::time::timeout(WALL_LIMIT, work) =>
-                result.unwrap_or_else(|_| Err("demo wall-clock budget exhausted".into())),
+            _ = cancelled => { self.sink.system(seat, "bounded peer session ended; this session stopped"); Ok(()) },
+            result = tokio::time::timeout(WALL_LIMIT, work) => result.unwrap_or_else(|_| Err("demo wall-clock budget exhausted".into())),
         };
         driver.stop().await;
-        // Compare the session-bound epoch inside the writer, never with a check-then-write.
         if let Err(reason) = &result
             && !matches!(
                 self.handle.status(),
                 CampaignStatus::Finished { .. } | CampaignStatus::Stopped { .. }
             )
         {
-            match self
-                .handle
-                .mark_failure_if_epoch(self.seat, epoch, reason)
-                .await
-            {
+            match self.handle.mark_failure_if_epoch(seat, epoch, reason).await {
                 Ok(()) | Err(cna_server::Error::StaleEpoch) => {}
                 Err(error) => {
                     result = combine_results(
                         result,
                         Err(format!("recording seat failure failed: {error}")),
-                    );
+                    )
                 }
             }
         }
-        if matches!(self.handle.status(), CampaignStatus::Running) {
-            // A final accepted order can finish while this control operation is queued.
-            if let Err(error) = self.handle.pause(true).await
-                && !matches!(
-                    self.handle.status(),
-                    CampaignStatus::Finished { .. } | CampaignStatus::Stopped { .. }
-                )
-            {
-                result = combine_results(result, Err(format!("campaign pause failed: {error}")));
-            }
-        }
-        let persistence = self.drain().await;
-        combine_results(result, persistence)
+        result
     }
 
+    async fn finish_run(&self, mut result: Result<(), String>) -> Result<(), String> {
+        if matches!(self.handle.status(), CampaignStatus::Running)
+            && let Err(error) = self.handle.pause(true).await
+            && !matches!(
+                self.handle.status(),
+                CampaignStatus::Finished { .. } | CampaignStatus::Stopped { .. }
+            )
+        {
+            result = combine_results(result, Err(format!("campaign pause failed: {error}")));
+        }
+        combine_results(result, self.drain().await)
+    }
     pub fn transcript(&self) -> Vec<ServerMessage> {
-        self.handle
-            .replay()
-            .transcripts(Perspective::Operator, self.seat, 0)
+        self.transcript_for(self.seat)
             .expect("persisted transcript")
     }
 
+    pub fn transcript_for(&self, seat: SeatId) -> Result<Vec<ServerMessage>, String> {
+        self.handle
+            .replay()
+            .transcripts(Perspective::Operator, seat, 0)
+            .map_err(|e| e.to_string())
+    }
     /// Bound a probe's persistence drain. A dead writer cannot hold HTTP/MCP open forever.
     async fn drain(&self) -> Result<(), String> {
         let drained = tokio::time::timeout(Duration::from_secs(5), self.sink.flush()).await;
@@ -278,7 +438,7 @@ impl Demo {
 
 /// Serve a saved campaign for thirty seconds without starting any model session.
 pub async fn replay_board(path: &Path, data: &Path, dist: &Path) {
-    let handle = sandbox::recover(path, data).expect("recover saved campaign");
+    let handle = campaigns::recover(path, data).expect("recover saved campaign");
     // Keep any recovered nonterminal game paused; this command never launches controllers.
     if matches!(handle.status(), CampaignStatus::Running) {
         handle.pause(true).await.expect("pause replay");
@@ -289,7 +449,7 @@ pub async fn replay_board(path: &Path, data: &Path, dist: &Path) {
     let app = App::new(
         path.parent().unwrap().into(),
         port,
-        Arc::new(move |r, dir| sandbox::create(dir, &data, r)),
+        Arc::new(move |r, dir| campaigns::create(dir, &data, r)),
     );
     let id = handle.projection(Perspective::Operator).meta.id;
     app.register(handle);
