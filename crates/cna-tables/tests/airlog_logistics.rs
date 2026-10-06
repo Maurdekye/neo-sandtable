@@ -53,6 +53,27 @@ fn fuel_rounding_follows_interpretation_airlog_0001() {
 }
 
 #[test]
+fn fuel_rounds_small_remainders_after_the_last_chart_row() {
+    // interp:airlog-0001: above five CP the complete movement rounds to a multiple of five.
+    let f = &tables().airlog.fuel_consumption;
+    for (cp, tenths) in [
+        (50, 100),
+        (51, 110),
+        (54, 110),
+        (55, 110),
+        (56, 120),
+        (101, 210),
+    ] {
+        assert_eq!(f.fuel_for(1, cp), Some(FuelTenths::new(tenths)));
+    }
+    assert_eq!(
+        f.fuel_for(7, i32::MAX),
+        None,
+        "cost cannot fit in the quantity"
+    );
+}
+
+#[test]
 fn fuel_totals_round_up_to_whole_points_when_drawn() {
     assert_eq!(FuelTenths::new(1).ceil_points(), FuelPoints::new(1));
     assert_eq!(FuelTenths::new(10).ceil_points(), FuelPoints::new(1));

@@ -77,28 +77,26 @@ impl FuelConsumption {
     /// `interp:airlog-0001`: 1-4 CP use the printed fractional rows; above that the CP count is
     /// rounded up to the next printed row (multiples of 5); counts over 50 are priced as
     /// whole 50-CP rows plus the remainder. Returns `None` for a rate with no column or a
-    /// negative CP. `airlog:49.19`, `airlog:49.13`.
+    /// negative CP, or a cost exceeding the quantity range. `airlog:49.19`, `airlog:49.13`.
     pub fn fuel_for(&self, rate: i32, cp: i32) -> Option<FuelTenths> {
         if cp < 0 {
             return None;
         }
-        let mut remaining = cp;
-        let mut total = FuelTenths::ZERO;
-        while remaining > 50 {
-            total += self.printed(rate, 50)?;
-            remaining -= 50;
-        }
+        let remaining = cp % 50;
+        let whole = self.printed(rate, 50)?.tenths().checked_mul(cp / 50)?;
         if remaining == 0 {
-            // Still validates the rate column.
-            self.printed(rate, 50)?;
-            return Some(total);
+            return Some(FuelTenths::new(whole));
         }
-        let priced_cp = if remaining < 5 {
+        // Fractional rows apply only when the entire movement is below five CP.
+        // A remainder of 1-4 after a whole 50-CP row still rounds up to five.
+        let priced_cp = if cp < 5 {
             remaining
         } else {
             (remaining + 4) / 5 * 5
         };
-        Some(total + self.printed(rate, priced_cp)?)
+        whole
+            .checked_add(self.printed(rate, priced_cp)?.tenths())
+            .map(FuelTenths::new)
     }
 
     /// The rate columns of the chart.
