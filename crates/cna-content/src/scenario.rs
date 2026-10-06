@@ -23,6 +23,7 @@ pub struct ScenarioContent {
     pub meta: ScenarioMeta,
     pub initiative: InitiativeSetup,
     pub victory: Vec<VictoryLevel>,
+    pub victory_points: Option<toml::Table>,
     /// One per side file (`land_axis.toml`, `land_cw.toml`).
     pub land: Vec<LandDeployment>,
     /// One per side file (`air_axis.toml`, `air_cw.toml`).
@@ -52,6 +53,11 @@ pub struct ScenarioMeta {
     pub systems: Vec<String>,
     /// ISO date of Game-Turn 1's first day, when the data gives it.
     pub campaign_start_date: Option<String>,
+    pub setup_from: Option<String>,
+    #[serde(default)]
+    pub setup_files: Vec<String>,
+    #[serde(default)]
+    pub files: Vec<String>,
     #[serde(default)]
     pub src: Vec<String>,
 }
@@ -373,6 +379,7 @@ pub struct FacilitySetup {
     #[serde(default)]
     pub off_map: bool,
     pub printed_location: Option<String>,
+    pub location: Option<String>,
     pub note: Option<String>,
     #[serde(default)]
     pub src: Vec<String>,
@@ -393,26 +400,65 @@ struct ScenarioFile {
     initiative: InitiativeSetup,
     #[serde(default)]
     victory: Vec<VictoryLevel>,
+    victory_points: Option<toml::Table>,
 }
 
 impl ScenarioContent {
     /// Load a `data/scenarios/<id>` folder.
     pub fn load(dir: &Path) -> Result<Self, ContentError> {
         let main: ScenarioFile = read_toml(&dir.join("scenario.toml"))?;
+        // Resolve one level of reuse explicitly: the authoritative metadata remains local.
+        let mut paths = BTreeMap::<String, PathBuf>::new();
+        let valid_name = |name: &str| {
+            Path::new(name).components().count() == 1
+                && !matches!(name, "." | "..")
+                && !name.contains(['/', '\\'])
+        };
+        let invalid = |message| ContentError::Invalid {
+            path: dir.to_path_buf(),
+            message,
+        };
+        if let Some(from) = &main.scenario.setup_from {
+            if !valid_name(from) {
+                return Err(invalid("invalid setup_from folder".into()));
+            }
+            let base = dir.parent().unwrap_or(dir).join(from);
+            for name in &main.scenario.setup_files {
+                if !valid_name(name) {
+                    return Err(invalid("invalid setup filename".into()));
+                }
+                let path = base.join(name);
+                if !path.exists() {
+                    return Err(invalid(format!("missing reused setup file {name}")));
+                }
+                paths.insert(name.clone(), path);
+            }
+        }
+        for name in &main.scenario.files {
+            if !valid_name(name) {
+                return Err(invalid("invalid scenario filename".into()));
+            }
+            let path = dir.join(name);
+            if !path.exists() {
+                return Err(invalid(format!("missing scenario file {name}")));
+            }
+            paths.insert(name.clone(), path);
+        }
+        let resolve = |name: &str| paths.get(name).cloned().unwrap_or_else(|| dir.join(name));
         let mut land = Vec::new();
         let mut air = Vec::new();
         for side in ["axis", "cw"] {
-            let path = dir.join(format!("land_{side}.toml"));
+            let path = resolve(&format!("land_{side}.toml"));
             if path.exists() {
                 land.push(read_toml(&path)?);
             }
-            let path = dir.join(format!("air_{side}.toml"));
+            let path = resolve(&format!("air_{side}.toml"));
             if path.exists() {
                 air.push(read_toml(&path)?);
             }
         }
         let optional = |name: &str| -> Result<Option<PathBuf>, ContentError> {
-            let path = dir.join(name);
+            let path = resolve(name);
             Ok(path.exists().then_some(path))
         };
         let supply = match optional("supply.toml")? {
@@ -434,6 +480,7 @@ impl ScenarioContent {
             meta: main.scenario,
             initiative: main.initiative,
             victory: main.victory,
+            victory_points: main.victory_points,
             land,
             air,
             supply,
@@ -492,5 +539,35 @@ impl ScenarioContent {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod reuse_tests {
+    use super::*;
+
+    /// Cases: scen:60.23, scen:60.82
+    #[test]
+    fn italian_campaign_reuses_setup_but_keeps_own_clock_and_victory() {
+        let base = crate::repo_data_dir().join("scenarios");
+        let graziani = ScenarioContent::load(&base.join("graziani")).unwrap();
+        let italian = ScenarioContent::load(&base.join("italian_campaign")).unwrap();
+        assert_eq!(italian.land, graziani.land);
+        assert_eq!(italian.air, graziani.air);
+        assert_eq!(italian.supply, graziani.supply);
+        assert_eq!(italian.facilities, graziani.facilities);
+        assert_eq!(italian.meta.end.gt, 20);
+        assert_eq!(graziani.meta.end.gt, 6);
+        assert!(
+            italian
+                .victory_points
+                .as_ref()
+                .unwrap()
+                .contains_key("place")
+        );
+        assert!(graziani.victory_points.is_none());
+        assert_ne!(italian.arrivals, graziani.arrivals);
+        let units = UnitsContent::load(&crate::repo_data_dir().join("units")).unwrap();
+        italian.check(&units).unwrap();
     }
 }

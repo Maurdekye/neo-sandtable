@@ -154,6 +154,7 @@ pub struct AircraftMode {
     #[serde(default)]
     pub tacair_paren: bool,
     pub maneuver: Option<i32>,
+    pub maneuver_night: Option<i32>,
     pub fuel_points: Option<i32>,
     pub bomb_capacity: Option<i32>,
     pub torpedo_capacity: Option<i32>,
@@ -251,6 +252,9 @@ pub struct OaUnit {
     pub stacking_points: Option<i32>,
     /// The unit's basic morale: its own row value, else the sheet's.
     pub basic_morale: Option<i32>,
+    pub commander: bool,
+    pub cpa: Option<i32>,
+    pub vehicle: Option<String>,
     pub engineer_hq: bool,
     pub never_arrived_parent: bool,
     pub immobile: bool,
@@ -305,6 +309,8 @@ pub struct ScheduledArrival {
     pub planes: Vec<ScheduledPlanes>,
     pub trucks: Option<Trucks>,
     #[serde(default)]
+    pub alone: bool,
+    #[serde(default)]
     pub src: Vec<String>,
 }
 
@@ -313,6 +319,10 @@ pub struct ScheduledUnit {
     pub unit: UnitId,
     #[serde(default)]
     pub subtree: bool,
+    #[serde(default)]
+    pub hq_only: bool,
+    #[serde(default)]
+    pub less: Vec<UnitId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -325,6 +335,10 @@ pub struct ScheduledPlanes {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct ScheduledWithdrawal {
     pub gt: Option<u16>,
+    pub opstage: Option<u8>,
+    #[serde(default)]
+    pub units: Vec<ScheduledUnit>,
+    pub transport: Option<WithdrawalTransport>,
     pub when: Option<String>,
     pub label: Option<String>,
     pub note: Option<String>,
@@ -339,6 +353,14 @@ pub struct WithdrawnSquadrons {
     pub count: i32,
     pub role: Option<String>,
     pub min_planes: Option<i32>,
+    pub min_bomb_points_each: Option<i32>,
+}
+
+/// The schedule's printed truck point / truck value pair; these are different quantities.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub struct WithdrawalTransport {
+    pub truck_points: i32,
+    pub truck_value: i32,
 }
 
 /// Truck points by type (`airlog:53`, `airlog:54.2`). Omitted types are zero.
@@ -399,6 +421,10 @@ struct UnitRow {
     basic_morale: Option<i32>,
     nationality: Option<String>,
     #[serde(default)]
+    commander: bool,
+    cpa: Option<i32>,
+    vehicle: Option<String>,
+    #[serde(default)]
     engineer_hq: bool,
     #[serde(default)]
     never_arrived_parent: bool,
@@ -453,6 +479,9 @@ impl UnitsContent {
                     arrives: row.arrives,
                     parent: row.parent,
                     stacking_points: row.stacking_points,
+                    commander: row.commander,
+                    cpa: row.cpa,
+                    vehicle: row.vehicle,
                     engineer_hq: row.engineer_hq,
                     never_arrived_parent: row.never_arrived_parent,
                     immobile: row.immobile,
@@ -509,6 +538,21 @@ impl UnitsContent {
             }
         }
         for s in &self.schedules {
+            for selector in s
+                .arrivals
+                .iter()
+                .flat_map(|a| &a.units)
+                .chain(s.withdrawals.iter().flat_map(|w| &w.units))
+            {
+                for id in std::iter::once(&selector.unit).chain(&selector.less) {
+                    if !self.units.contains_key(id) {
+                        return Err(invalid(format!(
+                            "{}: unknown scheduled unit {id}",
+                            s.path.display()
+                        )));
+                    }
+                }
+            }
             for a in &s.arrivals {
                 for u in &a.units {
                     if !self.units.contains_key(&u.unit) {
@@ -589,4 +633,42 @@ fn subdirs(dir: &Path) -> Result<Vec<PathBuf>, ContentError> {
     }
     out.sort();
     Ok(out)
+}
+
+#[cfg(test)]
+mod schedule_tests {
+    use super::*;
+
+    /// Cases: land:4.43a, land:20.8, land:31.1, land:4.44b
+    #[test]
+    fn engine_fields_survive_typed_loading() {
+        let units = UnitsContent::load(&crate::repo_data_dir().join("units")).unwrap();
+        let guards = units
+            .schedules
+            .iter()
+            .flat_map(|s| &s.arrivals)
+            .find(|a| a.gt == Some(20) && a.units.iter().any(|u| u.hq_only))
+            .unwrap();
+        assert_eq!(guards.units.iter().filter(|u| u.hq_only).count(), 2);
+        let withdrawal = units
+            .schedules
+            .iter()
+            .flat_map(|s| &s.withdrawals)
+            .find(|w| w.gt == Some(15) && !w.units.is_empty())
+            .unwrap();
+        assert_eq!(withdrawal.opstage, Some(2));
+        assert_eq!(withdrawal.units[0].less.len(), 2);
+        assert_eq!(
+            withdrawal.transport.unwrap(),
+            WithdrawalTransport {
+                truck_points: 16,
+                truck_value: 12
+            }
+        );
+        let rommel = units.units.values().find(|u| u.commander).unwrap();
+        assert_eq!(rommel.nationality, "german");
+        assert_eq!(rommel.cpa, Some(60));
+        assert!(rommel.vehicle.is_some());
+        assert_eq!(units.aircraft["ge.bf110"].modes[0].maneuver_night, Some(32));
+    }
 }

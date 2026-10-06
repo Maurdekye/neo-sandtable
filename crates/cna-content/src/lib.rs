@@ -4,6 +4,7 @@
 //! `docs/architecture.md` §3.1). This crate only reads and validates; it never invents a value
 //! that the data does not contain.
 
+pub mod areas;
 pub mod map;
 pub mod registry;
 pub mod scenario;
