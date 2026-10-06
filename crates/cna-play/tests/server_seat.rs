@@ -20,6 +20,7 @@ struct FakeCli {
     seat: cna_core::ids::SeatId,
     fail: bool,
     stopped: bool,
+    drain_pending: bool,
 }
 impl FakeCli {
     async fn call(&self, tool: &str, args: Value, emitter: &mut EntryEmitter, id: &str) -> Value {
@@ -56,35 +57,45 @@ impl SeatDriver for FakeCli {
             return Err(DriverError::Timeout);
         }
         let mut e = EntryEmitter::new(self.seat, self.sink.clone());
-        self.call("observe", json!({}), &mut e, "observe").await;
-        let pending: Value = self
-            .call(
-                "describe_actions",
-                json!({
-                    "decision_id": self.pending_id().await
-                }),
+        for step in 0..4096 {
+            let observed = self
+                .call("observe", json!({}), &mut e, &format!("observe-{step}"))
+                .await;
+            let Some(id) = observed["pending_decisions"][0]["decision_id"].as_str() else {
+                break;
+            };
+            let described = self
+                .call(
+                    "describe_actions",
+                    json!({"decision_id":id}),
+                    &mut e,
+                    &format!("actions-{step}"),
+                )
+                .await;
+            let request: cna_core::decision::DecisionRequest =
+                serde_json::from_value(described["request"].clone()).unwrap();
+            let action = if request.space.pass.is_some() {
+                Value::Null
+            } else {
+                first_fixture_action(&request.space.schema)
+            };
+            self.call(
+                "submit",
+                json!({"decision_id":id,"revision":request.revision,"action":action}),
                 &mut e,
-                "actions",
+                &format!("submit-{step}"),
             )
             .await;
-        // Test driver chooses the first option exposed by the authoritative schema.
-        // No sandbox-specific answer is hard-coded into the CNA integration flow.
-        let request: cna_core::decision::DecisionRequest =
-            serde_json::from_value(pending["request"].clone()).unwrap();
-        let cna_core::decision::ActionSchema::Choice { options } = request.space.schema else {
-            panic!("this test driver expects a choice window");
-        };
-        let action = options.first().unwrap().id.clone();
-        let id = pending["request"]["id"].as_str().unwrap();
-        self.call(
-            "submit",
-            json!({"decision_id":id,"action":action}),
-            &mut e,
-            "submit",
-        )
-        .await;
+            if !self.drain_pending {
+                break;
+            }
+            assert!(
+                step < 4095,
+                "inert fixture exceeded its decision safety bound"
+            );
+        }
         e.emit(TranscriptEntry::AssistantText {
-            text: "Initiative submitted.".into(),
+            text: "Offered decisions submitted.".into(),
         });
         Ok(TurnOutcome {
             ok: true,
@@ -104,14 +115,31 @@ impl SeatDriver for FakeCli {
         self.stopped = true;
     }
 }
-impl FakeCli {
-    async fn pending_id(&self) -> String {
-        let mut e = EntryEmitter::new(self.seat, self.sink.clone());
-        let observation = self.call("observe", json!({}), &mut e, "pending").await;
-        observation["pending_decisions"][0]["decision_id"]
-            .as_str()
-            .unwrap()
-            .into()
+// An inert baseline for integration fixtures, never a real AI failure fallback.
+fn first_fixture_action(schema: &cna_core::decision::ActionSchema) -> Value {
+    use cna_core::decision::ActionSchema;
+    match schema {
+        ActionSchema::Choice { options } => json!(options.first().expect("empty choice").id),
+        ActionSchema::Integer { min, .. } => json!(min),
+        ActionSchema::Bool => json!(false),
+        ActionSchema::Unit { among } => json!(among.first().expect("empty unit domain").as_str()),
+        ActionSchema::Hex { among: Some(hexes) } => {
+            json!(hexes.first().expect("empty hex domain").as_str())
+        }
+        ActionSchema::Path { .. } => json!([]),
+        ActionSchema::Record { fields } => Value::Object(
+            fields
+                .iter()
+                .filter(|f| !f.optional)
+                .map(|f| (f.name.clone(), first_fixture_action(&f.schema)))
+                .collect(),
+        ),
+        ActionSchema::List { item, min, .. } => {
+            Value::Array((0..*min).map(|_| first_fixture_action(item)).collect())
+        }
+        ActionSchema::Hex { among: None } => {
+            panic!("fixture needs an enumerated domain or an offered pass")
+        }
     }
 }
 async fn setup() -> (tempfile::TempDir, Demo) {
@@ -160,6 +188,7 @@ async fn mcp_answer_reaches_persistent_websocket_transcript() {
         seat: demo.seat,
         fail: false,
         stopped: false,
+        drain_pending: false,
     };
     demo.play(&mut driver, 1).await.unwrap();
     assert!(driver.stopped);
@@ -208,6 +237,7 @@ async fn timeout_pauses_without_substituting_an_order() {
         seat: demo.seat,
         fail: true,
         stopped: false,
+        drain_pending: false,
     };
     assert!(demo.play(&mut driver, 1).await.is_err());
     assert!(driver.stopped);
@@ -321,6 +351,7 @@ async fn finishing_inside_one_cli_turn_is_success() {
             seat: demo.seat,
             fail: false,
             stopped: false,
+            drain_pending: false,
         },
         handle: demo.handle.clone(),
     };
@@ -415,6 +446,7 @@ async fn handover_stops_old_cli_without_pausing_replacement_binding() {
             seat: demo.seat,
             fail: false,
             stopped: false,
+            drain_pending: false,
         },
         started: started.clone(),
     };
@@ -760,6 +792,7 @@ async fn writer_loss_during_control_preserves_cli_error_and_drains_captures() {
                 seat: demo.seat,
                 fail,
                 stopped: false,
+                drain_pending: false,
             },
             handle: demo.handle.clone(),
         };
@@ -826,14 +859,34 @@ async fn cna_binding_uses_real_observation_and_current_action_schema() {
         )
         .await
         .unwrap();
+    // Large setup rosters exceed a small paid probe's 40-call allocation. This
+    // offline fixture has no real CLI and uses a separate own-seat/epoch MCP
+    // endpoint with no quota cap; production router budgets stay unchanged.
+    let shared = std::sync::Arc::new(demo.handle.clone());
+    let fixture_router = std::sync::Arc::new(cna_seats::mcp::ToolRouter::new(
+        shared.clone(),
+        shared,
+        &[demo.seat],
+    ));
+    let fixture_mcp = cna_seats::mcp::McpServer::start(
+        fixture_router,
+        vec![cna_seats::mcp::SeatEndpoint {
+            seat: demo.seat,
+            epoch: demo.epoch,
+            instructions: demo.prompts.system_prompt(demo.seat),
+        }],
+    )
+    .await
+    .unwrap();
     let prompt = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
     let mut driver = TrackedCli {
         inner: FakeCli {
-            url: demo.mcp.url(demo.seat).unwrap(),
+            url: fixture_mcp.url(demo.seat).unwrap(),
             sink: demo.sink.clone(),
             seat: demo.seat,
             fail: false,
             stopped: false,
+            drain_pending: true,
         },
         hang: false,
         stopped: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -858,9 +911,13 @@ async fn cna_binding_uses_real_observation_and_current_action_schema() {
                         ..
                     },
                 ..
-            } => value["pending_decisions"]
-                .as_array()
-                .is_some_and(|p| p.iter().any(|d| d["kind"] == "cna.initiative_declaration")),
+            } => value["pending_decisions"].as_array().is_some_and(|p| {
+                p.iter().any(|d| {
+                    d["kind"]
+                        .as_str()
+                        .is_some_and(|kind| kind.starts_with("cna."))
+                })
+            }),
             _ => false,
         }
     }));
@@ -868,6 +925,7 @@ async fn cna_binding_uses_real_observation_and_current_action_schema() {
         demo.handle.status(),
         cna_server::CampaignStatus::Paused | cna_server::CampaignStatus::Finished { .. }
     ));
+    fixture_mcp.shutdown();
     demo.shutdown().await.unwrap();
 }
 #[tokio::test]
@@ -972,6 +1030,7 @@ async fn bounded_peer_completion_or_failure_stops_all_sessions_without_fallbacks
                             seat: *seat,
                             fail: index == 0 && fail,
                             stopped: false,
+                            drain_pending: false,
                         },
                         hang: index == 1,
                         stopped: flags[index].clone(),
@@ -1062,6 +1121,7 @@ async fn two_active_seats_submit_through_separate_scoped_endpoints() {
                         seat: *seat,
                         fail: false,
                         stopped: false,
+                        drain_pending: false,
                     },
                     answered: answered.clone(),
                 }) as Box<dyn SeatDriver>,
