@@ -1,0 +1,167 @@
+# OA sheet: 63rd "Cirene" Division (Semi-motorized) (land:4.44b). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.63_cirene_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "63rd \"Cirene\" Division (Semi-motorized)"
+basic_morale = -1
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.63rd_cirene_div_hq"
+name = "63rd Cirene Div HQ"
+counter = "63 Cir"
+class = "it.b"
+echelon = "division"
+toe = "N"
+arrives = "D"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.157th_infantry_regt_hq"
+name = "157th Infantry Regt HQ"
+counter = "157"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.63_cirene_div.63rd_cirene_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.i_157_infantry_bn"
+name = "I/157 Infantry Bn"
+counter = "I/157"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.157th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.ii_157_infantry_bn"
+name = "II/157 Infantry Bn"
+counter = "II/157"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.157th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.iii_157_infantry_bn"
+name = "III/157 Infantry Bn"
+counter = "III/157"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.157th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.158th_infantry_regt_hq"
+name = "158th Infantry Regt HQ"
+counter = "158"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.63_cirene_div.63rd_cirene_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.i_158_infantry_bn"
+name = "I/158 Infantry Bn"
+counter = "I/158"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.158th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.ii_158_infantry_bn"
+name = "II/158 Infantry Bn"
+counter = "II/158"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.158th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.iii_158_infantry_bn"
+name = "III/158 Infantry Bn"
+counter = "III/158"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.158th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.63rd_machinegun_bn"
+name = "63rd Machinegun Bn"
+counter = "63"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.63rd_cirene_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.63rd_anti_tank_coy"
+name = "63rd Anti-tank Coy"
+counter = "63"
+class = "it.rr"
+echelon = "company"
+toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
+arrives = "D"
+parent = "it.63_cirene_div.63rd_cirene_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.45th_artillery_regt"
+name = "45th Artillery Regt"
+counter = "45"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 6 }, { weapon = "it.100_17_howitzer", n = 3 }, { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = "D"
+parent = "it.63_cirene_div.63rd_cirene_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.63rd_engineer_bn"
+name = "63rd Engineer Bn"
+counter = "63"
+class = "it.bbb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.63rd_cirene_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.63_cirene_div.63rd_bersaglieri_mitrg_coy"
+name = "63rd Bersaglieri Mitrg Coy"
+counter = "63 Brs"
+class = "it.aaa"
+echelon = "company"
+toe = "N"
+arrives = "D"
+parent = "it.63_cirene_div.63rd_cirene_div_hq"
+src = ["land:4.44b"]
+
+[[mention]]
+unit = "it.libyan_tank_command.lxiii_l_tank_bn"
+begins_attached_to = "it.63_cirene_div.63rd_cirene_div_hq"
+src = ["land:4.44b"]

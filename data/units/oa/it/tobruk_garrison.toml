@@ -1,0 +1,263 @@
+# OA sheet: The Tobruk Garrison (Hex: C4807) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.tobruk_garrison"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "The Tobruk Garrison (Hex: C4807)"
+basic_morale = -3
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
+name = "31st Gaf S di C HQ"
+counter = "31 GaF"
+class = "it.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+engineer_hq = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.i_31_gaf_s_di_c_bn"
+name = "I/31 Gaf S di C Bn"
+counter = "I"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.ii_31_gaf_s_di_c_bn"
+name = "II/31 Gaf S di C Bn"
+counter = "II"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.iii_31_gaf_s_di_c_bn"
+name = "III/31 Gaf S di C Bn"
+counter = "III"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
+name = "32nd Gaf S di C HQ"
+counter = "32 GaF"
+class = "it.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+engineer_hq = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.i_32_gaf_s_di_c_bn"
+name = "I/32 Gaf S di C Bn"
+counter = "I"
+class = "it.v"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.ii_32_gaf_s_di_c_bn"
+name = "II/32 Gaf S di C Bn"
+counter = "II"
+class = "it.v"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.iii_32_gaf_s_di_c_bn"
+name = "III/32 Gaf S di C Bn"
+counter = "III"
+class = "it.v"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.marine_regimental_hq"
+name = "Marine Regimental HQ"
+counter = "Marines"
+class = "it.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.1st_marine_bn"
+name = "1st Marine Bn"
+counter = "1"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.marine_regimental_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.2nd_marine_bn"
+name = "2nd Marine Bn"
+counter = "2"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.marine_regimental_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.3rd_marine_bn"
+name = "3rd Marine Bn"
+counter = "3"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.tobruk_garrison.marine_regimental_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.xxxi_libyan_coast_def_bn"
+name = "XXXI Libyan Coast Def Bn"
+counter = "XXXILib"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.5th_artiglieri_regt"
+name = "5th Artiglieri Regt"
+counter = "V"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 2 } ]
+arrives = "D"
+group = "31 Gaf S di C Artiglieri (no HQ; not part of the 31st Gaf regiment)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.6th_artiglieri_regt"
+name = "6th Artiglieri Regt"
+counter = "VI"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.149mm_vichy_french", n = 2 } ]
+arrives = "D"
+group = "31 Gaf S di C Artiglieri (no HQ; not part of the 31st Gaf regiment)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.7th_artiglieri_regt"
+name = "7th Artiglieri Regt"
+counter = "VII"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.149_13_howitzer", n = 2 } ]
+arrives = "D"
+group = "31 Gaf S di C Artiglieri (no HQ; not part of the 31st Gaf regiment)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.1st_tobruk_cd_arty_group"
+name = "1st Tobruk CD Arty Group"
+counter = "1/TbrkCD"
+class = "it.pp"
+echelon = "company"
+toe = [ { weapon = "it.149_13_howitzer", n = 2, emplaced = true } ]
+arrives = "D"
+group = "Tobruk Coastal Defense Arty"
+immobile = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.2nd_tobruk_cd_arty_group"
+name = "2nd Tobruk CD Arty Group"
+counter = "2/TbrkCD"
+class = "it.pp"
+echelon = "company"
+toe = [ { weapon = "it.100_17_howitzer", n = 6, emplaced = true, barrage_land_max = 4 }, { weapon = "it.aa_light_i", n = 6 } ]
+arrives = "D"
+group = "Tobruk Coastal Defense Arty"
+immobile = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.3rd_tobruk_cd_arty_group"
+name = "3rd Tobruk CD Arty Group"
+counter = "3/TbrkCD"
+class = "it.pp"
+echelon = "company"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 4, emplaced = true }, { weapon = "it.aa_light_i", n = 8 } ]
+arrives = "D"
+group = "Tobruk Coastal Defense Arty"
+immobile = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.4th_tobruk_cd_arty_group"
+name = "4th Tobruk CD Arty Group"
+counter = "4/TbrkCD"
+class = "it.pp"
+echelon = "company"
+toe = [ { weapon = "it.105_28_gun", n = 6, emplaced = true, barrage_land_max = 2 }, { weapon = "it.aa_heavy_i", n = 4 } ]
+arrives = "D"
+group = "Tobruk Coastal Defense Arty"
+immobile = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.5th_tobruk_cd_arty_group"
+name = "5th Tobruk CD Arty Group"
+counter = "5/TbrkCD"
+class = "it.pp"
+echelon = "company"
+toe = [ { weapon = "it.149_13_howitzer", n = 6, emplaced = true, barrage_land_max = 2 }, { weapon = "it.aa_heavy_i", n = 2 } ]
+arrives = "D"
+group = "Tobruk Coastal Defense Arty"
+immobile = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.tobruk_light_aa_bn"
+name = "Tobruk Light AA Bn"
+counter = "TbrkLt"
+class = "it.ss"
+echelon = "battalion"
+toe = [ { weapon = "it.aa_light_i", n = 8 } ]
+arrives = "D"
+group = "Tobruk Coastal Defense Arty"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.tobruk_garrison.the_san_giorgio"
+name = "The San Giorgio"
+counter = "San Giorgio"
+arrives = "D"
+kind = "fixed_ship"
+note = "Old cruiser partially sunk in Tobruk harbor; fires with its own barrage/anti-air ratings (a ship counter, see GAPS U-009), cannot be attacked by land units, never refloated."
+src = ["land:4.45"]

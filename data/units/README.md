@@ -59,7 +59,7 @@ by `rules-airlog` (`data/tables/airlog/54.2-…`); scenario and schedule records
   `rules-land`) by `echelon` + `shell` status. `echelon` is one of `company`, `battalion`,
   `brigade`, `super_brigade`, `division`, `battle_group`.
 - **Ids** are lowercase snake_case, stable forever: `<nation>.<sheet>.<unit>` for units
-  (`it.1ccnn_div.219_lgn.129`), `<nation>.<weapon>` for weapons (`it.m13_40`),
+  (`it.1ccnn_div.129th_infantry_bn`: sheet id + slug of the printed unit name; a counter suffix is added only if two names in a sheet collide), `<nation>.<weapon>` for weapons (`it.m13_40`),
   `<nation>.<code>` for ID-code classes (`it.x`). Counter text (`201`, `7 RTR`) is **not** an id —
   it is not unique — and lives in `counter`.
 - **Notes** are paraphrased; each OA footnote becomes a structured field where it has rules
@@ -191,7 +191,7 @@ basic_morale = 0
 src = ["land:4.45"]
 
 [[unit]]
-id = "it.1ccnn_div.hq"
+id = "it.1ccnn_div.1st_ccnn_div_hq"
 name = "1st CCNN Div HQ"
 counter = "1 CCNN"
 class = "it.g"
@@ -202,33 +202,33 @@ arrives = "D"
 src = ["land:4.45"]
 
 [[unit]]
-id = "it.1ccnn_div.219_lgn"
+id = "it.1ccnn_div.219th_legion_hq"
 name = "219th Legion HQ"
 counter = "219 Lgn"
 class = "it.g"
 echelon = "brigade"
 toe = [ { weapon = "it.65_17_gun", n = 1 } ]
 arrives = "D"
-parent = "it.1ccnn_div.hq"
+parent = "it.1ccnn_div.1st_ccnn_div_hq"
 src = ["land:4.45"]
 
 [[unit]]
-id = "it.1ccnn_div.219_lgn.129"
+id = "it.1ccnn_div.129th_infantry_bn"
 name = "129th Infantry Bn"
 counter = "129"
 class = "it.x"
 echelon = "battalion"
 toe = "N"
 arrives = "D"
-parent = "it.1ccnn_div.219_lgn"
+parent = "it.1ccnn_div.219th_legion_hq"
 src = ["land:4.45"]
 
 # The I(M) Tank Battalion is ASSIGNED to the Libyan Tank Command, so its single canonical id
 # lives on that sheet (it.libyan_tank_command.i_m). The 1 CCNN sheet prints it with a footnote
 # ("begins attached to 1 CCNN"); that is recorded as a reference, never as a second unit:
 [[mention]]
-unit = "it.libyan_tank_command.i_m"
-begins_attached_to = "it.1ccnn_div.hq"
+unit = "it.libyan_tank_command.i_m_tank_bn"
+begins_attached_to = "it.1ccnn_div.1st_ccnn_div_hq"
 src = ["land:4.45"]
 ```
 
@@ -236,14 +236,14 @@ A Commonwealth armoured example (7th Armoured Division, sheet header `basic_mora
 
 ```toml
 [[unit]]
-id = "cw.7_armd_div.4_armd_bde.6_rtr"
+id = "cw.7_armd_div.6th_royal_tank_regt"
 name = "6th Royal Tank Regt"
 counter = "6 RTR"
 class = "cw.g"                 # tank battalion-equivalent, max 10 tank points
 echelon = "battalion"
 toe = [ { weapon = "cw.mk_vi_light", n = 10 } ]
 arrives = "D"
-parent = "cw.7_armd_div.4_armd_bde"
+parent = "cw.7_armd_div.4th_armored_bde_hq"
 src = ["land:4.45", "land:4.47"]
 ```
 
@@ -253,6 +253,13 @@ One canonical id per unit, forever: a unit's id is `<nation>.<sheet>.<...>` of t
 **assigned** to. Other sheets that print the same unit use `[[mention]]`. `tools/units/validate.py`
 (owned by `oob`) fails on duplicate unit ids, dangling `parent` / `class` / `weapon` / `unit`
 references, mentions of unknown units, and unknown field names; it is run before every push.
+
+Optional unit fields: `basic_morale` (per-unit morale on sheets that list it per row; otherwise the
+sheet value applies), `group` (printed grouping label with no HQ counter), `engineer_hq` (the
+printed superscript E: engineering-capable HQ, `land:23.14`), `immobile`, `never_arrived_parent`
+(asterisked: assigned to a parent that never reached Africa, `land:19.27`), `kind = "fixed_ship"`
+(the San Giorgio), `stacking_points` and `echelon_symbol` (read from the counter, `land:9.22`: the
+printed Stacking Point value, not the unit name, defines the organizational level).
 
 ## Aircraft (`aircraft/<nation>.toml`)
 

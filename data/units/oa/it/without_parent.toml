@@ -1,0 +1,119 @@
+# OA sheet: Assigned Units without a Parent Formation (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.without_parent"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Assigned Units without a Parent Formation"
+note = "Basic morale is listed per unit in the Notes column; see land:19.27 for reassignment restrictions."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.without_parent.xviii_libyan_bn"
+name = "XVIII Libyan Bn"
+counter = "XVIII Lib"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+basic_morale = -2
+never_arrived_parent = true
+note = "Meant for a 4th Libyan Division that never formed."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.without_parent.xxxii_libyan_bn"
+name = "XXXII Libyan Bn"
+counter = "XXXII Lib"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+basic_morale = -2
+never_arrived_parent = true
+note = "Meant for a 4th Libyan Division that never formed."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.without_parent.xxxiii_libyan_bn"
+name = "XXXIII Libyan Bn"
+counter = "XXXIII Lib"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 2 }
+arrives_raw = "2/10"
+basic_morale = -2
+never_arrived_parent = true
+note = "Meant for a 4th Libyan Division that never formed."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.without_parent.xxxiv_libyan_bn"
+name = "XXXIV Libyan Bn"
+counter = "XXXIV Lib"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 2 }
+arrives_raw = "2/12"
+basic_morale = -2
+never_arrived_parent = true
+note = "Meant for a 4th Libyan Division that never formed."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.without_parent.xxxv_libyan_bn"
+name = "XXXV Libyan Bn"
+counter = "XXXV Lib"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 15, opstage = 2 }
+arrives_raw = "2/15"
+basic_morale = -2
+never_arrived_parent = true
+note = "Meant for a 4th Libyan Division that never formed."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.without_parent.2_87_fanterie_bn"
+name = "2/87 Fanterie Bn"
+counter = "II/87"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 15, opstage = 2 }
+arrives_raw = "2/15"
+basic_morale = 0
+never_arrived_parent = true
+note = "Element of the 20th \"Friuli\" Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.without_parent.1_78_fanterie_bn"
+name = "1/78 Fanterie Bn"
+counter = "I/78"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 94, opstage = 3 }
+arrives_raw = "3/94"
+basic_morale = -3
+never_arrived_parent = true
+note = "Element of the 7th \"Lupi di Toscana\" Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.without_parent.iii_133_fanterie_bn"
+name = "III/133 Fanterie Bn"
+counter = "III/133"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 97, opstage = 2 }
+arrives_raw = "2/97"
+basic_morale = -2
+never_arrived_parent = true
+note = "Element of the 152nd \"Piceno\" Division."
+src = ["land:4.45"]

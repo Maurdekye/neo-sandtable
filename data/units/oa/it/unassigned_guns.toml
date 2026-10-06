@@ -1,0 +1,327 @@
+# OA sheet: Unassigned Gun Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.unassigned_guns"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Unassigned Gun Units"
+note = "Basic morale is listed per unit in the Notes column of the sheet."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.6th_gaf_s_di_c_arty_regt"
+name = "6th Gaf S di C Arty Regt"
+counter = "6 GaF"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 3 } ]
+arrives = "D"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.16th_gaf_s_di_c_arty_regt"
+name = "16th Gaf S di C Arty Regt"
+counter = "16 GaF"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 2 } ]
+arrives = "D"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.22nd_gaf_s_di_c_arty_regt"
+name = "22nd Gaf S di C Arty Regt"
+counter = "22 GaF"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 3 } ]
+arrives = "D"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.42nd_gaf_s_di_c_arty_regt"
+name = "42nd Gaf S di C Arty Regt"
+counter = "42 GaF"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 4 } ]
+arrives = "D"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.350th_gaf_s_di_c_arty_regt"
+name = "350th Gaf S di C Arty Regt"
+counter = "350 GaF"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.105_28_gun", n = 2 } ]
+arrives = "D"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.131st_artiglieri_bn"
+name = "131st Artiglieri Bn"
+counter = "131"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 2 } ]
+arrives = "D"
+basic_morale = -1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.147th_artiglieri_bn"
+name = "147th Artiglieri Bn"
+counter = "147"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 2 } ]
+arrives = "D"
+basic_morale = -1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.dliv_articelere_bn"
+name = "DLIV Articelere Bn"
+counter = "DLIV"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_sp_gun", n = 2 } ]
+arrives = { gt = 71, opstage = 3 }
+arrives_raw = "3/71"
+basic_morale = 0
+note = "Fast artillery assigned to the 133rd RC (Littorio) to replace units stripped for the Ariete."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.dlvi_articelere_bn"
+name = "DLVI Articelere Bn"
+counter = "DLVI"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_sp_gun", n = 2 } ]
+arrives = { gt = 71, opstage = 3 }
+arrives_raw = "3/71"
+basic_morale = 0
+note = "Fast artillery assigned to the 133rd RC (Littorio) to replace units stripped for the Ariete."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.5th_bn_1st_artiglieri"
+name = "5th Bn, 1st Artiglieri"
+counter = "5/1"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 4 } ]
+arrives = "D"
+basic_morale = -1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.2nd_bn_24th_artiglieri"
+name = "2nd Bn, 24th Artiglieri"
+counter = "2/24"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 3 } ]
+arrives = "D"
+basic_morale = -1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.i_articelere_regt"
+name = "I Articelere Regt"
+counter = "1 Artc"
+class = "it.ll"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 4 }, { weapon = "it.100_17_howitzer", n = 4 } ]
+arrives = { gt = 55, opstage = 1 }
+arrives_raw = "1/55"
+basic_morale = 0
+note = "Attached upon its arrival."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.ii_articelere_regt"
+name = "II Articelere Regt"
+counter = "2 Artc"
+class = "it.ll"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 4 }, { weapon = "it.100_17_howitzer", n = 3 } ]
+arrives = { gt = 55, opstage = 1 }
+arrives_raw = "1/55"
+basic_morale = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.1st_bn_1_arty_rgppmnto"
+name = "1st Bn, 1 Arty Rgppmnto"
+counter = "1/1AR"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 3 } ]
+arrives = "D"
+basic_morale = -1
+group = "1st Artillery Ragruppamento (no HQ; independent battalions)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.2nd_bn_1_arty_rgppmnto"
+name = "2nd Bn, 1 Arty Rgppmnto"
+counter = "2/1AR"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 3 } ]
+arrives = "D"
+basic_morale = -1
+group = "1st Artillery Ragruppamento (no HQ; independent battalions)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.3rd_bn_1_arty_rgppmnto"
+name = "3rd Bn, 1 Arty Rgppmnto"
+counter = "3/1AR"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.105_28_gun", n = 3 } ]
+arrives = "D"
+basic_morale = -1
+group = "1st Artillery Ragruppamento (no HQ; independent battalions)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.4th_bn_1_arty_rgppmnto"
+name = "4th Bn, 1 Arty Rgppmnto"
+counter = "4/1AR"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 3 } ]
+arrives = "D"
+basic_morale = -1
+group = "1st Artillery Ragruppamento (no HQ; independent battalions)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.1st_bn_2_arty_rgppmnto"
+name = "1st Bn, 2 Arty Rgppmnto"
+counter = "1/2AR"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 3 } ]
+arrives = { gt = 26, opstage = 1 }
+arrives_raw = "1/26"
+basic_morale = -1
+group = "2nd Artillery Ragruppamento (no HQ; independent battalions)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.2nd_bn_2_arty_rgppmnto"
+name = "2nd Bn, 2 Arty Rgppmnto"
+counter = "2/2AR"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 3 } ]
+arrives = { gt = 26, opstage = 1 }
+arrives_raw = "1/26"
+basic_morale = -1
+group = "2nd Artillery Ragruppamento (no HQ; independent battalions)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.3rd_bn_2_arty_rgppmnto"
+name = "3rd Bn, 2 Arty Rgppmnto"
+counter = "3/2AR"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 3 } ]
+arrives = { gt = 26, opstage = 1 }
+arrives_raw = "1/26"
+basic_morale = -1
+group = "2nd Artillery Ragruppamento (no HQ; independent battalions)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.4th_bn_2_arty_rgppmnto"
+name = "4th Bn, 2 Arty Rgppmnto"
+counter = "4/2AR"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.105_28_gun", n = 3 } ]
+arrives = { gt = 26, opstage = 1 }
+arrives_raw = "1/26"
+basic_morale = -1
+group = "2nd Artillery Ragruppamento (no HQ; independent battalions)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.x_corps_artillery_regt"
+name = "X Corps Artillery Regt"
+counter = "X Cp"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 4 } ]
+arrives = "D"
+basic_morale = -2
+note = "Begins the campaign stationed at Soluch; not a garrison unit."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.xxi_corps_artillery_regt"
+name = "XXI Corps Artillery Regt"
+counter = "XXI Cp"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 3 }, { weapon = "it.100_17_howitzer", n = 6 }, { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = "D"
+basic_morale = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.xxii_corps_artillery_regt"
+name = "XXII Corps Artillery Regt"
+counter = "XXII Cp"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 9 }, { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = "D"
+basic_morale = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.xxiii_corps_artillery_regt"
+name = "XXIII Corps Artillery Regt"
+counter = "XXIII Cp"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 9 }, { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = "D"
+basic_morale = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.xxv_corps_artillery_regt"
+name = "XXV Corps Artillery Regt"
+counter = "XXV Cp"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.105_28_gun", n = 9 }, { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = { gt = 9, opstage = 2 }
+arrives_raw = "2/9"
+basic_morale = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_guns.xxvi_corps_artillery_regt"
+name = "XXVI Corps Artillery Regt"
+counter = "XXVI Cp"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 9 }, { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = "D"
+basic_morale = 0
+src = ["land:4.45"]

@@ -1,0 +1,140 @@
+# OA sheet: 4th CCNN ("3 January") Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.4ccnn_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "4th CCNN (\"3 January\") Division"
+basic_morale = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.4th_ccnn_div_hq"
+name = "4th CCNN Div HQ"
+counter = "4 CCNN"
+class = "it.b"
+echelon = "division"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.240th_legion_hq"
+name = "240th Legion HQ"
+counter = "240 Lgn"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.4ccnn_div.4th_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.70th_infantry_bn"
+name = "70th Infantry Bn"
+counter = "70"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.4ccnn_div.240th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.119th_infantry_bn"
+name = "119th Infantry Bn"
+counter = "119"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.4ccnn_div.240th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.176th_infantry_bn"
+name = "176th Infantry Bn"
+counter = "176"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.4ccnn_div.240th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.270th_legion_hq"
+name = "270th Legion HQ"
+counter = "270 Lgn"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.4ccnn_div.4th_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.3rd_infantry_bn"
+name = "3rd Infantry Bn"
+counter = "3"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.4ccnn_div.270th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.17th_infantry_bn"
+name = "17th Infantry Bn"
+counter = "17"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.4ccnn_div.270th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.170th_infantry_bn"
+name = "170th Infantry Bn"
+counter = "170"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.4ccnn_div.270th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.204th_machinegun_bn"
+name = "204th Machinegun Bn"
+counter = "204"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.4ccnn_div.4th_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.204th_artillery_regt"
+name = "204th Artillery Regt"
+counter = "204"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 6 }, { weapon = "it.105_28_gun", n = 3 }, { weapon = "it.aa_heavy_75_46", n = 2 } ]
+arrives = "D"
+parent = "it.4ccnn_div.4th_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.4ccnn_div.204th_engineer_bn"
+name = "204th Engineer Bn"
+counter = "204"
+class = "it.bbb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.4ccnn_div.4th_ccnn_div_hq"
+src = ["land:4.45"]

@@ -1,0 +1,120 @@
+# OA sheet: Unassigned Blackshirt Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.unassigned_blackshirt"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Unassigned Blackshirt Units"
+basic_morale = 0
+note = "Information on the 250th CCNN Legion, 203rd MG Bn, 214th Artillery Regt and 203rd Engineer Bn is on the 3rd CCNN Division sheet."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.7th_ccnn_legion_hq"
+name = "7th CCNN Legion HQ"
+counter = "7 CCNN"
+class = "it.b"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 25, opstage = 1 }
+arrives_raw = "1/25"
+note = "Arrives attached to the 55th Infantry Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.7th_ccnn_bn"
+name = "7th CCNN Bn"
+counter = "7"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 25, opstage = 1 }
+arrives_raw = "1/25"
+parent = "it.unassigned_blackshirt.7th_ccnn_legion_hq"
+note = "Arrives attached to the 55th Infantry Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.9th_ccnn_legion_hq"
+name = "9th CCNN Legion HQ"
+counter = "9 CCNN"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = { gt = 22, opstage = 2 }
+arrives_raw = "2/22"
+note = "Arrives attached to the 17th Infantry Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.59th_ccnn_bn"
+name = "59th CCNN Bn"
+counter = "59"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 22, opstage = 2 }
+arrives_raw = "2/22"
+parent = "it.unassigned_blackshirt.9th_ccnn_legion_hq"
+note = "Arrives attached to the 17th Infantry Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.60th_ccnn_bn"
+name = "60th CCNN Bn"
+counter = "60"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 22, opstage = 2 }
+arrives_raw = "2/22"
+parent = "it.unassigned_blackshirt.9th_ccnn_legion_hq"
+note = "Arrives attached to the 17th Infantry Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.32nd_ccnn_bn"
+name = "32nd CCNN Bn"
+counter = "32"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 24, opstage = 1 }
+arrives_raw = "1/24"
+note = "Arrives attached to the 25th Infantry Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.33rd_ccnn_bn"
+name = "33rd CCNN Bn"
+counter = "33"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 21, opstage = 2 }
+arrives_raw = "2/21"
+note = "Arrives attached to the 27th Infantry Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.56th_ccnn_bn"
+name = "56th CCNN Bn"
+counter = "56"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 21, opstage = 2 }
+arrives_raw = "2/21"
+note = "Arrives attached to the 27th Infantry Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_blackshirt.140th_ccnn_bn"
+name = "140th CCNN Bn"
+counter = "140"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 13, opstage = 3 }
+arrives_raw = "3/13"
+src = ["land:4.45"]

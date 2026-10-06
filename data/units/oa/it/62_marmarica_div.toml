@@ -1,0 +1,156 @@
+# OA sheet: 62nd "Marmarica" Division (Semi-motorized) (land:4.44b). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.62_marmarica_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "62nd \"Marmarica\" Division (Semi-motorized)"
+basic_morale = -1
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.62nd_marmarica_div_hq"
+name = "62nd Marmarica Div HQ"
+counter = "62 Mrm"
+class = "it.b"
+echelon = "division"
+toe = "N"
+arrives = "D"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.115th_infantry_regt_hq"
+name = "115th Infantry Regt HQ"
+counter = "115"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.i_115_infantry_bn"
+name = "I/115 Infantry Bn"
+counter = "I/115"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.62_marmarica_div.115th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.ii_115_infantry_bn"
+name = "II/115 Infantry Bn"
+counter = "II/115"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.62_marmarica_div.115th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.iii_115_infantry_bn"
+name = "III/115 Infantry Bn"
+counter = "III/115"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.62_marmarica_div.115th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.116th_infantry_regt_hq"
+name = "116th Infantry Regt HQ"
+counter = "116"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.i_116_infantry_bn"
+name = "I/116 Infantry Bn"
+counter = "I/116"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.62_marmarica_div.116th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.ii_116_infantry_bn"
+name = "II/116 Infantry Bn"
+counter = "II/116"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.62_marmarica_div.116th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.iii_116_infantry_bn"
+name = "III/116 Infantry Bn"
+counter = "III/116"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.62_marmarica_div.116th_infantry_regt_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.62nd_machinegun_bn"
+name = "62nd Machinegun Bn"
+counter = "62"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.62nd_anti_tank_coy"
+name = "62nd Anti-tank Coy"
+counter = "62"
+class = "it.rr"
+echelon = "company"
+toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
+arrives = "D"
+parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.44th_artillery_regt"
+name = "44th Artillery Regt"
+counter = "44"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 6 }, { weapon = "it.105_28_gun", n = 3 }, { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = "D"
+parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+src = ["land:4.44b"]
+
+[[unit]]
+id = "it.62_marmarica_div.62nd_engineer_bn"
+name = "62nd Engineer Bn"
+counter = "62"
+class = "it.bbb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.62_marmarica_div.62nd_marmarica_div_hq"
+src = ["land:4.44b"]
+
+[[mention]]
+unit = "it.libyan_tank_command.lxii_l_tank_bn"
+begins_attached_to = "it.62_marmarica_div.62nd_marmarica_div_hq"
+src = ["land:4.44b"]

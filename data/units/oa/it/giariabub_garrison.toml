@@ -1,0 +1,69 @@
+# OA sheet: Giariabub Oasis Complex Garrison (Hex: C1014) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.giariabub_garrison"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Giariabub Oasis Complex Garrison (Hex: C1014)"
+basic_morale = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.giariabub_garrison.giariabub_oasis_mtr_mg_bn"
+name = "Giariabub Oasis Mtr MG Bn"
+counter = "Grbub"
+class = "it.hh"
+echelon = "company"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.giariabub_garrison.giariabub_oasis_infantry_bn"
+name = "Giariabub Oasis Infantry Bn"
+counter = "Grbub"
+class = "it.gg"
+echelon = "company"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.giariabub_garrison.giariabub_oasis_mg_bn"
+name = "Giariabub Oasis MG Bn"
+counter = "Grbub"
+class = "it.y"
+echelon = "battalion"
+toe = { under = 4 }
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.giariabub_garrison.giariabub_oasis_anti_tank_coy"
+name = "Giariabub Oasis Anti-tank Coy"
+counter = "Grbub"
+class = "it.rr"
+echelon = "company"
+toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.giariabub_garrison.giariabub_oasis_artillery_bty"
+name = "Giariabub Oasis Artillery Bty"
+counter = "Grbub"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.giariabub_garrison.giariabub_oasis_anti_air_bty"
+name = "Giariabub Oasis Anti-Air Bty"
+counter = "Grbub"
+class = "it.uu"
+echelon = "company"
+toe = [ { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = "D"
+src = ["land:4.45"]

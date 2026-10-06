@@ -1,0 +1,147 @@
+# OA sheet: The Libyan Tank Command (Babini Gruppo Corazzato) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.libyan_tank_command"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "The Libyan Tank Command (Babini Gruppo Corazzato)"
+basic_morale = 0
+note = "Printed note: nominally the original Italian armoured division, but it operated as such on paper only; most tank battalions begin attached elsewhere."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.libyan_tank_command_hq"
+name = "Libyan Tank Command HQ"
+counter = "LTC"
+class = "it.d"
+echelon = "division"
+toe = [ { weapon = "it.m11_39", n = 1 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.aresca_1st_regt_hq"
+name = "Aresca (1st) Regt HQ"
+counter = "Aresca"
+class = "it.d"
+echelon = "brigade"
+toe = [ { weapon = "it.cv33", n = 1 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.libyan_tank_command_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.xxi_l_tank_bn"
+name = "XXI(L) Tank Bn"
+counter = "XXI(L)"
+class = "it.k"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 9 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.aresca_1st_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.lxii_l_tank_bn"
+name = "LXII(L) Tank Bn"
+counter = "LXII(L)"
+class = "it.k"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 9 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.aresca_1st_regt_hq"
+note = "Begins attached to the 62nd Marmarica."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.lxiii_l_tank_bn"
+name = "LXIII(L) Tank Bn"
+counter = "LXIII(L)"
+class = "it.k"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 9 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.aresca_1st_regt_hq"
+note = "Begins attached to the 63rd Cirene."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.i_m_tank_bn"
+name = "I(M) Tank Bn"
+counter = "I(M)"
+class = "it.l"
+echelon = "battalion"
+toe = [ { weapon = "it.m11_39", n = 7 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.aresca_1st_regt_hq"
+note = "Begins attached to the 1st CCNN."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.trivioli_2nd_regt_hq"
+name = "Trivioli (2nd) Regt HQ"
+counter = "Trvli"
+class = "it.d"
+echelon = "brigade"
+toe = [ { weapon = "it.cv33", n = 1 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.libyan_tank_command_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.ix_l_tank_bn"
+name = "IX(L) Tank Bn"
+counter = "IX(L)"
+class = "it.k"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 9 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.trivioli_2nd_regt_hq"
+note = "Begins attached to the 2nd Libyan."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.xx_l_tank_bn"
+name = "XX(L) Tank Bn"
+counter = "XX(L)"
+class = "it.k"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 9 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.trivioli_2nd_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.lx_l_tank_bn"
+name = "LX(L) Tank Bn"
+counter = "LX(L)"
+class = "it.k"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 9 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.trivioli_2nd_regt_hq"
+note = "One company began the campaign attached to the Maletti."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.lxi_l_tank_bn"
+name = "LXI(L) Tank Bn"
+counter = "LXI(L)"
+class = "it.k"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 9 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.trivioli_2nd_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.libyan_tank_command.ii_m_tank_bn"
+name = "II(M) Tank Bn"
+counter = "II(M)"
+class = "it.l"
+echelon = "battalion"
+toe = [ { weapon = "it.m11_39", n = 7 } ]
+arrives = "D"
+parent = "it.libyan_tank_command.libyan_tank_command_hq"
+note = "Begins attached to the Maletti."
+src = ["land:4.45"]

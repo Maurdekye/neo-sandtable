@@ -1,0 +1,129 @@
+# OA sheet: Bardia Garrison (Hex: C4321) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.bardia_garrison"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Bardia Garrison (Hex: C4321)"
+basic_morale = -3
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.30th_gaf_s_di_c_hq"
+name = "30th Gaf S di C HQ"
+counter = "30 GaF"
+class = "it.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+engineer_hq = true
+note = "Counter text printed as \"32GaF\" on the sheet; counter file and unit number are 30 GaF."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.i_30_gaf_s_di_c_bn"
+name = "I/30 Gaf S di C Bn"
+counter = "I"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.ii_30_gaf_s_di_c_bn"
+name = "II/30 Gaf S di C Bn"
+counter = "II"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.iii_30_gaf_s_di_c_bn"
+name = "III/30 Gaf S di C Bn"
+counter = "III"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.vec_machinegun_bn"
+name = "VEC Machinegun Bn"
+counter = "VEC"
+class = "it.aa"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+note = "Vittorio Emanuele cavalry machinegun battalion, 4th Squadron; equipped with pre-WWI machineguns."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.30_gaf_antitank_bn"
+name = "30 Gaf Antitank Bn"
+counter = "30"
+class = "it.qq"
+echelon = "battalion"
+toe = [ { weapon = "it.47_32_mod37", n = 6 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.8th_gaf_s_di_c_arty_regt"
+name = "8th Gaf S di C Arty Regt"
+counter = "VIII"
+class = "it.ll"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 4 } ]
+arrives = "D"
+group = "30 Gaf S di C Artiglieri (no HQ)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.9th_gaf_s_di_c_arty_regt"
+name = "9th Gaf S di C Arty Regt"
+counter = "IX"
+class = "it.ll"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 4 }, { weapon = "it.75_27_gun", n = 2 } ]
+arrives = "D"
+group = "30 Gaf S di C Artiglieri (no HQ)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.10th_gaf_s_di_c_arty_regt"
+name = "10th Gaf S di C Arty Regt"
+counter = "X"
+class = "it.ll"
+echelon = "battalion"
+toe = [ { weapon = "it.105_28_gun", n = 4 }, { weapon = "it.100_17_howitzer", n = 3 } ]
+arrives = "D"
+group = "30 Gaf S di C Artiglieri (no HQ)"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.v_coastal_defense_arty_group"
+name = "V Coastal Defense Arty Group"
+counter = "V CD"
+class = "it.pp"
+echelon = "company"
+toe = [ { weapon = "it.75_27_gun", n = 1, emplaced = true }, { weapon = "it.100_17_howitzer", n = 1, emplaced = true }, { weapon = "it.105_28_gun", n = 1, emplaced = true } ]
+arrives = "D"
+immobile = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.bardia_garrison.xvii_anti_air_group"
+name = "XVII Anti-air Group"
+counter = "XVII"
+class = "it.ss"
+echelon = "battalion"
+toe = [ { weapon = "it.aa_light_20mm", n = 8 } ]
+arrives = "D"
+src = ["land:4.45"]

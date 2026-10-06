@@ -1,0 +1,50 @@
+# OA sheet: Benghazi Garrison (Hex: A4827) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.benghazi_garrison"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Benghazi Garrison (Hex: A4827)"
+basic_morale = -3
+note = "Printed hex A4827; the scenario booklet prints B4827 (see docs/interpretations scen-0001)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.benghazi_garrison.ii_libyan_coastal_defense_bn"
+name = "II Libyan Coastal Defense Bn"
+counter = "IILibCD"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.benghazi_garrison.vii_coastal_defense_arty_aa_group"
+name = "VII Coastal Defense Arty/AA Group"
+counter = "VIICD"
+class = "it.tt"
+echelon = "battalion"
+toe = [ { weapon = "it.aa_light_i", n = 6 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.benghazi_garrison.xx_corps_artillery_regt"
+name = "XX Corps Artillery Regt"
+counter = "XX Cp"
+class = "it.ll"
+echelon = "battalion"
+toe = [ { weapon = "it.100_17_howitzer", n = 6 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.benghazi_garrison.viii_ii_engineer_bn"
+name = "VIII/II Engineer Bn"
+counter = "VIII/II"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]

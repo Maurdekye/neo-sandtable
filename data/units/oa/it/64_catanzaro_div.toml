@@ -1,0 +1,152 @@
+# OA sheet: 64th "Catanzaro" Division (Semi-motorized) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.64_catanzaro_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "64th \"Catanzaro\" Division (Semi-motorized)"
+basic_morale = -1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.64th_catanzaro_div_hq"
+name = "64th Catanzaro Div HQ"
+counter = "64 Cat"
+class = "it.b"
+echelon = "division"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.141st_infantry_regt_hq"
+name = "141st Infantry Regt HQ"
+counter = "141"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.64_catanzaro_div.64th_catanzaro_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.i_141_infantry_bn"
+name = "I/141 Infantry Bn"
+counter = "I/141"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.64_catanzaro_div.141st_infantry_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.ii_141_infantry_bn"
+name = "II/141 Infantry Bn"
+counter = "II/141"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.64_catanzaro_div.141st_infantry_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.iii_141_infantry_bn"
+name = "III/141 Infantry Bn"
+counter = "III/141"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.64_catanzaro_div.141st_infantry_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.142nd_infantry_regt_hq"
+name = "142nd Infantry Regt HQ"
+counter = "142"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.64_catanzaro_div.64th_catanzaro_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.i_142_infantry_bn"
+name = "I/142 Infantry Bn"
+counter = "I/142"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.64_catanzaro_div.142nd_infantry_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.ii_142_infantry_bn"
+name = "II/142 Infantry Bn"
+counter = "II/142"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.64_catanzaro_div.142nd_infantry_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.iii_142_infantry_bn"
+name = "III/142 Infantry Bn"
+counter = "III/142"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.64_catanzaro_div.142nd_infantry_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.64th_machinegun_bn"
+name = "64th Machinegun Bn"
+counter = "64"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.64_catanzaro_div.64th_catanzaro_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.64th_anti_tank_coy"
+name = "64th Anti-tank Coy"
+counter = "64"
+class = "it.rr"
+echelon = "company"
+toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
+arrives = "D"
+parent = "it.64_catanzaro_div.64th_catanzaro_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.203rd_artillery_regt"
+name = "203rd Artillery Regt"
+counter = "203"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 6 }, { weapon = "it.105_28_gun", n = 3 }, { weapon = "it.aa_light_20mm", n = 3 } ]
+arrives = "D"
+parent = "it.64_catanzaro_div.64th_catanzaro_div_hq"
+note = "Printed note: seems originally assigned to the dispersed 3rd CCNN Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.64_catanzaro_div.64th_engineer_bn"
+name = "64th Engineer Bn"
+counter = "64"
+class = "it.bbb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.64_catanzaro_div.64th_catanzaro_div_hq"
+src = ["land:4.45"]

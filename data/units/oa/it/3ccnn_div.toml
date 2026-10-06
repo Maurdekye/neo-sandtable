@@ -1,0 +1,84 @@
+# OA sheet: 3rd CCNN ("21st April") Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.3ccnn_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "3rd CCNN (\"21st April\") Division"
+basic_morale = -2
+note = "Printed note: the division existed on paper only, with no divisional HQ; listed units are independent (the 250th Legion brigade-level, the three others battalion-level)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.3ccnn_div.250th_legion_hq"
+name = "250th Legion HQ"
+counter = "250 Lgn"
+class = "it.g"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.3ccnn_div.81st_infantry_bn"
+name = "81st Infantry Bn"
+counter = "81"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.3ccnn_div.250th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.3ccnn_div.156th_infantry_bn"
+name = "156th Infantry Bn"
+counter = "156"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.3ccnn_div.250th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.3ccnn_div.158th_infantry_bn"
+name = "158th Infantry Bn"
+counter = "158"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.3ccnn_div.250th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.3ccnn_div.203rd_machinegun_bn"
+name = "203rd Machinegun Bn"
+counter = "203"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.3ccnn_div.214th_artillery_regt"
+name = "214th Artillery Regt"
+counter = "214"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 6 }, { weapon = "it.100_17_howitzer", n = 3 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.3ccnn_div.203rd_engineer_bn"
+name = "203rd Engineer Bn"
+counter = "203"
+class = "it.bbb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+never_arrived_parent = true
+src = ["land:4.45"]

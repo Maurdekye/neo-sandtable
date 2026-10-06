@@ -1,0 +1,85 @@
+# OA sheet: The Saharan Detachment (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.sahara_det"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "The Saharan Detachment"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sahara_det.saharan_detachment_hq"
+name = "Saharan Detachment HQ"
+counter = "Sahara"
+class = "it.b"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sahara_det.1_saharan_libyan_bn"
+name = "1 Saharan/Libyan Bn"
+counter = "1Sah/L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.sahara_det.saharan_detachment_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sahara_det.2_saharan_libyan_bn"
+name = "2 Saharan/Libyan Bn"
+counter = "2 Sah/L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.sahara_det.saharan_detachment_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sahara_det.sahara_machinegun_bn"
+name = "Sahara Machinegun Bn"
+counter = "Sahara"
+class = "it.z"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.sahara_det.saharan_detachment_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sahara_det.sahara_mtr_machinegun_coy"
+name = "Sahara Mtr Machinegun Coy"
+counter = "SahMtr"
+class = "it.hh"
+echelon = "company"
+toe = "N"
+arrives = "D"
+parent = "it.sahara_det.saharan_detachment_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sahara_det.saharan_artillery_battery"
+name = "Saharan Artillery Battery"
+counter = "Sahara"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.65_17_gun", n = 3 }, { weapon = "it.aa_light_20mm", n = 2 } ]
+arrives = "D"
+parent = "it.sahara_det.saharan_detachment_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sahara_det.meharisiti_camel_cavalry"
+name = "Meharisiti Camel Cavalry"
+counter = "Mhrsti"
+class = "it.yy"
+echelon = "battalion"
+toe = { under = 2 }
+arrives = "D"
+parent = "it.sahara_det.saharan_detachment_hq"
+src = ["land:4.45"]

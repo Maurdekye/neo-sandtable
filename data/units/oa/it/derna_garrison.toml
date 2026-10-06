@@ -1,0 +1,52 @@
+# OA sheet: Derna Garrison (Hex: B5925) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.derna_garrison"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Derna Garrison (Hex: B5925)"
+basic_morale = -3
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.derna_garrison.54th_territorial_inf_regt"
+name = "54th Territorial Inf. Regt"
+counter = "54 Ter"
+class = "it.m"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+note = "A hodge-podge of local recruits given regimental status (no HQ plus battalions) because of poor training."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.derna_garrison.iv_coastal_def_arty_group"
+name = "IV Coastal Def Arty Group"
+counter = "IV CD"
+class = "it.pp"
+echelon = "company"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 5, emplaced = true } ]
+arrives = "D"
+immobile = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.derna_garrison.vi_coastal_def_arty_group"
+name = "VI Coastal Def Arty Group"
+counter = "VI CD"
+class = "it.pp"
+echelon = "company"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 2, emplaced = true } ]
+arrives = "D"
+immobile = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.derna_garrison.xv_coastal_def_aa_group"
+name = "XV Coastal Def AA Group"
+counter = "XV CD"
+class = "it.tt"
+echelon = "battalion"
+toe = [ { weapon = "it.aa_light_20mm", n = 6 } ]
+arrives = "D"
+src = ["land:4.45"]

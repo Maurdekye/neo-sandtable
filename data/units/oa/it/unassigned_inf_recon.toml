@@ -1,0 +1,171 @@
+# OA sheet: Unassigned Infantry and Reconnaissance Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.unassigned_inf_recon"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Unassigned Infantry and Reconnaissance Units"
+note = "Basic morale is listed per unit in the Notes column of the sheet."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
+name = "10th Bersaglieri Regt HQ"
+counter = "10 Brs"
+class = "it.c"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 11, opstage = 1 }
+arrives_raw = "1/11"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.16th_bersaglieri_mtr_bn"
+name = "16th Bersaglieri Mtr Bn"
+counter = "16 Brs"
+class = "it.t"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 11, opstage = 1 }
+arrives_raw = "1/11"
+parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.34th_bersaglieri_mtr_bn"
+name = "34th Bersaglieri Mtr Bn"
+counter = "34 Brs"
+class = "it.t"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 11, opstage = 1 }
+arrives_raw = "1/11"
+parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.35th_bersaglieri_mtr_bn"
+name = "35th Bersaglieri Mtr Bn"
+counter = "35 Brs"
+class = "it.t"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 11, opstage = 1 }
+arrives_raw = "1/11"
+parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.22nd_bersaglieri_mitrg_coy"
+name = "22nd Bersaglieri Mitrg Coy"
+counter = "22 Brs"
+class = "it.aaa"
+echelon = "company"
+toe = "N"
+arrives = { gt = 10, opstage = 1 }
+arrives_raw = "1/10"
+basic_morale = 1
+note = "Sheet indentation suggests assignment to the 10th Bersaglieri Regt but the counter shows no parent; kept parentless (GAPS U-008)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.5th_desert_patrol"
+name = "5th Desert Patrol"
+counter = "5 DPtl"
+class = "it.xx"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 62, opstage = 3 }
+arrives_raw = "3/62"
+basic_morale = 0
+note = "Possibly an Italian counterpart to the Commonwealth long-range desert units; treated as mounted in medium trucks for movement."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.23rd_desert_patrol"
+name = "23rd Desert Patrol"
+counter = "23 DPtl"
+class = "it.xx"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 62, opstage = 3 }
+arrives_raw = "3/62"
+basic_morale = 0
+note = "Possibly an Italian counterpart to the Commonwealth long-range desert units; treated as mounted in medium trucks for movement."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.libyan_parachute_regt_hq"
+name = "Libyan Parachute Regt HQ"
+counter = "Libyan"
+class = "it.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+basic_morale = -2
+note = "Airborne in name only (Gruppo Tonini); garrison duty stationed at Barce airfield; may not be paradropped; not a garrison unit."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.1st_libyan_parachute_bn"
+name = "1st Libyan Parachute Bn"
+counter = "1 LibPar"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.unassigned_inf_recon.libyan_parachute_regt_hq"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.1st_carabinieri_ccrr_bn"
+name = "1st Carabinieri (CCRR) Bn"
+counter = "1 CCRR"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.unassigned_inf_recon.libyan_parachute_regt_hq"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.4th_fanterie_mtr_regt"
+name = "4th Fanterie Mtr Regt"
+counter = "4/10 Army"
+class = "it.m"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+basic_morale = -1
+note = "Apparently the HQ regiment of the (unrepresented) 10th Army headquarters; a single formation, not an HQ plus battalions."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.iv_genoa_machinegun_bn"
+name = "IV Genoa Machinegun Bn"
+counter = "IV Gen"
+class = "it.y"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 51, opstage = 3 }
+arrives_raw = "3/51"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_inf_recon.vi_aosta_machinegun_bn"
+name = "VI Aosta Machinegun Bn"
+counter = "VI Aos"
+class = "it.y"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 59, opstage = 2 }
+arrives_raw = "2/59"
+basic_morale = -2
+src = ["land:4.45"]

@@ -1,0 +1,130 @@
+# OA sheet: 1st Libyan Infantry Division (Sibille) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.1_libyan_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "1st Libyan Infantry Division (Sibille)"
+basic_morale = -2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.1st_libyan_infantry_hq"
+name = "1st Libyan Infantry HQ"
+counter = "1 Libyan"
+class = "it.b"
+echelon = "division"
+toe = "N"
+arrives = "D"
+engineer_hq = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.1st_libyan_regt_hq"
+name = "1st Libyan Regt HQ"
+counter = "1Libyan"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.1_libyan_div.1st_libyan_infantry_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.viii_libyan_bn"
+name = "VIII Libyan Bn"
+counter = "VIII/1L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1_libyan_div.1st_libyan_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.ix_libyan_bn"
+name = "IX Libyan Bn"
+counter = "IX/1L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1_libyan_div.1st_libyan_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.x_libyan_bn"
+name = "X Libyan Bn"
+counter = "X/1L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1_libyan_div.1st_libyan_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.2nd_libyan_regt_hq"
+name = "2nd Libyan Regt HQ"
+counter = "2 Libyan"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.1_libyan_div.1st_libyan_infantry_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.xi_libyan_bn"
+name = "XI Libyan Bn"
+counter = "XI/2L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1_libyan_div.2nd_libyan_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.xii_libyan_bn"
+name = "XII Libyan Bn"
+counter = "XII/2L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1_libyan_div.2nd_libyan_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.xiii_libyan_bn"
+name = "XIII Libyan Bn"
+counter = "XIII/2L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1_libyan_div.2nd_libyan_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.1st_libyan_artillery_regt"
+name = "1st Libyan Artillery Regt"
+counter = "1 Libyan"
+class = "it.jj"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 6 } ]
+arrives = "D"
+parent = "it.1_libyan_div.1st_libyan_infantry_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1_libyan_div.1st_libyan_anti_tank_coy"
+name = "1st Libyan Anti-tank Coy"
+counter = "1 Libyan"
+class = "it.rr"
+echelon = "company"
+toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
+arrives = "D"
+parent = "it.1_libyan_div.1st_libyan_infantry_hq"
+src = ["land:4.45"]

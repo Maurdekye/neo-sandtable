@@ -57,7 +57,8 @@ MODE_ALLOWED = {"range_hexes", "tacair", "tacair_paren", "maneuver", "bomb_capac
 MISSION_VALUES = {"day", "night", "night_only", "strafe_only"}
 UNIT_ALLOWED = {"id", "name", "counter", "class", "echelon", "toe", "arrives", "arrives_raw", "parent", "nationality",
                 "note", "src", "reassign", "training", "morale_untrained", "shell", "garrison_of", "immobile",
-                "toe_note", "arrives_note", "kind"}
+                "toe_note", "arrives_note", "kind", "group", "engineer_hq", "never_arrived_parent", "stacking_points",
+                "echelon_symbol", "engineer", "garrison", "basic_morale", "begins_attached_to_sheet", "immobile"}
 SHEET_ALLOWED = {"id", "nation", "side", "nationality", "name", "basic_morale", "basic_morale_untrained", "src", "note"}
 MENTION_ALLOWED = {"unit", "begins_attached_to", "note", "src"}
 

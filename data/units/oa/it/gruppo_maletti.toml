@@ -1,0 +1,169 @@
+# OA sheet: Gruppo Maletti (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.gruppo_maletti"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Gruppo Maletti"
+basic_morale = -2
+note = "Printed note: the division was to become the 3rd Libyan Infantry Division but never received that designation."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.maletti_div_hq"
+name = "Maletti Div HQ"
+counter = "Maletti"
+class = "it.b"
+echelon = "division"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
+name = "I Libyan Mtr Regt HQ"
+counter = "1 LbMt"
+class = "it.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.maletti_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.i_libyan_mtr_bn"
+name = "I Libyan Mtr Bn"
+counter = "I/1LbM"
+class = "it.w"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.iii_libyan_mtr_bn"
+name = "III Libyan Mtr Bn"
+counter = "III/1LbM"
+class = "it.w"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.v_libyan_mtr_bn"
+name = "V Libyan Mtr Bn"
+counter = "V/1LbM"
+class = "it.w"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.5th_libyan_regt_hq"
+name = "5th Libyan Regt HQ"
+counter = "5 Libyan"
+class = "it.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.maletti_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.xvii_libyan_bn"
+name = "XVII Libyan Bn"
+counter = "XVII/5L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.5th_libyan_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.xix_libyan_bn"
+name = "XIX Libyan Bn"
+counter = "XIX/5L"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.5th_libyan_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.sahariano_camel_regt_hq"
+name = "Sahariano Camel Regt HQ"
+counter = "Sno"
+class = "it.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.maletti_div_hq"
+note = "A camel regiment in name only; assigned to the Maletti."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.1_sahariano_camel_bn"
+name = "1 Sahariano Camel Bn"
+counter = "1Sno/Sno"
+class = "it.zz"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.sahariano_camel_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.2_sahariano_camel_bn"
+name = "2 Sahariano Camel Bn"
+counter = "2Sno/Sno"
+class = "it.zz"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.sahariano_camel_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.3_sahariano_camel_bn"
+name = "3 Sahariano Camel Bn"
+counter = "3Sno/Sno"
+class = "it.zz"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.gruppo_maletti.sahariano_camel_regt_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.1st_maletti_artillery_bn"
+name = "1st Maletti Artillery Bn"
+counter = "1 Maletti"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 3 } ]
+arrives = "D"
+parent = "it.gruppo_maletti.maletti_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.gruppo_maletti.2nd_maletti_artillery_bn"
+name = "2nd Maletti Artillery Bn"
+counter = "2 Maletti"
+class = "it.mm"
+echelon = "battalion"
+toe = [ { weapon = "it.75_18_gun_howitzer", n = 2 } ]
+arrives = "D"
+parent = "it.gruppo_maletti.maletti_div_hq"
+src = ["land:4.45"]
+
+[[mention]]
+unit = "it.libyan_tank_command.ii_m_tank_bn"
+begins_attached_to = "it.gruppo_maletti.maletti_div_hq"
+src = ["land:4.45"]

@@ -1,0 +1,156 @@
+# OA sheet: 1st CCNN ("23rd March") Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "it.1ccnn_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "1st CCNN (\"23rd March\") Division"
+basic_morale = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.1st_ccnn_div_hq"
+name = "1st CCNN Div HQ"
+counter = "1 CCNN"
+class = "it.g"
+echelon = "division"
+toe = "N"
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.219th_legion_hq"
+name = "219th Legion HQ"
+counter = "219 Lgn"
+class = "it.g"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.1ccnn_div.1st_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.129th_infantry_bn"
+name = "129th Infantry Bn"
+counter = "129"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.219th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.133rd_infantry_bn"
+name = "133rd Infantry Bn"
+counter = "133"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.219th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.146th_infantry_bn"
+name = "146th Infantry Bn"
+counter = "146"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.219th_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.233rd_legion_hq"
+name = "233rd Legion HQ"
+counter = "233 Lgn"
+class = "it.g"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = "D"
+parent = "it.1ccnn_div.1st_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.114th_infantry_bn"
+name = "114th Infantry Bn"
+counter = "114"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.233rd_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.116th_infantry_bn"
+name = "116th Infantry Bn"
+counter = "116"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.233rd_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.118th_infantry_bn"
+name = "118th Infantry Bn"
+counter = "118"
+class = "it.x"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.233rd_legion_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.201st_machinegun_bn"
+name = "201st Machinegun Bn"
+counter = "201"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.1st_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.201st_artillery_regt"
+name = "201st Artillery Regt"
+counter = "201"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 6 }, { weapon = "it.100_17_howitzer", n = 3 }, { weapon = "it.aa_heavy_75_46", n = 2 } ]
+arrives = "D"
+parent = "it.1ccnn_div.1st_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.201st_engineer_bn"
+name = "201st Engineer Bn"
+counter = "201"
+class = "it.bbb"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.1st_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.1ccnn_div.201st_bersaglieri_mitrg_coy"
+name = "201st Bersaglieri Mitrg Coy"
+counter = "201 Brs"
+class = "it.aaa"
+echelon = "company"
+toe = "N"
+arrives = "D"
+parent = "it.1ccnn_div.1st_ccnn_div_hq"
+src = ["land:4.45"]
+
+[[mention]]
+unit = "it.libyan_tank_command.i_m_tank_bn"
+begins_attached_to = "it.1ccnn_div.1st_ccnn_div_hq"
+src = ["land:4.45"]
