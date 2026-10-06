@@ -291,6 +291,7 @@ pub struct ScheduleHeader {
     pub partial: bool,
     #[serde(default)]
     pub covers_gt: Vec<u16>,
+    pub truck_value_halves: Option<TruckValueHalves>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -356,11 +357,29 @@ pub struct WithdrawnSquadrons {
     pub min_bomb_points_each: Option<i32>,
 }
 
-/// The schedule's printed truck point / truck value pair; these are different quantities.
+/// The printed minimum full-Logistics truck value / abstract motorization pair.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct WithdrawalTransport {
-    pub truck_points: i32,
-    pub truck_value: i32,
+    pub truck_value_points: i32,
+    pub motorization_points: i32,
+}
+
+/// Truck value conversion in integer halves, read from the reinforcement chart footnote.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub struct TruckValueHalves {
+    pub light: i32,
+    pub medium: i32,
+    pub heavy: i32,
+}
+
+impl TruckValueHalves {
+    /// The full-Logistics value of physical truck points, measured in half-value points.
+    /// Cases: land:4.43a
+    pub fn value(self, trucks: Trucks) -> i64 {
+        i64::from(self.light) * i64::from(trucks.light)
+            + i64::from(self.medium) * i64::from(trucks.medium)
+            + i64::from(self.heavy) * i64::from(trucks.heavy)
+    }
 }
 
 /// Truck points by type (`airlog:53`, `airlog:54.2`). Omitted types are zero.
@@ -538,6 +557,24 @@ impl UnitsContent {
             }
         }
         for s in &self.schedules {
+            if s.withdrawals.iter().any(|w| w.transport.is_some())
+                && s.file.truck_value_halves.is_none()
+            {
+                return Err(invalid(format!(
+                    "{}: withdrawal transport lacks truck value weights",
+                    s.path.display()
+                )));
+            }
+            if let Some(weights) = s.file.truck_value_halves
+                && [weights.light, weights.medium, weights.heavy]
+                    .iter()
+                    .any(|v| *v <= 0)
+            {
+                return Err(invalid(format!(
+                    "{}: nonpositive truck value weight",
+                    s.path.display()
+                )));
+            }
             for selector in s
                 .arrivals
                 .iter()
@@ -661,9 +698,30 @@ mod schedule_tests {
         assert_eq!(
             withdrawal.transport.unwrap(),
             WithdrawalTransport {
-                truck_points: 16,
-                truck_value: 12
+                truck_value_points: 16,
+                motorization_points: 12
             }
+        );
+        let weights = units
+            .schedules
+            .iter()
+            .find_map(|s| s.file.truck_value_halves)
+            .unwrap();
+        assert_eq!(
+            weights,
+            TruckValueHalves {
+                light: 1,
+                medium: 2,
+                heavy: 4
+            }
+        );
+        assert_eq!(
+            weights.value(Trucks {
+                light: 10,
+                medium: 5,
+                heavy: 2
+            }),
+            28
         );
         let rommel = units.units.values().find(|u| u.commander).unwrap();
         assert_eq!(rommel.nationality, "german");

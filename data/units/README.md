@@ -386,9 +386,14 @@ Each land arrival has `gt`, `opstage`, `location`, `units` and `src`; optional `
 medium and heavy points for that printed row. A unit selector with `subtree = true` includes assigned
 units whose OA arrival equals the row's stage. `hq_only = true` selects the headquarters counter.
 Mandatory withdrawals use the same selectors, but include assigned units already present; `less`
-excludes named subtrees. `transport = { truck_points, truck_value }` preserves the schedule's Tpt pair
-(total truck count and the value needed on withdrawal/return), with conversion governed by the chart
-legend and Logistics rules. No choice of individual truck types is invented here.
+excludes named subtrees. `transport = { truck_value_points, motorization_points }` preserves the schedule's Tpt pair.
+The first number is the minimum Truck Value Points accompanying a withdrawal under full Logistics;
+the second is the minimum Motorization Points under abstract Logistics. Neither is a physical
+truck count. The Commonwealth schedule header stores the chart-footnote conversion as
+`truck_value_halves = { light = 1, medium = 2, heavy = 4 }`, so a light truck point is half a value
+point, a medium point is one, and a heavy point is two. Compare integer half-values to twice the
+full-Logistics requirement. The abstract requirement uses the second number instead. No selection
+of individual truck types is invented in these records. Source: land:4.43a chart footnote.
 
 Air monthly rows retain the whole `gt_from`/`gt_to` interval even when the scenario stops mid-month.
 `distribution = "even_per_game_turn"` constrains the weekly total; players choose its plane types

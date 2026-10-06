@@ -135,6 +135,14 @@ for p in sorted((units / "schedules").glob("*.toml")):
     covered = d.get("file", {}).get("covers_gt", [])
     if len(covered) != 2 or any(type(v) is not int or v < 1 for v in covered) or covered[0] > covered[1]:
         err(p, "file: covers_gt must be an ordered inclusive pair")
+    weights = d.get("file", {}).get("truck_value_halves")
+    if weights is not None:
+        check_fields(p, weights, ["light", "medium", "heavy"], {"light", "medium", "heavy"}, "truck_value_halves")
+        for k, v in weights.items():
+            if type(v) is not int or v < 1:
+                err(p, f"file: truck_value_halves.{k} must be a positive integer")
+    if any(r.get("transport") for r in d.get("withdrawal", [])) and weights is None:
+        err(p, "file: transport requires truck_value_halves")
     for kind in ("arrival", "withdrawal", "replacement"):
         for r in d.get(kind, []):
             check_fields(p, r, ["src"], ROW_ALLOWED, kind)
@@ -182,7 +190,7 @@ for p in sorted((units / "schedules").glob("*.toml")):
                     if field in sq and (type(sq[field]) is not int or sq[field] < 1):
                         err(p, f"{kind}: {field} must be positive")
             for field, allowed in (("trucks", {"light", "medium", "heavy"}),
-                                   ("transport", {"truck_points", "truck_value"})):
+                                   ("transport", {"truck_value_points", "motorization_points"})):
                 if field in r:
                     check_fields(p, r[field], sorted(allowed) if field == "transport" else [], allowed, field)
                     for k, v in r[field].items():

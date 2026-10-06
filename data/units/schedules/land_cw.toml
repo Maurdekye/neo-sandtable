@@ -1,6 +1,6 @@
 # Commonwealth land arrivals and mandatory withdrawals through GT20 (land:4.43a).
 # subtree selects assigned units arriving at this stage; hq_only selects just the counter.
-# Withdrawal transport records the schedule's total truck points and truck value.
+# Withdrawal transport gives full-Logistics truck value and abstract motorization thresholds.
 [file]
 side = "commonwealth"
 src = ["land:4.43a"]
@@ -8,6 +8,8 @@ transcribed_from = ["vassal:Allied Land Unit Reinf Schedule.png"]
 verification = "double"
 partial = true
 covers_gt = [1, 20]
+# Truck Value Points in halves, from the 4.43a chart footnote.
+truck_value_halves = { light = 1, medium = 2, heavy = 4 }
 
 [[arrival]]
 gt = 1
@@ -209,7 +211,7 @@ opstage = 3
 units = [
   { unit = "cw.4_indian_div.5th_indian_bde_hq", subtree = true }
 ]
-transport = { truck_points = 10, truck_value = 10 }
+transport = { truck_value_points = 10, motorization_points = 10 }
 src = ["land:4.43a", "land:20.8"]
 
 [[withdrawal]]
@@ -218,7 +220,7 @@ opstage = 3
 units = [
   { unit = "cw.4_indian_div.7th_indian_bde_hq", subtree = true }
 ]
-transport = { truck_points = 23, truck_value = 20 }
+transport = { truck_value_points = 23, motorization_points = 20 }
 src = ["land:4.43a", "land:20.8"]
 
 [[withdrawal]]
@@ -227,5 +229,5 @@ opstage = 2
 units = [
   { unit = "cw.4_indian_div.4th_indian_div_hq", subtree = true, less = ["cw.4_indian_div.5th_indian_bde_hq", "cw.4_indian_div.7th_indian_bde_hq"] }
 ]
-transport = { truck_points = 16, truck_value = 12 }
+transport = { truck_value_points = 16, motorization_points = 12 }
 src = ["land:4.43a", "land:20.8"]
