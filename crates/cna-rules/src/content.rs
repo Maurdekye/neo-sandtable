@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use cna_content::areas::AreasContent;
 use cna_content::map::MapContent;
+use cna_content::places::PlacesContent;
 use cna_content::registry::Registry;
 use cna_content::scenario::ScenarioContent;
 use cna_content::units::UnitsContent;
@@ -16,6 +17,7 @@ use crate::seq::{Bounds, System};
 /// Everything a campaign of one scenario reads.
 pub struct CnaContent {
     pub map: MapContent,
+    pub places: PlacesContent,
     pub areas: AreasContent,
     pub units: UnitsContent,
     pub scenario: ScenarioContent,
@@ -68,6 +70,8 @@ impl CnaContent {
         let map = MapContent::load(&data_dir.join("map")).map_err(|e| e.to_string())?;
         let areas = AreasContent::load(&data_dir.join("map/areas.toml"), &map)
             .map_err(|e| e.to_string())?;
+        let places = PlacesContent::load(&data_dir.join("map/places.toml"), &map)
+            .map_err(|e| e.to_string())?;
         let units = UnitsContent::load(&data_dir.join("units")).map_err(|e| e.to_string())?;
         let scenario = ScenarioContent::load(&data_dir.join("scenarios").join(scenario_id))
             .map_err(|e| e.to_string())?;
@@ -105,6 +109,7 @@ impl CnaContent {
         };
         let content = CnaContent {
             map,
+            places,
             areas,
             units,
             scenario,

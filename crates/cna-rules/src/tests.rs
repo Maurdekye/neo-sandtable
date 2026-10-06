@@ -301,6 +301,7 @@ fn source_files_lists_exactly_what_the_loaders_read() {
     for f in [
         "map/hexes.csv",
         "map/areas.toml",
+        "map/places.toml",
         "map/coverage.csv",
         "units/oa/it/1_libyan_div.toml",
         "scenarios/graziani/scenario.toml",

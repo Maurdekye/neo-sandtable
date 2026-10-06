@@ -6,6 +6,7 @@
 
 pub mod areas;
 pub mod map;
+pub mod places;
 pub mod registry;
 pub mod scenario;
 pub mod units;
