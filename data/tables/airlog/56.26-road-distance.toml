@@ -1,0 +1,51 @@
+[table]
+id = "airlog.56.26.road_distance"
+case = "56.26"
+title = "Road Distance Table"
+src = ["airlog:56.26"]
+transcribed_from = ["vassal:56.26 Road Distance Table.png"]
+verification = "double"
+dice = "none"
+notes = """
+Road distance between ten coastal-road places (the chart prints no unit label; see GAPS.md), as a lower triangle: each row lists the distance to every
+place EARLIER in the order list (the diagonal is a dash). Second pass: every value was re-derived as
+the sum of adjacent-leg values along the coast road and agrees, except Cairo, whose leg from Mersa
+Matruh (65) is shorter than via Alexandria (39 + 31 = 70), which the chart prints as such.
+"""
+places = ["nofilia", "marble_arch", "el_agheila", "benghazi", "derna", "tobruk", "bardia", "mersa_matruh", "alexandria", "cairo"]
+
+[[row]]
+place = "marble_arch"
+to = { nofilia = 9 }
+
+[[row]]
+place = "el_agheila"
+to = { nofilia = 19, marble_arch = 10 }
+
+[[row]]
+place = "benghazi"
+to = { nofilia = 61, marble_arch = 52, el_agheila = 42 }
+
+[[row]]
+place = "derna"
+to = { nofilia = 98, marble_arch = 89, el_agheila = 79, benghazi = 37 }
+
+[[row]]
+place = "tobruk"
+to = { nofilia = 121, marble_arch = 112, el_agheila = 102, benghazi = 60, derna = 23 }
+
+[[row]]
+place = "bardia"
+to = { nofilia = 138, marble_arch = 129, el_agheila = 119, benghazi = 77, derna = 40, tobruk = 17 }
+
+[[row]]
+place = "mersa_matruh"
+to = { nofilia = 174, marble_arch = 165, el_agheila = 155, benghazi = 113, derna = 76, tobruk = 53, bardia = 36 }
+
+[[row]]
+place = "alexandria"
+to = { nofilia = 213, marble_arch = 204, el_agheila = 194, benghazi = 152, derna = 115, tobruk = 92, bardia = 75, mersa_matruh = 39 }
+
+[[row]]
+place = "cairo"
+to = { nofilia = 239, marble_arch = 230, el_agheila = 220, benghazi = 178, derna = 141, tobruk = 118, bardia = 101, mersa_matruh = 65, alexandria = 31 }

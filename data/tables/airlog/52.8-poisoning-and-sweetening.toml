@@ -1,0 +1,32 @@
+[table]
+id = "airlog.52.8.poisoning_and_sweetening"
+case = "52.8"
+title = "Poisoning and Sweetening Wells Table"
+src = ["airlog:52.8", "airlog:52.16", "airlog:52.17"]
+transcribed_from = ["vassal:52.8Poisoning and Sweetening Wells Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+One die per attempt. Poisoning succeeds on a 1. Sweetening succeeds on 1-3, after which water may
+be drawn normally. CP costs (1 to poison, 5 per sweetening attempt) are in the cases, not the chart.
+"""
+
+[[row]]
+attempt = "poison_well"
+die_range = [1, 1]
+result = "well_poisoned"
+
+[[row]]
+attempt = "poison_well"
+die_range = [2, 6]
+result = "no_effect"
+
+[[row]]
+attempt = "sweeten_well"
+die_range = [1, 3]
+result = "well_sweetened"
+
+[[row]]
+attempt = "sweeten_well"
+die_range = [4, 6]
+result = "no_effect_still_poisoned"

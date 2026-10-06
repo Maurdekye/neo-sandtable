@@ -1,0 +1,82 @@
+[table]
+id = "airlog.56.18.axis_naval_convoy_air_distance"
+case = "56.18"
+title = "Axis Naval Convoy Air Distance Chart"
+src = ["airlog:56.18", "airlog:56.11", "airlog:42.5"]
+transcribed_from = ["vassal:56.18 Axis Naval Convoy Air DIstance Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Distance in hexes from each air origin to each of the six Axis shipping lanes. Sicily, Italy and
+Crete mean aircraft flying from any of those boxes; Malta means aircraft flying from any Malta
+hex. Benghazi, Derna and Tobruk are the Rally Points. A plane flying a mission from North Africa
+to a lane needs Range at least the hexes from its air facility to a Rally Point plus the hexes
+from that Rally Point to the lane. A dash (printed for lane 1 / Crete) is recorded as an omitted
+value listed in dash_columns.
+"""
+
+[[row]]
+lane = 1
+route = "west_sicily_to_bizerta"
+sicily = 20
+italy = 56
+malta = 42
+benghazi = 126
+derna = 145
+tobruk = 165
+dash_columns = ["crete"]
+
+[[row]]
+lane = 2
+route = "west_sicily_to_tripoli"
+sicily = 45
+italy = 82
+crete = 134
+malta = 35
+benghazi = 100
+derna = 135
+tobruk = 160
+
+[[row]]
+lane = 3
+route = "italy_to_benghazi"
+sicily = 41
+italy = 79
+crete = 80
+malta = 50
+benghazi = 51
+derna = 57
+tobruk = 80
+
+[[row]]
+lane = 4
+route = "greece_to_benghazi"
+sicily = 83
+italy = 117
+crete = 38
+malta = 80
+benghazi = 27
+derna = 22
+tobruk = 42
+
+[[row]]
+lane = 5
+route = "greece_to_tobruk"
+sicily = 96
+italy = 137
+crete = 28
+malta = 125
+benghazi = 44
+derna = 18
+tobruk = 26
+
+[[row]]
+lane = 6
+route = "italy_to_tobruk"
+sicily = 57
+italy = 101
+crete = 62
+malta = 70
+benghazi = 39
+derna = 38
+tobruk = 60

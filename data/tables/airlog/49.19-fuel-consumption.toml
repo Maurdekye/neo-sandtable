@@ -1,0 +1,72 @@
+[table]
+id = "airlog.49.19.fuel_consumption"
+case = "49.19"
+title = "Fuel Consumption Chart"
+src = ["airlog:49.19", "airlog:49.13"]
+transcribed_from = ["vassal:49.19 Fuel Consumption Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Fuel Points consumed by one vehicle (TOE point) for CP spent moving, by that vehicle's fuel
+consumption rate (columns 1-7). Values are stored in tenths of a Fuel Point (2 = 0.2) so no float is
+needed. Every cell equals rate x CP / 5; the second pass checked every cell against that identity.
+The chart lists only 1-4 CP and multiples of 5 up to 50; how to price other CP counts is
+docs/interpretations/airlog-0001-fuel-chart-rounding.md.
+"""
+consumption_rates = [1, 2, 3, 4, 5, 6, 7]   # column heads; fuel_tenths below is in the same order
+
+[[row]]
+cp_expended = 1
+fuel_tenths = [2, 4, 6, 8, 10, 12, 14]
+
+[[row]]
+cp_expended = 2
+fuel_tenths = [4, 8, 12, 16, 20, 24, 28]
+
+[[row]]
+cp_expended = 3
+fuel_tenths = [6, 12, 18, 24, 30, 36, 42]
+
+[[row]]
+cp_expended = 4
+fuel_tenths = [8, 16, 24, 32, 40, 48, 56]
+
+[[row]]
+cp_expended = 5
+fuel_tenths = [10, 20, 30, 40, 50, 60, 70]
+
+[[row]]
+cp_expended = 10
+fuel_tenths = [20, 40, 60, 80, 100, 120, 140]
+
+[[row]]
+cp_expended = 15
+fuel_tenths = [30, 60, 90, 120, 150, 180, 210]
+
+[[row]]
+cp_expended = 20
+fuel_tenths = [40, 80, 120, 160, 200, 240, 280]
+
+[[row]]
+cp_expended = 25
+fuel_tenths = [50, 100, 150, 200, 250, 300, 350]
+
+[[row]]
+cp_expended = 30
+fuel_tenths = [60, 120, 180, 240, 300, 360, 420]
+
+[[row]]
+cp_expended = 35
+fuel_tenths = [70, 140, 210, 280, 350, 420, 490]
+
+[[row]]
+cp_expended = 40
+fuel_tenths = [80, 160, 240, 320, 400, 480, 560]
+
+[[row]]
+cp_expended = 45
+fuel_tenths = [90, 180, 270, 360, 450, 540, 630]
+
+[[row]]
+cp_expended = 50
+fuel_tenths = [100, 200, 300, 400, 500, 600, 700]

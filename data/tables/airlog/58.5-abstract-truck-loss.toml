@@ -1,0 +1,36 @@
+[table]
+id = "airlog.58.5.abstract_truck_loss"
+case = "58.5"
+title = "Abstract Truck Loss Chart"
+src = ["airlog:58.5", "airlog:58.42"]
+transcribed_from = ["vassal:58.5 Abstract Truck Loss Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Only used with the abstract Air rules (section 58), which the Graziani full-systems profile does not
+use. Each month lists two percentages, printed 'N/M': N = percentage of Commonwealth motorization
+points in N. Africa destroyed, M = percentage of Axis motorization points in N. Africa (including
+Tripoli/Tunis etc.) destroyed. A dash means no loss is given (before October 1940, and after
+January 1943). The rules text calls this the Abstract Truck Loss Chart in 58.44 and the chart prints
+case number 58.5.
+"""
+
+[[row]]
+year = 1940
+months = { oct = { cw_percent = 6, axis_percent = 2 }, nov = { cw_percent = 5, axis_percent = 3 }, dec = { cw_percent = 4, axis_percent = 4 } }
+dash_months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep"]
+
+[[row]]
+year = 1941
+months = { jan = { cw_percent = 2, axis_percent = 3 }, feb = { cw_percent = 2, axis_percent = 3 }, mar = { cw_percent = 10, axis_percent = 1 }, apr = { cw_percent = 9, axis_percent = 2 }, may = { cw_percent = 7, axis_percent = 3 }, jun = { cw_percent = 5, axis_percent = 4 }, jul = { cw_percent = 4, axis_percent = 3 }, aug = { cw_percent = 3, axis_percent = 3 }, sep = { cw_percent = 3, axis_percent = 3 }, oct = { cw_percent = 3, axis_percent = 3 }, nov = { cw_percent = 3, axis_percent = 5 }, dec = { cw_percent = 3, axis_percent = 4 } }
+dash_months = []
+
+[[row]]
+year = 1942
+months = { jan = { cw_percent = 2, axis_percent = 4 }, feb = { cw_percent = 3, axis_percent = 3 }, mar = { cw_percent = 3, axis_percent = 3 }, apr = { cw_percent = 3, axis_percent = 3 }, may = { cw_percent = 3, axis_percent = 3 }, jun = { cw_percent = 3, axis_percent = 4 }, jul = { cw_percent = 3, axis_percent = 4 }, aug = { cw_percent = 3, axis_percent = 4 }, sep = { cw_percent = 3, axis_percent = 4 }, oct = { cw_percent = 3, axis_percent = 4 }, nov = { cw_percent = 4, axis_percent = 6 }, dec = { cw_percent = 3, axis_percent = 5 } }
+dash_months = []
+
+[[row]]
+year = 1943
+months = { jan = { cw_percent = 2, axis_percent = 4 } }
+dash_months = ["feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]

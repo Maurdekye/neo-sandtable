@@ -1,0 +1,178 @@
+[section]
+id = "49.0"
+book = "airlog"
+title = "Fuel"
+systems = ["logistics"]
+
+[[case]]
+id = "49.0"
+title = "General Rule"
+summary = "Nearly every vehicle burns fuel when it moves unless a rule says otherwise; consumption depends on vehicle and distance, construction can also burn fuel, and each side must record fuel levels (dumps, unit TOE sheets, truck convoy sheet) the moment they change."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["airlog:49.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.1"
+title = "Fuel Consumption Rates"
+summary = "Group heading for the fuel-point unit, who burns fuel, how burn rates and tank capacities work, and where fuel is drawn from."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:49.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.11"
+title = ""
+summary = "Fuel is counted in Fuel Points (about 250 lb / 35 gallons of petroleum each); this unit applies to the Land and Logistics games only, since air fuel use is abstracted."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:49.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.12"
+title = ""
+summary = "Every vehicle burns fuel when it moves, including HQs with unparenthesised TOE points and all gun-class units; motorcycles, tank-towing to repair, desert raiders and patrols are exceptions or special."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["49.13"]
+src = ["airlog:49.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.13"
+title = ""
+summary = "Fuel burned = unit's consumption rate times the number of 5-CP groups (or fraction) spent moving hex to hex; CP spent on combat or other non-movement burns nothing. Trucks and recce/AC use rate 1."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["airlog.49.19.fuel_consumption"]
+depends_on = ["49.12", "49.16"]
+errata = ["errata79:49.13"]
+src = ["airlog:49.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.14"
+title = ""
+summary = "A TOE point's tank capacity is its CPA times one fifth times its consumption rate (enough for a full CPA of movement); capacity is not a hard limit because units may refuel from any same-hex source and move on."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["49.13"]
+errata = ["errata79:49.14"]
+src = ["airlog:49.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.15"
+title = ""
+summary = "Fuel can be burned only if it is in the consuming unit's hex; movement is normally charged against the unit's own tanks, so the engine must track distance moved since the unit last refuelled."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["49.14", "49.16"]
+src = ["airlog:49.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.16"
+title = ""
+summary = "At the start of each movement segment a unit burns fuel in its starting hex from any source there except second/third-line convoy trucks (those must unload first); no CP cost to refuel. A later move that OpStage draws on the new hex or its own tanks."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["49.14", "49.15", "53.12"]
+src = ["airlog:49.16"]
+applies = { graziani = "yes" }
+decision = { what = "For each moving unit, declare the distance to be moved and choose which same-hex fuel source (supply dump, first-line truck, own tanks) pays the fuel.", params = ["moving unit", "distance in CP", "fuel source in hex"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "49.17"
+title = ""
+summary = "In an emergency a unit may siphon fuel from another unit in the same hex (up to the receiver's capacity) at 3 CP to each; fuel may be siphoned from abandoned or broken-down enemy vehicles (referee tells the count) but not destroyed ones."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["49.14"]
+src = ["airlog:49.17"]
+applies = { graziani = "yes" }
+decision = { what = "Choose to transfer fuel between two units in a hex (or siphon from an abandoned or broken-down enemy vehicle) when no other supply is present.", params = ["donor unit", "receiving unit", "fuel points transferred"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "49.18"
+title = ""
+summary = "Trucks burn fuel when they move and may treat the fuel they carry as their own source, so a long haul can eat half the cargo; trucks and recce/AC units use rate 1."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.truck_convoy_movement"]
+depends_on = ["49.13", "53.2"]
+errata = ["errata79:49.18"]
+src = ["airlog:49.18"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.19"
+title = ""
+summary = "Fuel has no nationality; either side may use any fuel, which makes captured dumps worth taking. Also the case number under which the Fuel Consumption Chart is filed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.49.19.fuel_consumption"]
+src = ["airlog:49.19"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.2"
+title = "Transportation of Fuel"
+summary = "Fuel moves only by truck, rail or aircraft; tanks, other fighting vehicles and walking infantry never carry it. Truck capacity comes from the Truck Characteristics Chart, aircraft capacity from the aircraft charts."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement", "opstage.organization.supply_distribution"]
+tables = ["airlog.54.2.truck_characteristics"]
+depends_on = ["54.2", "42.3"]
+src = ["airlog:49.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "49.3"
+title = "Evaporation and Spillage"
+summary = "In the Stores Expenditure Stage each side cuts every on-map fuel level (convoys at sea exempt) by 6% rounded down; hot weather adds a 5% cut as soon as it is declared; the CW rate is 9% per Game-Turn from Sept 1940 through Aug 1941. Same rates apply to non-well water (52.44)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["logistics.stores_expenditure", "opstage.weather"]
+depends_on = ["52.44", "29.3"]
+src = ["airlog:49.3"]
+applies = { graziani = "yes", graziani_note = "The CW 9% rate (Sept 1940 - Aug 1941) is the one in force for the whole Graziani window." }
+
+[[case]]
+id = "49.4"
+title = ""
+summary = "A motorized infantry unit with no fuel must debark to close assault and defends with its non-motorized CPA; mechanized/tank/AC/recce units without fuel may not close or armour assault, and defending tank-type units without fuel give the attacker a two-column shift."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.force_assignment", "opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["49.13"]
+errata = ["errata79:49.4"]
+src = ["airlog:49.4"]
+applies = { graziani = "yes" }

@@ -1,0 +1,52 @@
+[table]
+id = "airlog.54.12.supply_dump_capacity"
+case = "54.12"
+title = "Supply Dump Capacity Chart"
+src = ["airlog:54.12", "airlog:54.13"]
+transcribed_from = ["vassal:54.12 Supply Dump Capacity Table.png"]
+verification = "double"
+dice = "none"
+notes = """
+Maximum points of each supply type that a dump may hold, by where the dump is. 'unlimited' means no
+cap. The chart's legend adds that water can be drawn as well as stored at a village, a major city or
+a Tunis/Tripoli box, and that the Tunis/Tripoli/In Transit boxes may not be used as supply dumps
+as such (the 'Tunis_Tripoli' row describes the Axis off-map boxes' own unlimited holdings). The
+'non_dump' row is the capacity of a hex that is not a dump (what units and trucks leave lying
+there). The chart's source case is 54.12 although the text calls it 54.13.
+"""
+
+[[row]]
+location = "tunis_tripoli"
+description = "Each of the four Axis off-map boxes for the Tripoli-to-Tunis region"
+ammo = { unlimited = true }
+fuel = { unlimited = true }
+stores = { unlimited = true }
+water = { unlimited = true }
+
+[[row]]
+location = "major_city"
+ammo = { unlimited = true }
+fuel = { unlimited = true }
+stores = { unlimited = true }
+water = { unlimited = true }
+
+[[row]]
+location = "village"
+ammo = { max_points = 2500 }
+fuel = { max_points = 8000 }
+stores = { max_points = 3000 }
+water = { max_points = 1000 }
+
+[[row]]
+location = "other_terrain"
+ammo = { max_points = 1500 }
+fuel = { max_points = 5000 }
+stores = { max_points = 1000 }
+water = { max_points = 1000 }
+
+[[row]]
+location = "non_dump"
+ammo = { max_points = 50 }
+fuel = { max_points = 0 }
+stores = { max_points = 50 }
+water = { max_points = 0 }

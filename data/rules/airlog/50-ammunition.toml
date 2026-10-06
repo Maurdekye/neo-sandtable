@@ -1,0 +1,125 @@
+[section]
+id = "50.0"
+book = "airlog"
+title = "Ammunition"
+systems = ["logistics"]
+
+[[case]]
+id = "50.0"
+title = "General Rule"
+summary = "Land units spend ammunition whenever they use TOE points in combat, and bomb-carrying or dogfighting aircraft spend it too; a unit without ammunition is useless in combat. A TOE point can carry on its own only one firing's worth, so beyond that ammo must be in the hex (attached trucks or a dump)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["airlog:50.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.1"
+title = "Consumption of Ammunition"
+summary = "Group heading for ammunition units, who spends it, and how it is accounted."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:50.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.11"
+title = ""
+summary = "Ammunition is counted in Ammunition Points, each roughly four tons; per-function rates are in 50.2."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.50.2.ammunition_consumption"]
+src = ["airlog:50.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.12"
+title = ""
+summary = "Using barrage, anti-armour, AA or any assault strength costs ammo. A unit with no ammo of any kind has no ZOC, cannot enter an enemy ZOC unless stacked with a friendly unit or dump that has ammo, and surrenders if assaulted (anti-armour or close); merely being in a ZOC or barraged does not make it surrender."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["50.14"]
+errata = ["errata79:50.12"]
+src = ["airlog:50.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.13"
+title = ""
+summary = "Each combat function has its own ammo rate (see 50.2); a unit with several strength types (e.g. anti-armour and assault) pays the rate of the function it actually uses."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+tables = ["airlog.50.2.ammunition_consumption"]
+src = ["airlog:50.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.14"
+title = ""
+summary = "Ammo cost is the consumption rate times the number of TOE points committed, regardless of the actual barrage points they yield; a player can save ammo by committing fewer TOE points (the commit choice itself is made in the land combat cases)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage", "opstage.movement_and_combat.combat.anti_armor", "opstage.movement_and_combat.combat.close_assault"]
+tables = ["airlog.50.2.ammunition_consumption"]
+depends_on = ["50.13"]
+src = ["airlog:50.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.15"
+title = ""
+summary = "Ammunition counts only if it is in the firing unit's hex, and ammo aboard second/third-line convoy trucks must be off-loaded first; it is deducted the instant it is used."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["53.12"]
+src = ["airlog:50.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.16"
+title = ""
+summary = "Ammo is nationality-specific: an enemy may use only one third (rounded up) of captured Ammo Points, the rest are lost; if a dump is recaptured only one third of what remains is usable by the recapturer."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["airlog:50.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.17"
+title = ""
+summary = "Ammo travels by truck or aircraft and may be airdropped; it is usable once in first-line trucks or a dump, but not while on convoy trucks. Combat units may carry one firing's worth themselves."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement", "opstage.land_support_air.completion"]
+depends_on = ["42.3", "42.4", "53.1"]
+src = ["airlog:50.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "50.2"
+title = "Ammunition Consumption Rates Chart"
+summary = "Chart of ammunition points spent per TOE point by combat function; infantry units spend one Ammo Point per TOE point used."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+tables = ["airlog.50.2.ammunition_consumption"]
+errata = ["errata79:50.2"]
+src = ["airlog:50.2"]
+applies = { graziani = "yes" }

@@ -1,0 +1,233 @@
+[section]
+id = "55.0"
+book = "airlog"
+title = "Ports and Supply"
+systems = ["logistics"]
+
+[[case]]
+id = "55.1"
+title = "Port Capacity and Use"
+summary = "Group heading for port types, efficiency levels, capacity, bombing effects, recovery and the Bizerta restriction."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:55.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.11"
+title = ""
+summary = "Ports are major or minor; what each can ship in and out follows the Port Capacity and Efficiency Level Chart (text corrected to point there)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival", "opstage.organization.tactical_shipping"]
+tables = ["airlog.55.3.port_capacity_and_efficiency"]
+src = ["airlog:55.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.12"
+title = ""
+summary = "Every port carries an abstract Efficiency Level (e.g. Tobruk 5); enemy action can reduce it."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.55.3.port_capacity_and_efficiency"]
+src = ["airlog:55.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.13"
+title = ""
+summary = "Each port also has a capacity limiting the TOE strength points and tons of supply that may pass in and out per OpStage."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.55.3.port_capacity_and_efficiency"]
+src = ["airlog:55.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.14"
+title = ""
+summary = "Throughput scales with current Efficiency Level over maximum: a port at 3 of 5 handles 60% of its listed capacity in both directions, reductions rounded up to the nearest ton (Benghazi at level 1 of 3 handles 834 of 2500 tons)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival", "opstage.organization.tactical_shipping"]
+tables = ["airlog.55.3.port_capacity_and_efficiency"]
+depends_on = ["55.12", "55.13"]
+src = ["airlog:55.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.15"
+title = ""
+summary = "Debarking troops (as opposed to supplies) may lower a port's supply efficiency for the OpStage or Game-Turn of arrival, except for mandatory scheduled reinforcements, which never affect capacity or efficiency."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["airlog:55.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.16"
+title = ""
+summary = "Some ports take shipments only in a Strategic Phase, others every OpStage; capacity applies to everything received in a Game-Turn (OpStages included), except as 55.15 says."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival", "opstage.organization.tactical_shipping"]
+depends_on = ["55.15"]
+src = ["airlog:55.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.17"
+title = ""
+summary = "Bizerta (Tunis box) is unusable until the June 1, 1941 Game-Turn; from then the Axis rolls two dice each Game-Turn and may use it permanently after a 12."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["initiative"]
+depends_on = ["56.14"]
+src = ["airlog:55.17"]
+applies = { graziani = "no", graziani_note = "Bizerta is closed until Game-Turn 35 (June 1941); Graziani ends at Game-Turn 6." }
+
+[[case]]
+id = "55.18"
+title = ""
+summary = "For each OpStage in which a port loses no Efficiency Levels to enemy bombs it regains one level, never above its maximum; 55.26 and 55.27 (blocking and mines) are exceptions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.initiative_declaration"]
+depends_on = ["55.26", "55.27"]
+src = ["airlog:55.18"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.2"
+title = "Blocking Harbors"
+summary = "Either side may cut the effectiveness of a port it occupies by scuttling ships to block the harbor (as the Axis did at Benghazi); the enemy may also mine ports."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:55.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.21"
+title = ""
+summary = "A port's owner may decide to block the harbor, but Bizerta, Tripoli, Alexandria, Aboukir (E3815) and Rosetta (E4019) cannot be blocked."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.construction"]
+depends_on = ["55.22"]
+src = ["airlog:55.21"]
+applies = { graziani = "yes" }
+decision = { what = "Decide whether to block a port the player holds (if it is blockable).", params = ["port"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "55.22"
+title = ""
+summary = "To lower a port's Efficiency Level by one by blocking, an engineer battalion or engineering-capable CW HQ in the port hex, in the Construction Phase, spends 25 ammunition and 10 stores present in the hex."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.construction"]
+depends_on = ["55.21", "55.23", "55.24"]
+src = ["airlog:55.22"]
+applies = { graziani = "yes" }
+decision = { what = "Order an engineer unit to block a port by one level, spending 25 ammunition and 10 stores.", params = ["port", "engineer unit"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "55.23"
+title = ""
+summary = "All ports reduce at the same rate except Tobruk, where lowering one level costs 50 ammunition and 25 stores."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["55.22"]
+src = ["airlog:55.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.24"
+title = ""
+summary = "A port can be blocked by only one level per OpStage regardless of supplies spent."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["airlog:55.24"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.25"
+title = ""
+summary = "At game start the Italian cruiser San Giorgio partly blocks Tobruk harbor, lowering its efficiency by three levels."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+tables = ["airlog.55.3.port_capacity_and_efficiency"]
+src = ["airlog:55.25"]
+applies = { graziani = "conditional", graziani_note = "Applies only if Tobruk is Italian-held in the scenario setup; check scen:60.22." }
+
+[[case]]
+id = "55.26"
+title = ""
+summary = "Only the owner's engineers (or engineering-capable CW HQ) can undo blocking, at one level per OpStage for 50 ammunition and 25 stores per port; Tobruk costs 25 ammunition and 10 stores per level, Benghazi 100 ammunition and 50 stores plus two engineer units."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.construction"]
+depends_on = ["55.22"]
+src = ["airlog:55.26"]
+applies = { graziani = "yes" }
+decision = { what = "Order engineers to clear one level of harbor blocking, paying the port's ammunition and stores cost.", params = ["port", "engineer units"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "55.27"
+title = ""
+summary = "Enemy bombers laying mines (41.3) lower a port by one level per mine. The owner with an engineer unit in the port rolls a die per mine in the Construction stage (1-3 removes it, 4-6 stays); the engineers may not move or spend CPA that stage nor do other construction."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.construction", "opstage.land_support_air.completion"]
+depends_on = ["41.3", "55.26"]
+src = ["airlog:55.27"]
+applies = { graziani = "yes" }
+decision = { what = "Assign an engineer unit in a mined port to sweep mines this Construction stage.", params = ["port", "engineer unit"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "55.28"
+title = ""
+summary = "CW ships sitting in an Axis port hex do not interfere with convoy arrivals (an abstraction of Axis air power)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["airlog:55.28"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "55.3"
+title = "Port Capacity and Efficiency Level Chart"
+summary = "Chart of each port's maximum Efficiency Level, in/out stacking-point limits and tonnage capacity; a clarification adds that in a turn of convoy level G any tonnage a port cannot take may land at Tripoli."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+tables = ["airlog.55.3.port_capacity_and_efficiency"]
+src = ["airlog:55.3"]
+applies = { graziani = "yes" }

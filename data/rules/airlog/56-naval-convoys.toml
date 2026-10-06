@@ -1,0 +1,332 @@
+[section]
+id = "56.0"
+book = "airlog"
+title = "The Axis Naval Convoy System"
+systems = ["logistics", "naval"]
+
+[[case]]
+id = "56.0"
+title = "General Rule"
+summary = "Nearly all Axis supplies and personnel must come by convoy from Italy and the Aegean. Convoys are planned one Game-Turn ahead with their lane; tonnage depends on month, year and a die roll, may be reduced by CW bombers, and is capped by port capacities. Limited coastal shipping moves small loads between African ports."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+src = ["airlog:56.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.1"
+title = "The Shipping Lanes"
+summary = "Group heading for lane definitions."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:56.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.11"
+title = ""
+summary = "There are six shipping lanes, identified by origin and destination ports rather than printed on the map; the Axis Naval Convoy Air Distance Chart lists them."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.56.18.axis_naval_convoy_air_distance"]
+src = ["airlog:56.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.12"
+title = ""
+summary = "An Axis convoy is the total tonnage assigned to one lane in one Game-Turn; between one and six convoys may exist per turn, only on the listed lane port pairs."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+src = ["airlog:56.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.13"
+title = ""
+summary = "CW bombers may attack convoys (41.6), so the Axis trades the risk of arriving near the front, in range of more CW planes, against the time and supply cost of landing farther back."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+depends_on = ["41.6"]
+src = ["airlog:56.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.14"
+title = ""
+summary = "Lanes 4 and 5 (Greece routes) cannot be used before the second Game-Turn of May 1941 (see also 55.17)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+depends_on = ["55.17"]
+src = ["airlog:56.14"]
+applies = { graziani = "yes", graziani_note = "The restriction is in force for all of Graziani: lanes 4 and 5 are unavailable." }
+
+[[case]]
+id = "56.15"
+title = ""
+summary = "Each convoy is bound to its lane when planned and cannot be changed afterward; a convoy bound for a port the Commonwealth captures is cancelled and never sails."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["naval_convoy.schedule"]
+depends_on = ["56.25"]
+src = ["airlog:56.15"]
+applies = { graziani = "yes" }
+decision = { what = "Assign each planned convoy's tonnage to one of the six shipping lanes (and hence its destination port); the choice is final once made.", params = ["convoy", "lane", "target game-turn"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "56.16"
+title = ""
+summary = "The Axis records each convoy's cargo and lane. An unattacked lane delivers everything at its destination port; an attacked lane gives the Axis Flak/AA points equal to tonnage / 1000 (15,000 tons = 15 points) to fire at CW planes, with losses taken under the strategic bombardment rules."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.bombing", "opstage.convoy_arrival"]
+depends_on = ["41.6", "46.3"]
+src = ["airlog:56.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.17"
+title = ""
+summary = "A convoy may carry any tonnage in its lane, subject only to the limits in 56.2."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+depends_on = ["56.2"]
+src = ["airlog:56.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.2"
+title = "Shipping by Convoy"
+summary = "Explains the design choice of using historical monthly tonnage figures for convoy capacity, accepting that arrivals may not match Axis needs."
+kind = "designer_note"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:56.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.21"
+title = ""
+summary = "Convoy tonnage is looked up in the Level Chart (a letter A-G per month) and then the Capacity Table by die roll. The Axis plans one Game-Turn ahead (replacements two ahead); the worked example uses November 1941 level E, roll 4, giving 21,000 tons."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["airlog.56.4.axis_naval_convoy_level", "airlog.56.5.axis_naval_convoy_capacity"]
+src = ["airlog:56.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.22"
+title = ""
+summary = "Having the allowed tonnage, the Axis freely chooses how much fuel, ammunition and stores to ship (supplies in Europe are unlimited) within that total."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["naval_convoy.schedule"]
+tables = ["airlog.54.5.equivalent_weights"]
+depends_on = ["56.21", "56.23"]
+src = ["airlog:56.22"]
+applies = { graziani = "yes" }
+decision = { what = "Choose how the convoy tonnage is split among fuel, ammunition and stores shipments.", params = ["fuel points", "ammunition points", "stores points", "target game-turn"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "56.23"
+title = ""
+summary = "Tonnage equivalents of each supply type are on the Equivalent Weights Chart (54.5)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["airlog.54.5.equivalent_weights"]
+src = ["airlog:56.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.24"
+title = ""
+summary = "Replacements the Axis planned earlier (20.6) to send from Italy or Greece also use convoy tonnage (weights from the Equivalent Weights Chart); scheduled reinforcements and replacements arriving by schedule do not use tonnage (10 infantry points cost 300 tons)."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["naval_convoy.schedule"]
+tables = ["airlog.54.5.equivalent_weights"]
+depends_on = ["20.6", "56.22"]
+src = ["airlog:56.24"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which planned (non-scheduled) replacement points ride in a convoy, which reduces its tonnage for supplies.", params = ["replacement points by type", "lane", "target game-turn"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "56.25"
+title = ""
+summary = "At the same time as choosing cargo the Axis allocates available tonnage to lanes and ports; lanes and destinations cannot change afterward (56.1). Arrival may be allocated to any OpStage of the turn unless already designated elsewhere."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["naval_convoy.schedule"]
+depends_on = ["56.15", "56.22"]
+errata = ["errata79:56.25"]
+src = ["airlog:56.25"]
+applies = { graziani = "yes" }
+decision = { what = "Allocate the planned tonnage to shipping lanes, destination ports and arrival OpStage.", params = ["tonnage", "lane", "arrival opstage"], trigger = "scheduled", secrecy = "secret", interrupts = false }
+
+[[case]]
+id = "56.26"
+title = ""
+summary = "Axis convoys and what they carry may be bombed by the Commonwealth (see 41.6); the road distance chart under this number gives distances between coastal places."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.bombing"]
+tables = ["airlog.56.26.road_distance"]
+depends_on = ["41.6"]
+src = ["airlog:56.26"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.27"
+title = ""
+summary = "Ports have maximum capacities and cannot receive supplies above them (55.3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+tables = ["airlog.55.3.port_capacity_and_efficiency"]
+depends_on = ["55.14"]
+src = ["airlog:56.27"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.28"
+title = ""
+summary = "Supplies and personnel unload at once on arrival where possible and may be used immediately; every arrival port counts as having a built-in supply dump."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["airlog:56.28"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.29"
+title = ""
+summary = "Optional variant: instead of the printed level for each month the Axis may pick the letter freely among the month's letters, each usable only as often as it appears, with no letter above B twice in a row."
+kind = "addendum"
+disposition = "unresolved"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+depends_on = ["56.21"]
+interp = ["airlog-0003"]
+src = ["airlog:56.29"]
+applies = { graziani = "no", graziani_note = "Optional house variant not adopted by default; see interpretation airlog-0003." }
+
+[[case]]
+id = "56.3"
+title = "Axis Coastal Shipping"
+summary = "The Axis owns a few old coastal boats that move small supply loads between African ports; their capacity is limited."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:56.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.31"
+title = ""
+summary = "Axis coastal ships are counters printed with tonnage capacity; each has CPA 50 for movement only, one point per sea hex (an addition: four Tripoli-Tunis boxes of movement per Stage)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+errata = ["errata79:56.31"]
+src = ["airlog:56.31"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.32"
+title = ""
+summary = "Axis coastal shipping moves in the Truck Convoy Phase and only then."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+interp = ["airlog-0004"]
+src = ["airlog:56.32"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.33"
+title = ""
+summary = "Axis coastal ships cannot be attacked from air or land, cannot enter a port neutralized to capacity zero, and can never enter an enemy-occupied port."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+src = ["airlog:56.33"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.34"
+title = ""
+summary = "At the start of the Truck Convoy Phase the Axis loads supplies (no personnel) on a coastal ship for 5 CP, moves it, and unloads for 5 CP; a ship carries only one cargo type at a time and may not carry tanks, guns and the like."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["56.35"]
+src = ["airlog:56.34"]
+applies = { graziani = "yes" }
+decision = { what = "Load a coastal ship with one type of supply, sail it, and unload it at a port.", params = ["ship", "cargo type and amount", "route", "unloading port"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "56.35"
+title = ""
+summary = "A coastal ship may unload in one port and go on to another within its CPA; coastal ships need no fuel."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+src = ["airlog:56.35"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.4"
+title = "Axis Naval Convoy Level Chart"
+summary = "Chart giving the convoy level letter (A-G) for each month of 1940-42."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["airlog.56.4.axis_naval_convoy_level"]
+src = ["airlog:56.4"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "56.5"
+title = "Axis Convoy Capacity Table"
+summary = "Table of fixed plus per-die-pip tonnage for each convoy level, rounded up to the nearest 1,000 tons."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["airlog.56.5.axis_naval_convoy_capacity"]
+src = ["airlog:56.5"]
+applies = { graziani = "yes" }

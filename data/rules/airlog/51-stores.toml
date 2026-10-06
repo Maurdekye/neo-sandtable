@@ -1,0 +1,158 @@
+[section]
+id = "51.0"
+book = "airlog"
+title = "Stores"
+systems = ["logistics"]
+
+[[case]]
+id = "51.0"
+title = "General Rule"
+summary = "Stores means everything other than fuel, ammo and water (mainly food). Unlike other supply they are issued once per Game-Turn, at the Stores Expenditure Stage, not every OpStage; a unit may do without them at the price of reduced effectiveness and possible attrition. Players decide how available stores are allocated to units that need them."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["logistics.stores_expenditure"]
+depends_on = ["51.1", "51.2"]
+src = ["airlog:51.0"]
+applies = { graziani = "yes" }
+decision = { what = "Allocate the stores available in each hex among the units and prisoners that need them, and note which units go short (and whether to put units on half rations, 51.23).", params = ["hex", "unit", "stores points issued"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "51.1"
+title = "Usage of Stores"
+summary = "Group heading for stores consumption rates and handling."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:51.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.11"
+title = ""
+summary = "Each TOE strength point in play needs four Stores Points per Game-Turn unless a rule below says less."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["logistics.stores_expenditure"]
+src = ["airlog:51.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.12"
+title = ""
+summary = "Prisoners need one Stores Point per five Prisoner Points per OpStage and are supplied before any other unit; if the hex has none, the nearest dump pays regardless of distance."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["logistics.stores_expenditure"]
+depends_on = ["28.15"]
+src = ["airlog:51.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.13"
+title = ""
+summary = "HQ and engineer units need only one Stores Point per Game-Turn."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["logistics.stores_expenditure"]
+src = ["airlog:51.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.14"
+title = ""
+summary = "Construction can consume stores; the amounts are in the construction rules."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.0"]
+src = ["airlog:51.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.15"
+title = ""
+summary = "One Stores Point weighs a ton. Stores move by truck or aircraft and may be airdropped; they must be in the hex to be used, and stores on convoy trucks are unusable until off-loaded."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["logistics.stores_expenditure", "opstage.truck_convoy_movement"]
+tables = ["airlog.54.5.equivalent_weights"]
+depends_on = ["42.3", "42.4"]
+src = ["airlog:51.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.16"
+title = ""
+summary = "An enemy may use only half of captured Stores Points; the rest are lost."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["airlog:51.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.17"
+title = ""
+summary = "Each Guard point needs two Stores Points per Game-Turn and, like prisoners, may draw from the nearest dump."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["logistics.stores_expenditure"]
+depends_on = ["51.12"]
+src = ["airlog:51.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.2"
+title = "Effects of Lack of Stores"
+summary = "Group heading for the penalties and the half-ration option."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:51.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.21"
+title = ""
+summary = "If any TOE point of a unit (or its parent formation) misses its stores, the unit gains one Disorganization Point for each Game-Turn short."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["logistics.stores_expenditure"]
+src = ["airlog:51.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.22"
+title = ""
+summary = "Units in a hex without stores lose, per two consecutive short Game-Turns, a cumulative and progressive 2% of TOE points (rounded to nearest whole): 2% after two turns, 4% after four, and so on. Only infantry-type TOE points can be lost; guns and tanks are immune."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.attrition"]
+depends_on = ["51.21"]
+src = ["airlog:51.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "51.23"
+title = ""
+summary = "A player short of stores may put units on half rations (two instead of four points per TOE point), but such a unit may not voluntarily exceed its CPA or voluntarily enter an enemy ZOC. It is for genuine shortage only, not for saving stores."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["logistics.stores_expenditure"]
+depends_on = ["51.0"]
+src = ["airlog:51.23"]
+applies = { graziani = "yes" }
+decision = { what = "Place named units on half rations when stores are insufficient for all.", params = ["unit", "turn"], trigger = "scheduled", secrecy = "open", interrupts = false }

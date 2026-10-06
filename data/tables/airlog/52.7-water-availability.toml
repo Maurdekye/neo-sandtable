@@ -1,0 +1,91 @@
+[table]
+id = "airlog.52.7.water_availability"
+case = "52.7"
+title = "Water Availability Table"
+src = ["airlog:52.7", "airlog:52.13"]
+transcribed_from = ["vassal:52.7 Water Availability Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Water Points drawn by one draw at a well, by die roll, for a Town (village) and a Bir. Cells marked
+depletion_check are starred on the chart: after such a result the drawing player rolls one more die
+secretly and the well is depleted on a 1. Major cities and oases draw without a roll and are
+unlimited (not in the table). The chart column is headed 'Town'; case 52.13 calls it 'village'.
+"""
+
+[[row]]
+source = "town"
+die = 1
+water_points = 100
+depletion_check = false
+
+[[row]]
+source = "town"
+die = 2
+water_points = 150
+depletion_check = false
+
+[[row]]
+source = "town"
+die = 3
+water_points = 200
+depletion_check = false
+
+[[row]]
+source = "town"
+die = 4
+water_points = 300
+depletion_check = false
+
+[[row]]
+source = "town"
+die = 5
+water_points = 350
+depletion_check = true
+
+[[row]]
+source = "town"
+die = 6
+water_points = 500
+depletion_check = true
+
+[[row]]
+source = "bir"
+die = 1
+water_points = 50
+depletion_check = false
+
+[[row]]
+source = "bir"
+die = 2
+water_points = 100
+depletion_check = false
+
+[[row]]
+source = "bir"
+die = 3
+water_points = 150
+depletion_check = false
+
+[[row]]
+source = "bir"
+die = 4
+water_points = 200
+depletion_check = true
+
+[[row]]
+source = "bir"
+die = 5
+water_points = 300
+depletion_check = true
+
+[[row]]
+source = "bir"
+die = 6
+water_points = 400
+depletion_check = true
+
+[depletion]
+roll_die = "1d6"
+depleted_on = 1
+secret = true

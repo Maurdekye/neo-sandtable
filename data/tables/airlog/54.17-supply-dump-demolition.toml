@@ -1,0 +1,104 @@
+[table]
+id = "airlog.54.17.supply_dump_demolition"
+case = "54.17"
+title = "Supply Dump Demolition Table"
+src = ["airlog:54.17", "airlog:54.14", "errata79:54.17"]
+transcribed_from = ["vassal:54.17 Supply Dump Demolition Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Cross-index the modified die roll with the percentage of each type of supply in the dump that is
+destroyed. The 2021 chart already shows the corrected 0% under -1 and 100% under 7 (errata79:54.17).
+The lowest printed column is -2 and the highest is 8-or-more; results below -2 are not printed
+(see GAPS.md and interpretation airlog-0002). The modifiers are cumulative across the four groups
+below; within a group the alternatives are mutually exclusive ('or' on the chart).
+"""
+
+[[row]]
+modified_die = -2
+percent_destroyed = 0
+
+[[row]]
+modified_die = -1
+percent_destroyed = 0
+
+[[row]]
+modified_die = 0
+percent_destroyed = 0
+
+[[row]]
+modified_die = 1
+percent_destroyed = 10
+
+[[row]]
+modified_die = 2
+percent_destroyed = 20
+
+[[row]]
+modified_die = 3
+percent_destroyed = 33
+
+[[row]]
+modified_die = 4
+percent_destroyed = 50
+
+[[row]]
+modified_die = 5
+percent_destroyed = 75
+
+[[row]]
+modified_die = 6
+percent_destroyed = 100
+
+[[row]]
+modified_die = 7
+percent_destroyed = 100
+
+[[row]]
+modified_die = 8
+or_more = true
+percent_destroyed = 100
+
+# Die-roll modifiers (cumulative). Group = one 'and'-joined clause of the chart; options within a
+# group are the chart's 'or' alternatives (or 'if not, then' for group 3).
+
+[[modifier]]
+group = 1
+condition = "per_additional_third_of_basic_cpa_expended"
+description = "For each additional one third of the attempting unit's basic CPA expended (beyond the base one third, see 54.14)"
+modifier = 1
+
+[[modifier]]
+group = 2
+condition = "attempting_unit_is_full_non_shell_division"
+modifier = 1
+
+[[modifier]]
+group = 2
+condition = "attempting_units_total_one_stacking_point_or_less"
+modifier = -1
+
+[[modifier]]
+group = 3
+condition = "attempt_in_major_city_hex"
+modifier = -2
+
+[[modifier]]
+group = 3
+condition = "not_major_city_and_dump_total_supplies_500_or_less"
+modifier = 1
+
+[[modifier]]
+group = 3
+condition = "not_major_city_and_dump_total_supplies_4000_or_more"
+modifier = -1
+
+[[modifier]]
+group = 4
+condition = "attempting_units_just_captured_the_dump"
+modifier = 1
+
+[[modifier]]
+group = 4
+condition = "dump_not_just_captured_and_nearest_enemy_unit_at_least_20_cp_via_medium_truck_away"
+modifier = -1

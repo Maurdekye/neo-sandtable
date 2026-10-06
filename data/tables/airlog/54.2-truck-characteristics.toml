@@ -1,0 +1,80 @@
+[table]
+id = "airlog.54.2.truck_characteristics"
+case = "54.2"
+title = "Truck Characteristics Chart"
+src = ["airlog:54.2", "airlog:53.2"]
+transcribed_from = ["vassal:54.2 Truck Characteristics Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Characteristics of ONE Truck Point (ten actual trucks) by type. 'na' (not allowed) is recorded as
+an omitted value with the field listed in not_allowed. CPA columns are the Capability Point
+Allowance of the Truck Point when transporting (motorizing) the item; the 'supplies' CPA applies
+only to trucks in convoy carrying supplies. Transport capacity is in TOE Strength Points for the
+infantry/artillery/AA columns and in Ammunition/Fuel/Stores/Water Points for the supply columns
+(the chart groups the Ammo column ambiguously between the two; see GAPS.md). BAR is the
+Breakdown Adjustment Rating in column shifts to the left. The light-truck inf capacity
+(one half) requires two Light Truck Points per infantry TOE point. See footnotes.
+"""
+
+[[row]]
+truck_type = "light"
+cpa_inf = 25
+cpa_supplies = 40
+capacity_inf_toe_halves = 1       # 1/2 TOE point (marked dagger: needs two Light Truck Points per infantry TOE point)
+capacity_aa_toe = 1
+capacity_ammo_points = 2
+capacity_fuel_points = 50
+capacity_stores_points = 6
+capacity_water_points = 40
+fuel_capacity_points = 8
+fuel_consumption_factor = 1
+bar_shift_left = 2
+not_allowed = ["cpa_guns", "capacity_arty_toe"]
+footnotes = ["light_inf_two_points_per_toe", "light_off_road_extra_breakdown_points"]
+
+[[row]]
+truck_type = "medium"
+cpa_inf = 20
+cpa_guns = 15
+cpa_supplies = 30
+capacity_inf_toe_halves = 2
+capacity_arty_toe = 1
+capacity_aa_toe = 2
+capacity_ammo_points = 4
+capacity_fuel_points = 120
+capacity_stores_points = 15
+capacity_water_points = 100
+fuel_capacity_points = 6
+fuel_consumption_factor = 1
+bar_shift_left = 2
+not_allowed = []
+footnotes = []
+
+[[row]]
+truck_type = "heavy"
+cpa_inf = 20
+cpa_guns = 15
+cpa_supplies = 30
+capacity_inf_toe_halves = 4
+capacity_arty_toe = 1
+capacity_aa_toe = 4
+capacity_ammo_points = 8
+capacity_fuel_points = 250
+capacity_stores_points = 30
+capacity_water_points = 200
+fuel_capacity_points = 6
+fuel_consumption_factor = 1
+bar_shift_left = 2
+not_allowed = []
+footnotes = []
+
+[[footnote]]
+id = "light_inf_two_points_per_toe"
+applies_to = "capacity_inf_toe_halves"
+meaning = "Two Light Truck Points are needed to motorize one infantry TOE point (so 1/2 TOE per Light Truck Point); light trucks are not suggested for this."
+
+[[footnote]]
+id = "light_off_road_extra_breakdown_points"
+applies_to = "bar_shift_left"
+meaning = "A Light Truck not moved along a road accumulates one extra breakdown point in addition to those from entering the hex or crossing the hexside (a wadi hexside plus a rough hex entered along a track: 1/2 x 8 + 1/2 x 8 + 1 + 1 = 18 BPs in the chart's example)."

@@ -1,0 +1,28 @@
+[table]
+id = "airlog.56.4.axis_naval_convoy_level"
+case = "56.4"
+title = "Axis Naval Convoy Level Chart"
+src = ["airlog:56.4", "airlog:56.21", "airlog:56.29"]
+transcribed_from = ["vassal:56.4 Axis Naval Convoy Level Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Convoy Level letter (A-G) for each month, 1940-1942. A dash means no level is given for that month
+(before September 1940). The letter is looked up in airlog.56.5.axis_naval_convoy_capacity.
+Cross-check: the case 56.21 example (November 1941 uses level E) agrees.
+"""
+
+[[row]]
+year = 1940
+levels = { sep = "B", oct = "B", nov = "B", dec = "B" }
+dash_months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug"]
+
+[[row]]
+year = 1941
+levels = { jan = "B", feb = "E", mar = "F", apr = "E", may = "D", jun = "G", jul = "C", aug = "E", sep = "C", oct = "D", nov = "E", dec = "A" }
+dash_months = []
+
+[[row]]
+year = 1942
+levels = { jan = "C", feb = "B", mar = "B", apr = "G", may = "F", jun = "A", jul = "F", aug = "B", sep = "D", oct = "A", nov = "G", dec = "C" }
+dash_months = []

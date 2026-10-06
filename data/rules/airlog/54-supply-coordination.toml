@@ -1,0 +1,290 @@
+[section]
+id = "54.0"
+book = "airlog"
+title = "Supply Coordination"
+systems = ["logistics"]
+
+[[case]]
+id = "54.0"
+title = "Commentary"
+summary = "Consolidates rules on supply dumps, trucks and rail that are scattered elsewhere, to help players build a network of dumps and trucks."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:54.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.1"
+title = "Supply Dumps"
+summary = "Group heading for dump rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:54.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.11"
+title = ""
+summary = "Dumps hold ammunition, fuel, stores and water in a hex units can easily reach; any hex can be a dump and every major city is a natural dump."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.54.12.supply_dump_capacity"]
+src = ["airlog:54.11"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.12"
+title = ""
+summary = "Dummy dumps hold nothing; the counter is revealed and removed only when an enemy unit enters the hex or bombs or strafes it."
+kind = "rule"
+disposition = "display"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.land_support_air.completion"]
+depends_on = ["54.15"]
+src = ["airlog:54.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.13"
+title = "Supply Dump Capacity Chart"
+summary = "Chart giving the most ammo, fuel, stores and water a dump may hold by location type (the chart prints case number 54.12)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.54.12.supply_dump_capacity"]
+src = ["airlog:54.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.14"
+title = ""
+summary = "A non-gun unit may try to blow a dump (one phasing unit per hex per dump per Player-Turn) by spending one third (rounded up) of its basic CPA, never exceeding basic CPA; one die roll with modifiers gives the percentage of each supply type destroyed on the Demolition Table. Extra one-third or two-thirds CPA expenditure announced beforehand improves the roll. A unit sharing the hex may instead blow it as part of retreat before combat for one third CPA and must leave the hex regardless. Allowed in any segment of an OpStage."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement", "opstage.movement_and_combat.combat.retreat_before_assault"]
+tables = ["airlog.54.17.supply_dump_demolition"]
+depends_on = ["54.17"]
+src = ["airlog:54.14"]
+applies = { graziani = "yes" }
+decision = { what = "Attempt to blow a supply dump in the unit's hex, and choose how much extra CPA to spend to improve the die roll (or do so while retreating before assault).", params = ["unit", "dump hex", "extra CPA spent (0, 1/3 or 2/3 of basic CPA)", "as part of retreat before assault"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "54.15"
+title = ""
+summary = "Either player may use any dump as a supply source; dump counters carry ID numbers for record-keeping, including which are dummies."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["airlog:54.15"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.16"
+title = ""
+summary = "Advice that dumps be spaced about one OpStage of truck travel (including loading time) apart; establishing the dump network should be the logistics commander's first priority."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:54.16"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.17"
+title = "Supply Dump Demolition Table"
+summary = "Table of the percentage of supplies destroyed by modified die roll, with cumulative modifiers; corrected so the -1 column is 0% and the +7 column 100%."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["airlog.54.17.supply_dump_demolition"]
+errata = ["errata79:54.17"]
+interp = ["airlog-0002"]
+src = ["airlog:54.17", "errata79:54.17"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.2"
+title = "Truck Characteristics Chart"
+summary = "Chart of per-Truck-Point carrying capacities, CPAs, fuel capacity and breakdown rating for light, medium and heavy trucks; light trucks need two points per infantry TOE point, and the chart restates that trucks should be kept constantly ferrying supplies forward."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+tables = ["airlog.54.2.truck_characteristics"]
+src = ["airlog:54.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.3"
+title = "The Commonwealth Railroad: Supplies"
+summary = "Group heading for how the Commonwealth railroad carries supplies."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:54.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.31"
+title = ""
+summary = "The railroad may move personnel in any direction and also supplies, but in one use it carries either supplies or personnel, not both."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+depends_on = ["8.7", "8.9"]
+src = ["airlog:54.31"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.32"
+title = ""
+summary = "Rail supply capacity is 1500 tons per OpStage in either direction (personnel can go one way while supplies go the other); convert supplies to tons with the Equivalent Weights Chart."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+tables = ["airlog.54.5.equivalent_weights"]
+src = ["airlog:54.32"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.33"
+title = ""
+summary = "The railroad carries only one type of supply at a time (fuel, ammo or stores, never a mix); water is not shipped by rail because the railroad hexes themselves act as pipeline."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.cw_rail_movement"]
+depends_on = ["54.32", "52.22"]
+src = ["airlog:54.33"]
+applies = { graziani = "yes" }
+decision = { what = "Choose which single supply type (fuel, ammunition or stores) the railroad hauls, how much, and between which hexes.", params = ["supply type", "points", "origin hex", "destination hex"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "54.34"
+title = ""
+summary = "In one OpStage of each calendar month the railroad cannot be used at all, being busy hauling water forward for railroad use; the players must announce each month which OpStage that is."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["initiative"]
+src = ["airlog:54.34"]
+applies = { graziani = "yes" }
+decision = { what = "State which OpStage of the calendar month the railroad is out of service for water hauling.", params = ["month", "game-turn", "opstage"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "54.35"
+title = ""
+summary = "Rail-carried supplies may be picked up anywhere and dumped anywhere along the line; they count as unloaded on arrival and may not be moved again that OpStage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_rail_movement"]
+src = ["airlog:54.35"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "54.4"
+title = "Axis Use of the Commonwealth Railroad"
+summary = "The Axis may use the coastal rail line if it controls the hexes and imports rolling stock; the Barce railroad east of Benghazi is never usable."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["54.41", "54.43"]
+src = ["airlog:54.4"]
+applies = { graziani = "conditional", graziani_note = "Needs five contiguous controlled rail hexes plus imported rolling stock; arises only if the Italians capture enough of the Egyptian railhead during turns 1-6." }
+
+[[case]]
+id = "54.41"
+title = ""
+summary = "Whenever the Axis controls five or more contiguous rail hexes (control = last side to pass a land combat unit through the hex) it may use them to move equipment and personnel."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+src = ["airlog:54.41"]
+applies = { graziani = "conditional", graziani_note = "Requires Italian capture of rail hexes; see 54.4." }
+
+[[case]]
+id = "54.42"
+title = ""
+summary = "The Axis can never build new railroad but may repair controlled rail hexes at the Commonwealth rate."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.construction"]
+src = ["airlog:54.42"]
+applies = { graziani = "conditional", graziani_note = "Requires Italian capture of rail hexes; see 54.4." }
+
+[[case]]
+id = "54.43"
+title = ""
+summary = "To run captured rail the Axis ships rolling stock from Europe: for each 250 Stores and 100 Fuel Points imported and brought to a controlled working rail hex, all contiguous controlled hexes become able to haul 300 tons in one direction per OpStage. Rail movement happens in the Convoy stage."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["naval_convoy.schedule", "opstage.truck_convoy_movement"]
+depends_on = ["54.41", "56.22"]
+src = ["airlog:54.43"]
+applies = { graziani = "conditional", graziani_note = "Requires Italian capture of rail hexes; see 54.4." }
+decision = { what = "Commit imported Stores and Fuel as rolling stock for captured Commonwealth rail.", params = ["stores points", "fuel points", "rail hex"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "54.44"
+title = ""
+summary = "To rail one Stacking Point of any unit type the Axis needs active rolling stock equal to 900 tons of hauling capacity in that direction."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["54.43"]
+src = ["airlog:54.44"]
+applies = { graziani = "conditional", graziani_note = "Requires Italian capture of rail hexes; see 54.4." }
+
+[[case]]
+id = "54.45"
+title = ""
+summary = "Stores and fuel spent as rolling stock are consumed for good. If the Axis ever loses five contiguous controlled rail hexes, the stock is deemed destroyed; neither side can use the other's stock."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["54.43"]
+src = ["airlog:54.45"]
+applies = { graziani = "conditional", graziani_note = "Requires Italian capture of rail hexes; see 54.4." }
+
+[[case]]
+id = "54.46"
+title = ""
+summary = "All other rules on moving troops and supplies by rail apply to the Axis exactly as to the Commonwealth."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+src = ["airlog:54.46"]
+applies = { graziani = "conditional", graziani_note = "Requires Italian capture of rail hexes; see 54.4." }
+
+[[case]]
+id = "54.5"
+title = "Equivalent Weights Chart"
+summary = "Chart giving tonnage per point of each supply type, replacement and truck point tonnage by transport mode, and stacking-point equivalents for rail/interport movement."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.54.5.equivalent_weights"]
+src = ["airlog:54.5"]
+applies = { graziani = "yes" }

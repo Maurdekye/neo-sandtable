@@ -1,0 +1,83 @@
+[table]
+id = "airlog.54.5.equivalent_weights"
+case = "54.5"
+title = "Equivalent Weights Chart"
+src = ["airlog:54.5", "airlog:56.23", "airlog:56.24"]
+transcribed_from = ["vassal:54.5 Equivalent Weights Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Tonnage of one point of each supply type, tonnage of replacement and truck/motorization points by
+transport mode, and stacking-point equivalents for rail/interport movement. Fractions are stored as
+{ num, den } so no float is needed. 'varies' means the amount comes from the Axis Replacement Pool
+(case 20.6). 'na' = not applicable, 'prohibited' = the chart's P. See the footnotes.
+"""
+
+# One point of each supply type, in tons (supplies by naval convoy, interport transfer, rail or air)
+[[supply_tonnage]]
+supply = "ammo"
+tons = { num = 4, den = 1 }
+
+[[supply_tonnage]]
+supply = "fuel"
+tons = { num = 1, den = 8 }
+
+[[supply_tonnage]]
+supply = "stores"
+tons = { num = 1, den = 1 }
+
+[[supply_tonnage]]
+supply = "water"
+tons = { num = 1, den = 6 }
+
+[[replacement_point_tonnage]]
+by = "axis_naval_convoy"
+tons = "varies"                      # see Axis Replacement Pool
+[[replacement_point_tonnage]]
+by = "interport_or_railroad"
+tons = "na"                          # chart says see below (stacking-point equivalent)
+[[replacement_point_tonnage]]
+by = "air"
+tons = { num = 2, den = 1 }
+footnotes = ["air_infantry_class_replacements_only"]
+
+[[truck_motorization_point_tonnage]]
+by = "axis_naval_convoy"
+tons = "varies"
+[[truck_motorization_point_tonnage]]
+by = "railroad"
+tons = "na"                          # chart says see below
+[[truck_motorization_point_tonnage]]
+by = "interport"
+tons = { num = 50, den = 1 }
+footnotes = ["interport_unattached_or_excess_points_only"]
+[[truck_motorization_point_tonnage]]
+by = "air"
+tons = "prohibited"
+
+# Stacking-point equivalents for railroad / interport movement
+[[stacking_point_equivalent]]
+item = "truck_motorization_point"
+stacking_points = { num = 1, den = 10 }
+footnotes = ["rail_unattached_or_excess_points_only"]
+[[stacking_point_equivalent]]
+item = "replacement_point"
+stacking_points = { num = 1, den = 5 }
+[[stacking_point_equivalent]]
+item = "squadron_ground_support_unit"
+stacking_points = { num = 1, den = 2 }
+[[stacking_point_equivalent]]
+item = "unit_of_stacking_points"          # printed label; meaning unclear, see GAPS.md
+stacking_points = { num = 1, den = 2 }
+
+[[footnote]]
+id = "air_infantry_class_replacements_only"
+meaning = "Only infantry-class replacement points may travel by air."
+
+[[footnote]]
+id = "interport_unattached_or_excess_points_only"
+meaning = "Applies only to unattached points, or attached points beyond the sum of the TOE strength points making up the parent unit."
+
+[[footnote]]
+id = "rail_unattached_or_excess_points_only"
+meaning = "Applies only to points moved by rail that are unattached, or attached points beyond the sum of the TOE strength points making up the parent unit."

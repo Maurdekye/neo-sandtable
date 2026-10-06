@@ -1,0 +1,184 @@
+[section]
+id = "53.0"
+book = "airlog"
+title = "Trucks and Transport"
+systems = ["logistics"]
+
+[[case]]
+id = "53.0"
+title = "Commentary and General Rule"
+summary = "Trucks are the lifeline of the logistics game. One Truck Point stands for ten real trucks, classed heavy (about 3 tons or more), medium (about 30 cwt) or light (under that); trucks carry supplies or motorize infantry, burn fuel and water, and can break down."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+tables = ["airlog.54.2.truck_characteristics"]
+src = ["airlog:53.0"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.1"
+title = "First, Second, and Third-Line Trucks"
+summary = "Group heading for the three truck tiers (a bookkeeping model, not rigid rules)."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:53.1"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.11"
+title = "First Line Trucks"
+summary = "Trucks attached to a parent combat unit carry its men and supplies; they have no counters (the unit's TOE sheet records type and number and what each carries). They may be detached in the Organization Phase, then becoming counters and no longer first line."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["53.23"]
+src = ["airlog:53.11"]
+applies = { graziani = "yes" }
+decision = { what = "Attach trucks to, or detach them from, a parent combat unit as first-line trucks.", params = ["parent unit", "truck points and type", "attach or detach"], trigger = "scheduled", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "53.12"
+title = "Second Line Trucks"
+summary = "Counter-represented trucks that shuttle between combat units and forward dumps; they may carry anything not forbidden, are tracked on the truck and major-end-items sheets, and move only in the Truck Convoy Movement phase because they are not attached to a unit."
+kind = "definition"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["53.21"]
+src = ["airlog:53.12"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.13"
+title = "Third Line Trucks"
+summary = "Counter trucks that work between major ports of entry and forward dumps; mechanically identical to second line trucks, the name only distinguishes roles in a player's network."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["53.12"]
+src = ["airlog:53.13"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.14"
+title = "Three Tier Organization"
+summary = "Recommended (not mandatory) pattern: third-line trucks haul port stocks to forward dumps, second-line trucks haul dump stocks to units and load them onto the units' first-line trucks."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:53.14"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.2"
+title = "Restrictions on the Use of Trucks"
+summary = "Group heading for convoy movement timing, extended CPAs, cohesion limits, load/unload cost and the leapfrogging ban."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:53.2"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.21"
+title = ""
+summary = "Unattached trucks (any truck counter on the map is by definition a convoy) may move only in the Truck Convoy Movement phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["8.18"]
+src = ["airlog:53.21"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.22"
+title = ""
+summary = "In the Convoy phase heavy and medium trucks have CPA 30 and light trucks 40, a hard ceiling: exceeding it forces a breakdown at that instant. First-line trucks use basic CPA (20 or 25) and may exceed it as their parent unit does."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement", "opstage.movement_and_combat.movement"]
+tables = ["airlog.54.2.truck_characteristics"]
+depends_on = ["6.1", "21.0"]
+src = ["airlog:53.22"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.23"
+title = ""
+summary = "A combat unit at cohesion -5 or worse may not voluntarily detach its first-line trucks; second/third-line trucks attached as first line take on the parent unit's cohesion level."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["airlog:53.23"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.24"
+title = ""
+summary = "Loading and unloading men or supplies costs CP (6.3). One truck unit's cargo must be off-loaded before another truck unit can load it, and a convoy truck at its extended CPA cannot unload if that would push another truck past its limit. Exceptions: free loading/unloading in the Supply Distribution segment, and fuel/ammo in a truck's hex may be expended without unloading cost during movement and combat."
+kind = "procedure"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.supply_distribution", "opstage.truck_convoy_movement"]
+depends_on = ["6.3", "53.25"]
+src = ["airlog:53.24"]
+applies = { graziani = "yes" }
+decision = { what = "Load or unload supplies and men on named trucks, paying the CP cost, and choose which cargo each truck carries.", params = ["truck unit", "cargo type and amount", "load or unload"], trigger = "triggered", secrecy = "open", interrupts = false }
+
+[[case]]
+id = "53.25"
+title = ""
+summary = "Supplies or men passed from truck to truck in one movement segment count as having used the CP of the trucks that carried them and can never exceed the CPA of the first truck they started with that OpStage, so a cache cannot be relayed across the map in one segment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["53.24"]
+src = ["airlog:53.25"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.3"
+title = "Abandoned Vehicles"
+summary = "Group heading for vehicles stranded in salt marsh and their recovery."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["airlog:53.3"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.31"
+title = ""
+summary = "Trucks or other prohibited vehicles in a salt-marsh hex off a road or track are abandoned automatically. Infantry riding in them or guns towed by them are captured if an enemy combat unit is within three traversable hexes and no friendly combat unit is, at the end of movement; otherwise infantry walk from next movement stage and guns stay abandoned."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.44"]
+src = ["airlog:53.31"]
+applies = { graziani = "yes" }
+
+[[case]]
+id = "53.32"
+title = ""
+summary = "A unit with engineering capability in an adjacent non-salt-marsh hex can recover an abandoned vehicle or gun for 10 CP to both units (the vehicle counts as having full CPA); not allowed if either is adjacent to an enemy combat unit. The recovered vehicle attaches to the recovering unit."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["23.1", "53.31"]
+src = ["airlog:53.32"]
+applies = { graziani = "yes" }
+decision = { what = "Recover an abandoned vehicle or gun using an adjacent engineering-capable unit.", params = ["recovering unit", "abandoned vehicle or gun"], trigger = "triggered", secrecy = "open", interrupts = false }

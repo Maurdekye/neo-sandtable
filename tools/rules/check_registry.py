@@ -40,6 +40,11 @@ BOOKS = {
     "scen": {"text": "scenarios-2021.txt", "dir": "scen"},
 }
 
+# Known typos in the 2021 retype text: (wrong, right) replacements applied before extracting case ids.
+SOURCE_TEXT_FIXES = {
+    "airlog": [("[53.1)", "[53.1]"), ("[56.l]", "[56.1]"), ("[31.53]", "[34.53]")],
+}
+
 CASE_RE = re.compile(r"\[(\d+)[ ]?\.[ ]?(\d+[a-z]?)\]")
 ID_RE = re.compile(r"^\d+\.\d+[a-z]?$")
 
@@ -285,7 +290,10 @@ def check_book(book: str, sources: Path | None, validate: bool) -> dict:
         result["source_cases"] = None
         result["skipped"] = f"source text not found: {path}"
         return result
-    ids, midline, counts = source_cases(read_text(path))
+    src_text = read_text(path)
+    for wrong, right in SOURCE_TEXT_FIXES.get(book, []):
+        src_text = src_text.replace(wrong, right)
+    ids, midline, counts = source_cases(src_text)
     result["source_cases"] = len(ids)
     result["source_midline_only"] = midline
     result["source_repeated_ids"] = sorted(k for k, v in counts.items() if v > 1)

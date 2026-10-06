@@ -1,0 +1,102 @@
+[table]
+id = "airlog.55.3.port_capacity_and_efficiency"
+case = "55.3"
+title = "Port Capacity and Efficiency Level Chart"
+src = ["airlog:55.3", "airlog:55.1", "airlog:55.25", "airlog:55.17"]
+transcribed_from = ["vassal:55.3 Port Capacity and Efficiency Level Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Per-port maximum Efficiency Level, the stacking points that may be shipped in and out per
+Operations Stage, and the maximum tonnage of supplies shipped in and/or out per OpStage. A loss of
+one efficiency level cuts capacity by one over the listed level. Reinforcements are never limited
+by port capacity or efficiency; stacking points and tonnage are separate budgets; replacement
+points shipped by Axis convoy are unloaded against the stacking-point schedule, not the tonnage
+schedule. Stacking-point fields are omitted where the chart prints 'na' (not allowed); the
+'in_any_one_unit_of_zero_stacking_points' flag marks the chart's dagger-double footnote.
+"""
+
+[[row]]
+port = "tripoli"
+max_efficiency_level = 10
+stacking_points_in = 10
+stacking_points_out = 15
+max_tonnage = 15000
+
+[[row]]
+port = "bizerta"
+max_efficiency_level = 10
+stacking_points_in = 10
+stacking_points_out = 15
+max_tonnage = 3333
+footnotes = ["bizerta_axis_not_before_gt35"]
+
+[[row]]
+port = "alexandria"
+max_efficiency_level = 10
+stacking_points_in = 5
+stacking_points_out = 10
+max_tonnage = 15000
+
+[[row]]
+port = "tobruk"
+max_efficiency_level = 5
+stacking_points_in = 1
+stacking_points_out = 3
+max_tonnage = 1700
+footnotes = ["tobruk_starts_below_max_san_giorgio"]
+
+[[row]]
+port = "benghazi"
+max_efficiency_level = 3
+stacking_points_in = 2
+stacking_points_out = 5
+max_tonnage = 2500
+
+[[row]]
+port = "mersa_matruh"
+max_efficiency_level = 1
+stacking_points_in = 1
+stacking_points_out = 2
+max_tonnage = 250
+
+[[row]]
+port = "bardia"
+max_efficiency_level = 1
+stacking_points_in = 0
+stacking_points_out = 1
+max_tonnage = 400
+footnotes = ["in_any_one_unit_of_zero_stacking_points"]
+
+[[row]]
+port = "sollum"
+max_efficiency_level = 1
+stacking_points_in = 0
+stacking_points_out = 1
+max_tonnage = 250
+footnotes = ["in_any_one_unit_of_zero_stacking_points"]
+
+[[row]]
+port = "derna"
+max_efficiency_level = 1
+stacking_points_out = 1
+max_tonnage = 300
+not_allowed = ["stacking_points_in"]
+
+[[row]]
+port = "all_others"
+max_efficiency_level = 1
+max_tonnage = 100
+not_allowed = ["stacking_points_in", "stacking_points_out"]
+
+[[footnote]]
+id = "bizerta_axis_not_before_gt35"
+meaning = "The Axis may not use Bizerta before Game-Turn 35, when it may roll for activation (see 55.17)."
+
+[[footnote]]
+id = "tobruk_starts_below_max_san_giorgio"
+meaning = "Tobruk begins the campaign below its listed level of five because the Italian cruiser San Giorgio partly blocks the harbor (see 55.25: down three levels)."
+
+[[footnote]]
+id = "in_any_one_unit_of_zero_stacking_points"
+meaning = "Any one unit that has zero stacking points may still be shipped in."

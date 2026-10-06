@@ -1,0 +1,97 @@
+[table]
+id = "airlog.50.2.ammunition_consumption"
+case = "50.2"
+title = "Ammunition Consumption Rates Table"
+src = ["airlog:50.2"]
+transcribed_from = ["vassal:50.2 Ammunition Consumption Rates Table.png"]
+verification = "double"
+dice = "none"
+notes = """
+Ammunition Points spent per TOE point (land actions) or per plane/squadron (air actions), in two
+columns of rows: the Logistics game played in full ('played') and the Logistics game abstracted
+('abstracted'; these rows are not used when the full Logistics game is played, which is the
+Graziani profile, D2). A row whose cost is given as a rating rather than a number has no
+ammo_points and carries ammo_cost_basis instead; see GAPS.md for the unclear cell.
+"""
+
+[[row]]
+mode = "played"
+action = "barrage"
+ammo_points = 4
+
+[[row]]
+mode = "played"
+action = "anti_armor"
+ammo_points = 3
+
+[[row]]
+mode = "played"
+action = "close_assault_armor_gun_mg_inf_hvywpn_inf"
+description = "Close assault by armor-class, gun-class, MG-inf or heavy-weapons-inf units"
+ammo_points = 2
+
+[[row]]
+mode = "played"
+action = "close_assault_inf_class"
+description = "Close assault by Inf-class units"
+ammo_points = 1
+
+[[row]]
+mode = "played"
+action = "anti_air_single_target_group"
+description = "Anti-air fire at a single target group"
+ammo_points = 2
+
+[[row]]
+mode = "played"
+action = "rearm_squadron_tacair"
+description = "Rearm any portion of a squadron's planes' tacair rating"
+ammo_points = 1
+
+[[row]]
+mode = "played"
+action = "rearm_one_plane_bombs_torpedoes_mines"
+description = "Rearm one plane with bombs, torpedoes or mines"
+ammo_points = 1
+
+[[row]]
+mode = "played"
+action = "air_to_air_combat_or_strafe"
+description = "Engage in air-to-air combat and/or strafe"
+ammo_cost_basis = "tacair_bombload"   # printed cell reads 'TacAir Bombload'; see GAPS.md
+
+[[row]]
+mode = "abstracted"
+action = "barrage_phasing_battalion_eq"
+ammo_points = 4
+
+[[row]]
+mode = "abstracted"
+action = "barrage_non_phasing_battalion_eq"
+ammo_points = 2
+
+[[row]]
+mode = "abstracted"
+action = "assault_phasing_battalion_eq"
+ammo_points = 1
+
+[[row]]
+mode = "abstracted"
+action = "assault_non_phasing_battalion_eq"
+ammo_points = 1
+
+[[row]]
+mode = "abstracted"
+action = "anti_air_gun_class_single_target_group"
+ammo_points = 1
+
+[[row]]
+mode = "abstracted"
+action = "rearm_non_fighter_squadron_tacair_and_bombload"
+description = "Rearm any portion of a non-fighter squadron's tacair ratings and bombload"
+ammo_points = 1
+
+[[row]]
+mode = "abstracted"
+action = "flight_by_non_fighter_plane"
+ammo_cost_basis = "bombload"

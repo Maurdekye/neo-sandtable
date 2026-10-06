@@ -1,0 +1,17 @@
+[section]
+id = "57.0"
+book = "airlog"
+title = "The Commonwealth Supply Base"
+systems = ["logistics"]
+
+[[case]]
+id = "57.0"
+title = "General Rule"
+summary = "The Commonwealth has unlimited fuel, ammunition, water and stores in Cairo throughout the game; its only problem is moving them forward, since it ships nothing in. CW ships need no supplies. Reinforcements and replacements follow the schedule and the CW replacement system (section 20)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.supply_distribution", "opstage.truck_convoy_movement"]
+depends_on = ["20.0"]
+src = ["airlog:57.0"]
+applies = { graziani = "yes" }

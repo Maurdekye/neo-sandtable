@@ -1,0 +1,51 @@
+[table]
+id = "airlog.56.5.axis_naval_convoy_capacity"
+case = "56.5"
+title = "Axis Naval Convoy Capacity Table"
+src = ["airlog:56.5", "airlog:56.21"]
+transcribed_from = ["vassal:56.5 Axis Naval Convoy Capacity Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Axis convoy capacity in tons = fixed tonnage + (variable tonnage per die pip x one die roll),
+with any fraction rounded UP to the nearest 1,000 tons. Check against the case 56.21 example:
+level E, roll 4 gives 11,000 + 4 x 2,500 = 21,000.
+"""
+
+[[row]]
+convoy_level = "A"
+fixed_tons = 6000
+variable_tons_per_pip = 1000
+
+[[row]]
+convoy_level = "B"
+fixed_tons = 7000
+variable_tons_per_pip = 1500
+
+[[row]]
+convoy_level = "C"
+fixed_tons = 10000
+variable_tons_per_pip = 1500
+
+[[row]]
+convoy_level = "D"
+fixed_tons = 11000
+variable_tons_per_pip = 2000
+
+[[row]]
+convoy_level = "E"
+fixed_tons = 11000
+variable_tons_per_pip = 2500
+
+[[row]]
+convoy_level = "F"
+fixed_tons = 15000
+variable_tons_per_pip = 2000
+
+[[row]]
+convoy_level = "G"
+fixed_tons = 32000
+variable_tons_per_pip = 3000
+
+[rounding]
+round_up_to_tons = 1000
