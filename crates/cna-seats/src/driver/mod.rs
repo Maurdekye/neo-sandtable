@@ -250,7 +250,8 @@ impl ChildProc {
 /// Environment variable name prefixes that never reach a seat's CLI: the operator's own agent
 /// identity, other providers' credentials and any parent CLI session markers. What a seat needs
 /// (its account's config dir) is set explicitly afterwards.
-const SCRUBBED_PREFIXES: [&str; 12] = [
+const SCRUBBED_PREFIXES: [&str; 13] = [
+    "CNA_",
     "ORGTREE_",
     "CLAUDE",
     "ANTHROPIC_",
@@ -455,6 +456,12 @@ mod tests {
         let parent = vec![
             (os("PATH"), os("/bin")),
             (os("SystemRoot"), os("C:/Windows")),
+            (os("CNA_OPERATOR_TOKEN"), os("operator-secret")),
+            (
+                os("CNA_CAPABILITY_FILE"),
+                os("/server/operator-capabilities.json"),
+            ),
+            (os("CNA_SOURCES"), os("/game-private-sources")),
             (os("ORGTREE_AGENT_TOKEN"), os("secret")),
             (os("CLAUDE_CONFIG_DIR"), os("/other")),
             (os("ClaudeCode"), os("1")),

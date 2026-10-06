@@ -355,7 +355,12 @@ impl ClaudeDriver {
     /// Check that the configured login is the expected account (`claude auth status`).
     pub async fn verify_account(&self) -> Result<String, DriverError> {
         let mut cmd = Command::new(self.exe()?);
-        cmd.args(["auth", "status"]).current_dir(&self.cfg.sandbox);
+        cmd.args(["auth", "status"])
+            .current_dir(&self.cfg.sandbox)
+            .kill_on_drop(true);
+        cmd.stdin(std::process::Stdio::null());
+        #[cfg(windows)]
+        cmd.creation_flags(0x0800_0000);
         apply_seat_env(&mut cmd, &self.env());
         let out = cmd.output().await.map_err(|e| DriverError::Spawn {
             cli: "claude",
@@ -471,9 +476,18 @@ impl SeatDriver for ClaudeDriver {
                     tools,
                     mcp_connected,
                     session_id,
-                    ..
+                    model,
+                    cli_version,
                 } => {
                     check_isolation(tools, *mcp_connected)?;
+                    self.sink.system(
+                        self.cfg.seat,
+                        format!(
+                            "CLI metadata: model {}, version {}",
+                            model.as_deref().unwrap_or("unknown"),
+                            cli_version.as_deref().unwrap_or("unknown"),
+                        ),
+                    );
                     real_session = Some(session_id.clone());
                 }
                 StreamEvent::Entry(entry) => emitter.emit(entry.clone()),

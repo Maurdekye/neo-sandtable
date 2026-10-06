@@ -32,37 +32,53 @@ pub trait TranscriptStore: Send + Sync + 'static {
     -> Result<u64, String>;
 }
 
+/// A capture not yet confirmed by its store. Recovery outboxes use this local shape,
+/// not the viewer protocol: numbering and alignment belong to the campaign writer.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct UnconfirmedEntry {
+    pub seat: SeatId,
+    pub at: String,
+    pub entry: TranscriptEntry,
+}
+
 enum Item {
-    Entry {
-        seat: SeatId,
-        at: String,
-        entry: TranscriptEntry,
-    },
+    Entry(UnconfirmedEntry),
     Flush(oneshot::Sender<()>),
 }
+
+struct DeliveryTask(tokio::sync::Mutex<Option<tokio::task::JoinHandle<()>>>);
 
 /// The cloneable handle drivers write to.
 #[derive(Clone)]
 pub struct TranscriptSink {
     tx: mpsc::UnboundedSender<Item>,
+    pending: Arc<Mutex<std::collections::VecDeque<UnconfirmedEntry>>>,
+    delivery: Arc<DeliveryTask>,
 }
 
 impl TranscriptSink {
     /// Start the delivery task for `store`. Must be called inside a Tokio runtime.
     pub fn new(store: Arc<dyn TranscriptStore>) -> Self {
         let (tx, mut rx) = mpsc::unbounded_channel::<Item>();
-        tokio::spawn(async move {
+        let pending = Arc::new(Mutex::new(std::collections::VecDeque::new()));
+        let remaining = pending.clone();
+        let task = tokio::spawn(async move {
             while let Some(item) = rx.recv().await {
                 match item {
-                    Item::Entry { seat, at, entry } => {
+                    Item::Entry(capture) => {
                         let mut delay = Duration::from_millis(50);
-                        while let Err(e) = store.append(seat, at.clone(), entry.clone()).await {
+                        while let Err(e) = store
+                            .append(capture.seat, capture.at.clone(), capture.entry.clone())
+                            .await
+                        {
                             eprintln!(
-                                "transcript store refused an entry for {seat}: {e}; retrying"
+                                "transcript store refused an entry for {}: {e}; retrying",
+                                capture.seat
                             );
                             tokio::time::sleep(delay).await;
                             delay = (delay * 2).min(Duration::from_secs(5));
                         }
+                        remaining.lock().expect("pending captures").pop_front();
                     }
                     Item::Flush(done) => {
                         let _ = done.send(());
@@ -70,16 +86,25 @@ impl TranscriptSink {
                 }
             }
         });
-        Self { tx }
+        Self {
+            tx,
+            pending,
+            delivery: Arc::new(DeliveryTask(tokio::sync::Mutex::new(Some(task)))),
+        }
     }
 
-    /// Queue one entry for a seat (never blocks; capture time is taken now).
+    /// Queue one entry for a seat (never waits for storage; capture time is taken now).
     pub fn emit(&self, seat: SeatId, entry: TranscriptEntry) {
-        let _ = self.tx.send(Item::Entry {
+        let capture = UnconfirmedEntry {
             seat,
             at: now_rfc3339(),
             entry,
-        });
+        };
+        // Hold this lock through enqueue so concurrent producers and the recovery mirror
+        // have the same order. A failed enqueue remains visible in the mirror.
+        let mut pending = self.pending.lock().expect("pending captures");
+        pending.push_back(capture.clone());
+        let _ = self.tx.send(Item::Entry(capture));
     }
 
     pub fn system(&self, seat: SeatId, text: impl Into<String>) {
@@ -87,14 +112,36 @@ impl TranscriptSink {
     }
 
     /// Wait until everything queued so far has been accepted by the store.
+    /// A permanently unavailable store needs the supervisor's bounded shutdown path.
     pub async fn flush(&self) {
         let (done, wait) = oneshot::channel();
         if self.tx.send(Item::Flush(done)).is_ok() {
             let _ = wait.await;
         }
     }
-}
 
+    pub fn pending_count(&self) -> usize {
+        self.pending.lock().expect("pending captures").len()
+    }
+
+    /// Stop and join delivery, retaining captures for a recovery outbox.
+    /// Stop all producers first. This is irreversible for every clone of this sink.
+    /// The last in-flight append may have committed before cancellation without confirming;
+    /// inspect the campaign before replaying an outbox. Never replay it blindly.
+    pub async fn stop_delivery(&self) -> Vec<UnconfirmedEntry> {
+        let mut delivery = self.delivery.0.lock().await;
+        if let Some(task) = delivery.take() {
+            task.abort();
+            let _ = task.await;
+        }
+        self.pending
+            .lock()
+            .expect("pending captures")
+            .iter()
+            .cloned()
+            .collect()
+    }
+}
 /// One stored transcript entry.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StoredEntry {
@@ -278,5 +325,63 @@ mod tests {
         assert_eq!(v["game_seq"], 1235);
         assert_eq!(v["entry"]["kind"], "tool_call");
         assert_eq!(v["entry"]["call_id"], "c12");
+    }
+}
+
+#[cfg(test)]
+mod recovery_tests {
+    use super::*;
+    use tokio::sync::Notify;
+
+    struct Blocked {
+        entered: Arc<Notify>,
+    }
+    #[async_trait]
+    impl TranscriptStore for Blocked {
+        async fn append(&self, _: SeatId, _: String, _: TranscriptEntry) -> Result<u64, String> {
+            self.entered.notify_one();
+            std::future::pending().await
+        }
+    }
+    #[tokio::test]
+    async fn stopping_delivery_retains_ordered_captures_and_joins_in_flight_append() {
+        let entered = Arc::new(Notify::new());
+        let sink = TranscriptSink::new(Arc::new(Blocked {
+            entered: entered.clone(),
+        }));
+        let seat = "axis.commander".parse().unwrap();
+        for i in 0..3 {
+            sink.system(seat, format!("m{i}"));
+        }
+        entered.notified().await;
+        let (first, second) = tokio::join!(sink.stop_delivery(), sink.stop_delivery());
+        assert_eq!(first, second);
+        let texts: Vec<_> = first
+            .iter()
+            .map(|c| match &c.entry {
+                TranscriptEntry::System { text } => text.as_str(),
+                _ => unreachable!(),
+            })
+            .collect();
+        assert_eq!(texts, ["m0", "m1", "m2"]);
+        sink.system(seat, "captured after close");
+        assert_eq!(
+            sink.pending_count(),
+            4,
+            "closed delivery must not silently drop captures"
+        );
+    }
+    #[tokio::test]
+    async fn dropping_last_producer_still_drains_a_healthy_store() {
+        let store = LocalTranscript::detached();
+        let mut live = store.subscribe();
+        let sink = TranscriptSink::new(store.clone());
+        sink.system("axis.commander".parse().unwrap(), "last capture");
+        drop(sink);
+        let row = tokio::time::timeout(Duration::from_secs(1), live.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(row.entry, TranscriptEntry::System { text } if text == "last capture"));
     }
 }

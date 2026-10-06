@@ -21,3 +21,4 @@ currently responsible; the lead agent updates this table when responsibility cha
 | Units, organization, equipment | `data/units/` | oob |
 | Scenarios | `data/scenarios/` | oob |
 | Live board | `web/` | board |
+| AI campaign launcher and integration probes | `crates/cna-play/` | seats |
