@@ -1,0 +1,65 @@
+# Organization Size Close Assault Modifications Chart (land:15.53).
+
+[table]
+id = "land.15.53.organization_size_modifications"
+case = "15.53"
+title = "Organization Size Close Assault Modifications Chart"
+src = ["land:15.53"]
+transcribed_from = ["vassal:15.53 Organization SIze Close Assault Modifications Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Column shifts for organizational size, always in favor of the side with the larger 'largest unit'. Each
+side's largest unit is the largest size-equivalent (by stacking points: 5 division, 3 super brigade, 2
+brigade, 1 battalion, 0 company or less) actually taking part in the combat in that hex; only the size of
+that single largest unit matters, not how many units there are. Pairs not listed (equal sizes, or 3 against
+1) have no entry on the chart. The 2021 text corrects a misplaced brigade entry from the original.
+"""
+
+[[row]]
+larger_sp = [5]
+smaller_sp = 3
+column_shift = 1
+
+[[row]]
+larger_sp = [5]
+smaller_sp = 2
+column_shift = 2
+
+[[row]]
+larger_sp = [5]
+smaller_sp = 1
+column_shift = 4
+
+[[row]]
+larger_sp = [5]
+smaller_sp = 0
+column_shift = 8
+
+[[row]]
+larger_sp = [3]
+smaller_sp = 2
+column_shift = 0
+
+[[row]]
+larger_sp = [2, 3]
+smaller_sp = 1
+column_shift = 2
+
+[[row]]
+larger_sp = [2, 3]
+smaller_sp = 0
+column_shift = 4
+
+[[row]]
+larger_sp = [1]
+smaller_sp = 0
+column_shift = 2
+
+[[footnote]]
+id = "largest_unit"
+text = "Largest unit is each player's largest unit, in size-equivalents, actually taking part in the combat in that hex. Only TOE points actually taking part in combat in that hex count toward size equivalence: a battalion that did not contribute at least 50% of its maximum TOE strength limit (understrength, probing, committed to attacks in other hexes, or any other reason) is a shell and may lower the size-equivalent of any brigade or division it is attached to."
+
+[[footnote]]
+id = "adjustment"
+text = "Adjustment is the number of columns shifted in the larger side's favor in that Close Assault."

@@ -1,0 +1,981 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "15.0"
+book = "land"
+title = "Close Assault"
+systems = ["land"]
+
+[[case]]
+id = "15.0"
+title = "General rule: Close Assault"
+summary = "Close Assault is the last combat step: the phasing player attacks and the non-phasing player defends. Each side totals its Actual Close Assault Points (offensive or defensive); the defender's total is subtracted from the attacker's to give the Assault Differential, which terrain, morale and organizational size then shift by columns. Each side rolls two dice once, read in sequence, on its half of the Close Assault table and takes losses and other results at once, before the next hex. Ammunition is spent by both sides. The Probe is a lighter form (15.9)."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.15.79.close_assault_results"]
+depends_on = ["15.1", "15.7", "15.9"]
+src = ["land:15.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.1"
+title = "Which Units May Participate in Close Assault"
+summary = "Heading for 15.11-15.18."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.11"
+title = "Units with ratings may fight"
+summary = "Units with Close Assault ratings may use them offensively or defensively; unrated units may take part but add nothing (15.17)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.17"]
+src = ["land:15.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.12"
+title = "Pinned and retreated defenders"
+summary = "Pinned units and units that retreated before assault into the assaulted hex add no defensive rating, but their TOE strength counts when computing casualties. Applies only to non-phasing defenders."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["12.44", "13.28"]
+src = ["land:15.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.13"
+title = "Back guns and Forward guns"
+summary = "Back guns are untouched by Close Assault unless Overrun (the text cites 15.86; the Overrun loss rule is 15.84); Forward guns may fight offensively or defensively with Vulnerability affected per 12.18."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["12.18", "15.84"]
+interp = ["land-0010"]
+src = ["land:15.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.14"
+title = "Only committed units add ratings"
+summary = "Only units committed to the assault contribute ratings, but some non-phasing units suffer results without taking part (15.12, 15.15)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.15"
+title = "Out of ammunition"
+summary = "Units out of ammunition cannot assault or defend, but out-of-ammo defenders still count for percentage losses; phasing out-of-ammo units are ignored. If every defender in a hex is out of ammunition and assaulted, the whole hex surrenders."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.88", "50.0"]
+src = ["land:15.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.16"
+title = "Splitting and withholding TOE points"
+summary = "A phasing unit may split TOE points among assaults or hold some back; a non-phasing player may withhold points too, but withheld defending points still count toward percentage losses. A hex may never be Close Assaulted twice in one segment."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.force_assignment"]
+depends_on = ["14.11", "14.26"]
+src = ["land:15.16"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign TOE points of each unit to Close Assault (which hex), Anti-Armor, or withhold"
+params = ["unit", "TOE points", "target hex or role"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "15.17"
+title = "Parenthesised close assault ratings"
+summary = "Units whose Close Assault ratings are parenthesised may use them only in a hex with no combat units; in a hex with combat units their TOE counts for losses only if the owner chooses, in which case they may absorb at most 25% of losses. If the phasing unit assaults two hexes at once and one holds only such a unit, that unit may use its rating."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["3.4"]
+src = ["land:15.17"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.18"
+title = "Parenthesised-only defenders overrun"
+summary = "When all non-phasing units in the assault have only parenthesised ratings and the attacker has at least three times their Raw defensive strength, the attacker ignores its first 20% losses, and if the defenders suffer 20% or more casualties their remaining TOE points are captured (if the enemy force survives)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.83"]
+src = ["land:15.18"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.2"
+title = "How Close Assault Occurs"
+summary = "Heading for 15.21-15.29."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.21"
+title = "Who may assault"
+summary = "Phasing units with Offensive ratings may assault adjacent enemy hexes unless terrain prohibits (15.3); units assigned to Anti-Armor cannot join (but see 14.23)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.3", "14.23"]
+src = ["land:15.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.22"
+title = "Announcing and sequencing assaults"
+summary = "The phasing player announces which hexes he assaults, states whether each is a Close Assault or a Probe, and each assault is resolved one after another with results applied as they occur. The Probe designation need not be revealed until after the assault (15.94)."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.94", "15.9"]
+src = ["land:15.22"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Announce target hexes and the order of assaults"
+params = ["target hexes", "order"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "15.23"
+title = "One assault per hex"
+summary = "An enemy-occupied hex may be assaulted or probed once per segment, as one group; the phasing player may not attack part of the hex's units with one group and part with another."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.24"
+title = "Multi-hex assaults"
+summary = "Units from any number of adjacent hexes may assault a hex, and a phasing unit may assault more than one hex at once if all those hexes are adjacent to its origin hex and to each other."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.25"
+title = "50% rule for a full Close Assault"
+summary = "Units may commit any number of TOE points, but if the units making an assault have committed less than 50% of their available TOE points (counted across all their assaults), the assault is automatically a Probe. Example: TOE 7, 2 points on hex A and 1 on hex B with 4 withheld means both are Probes; 3 on A and 1 on B (4 of 7) makes both full assaults."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.force_assignment", "opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.9", "15.91"]
+interp = ["land-0010"]
+src = ["land:15.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.26"
+title = "Basic Assault Differential"
+summary = "Each side totals its Actual Points (11.32, 11.35); the attacker's total minus the defender's is the Basic Assault Differential (6 against 8 is -2)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["11.32"]
+src = ["land:15.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.27"
+title = "Column adjustment and dice reading"
+summary = "Terrain, morale and unit size shift the differential column (not the number); the cumulative result is the Adjusted Assault Differential used for the table. Dice are read sequentially (62 not 8) for losses, and the same roll added (6+2=8) for retreats, surrenders and similar results."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.3", "15.5", "15.6", "15.7"]
+src = ["land:15.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.28"
+title = "Small totals"
+summary = "In Close Assault and Probe, a side with fewer than 5 Raw points counts as zero; if each side has fewer than 10 Raw, Raw points are used as if they were Actual."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["11.33", "15.51"]
+src = ["land:15.28"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.29"
+title = "Nobody allocated to assault"
+summary = "If the defender allocates no units to an assault, all his units in the hex retreat three hexes and gain three Disorganization Points plus any from the move; if the attacker allocates none there is no assault (only possible under 10.31 and following)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["6.21", "10.31"]
+src = ["land:15.29"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.3"
+title = "Terrain Effects on Close Assault"
+summary = "Heading for 15.31-15.36."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.31"
+title = "Terrain adjusts the differential"
+summary = "Terrain the defender occupies, or the attacker crosses, shifts the differential for or against the attacker; see the Terrain Effects Chart."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:15.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.32"
+title = "Hex terrain shifts"
+summary = "Hex terrain either has no effect or shifts the column in the defender's favor by the chart amount (a Mountain defence against +4 uses the +1 column); salt marsh shifts one column in the attacker's favor."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:15.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.33"
+title = "Hexside shifts"
+summary = "Assaulting across certain hexsides shifts the differential (a wadi hexside shifts one column against the attacker) in addition to the hex; if any attacker crosses a given hexside, the shift applies as if all do."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:15.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.34"
+title = "Terrain that bars assault"
+summary = "Motorized units may never assault up an escarpment (even over a track) and may not assault into salt marsh; infantry can dismount first. A combat unit in an enemy ZOC that it cannot attack must retreat one hex unless another unit attacks that enemy."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["8.44", "8.42"]
+src = ["land:15.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.35"
+title = "Cumulative terrain"
+summary = "Terrain effects add up except that the defender benefits from only one hexside type unless attackers actually cross a hexside holding two (rare). Example: Level Two fortification, Rough, and a ridge hexside give six columns to the defender."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:15.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.36"
+title = "Downhill and uphill assault"
+summary = "Assaults down slopes or escarpments favor the attacker; if both up and down hexsides are crossed the benefits offset (down slope +1 with up escarpment -3 gives -2)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.8.37.terrain_effects"]
+src = ["land:15.36"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.4"
+title = "Combined Arms Effect on Assault"
+summary = "Tanks (only tanks, not recce or SP guns) need equal numbers of infantry, machinegun or heavy-weapons TOE points from the same hex in the assault; for every 1-3 unsupported tank TOE points the tanks' Actual Close Assault strength drops by one (maximum reduction four), for both sides. Two unsupported tank points rated 7 drop to zero; four drop to one."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["11.4"]
+src = ["land:15.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.5"
+title = "Effect of Assaulting Force Organizational Size on Close Assault"
+summary = "Greater disparity in organizational size gives the larger force a column shift; heading for 15.51-15.56."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.51"
+title = "Two-to-one raw superiority"
+summary = "If one side has at least twice the Raw Close Assault points of the other, it adjusts the differential two columns in its favor regardless of other adjustments (exception 15.54). Example: 24 Raw against 12 Raw (+1 Actual difference) is resolved on the +3 column."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.54"]
+src = ["land:15.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.52"
+title = "Largest-unit size shift"
+summary = "If the largest organizational unit on one side is bigger than the largest on the other, the larger side gets a column shift; unit equivalents apply (9.2)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["9.2", "15.53"]
+src = ["land:15.52"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.53"
+title = "Organizational size column adjustments"
+summary = "Table of column adjustments by size difference, always in favor of the larger. All names are unit equivalents (9.2); a misplaced brigade entry was corrected in the 2021 text."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.15.53.organization_size_modifications"]
+depends_on = ["9.2"]
+src = ["land:15.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.54"
+title = "Zero-rated lone units"
+summary = "A unit with no Defensive Close Assault rating (for example 5.5-inch or 210mm howitzers) alone in a hex has defence zero; the attacker takes no casualties and gets a three-column shift in addition to 15.53. Case 15.51 does not apply."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.53"]
+src = ["land:15.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.55"
+title = "Brigade attachment for shell status"
+summary = "A brigade counts as attached to a division only if its HQ counter is attached (a division with nine battalions and no brigade HQ is a shell in Close Assault; the two Italian infantry brigade counters stand for whole brigades). The designer's own note admits the case is unclear."
+kind = "rule"
+disposition = "unresolved"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["9.26"]
+interp = ["land-0009"]
+src = ["land:15.55"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.56"
+title = "All defenders pinned"
+summary = "If every defender in the hex is pinned and the hex is assaulted, they defend at strength 0 and the differential shifts two columns to the right (the effect of 15.51)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["12.44", "15.51"]
+src = ["land:15.56"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.6"
+title = "Effects of Morale on Close Assault"
+summary = "Heading for 15.61-15.64; morale is in Section 17."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.61"
+title = "Final Adjusted Morale"
+summary = "Each side computes its Adjusted Morale (17.2); the phasing side's minus the non-phasing side's is the Final Adjusted Morale, the number of columns the differential is adjusted."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["17.2", "15.64"]
+src = ["land:15.61"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.62"
+title = "Direction of morale shift"
+summary = "A positive Final Adjusted Morale shifts the differential that many columns right (for the attacker); negative shifts it left (for the defender)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.62"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.63"
+title = "Largest-unit rule for morale"
+summary = "Units with differing morale in one assault use the largest-unit rule of 6.27."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["6.27"]
+src = ["land:15.63"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.64"
+title = "Morale example"
+summary = "Worked example: Axis divisions (+3 and +1, averaged +2, cohesion -4 gives -2 morale change) against 2nd NZ Division (+1, cohesion +2, no change) with an attached battalion; Final Adjusted Morale -1 shifts one column for the defender."
+kind = "example"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["17.4"]
+src = ["land:15.64"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.7"
+title = "How to Use the Close Assault Combat Results Table"
+summary = "Heading for 15.71-15.79."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.7"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.71"
+title = "Table overview and one roll"
+summary = "The table uses each side's single two-dice roll in three ways (sequential reading for losses; summed for engaged/retreat; summed for captured), except for the extra die in 15.73d."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.15.79.close_assault_results"]
+src = ["land:15.71"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.72"
+title = "Table layout"
+summary = "Columns are Assault Differentials, rows are loss percentages, center cells are dice-reading ranges; Engaged (attacker), Retreat (defender) and Captured possibilities sit at the bottom of each column and use the same roll."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.15.79.close_assault_results"]
+src = ["land:15.72"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.73"
+title = "Resolving the table"
+summary = "a. Each side reads its dice sequentially in its own half to find percentage losses. b. The same roll summed gives Engaged (attacker half) or Retreat (defender half). c. Summed again for Captured possibilities. d. On a Captured result the player rolls one more die on the Prisoners Captured table (15.89) to find the percentage of losses captured."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.15.79.close_assault_results", "land.15.89.prisoners_captured"]
+depends_on = ["15.89"]
+src = ["land:15.73"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.74"
+title = "Retreat beats Engaged"
+summary = "If both Retreat and Engaged occur, Retreat applies and Engaged is ignored."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.74"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.75"
+title = "Both sides roll"
+summary = "Attacker and defender each roll two dice, use the same differential column and their own halves of the table."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.75"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.76"
+title = "Zero losses can still engage or retreat"
+summary = "A zero loss result may still carry Engaged or Retreat."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.76"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.77"
+title = "Overrun columns"
+summary = "The +11 and higher columns are the Overrun section: not a choice, but overwhelming strength that breaks the line, producing comparable losses and exposing guns (15.84, 15.86); all defender losses round up."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.84", "15.86"]
+src = ["land:15.77"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.78"
+title = "Table commentary"
+summary = "Comment that the table is large but straightforward once the dice mechanics are understood."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.78"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.79"
+title = "Close Assault Combat Results Table"
+summary = "Table of Close Assault results by differential column. Errata folded in: the defender 10% loss line at the +4 differential reads 34-45. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.15.79.close_assault_results"]
+errata = ["errata79:15.79"]
+src = ["land:15.79"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.8"
+title = "Determining Casualties"
+summary = "Heading for 15.81-15.89."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.8"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.81"
+title = "Engaged"
+summary = "Engaged locks all units in the assault together, with the heavier break-off cost of 8.6; Engaged markers go on affected units and come off at the end of the Operations Stage. Surviving adjacent assault units not Engaged are in Contact."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["8.6", "8.63"]
+src = ["land:15.81"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.82"
+title = "Retreat results"
+summary = "A Retreat result forces the affected units (including withheld pinned or out-of-ammo units) at least that many hexes from the inflicting enemy, along the path of least resistance toward the nearest supply dump or city; each hex not retreated costs an extra 10% loss; retreat costs CP; units in a Major City may ignore retreat results."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["9.35", "8.12"]
+src = ["land:15.82"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose retreat paths and how far to retreat"
+params = ["units", "retreat hexes"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "15.83"
+title = "Percentage losses procedure"
+summary = "Steps: read loss % on the table; total all Raw Assault points involved (the defender adds Raw points of pinned or previously retreated units, and in an Overrun all withheld defenders); multiply, rounding up for the attacker and down for the defender (up in an Overrun), adding any extra 10% per hex not retreated; remove TOE points whose ratings absorb the Raw points (participants, and for defenders pinned or withheld units); split losses across hexes in proportion to Raw points committed."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.82", "15.77"]
+src = ["land:15.83"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose which TOE points absorb the Raw point losses"
+params = ["TOE points removed per hex"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "15.84"
+title = "Gun losses in Close Assault"
+summary = "In an Overrun all defending guns add defensive close assault points to the loss base. Forward guns lose Vulnerability points equal to at least half the Raw points lost (at least one if any Raw point was lost), AA/flak excepted; in an Overrun all defending guns are subject to this after percentage losses."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["14.42", "12.18"]
+src = ["land:15.84"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose which Forward gun TOE points absorb Vulnerability losses"
+params = ["gun TOE points"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "15.85"
+title = "Captured losses"
+summary = "If TOE points are Captured, the player converts that percentage of his determined losses into prisoners or captured equipment given to the enemy; captured percentages round up."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.73", "28.0"]
+src = ["land:15.85"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.86"
+title = "Determining captured TOE points"
+summary = "First determine eliminated TOE points, then take the Captured percentage of them, using any TOE points the owner picks to satisfy it (measured in Raw points); captured infantry become prisoner points one per TOE point; captured guns and tanks go to the enemy."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["28.0"]
+src = ["land:15.86"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose which eliminated TOE points count as captured"
+params = ["TOE points"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "15.87"
+title = "30% losses disorganize"
+summary = "A side losing 30% or more of the TOE points committed to the assault (from committed units or not) puts 3 Disorganization Points on all its involved units; both sides may suffer this."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["6.21"]
+src = ["land:15.87"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.88"
+title = "Surrender"
+summary = "A player may voluntarily surrender his units. Units out of ammunition or at cohesion -17 or worse automatically surrender if assaulted (a -26 unit also surrenders when merely approached, per 6.26)."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["6.26", "17.25"]
+src = ["land:15.88"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Voluntarily surrender units that are assaulted"
+params = ["units"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "15.89"
+title = "Prisoners Captured Results Tables"
+summary = "Table giving the percentage of losses captured by die roll. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.15.89.prisoners_captured"]
+src = ["land:15.89"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.9"
+title = "Probes"
+summary = "Heading for 15.91-15.96."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:15.9"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.91"
+title = "What a Probe is"
+summary = "A Probe is any Close Assault by the phasing player with less than 50% of his available TOE points taking part in that or another attack."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["10.31", "15.25"]
+src = ["land:15.91"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.92"
+title = "Probe size"
+summary = "A Probe may use any number of units subject to 15.91."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.92"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.93"
+title = "Probe results"
+summary = "Probe results are the same for both sides, except that Engaged results are ignored and probing and defending units are not in Contact."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["8.62"]
+src = ["land:15.93"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.94"
+title = "Probe announcement"
+summary = "The probing player need not announce a Probe until after it is resolved; all units are assigned before Anti-Armor."
+kind = "rule"
+disposition = "display"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.94"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.95"
+title = "Recce probes"
+summary = "If all probing units are Recce-type, their Close Assault losses are reduced by 10%."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+src = ["land:15.95"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "15.96"
+title = "Defence CP against hopeless probes"
+summary = "If the final adjusted differential in a Probe is worse than -3, the defenders spend no CP defending."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["11.27"]
+src = ["land:15.96"]
+
+[case.applies]
+graziani = "yes"

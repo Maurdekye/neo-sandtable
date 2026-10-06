@@ -1,0 +1,533 @@
+# The Close Assault Combat Results Table (land:15.79).
+
+[table]
+id = "land.15.79.close_assault_results"
+case = "15.79"
+title = "The Close Assault Combat Results Table"
+src = ["land:15.79", "errata79:15.79"]
+transcribed_from = ["vassal:15.79 The Close Assault Combat Results Table.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+Each side rolls two dice once. Losses use the sequential reading (11 to 66, larger die as tens); Engaged,
+Captured and Retreat use the plain sum of the same two dice (2 to 12). Both sides use the same column, the
+Adjusted Assault Differential, but each its own half of the table: [[loss_row]] gives, for a side, the
+percentage of its Raw Assault Points lost for each dice-reading range; [[sum_result]] gives the sums that
+trigger Captured (go on to the Prisoners Captured table, land:15.89), Engaged (attacker half; ignored if
+the defender retreats after the combat; otherwise the units are Engaged, else In Contact) and Retreat
+(defender half; at least that many hexes or take extra casualties; the attacker never retreats
+involuntarily). A cell absent from a row is a printed dash. The columns marked overrun are the Overrun
+section (land:15.77). The first column covers a differential of -11 or worse and the last +17 or better
+(printed 'ET Seq'). For the loss rows, every column of each side covers all 36 dice readings exactly once
+with one exception, recorded in [[gap]]. The errata correction (defender, +4 column, 10% line is 34-45) is
+already applied in the image and here. In the printed layout the three defender retreat sub-rows share
+their left cell with the row labels, so the -11 and worse column shows no retreat results.
+"""
+
+[[gap]]
+side = "defender"
+column = "p2"
+readings = [34, 35, 36]
+description = "The printed defender cells for the +2 column leave readings 34, 35 and 36 uncovered (10% line ends at 33, 5% line starts at 41). Values are transcribed as printed; see interpretation land-0011 for the proposed fill."
+interp = "land-0011"
+
+[[column]]
+id = "m11_and_below"
+differential_max = -11
+
+[[column]]
+id = "m10_to_m8"
+differential_min = -10
+differential_max = -8
+
+[[column]]
+id = "m7_to_m6"
+differential_min = -7
+differential_max = -6
+
+[[column]]
+id = "m5_to_m4"
+differential_min = -5
+differential_max = -4
+
+[[column]]
+id = "m3"
+differential_min = -3
+differential_max = -3
+
+[[column]]
+id = "m2"
+differential_min = -2
+differential_max = -2
+
+[[column]]
+id = "m1"
+differential_min = -1
+differential_max = -1
+
+[[column]]
+id = "0"
+differential_min = 0
+differential_max = 0
+
+[[column]]
+id = "p1"
+differential_min = 1
+differential_max = 1
+
+[[column]]
+id = "p2"
+differential_min = 2
+differential_max = 2
+
+[[column]]
+id = "p3"
+differential_min = 3
+differential_max = 3
+
+[[column]]
+id = "p4"
+differential_min = 4
+differential_max = 4
+
+[[column]]
+id = "p5_to_p6"
+differential_min = 5
+differential_max = 6
+
+[[column]]
+id = "p7_to_p8"
+differential_min = 7
+differential_max = 8
+
+[[column]]
+id = "p9_to_p10"
+differential_min = 9
+differential_max = 10
+
+[[column]]
+id = "overrun_p11_to_p13"
+differential_min = 11
+differential_max = 13
+overrun = true
+
+[[column]]
+id = "overrun_p14_to_p16"
+differential_min = 14
+differential_max = 16
+overrun = true
+
+[[column]]
+id = "overrun_p17_and_above"
+differential_min = 17
+overrun = true
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 50
+cells = [
+  { column = "m11_and_below", dice = [11, 15] },
+  { column = "m10_to_m8", dice = [11, 12] },
+  { column = "m7_to_m6", dice = [11, 11] },
+]
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 40
+cells = [
+  { column = "m11_and_below", dice = [16, 24] },
+  { column = "m10_to_m8", dice = [13, 16] },
+  { column = "m7_to_m6", dice = [12, 14] },
+  { column = "m5_to_m4", dice = [11, 11] },
+]
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 30
+cells = [
+  { column = "m11_and_below", dice = [25, 33] },
+  { column = "m10_to_m8", dice = [21, 26] },
+  { column = "m7_to_m6", dice = [15, 23] },
+  { column = "m5_to_m4", dice = [12, 15] },
+  { column = "m3", dice = [11, 12] },
+]
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 25
+cells = [
+  { column = "m11_and_below", dice = [34, 36] },
+  { column = "m10_to_m8", dice = [31, 34] },
+  { column = "m7_to_m6", dice = [24, 32] },
+  { column = "m5_to_m4", dice = [16, 23] },
+  { column = "m3", dice = [13, 16] },
+  { column = "m2", dice = [11, 12] },
+  { column = "m1", dice = [11, 11] },
+  { column = "0", dice = [11, 11] },
+  { column = "p1", dice = [11, 11] },
+  { column = "p2", dice = [11, 11] },
+]
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 20
+cells = [
+  { column = "m11_and_below", dice = [41, 46] },
+  { column = "m10_to_m8", dice = [35, 43] },
+  { column = "m7_to_m6", dice = [33, 41] },
+  { column = "m5_to_m4", dice = [24, 33] },
+  { column = "m3", dice = [21, 26] },
+  { column = "m2", dice = [13, 18] },
+  { column = "m1", dice = [12, 13] },
+  { column = "0", dice = [12, 12] },
+  { column = "p1", dice = [12, 12] },
+  { column = "p2", dice = [12, 12] },
+  { column = "p3", dice = [11, 12] },
+  { column = "p4", dice = [11, 12] },
+  { column = "p5_to_p6", dice = [11, 11] },
+]
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 15
+cells = [
+  { column = "m11_and_below", dice = [51, 56] },
+  { column = "m10_to_m8", dice = [44, 53] },
+  { column = "m7_to_m6", dice = [42, 51] },
+  { column = "m5_to_m4", dice = [34, 44] },
+  { column = "m3", dice = [31, 36] },
+  { column = "m2", dice = [21, 33] },
+  { column = "m1", dice = [14, 26] },
+  { column = "0", dice = [13, 24] },
+  { column = "p1", dice = [13, 22] },
+  { column = "p2", dice = [13, 16] },
+  { column = "p3", dice = [13, 16] },
+  { column = "p4", dice = [13, 15] },
+  { column = "p5_to_p6", dice = [12, 13] },
+  { column = "p7_to_p8", dice = [11, 12] },
+  { column = "p9_to_p10", dice = [11, 11] },
+]
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 10
+cells = [
+  { column = "m11_and_below", dice = [61, 63] },
+  { column = "m10_to_m8", dice = [54, 62] },
+  { column = "m7_to_m6", dice = [52, 56] },
+  { column = "m5_to_m4", dice = [45, 53] },
+  { column = "m3", dice = [41, 46] },
+  { column = "m2", dice = [34, 44] },
+  { column = "m1", dice = [31, 42] },
+  { column = "0", dice = [25, 36] },
+  { column = "p1", dice = [23, 33] },
+  { column = "p2", dice = [21, 31] },
+  { column = "p3", dice = [21, 26] },
+  { column = "p4", dice = [16, 25] },
+  { column = "p5_to_p6", dice = [14, 21] },
+  { column = "p7_to_p8", dice = [13, 21] },
+  { column = "p9_to_p10", dice = [12, 16] },
+  { column = "overrun_p11_to_p13", dice = [11, 16] },
+  { column = "overrun_p14_to_p16", dice = [11, 13] },
+  { column = "overrun_p17_and_above", dice = [11, 12] },
+]
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 5
+cells = [
+  { column = "m11_and_below", dice = [64, 66] },
+  { column = "m10_to_m8", dice = [63, 65] },
+  { column = "m7_to_m6", dice = [61, 63] },
+  { column = "m5_to_m4", dice = [54, 61] },
+  { column = "m3", dice = [51, 56] },
+  { column = "m2", dice = [45, 54] },
+  { column = "m1", dice = [43, 52] },
+  { column = "0", dice = [41, 51] },
+  { column = "p1", dice = [34, 46] },
+  { column = "p2", dice = [32, 44] },
+  { column = "p3", dice = [31, 42] },
+  { column = "p4", dice = [26, 41] },
+  { column = "p5_to_p6", dice = [22, 35] },
+  { column = "p7_to_p8", dice = [22, 33] },
+  { column = "p9_to_p10", dice = [21, 31] },
+  { column = "overrun_p11_to_p13", dice = [21, 26] },
+  { column = "overrun_p14_to_p16", dice = [14, 21] },
+  { column = "overrun_p17_and_above", dice = [13, 16] },
+]
+
+[[loss_row]]
+side = "attacker"
+loss_percent = 0
+cells = [
+  { column = "m10_to_m8", dice = [66, 66] },
+  { column = "m7_to_m6", dice = [64, 66] },
+  { column = "m5_to_m4", dice = [62, 66] },
+  { column = "m3", dice = [61, 66] },
+  { column = "m2", dice = [55, 66] },
+  { column = "m1", dice = [53, 66] },
+  { column = "0", dice = [52, 66] },
+  { column = "p1", dice = [51, 66] },
+  { column = "p2", dice = [45, 66] },
+  { column = "p3", dice = [43, 66] },
+  { column = "p4", dice = [42, 66] },
+  { column = "p5_to_p6", dice = [36, 66] },
+  { column = "p7_to_p8", dice = [34, 66] },
+  { column = "p9_to_p10", dice = [32, 66] },
+  { column = "overrun_p11_to_p13", dice = [31, 66] },
+  { column = "overrun_p14_to_p16", dice = [22, 66] },
+  { column = "overrun_p17_and_above", dice = [21, 66] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 50
+cells = [
+  { column = "overrun_p14_to_p16", dice = [11, 13] },
+  { column = "overrun_p17_and_above", dice = [11, 16] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 40
+cells = [
+  { column = "p7_to_p8", dice = [11, 11] },
+  { column = "p9_to_p10", dice = [11, 12] },
+  { column = "overrun_p11_to_p13", dice = [11, 13] },
+  { column = "overrun_p14_to_p16", dice = [14, 25] },
+  { column = "overrun_p17_and_above", dice = [21, 26] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 30
+cells = [
+  { column = "p5_to_p6", dice = [11, 11] },
+  { column = "p7_to_p8", dice = [12, 14] },
+  { column = "p9_to_p10", dice = [13, 16] },
+  { column = "overrun_p11_to_p13", dice = [14, 22] },
+  { column = "overrun_p14_to_p16", dice = [26, 33] },
+  { column = "overrun_p17_and_above", dice = [31, 36] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 25
+cells = [
+  { column = "p2", dice = [11, 11] },
+  { column = "p3", dice = [11, 11] },
+  { column = "p4", dice = [11, 12] },
+  { column = "p5_to_p6", dice = [12, 14] },
+  { column = "p7_to_p8", dice = [15, 22] },
+  { column = "p9_to_p10", dice = [21, 26] },
+  { column = "overrun_p11_to_p13", dice = [23, 33] },
+  { column = "overrun_p14_to_p16", dice = [34, 43] },
+  { column = "overrun_p17_and_above", dice = [41, 46] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 20
+cells = [
+  { column = "m2", dice = [11, 11] },
+  { column = "m1", dice = [11, 11] },
+  { column = "0", dice = [11, 12] },
+  { column = "p1", dice = [11, 13] },
+  { column = "p2", dice = [12, 13] },
+  { column = "p3", dice = [12, 14] },
+  { column = "p4", dice = [13, 16] },
+  { column = "p5_to_p6", dice = [15, 23] },
+  { column = "p7_to_p8", dice = [23, 31] },
+  { column = "p9_to_p10", dice = [31, 41] },
+  { column = "overrun_p11_to_p13", dice = [34, 46] },
+  { column = "overrun_p14_to_p16", dice = [44, 55] },
+  { column = "overrun_p17_and_above", dice = [51, 56] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 15
+cells = [
+  { column = "m5_to_m4", dice = [11, 11] },
+  { column = "m3", dice = [11, 13] },
+  { column = "m2", dice = [12, 13] },
+  { column = "m1", dice = [12, 16] },
+  { column = "0", dice = [13, 23] },
+  { column = "p1", dice = [14, 22] },
+  { column = "p2", dice = [14, 23] },
+  { column = "p3", dice = [15, 25] },
+  { column = "p4", dice = [21, 33] },
+  { column = "p5_to_p6", dice = [24, 36] },
+  { column = "p7_to_p8", dice = [32, 45] },
+  { column = "p9_to_p10", dice = [42, 56] },
+  { column = "overrun_p11_to_p13", dice = [51, 62] },
+  { column = "overrun_p14_to_p16", dice = [56, 63] },
+  { column = "overrun_p17_and_above", dice = [61, 63] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 10
+cells = [
+  { column = "m11_and_below", dice = [11, 11] },
+  { column = "m10_to_m8", dice = [11, 11] },
+  { column = "m7_to_m6", dice = [11, 13] },
+  { column = "m5_to_m4", dice = [12, 15] },
+  { column = "m3", dice = [14, 21] },
+  { column = "m2", dice = [14, 23] },
+  { column = "m1", dice = [21, 26] },
+  { column = "0", dice = [24, 32] },
+  { column = "p1", dice = [23, 33] },
+  { column = "p2", dice = [24, 33] },
+  { column = "p3", dice = [26, 42] },
+  { column = "p4", dice = [34, 45] },
+  { column = "p5_to_p6", dice = [41, 54] },
+  { column = "p7_to_p8", dice = [46, 61] },
+  { column = "p9_to_p10", dice = [61, 63] },
+  { column = "overrun_p11_to_p13", dice = [63, 64] },
+  { column = "overrun_p14_to_p16", dice = [64, 64] },
+  { column = "overrun_p17_and_above", dice = [64, 65] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 5
+cells = [
+  { column = "m11_and_below", dice = [12, 16] },
+  { column = "m10_to_m8", dice = [12, 23] },
+  { column = "m7_to_m6", dice = [14, 26] },
+  { column = "m5_to_m4", dice = [16, 31] },
+  { column = "m3", dice = [22, 41] },
+  { column = "m2", dice = [24, 44] },
+  { column = "m1", dice = [31, 46] },
+  { column = "0", dice = [33, 51] },
+  { column = "p1", dice = [34, 51] },
+  { column = "p2", dice = [41, 52] },
+  { column = "p3", dice = [43, 54] },
+  { column = "p4", dice = [46, 56] },
+  { column = "p5_to_p6", dice = [55, 62] },
+  { column = "p7_to_p8", dice = [62, 64] },
+  { column = "p9_to_p10", dice = [64, 65] },
+  { column = "overrun_p11_to_p13", dice = [65, 65] },
+  { column = "overrun_p14_to_p16", dice = [65, 66] },
+  { column = "overrun_p17_and_above", dice = [66, 66] },
+]
+
+[[loss_row]]
+side = "defender"
+loss_percent = 0
+cells = [
+  { column = "m11_and_below", dice = [21, 66] },
+  { column = "m10_to_m8", dice = [24, 66] },
+  { column = "m7_to_m6", dice = [31, 66] },
+  { column = "m5_to_m4", dice = [32, 66] },
+  { column = "m3", dice = [42, 66] },
+  { column = "m2", dice = [45, 66] },
+  { column = "m1", dice = [51, 66] },
+  { column = "0", dice = [52, 66] },
+  { column = "p1", dice = [52, 66] },
+  { column = "p2", dice = [53, 66] },
+  { column = "p3", dice = [55, 66] },
+  { column = "p4", dice = [61, 66] },
+  { column = "p5_to_p6", dice = [63, 66] },
+  { column = "p7_to_p8", dice = [65, 66] },
+  { column = "p9_to_p10", dice = [66, 66] },
+  { column = "overrun_p11_to_p13", dice = [66, 66] },
+]
+
+[[sum_result]]
+side = "attacker"
+kind = "captured"
+cells = [
+  { column = "m11_and_below", sums = [2, 3, 4, 5, 6, 7] },
+  { column = "m10_to_m8", sums = [2, 3, 4, 5, 6] },
+  { column = "m7_to_m6", sums = [2, 3, 4, 5] },
+  { column = "m5_to_m4", sums = [2, 3, 4] },
+  { column = "m3", sums = [2, 3] },
+  { column = "m2", sums = [2] },
+]
+
+[[sum_result]]
+side = "attacker"
+kind = "engaged"
+cells = [
+  { column = "m11_and_below", sums = [10, 11, 12] },
+  { column = "m10_to_m8", sums = [10, 11] },
+  { column = "m7_to_m6", sums = [11, 12] },
+  { column = "m5_to_m4", sums = [12] },
+  { column = "m3", sums = [11, 12] },
+  { column = "m2", sums = [10, 11] },
+  { column = "m1", sums = [10, 11, 12] },
+  { column = "0", sums = [9, 10, 12] },
+  { column = "p1", sums = [9, 10, 11] },
+  { column = "p2", sums = [9, 10, 11, 12] },
+  { column = "p3", sums = [8, 9, 10, 12] },
+  { column = "p4", sums = [8, 9, 10] },
+  { column = "p5_to_p6", sums = [9, 10, 12] },
+  { column = "p7_to_p8", sums = [10, 11, 12] },
+  { column = "p9_to_p10", sums = [9, 10, 11] },
+]
+
+[[sum_result]]
+side = "defender"
+kind = "captured"
+cells = [
+  { column = "0", sums = [2] },
+  { column = "p1", sums = [2] },
+  { column = "p2", sums = [2] },
+  { column = "p3", sums = [2, 3] },
+  { column = "p4", sums = [2, 3] },
+  { column = "p5_to_p6", sums = [2, 3, 4] },
+  { column = "p7_to_p8", sums = [2, 3, 4] },
+  { column = "p9_to_p10", sums = [2, 3, 4, 5] },
+  { column = "overrun_p11_to_p13", sums = [2, 3, 4, 5, 6] },
+  { column = "overrun_p14_to_p16", sums = [2, 3, 4, 5, 6, 7] },
+  { column = "overrun_p17_and_above", sums = [2, 3, 4, 5, 6, 7, 8] },
+]
+
+[[sum_result]]
+side = "defender"
+kind = "retreat_1_hex"
+cells = [
+  { column = "m3", sums = [10] },
+  { column = "m2", sums = [9] },
+  { column = "m1", sums = [8] },
+  { column = "0", sums = [5, 6] },
+  { column = "p1", sums = [4, 5, 6] },
+  { column = "p2", sums = [5, 6, 7] },
+  { column = "p3", sums = [4, 5, 6, 7] },
+  { column = "p4", sums = [3, 4, 5, 6, 7] },
+  { column = "p5_to_p6", sums = [7, 8, 9] },
+  { column = "p7_to_p8", sums = [7, 8, 9, 12] },
+  { column = "p9_to_p10", sums = [4, 5, 6, 7, 12] },
+  { column = "overrun_p11_to_p13", sums = [3, 4, 6, 7, 8, 9] },
+  { column = "overrun_p14_to_p16", sums = [2, 5, 6, 7, 9, 11] },
+  { column = "overrun_p17_and_above", sums = [2, 3, 4, 5, 6, 7, 8, 9, 11] },
+]
+
+[[sum_result]]
+side = "defender"
+kind = "retreat_2_hexes"
+cells = [
+  { column = "p3", sums = [11] },
+  { column = "p4", sums = [11] },
+  { column = "p5_to_p6", sums = [5] },
+  { column = "p7_to_p8", sums = [5] },
+  { column = "p9_to_p10", sums = [8] },
+  { column = "overrun_p11_to_p13", sums = [12] },
+  { column = "overrun_p14_to_p16", sums = [8, 10] },
+  { column = "overrun_p17_and_above", sums = [10] },
+]
+
+[[sum_result]]
+side = "defender"
+kind = "retreat_3_hexes"
+cells = [
+  { column = "overrun_p11_to_p13", sums = [11] },
+  { column = "overrun_p14_to_p16", sums = [12] },
+  { column = "overrun_p17_and_above", sums = [12] },
+]
+
+[[footnote]]
+id = "caveat_overrun_rounding"
+text = "In an Overrun all defender losses round up (land:15.77)."

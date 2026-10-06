@@ -1,0 +1,39 @@
+# Prisoners Captured Results Table (land:15.89).
+
+[table]
+id = "land.15.89.prisoners_captured"
+case = "15.89"
+title = "Prisoners Captured Results Table"
+src = ["land:15.89"]
+transcribed_from = ["vassal:15.89 Prisoners Captured Results Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+After a Captured result on the Close Assault table (land:15.73d), roll one die. The cell is the percentage
+of the player's Infantry, Armor and Gun casualties taken as prisoners by the opposing player (rounded up,
+land:15.85).
+"""
+
+[[row]]
+die = 1
+percent_prisoners = 10
+
+[[row]]
+die = 2
+percent_prisoners = 25
+
+[[row]]
+die = 3
+percent_prisoners = 33
+
+[[row]]
+die = 4
+percent_prisoners = 50
+
+[[row]]
+die = 5
+percent_prisoners = 50
+
+[[row]]
+die = 6
+percent_prisoners = 75
