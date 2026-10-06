@@ -1,4 +1,4 @@
-"""Publish initial movement-layer schema/masks; never invent edge absence.
+"""Replay movement-layer schema and accepted masks; never invent edge absence.
 
 Source hashes and terrain reviews are rechecked. Refuses to erase edge data.
 """
@@ -9,6 +9,7 @@ import tomllib
 from apply_terrain import load_reviews, sha256
 from generate_grid import extract, IMAGE, write_csv
 from geometry import Grid, DIRECTIONS
+from line_reviews import load_line_reviews
 from layers import LINE_KINDS, SIDE_KINDS, COVERAGE_FIELDS, LINE_FIELDS, SIDE_FIELDS, Layers
 
 def publish(repo, sources):
@@ -26,14 +27,27 @@ def publish(repo, sources):
         review = tomllib.loads(path.read_text())
         for h in review["hex"]:
             batch_for[h["hex_id"]] = review["batch"]["id"]
-    for file in ["line_features.csv", "hexsides.csv"]:
-        if (folder / file).exists() and len((folder / file).read_text().splitlines()) > 1:
-            raise ValueError("Initial-schema publisher cannot erase reviewed features")
-    if (folder / "coverage.csv").exists():
+    line_features,line_coverage=load_line_reviews(folder/"line-reviews",grid,image_hash,build_hash)
+    if (folder/"hexsides.csv").exists() and len((folder/"hexsides.csv").read_text().splitlines())>1:
+        raise ValueError("No hexside replay implemented yet; cannot erase reviewed hexsides")
+    if (folder/"coverage.csv").exists():
         import csv
-        with (folder / "coverage.csv").open(newline="") as f:
-            if any(r["layer"] not in {"terrain", "coastal"} for r in csv.DictReader(f)):
-                raise ValueError("Initial-schema publisher cannot erase edge coverage")
+        with (folder/"coverage.csv").open(newline="") as f:
+            if any(r["layer"].startswith("side:") for r in csv.DictReader(f)):
+                raise ValueError("Cannot erase hexside masks")
+    # Replay may add evidence, but cannot silently remove existing reviewed data.
+    import csv
+    expected_masks={(r["layer"],r["hex_id"],r["neighbour_id"]) for r in line_coverage}
+    expected_features={(r["from_hex"],r["to_hex"],r["kind"]) for r in line_features}
+    if (folder/"coverage.csv").exists():
+        with (folder/"coverage.csv").open(newline="") as f:
+            if any((r["layer"],r["hex_id"],r["neighbour_id"]) not in expected_masks
+                   for r in csv.DictReader(f) if r["layer"].startswith("line:")):
+                raise ValueError("Cannot erase existing line masks; explicit amendment required")
+    if (folder/"line_features.csv").exists():
+        with (folder/"line_features.csv").open(newline="") as f:
+            if any((r["from_hex"],r["to_hex"],r["kind"]) not in expected_features for r in csv.DictReader(f)):
+                raise ValueError("Cannot erase existing line features; explicit amendment required")
     coverage = []
     for name, entry in sorted(decisions.items()):
         h = grid.hexes[name]
@@ -45,13 +59,14 @@ def publish(repo, sources):
         for layer in layers:
             coverage.append(dict(layer=layer, hex_id=name, neighbour_id="",
                                  src=";".join(entry["src"]), review_batch=batch_for[name]))
-    write_csv(folder / "coverage.csv", COVERAGE_FIELDS, sorted(coverage, key=lambda r:(r["layer"],r["hex_id"])))
-    write_csv(folder / "line_features.csv", LINE_FIELDS, [])
+    coverage.extend(line_coverage)
+    write_csv(folder / "coverage.csv", COVERAGE_FIELDS, sorted(coverage, key=lambda r:(r["layer"],r["hex_id"],r["neighbour_id"])))
+    write_csv(folder / "line_features.csv", LINE_FIELDS, line_features)
     write_csv(folder / "hexsides.csv", SIDE_FIELDS, [])
     metadata = dict(schema_version=1, coordinate_profile="vassal-2021", build_file_sha256=build_hash,
                     source_image_sha256=image_hash, line_kinds=sorted(LINE_KINDS), hexside_kinds=sorted(SIDE_KINDS),
                     cell_layers=["terrain", "coastal"], edge_coverage="per_feature_kind",
-                    unknown_policy="outside_mask_unknown", verification="surface_single_observer_edges_unreviewed")
+                    unknown_policy="outside_mask_unknown", verification="surface_single_observer_lines_pilot_only_hexsides_unreviewed")
     (folder / "layers.toml").write_text("\n".join(f"{k} = {json.dumps(v)}" for k,v in metadata.items())+"\n",encoding="utf-8",newline="\n")
     ids = set()
     parts = []
@@ -74,7 +89,7 @@ def publish(repo, sources):
         lines += ["", "[[bounds]]"] + [f"{k} = {json.dumps(v)}" for k,v in part.items()]
     (folder / "graziani-window.toml").write_text("\n".join(lines)+"\n",encoding="utf-8",newline="\n")
     Layers(folder)
-    print(f"Schema1: {len(coverage)} cell masks; zero surveyed edges. Window {len(ids)} hexes/{len(edges)} internal edges.")
+    print(f"Schema1: {len(coverage)-len(line_coverage)} cell masks; {len(line_coverage)} surveyed line-kind edges, {len(line_features)} features. Window {len(ids)} hexes/{len(edges)} internal edges.")
 
 if __name__ == "__main__":
     if not os.environ.get("CNA_SOURCES"):

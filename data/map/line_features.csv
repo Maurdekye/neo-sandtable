@@ -1,1 +1,10 @@
 from_hex,to_hex,kind,src,review_batch
+C4320,C4419,road,land:8.37;land:8.33,validation-0001
+C4419,C4519,road,land:8.37;land:8.33,validation-0001
+C4419,C4520,track,land:8.37;land:8.33,validation-0001
+C4516,C4517,road,land:8.37;land:8.33,validation-0001
+C4517,C4518,road,land:8.37;land:8.33,validation-0001
+C4517,C4617,track,land:8.37;land:8.33,validation-0001
+C4518,C4519,road,land:8.37;land:8.33,validation-0001
+C4616,C4717,track,land:8.37;land:8.33,validation-0001
+C4716,C4717,track,land:8.37;land:8.33,validation-0001

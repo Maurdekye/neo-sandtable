@@ -1,0 +1,64 @@
+{
+  "algorithm": "line-pattern-v0.4",
+  "build_file_sha256": "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac",
+  "source_image_sha256": "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011",
+  "selection": {
+    "section": "C",
+    "first": [
+      44,
+      48
+    ],
+    "second": [
+      17,
+      22
+    ]
+  },
+  "selected_cells": 23,
+  "edges": 70,
+  "seed": 6031,
+  "sample_per_kind_state": 8,
+  "elapsed_seconds": 4.469,
+  "populations": {
+    "railroad/absent": 68,
+    "railroad/uncertain": 2,
+    "road/absent": 62,
+    "road/present": 5,
+    "road/uncertain": 3,
+    "track/absent": 30,
+    "track/present": 6,
+    "track/uncertain": 34,
+    "unfinished_road/uncertain": 70
+  },
+  "calibration": "unmeasured",
+  "unknown_kinds": [
+    "unfinished_railroad",
+    "pipeline"
+  ],
+  "publication": "none",
+  "review_id": "validation-0001",
+  "publish_reviewed_labels": true,
+  "cohort": "individually_reviewed_audit_rows_only",
+  "review_basis": "single observer at source scale; adjacent separate strip; no independent or original1979 comparison",
+  "src_by_kind": {
+    "road": [
+      "land:8.37",
+      "land:8.33"
+    ],
+    "unfinished_road": [
+      "land:8.37",
+      "land:8.47"
+    ],
+    "track": [
+      "land:8.37",
+      "land:8.33"
+    ],
+    "railroad": [
+      "land:8.37",
+      "land:8.7"
+    ]
+  },
+  "files_sha256": {
+    "audit.csv": "a57755e3f0d2ca9368736706c7159850472a83c06972e9e39111556b67650203",
+    "proposals.csv": "70447e0a339f17c883bb5529378f14b5808ffe50d0613879268c42d74aee7e21"
+  }
+}

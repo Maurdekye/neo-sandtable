@@ -86,3 +86,18 @@ The approved Graziani priority window contains2933 canonical cells and8547
 internal edges, plus175 crossing edges; this is not a scenario boundary.
 Semi-automatic line/hexside classification and random error auditing remain
 pending. Existing palette proposals cannot certify edge absence or orientation.
+
+
+## First line-pilot limitations
+
+- Fifty-five kind/edge masks cover reviewed rows only; most of the approved
+  window remains unknown. Do not extend negative decisions to adjacent edges.
+- C4320/C4419 has a verified road crossing, but the nearby dashed segment lies
+  nearly on the shared side. Track crossing attribution remains unresolved.
+- Track false positives still occur at grid/contour strokes. Railroad positive
+  accuracy is unmeasured on the separate strip; earlier calibration confused
+  escarpments with railway ties.
+- Unfinished road remains an always-abstaining proposal layer; eight reviewed
+  absences do not establish a classifier. Unfinished railroad and pipeline have
+  no coverage. All hexside layers, including directional escarpments, remain
+  unreviewed. No movement cost or route absence may be inferred there.

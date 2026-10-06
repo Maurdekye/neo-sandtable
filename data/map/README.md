@@ -193,9 +193,11 @@ coverage but no terrain coverage. Place/facility absence has **no coverage mask
 yet**, so a missing place record always remains unknown. A later schema will
 pin facility-kind masks before certifying any absence there.
 
-Current publication contains **228 terrain cells, 229 coastal-domain cells and
-zero surveyed edges**. Line/hexside files have headers only, so they certify no
-roads, rails, pipelines or hexside absences anywhere. `tools/map/layers.py`
+Current publication contains **228 terrain cells, 229 coastal-domain cells** and
+**55 surveyed line-kind edges**: 16 road, 21 track, 10 railroad and eight
+unfinished-road masks from individually reviewed pilot rows. Nine features are
+published (five road, four track). All hexside layers, unfinished railroad and
+pipeline remain unknown everywhere. No mask covers the entire work window. `tools/map/layers.py`
 validates canonical adjacency, coverage, duplicate keys and directional features;
 `feature(family,kind,a,b)` returns a row, `None` for covered absence, or raises
 `UnknownCoverage`. It accepts display aliases at the query boundary only.
@@ -241,7 +243,9 @@ seed, population, sample ids, disagreements, abstentions and corrected records.
 Report observed errors with denominator and uncertainty per layer; report false
 positives and false negatives separately. If the sample finds systematic misses,
 expand review and recalibrate before increasing masks. Existing convenience
-samples are not random, and no edge-classifier accuracy has yet been measured.
+terrain samples are not random. The first seeded line pilot and its limitations
+are documented in VERIFICATION.md; its sample rates do not establish full-map
+accuracy.
 
 ## Area and off-map identities (schema 1)
 
@@ -337,3 +341,40 @@ unreviewed existing classifications that would otherwise be lost.
 before regenerating the initial layer files and approved window. It refuses to
 erase nonempty edge features or edge coverage; replace this initialization step
 with the reviewed-edge replay at the first edge-data milestone.
+
+### Line proposals, audits and accepted replay
+
+`propose_lines.py` samples a band along each shared side and short crossing
+corridors. Paired brown strokes propose roads; gray dash/tie patterns propose
+tracks and railroad. Its confidence numbers are uncalibrated heuristic scores,
+including the score attached to an absence proposal. It never publishes a mask.
+Unfinished roads always abstain in this version; unfinished railroad and pipeline
+have no classifier. A source-grid line or an obscured crossing can still confuse
+the model, so every accepted edge has an individual visual decision.
+
+With Python3.10+ and Pillow, write proposals and inspection sheets outside the
+clone. Use a fresh empty output folder: the command refuses to overwrite reviews.
+
+```powershell
+python tools/map/propose_lines.py --section C --first 44 48 --second 17 22 --seed 6031 --sample 8 --output ../runs/lines/new-validation
+```
+
+The generator writes numeric `proposals.csv`, seeded `audit.csv`, `metadata.json`
+and local PNG sheets. Fill the audit's `observed` with present, absent or
+unresolved, and explain the visual evidence in `note`. `audit_lines.py <folder>`
+checks the exact seeded cohort, unchanged predictions and population counts,
+then reports positive/negative errors and abstentions separately. Unresolved
+labels are counted and excluded from accuracy denominators; an empty resolved
+sample has unknown accuracy rather than zero error.
+
+Only numeric review bundles enter `data/map/line-reviews/<batch>/`: proposals,
+audit decisions and metadata. Explicit `publish_reviewed_labels=true`, source
+image/build hashes, LF-normalized CSV hashes, review basis and per-kind case citations are
+required. This acceptance is for resolved audit rows only, not unsampled model
+predictions. `publish_layer_schema.py` checks and replays these bundles with
+`line_reviews.py`, generating `line_features.csv` and the matching per-kind
+coverage rows. Unresolved or unaudited edges remain unknown. Duplicate batches,
+stale sources, altered CSVs, noncanonical/nonadjacent endpoints and removal of
+existing surveyed edges fail. Hexside replay is still pending; the publisher
+refuses to erase future hexside evidence. Schema1 and consumer query semantics
+are unchanged.

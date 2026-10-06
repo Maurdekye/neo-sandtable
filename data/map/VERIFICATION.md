@@ -230,3 +230,65 @@ Only that city's terrain/place/area is accepted, not neighboring substrates or
 port/facility attributes. Current coverage228classified/7023,6795unknown:
 191clear,22rough,7sea,2salt_marsh,6major_city. Surface masks228terrain/229coastal;
 edge masks are still empty. Total229distinct terrain cells have decisions.
+
+
+## First movement-line pilot (2026-10-07)
+
+The shipped detector is `line-pattern-v0.4`. Its tests caught a seed-sampling
+failure: sampling only the bright gap could skip both road strokes. The fix
+samples across the strokes too. It also rejects fully black grid ink from gray
+line matching, searches finer crossing orientations and abstains on clipped
+image regions. Synthetic tests establish these safeguards, not map accuracy.
+
+The initial Bardia/Sollum calibration strip C first39..45/second20..25 contains
+26 cells and 88 touching edges. An earlier v0.2 stratified sample disagreed on
+0/12 resolved road predictions, 5/16 track predictions and 5/15 railroad
+predictions. One further railroad crossing was unresolved. Grid lines, labels
+and escarpments caused gray-line false positives; these calibration observations
+were used to revise the detector and are not held-out validation. Their source
+sheets and numeric audit remain local in scratch/runs/lines/pilot-0003.
+
+After freezing v0.4, a separate adjacent strip C first44..48/second17..22 supplied
+23 contained cells and 70 touching edges. Seed6031 selects up to eight rows per
+kind and proposal state (all rows when a stratum is smaller). All 56 selected
+kind/edge rows were checked visually against native sheets with the shared side
+marked. One boundary-coincident track at C4320/C4419 stays unresolved. This is a
+single-observer check on the 2021 map, not independent review or original1979
+verification. Adjacent strips share some boundary cells/edges; this is a separate
+strip check, not a statistically independent geographic holdout.
+
+| Layer | Resolved positive predictions: errors/sample | Resolved negative predictions: errors/sample | Population abstentions |
+|---|---:|---:|---:|
+| Road | 0/5 | 0/8 | 3/70 |
+| Track | 2/6 | 0/8 | 34/70 |
+| Railroad | no positive examples | 0/8 | 2/70 |
+| Unfinished road | no predictions | no predictions | 70/70 |
+
+The sampled resolved prediction error is 0/13 for roads and 2/14 (14.29%) for
+tracks. These strata have different sampling fractions, so the pooled numbers
+are conditional sample descriptions, not population/full-map estimates.
+Railroad positive accuracy is unknown: no positive example was present in this
+strip, and the failed calibration prohibits relying on gray width alone.
+Unfinished-road accuracy is unknown because this model always abstains. The
+unfinished railroad/pipeline layers have no predictions or measured error rate.
+Uncertain samples are not treated as errors or successes: three road cases,
+ten railroad cases including two abstentions, and eight unfinished-road cases
+were resolved absent; seven track abstentions were resolved absent, one stays
+unresolved. Two false track positives (C4318/C4418, C4418/C4518) were corrected
+to absence before publication.
+
+`line-reviews/validation-0001` preserves every proposal and audited label with
+source identities, exact seed, populations, file hashes, notes and citations.
+The accepted subset supplies 55 per-kind edge masks (road16, track21,
+railroad10, unfinished_road8) and nine positive rows (road5, track4). The
+C4320/C4419 road is verified while its track layer remains unknown. No unsampled
+prediction creates coverage. All hexside masks remain empty.
+
+Inference took 4.469 seconds for70 edges on this machine; the calibration strip
+took8.708 seconds for88. At those observed rates, the approved8722-edge window
+would take approximately9?15 minutes for proposals only. This does not estimate
+visual review time: track abstentions and errors remain substantial, unfinished
+states need symbol-specific work, and no escarpment classifier has been audited.
+Full-window line and hexside ETAs therefore remain provisional. Next steps are
+reviewed strip expansion with connected route tracing, tighter dash/tie filters,
+then an independent escarpment/high-side pilot. No traced artwork is published.
