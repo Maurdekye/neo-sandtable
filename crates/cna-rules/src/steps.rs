@@ -35,6 +35,7 @@ impl Cna {
     ) -> Result<(), EngineError> {
         let anchor = state.cursor.anchor();
         match anchor {
+            "setup" => crate::setup::enter(content, state, cx, self.strict),
             "initiative" => determine_initiative(content, state, cx),
             "opstage.initiative_declaration" => {
                 open_initiative_declaration(state, cx);
@@ -69,6 +70,9 @@ impl Cna {
         match pending.kind.as_str() {
             crate::land::movement::KIND => {
                 crate::land::movement::answer(content, state, pending, action, self.strict, cx)
+            }
+            crate::setup::KIND_UNIT | crate::setup::KIND_DUMP | crate::setup::KIND_TRUCKS => {
+                crate::setup::answer(content, state, pending, action, cx)
             }
             KIND_INITIATIVE_DECLARATION => {
                 answer_initiative_declaration(state, pending, action, cx)

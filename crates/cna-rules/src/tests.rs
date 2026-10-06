@@ -22,6 +22,21 @@ fn content() -> &'static CnaContent {
     })
 }
 
+fn first_answer(schema: &ActionSchema) -> Value {
+    match schema {
+        ActionSchema::Choice { options } => json!(options[0].id),
+        ActionSchema::Unit { among } => json!(among[0]),
+        ActionSchema::Integer { max, .. } => json!(max),
+        ActionSchema::Record { fields } => Value::Object(
+            fields
+                .iter()
+                .map(|f| (f.name.clone(), first_answer(&f.schema)))
+                .collect(),
+        ),
+        other => panic!("no test answer for {other:?}"),
+    }
+}
+
 fn new_game(seed: u8) -> Game<Cna> {
     Game {
         state: State::new(content()).expect("initial state"),
@@ -57,7 +72,7 @@ fn play(
         let action = match &request.space.schema {
             ActionSchema::Choice { options } => json!(options[0].id),
             _ if request.space.pass.is_some() => Value::Null,
-            other => panic!("no test answer for {other:?}"),
+            other => first_answer(other),
         };
         let response = DecisionResponse {
             decision_id: request.id.clone(),
@@ -136,8 +151,10 @@ fn dev_profile_plays_graziani_to_the_end_with_initiative_decisions() {
     assert!(summary.contains("Graziani"), "{summary}");
     assert!(game.state.cursor.is_finished());
     // 6 game-turns x 3 OpStages, one initiative declaration each.
-    assert!(answered > 18);
-    assert_eq!(events.iter().filter(|e| matches!(&e.event, GameEvent::DecisionOpened {decision} if decision.kind == "cna.initiative_declaration")).count(),18);
+    assert!(answered > 18, "setup adds decisions before initiative");
+    assert_eq!(events.iter().filter(|e| matches!(&e.event, GameEvent::DecisionOpened { decision } if decision.kind == "cna.initiative_declaration")).count(), 18);
+    assert!(game.state.setup.closed);
+    assert!(game.state.land.undistributed_trucks.is_empty());
     // GT1 initiative is fixed by the scenario; GT2-6 are rolled (two dice per roll at least).
     let initiative_rolls = events
         .iter()
