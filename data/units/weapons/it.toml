@@ -1,0 +1,304 @@
+# Weapon systems, land:4.48. Field meanings: see data/units/README.md.
+[file]
+nation = "it"
+src = ["land:4.48"]
+transcribed_from = ["vassal:Italian Tank and Gun Characteristics Chart.png"]
+verification = "double"
+
+[[weapon]]
+id = "it.cv33"
+nation = "it"
+kind = "tank"
+name = "CV 33 (L3/35)"
+cpa = 25
+aa = 0
+anti_armor = 0
+armor_prot = 1
+ca_off = 1
+ca_def = 2
+fuel_rate = 1
+bar = { shift = 2, dir = "R" }
+
+[[weapon]]
+id = "it.l6_40"
+nation = "it"
+kind = "tank"
+name = "L 6/40"
+cpa = 25
+aa = 0
+anti_armor = 1
+armor_prot = 2
+ca_off = 2
+ca_def = 2
+fuel_rate = 2
+bar = { shift = 0 }
+
+[[weapon]]
+id = "it.m11_39"
+nation = "it"
+kind = "tank"
+name = "M 11/39"
+cpa = 20
+aa = 1
+anti_armor = 2
+armor_prot = 2
+ca_off = 3
+ca_def = 3
+fuel_rate = 2
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "it.m13_40"
+nation = "it"
+kind = "tank"
+name = "M 13/40"
+cpa = 20
+aa = 1
+anti_armor = 3
+armor_prot = 3
+ca_off = 3
+ca_def = 3
+fuel_rate = 2
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "it.m14_41"
+nation = "it"
+kind = "tank"
+name = "M 14/41"
+cpa = 20
+aa = 1
+anti_armor = 3
+armor_prot = 3
+ca_off = 3
+ca_def = 3
+fuel_rate = 2
+bar = { shift = 0 }
+
+[[weapon]]
+id = "it.65_17_gun"
+nation = "it"
+kind = "gun"
+name = "65/17 Gun"
+cpa = 15
+barrage = 5
+anti_armor = 0
+vulnerability = 3
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "it.75_18_gun_howitzer"
+nation = "it"
+kind = "gun"
+name = "75/18 Gun-Howitzer"
+cpa = 15
+barrage = 6
+anti_armor = 0
+vulnerability = 5
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "it.75_18_sp_gun"
+nation = "it"
+kind = "sp_gun"
+name = "75/18 Gun (semovente, self-propelled)"
+cpa = 20
+barrage = 6
+anti_armor = 6
+vulnerability = 4
+armor_prot = 3
+ca_off = 3
+ca_def = 3
+fuel_rate = 2
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "it.75_27_gun"
+nation = "it"
+kind = "gun"
+name = "75/27 Gun"
+cpa = 15
+barrage = 6
+anti_armor = 2
+vulnerability = 4
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+note = "Printed footnote: anti-armor counts as 0 until the first OpStage of GT 63 (see GAPS U-003)."
+
+[[weapon]]
+id = "it.100_17_howitzer"
+nation = "it"
+kind = "gun"
+name = "100/17 Howitzer"
+cpa = 15
+barrage = 8
+anti_armor = 0
+vulnerability = 5
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "it.105_28_gun"
+nation = "it"
+kind = "gun"
+name = "105/28 Gun"
+cpa = 15
+barrage = 9
+anti_armor = 1
+vulnerability = 7
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "it.149_13_howitzer"
+nation = "it"
+kind = "gun"
+name = "149/13 Howitzer"
+cpa = 15
+barrage = 15
+anti_armor = 0
+vulnerability = 5
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "it.para_art"
+nation = "it"
+kind = "gun"
+name = "ParaArt"
+cpa = 15
+barrage = 2
+anti_armor = 2
+vulnerability = 1
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+airdroppable = true
+note = "81mm mortars and light anti-tank guns; the only Italian gun system that may be airdropped."
+
+[[weapon]]
+id = "it.149mm_vichy_french"
+nation = "it"
+kind = "gun"
+name = "149mm Vichy French"
+cpa = 15
+barrage = 10
+anti_armor = 1
+vulnerability = 5
+ca_off = 0
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "it.155mm_rimhailo_fr"
+nation = "it"
+kind = "gun"
+name = "155mm Rimhailo (Fr.)"
+cpa = 15
+barrage = 13
+anti_armor = 0
+vulnerability = 3
+ca_off = 0
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "it.47_32_mod37"
+nation = "it"
+kind = "anti_tank"
+name = "47/32 Mod. 37"
+cpa = 15
+anti_armor = 4
+vulnerability = 2
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "it.aa_light_20mm"
+nation = "it"
+kind = "anti_air_light"
+name = "Light AA (20mm M/35 Breda)"
+cpa = 15
+aa = 1
+anti_armor = 2
+vulnerability = 2
+ca_off = 1
+ca_off_paren = true
+ca_def = 1
+ca_def_paren = true
+fuel_rate = 1
+
+[[weapon]]
+id = "it.aa_light_i"
+nation = "it"
+kind = "anti_air_light"
+name = "'I' Light AA"
+cpa = 0
+cpa_sited = true
+aa = 1
+anti_armor = 2
+vulnerability = 2
+ca_off = 1
+ca_off_paren = true
+ca_def = 1
+ca_def_paren = true
+fuel_rate = 1
+note = "No organic transport; moves only if motorized with truck points."
+
+[[weapon]]
+id = "it.aa_heavy_75_46"
+nation = "it"
+kind = "anti_air_heavy"
+name = "Heavy AA (75/46 Mod. 34)"
+cpa = 15
+aa = 2
+anti_armor = 5
+anti_armor_paren = true
+vulnerability = 2
+ca_off = 1
+ca_off_paren = true
+ca_def = 1
+ca_def_paren = true
+fuel_rate = 1
+
+[[weapon]]
+id = "it.aa_heavy_i"
+nation = "it"
+kind = "anti_air_heavy"
+name = "'I' Heavy AA"
+cpa = 0
+cpa_sited = true
+aa = 2
+anti_armor = 5
+anti_armor_paren = true
+vulnerability = 2
+ca_off = 1
+ca_off_paren = true
+ca_def = 1
+ca_def_paren = true
+fuel_rate = 0
+note = "No organic transport; moves only if motorized with truck points."
+
+[[weapon]]
+id = "it.aa_heavy_90_53"
+nation = "it"
+kind = "anti_air_heavy"
+name = "Heavy AA (90/53)"
+cpa = 15
+aa = 3
+anti_armor = 9
+vulnerability = 2
+ca_off = 1
+ca_off_paren = true
+ca_def = 1
+ca_def_paren = true
+fuel_rate = 1

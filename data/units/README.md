@@ -48,10 +48,11 @@ by `rules-airlog` (`data/tables/airlog/54.2-…`); scenario and schedule records
   supplied with trucks to be fully motorized); `cpa_fixed = true` when starred `30*` (keeps that CPA
   whatever the assigned TOE points have). `cpa = 0` with `emplaced = true` for printed `0`;
   `cpa_sited = true` for `0+`.
-- **Arrival codes** (`arrives`): `"D"` = deployed at start of the first scenario; otherwise
-  `{ gt = N, opstage = M }`. The OA sheets print the pair as `a/b`; the order is **an open question**
-  (`GAPS.md` U-001) and the raw printed string is kept in `arrives_raw` until it is settled. It does
-  not affect Graziani's (GT 1–6) except for units whose OA entry is printed that way.
+- **Arrival codes** (`arrives`): `"D"` = deployed at the start of the first scenario; otherwise
+  `{ gt = N, opstage = M }`. Unit rows on OA sheets and the chart legends print the pair as
+  `opstage/gt` (e.g. `2/68` = OpStage 2 of GT 68; chart notes such as "1/39 Game-Turn" read the same
+  way), while the reinforcement schedules list `GT` then `OpS`. The printed OA string is kept in
+  `arrives_raw` when it is not `D`.
 - **TOE of a unit instance** (`toe`): `"N"` normal (= class maximum), `{ under = n }` (U@n),
   `{ over = n }` (O), or an explicit weapons list `toe = [{ weapon = "cw.mk_vi_light", n = 10 }]`.
 - **Stacking points** are *not* stored per unit: they come from `land:9.4` (table owned by
@@ -282,7 +283,7 @@ and strafing, `s` scramble, `r` reconnaissance, `d` strafe and/or any bombing mi
 chart: `d` (as above), `r` reconnaissance, `b` bombing (naval convoy and land support). The Blenheim
 IVF's scramble `0` (night scramble only) is `s = "night_only"`; the Hurricane IID row marked `A`
 (may also strafe armor) is `f = "day"` plus `strafe_armor = true`. Only the values `"day"`,
-`"night"`, `"night_only"` exist.
+`"night"`, `"night_only"` and (for `d` only) `"strafe_only"` exist. Transport capacity is stored as `transport = { toe_quarter_points, or_half_tons, paradrop_only }` (TOE points in quarters, tons in halves, so no fractions); ratings printed in parentheses get `<field>_paren = true`.
 
 (Bomber rows add `bomb_capacity`, `torpedo_capacity`, `transport`, `missions = { d, r, b }`.)
 

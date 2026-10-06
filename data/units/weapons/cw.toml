@@ -1,0 +1,452 @@
+# Weapon systems, land:4.47. Field meanings: see data/units/README.md.
+[file]
+nation = "cw"
+src = ["land:4.47"]
+transcribed_from = ["vassal:Allied Tank and Gun Characteristics Chart.png"]
+verification = "double"
+
+[[weapon]]
+id = "cw.a9_cruiser"
+nation = "cw"
+kind = "tank"
+name = "A9 Cruiser"
+cpa = 25
+aa = 1
+anti_armor = 3
+armor_prot = 1
+ca_off = 3
+ca_def = 3
+fuel_rate = 2
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "cw.a10_cruiser"
+nation = "cw"
+kind = "tank"
+name = "A10 Cruiser"
+cpa = 15
+aa = 1
+anti_armor = 3
+armor_prot = 2
+ca_off = 3
+ca_def = 3
+fuel_rate = 2
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "cw.a13_cruiser"
+nation = "cw"
+kind = "tank"
+name = "A13 Cruiser"
+cpa = 30
+aa = 0
+anti_armor = 3
+armor_prot = 2
+ca_off = 2
+ca_def = 3
+fuel_rate = 2
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "cw.churchill_ii"
+nation = "cw"
+kind = "tank"
+name = "Churchill II"
+cpa = 15
+aa = 1
+anti_armor = 6
+armor_prot = 7
+ca_off = 5
+ca_def = 6
+fuel_rate = 7
+bar = { shift = 0 }
+
+[[weapon]]
+id = "cw.crusader_i"
+nation = "cw"
+kind = "tank"
+name = "Crusader Mk.I"
+cpa = 25
+aa = 1
+anti_armor = 3
+armor_prot = 3
+ca_off = 3
+ca_def = 4
+fuel_rate = 3
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "cw.crusader_ii"
+nation = "cw"
+kind = "tank"
+name = "Crusader Mk.II"
+cpa = 25
+aa = 1
+anti_armor = 3
+armor_prot = 4
+ca_off = 4
+ca_def = 4
+fuel_rate = 3
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "cw.crusader_iii"
+nation = "cw"
+kind = "tank"
+name = "Crusader Mk.III"
+cpa = 25
+aa = 1
+anti_armor = 6
+armor_prot = 4
+ca_off = 4
+ca_def = 5
+fuel_rate = 3
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "cw.grant_m3"
+nation = "cw"
+kind = "tank"
+name = "Grant M3"
+cpa = 20
+aa = 1
+anti_armor = 7
+armor_prot = 4
+ca_off = 6
+ca_def = 5
+fuel_rate = 7
+bar = { shift = 0 }
+us_tank = true
+
+[[weapon]]
+id = "cw.mk_vi_light"
+nation = "cw"
+kind = "tank"
+name = "Mark VI Light"
+cpa = 35
+aa = 1
+anti_armor = 0
+armor_prot = 1
+ca_off = 2
+ca_def = 2
+fuel_rate = 1
+bar = { shift = 0 }
+
+[[weapon]]
+id = "cw.matilda_ii"
+nation = "cw"
+kind = "tank"
+name = "Matilda Mk.II"
+cpa = 15
+aa = 0
+anti_armor = 3
+armor_prot = 6
+ca_off = 3
+ca_def = 4
+fuel_rate = 3
+bar = { shift = 1, dir = "R" }
+
+[[weapon]]
+id = "cw.sherman"
+nation = "cw"
+kind = "tank"
+name = "Sherman"
+cpa = 20
+aa = 1
+anti_armor = 6
+armor_prot = 6
+ca_off = 5
+ca_def = 5
+fuel_rate = 6
+bar = { shift = 0 }
+us_tank = true
+
+[[weapon]]
+id = "cw.stuart_m3"
+nation = "cw"
+kind = "tank"
+name = "Stuart M3"
+cpa = 35
+aa = 1
+anti_armor = 4
+armor_prot = 3
+ca_off = 4
+ca_def = 4
+fuel_rate = 4
+bar = { shift = 0 }
+us_tank = true
+
+[[weapon]]
+id = "cw.valentine_ii"
+nation = "cw"
+kind = "tank"
+name = "Valentine Mk.II"
+cpa = 15
+aa = 0
+anti_armor = 3
+armor_prot = 5
+ca_off = 3
+ca_def = 4
+fuel_rate = 3
+bar = { shift = 0 }
+
+[[weapon]]
+id = "cw.scorpion"
+nation = "cw"
+kind = "tank"
+name = "Scorpion"
+cpa = 25
+aa = 0
+anti_armor = 0
+armor_prot = 7
+ca_off = 0
+ca_def = 2
+ca_def_paren = true
+fuel_rate = 3
+bar = { shift = 1, dir = "L" }
+minesweeper = true
+note = "Mine-clearing tank on a Valentine chassis; treated as an engineer unit for minefield purposes."
+
+[[weapon]]
+id = "cw.18_pounder_gun"
+nation = "cw"
+kind = "gun"
+name = "18-pounder Gun"
+cpa = 15
+barrage = 7
+anti_armor = 2
+anti_armor_paren = true
+vulnerability = 4
+ca_off = 0
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.18_25_pounder_gun"
+nation = "cw"
+kind = "gun"
+name = "18/25-pounder Gun"
+cpa = 15
+barrage = 8
+anti_armor = 2
+vulnerability = 5
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.25_pounder_gun"
+nation = "cw"
+kind = "gun"
+name = "25-pounder Gun"
+cpa = 15
+barrage = 8
+anti_armor = 5
+vulnerability = 6
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.4_5_inch_gun"
+nation = "cw"
+kind = "gun"
+name = "4.5\" Gun"
+cpa = 15
+barrage = 11
+anti_armor = 1
+vulnerability = 9
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.5_5_inch_gun_howitzer"
+nation = "cw"
+kind = "gun"
+name = "5.5\" Gun/Howitzer"
+cpa = 15
+barrage = 15
+anti_armor = 1
+vulnerability = 7
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.60_pounder_gun"
+nation = "cw"
+kind = "gun"
+name = "60-pounder Gun"
+cpa = 15
+barrage = 12
+anti_armor = 1
+vulnerability = 7
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.sp_25_pounder_gun"
+nation = "cw"
+kind = "sp_gun"
+name = "SP 25-pounder Gun"
+cpa = 15
+barrage = 8
+anti_armor = 4
+vulnerability = 3
+armor_prot = 5
+ca_off = 2
+ca_def = 1
+fuel_rate = 3
+bar = { shift = 2, dir = "R" }
+
+[[weapon]]
+id = "cw.3_7_inch_howitzer"
+nation = "cw"
+kind = "gun"
+name = "3.7\" Howitzer"
+cpa = 15
+barrage = 7
+anti_armor = 0
+vulnerability = 3
+ca_off = 0
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.4_5_inch_howitzer"
+nation = "cw"
+kind = "gun"
+name = "4.5\" Howitzer"
+cpa = 15
+barrage = 9
+anti_armor = 0
+vulnerability = 3
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.6_inch_howitzer"
+nation = "cw"
+kind = "gun"
+name = "6\" Howitzer"
+cpa = 15
+barrage = 15
+anti_armor = 1
+vulnerability = 5
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.155mm_howitzer"
+nation = "cw"
+kind = "gun"
+name = "155mm Howitzer"
+cpa = 15
+barrage = 15
+anti_armor = 1
+vulnerability = 6
+ca_off = 1
+ca_def = 0
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.105mm_sp_howitzer"
+nation = "cw"
+kind = "sp_gun"
+name = "105mm SP Howitzer"
+cpa = 20
+aa = 1
+barrage = 9
+anti_armor = 2
+vulnerability = 4
+armor_prot = 4
+ca_off = 2
+ca_def = 3
+fuel_rate = 3
+bar = { shift = 0 }
+
+[[weapon]]
+id = "cw.2_pounder"
+nation = "cw"
+kind = "anti_tank"
+name = "2-pounder"
+cpa = 15
+anti_armor = 4
+vulnerability = 2
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.6_pounder"
+nation = "cw"
+kind = "anti_tank"
+name = "6-pounder"
+cpa = 15
+anti_armor = 7
+vulnerability = 2
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.17_pounder"
+nation = "cw"
+kind = "anti_tank"
+name = "17-pounder"
+cpa = 15
+anti_armor = 13
+vulnerability = 2
+ca_off = 1
+ca_def = 1
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.sp_6_pounder"
+nation = "cw"
+kind = "sp_anti_tank"
+name = "SP 6-pounder"
+cpa = 20
+anti_armor = 7
+vulnerability = 2
+armor_prot = 1
+ca_off = 2
+ca_def = 2
+fuel_rate = 1
+bar = { shift = 1, dir = "L" }
+
+[[weapon]]
+id = "cw.aa_light_bofors_40mm"
+nation = "cw"
+kind = "anti_air_light"
+name = "Light AA (Bofors 40mm)"
+cpa = 15
+aa = 1
+anti_armor = 1
+anti_armor_paren = true
+vulnerability = 2
+ca_off = 1
+ca_off_paren = true
+ca_def = 1
+ca_def_paren = true
+fuel_rate = 1
+
+[[weapon]]
+id = "cw.aa_heavy_3_7"
+nation = "cw"
+kind = "anti_air_heavy"
+name = "Heavy AA (3.7\")"
+cpa = 15
+aa = 4
+anti_armor = 7
+anti_armor_paren = true
+vulnerability = 2
+ca_off = 1
+ca_off_paren = true
+ca_def = 1
+ca_def_paren = true
+fuel_rate = 1

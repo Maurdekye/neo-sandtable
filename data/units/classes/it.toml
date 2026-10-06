@@ -1,0 +1,633 @@
+# ID-code unit classes, land:4.46b. Field meanings: see data/units/README.md.
+# Notes on the chart (paraphrased): `t` classes have their armor protection only while carried by
+# trucks/motorization points (halftrack equivalent, land:14.88). `vv` units are Autoblinda 41 vehicles
+# and `ww` Autoblinda 40; a unit of both ID codes has a BAR of 1 Left. Heavy-AA points arriving with
+# an Italian unit carry the 75/46 gun. From GT 75 Italian Battle Groups and certain HQs may take
+# anti-tank points (land:19.8); from GT 39 `ww` units may be upgraded (land:20.5). `HQ` echelon is set
+# per OA unit. `*` = cpa_fixed, `+` = cpa_plus (historically fully trucked).
+[file]
+nation = "it"
+src = ["land:4.46b"]
+transcribed_from = ["vassal:Italian Unit Characteristics Chart.png"]
+verification = "single"
+
+[[class]]
+id = "it.a"
+nation = "it"
+code = "a"
+unit_type = "headquarters"
+cpa = 45
+max_toe = 1
+max_toe_paren = true
+[[class.assigns]]
+kind = "recon"
+max = 1
+
+[[class]]
+id = "it.b"
+nation = "it"
+code = "b"
+unit_type = "headquarters"
+cpa = 30
+ca_off = 0
+ca_def = 1
+ca_def_paren = true
+max_toe = 1
+max_toe_paren = true
+
+[[class]]
+id = "it.c"
+nation = "it"
+code = "c"
+unit_type = "headquarters"
+cpa = 30
+cpa_fixed = true
+anti_armor = 1
+anti_armor_paren = true
+armor_prot = 1
+armor_prot_paren = true
+ca_off = 3
+ca_off_paren = true
+ca_def = 2
+ca_def_paren = true
+max_toe = 1
+max_toe_paren = true
+
+[[class]]
+id = "it.d"
+nation = "it"
+code = "d"
+unit_type = "headquarters"
+cpa = 30
+cpa_fixed = true
+max_toe = 1
+max_toe_paren = true
+[[class.assigns]]
+kind = "tank"
+max = 1
+
+[[class]]
+id = "it.e"
+nation = "it"
+code = "e"
+unit_type = "headquarters"
+cpa = 30
+cpa_fixed = true
+aa = 1
+ca_off = 0
+ca_def = 1
+ca_def_paren = true
+max_toe = 4
+
+[[class]]
+id = "it.f"
+nation = "it"
+code = "f"
+unit_type = "headquarters"
+cpa = 20
+ca_off = 0
+ca_def = 1
+ca_def_paren = true
+max_toe = 1
+max_toe_paren = true
+
+[[class]]
+id = "it.g"
+nation = "it"
+code = "g"
+unit_type = "headquarters"
+cpa = 20
+max_toe = 1
+[[class.assigns]]
+kind = "artillery"
+max = 1
+
+[[class]]
+id = "it.h"
+nation = "it"
+code = "h"
+unit_type = "headquarters"
+cpa = 20
+cpa_fixed = true
+max_toe = 1
+[[class.assigns]]
+kind = "artillery"
+max = 1
+
+[[class]]
+id = "it.j"
+nation = "it"
+code = "j"
+unit_type = "headquarters"
+cpa = 20
+cpa_fixed = true
+max_toe = 2
+[[class.assigns]]
+kind = "artillery"
+max = 2
+
+[[class]]
+id = "it.k"
+nation = "it"
+code = "k"
+unit_type = "tank"
+echelon = "battalion"
+cpa = 30
+max_toe = 9
+[[class.assigns]]
+kind = "tank"
+max = 9
+
+[[class]]
+id = "it.l"
+nation = "it"
+code = "l"
+unit_type = "tank"
+echelon = "battalion"
+cpa = 30
+max_toe = 7
+[[class.assigns]]
+kind = "tank"
+max = 7
+
+[[class]]
+id = "it.m"
+nation = "it"
+code = "m"
+unit_type = "infantry"
+echelon = "brigade"
+cpa = 10
+ca_off = 1
+ca_def = 1
+max_toe = 10
+
+[[class]]
+id = "it.n"
+nation = "it"
+code = "n"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 25
+ca_off = 4
+ca_def = 3
+max_toe = 6
+
+[[class]]
+id = "it.p"
+nation = "it"
+code = "p"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 15
+aa = 2
+barrage = 2
+anti_armor = 5
+vulnerability = 1
+ca_off = 2
+ca_def = 3
+max_toe = 4
+
+[[class]]
+id = "it.q"
+nation = "it"
+code = "q"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 15
+aa = 1
+barrage = 6
+anti_armor = 4
+vulnerability = 4
+ca_off = 3
+ca_def = 3
+max_toe = 3
+
+[[class]]
+id = "it.r"
+nation = "it"
+code = "r"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 15
+aa = 1
+barrage = 6
+anti_armor = 4
+vulnerability = 4
+ca_off = 1
+ca_def = 2
+max_toe = 3
+
+[[class]]
+id = "it.s"
+nation = "it"
+code = "s"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 10
+anti_armor = 2
+ca_off = 3
+ca_def = 3
+max_toe = 7
+
+[[class]]
+id = "it.t"
+nation = "it"
+code = "t"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 10
+cpa_plus = true
+anti_armor = 1
+armor_prot = 1
+ca_off = 3
+ca_def = 2
+max_toe = 7
+armor_prot_only_when_truck_transported = true
+
+[[class]]
+id = "it.u"
+nation = "it"
+code = "u"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 10
+ca_off = 1
+ca_def = 1
+max_toe = 7
+
+[[class]]
+id = "it.v"
+nation = "it"
+code = "v"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 10
+ca_off = 1
+ca_def = 1
+max_toe = 6
+
+[[class]]
+id = "it.w"
+nation = "it"
+code = "w"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 10
+cpa_plus = true
+ca_off = 1
+ca_def = 1
+max_toe = 5
+
+[[class]]
+id = "it.x"
+nation = "it"
+code = "x"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 10
+ca_off = 1
+ca_def = 1
+max_toe = 5
+
+[[class]]
+id = "it.y"
+nation = "it"
+code = "y"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 8
+ca_off = 4
+ca_def = 6
+max_toe = 6
+
+[[class]]
+id = "it.z"
+nation = "it"
+code = "z"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 8
+ca_off = 2
+ca_def = 7
+max_toe = 5
+
+[[class]]
+id = "it.aa"
+nation = "it"
+code = "aa"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 8
+ca_off = 2
+ca_def = 3
+max_toe = 3
+
+[[class]]
+id = "it.bb"
+nation = "it"
+code = "bb"
+unit_type = "infantry"
+echelon = "battalion"
+cpa = 8
+ca_off = 5
+ca_def = 7
+max_toe = 2
+
+[[class]]
+id = "it.cc"
+nation = "it"
+code = "cc"
+unit_type = "infantry"
+echelon = "company"
+cpa = 25
+ca_off = 5
+ca_def = 7
+max_toe = 1
+
+[[class]]
+id = "it.dd"
+nation = "it"
+code = "dd"
+unit_type = "infantry"
+echelon = "company"
+cpa = 15
+aa = 1
+barrage = 5
+anti_armor = 1
+vulnerability = 2
+ca_off = 2
+ca_def = 2
+max_toe = 1
+
+[[class]]
+id = "it.ee"
+nation = "it"
+code = "ee"
+unit_type = "infantry"
+echelon = "company"
+cpa = 15
+aa = 1
+anti_armor = 4
+ca_off = 2
+ca_def = 2
+max_toe = 1
+
+[[class]]
+id = "it.ff"
+nation = "it"
+code = "ff"
+unit_type = "infantry"
+echelon = "company"
+cpa = 15
+aa = 2
+anti_armor = 5
+ca_off = 1
+ca_def = 1
+max_toe = 1
+
+[[class]]
+id = "it.gg"
+nation = "it"
+code = "gg"
+unit_type = "infantry"
+echelon = "company"
+cpa = 10
+ca_off = 1
+ca_def = 1
+max_toe = 1
+
+[[class]]
+id = "it.hh"
+nation = "it"
+code = "hh"
+unit_type = "infantry"
+echelon = "company"
+cpa = 8
+cpa_plus = true
+ca_off = 5
+ca_def = 7
+max_toe = 1
+
+[[class]]
+id = "it.jj"
+nation = "it"
+code = "jj"
+unit_type = "artillery"
+echelon = "battalion"
+cpa = 15
+max_toe = 12
+[[class.assigns]]
+kind = "artillery"
+max = 12
+
+[[class]]
+id = "it.kk"
+nation = "it"
+code = "kk"
+unit_type = "artillery"
+echelon = "battalion"
+cpa = 15
+max_toe = 9
+max_toe_extra = 3
+[[class.assigns]]
+kind = "artillery"
+max = 9
+[[class.assigns]]
+kind = "anti_air"
+max = 3
+note = "up to three heavy AA or up to three light AA points, not both"
+
+[[class]]
+id = "it.ll"
+nation = "it"
+code = "ll"
+unit_type = "artillery"
+echelon = "battalion"
+cpa = 15
+max_toe = 9
+[[class.assigns]]
+kind = "artillery"
+max = 9
+
+[[class]]
+id = "it.mm"
+nation = "it"
+code = "mm"
+unit_type = "artillery"
+echelon = "battalion"
+cpa = 15
+max_toe = 4
+[[class.assigns]]
+kind = "artillery"
+max = 4
+
+[[class]]
+id = "it.nn"
+nation = "it"
+code = "nn"
+unit_type = "artillery"
+echelon = "company"
+cpa = 15
+max_toe = 1
+[[class.assigns]]
+kind = "artillery"
+max = 1
+
+[[class]]
+id = "it.pp"
+nation = "it"
+code = "pp"
+unit_type = "artillery"
+echelon = "company"
+cpa = 0
+max_toe = 8
+emplaced = true
+max_toe_kind = "anti_air"
+[[class.assigns]]
+kind = "anti_air"
+max = 8
+note = "the emplaced guns"
+
+[[class]]
+id = "it.qq"
+nation = "it"
+code = "qq"
+unit_type = "anti_tank"
+echelon = "battalion"
+cpa = 15
+max_toe = 6
+[[class.assigns]]
+kind = "anti_tank"
+max = 6
+
+[[class]]
+id = "it.rr"
+nation = "it"
+code = "rr"
+unit_type = "anti_tank"
+echelon = "company"
+cpa = 15
+max_toe = 2
+[[class.assigns]]
+kind = "anti_tank"
+max = 2
+
+[[class]]
+id = "it.ss"
+nation = "it"
+code = "ss"
+unit_type = "anti_air"
+echelon = "battalion"
+cpa = 15
+max_toe = 8
+[[class.assigns]]
+kind = "anti_air_light"
+max = 8
+
+[[class]]
+id = "it.tt"
+nation = "it"
+code = "tt"
+unit_type = "anti_air"
+echelon = "battalion"
+cpa = 15
+max_toe = 6
+[[class.assigns]]
+kind = "anti_air"
+max = 6
+
+[[class]]
+id = "it.uu"
+nation = "it"
+code = "uu"
+unit_type = "anti_air"
+echelon = "company"
+cpa = 15
+max_toe = 3
+[[class.assigns]]
+kind = "anti_air"
+max = 3
+
+[[class]]
+id = "it.vv"
+nation = "it"
+code = "vv"
+unit_type = "recce"
+echelon = "battalion"
+cpa = 45
+anti_armor = 1
+armor_prot = 1
+ca_off = 3
+ca_def = 2
+max_toe = 6
+equipment_note = "Autoblinda 41 units"
+
+[[class]]
+id = "it.ww"
+nation = "it"
+code = "ww"
+unit_type = "recce"
+echelon = "battalion"
+cpa = 45
+armor_prot = 1
+ca_off = 3
+ca_def = 2
+max_toe = 6
+equipment_note = "Autoblinda 40 units"
+
+[[class]]
+id = "it.xx"
+nation = "it"
+code = "xx"
+unit_type = "recce"
+echelon = "battalion"
+cpa = 35
+ca_off = 1
+ca_def = 2
+max_toe = 3
+
+[[class]]
+id = "it.yy"
+nation = "it"
+code = "yy"
+unit_type = "recce"
+echelon = "battalion"
+cpa = 15
+ca_off = 1
+ca_def = 1
+max_toe = 5
+
+[[class]]
+id = "it.zz"
+nation = "it"
+code = "zz"
+unit_type = "recce"
+echelon = "battalion"
+cpa = 10
+ca_off = 1
+ca_def = 1
+max_toe = 5
+
+[[class]]
+id = "it.aaa"
+nation = "it"
+code = "aaa"
+unit_type = "recce"
+echelon = "company"
+cpa = 25
+ca_off = 4
+ca_def = 3
+max_toe = 1
+
+[[class]]
+id = "it.bbb"
+nation = "it"
+code = "bbb"
+unit_type = "engineer"
+echelon = "battalion"
+cpa = 25
+ca_off = 0
+ca_def = 1
+ca_def_paren = true
+max_toe = 1
+max_toe_paren = true

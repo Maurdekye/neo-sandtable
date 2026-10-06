@@ -1,0 +1,302 @@
+# Aircraft types, land:4.44b (and the 4.44 corrections). Field meanings: data/units/README.md.
+# Printed range of the C 200 reads ";40"; taken as 40 (GAPS U-004). Z.506B range 110 per the land:4.44b addition.
+[file]
+nation = "it"
+src = ["land:4.44b"]
+transcribed_from = ["vassal:4.44b Italian Aircraft.png"]
+verification = "single"
+partial = false
+
+[[aircraft]]
+id = "it.cr32"
+nation = "it"
+name = "C.R. 32"
+role = "fighter"
+manufacturer = "Fiat"
+[[aircraft.mode]]
+  range_hexes = 42
+  tacair = 3
+  maneuver = 25
+  bomb_capacity = 1
+  fuel_points = 1
+  missions = { f = "day", s = "day", d = "day" }
+
+[[aircraft]]
+id = "it.cr42"
+nation = "it"
+name = "C.R. 42 Falco"
+role = "fighter"
+manufacturer = "Fiat"
+[[aircraft.mode]]
+  range_hexes = 43
+  tacair = 3
+  maneuver = 28
+  fuel_points = 1
+  missions = { f = "night", s = "day" }
+
+[[aircraft]]
+id = "it.cr42as"
+nation = "it"
+name = "C.R. 42AS Falco"
+role = "fighter"
+manufacturer = "Fiat"
+[[aircraft.mode]]
+  range_hexes = 41
+  tacair = 3
+  maneuver = 27
+  bomb_capacity = 1
+  fuel_points = 1
+  missions = { f = "day", s = "day", d = "day" }
+
+[[aircraft]]
+id = "it.c200"
+nation = "it"
+name = "C 200 Saetta"
+role = "fighter"
+manufacturer = "Macchi"
+[[aircraft.mode]]
+  range_hexes = 40
+  tacair = 2
+  maneuver = 33
+  fuel_points = 1
+  missions = { f = "day", s = "day", d = "day" }
+
+[[aircraft]]
+id = "it.c202"
+nation = "it"
+name = "C 202 Folgore"
+role = "fighter"
+manufacturer = "Macchi"
+[[aircraft.mode]]
+  range_hexes = 47
+  tacair = 2
+  maneuver = 35
+  bomb_capacity = 1
+  fuel_points = 1
+  missions = { f = "day", s = "day", d = "day" }
+
+[[aircraft]]
+id = "it.g50"
+nation = "it"
+name = "G. 50 Freccia"
+role = "fighter"
+manufacturer = "Fiat"
+[[aircraft.mode]]
+  range_hexes = 57
+  tacair = 3
+  maneuver = 25
+  fuel_points = 1
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "it.re2000"
+nation = "it"
+name = "Re. 2000 Falco I"
+role = "fighter"
+manufacturer = "Reggiane"
+note = "Appears in no scenario or reinforcement list (land:4.44b correction 5)."
+[[aircraft.mode]]
+  range_hexes = 47
+  tacair = 2
+  maneuver = 34
+  fuel_points = 2
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "it.re2001"
+nation = "it"
+name = "Re. 2001 Falco II"
+role = "fighter"
+manufacturer = "Reggiane"
+[[aircraft.mode]]
+  range_hexes = 42
+  tacair = 3
+  maneuver = 35
+  fuel_points = 3
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "it.ba65"
+nation = "it"
+name = "Ba 65"
+role = "bomber"
+manufacturer = "Breda"
+[[aircraft.mode]]
+  range_hexes = 55
+  tacair = 4
+  tacair_paren = true
+  maneuver = 18
+  bomb_capacity = 10
+  fuel_points = 2
+  missions = { d = "day" }
+
+[[aircraft]]
+id = "it.ba88"
+nation = "it"
+name = "Ba 88 Lince"
+role = "bomber"
+manufacturer = "Breda"
+[[aircraft.mode]]
+  range_hexes = 92
+  tacair = 4
+  tacair_paren = true
+  maneuver = 16
+  bomb_capacity = 11
+  fuel_points = 3
+  missions = { b = "day" }
+
+[[aircraft]]
+id = "it.br20"
+nation = "it"
+name = "B.R. 20 Cicogna"
+role = "bomber"
+manufacturer = "Fiat"
+[[aircraft.mode]]
+  range_hexes = 145
+  tacair = 2
+  tacair_paren = true
+  maneuver = 17
+  bomb_capacity = 17
+  fuel_points = 3
+  missions = { b = "night" }
+
+[[aircraft]]
+id = "it.ca309"
+nation = "it"
+name = "Ca 309 Ghibli"
+role = "bomber"
+manufacturer = "Caproni"
+[[aircraft.mode]]
+  range_hexes = 84
+  tacair = 2
+  tacair_paren = true
+  maneuver = 9
+  bomb_capacity = 4
+  fuel_points = 2
+  missions = { r = "day", b = "day" }
+  transport = { toe_quarter_points = 0, or_half_tons = 1 }
+
+[[aircraft]]
+id = "it.ca311"
+nation = "it"
+name = "Ca 311"
+role = "bomber"
+manufacturer = "Caproni"
+[[aircraft.mode]]
+  range_hexes = 108
+  tacair = 2
+  tacair_paren = true
+  maneuver = 10
+  bomb_capacity = 4
+  fuel_points = 2
+  missions = { r = "day", b = "day" }
+
+[[aircraft]]
+id = "it.z501"
+nation = "it"
+name = "Cant Z. 501 Gabbiano"
+role = "flying_boat"
+manufacturer = "CRDA"
+[[aircraft.mode]]
+  range_hexes = 130
+  tacair = 2
+  tacair_paren = true
+  maneuver = 7
+  bomb_capacity = 7
+  fuel_points = 2
+  missions = { r = "day", b = "day" }
+
+[[aircraft]]
+id = "it.z506b"
+nation = "it"
+name = "Cant Z. 506B Airone/35"
+role = "flying_boat"
+manufacturer = "CRDA"
+[[aircraft.mode]]
+  range_hexes = 110
+  tacair = 3
+  tacair_paren = true
+  maneuver = 14
+  bomb_capacity = 11
+  torpedo_capacity = 8
+  fuel_points = 3
+  missions = { r = "day", b = "day" }
+
+[[aircraft]]
+id = "it.z1007bis"
+nation = "it"
+name = "Cant Z. 1007bis Alcione"
+role = "bomber"
+manufacturer = "CRDA"
+[[aircraft.mode]]
+  range_hexes = 120
+  tacair = 3
+  tacair_paren = true
+  maneuver = 23
+  bomb_capacity = 15
+  torpedo_capacity = 10
+  fuel_points = 4
+  missions = { b = "day" }
+
+[[aircraft]]
+id = "it.ro37bis"
+nation = "it"
+name = "Ro 37bis"
+role = "bomber"
+manufacturer = "IMAM"
+[[aircraft.mode]]
+  range_hexes = 93
+  tacair = 2
+  tacair_paren = true
+  maneuver = 20
+  bomb_capacity = 2
+  fuel_points = 2
+  missions = { r = "day", b = "day" }
+
+[[aircraft]]
+id = "it.sm79"
+nation = "it"
+name = "S.M. 79 Sparviero"
+role = "bomber"
+manufacturer = "Savoia-Marchetti"
+[[aircraft.mode]]
+  range_hexes = 120
+  tacair = 4
+  tacair_paren = true
+  maneuver = 19
+  bomb_capacity = 12
+  torpedo_capacity = 6
+  fuel_points = 3
+  missions = { b = "day" }
+
+[[aircraft]]
+id = "it.sm81"
+nation = "it"
+name = "S.M. 81 Pipistrello"
+role = "bomber"
+manufacturer = "Savoia-Marchetti"
+[[aircraft.mode]]
+  range_hexes = 90
+  tacair = 5
+  tacair_paren = true
+  maneuver = 14
+  bomb_capacity = 11
+  fuel_points = 3
+  missions = { r = "day", b = "night" }
+  transport = { toe_quarter_points = 4, paradrop_only = true, or_half_tons = 5 }
+
+[[aircraft]]
+id = "it.sm84"
+nation = "it"
+name = "S.M. 84"
+role = "bomber"
+manufacturer = "Savoia-Marchetti"
+[[aircraft.mode]]
+  range_hexes = 101
+  tacair = 4
+  tacair_paren = true
+  maneuver = 16
+  bomb_capacity = 22
+  torpedo_capacity = 14
+  fuel_points = 4
+  missions = { b = "day" }

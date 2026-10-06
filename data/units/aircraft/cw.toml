@@ -1,0 +1,212 @@
+# Aircraft types, land:4.44a (and the 4.44 corrections). Field meanings: data/units/README.md.
+# PARTIAL: only types that occur in the Graziani set-up and schedules are entered so far (README: whole-war completion later).
+[file]
+nation = "cw"
+src = ["land:4.44a"]
+transcribed_from = ["vassal:4.44A Commonwealth Aircraft.png"]
+verification = "single"
+partial = true
+
+[[aircraft]]
+id = "cw.blenheim_ivf"
+nation = "cw"
+name = "Blenheim Mk. IVF"
+role = "fighter"
+manufacturer = "Bristol"
+[[aircraft.mode]]
+  range_hexes = 146
+  tacair = 5
+  maneuver = 30
+  fuel_points = 3
+  missions = { f = "night", s = "night_only" }
+
+[[aircraft]]
+id = "cw.gladiator_ii"
+nation = "cw"
+name = "Gladiator Mk. II"
+role = "fighter"
+manufacturer = "Gloster"
+[[aircraft.mode]]
+  range_hexes = 44
+  tacair = 2
+  maneuver = 27
+  fuel_points = 1
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "cw.hurricane_i"
+nation = "cw"
+name = "Hurricane Mk. I"
+role = "fighter"
+manufacturer = "Hawker"
+[[aircraft.mode]]
+  range_hexes = 52
+  tacair = 4
+  maneuver = 32
+  fuel_points = 1
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "cw.sea_gladiator"
+nation = "cw"
+name = "Sea Gladiator"
+role = "fighter"
+manufacturer = "Gloster"
+note = "Never arrives as a reinforcement (land:4.44b); present in Malta set-up."
+[[aircraft.mode]]
+  range_hexes = 38
+  tacair = 2
+  maneuver = 27
+  fuel_points = 1
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "cw.ms406"
+nation = "cw"
+name = "MS406"
+role = "fighter"
+manufacturer = "Morane-Saulnier"
+note = "French aircraft; Free French units."
+[[aircraft.mode]]
+  range_hexes = 45
+  tacair = 4
+  maneuver = 32
+  fuel_points = 1
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "cw.lysander_i"
+nation = "cw"
+name = "Lysander Mk. I"
+role = "bomber"
+manufacturer = "Westland"
+[[aircraft.mode]]
+  range_hexes = 60
+  tacair = 2
+  tacair_paren = true
+  maneuver = 20
+  fuel_points = 1
+  missions = { d = "strafe_only", r = "day" }
+
+[[aircraft]]
+id = "cw.potez_63_11"
+nation = "cw"
+name = "63.11"
+role = "bomber"
+manufacturer = "Potez"
+note = "French aircraft (Potez 63/11)."
+[[aircraft.mode]]
+  range_hexes = 75
+  tacair = 5
+  tacair_paren = true
+  maneuver = 26
+  fuel_points = 1
+  missions = { r = "day" }
+
+[[aircraft]]
+id = "cw.blenheim_i"
+nation = "cw"
+name = "Blenheim Mk. I"
+role = "bomber"
+manufacturer = "Bristol"
+[[aircraft.mode]]
+  range_hexes = 101
+  tacair = 1
+  tacair_paren = true
+  maneuver = 22
+  bomb_capacity = 5
+  fuel_points = 2
+  missions = { b = "day" }
+
+[[aircraft]]
+id = "cw.blenheim_iv"
+nation = "cw"
+name = "Blenheim Mk. IV"
+role = "bomber"
+manufacturer = "Bristol"
+[[aircraft.mode]]
+  range_hexes = 131
+  tacair = 3
+  tacair_paren = true
+  maneuver = 21
+  bomb_capacity = 6
+  fuel_points = 3
+  missions = { b = "day" }
+
+[[aircraft]]
+id = "cw.bombay_i"
+nation = "cw"
+name = "Bombay Mk. I"
+role = "transport"
+manufacturer = "Bristol"
+note = "First mode range is printed with ** (range when flown on a transfer mission)."
+[[aircraft.mode]]
+  range_hexes = 203
+  tacair = 1
+  tacair_paren = true
+  maneuver = 6
+  fuel_points = 2
+  rng_is_transfer_range = true
+[[aircraft.mode]]
+  range_hexes = 88
+  tacair = 1
+  tacair_paren = true
+  maneuver = 5
+  bomb_capacity = 10
+  fuel_points = 2
+  missions = { b = "day" }
+  transport = { toe_quarter_points = 4, or_half_tons = 20 }
+
+[[aircraft]]
+id = "cw.sunderland"
+nation = "cw"
+name = "Sunderland"
+role = "flying_boat"
+manufacturer = "Short"
+[[aircraft.mode]]
+  range_hexes = 238
+  tacair = 5
+  tacair_paren = true
+  maneuver = 7
+  fuel_points = 4
+  missions = { r = "day" }
+[[aircraft.mode]]
+  range_hexes = 176
+  tacair = 5
+  tacair_paren = true
+  maneuver = 11
+  bomb_capacity = 9
+  fuel_points = 4
+  missions = { b = "day" }
+
+[[aircraft]]
+id = "cw.swordfish_i"
+nation = "cw"
+name = "Swordfish Mk. I"
+role = "bomber"
+manufacturer = "Fairey"
+note = "Biplane; never arrives as a reinforcement (land:4.44b); present in Malta set-up."
+[[aircraft.mode]]
+  range_hexes = 48
+  tacair = 1
+  tacair_paren = true
+  maneuver = 7
+  torpedo_capacity = 8
+  fuel_points = 1
+  missions = { b = "day" }
+
+[[aircraft]]
+id = "cw.valentia"
+nation = "cw"
+name = "Valentia"
+role = "transport"
+manufacturer = "Vickers"
+note = "Biplane; never arrives as a reinforcement (land:4.44b). tacair printed as 0 (not parenthesized)."
+[[aircraft.mode]]
+  range_hexes = 31
+  tacair = 0
+  maneuver = 1
+  bomb_capacity = 10
+  fuel_points = 1
+  missions = { b = "day" }
+  transport = { toe_quarter_points = 1, or_half_tons = 10 }
