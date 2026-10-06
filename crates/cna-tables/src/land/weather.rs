@@ -119,15 +119,17 @@ impl WeatherTable {
             .map(|r| r.season)
     }
 
-    /// Printed seasonal cells are preserved, including winter hot weather and summer rain.
+    /// Apply the adopted Summer/Winter cell swap; the printed turn labels remain the seasons.
     /// A storm result requires the separate location roll; it is not global weather.
     /// Cases: land:29.6, land:29.61, land:29.1
     /// Interpretations: interp:land-0019
     pub fn result(&self, game_turn: i32, reading: TwoDiceReading) -> Option<WeatherKind> {
-        let row = self
-            .row
-            .iter()
-            .find(|r| r.game_turns.iter().any(|span| span.contains(game_turn)))?;
+        let cell_season = match self.season(game_turn)? {
+            Season::Summer => Season::Winter,
+            Season::Winter => Season::Summer,
+            season => season,
+        };
+        let row = self.row.iter().find(|r| r.season == cell_season)?;
         row.cells()
             .into_iter()
             .find(|(_, cell)| cell.is_some_and(|span| span.contains(i32::from(reading.value()))))

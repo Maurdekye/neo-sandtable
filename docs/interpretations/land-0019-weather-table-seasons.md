@@ -29,5 +29,5 @@ feature (29.3 and the cases it refers to), and the swapped rows match the climat
 1979 errata calls the table backwards but only relabels the seasons.
 
 ## Affected behaviour and tests
-Weather determination (29.1). Test: a Game-Turn in 37-48 with reading 61 yields a rainstorm; a Game-Turn in 13-24 with reading 31 yields hot weather. A coverage test asserts each row covers all readings once.
+Weather determination (29.1). Tests: a summer Game-Turn (37-48) with reading 53 gives hot weather, and reading 61 gives a sandstorm. A winter Game-Turn (13-24) with reading 31 gives normal weather and reading 53 gives a rainstorm. Fall and Spring keep their printed cells. A coverage test checks every turn and all 36 readings.
 

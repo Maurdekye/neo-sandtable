@@ -337,7 +337,7 @@ fn malformed_land_tables_name_the_file_and_field() {
 /// Cases: land:29.6, land:29.61, land:29.1
 /// Interpretations: interp:land-0019
 #[test]
-fn weather_preserves_seasonal_chart_cells_and_boundaries() {
+fn weather_applies_adopted_season_swap_and_preserves_turn_boundaries() {
     use cna_tables::land::weather::{Season, WeatherKind};
     let read = |tens, units| cna_core::dice::TwoDiceReading {
         tens: cna_core::dice::Die::new(tens).unwrap(),
@@ -362,8 +362,12 @@ fn weather_preserves_seasonal_chart_cells_and_boundaries() {
     assert_eq!(t.result(1, read(4, 3)), Some(WeatherKind::Hot));
     assert_eq!(t.result(1, read(5, 6)), Some(WeatherKind::Sandstorm));
     assert_eq!(t.result(1, read(6, 5)), Some(WeatherKind::Rainstorm));
-    assert_eq!(t.result(37, read(6, 1)), Some(WeatherKind::Rainstorm));
-    assert_eq!(t.result(13, read(3, 1)), Some(WeatherKind::Hot));
+    assert_eq!(t.result(37, read(6, 1)), Some(WeatherKind::Sandstorm));
+    assert_eq!(t.result(13, read(3, 1)), Some(WeatherKind::Normal));
+    // The weather case's example: a summer reading of 53 gives hot weather.
+    assert_eq!(t.result(37, read(5, 3)), Some(WeatherKind::Hot));
+    assert_eq!(t.result(13, read(5, 3)), Some(WeatherKind::Rainstorm));
+    assert_eq!(t.result(25, read(6, 2)), Some(WeatherKind::Rainstorm));
     assert_eq!(t.season(0), None);
     assert_eq!(t.season(111), None);
     assert_eq!(t.result(111, read(1, 1)), None);
