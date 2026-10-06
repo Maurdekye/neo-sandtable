@@ -5,7 +5,7 @@ currently responsible; the lead agent updates this table when responsibility cha
 
 | Area | Paths | Owner |
 |---|---|---|
-| Project lead, docs, decisions, shared schemas (`data/*/README.md` envelopes, `docs/protocol.md`) | `docs/`, top-level files | neo-sandtable (lead agent) |
+| Project lead, docs, decisions, shared schemas (`data/*/README.md` envelopes, `docs/protocol.md`), content-rule tooling | `docs/`, top-level files, `tools/content/` | neo-sandtable (lead agent) |
 | Engine core | `crates/cna-core/` | neo-sandtable |
 | Content loading and validation | `crates/cna-content/` | neo-sandtable |
 | Server, runner, persistence, streams, HTTP/WebSocket API | `crates/cna-server/` | server |

@@ -14,6 +14,18 @@ The original game's components are copyrighted. The repository must never contai
 - verbatim rules prose. Paraphrase in your own words. Short identifiers are fine: case numbers
   (`[8.37]`), section titles ("Breakdown"), unit designations, place names.
 
+The measurable bar: no run of **10 or more consecutive words** that also occurs in a rulebook,
+unless the run is an official name (a phase, segment, table, unit or place). Chart legends follow
+the same rule. `tools/content/check_verbatim.py` finds such runs; run it before pushing anything
+that contains prose (summaries, notes, footnotes, interpretations, READMEs):
+
+```sh
+python tools/content/check_verbatim.py            # all of data/ and docs/; exit 1 on a prose run
+python tools/content/check_verbatim.py data/rules/airlog
+```
+
+It needs `CNA_SOURCES`, so it cannot run in CI; passing it is each author's responsibility.
+
 What *is* allowed, and expected:
 
 - **Game data as structured records**: terrain per hex, unit values, chart and table numbers,
@@ -53,6 +65,13 @@ tests that pin it. The lead agent batches consequential interpretations for the 
 - Before every push: `git pull --rebase origin main`, re-run the checks, then push. Never
   force-push `main`. If a rebase conflicts in a file you do not own, stop and ask the owner of that
   area (see §4) instead of resolving it yourself.
+- **Landing slot.** Pushes to `main` are serialized through the orgtree reservation
+  `resource='main'`. Agents use `orgtree_reservation`; humans need not. Commit locally and rebase.
+  Then `acquire` with `base` = the `origin/main` commit you rebased onto, `candidate` = your
+  `HEAD`, `lease_s` ≈ 180 and your docket item. If someone else holds the slot, do other work and
+  retry; never push while it is held by someone else. While holding it: rebase again if `main`
+  moved, re-run the checks, push, then `land` and `release`. `renew` if the checks will outlast
+  the lease. Hold the slot only for rebase, check and push, never while editing.
 - Keep commits small and focused, with a prefix naming the area:
   `core: …`, `rules: …`, `map: …`, `units: …`, `scenario: …`, `server: …`, `web: …`, `docs: …`,
   `ci: …`, `tools: …`.
@@ -86,7 +105,7 @@ message. Cross-area changes (a shared schema, a core type) go through the lead a
 | Units, organization, equipment | `data/units/` |
 | Scenarios | `data/scenarios/` |
 | Live board | `web/` |
-| Project docs and decisions | `docs/`, top-level files (lead agent) |
+| Project docs and decisions | `docs/`, top-level files, `tools/content/` (lead agent) |
 
 ## 5. Determinism and units
 

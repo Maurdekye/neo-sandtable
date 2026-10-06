@@ -185,6 +185,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cna-sandbox"
+version = "0.1.0"
+dependencies = [
+ "cna-content",
+ "cna-core",
+ "cna-protocol",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cna-seats"
 version = "0.1.0"
 dependencies = [
