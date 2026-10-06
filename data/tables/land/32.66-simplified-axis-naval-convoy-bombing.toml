@@ -1,0 +1,60 @@
+# Simplified Axis Naval Convoy Bombing Chart (land:32.66).
+
+[table]
+id = "land.32.66.axis_convoy_bombing"
+case = "32.66"
+title = "Simplified Axis Naval Convoy Bombing Chart"
+src = ["land:32.66", "land:32.64"]
+transcribed_from = ["vassal:32.66 Simplified Axis Naval Convoy Bombing Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Abstract-logistics table (not used in the full-systems profile). Find the convoy route (1 to 6) the Axis convoy is
+using and read down its column to the westernmost east-west hex row beyond which a qualifying Allied division is
+located; read across to the row's Bomb Points, which names the Air Bombardment and Secondary Barrage Targets CRT
+column used for the attack (land:32.64). Each cell is a location code: a map-section letter (A to E), the two lower
+case x's meaning any north-south hex may be used, and the two digits are the east-west hex row, for example Cxx01
+is hex row 01 of map section C. A qualifying Allied division is any complete (non-shell) Allied division that is east
+of, or in the same east-west row as, at least one other non-shell Allied division. A printed dash means that route
+column does not reach that bomb-point row. Attacks on one convoy do not affect attacks on others.
+"""
+
+[[row]]
+bomb_points = [21, 40]
+location = { r1 = "Cxx01", r2 = "Dxx01", r3 = "Dxx01", r4 = "Exx01", r5 = "Exx11", r6 = "Dxx11" }
+
+[[row]]
+bomb_points = [41, 80]
+location = { r1 = "Bxx16", r2 = "Cxx16", r3 = "Cxx21", r4 = "Dxx21", r5 = "Exx01", r6 = "Dxx01" }
+
+[[row]]
+bomb_points = [81, 120]
+location = { r1 = "Bxx01", r2 = "Cxx01", r3 = "Cxx11", r4 = "Dxx11", r5 = "Dxx21", r6 = "Cxx21" }
+
+[[row]]
+bomb_points = [121, 160]
+location = { r1 = "Axx18", r2 = "Bxx16", r3 = "Cxx01", r4 = "Dxx01", r5 = "Dxx11", r6 = "Cxx11" }
+
+[[row]]
+bomb_points = [161, 200]
+location = { r2 = "Bxx01", r3 = "Bxx26", r4 = "Cxx21", r5 = "Dxx01", r6 = "Cxx01" }
+
+[[row]]
+bomb_points = [201, 260]
+location = { r2 = "Axx18", r3 = "Bxx20", r4 = "Cxx11", r5 = "Cxx21", r6 = "Bxx26" }
+
+[[row]]
+bomb_points = [261, 320]
+location = { r3 = "Bxx10", r4 = "Cxx01", r5 = "Cxx11", r6 = "Bxx20" }
+
+[[row]]
+bomb_points = [321, 390]
+location = { r3 = "Bxx01", r4 = "Bxx26", r5 = "Cxx01", r6 = "Bxx10" }
+
+[[row]]
+bomb_points = [391, 470]
+location = { r3 = "Axx18", r4 = "Bxx20", r5 = "Bxx26", r6 = "Bxx01" }
+
+[[row]]
+bomb_points_min = 471
+location = { r4 = "Bxx10", r5 = "Bxx20", r6 = "Axx18" }

@@ -1,0 +1,40 @@
+# Commonwealth Simplified Supply Availability Table (land:32.47).
+
+[table]
+id = "land.32.47.cw_supply_availability"
+case = "32.47"
+title = "Commonwealth Simplified Supply Availability Table"
+src = ["land:32.47", "land:32.45"]
+transcribed_from = ["vassal:32.47 Commonwealth Simplified Supply Availability Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Abstract-logistics table (not used in the full-systems profile). Roll one die in the column for the supply
+period of the arrival date (not the planning date): Period I is 1940 through the end of April 1941; Period II is
+May 1941 through the end of May 1942; Period III is June 1942 to the end of the game. The cell is the number of
+Supply Units that arrive four Game-Turns later (land:32.45).
+"""
+
+[[row]]
+die = 1
+supply_units = { period_I = 1, period_II = 2, period_III = 3 }
+
+[[row]]
+die = 2
+supply_units = { period_I = 1, period_II = 3, period_III = 4 }
+
+[[row]]
+die = 3
+supply_units = { period_I = 2, period_II = 3, period_III = 5 }
+
+[[row]]
+die = 4
+supply_units = { period_I = 2, period_II = 3, period_III = 5 }
+
+[[row]]
+die = 5
+supply_units = { period_I = 3, period_II = 4, period_III = 6 }
+
+[[row]]
+die = 6
+supply_units = { period_I = 3, period_II = 4, period_III = 7 }

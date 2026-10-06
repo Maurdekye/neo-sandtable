@@ -1,0 +1,649 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "30.0"
+book = "land"
+title = "The Mediterranean Fleet (Commonwealth)"
+systems = ["land", "naval"]
+
+[[case]]
+id = "30.0"
+title = "General rule: The Mediterranean Fleet"
+summary = "The Commonwealth has abstracted battleships, cruisers and destroyers used for barrage and anti-aircraft fire; no naval combat exists. Each ship's Barrage Strength equals Actual points; ships can be hit by air attack and land fire; the Axis may cripple the fleet by a Chariot raid. The Italian Navy is abstracted into the Axis convoy rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["30.1", "airlog:51.0"]
+src = ["land:30.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.1"
+title = "Commonwealth Naval Counters"
+summary = "Heading for 30.11-30.18."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:30.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.11"
+title = "Ships stand for types"
+summary = "Naval counters are abstract ship types given names of ships actually in the Mediterranean; the fleet was never stable, so they do not represent a particular ship."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:30.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.12"
+title = "Gun and AA ratings"
+summary = "Each naval counter has a Gun Rating (equal to Actual Barrage Points) and an AA Rating (actual AA points); Queen Elizabeth starts at barrage 6 and AA 12."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:30.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.13"
+title = "Gun rating is also hit points"
+summary = "A ship's Gun Rating also measures how much damage it can take, one point per strength point; sinking needs all points removed; AA points fall in proportion to lost gun points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:30.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.14"
+title = "No stacking or presence effects"
+summary = "Naval units have no stacking points, stack freely in coastal or all-sea hexes, and do not affect land, air or other naval movement."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:30.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.15"
+title = "Range of 100 sea hexes"
+summary = "Ships are placed (they do not move) in any hex within 100 sea hexes of Alexandria, never west of hex row xx29 on map B, at the start of an OpStage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:30.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.16"
+title = "Port time and sea limit"
+summary = "Ships use no fuel, ammunition or water; each OpStage in action requires two in port afterwards, and a ship can be at sea at most three OpStages in a row (then six in port)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:30.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.17"
+title = "The San Giorgio"
+summary = "The Italian ship San Giorgio, partly sunk to block Tobruk harbor, acts like an artillery unit that cannot move, fires into adjacent hexes (including at Commonwealth ships through sea hexsides), until removed or fully sunk by enemy engineers."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["30.39"]
+src = ["land:30.17"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.18"
+title = "Valetta moves"
+summary = "Commonwealth ships may go to and from Valetta (Malta), at most five there at once; Valetta is a recovery port like Alexandria; ships there may move only to Alexandria; the trip takes one OpStage and does not count as time at sea."
+kind = "rule"
+disposition = "decision"
+seat = "naval"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:30.18"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Move ships between Alexandria and Valetta"
+params = ["ships", "direction"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "30.2"
+title = "Off-Shore Bombardment"
+summary = "Heading for 30.21-30.25."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:30.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.21"
+title = "Bombardment reach"
+summary = "Ships may bombard any coastal hex they occupy; battleships and heavy cruisers (4-pointers) may also hit any hex adjacent to their coastal hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:30.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.22"
+title = "Strength and ammunition"
+summary = "Ship Gun Ratings act as Actual artillery points needing no ammunition; battleships and heavy cruisers firing at two hexes distance have halved strength."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["12.0"]
+src = ["land:30.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.23"
+title = "Using ships to bombard"
+summary = "The Commonwealth places the ship in the chosen hex within range in the Fleet Assignment Segment; in any one Barrage Step of the stage it may bombard that hex and those adjacent (the example places Valiant and Ajax at Derna B5925)."
+kind = "rule"
+disposition = "decision"
+seat = "naval"
+timing = ["opstage.cw_fleet.assignment"]
+depends_on = ["30.15"]
+src = ["land:30.23"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign ships to bombardment hexes"
+params = ["ships", "hexes"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "30.24"
+title = "One shot per stage"
+summary = "A ship may use its Barrage Strength only once per OpStage; the player picks which Barrage Step it fires in."
+kind = "rule"
+disposition = "decision"
+seat = "naval"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+src = ["land:30.24"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose the Barrage Step in which each ship fires"
+params = ["ships", "step"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "30.25"
+title = "Recovery after firing"
+summary = "A ship that bombards must spend the next two OpStages in Alexandria; anti-aircraft fire is unrestricted."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:30.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.3"
+title = "Attacking Ships and Their Repair"
+summary = "Heading for 30.31-30.39."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:30.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.31"
+title = "Sources of damage"
+summary = "Ships may be damaged by air bombardment (39.3), coastal guns (30.35, 30.36 as cited) or an Italian Chariot raid (30.4)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["airlog:39.3"]
+src = ["land:30.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.32"
+title = "Air attack on ships"
+summary = "Bombers, fighter-bombers and torpedo planes may bomb a ship counter to cut its Gun Rating when in the same hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["airlog:41.3"]
+src = ["land:30.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.33"
+title = "Bombing ships is a mission"
+summary = "A plane must be assigned to the ship-bombing mission to attack a ship even if in the same hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["airlog:41.7"]
+src = ["land:30.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.34"
+title = "Damage in gun rating points"
+summary = "Damage is taken in Gun Rating Points as given by the Air Bombardment Table; ships fire at their reduced Gun and AA ratings (Ajax with two damage points drops from 4 to 2 gun, AA 4)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["airlog:41.5"]
+src = ["land:30.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.35"
+title = "Artillery vs ships"
+summary = "Artillery units with Vulnerability 6 or more, and emplaced guns, may fire at enemy ships in their own hex instead of at land units that stage; halve their total Raw points (emplaced guns do not) and use the Air Bombardment Table as if they were bomb points."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["airlog:41.5"]
+src = ["land:30.35"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Fire shore artillery at enemy ships"
+params = ["artillery units", "ships"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "30.36"
+title = "Damaged and sunk ships"
+summary = "A ship below 50% of face-value Gun Rating cannot leave port until repaired above 50%; with no Gun Rating left it is sunk and unrepairable; a warship lost while carrying a commando unit eliminates it."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:30.36"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.37"
+title = "Repair"
+summary = "One Gun Rating level takes six consecutive OpStages in Alexandria, with no engineers or supplies; moving early restarts the work."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.repair"]
+src = ["land:30.37"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.38"
+title = "Ships always fire AA"
+summary = "Ships may always fire as anti-aircraft guns, wherever they are and whatever they are doing, even repairing."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:30.38"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.39"
+title = "San Giorgio fires at ships"
+summary = "The San Giorgio can shoot at Commonwealth ships, its gun rating serving as bombardment points per 30.35."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["30.35"]
+src = ["land:30.39"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.4"
+title = "The Italian 10th Light Flotilla: Chariot Raids"
+summary = "Background on the December 1941 Alexandria raid. Heading for 30.41-30.46."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:30.4"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Chariot raids start only in July 1941"
+
+[[case]]
+id = "30.41"
+title = "Availability"
+summary = "From July 1941 the Axis may attempt a Chariot raid on Alexandria to damage Commonwealth shipping."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:30.41"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Chariot raids start only in July 1941"
+
+[[case]]
+id = "30.42"
+title = "Planning lead time"
+summary = "The raid must be planned six OpStages (two weeks) ahead and occurs on the seventh stage after planning; the Axis notes both dates on paper."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["continuous"]
+src = ["land:30.42"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Chariot raids start only in July 1941"
+
+[case.decision]
+what = "Plan a Chariot raid and record its execution date"
+params = ["planning stage"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "30.43"
+title = "When it occurs"
+summary = "The raid is resolved in the Air Mission Completion Segment of the Land Support Air Phase, after ships have been sent on missions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:30.43"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Chariot raids start only in July 1941"
+
+[[case]]
+id = "30.44"
+title = "Resolution"
+summary = "The Axis announces the raid and rolls one die on the Chariot Table."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+tables = ["land.30.46.chariot_raid"]
+src = ["land:30.44"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Chariot raids start only in July 1941"
+
+[[case]]
+id = "30.45"
+title = "No supplies; once; campaign only"
+summary = "No supplies are needed; the raid may be tried only once and only in a Campaign Game."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:30.45"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Chariot raids start only in July 1941"
+
+[[case]]
+id = "30.46"
+title = "Chariot Table"
+summary = "Table of dice-to-roll by die roll giving Damage Points to ships. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+tables = ["land.30.46.chariot_raid"]
+src = ["land:30.46"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Chariot raids start only in July 1941"
+
+[[case]]
+id = "30.5"
+title = "Naval Transport of Troops"
+summary = "Only the Commonwealth moves troops by sea (the Axis coastal shipping carries supplies); the case text is flagged as garbled and corrected below. Heading for 30.51-30.59."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:30.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.51"
+title = "Port-to-port transfers"
+summary = "The Commonwealth may transfer units between ports depending on personnel capacity; ports incapacitated by air bombardment cannot receive or ship personnel."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["airlog:39.3"]
+src = ["land:30.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.52"
+title = "One transfer per port per stage"
+summary = "Only one personnel transfer per port per OpStage, in either direction, taking place in the Truck Convoy Movement Phase."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.truck_convoy_movement"]
+src = ["land:30.52"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Transfer troops by sea between two ports"
+params = ["units", "ports"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "30.53"
+title = "Effect on supplies"
+summary = "Personnel transfers can reduce the supplies a port can receive (30.57)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["30.57"]
+src = ["land:30.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.54"
+title = "Port personnel capacity"
+summary = "The number of stacking points that can be landed or embarked is the port's personnel capacity, and the transfer is limited by the smaller of the two ports."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["airlog:55.3"]
+src = ["land:30.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.55"
+title = "Eligibility and cost"
+summary = "A unit must start the stage in the embarkation port having spent no CP in earlier phases (except units that were barraged or bombed); in the Truck Convoy Segment it is moved to the debarkation port and lands at a CP cost equal to its CPA."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+src = ["land:30.55"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.56"
+title = "Incapacitated and non-friendly ports"
+summary = "No transfer when either port is incapacitated by air bombardment; transfers go between friendly-controlled ports (control means last to occupy the hex)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["airlog:39.3"]
+src = ["land:30.56"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.57"
+title = "Troops reduce port supply capacity"
+summary = "Each stacking point shipped in reduces that port's maximum supply tonnage for the stage by 10% (the reference to 30.59 is to be ignored; troops shipped out have no effect); Tobruk with 1700 tons drops to 1530 per point in. For ports with more than one stacking point of air capacity, shipping in at least 50% of the supply tonnage reduces the SP level by at least one third; 1-SP ports are unaffected by supplies."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["airlog:55.3"]
+errata = ["errata79:30.59"]
+src = ["land:30.57"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.58"
+title = "Blocked ports"
+summary = "Port blocking (55.2) does not affect personnel transfers unless the port is reduced below two thirds capacity (rounded up), when it cannot receive or send personnel; a port totally incapacitated by bombing cannot either."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["airlog:55.2"]
+src = ["land:30.58"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.59"
+title = "Port Capacity Chart"
+summary = "There is no 30.59 chart; the chart is now Case 55.3 of the Air and Logistics book (clarification)."
+kind = "table"
+disposition = "superseded"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["airlog:55.3"]
+errata = ["errata79:30.59"]
+src = ["land:30.59"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "30.6"
+title = "Commonwealth Fleet Reinforcement Schedule"
+summary = "Table of ships and the Game-Turn each is deployed (initial fleet at turn 1, more at 3/8 and 1/33), with Malta deployment options. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+tables = ["land.30.6.cw_fleet_reinforcement"]
+src = ["land:30.6"]
+
+[case.applies]
+graziani = "yes"

@@ -1,0 +1,39 @@
+# Axis Simplified Supply Availability Table (land:32.46).
+
+[table]
+id = "land.32.46.axis_supply_availability"
+case = "32.46"
+title = "Axis Simplified Supply Availability Table"
+src = ["land:32.46", "land:32.44"]
+transcribed_from = ["vassal:32.46 Axis Simplified Supply Availability Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Abstract-logistics table (not used in the full-systems profile). Roll one die in the column for the Tonnage
+Availability Letter (A to G, from the Axis Naval Convoy Level Chart, land:32.44). The cell is the number of Supply
+Units available for that Game-Turn.
+"""
+
+[[row]]
+die = 1
+supply_units = { A = 0, B = 0, C = 1, D = 1, E = 1, F = 1, G = 2 }
+
+[[row]]
+die = 2
+supply_units = { A = 0, B = 1, C = 1, D = 1, E = 2, F = 2, G = 3 }
+
+[[row]]
+die = 3
+supply_units = { A = 1, B = 1, C = 1, D = 2, E = 2, F = 3, G = 3 }
+
+[[row]]
+die = 4
+supply_units = { A = 1, B = 2, C = 2, D = 3, E = 3, F = 4, G = 4 }
+
+[[row]]
+die = 5
+supply_units = { A = 2, B = 2, C = 3, D = 3, E = 3, F = 4, G = 5 }
+
+[[row]]
+die = 6
+supply_units = { A = 2, B = 3, C = 3, D = 3, E = 4, F = 4, G = 6 }

@@ -1,0 +1,64 @@
+# Commonwealth Fleet Reinforcement Schedule (land:30.6).
+
+[table]
+id = "land.30.6.cw_fleet_reinforcement"
+case = "30.6"
+title = "Commonwealth Fleet Reinforcement Schedule"
+src = ["land:30.6"]
+transcribed_from = ["vassal:30.6 Commonwealth Fleet Reinfrocement Schedule.png"]
+verification = "double"
+dice = "none"
+notes = """
+Warships deployed and when. 'deploy' means deployed at the start of the first Operations Stage of the first
+Game-Turn; the others are given as OpStage/Game-Turn. Ship types are as printed on the counters: BB battleship,
+CA heavy cruiser, CL light cruiser, CLAA anti-aircraft cruiser, DD destroyer. All ships deploy in the port hex
+of Alexandria except where a footnote allows Valetta (Malta). Names are transcribed as printed.
+"""
+
+[[group]]
+when = "deploy"
+op_stage = 1
+game_turn = 1
+ships = [
+  { type = "BB", name = "Valiant" },
+  { type = "CL", name = "Arethusa", footnotes = ["star"] },
+  { type = "CLAA", name = "Dido", footnotes = ["star"] },
+  { type = "CLAA", name = "Eurylaus", footnotes = ["star"] },
+  { type = "DD", name = "Airedale", footnotes = ["dagger"] },
+  { type = "DD", name = "Bedouin", footnotes = ["dagger"] },
+  { type = "DD", name = "Jervis", footnotes = ["dagger"] },
+  { type = "DD", name = "Lance", footnotes = ["dagger"] },
+  { type = "DD", name = "Ledbury", footnotes = ["dagger"] },
+  { type = "DD", name = "Mohawk", footnotes = ["dagger"] },
+  { type = "DD", name = "Nubian", footnotes = ["dagger"] },
+]
+
+[[group]]
+when = "3/8"
+op_stage = 3
+game_turn = 8
+ships = [
+  { type = "BB", name = "Barham" },
+  { type = "CA", name = "York" },
+  { type = "CL", name = "Ajax" },
+  { type = "DD", name = "Marne" },
+  { type = "DD", name = "Partridge" },
+]
+
+[[group]]
+when = "1/33"
+op_stage = 1
+game_turn = 33
+ships = [
+  { type = "BB", name = "Queen Elizabeth" },
+  { type = "CA", name = "Fiji" },
+  { type = "CLAA", name = "Naiad" },
+]
+
+[[footnote]]
+id = "star"
+text = "Any one of the three marked ships (Arethusa, Dido, Eurylaus) may deploy in the port of Valetta on Malta."
+
+[[footnote]]
+id = "dagger"
+text = "Any two of the seven marked destroyers may deploy in the port of Valetta on Malta."

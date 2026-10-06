@@ -1,0 +1,35 @@
+# Chariot Raid Table (land:30.46).
+
+[table]
+id = "land.30.46.chariot_raid"
+case = "30.46"
+title = "Chariot Raid Table"
+src = ["land:30.46", "land:30.44"]
+transcribed_from = ["vassal:30.46 Chariot Raid Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Roll one die. The result is a number of dice to roll; their total is the number of Damage Points (land:30.34)
+that the Axis player may distribute among the ships in the hex at his choice. The same table gives the damage
+for the abstract bombardment of the Commonwealth Fleet at Alexandria (land:32.74b refers to it).
+"""
+
+[[row]]
+die_min = 1
+die_max = 1
+dice_to_roll = 3
+
+[[row]]
+die_min = 2
+die_max = 3
+dice_to_roll = 2
+
+[[row]]
+die_min = 4
+die_max = 5
+dice_to_roll = 1
+
+[[row]]
+die_min = 6
+die_max = 6
+dice_to_roll = 0

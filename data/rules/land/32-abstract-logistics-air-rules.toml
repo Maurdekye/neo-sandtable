@@ -1,0 +1,947 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "32.0"
+book = "land"
+title = "Abstract Logistics & Air Rules"
+systems = ["land", "logistics", "air"]
+
+[[case]]
+id = "32.0"
+title = "General rule: Abstract Logistics and Air Rules"
+summary = "These rules apply only if the Land Game is played without the Air and Logistics Games. All supply expenditures of the Land and Air rules are replaced by Ammo and Fuel costs listed here; players get Motorization Points instead of trucks and Supply Units holding Ammo and Fuel. A commentary warns the abstract rules were never tested and may affect game balance."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["scen:65.0"]
+src = ["land:32.0"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.1"
+title = "Supply Units & Supply"
+summary = "Heading for 32.11-32.18."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:32.1"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.11"
+title = "Ignore normal supplies"
+summary = "All references to Ammo, Fuel, Stores and Water use are ignored; only the supply rules of this section apply."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:32.11"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.12"
+title = "Supply Units"
+summary = "Supply Units are abstract substitutes for all supplies, shown by a Supply Dump counter."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:32.12"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.13"
+title = "Capture of Supply Units"
+summary = "A Supply Unit has no combat ability; an enemy combat unit entering its hex captures it and uses its supplies at once."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:32.13"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.14"
+title = "Stacking of Supply Units"
+summary = "Supply Units have stacking value zero; at most five per Major City hex and three per other off-map hex; unlimited in the Tripoli/Tunisia boxes."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:32.14"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.15"
+title = "Contents"
+summary = "A Supply Unit starts with and never exceeds 40 Ammo and 60 Fuel points; at zero both it is removed; supplies may be shuffled free of cost among units in the same hex in the Organization Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:32.15"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.16"
+title = "Drawing supply by range"
+summary = "A friendly combat unit may draw on a Supply Unit within half its CPA, traced as a medium truck (infantry on foot as infantry), not through impassable terrain or unoccupied enemy ZOCs."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:32.16"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.17"
+title = "Destroying Supply Units"
+summary = "The owner spends half the CPA of all units in the hex (rounded up) and rolls one die per Supply Unit; 1-3 destroys it (add one if the hex has one or fewer stacking points); done before movement in a sub-segment, once per Supply Unit per sub-segment."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:32.17"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Try to destroy Supply Units in a hex"
+params = ["hex", "supply units"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "32.18"
+title = "Dummy Supply Units"
+summary = "One dummy Supply Unit per three real ones received or started with may be placed; moves like a real one, needs fewer motorization points, removed on discovery."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:32.18"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Place or move a dummy Supply Unit"
+params = ["hex"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "32.2"
+title = "Supply Expenditures"
+summary = "Heading for 32.21-32.25; players track Ammo and Fuel per Supply Unit; the Commonwealth Fleet and patrolling TOE need no supplies."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:32.2"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.21"
+title = "Ammo costs"
+summary = "Ammo is spent per battalion-equivalent: a non-phasing unit needs 1 Ammo to take part in an Assault and 2 to Barrage; a phasing unit twice as much."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:32.21"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.22"
+title = "Ammo spent at combat"
+summary = "Ammo points are spent at the instant of combat."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:32.22"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.23"
+title = "Fuel per stage"
+summary = "Fuel is spent per Operations Stage: each battalion-equivalent spends the required Fuel the first time it is moved by land in the stage and may then move up to its CPA; exceeding the CPA costs more Fuel at that instant."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:32.23"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.24"
+title = "Fuel amounts"
+summary = "Tank battalions need two Fuel; tank companies one; gun-class and recce battalions (not camels) one; Motorization Points carrying infantry, gun battalions or a real Supply Unit need one; companies and other uses need none."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:32.24"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.25"
+title = "Patrol supplies"
+summary = "Patrolling costs no supplies."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+src = ["land:32.25"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.3"
+title = "Movement of Supply Units"
+summary = "Heading for 32.31-32.37."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:32.3"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.31"
+title = "Modes of movement"
+summary = "Supply Units move by land, rail, sea and air, and may move by land or rail in the stage they arrive."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:32.31"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.32"
+title = "Motorization needs"
+summary = "A real Supply Unit needs 30 Motorization Points to move and a dummy 6; they attach or detach only in the Organization Phase; one lacking its minimum cannot move."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.reorganization"]
+src = ["land:32.32"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Assign motorization points to a Supply Unit"
+params = ["supply unit", "points"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "32.33"
+title = "Which phase it moves in"
+summary = "A transported Supply Unit moves in either the Movement/Combat Phase (only if it starts and stays stacked with a friendly combat unit) or the Truck Convoy Phase, not both."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement", "opstage.truck_convoy_movement"]
+src = ["land:32.33"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.34"
+title = "Commonwealth rail"
+summary = "The Commonwealth may carry any two Supply Units (real or dummy) by rail in one direction per OpStage under normal rail rules."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.cw_rail_movement"]
+src = ["land:32.34"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Send Supply Units by rail"
+params = ["supply units", "destination"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "32.35"
+title = "Axis coastal shipping"
+summary = "The Axis may ship Supply Units on coastal shipping at 2000 tons each (two ships may share a mission)."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.tactical_shipping"]
+src = ["land:32.35"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Ship Supply Units on Axis coastal ships"
+params = ["supply units", "ships"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "32.36"
+title = "Commonwealth sea transport"
+summary = "One Supply Unit per OpStage by sea among Alexandria, Benghazi and Tobruk, the destination port having at least 50% efficiency; it occurs in the Naval Convoy Arrival Phase in place of troop transport."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.convoy_arrival"]
+src = ["land:32.36"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Ship a Supply Unit by sea between ports"
+params = ["supply unit", "ports"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "32.37"
+title = "Air transport"
+summary = "Only Supply Units fly, one per player per Game-Turn, in the Organization Phase between major cities, villages or Tripoli/Tunisia boxes, spending 12 Fuel at the origin; none if enemy combat units are within five hexes of the origin; not past the easternmost (Axis) or westernmost (Commonwealth) row held by a friendly division; the destination must hold a friendly division or brigade HQ; the supply unit cannot move further that stage."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.reorganization"]
+src = ["land:32.37"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Air transport a Supply Unit"
+params = ["supply unit", "origin", "destination"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "32.4"
+title = "Availability of Supply Units"
+summary = "Heading for 32.41-32.47."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:32.4"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.41"
+title = "Initial and ongoing supply"
+summary = "Players get the starting number of Supply Units from each scenario's Simplified Supply case, plus more from the availability tables."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+depends_on = ["scen:60.0"]
+src = ["land:32.41"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.42"
+title = "Where they arrive"
+summary = "Axis Supply Units arrive by convoy (32.6); Commonwealth ones are placed in Cairo, except that when more than three arrive in a Game-Turn one in three may be placed in Alexandria."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:32.42"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.43"
+title = "Planning ahead"
+summary = "Each Game-Turn players plan arrivals: the Axis two Game-Turns ahead, the Commonwealth four, as much as needed so Supply Units arrive every turn (except the scenario's first)."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["naval_convoy.schedule"]
+src = ["land:32.43"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Plan arrival of Supply Units"
+params = ["game-turn", "availability roll"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "32.44"
+title = "Axis planning procedure"
+summary = "The Axis finds the Tonnage Availability Letter for the planning month on the Axis Naval Convoy Level Chart (56.4), rolls one die on that column of the Axis Simplified Supply Availability Table, and brings in that many real Supply Units two Game-Turns later."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.32.46.axis_supply_availability"]
+depends_on = ["airlog:56.4"]
+src = ["land:32.44"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.45"
+title = "Commonwealth planning procedure"
+summary = "The Commonwealth reads the supply period of the arrival date, rolls one die on that column of its table, and receives that many real Supply Units four Game-Turns later."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.32.47.cw_supply_availability"]
+src = ["land:32.45"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.46"
+title = "Axis Simplified Supply Availability Table"
+summary = "Table of Axis supply units available by die and tonnage letter. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.32.46.axis_supply_availability"]
+src = ["land:32.46"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.47"
+title = "Commonwealth Simplified Supply Availability Table"
+summary = "Table of Commonwealth supply units by die and supply period. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.32.47.cw_supply_availability"]
+src = ["land:32.47"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.5"
+title = "Motorization Points"
+summary = "Heading for 32.51-32.59."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:32.5"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.51"
+title = "Motorization Points replace trucks"
+summary = "Motorization Points stand in for truck points and are Medium Truck Points in every respect except as modified here."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:32.51"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.52"
+title = "Supply of Motorization Points"
+summary = "Scenarios give starting numbers and reinforcements; players may also bring them in as replacements at the rate of Medium Truck Replacement Points."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["land:32.52"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.53"
+title = "What they may carry"
+summary = "Motorization Points can transport units and all guns with CPA 0+; normal units keep their own built-in transport."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:32.53"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.54"
+title = "Priority for infantry"
+summary = "Any leg infantry may be motorized, but Motorization Points must first go to all historically motorized infantry (CPA 8+ and 10+)."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["8.93"]
+src = ["land:32.54"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Assign Motorization Points to infantry units"
+params = ["points", "units"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "32.55"
+title = "No breakdown"
+summary = "Motorization Points do not break down; all other Breakdown rules apply."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.breakdown"]
+src = ["land:32.55"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.56"
+title = "Loss and capture"
+summary = "Motorization Points are normally lost only if their unit is eliminated; if it is captured they are captured too; barrage never produces a truck result against them."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:32.56"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.57"
+title = "Monthly abstract losses"
+summary = "In the first Naval Convoy Stage of each month, losses for the previous month are read from the Abstract Motorization Point Loss Chart (Commonwealth percentage left of the stroke, Axis right) of the player's map points; points may be removed anywhere on map E (Commonwealth) or section A including off-map (Axis)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+depends_on = ["airlog:58.5"]
+src = ["land:32.57"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.58"
+title = "Supply-carrying attributes"
+summary = "Motorization Points carrying a Supply Unit have CPA 15; if forced over it they return to the last hex where they had not exceeded it; they spend no CP when stacked with combat units in combat; they may react unless the unit moving adjacent has CPA 35 or more."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:32.58"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.59"
+title = "Abstract Truck/Motorization Loss Chart"
+summary = "Chart of monthly motorization losses; the image appears among the Air and Logistics charts (58.5) and is transcribed by the airlog registry."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+depends_on = ["airlog:58.5"]
+src = ["land:32.59"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.6"
+title = "Simplified Axis Naval Convoys"
+summary = "Heading for 32.61-32.66."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:32.6"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.61"
+title = "Convoy contents"
+summary = "Axis convoys carry all Supply Units, Motorization Points and Replacement Points for a Game-Turn, divided among available convoy lanes under 56.0, with no tonnage limits."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+depends_on = ["airlog:56.0"]
+src = ["land:32.61"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.62"
+title = "Lane limits"
+summary = "No more than three Supply Units and twenty Motorization Points per convoy lane per Naval Convoy Stage; the replacement pool's charts also cap totals per Game-Turn."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+src = ["land:32.62"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.63"
+title = "Commonwealth attacks on convoys"
+summary = "The Commonwealth may attack every convoy regardless of weather in the Naval Convoy Phase: the Axis announces the lanes, then each arriving convoy is attacked separately."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+src = ["land:32.63"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.64"
+title = "Attack procedure"
+summary = "Read the Convoy Lane column down to the westernmost location of a qualifying Commonwealth division, read across for the Bomb Points, roll two dice (in sequence) on the Air Bombardment CRT in that column; the result is the percentage of supply units, motorization points and replacement points on that lane destroyed."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.32.66.axis_convoy_bombing"]
+depends_on = ["airlog:41.5"]
+src = ["land:32.64"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.65"
+title = "Applying losses"
+summary = "A 10% result affects only Motorization and Replacement Points (rounding down for the former, up for the latter); 20% or more affects everything conveyed, rounding down, but at least one point of each Supply Unit type is always lost; tank and gun losses are percentages of each nationality's total, not by type."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+src = ["land:32.65"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.66"
+title = "Simple Axis Naval Convoy Bombing Chart"
+summary = "Table of bomb points by convoy route and westernmost qualifying Allied division location. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.32.66.axis_convoy_bombing"]
+src = ["land:32.66"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.7"
+title = "Bombardment of the Commonwealth Fleet"
+summary = "Heading for 32.71-32.75."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:32.7"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.71"
+title = "Limited attacks"
+summary = "The Axis may make a limited number of bombardment attacks on the fleet in Alexandria Harbor."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:32.71"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.72"
+title = "Number of attacks"
+summary = "Number permitted per scenario is one secret die roll, plus two in a Campaign Game."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:32.72"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.73"
+title = "Plotting"
+summary = "Only one attack per OpStage, plotted secretly in the Commonwealth Fleet Assignment Segment and occurring in the Tactical Naval Movement Segment."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:32.73"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[case.decision]
+what = "Plot a bombardment attack on the Alexandria fleet"
+params = ["stage"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "32.74"
+title = "Attack procedure"
+summary = "Strength: roll one die (plus two in the Campaign Game) and use that column from the left on the Air Bombardment and Secondary Barrage Targets table; then roll two dice in sequence for the number of Damage Points (see the Chariot Table, 30.46) to inflict on ships in Alexandria Harbor, distributed as the Axis chooses."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+tables = ["land.30.46.chariot_raid"]
+depends_on = ["airlog:41.5"]
+src = ["land:32.74"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.75"
+title = "Weather bar"
+summary = "No attack if map E has a rainstorm or sandstorm."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.cw_fleet.assignment"]
+src = ["land:32.75"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.8"
+title = "Anti-Air Unit Modifications"
+summary = "Heading for 32.81-32.84."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:32.8"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.81"
+title = "Commonwealth AA removed"
+summary = "Every Commonwealth anti-air unit, and all light and heavy AA TOE and replacement points, leave the game, as do any captured Axis AA TOE points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup"]
+src = ["land:32.81"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.82"
+title = "German AA changes"
+summary = "The Axis removes German AA units with ID codes z and bb, all assigned light AA TOE and replacement points; heavy AA is unaffected."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup"]
+src = ["land:32.82"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.83"
+title = "Italian AA changes"
+summary = "Italian AA units (ID ss, tt, uu) are removed; AA points assigned to emplaced gun units (pp) are removed; artillery units that could take AA points (kk) lose heavy AA points; all heavy (75mm and 90mm) AA replacement points are lost; light AA replacements arrive at one per month."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup"]
+src = ["land:32.83"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.84"
+title = "Scope of AA changes"
+summary = "These changes apply only to anti-air TOE and replacement points, not to other points that merely carry an anti-air rating."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup"]
+src = ["land:32.84"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"
+
+[[case]]
+id = "32.9"
+title = "Road & Track Stacking Modification"
+summary = "The road-only and track-only stacking-point limits of Section 9.0 do not apply."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["9.33"]
+src = ["land:32.9"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Official abstraction not used in the full-systems profile (decision D2)"

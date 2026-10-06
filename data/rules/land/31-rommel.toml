@@ -1,0 +1,21 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "31.0"
+book = "land"
+title = "Rommel"
+systems = ["land"]
+
+[[case]]
+id = "31.0"
+title = "Rommel"
+summary = "The Axis receives a Rommel counter that is a vehicle (4-wheel-drive medium truck) with CPA 60 and no combat ratings; he may react and retreat before assault from any unit except an LRDG and may retreat through an enemy ZOC unharmed; units stacked with him in combat gain +1 Morale; units with him for a whole OpStage may add 5 to their CPA. At the start of each Game-Turn he is present the Axis rolls two dice: a 12 sends him to Germany and drops Axis Initiative to 3 for that turn; he returns next turn unless another 12. A designer's note admits including only Rommel is a design affectation."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["7.2", "17.28", "27.6"]
+src = ["land:31.0"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Rommel appears only with German forces, which are not in Graziani's Offensive"
