@@ -1,0 +1,479 @@
+[section]
+id = "60.0"
+book = "scen"
+title = "Scenario Group One: The Italians"
+systems = ["land", "air", "logistics", "naval"]
+
+[[case]]
+id = "60.0"
+title = "Scenario Group One: The Italians"
+summary = "Introduces the two scenarios covering the opening Italian offensive and the British counteroffensive."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:60.0"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.1"
+title = "General Description"
+summary = "Describes the September 1940 to February 1941 period modeled by Group One."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:60.1"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.2"
+title = "Scenario Length"
+summary = "Introduces the two independent Group One scenario durations."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:60.2"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.21"
+title = "Two independent scenarios"
+summary = "Graziani's Offensive and the Italian Campaign each have their own end point and victory assessment."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = []
+src = ["scen:60.21"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.22"
+title = "Graziani's Offensive"
+summary = "The shorter scenario runs from GT1/1 through GT6/3, with an estimated 25-50 hours of play. Its victory conditions are in 60.81; the printed 60.71 cross-reference is erroneous."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:60.22"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "no"
+italian_campaign_note = "The Italian Campaign uses the duration in 60.23."
+
+[[case]]
+id = "60.23"
+title = "The Italian Campaign"
+summary = "The longer scenario runs from GT1/1 through GT20/3, including Operation Compass, with an estimated 90-150 hours of play. Use 60.82 for victory; the printed 60.72 reference is erroneous."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:60.23"]
+[case.applies]
+graziani = "no"
+graziani_note = "Graziani uses the duration in 60.22."
+italian_campaign = "yes"
+
+[[case]]
+id = "60.3"
+title = "Axis Forces"
+summary = "Introduces Italian land, air, truck, supply and shipping records."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:60.3"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.31"
+title = "Place and organize initial Italian land forces"
+summary = "The deployment records specify starting formations, exceptions, first-line trucks and geographic choices. Two Autoblin da 40 TOE points may be split between distinct units outside normal composition limits or held at Tobruk as trained, fueled replacements."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["setup"]
+src = ["scen:60.31"]
+interp = ["scen-0001", "scen-0002", "scen-0005"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place and organize initial Italian land forces"
+params = ["group", "unit destinations", "attachments", "recce bonus allocation"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.32"
+title = "Place initial Italian air forces"
+summary = "Distribute the listed aircraft, pilots and 39 SGSUs among Italian facilities within capacity. No initial aircraft are in Italy or Sicily; Crete is unavailable. Refitting begins no earlier than GT1/2."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["setup"]
+src = ["scen:60.32"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place initial Italian air forces"
+params = ["aircraft counts", "pilot ratings", "squadron", "facility"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.33"
+title = "Place initial Italian convoy trucks"
+summary = "The scenario records supply and air-service truck pools with their placement restrictions, plus the Italian repair facilities. Allocate the pools within those restrictions."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:60.33"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place initial Italian convoy trucks"
+params = ["truck pool", "destinations", "truck allocations"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.34"
+title = "Place initial Axis dumps and supplies"
+summary = "Fixed and free dump records define the starting stocks. Two real and two dummy dumps may be placed in the Libyan part of map C outside the four-hex enemy exclusion; allocate the separate air supply pool under 59.52."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:60.34"]
+interp = ["scen-0005"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place initial Axis dumps and supplies"
+params = ["dump", "destination", "facility supply allocations"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.35"
+title = "Initial Axis coastal shipping"
+summary = "All Axis coastal shipping counters are available and start at Tripoli, carrying no cargo."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:60.35"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.36"
+title = "Opening Malta attack availability"
+summary = "Axis strategic attacks against Malta use availability level I for this scenario group."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["strategic_air.malta_availability"]
+src = ["scen:60.36"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.37"
+title = "Plan remaining September convoys"
+summary = "Before play, plan the remaining September runs using only lanes 2, 3 and 6 and the convoy availability data. Scheduled reinforcements follow their tracks."
+kind = "rule"
+disposition = "decision"
+seat = "naval"
+timing = ["setup"]
+src = ["scen:60.37"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Plan remaining September convoys"
+params = ["available shipping", "run date", "lane", "cargo"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.4"
+title = "Commonwealth Forces"
+summary = "Introduces Commonwealth land, air, truck, supply, fleet and Malta records."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:60.4"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.41"
+title = "Place and organize initial Commonwealth land forces"
+summary = "The records specify land units, detached assignments, first-line trucks, training placements, free placement areas and the broken-down tanks at Alexandria."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["setup"]
+src = ["scen:60.41"]
+interp = ["scen-0005"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place and organize initial Commonwealth land forces"
+params = ["group", "unit destinations", "attachments"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.42"
+title = "Place initial Commonwealth North African air forces"
+summary = "Distribute the listed aircraft, pilots and 14 SGSUs among friendly North African facilities within capacity. The two Free French aircraft types may share a squadron."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["setup"]
+src = ["scen:60.42"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place initial Commonwealth North African air forces"
+params = ["aircraft counts", "pilot ratings", "squadron", "facility"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.43"
+title = "Place initial Commonwealth convoy trucks"
+summary = "Allocate the listed Cairo, Alexandria, general supply and air-service pools within their placement restrictions."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:60.43"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place initial Commonwealth convoy trucks"
+params = ["truck pool", "destinations", "truck allocations"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.44"
+title = "Place initial Commonwealth dumps and supplies"
+summary = "The records specify fixed stocks, a free real dump and one dummy in the Egyptian parts of maps C or D, and the air supply pool. Cairo and Alexandria provide unlimited supplies under the supply rules; repair facilities are also listed."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:60.44"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place initial Commonwealth dumps and supplies"
+params = ["dump", "destination", "facility supply allocations"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.45"
+title = "Initial Commonwealth fleet"
+summary = "Use the live fleet totals of one battleship, three cruisers and seven destroyers and the fleet schedule. The superseded port roster is struck out. No fleet movement is allowed before GT2/1; ships remain ready to fire."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup", "opstage.cw_fleet.assignment", "continuous"]
+src = ["scen:60.45"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.46"
+title = "Place Malta air and AA forces"
+summary = "Assign the listed Malta planes and pilots to the five starting SGSUs, distribute 17 AA points and allocate the initial five-SGSU facility capacity. Capacity expansion cannot start before October 1940."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["setup"]
+src = ["scen:60.46"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place Malta air and AA forces"
+params = ["squadron", "aircraft and pilots", "facility capacity", "AA distribution"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "60.47"
+title = "Commonwealth reinforcements and replacements"
+summary = "Follow the Commonwealth arrival track, including training requirements. Replacement points cannot arrive earlier than November 1940."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival", "opstage.organization.training"]
+src = ["scen:60.47"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.5"
+title = "Initial Air Facilities"
+summary = "Lists existing airfields, strips and flying-boat facilities. At setup, facilities in Egypt belong to the Commonwealth and those in Libya to Italy; subsequent control determines their user."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:60.5"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.6"
+title = "Opening initiative"
+summary = "The Axis holds initiative for all of GT1. Apply the normal initiative procedure from GT2 onward."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["initiative"]
+src = ["scen:60.6"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.7"
+title = "Initial construction and port condition"
+summary = "No initial minefields, fortifications or extra pipeline are present. The railway ends at Mersa Matruh. Ports use their listed efficiencies except Tobruk, which starts at level 7."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:60.7"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.8"
+title = "First Scenario Group Victory Conditions"
+summary = "Introduces the distinct objectives used by the two Group One scenarios."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:60.8"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.81"
+title = "Graziani victory levels"
+summary = "At game end, assess the location combinations for each side and the required convoy supply connections. The highest satisfied tier determines the result."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["end_of_game"]
+src = ["scen:60.81"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "no"
+italian_campaign_note = "The Italian Campaign uses the victory conditions in 60.82."
+
+[[case]]
+id = "60.82"
+title = "Italian Campaign victory points"
+summary = "Score occupied objectives only when a combat unit has a supply route of at most one GT to a dump or city linked onward to its home base. The Commonwealth wins strategically if no Italian combat unit on the maps can trace supply; otherwise compare objective points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["end_of_game"]
+src = ["scen:60.82"]
+[case.applies]
+graziani = "no"
+graziani_note = "Graziani uses the victory conditions in 60.81."
+italian_campaign = "yes"
+
+[[case]]
+id = "60.9"
+title = "Air and Logistics Games Abstractions"
+summary = "Introduces Group One adjustments supplementing the general optional abstraction rules."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:60.9"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "60.91"
+title = "Air-only abstraction"
+summary = "Group One adds no adjustments beyond the general Air abstraction rules."
+kind = "rule"
+disposition = "none"
+seat = "none"
+timing = ["setup"]
+src = ["scen:60.91"]
+[case.applies]
+graziani = "no"
+italian_campaign = "no"
+graziani_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+italian_campaign_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+
+[[case]]
+id = "60.92"
+title = "Land-only abstraction"
+summary = "Medium-truck reinforcement counts become motorization points. Alternate starting supply-unit records replace the full Logistics stock records when both Air and Logistics are abstracted."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:60.92"]
+[case.applies]
+graziani = "no"
+italian_campaign = "no"
+graziani_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+italian_campaign_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."

@@ -42,6 +42,10 @@ BOOKS = {
 
 # Known typos in the 2021 retype text: (wrong, right) replacements applied before extracting case ids.
 SOURCE_TEXT_FIXES = {
+    # Scenario section headings and 60.91 have damaged delimiters in the retype.
+    "scen": [("(60.5]", "[60.5]"), ("(60.7)", "[60.7]"),
+             ("(60.8]", "[60.8]"), ("(60.9]", "[60.9]"),
+             ("[60.9'1]", "[60.91]")],
     "airlog": [("[53.1)", "[53.1]"), ("[56.l]", "[56.1]"), ("[31.53]", "[34.53]")],
 }
 

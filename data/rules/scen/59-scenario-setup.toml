@@ -1,0 +1,486 @@
+[section]
+id = "59.0"
+book = "scen"
+title = "Introduction to Scenarios"
+systems = ["land", "air", "logistics", "naval"]
+
+[[case]]
+id = "59.0"
+title = "Introduction to Scenarios"
+summary = "Explains the operational scope of the five scenario groups and the care required to prepare their forces and objectives."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:59.0"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.1"
+title = "Scenario Organization"
+summary = "Introduces the grouping of scenarios and the categories of information provided for each."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:59.1"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.11"
+title = "Scenario groups"
+summary = "Four groups cover selected operations; the fifth provides the entire campaign."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = []
+src = ["scen:59.11"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.12"
+title = "Scenario contents"
+summary = "A scenario supplies its duration, objectives, land and air forces, stores, trucks, island forces, optional abstractions and special constraints."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = []
+src = ["scen:59.12"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.2"
+title = "Organize and place initial land forces"
+summary = "Expand listed formations using their OA assignments and the scenario exceptions. Split groups over permitted hexes and organize colocated units within formation and stacking limits; distribute their first-line trucks. Adopted scen-0005 governs the blind setup window and exclusions."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["setup"]
+src = ["scen:59.2"]
+interp = ["scen-0005"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Organize and place initial land forces"
+params = ["group", "units", "destinations", "attachments", "truck allocations"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.3"
+title = "Initial Air Strengths"
+summary = "Introduces aircraft, pilot and ground-support starting records."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:59.3"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.31"
+title = "Starting air-force records"
+summary = "Aircraft types, total and ready counts, pilots, facilities and SGSUs are recorded separately for each listed theatre."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:59.31"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.32"
+title = "Initial aircraft readiness"
+summary = "The ready subset is distinguished from total aircraft. Every starting aircraft is already armed and fueled without charging the initial stores."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup"]
+src = ["scen:59.32"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.33"
+title = "Assign starting aircraft to squadrons"
+summary = "Allocate aircraft to SGSUs while respecting the squadron composition constraints of airlog:35.2."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["setup"]
+src = ["scen:59.33"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Assign starting aircraft to squadrons"
+params = ["aircraft type", "total and ready counts", "squadron"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.34"
+title = "Assign starting pilots"
+summary = "Choose the initial distribution of available pilots among aircraft and squadrons."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["setup"]
+src = ["scen:59.34"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Assign starting pilots"
+params = ["pilot rating", "number", "squadron"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.35"
+title = "Place starting SGSUs"
+summary = "Place support units at friendly air facilities within each facility's readying capacity."
+kind = "rule"
+disposition = "decision"
+seat = "air"
+timing = ["setup"]
+src = ["scen:59.35"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place starting SGSUs"
+params = ["SGSU", "facility"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.36"
+title = "First-stage aircraft maintenance"
+summary = "Aircraft maintenance is unavailable during the scenario's opening OpStage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.land_support_air.maintenance", "strategic_air_recovery.maintenance"]
+src = ["scen:59.36"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.4"
+title = "Initial Truck Strengths"
+summary = "Introduces the three categories of starting trucks."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:59.4"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.41"
+title = "Starting truck categories"
+summary = "Distinguish trucks attached to land units from supply-convoy trucks and air-facility convoy trucks."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:59.41"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.42"
+title = "Distribute first-line trucks"
+summary = "Allocate each listed first-line pool among the land units starting at its permitted hex."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:59.42"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Distribute first-line trucks"
+params = ["truck pool", "unit", "light", "medium", "heavy"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.43"
+title = "Place air-facility truck convoys"
+summary = "Air-service second- and third-line trucks must begin at an air facility."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:59.43"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place air-facility truck convoys"
+params = ["truck pool", "facility", "truck allocation"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.44"
+title = "Place supply truck convoys"
+summary = "Split supply-convoy trucks among friendly combat units, dumps or major settlements, subject to the scenario. Axis pools explicitly allowed off-map may start there."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:59.44"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place supply truck convoys"
+params = ["truck pool", "destination", "truck allocation"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.45"
+title = "Choose starting truck loads"
+summary = "Starting trucks may carry supplies or motorize eligible personnel and guns without a time charge. Initial truck cargo is additional to the scenario's dump stocks."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:59.45"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Choose starting truck loads"
+params = ["trucks", "cargo or passengers", "quantity"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.5"
+title = "Initial Supply"
+summary = "Introduces dump stocks, air-facility stores and dummy dumps."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:59.5"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.51"
+title = "Starting supply records"
+summary = "The scenario identifies the initial store quantities and their permitted locations."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:59.51"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.52"
+title = "Allocate air-facility supply pools"
+summary = "Air facilities have intrinsic dumps; merge colocated dump and facility stocks. Distribute a separately listed air supply pool only among facilities on the game maps."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:59.52"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Allocate air-facility supply pools"
+params = ["air supply pool", "on-map facility", "supply amounts"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.53"
+title = "Place dummy dumps"
+summary = "Non-active dumps are decoys. Their starting hex may not contain an air facility."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:59.53"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+[case.decision]
+what = "Place dummy dumps"
+params = ["dummy dump", "destination"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.54"
+title = "Empty starting coastal shipping"
+summary = "Axis coastal shipping carries no cargo at the start."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup"]
+src = ["scen:59.54"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.6"
+title = "Abstract Logistics and Air"
+summary = "Introduces conversions required when using the optional abstract systems."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["scen:59.6"]
+[case.applies]
+graziani = "yes"
+italian_campaign = "yes"
+
+[[case]]
+id = "59.61"
+title = "Air-only abstraction"
+summary = "Omit air-service truck pools and stocks when replacing the Air Game with section 58."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup"]
+src = ["scen:59.61"]
+[case.applies]
+graziani = "no"
+italian_campaign = "no"
+graziani_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+italian_campaign_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+
+[[case]]
+id = "59.62"
+title = "Abstract logistics quantities"
+summary = "When Logistics is abstracted, use motorization points and supply units for the starting records."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["setup"]
+src = ["scen:59.62"]
+[case.applies]
+graziani = "no"
+italian_campaign = "no"
+graziani_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+italian_campaign_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+
+[[case]]
+id = "59.63"
+title = "Convert initial trucks to motorization"
+summary = "Each starting medium or heavy truck supplies one motorization point, retaining attached and convoy categories. Omit air-service pools if Air is abstracted too."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["setup"]
+src = ["scen:59.63"]
+[case.applies]
+graziani = "no"
+italian_campaign = "no"
+graziani_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+italian_campaign_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+
+[[case]]
+id = "59.64"
+title = "Redistribute initial motorization"
+summary = "After setup, redistribute motorization under the ordinary attachment rules, with the initial loaded-point exception in 59.66B."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["continuous"]
+src = ["scen:59.64"]
+[case.applies]
+graziani = "no"
+italian_campaign = "no"
+graziani_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+italian_campaign_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+[case.decision]
+what = "Redistribute initial motorization"
+params = ["motorization points", "attachment"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "59.65"
+title = "Place abstract supply units"
+summary = "Use regular supply units and, if Air remains active, depot units. Only unavoidable initial placements may exceed stacking; no further units may increase that excess."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:59.65"]
+[case.applies]
+graziani = "no"
+italian_campaign = "no"
+graziani_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+italian_campaign_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+[case.decision]
+what = "Place abstract supply units"
+params = ["supply unit", "destination"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "59.66"
+title = "Choose additional abstract initial supplies"
+summary = "Unoccupied attached points may carry one ammo or three fuel each, consumed first and restricted while loaded. Convoy points form groups of 30 for regular supply units or, at air facilities, 50 for depots; the Tripoli-Tunisia boxes count as hexes."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["setup"]
+src = ["scen:59.66"]
+[case.applies]
+graziani = "no"
+italian_campaign = "no"
+graziani_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+italian_campaign_note = "Both target scenarios use full Air and Logistics; these optional conversions are inactive."
+[case.decision]
+what = "Choose additional abstract initial supplies"
+params = ["motorization group", "initial cargo", "supply unit"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
