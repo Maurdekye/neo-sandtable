@@ -1,0 +1,131 @@
+# Replacement Point Conversion Chart (land:20.3).
+
+[table]
+id = "land.20.3.replacement_point_conversion"
+case = "20.3"
+title = "Replacement Point Conversion Chart"
+src = ["land:20.3", "errata79:20.3"]
+transcribed_from = ["vassal:20.3 Replacement Point Conversion Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+For each unit type, the replacement points of each class needed to replace one TOE strength point. Classes:
+inf (Infantry), gun (artillery, anti-tank or anti-air, whatever the ratings), tank, armr (Armored
+Reconnaissance/Armored Car point), lt_tank (a light tank of the type allowed in land:20.5; usable only when
+upgrading the unit), lt_at (only Italian 47/32 or German 2.8cm or 28/20 Pak anti-tank guns). Italian armr
+points always count as Autobelinda 41 (ID code vv) even where upgrading is not allowed. 'alternatives' lists
+mutually exclusive ways to pay; 'and' lists a combination. The errata removes an SGSU line printed at the end
+of the original chart (Squadron Ground Support Units need no replacement points, land:34.82). 'none' means no
+replacement points are needed.
+"""
+
+[[row]]
+unit = "any_headquarters_unit"
+requires = { inf = 2 }
+
+[[row]]
+unit = "commando"
+footnotes = ["a"]
+requires = { inf = 3 }
+
+[[row]]
+unit = "paratroop_infantry"
+footnotes = ["b"]
+requires = { inf = 2 }
+
+[[row]]
+unit = "italian_bersaglieri_infantry"
+requires = { inf = 2 }
+
+[[row]]
+unit = "machinegun"
+footnotes = ["c"]
+requires = { inf = 2 }
+
+[[row]]
+unit = "heavy_weapons"
+footnotes = ["d"]
+requires = { and = { inf = 1, gun = 1 } }
+
+[[row]]
+unit = "any_other_infantry"
+requires = { inf = 1 }
+
+[[row]]
+unit = "engineer_battalion"
+footnotes = ["e"]
+requires = { inf = 2 }
+
+[[row]]
+unit = "engineer_company"
+requires = { inf = 1 }
+
+[[row]]
+unit = "road_construction_or_railroad_construction"
+footnotes = ["f"]
+requires = { none = true }
+
+[[row]]
+unit = "motorcycle_reconnaissance_camel_cavalry_or_reconnaissance"
+requires = { inf = 2 }
+
+[[row]]
+unit = "armored_reconnaissance"
+requires = { alternatives = [{ armr = 1 }, { lt_tank = 1 }] }
+
+[[row]]
+unit = "armored_car"
+requires = { alternatives = [{ armr = 2 }, { lt_tank = 1 }] }
+
+[[row]]
+unit = "tank"
+requires = { tank = 1 }
+
+[[row]]
+unit = "artillery"
+requires = { gun_artillery = 1 }
+
+[[row]]
+unit = "airdroppable_artillery"
+requires = { alternatives = [{ italian_para_art = 1 }, { german_7_5cm_light_gun = 1 }] }
+
+[[row]]
+unit = "anti_tank"
+requires = { gun_anti_tank = 1 }
+
+[[row]]
+unit = "airdroppable_anti_tank"
+footnotes = ["g"]
+requires = { lt_at = 1 }
+
+[[row]]
+unit = "anti_air"
+requires = { gun_anti_air = 1 }
+
+[[footnote]]
+id = "a"
+text = "Specifically the Layforce or Special Air Service Brigade."
+
+[[footnote]]
+id = "b"
+text = "Specifically units of the Italian 185th Folgore or the German Ramcke Brigade."
+
+[[footnote]]
+id = "c"
+text = "Whether or not the unit bears a motorized symbol."
+
+[[footnote]]
+id = "d"
+text = "All units except those of the Ramcke Brigade."
+
+[[footnote]]
+id = "e"
+text = "Including the Australian Pioneer unit."
+
+[[footnote]]
+id = "f"
+text = "Specifically the Commonwealth player's one South African Road Construction Battalion and two New Zealand Railroad Construction Battalions. If eliminated, the unit returns to play as a reinforcement in the sixth Operations Stage after the stage in which it was eliminated."
+
+[[footnote]]
+id = "g"
+text = "Only applies when assigning anti-tank TOE strength points to headquarters of the 185th Folgore Division and/or the headquarters of the Ramcke Brigade."

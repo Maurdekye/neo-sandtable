@@ -1,0 +1,928 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "19.0"
+book = "land"
+title = "Organization & Reorganization"
+systems = ["land"]
+
+[[case]]
+id = "19.0"
+title = "General rule: Organization and Reorganization"
+summary = "Every counter is independent or assigned and/or attached to a parent formation (companies, battalions and brigades can be; division HQs are always independent). Historical assignments are on the OA chart and may be altered within limits; attachments are more flexible. Formation limits are on the Formation Organization Chart (19.3) and extra attachments on the Maximum Attachment Chart (19.5). The commentary stresses reading the limits as guides to doctrine, with the charts giving maxima."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["19.1", "19.3", "19.5", "4.45"]
+src = ["land:19.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.1"
+title = "Difference Between \"Assigned\" and \"Attached\" Units"
+summary = "Heading for 19.11-19.14."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:19.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.11"
+title = "Assigned"
+summary = "A unit is assigned to a parent if it is part of that parent's organization (the 8th Panzer Regiment is assigned to the 15th Panzer Division)."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:19.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.12"
+title = "Attached"
+summary = "A unit is attached to a parent if the parent's counter on the map also stands for it; both are in the same hex and functionally combined."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.1"]
+src = ["land:19.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.13"
+title = "One assigned parent, one attached parent"
+summary = "A unit may have one assigned parent and a different attached parent at once but never two of either kind; an attached unit must be in its parent's hex, an assigned one need not be."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:19.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.14"
+title = "Parents may themselves be subordinate"
+summary = "A unit may be a parent and also be assigned or attached to a higher parent; units attached to it can limit whether it can attach upward (example: 1st KRRC assigned to 7th Armoured, attached to 2nd NZ Division)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:19.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.2"
+title = "Unit Assignments"
+summary = "Each parent has limits on subsidiary units assigned (Formation Organization Chart). Units start assigned, assignments are generally permanent, and new assignments are made in the Reorganization Segment and recorded on the TOE sheet."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["19.3"]
+src = ["land:19.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.21"
+title = "Filling assignment slots"
+summary = "A parent with fewer assigned units than its maximum may be assigned independent units up to the limit; the unit must currently be attached to that parent."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.3"]
+src = ["land:19.21"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign an independent attached unit to a parent with room"
+params = ["unit", "parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.22"
+title = "Orphaned units become independent"
+summary = "If a unit's assigned parent is eliminated, the surviving unit is independent and eligible for reassignment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:19.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.23"
+title = "Eliminated units free their slot"
+summary = "An eliminated assigned unit's assignment ends and another independent unit may take its place; eliminated units do not count toward the limits."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:19.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.24"
+title = "Historical assignment shifts"
+summary = "OA-chart notes list historical shifts (for example the 115th Regiment moving from 15th Panzer to 21st Panzer); players may adopt or ignore them within 19.21, and must do so in the month listed or not at all."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.21", "19.25"]
+src = ["land:19.24"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if an OA-chart shift falls inside the scenario window"
+
+[case.decision]
+what = "Adopt or skip an OA-chart assignment shift"
+params = ["unit", "new parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.25"
+title = "Commonwealth armored limits change"
+summary = "Assignment limits on Commonwealth armored divisions and brigades changed three times; the player may assign independent units when limits grow and must unassign excess units when they shrink."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["4.45"]
+src = ["land:19.25"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if an armored formation limit change falls inside the scenario window"
+
+[case.decision]
+what = "Assign or unassign units when a formation limit changes"
+params = ["unit", "parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.26"
+title = "Commonwealth battalion shuffling"
+summary = "Commonwealth brigades (infantry and armor) may swap assigned battalions with another brigade or the unassigned pool; such battalions become assigned to the new brigade. They may be reassigned but not simply unassigned to become independent."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.26"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Swap an assigned battalion between Commonwealth brigades"
+params = ["battalion", "old brigade", "new brigade"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.27"
+title = "Units assigned to formations not in Africa"
+summary = "Units marked with an asterisk are assigned to parents that never reached Africa and cannot be reassigned except under 19.26."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["19.26"]
+src = ["land:19.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.28"
+title = "Only independent units get assigned"
+summary = "Only independent units may be assigned to a parent; an assigned unit cannot be assigned elsewhere (except 19.26). Assigned units keep their slot in the parent's TOE wherever they are."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.26"]
+src = ["land:19.28"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.3"
+title = "Formation Organization Chart"
+summary = "Table of the maximum numbers of each unit type that may be assigned to normal divisions and brigades; units with singular structures follow their OA-sheet limits. It is a symbolic composition chart for the units area to encode (not transcribed here)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.45"]
+src = ["land:19.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.31"
+title = "Allied Formation Organization Chart"
+summary = "Allied part of the Formation Organization Chart."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.45"]
+src = ["land:19.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.32"
+title = "Italian Formation Organization Chart"
+summary = "Italian part of the Formation Organization Chart."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.45"]
+src = ["land:19.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.33"
+title = "German Formation Organization Chart"
+summary = "German part of the Formation Organization Chart."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.45"]
+src = ["land:19.33"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "German formations do not appear in Graziani's Offensive"
+
+[[case]]
+id = "19.4"
+title = "Restrictions on Attachment & Detachment"
+summary = "Assigned units may freely attach to and detach from their parent; most parents may also take extra non-assigned units up to the Maximum Attachment Chart, or non-assigned units may substitute for missing assigned ones."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["19.5", "19.45"]
+src = ["land:19.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.41"
+title = "Attaching an assigned unit"
+summary = "An assigned but unattached unit in the same hex as its parent may attach at any time for 1 CP each to the unit and the parent; its counter leaves the map. Stacking value is unchanged unless the parent was a shell."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization", "opstage.movement_and_combat.movement"]
+depends_on = ["9.26", "6.3"]
+src = ["land:19.41"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attach an assigned unit in the same hex to its parent"
+params = ["unit", "parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.42"
+title = "Attaching a non-assigned unit"
+summary = "A unit not assigned to the parent may attach in the owner's Reorganization Segment only, for 2 CP each, within 19.4/19.5 limits; it must first be moved into the parent's hex in an earlier Movement Segment subject to stacking."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.5", "6.3"]
+src = ["land:19.42"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attach a non-assigned unit to a parent in the same hex"
+params = ["unit", "parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.43"
+title = "Detaching an assigned and attached unit"
+summary = "A unit both assigned and attached may be detached at any time for 1 CP each."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization", "opstage.movement_and_combat.movement"]
+depends_on = ["6.3"]
+src = ["land:19.43"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Detach an assigned unit from its parent"
+params = ["unit", "parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.44"
+title = "Detaching an attached, non-assigned unit"
+summary = "Such a unit may be detached only in the owner's Reorganization or Movement Segment, for 1 CP each; once stopped, the detached unit or the parent cannot move further unless they move as a stack."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization", "opstage.movement_and_combat.movement"]
+depends_on = ["6.3", "8.97"]
+src = ["land:19.44"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Detach a non-assigned unit from its parent"
+params = ["unit", "parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.45"
+title = "Substituting for missing units"
+summary = "A parent with fewer assigned units than its maximum may take an attached substitute for a missing unit (not in the game or reassigned under 19.66) provided it fits the limits that would apply to the missing one (an independent infantry brigade with at most three battalions for a missing infantry brigade)."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.66", "19.3"]
+src = ["land:19.45"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attach a substitute for a missing assigned unit"
+params = ["unit", "parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.46"
+title = "Attachment is transitive"
+summary = "A unit attached to a parent that is attached to a larger parent counts as attached to the larger one too, which can block an attachment (exception: units attached under 19.45 do not count)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["19.45"]
+src = ["land:19.46"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.47"
+title = "Re-attaching among detached units"
+summary = "Units detached from a parent may end up attached to each other at only the CP cost of detachment (the 132nd Armored Regiment and Nizza Cavalry detached from Ariete, then attached to each other)."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization", "opstage.movement_and_combat.movement"]
+depends_on = ["19.43"]
+src = ["land:19.47"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Attach detached units to each other"
+params = ["units"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.5"
+title = "Maximum Attachment Chart"
+summary = "Table of how many units of which types may be attached beyond a parent's assigned maxima, by parent size and type. Clarification: parents may exceed their assigned levels by attaching (not assigning) smaller units, in addition to the assigned ones. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["land.19.5.maximum_attachment"]
+src = ["land:19.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.6"
+title = "Rebuilding Depleted Units"
+summary = "Replacing TOE points is covered by 20.4; no unit may exceed its printed ID-code maximum TOE strength, and units that arrive below paper strength may be topped up. Heading for 19.61-19.68."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["20.4"]
+src = ["land:19.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.61"
+title = "Maximum TOE"
+summary = "Depleted units may be augmented by replacements but never above the maximum TOE strength on the OA chart."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["20.4"]
+src = ["land:19.61"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.62"
+title = "Eliminated units and cadres"
+summary = "A unit eliminated by combat attrition (not Breakdown) cannot be rebuilt, but an HQ that lost all its battalions may be assigned new ones up to the OA limit while the HQ exists as a cadre. Addition: an eliminated unit with a TOE maximum of one or two that finds its slot taken when recreated is independent."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.62"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.63"
+title = "Rebuilding an eliminated HQ"
+summary = "An eliminated HQ counter can be rebuilt only if at least 50% of its assigned units still exist and are not attached elsewhere, using two Infantry Replacement Points; otherwise it is gone permanently."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["20.4"]
+src = ["land:19.63"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Revive an eliminated HQ using two Infantry Replacement Points"
+params = ["HQ", "replacement points"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.64"
+title = "Replacement type rules"
+summary = "Infantry points rebuild a wide variety of infantry-type units, HQs and engineers; artillery units may use any artillery guns; any tank battalion may take any tanks (historical type pairing is optional); Heavy Weapons points need both Infantry and Gun replacement points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["20.4"]
+src = ["land:19.64"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.65"
+title = "Recce rebuilding"
+summary = "Armored Recce and Armored Car units normally use Recce points but may be augmented with light tanks (20.6)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["20.5"]
+src = ["land:19.65"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.66"
+title = "Taking over a vacated assignment slot"
+summary = "A slot vacated by an eliminated or reassigned battalion may be filled by another previously unassigned battalion (the 7th RTR replacing a destroyed 42nd RTR in 1st Army Tank Brigade), which becomes assigned to the new parent."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.26"]
+src = ["land:19.66"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign a previously unassigned battalion to a vacated slot"
+params = ["battalion", "parent"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.67"
+title = "HQ is the cadre"
+summary = "For play purposes an HQ is its parent formation's cadre; while the HQ exists the formation may be rebuilt or reassigned; otherwise see 19.62 and 19.63."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.62", "19.63"]
+src = ["land:19.67"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.68"
+title = "Rebuilding timing and cost"
+summary = "Rebuilding happens only in the Organization Phase; each two replacement TOE points added cost the unit (and its parent) one CP, and a large intake can bring Disorganization Points, so badly depleted units should first go to the rear."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["6.21", "20.4"]
+src = ["land:19.68"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.7"
+title = "Axis Battle Groups"
+summary = "Heading for 19.71-19.73."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:19.7"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "19.71"
+title = "Forming Battle Groups"
+summary = "At any time during an Organization Phase (only) the Axis player may form Battle Groups from units in one hex, within stacking and the limits below; Battle Group counters provide HQ support and carry historical names usable in any way."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.72", "19.73", "9.0"]
+src = ["land:19.71"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Form or dissolve an Axis Battle Group"
+params = ["units in hex", "battle group counter"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.72"
+title = "German Battle Group limits"
+summary = "A German Battle Group may carry up to four battalion-size units with at most one tank battalion and two infantry battalions, plus up to two extra companies."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.72"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "German formations do not appear in Graziani's Offensive"
+
+[[case]]
+id = "19.73"
+title = "Italian Battle Groups"
+summary = "Italians may form Battle Groups from the list on the Italian OA sheet (no counters): at most three battalion-size units (two infantry, one armor), one attached company, and at most two such groups at a time."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.71"]
+src = ["land:19.73"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Form an Italian Battle Group from the OA list"
+params = ["units", "battle group name"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.8"
+title = "Forming Ad Hoc Axis Anti-Tank Batteries"
+summary = "The Axis player may use Anti-Tank Gun Replacement Points to form ad hoc anti-tank batteries of 3 to 6 TOE points of any one AT gun; heading for 19.81-19.87."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:19.8"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Axis anti-tank replacement points for ad hoc batteries are likely not available in the Graziani window"
+
+[[case]]
+id = "19.81"
+title = "HQ anti-tank capacity"
+summary = "Axis brigade-level HQs (including Battle Groups) with an infantry-type symbol may contain up to six TOE points of anti-tank guns."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.81"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Axis anti-tank replacement points for ad hoc batteries are likely not available in the Graziani window"
+
+[[case]]
+id = "19.82"
+title = "Condition for augmenting"
+summary = "An Axis brigade-level HQ may be augmented with anti-tank points only if all Axis anti-tank units on the map (including the Tripoli-Tunisia boxes) are at least 67% of maximum TOE."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.82"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Axis anti-tank replacement points for ad hoc batteries are likely not available in the Graziani window"
+
+[[case]]
+id = "19.83"
+title = "Augmentation procedure"
+summary = "Augmentation assigns anti-tank replacement points to the HQ as if it were an anti-tank unit; the first assignment must be at least three points."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["19.82"]
+src = ["land:19.83"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Axis anti-tank replacement points for ad hoc batteries are likely not available in the Graziani window"
+
+[case.decision]
+what = "Assign anti-tank replacement points to an Axis brigade-level HQ"
+params = ["HQ", "replacement points"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.84"
+title = "Training rate"
+summary = "The assigned anti-tank points are trained at the Gun Replacement Point rate."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.training"]
+tables = ["land.17.6.training_chart"]
+src = ["land:19.84"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Axis anti-tank replacement points for ad hoc batteries are likely not available in the Graziani window"
+
+[[case]]
+id = "19.85"
+title = "CPA of augmented HQ"
+summary = "An HQ holding anti-tank points has a CPA equal to that of those points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:19.85"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Axis anti-tank replacement points for ad hoc batteries are likely not available in the Graziani window"
+
+[[case]]
+id = "19.86"
+title = "One gun type per HQ"
+summary = "Only one type of anti-tank gun per HQ (starting afresh if all are lost); captured guns cannot be used to augment."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.86"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Axis anti-tank replacement points for ad hoc batteries are likely not available in the Graziani window"
+
+[[case]]
+id = "19.87"
+title = "Stacking value stays zero"
+summary = "An augmented HQ keeps a stacking value of zero whatever number of AT points it holds."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:19.87"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Axis anti-tank replacement points for ad hoc batteries are likely not available in the Graziani window"
+
+[[case]]
+id = "19.9"
+title = "Augmenting Commonwealth Battalions with Anti-Tank"
+summary = "Heading for 19.91-19.98."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:19.9"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"
+
+[[case]]
+id = "19.91"
+title = "Start date"
+summary = "From Game-Turn 75 (April 1, 1942) the Commonwealth may add anti-tank gun TOE points to certain infantry battalions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.91"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"
+
+[[case]]
+id = "19.92"
+title = "Eligible battalions"
+summary = "Only infantry battalions with CPA 10 (or 10+) and Offensive/Defensive Close Assault ratings of 1/2 or 2/2 may be augmented."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.92"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"
+
+[[case]]
+id = "19.93"
+title = "Second weapons system"
+summary = "Eligible battalions may contain a second weapons system of anti-tank points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.93"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"
+
+[[case]]
+id = "19.94"
+title = "Anti-tank capacity"
+summary = "Historically motorized (10+) battalions may hold 2 anti-tank TOE points; non-motorized (10) battalions one."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.94"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"
+
+[[case]]
+id = "19.95"
+title = "Assignment and training"
+summary = "The points are assigned as ordinary Gun Replacement Points and trained at the Gun rate."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["20.4"]
+src = ["land:19.95"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"
+
+[case.decision]
+what = "Assign anti-tank replacement points to an infantry battalion"
+params = ["battalion", "points"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "19.96"
+title = "Precondition"
+summary = "No anti-tank points may be assigned if any anti-tank regiment assigned to the battalion's parent unit(s) is below maximum TOE."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:19.96"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"
+
+[[case]]
+id = "19.97"
+title = "CPA of absorbed points"
+summary = "Absorbed anti-tank points take the infantry unit's CPA (10 on foot, 20 or 25 motorized)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:19.97"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"
+
+[[case]]
+id = "19.98"
+title = "No shell effect"
+summary = "Anti-tank points do not count in the unit's shell determination."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["9.26"]
+src = ["land:19.98"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "The option opens at Game-Turn 75 (April 1942), after the Graziani window"

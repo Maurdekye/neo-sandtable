@@ -1,0 +1,401 @@
+# Axis Replacement Pool (land:20.66): truck production chart (20.66a), German production chart, Italian production chart.
+
+[table]
+id = "land.20.66.axis_replacement_pool"
+case = "20.66"
+title = "Axis Replacement Pool"
+src = ["land:20.66", "errata79:20.66"]
+transcribed_from = ["vassal:20.66 Axis Product and Replacement.png"]
+verification = "double"
+dice = "none"
+notes = """
+Three charts in one image. Each row gives an item, the total pool (number) of replacement points that may be
+brought in, availability lines of (max points per Game-Turn, first and last Game-Turn on which the points may be
+PLANNED; arrival is two Game-Turns later) and the shipping tonnage per point. Where an item has two printed
+numbers the player may bring in the sum of both, but no more than the first number during the period listed
+beside it; here each availability line carries the 'pool' figure printed on its line. A line with only a first
+game turn (for example 13+) runs to the end of the campaign. Markers: star = the maximum applies to every two
+weeks (first and second weeks of a month, third and fourth weeks); dagger = the maximum is per month, by
+calendar month; double_dagger = the French pieces located in the Tunis box, available on Game-Turn 39 without
+the two-turn delay, movable by land or coastal shipping, needing no supplies until Map Section A proper, and at
+most two points of each type may be called up per Game-Turn. All Italian armored recce/armored car points are
+Autobelinda 41 (ID code vv). There are no M 11/39 tank replacements (the errata fixes the explanation that said
+13/39). A handwritten 30 beside the Italian Light AA number 15 on the source image is an annotation and is not
+transcribed as data; the printed total is 15 + 45 = 60, as the chart's own example states. The German 7.5cm IG18 is printed as 75.cm IG18. The chart's example
+text gives game turns 4 to 26 for Light AA while the row prints 2 to 24; the row is transcribed as printed.
+"""
+
+
+# 20.66a Axis Truck Production Chart
+
+[[truck_row]]
+truck_type = "light"
+number = 835
+availability = [
+  { max = 4, first_game_turn = 4, last_game_turn = 12 },
+  { max = 15, first_game_turn = 13 },
+]
+tonnage = 45
+
+[[truck_row]]
+truck_type = "medium"
+number = 2890
+availability = [
+  { max = 20, first_game_turn = 6, last_game_turn = 12 },
+  { max = 50, first_game_turn = 13 },
+]
+tonnage = 80
+
+[[truck_row]]
+truck_type = "heavy"
+number = 525
+availability = [
+  { max = 3, first_game_turn = 5, last_game_turn = 12 },
+  { max = 8, first_game_turn = 13 },
+]
+tonnage = 150
+
+# German Production Chart
+
+[[german_row]]
+item = "Infantry"
+number = 400
+max_per_game_turn = 12
+first_game_turn = 38
+tonnage = 30
+
+[[german_row]]
+item = "Armed Recce"
+number = 25
+max_per_game_turn = 2
+max_marker = "star"
+first_game_turn = 47
+tonnage = 80
+
+[[german_row]]
+item = "Light AA"
+number = 40
+max_per_game_turn = 2
+first_game_turn = 59
+tonnage = 13
+
+[[german_row]]
+item = "Heavy AA"
+number = 10
+max_per_game_turn = 1
+max_marker = "dagger"
+first_game_turn = 59
+tonnage = 65
+
+[[german_row]]
+item = "7.5cm IG18"
+number = 20
+max_per_game_turn = 1
+first_game_turn = 45
+tonnage = 5
+
+[[german_row]]
+item = "10.5cm K18"
+number = 40
+max_per_game_turn = 1
+first_game_turn = 45
+tonnage = 66
+
+[[german_row]]
+item = "15cm sFH18"
+number = 10
+max_per_game_turn = 1
+first_game_turn = 45
+tonnage = 65
+
+[[german_row]]
+item = "15cm sIG33"
+number = 5
+max_per_game_turn = 1
+first_game_turn = 45
+tonnage = 18
+
+[[german_row]]
+item = "15cm K18"
+number = 18
+max_per_game_turn = 1
+first_game_turn = 45
+tonnage = 150
+
+[[german_row]]
+item = "17cm K18"
+number = 5
+max_per_game_turn = 1
+max_marker = "dagger"
+first_game_turn = 65
+tonnage = 206
+
+[[german_row]]
+item = "21cm Mrs.18"
+number = 5
+max_per_game_turn = 1
+max_marker = "dagger"
+first_game_turn = 60
+tonnage = 197
+
+[[german_row]]
+item = "SP 10.5cm"
+number = 3
+max_per_game_turn = 3
+max_marker = "dagger"
+first_game_turn = 63
+tonnage = 120
+
+[[german_row]]
+item = "5cm Pak38"
+number = 25
+max_per_game_turn = 1
+first_game_turn = 45
+tonnage = 12
+
+[[german_row]]
+item = "2.8cm s.Pz.B.41 28/20 Pak"
+number = 15
+max_per_game_turn = 1
+first_game_turn = 45
+tonnage = 5
+
+[[german_row]]
+item = "7.62cm Pak(R)"
+number = 22
+max_per_game_turn = 1
+first_game_turn = 64
+tonnage = 15
+
+[[german_row]]
+item = "Marder III"
+number = 9
+max_per_game_turn = 1
+max_marker = "dagger"
+first_game_turn = 64
+tonnage = 132
+
+[[german_row]]
+item = "PzII"
+number = 5
+max_per_game_turn = 1
+first_game_turn = 41
+tonnage = 135
+
+[[german_row]]
+item = "PzIII E"
+number = 38
+max_per_game_turn = 5
+first_game_turn = 53
+tonnage = 190
+
+[[german_row]]
+item = "PzIII H"
+number = 31
+max_per_game_turn = 5
+first_game_turn = 53
+tonnage = 200
+
+[[german_row]]
+item = "PzIII J Special"
+number = 17
+max_per_game_turn = 2
+first_game_turn = 76
+tonnage = 220
+
+[[german_row]]
+item = "PzIV D"
+number = 18
+max_per_game_turn = 1
+first_game_turn = 59
+tonnage = 215
+
+[[german_row]]
+item = "PzIV E"
+number = 15
+max_per_game_turn = 1
+max_marker = "unreadable"
+first_game_turn = 59
+tonnage = 220
+
+[[german_row]]
+item = "PzIV F2 Special"
+number = 7
+max_per_game_turn = 1
+max_marker = "star"
+first_game_turn = 81
+tonnage = 235
+
+# Italian Production Chart
+
+[[italian_row]]
+item = "Infantry"
+numbers = [100, 1100]
+availability = [
+  { max = 5, first_game_turn = 5, last_game_turn = 8, pool = 100 },
+  { max = 10, first_game_turn = 9, last_game_turn = 24, pool = 100 },
+  { max = 25, first_game_turn = 25, pool = 1100 },
+]
+tonnage = 30
+
+[[italian_row]]
+item = "Armored Reconnaissance/Armored Car"
+item_marker = "star_all_autobelinda_41"
+numbers = [25]
+availability = [
+  { max = 1, first_game_turn = 31, pool = 25 },
+]
+tonnage = 59
+
+[[italian_row]]
+item = "Light AA"
+numbers = [15, 45]
+availability = [
+  { max = 2, first_game_turn = 2, last_game_turn = 24, pool = 15 },
+  { max = 1, first_game_turn = 25, pool = 45 },
+]
+tonnage = 6
+
+[[italian_row]]
+item = "Heavy AA (75/46)"
+numbers = [5, 25]
+availability = [
+  { max = 1, first_game_turn = 10, last_game_turn = 24, pool = 5 },
+  { max = 1, first_game_turn = 25, pool = 25 },
+]
+tonnage = 59
+
+[[italian_row]]
+item = "Heavy AA (90/53)"
+numbers = [10]
+availability = [
+  { max = 1, first_game_turn = 73, pool = 10 },
+]
+tonnage = 92
+
+[[italian_row]]
+item = "47/32 Mod. 37"
+numbers = [8, 25]
+availability = [
+  { max = 2, first_game_turn = 10, last_game_turn = 24, pool = 8 },
+  { max = 1, first_game_turn = 25, pool = 25 },
+]
+tonnage = 9
+
+[[italian_row]]
+item = "65/17 Gun"
+numbers = [5, 15]
+availability = [
+  { max = 1, first_game_turn = 9, last_game_turn = 24, pool = 5 },
+  { max = 1, first_game_turn = 25, pool = 15 },
+]
+tonnage = 3
+
+[[italian_row]]
+item = "75/27 Gun"
+numbers = [12, 26]
+availability = [
+  { max = 2, first_game_turn = 9, last_game_turn = 24, pool = 12 },
+  { max = 2, first_game_turn = 25, pool = 26 },
+]
+tonnage = 12
+
+[[italian_row]]
+item = "75/18 Howitzer"
+numbers = [6, 5]
+availability = [
+  { max = 1, first_game_turn = 9, last_game_turn = 24, pool = 6 },
+  { max = 1, first_game_turn = 25, pool = 5, marker = "dagger" },
+]
+tonnage = 12
+
+[[italian_row]]
+item = "100/17 Howitzer"
+numbers = [10, 22]
+availability = [
+  { max = 1, first_game_turn = 9, last_game_turn = 24, pool = 10 },
+  { max = 2, first_game_turn = 25, pool = 22 },
+]
+tonnage = 17
+
+[[italian_row]]
+item = "105/28 Gun"
+numbers = [3, 6]
+availability = [
+  { max = 1, first_game_turn = 9, last_game_turn = 24, pool = 3, marker = "dagger" },
+  { max = 1, first_game_turn = 25, pool = 6, marker = "dagger" },
+]
+tonnage = 48
+
+[[italian_row]]
+item = "Semovente 75/18 SP Gun"
+numbers = [8]
+availability = [
+  { max = 1, first_game_turn = 65, pool = 8, marker = "dagger" },
+]
+tonnage = 60
+
+[[italian_row]]
+item = "149/13 Howitzer"
+numbers = [6]
+availability = [
+  { max = 1, first_game_turn = 25, pool = 6, marker = "dagger" },
+]
+tonnage = 84
+
+[[italian_row]]
+item = "ParaArt"
+numbers = [4]
+availability = [
+  { max = 2, first_game_turn = 96, pool = 4 },
+]
+tonnage = 3
+
+[[italian_row]]
+item = "149mm (Fr.)"
+numbers = [10]
+availability = [
+  { max = 2, first_game_turn = 39, pool = 10, marker = "double_dagger" },
+]
+tonnage = 50
+
+[[italian_row]]
+item = "155mm Rimhailo (Fr.)"
+numbers = [10]
+availability = [
+  { max = 2, first_game_turn = 39, pool = 10, marker = "double_dagger" },
+]
+tonnage = 53
+
+[[italian_row]]
+item = "CV L.3 or CV 33/35"
+numbers = [68]
+availability = [
+  { max = 5, first_game_turn = 3, pool = 68 },
+]
+tonnage = 16
+
+[[italian_row]]
+item = "CA L6/40"
+numbers = [5, 21]
+availability = [
+  { max = 1, first_game_turn = 33, last_game_turn = 68, pool = 5, marker = "dagger" },
+  { max = 2, first_game_turn = 69, pool = 21 },
+]
+tonnage = 28
+
+[[italian_row]]
+item = "CA M 13/40"
+numbers = [49]
+availability = [
+  { max = 2, first_game_turn = 25, pool = 49 },
+]
+tonnage = 70
+
+[[italian_row]]
+item = "CA M 14/41"
+numbers = [61]
+availability = [
+  { max = 3, first_game_turn = 59, pool = 61 },
+]
+tonnage = 73

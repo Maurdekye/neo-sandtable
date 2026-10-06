@@ -1,0 +1,134 @@
+# Maximum Attachment Chart (land:19.5).
+
+[table]
+id = "land.19.5.maximum_attachment"
+case = "19.5"
+title = "Maximum Attachment Chart"
+src = ["land:19.5"]
+transcribed_from = ["vassal:19.5 Maximum Attachment Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+How many non-assigned units each parent type may have attached on top of its assigned units (land:19.4,
+19.5). 'unit' means a counter at full strength that is a battalion- or company-equivalent. 'tank' means
+battalion-equivalent units composed of tank TOE points. 'infantry' means all infantry-type units except
+Machinegun and Heavy Weapons units, motorized or not. Each row has one or more alternative allowances
+(options); 'max_units' is the total number of units, and the other fields restrict their kinds. A row with
+two printed lines gives the total on the first line and the type restriction on the second. Modification
+(footnote 'company_bonus'): any nation's division- and brigade-equivalent parents may additionally attach two
+non-shell company-equivalent units at no cost to these maxima.
+"""
+
+[[row]]
+nation = "allied"
+parent = "armor_division"
+game_turn_range = [1, 67]
+options = [{ max_units = 2, max_infantry = 1, max_tank = 0 }]
+
+[[row]]
+nation = "allied"
+parent = "armor_division"
+game_turn_range = [68, 111]
+options = [{ max_units = 3, max_infantry = 1, max_tank = 1, infantry_and_or_tank_one_each = true }]
+
+[[row]]
+nation = "allied"
+parent = "infantry_division"
+options = [{ max_units = 2, max_infantry = 1, max_tank = 0 }]
+
+[[row]]
+nation = "allied"
+parent = "tank_brigade"
+game_turn_range = [1, 67]
+options = [{ max_units = 2, max_infantry = 1, max_tank = 0 }]
+
+[[row]]
+nation = "allied"
+parent = "tank_brigade"
+game_turn_range = [68, 111]
+options = [{ max_units = 1, max_tank = 0 }]
+
+[[row]]
+nation = "allied"
+parent = "other_brigade"
+options = [{ max_units = 1 }]
+
+[[row]]
+nation = "allied"
+parent = "any_battalion"
+options = [{ max_companies = 1 }]
+
+[[row]]
+nation = "allied"
+parent = "matruh_garrison"
+game_turn_range = [1, 12]
+options = [{ max_units = 6, max_tank = 0, max_gun_class = 1 }]
+
+[[row]]
+nation = "allied"
+parent = "selby_force"
+game_turn_range = [13, 111]
+options = [{ max_units = 5, max_tank = 0, max_recce = 0, max_infantry = 3 }]
+
+[[row]]
+nation = "german"
+parent = "armor_division"
+options = [{ max_brigades = 1, max_units_besides_brigade = 1, max_tank = 0 }, { max_units = 4, max_tank = 0 }]
+
+[[row]]
+nation = "german"
+parent = "infantry_division"
+options = [{ max_brigades = 1, max_tank = 0 }, { max_units = 3, max_tank = 0 }]
+
+[[row]]
+nation = "german"
+parent = "infantry_or_armor_regiment"
+options = [{ max_units = 1 }]
+
+[[row]]
+nation = "german"
+parent = "battle_group"
+options = [{ max_units = 4 }]
+
+[[row]]
+nation = "german"
+parent = "artillery_brigade_hq"
+options = [{ max_artillery_units = 1 }]
+
+[[row]]
+nation = "german"
+parent = "any_battalion"
+options = [{ max_companies = 1 }]
+
+[[row]]
+nation = "italian"
+parent = "armor_division_or_tank_group"
+options = [{ max_units = 2 }]
+
+[[row]]
+nation = "italian"
+parent = "infantry_division"
+options = [{ max_units = 2, one_infantry_or_one_tank = true }]
+
+[[row]]
+nation = "italian"
+parent = "brigade_or_regiment"
+options = [{ max_units = 1 }]
+
+[[row]]
+nation = "italian"
+parent = "battle_group"
+options = [{ max_units = 3 }]
+
+[[row]]
+nation = "italian"
+parent = "any_battalion"
+options = [{ max_units = 0 }]
+
+[[footnote]]
+id = "definitions"
+text = "Unit refers to a counter at full strength, a battalion- or company-equivalent. Tank means specifically battalion-equivalent units composed of tank TOE strength points. Infantry means all infantry-type units except Machinegun and Heavy Weapons units, whether or not motorized."
+
+[[footnote]]
+id = "company_bonus"
+text = "Any nation's division- and brigade-equivalent units may attach two non-shell company-equivalent units at no cost to the maximum attachments. Three company-equivalents equal one battalion-equivalent unit, and the company-equivalents must comply with any restrictions on the types of units that may be attached to that division or brigade."

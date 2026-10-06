@@ -1,0 +1,799 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "20.0"
+book = "land"
+title = "Reinforcements, Replacements & Commonwealth Withdrawals"
+systems = ["land"]
+
+[[case]]
+id = "20.0"
+title = "General rule: Reinforcements, Replacements and Withdrawals"
+summary = "Reinforcements are whole units arriving on the Reinforcement Track; replacements are TOE points of particular classes (Commonwealth from Production, Axis from the Replacement Pool). Replacement dice rolls may be kept secret even from teammates."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["20.1", "20.2"]
+src = ["land:20.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.1"
+title = "Reinforcements"
+summary = "Heading for 20.11-20.15."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:20.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.11"
+title = "Reinforcements are whole units"
+summary = "Reinforcements arrive as specified by the Reinforcement Track (for example the 6th New Zealand Brigade and its battalions plus the 6th NZ Field Artillery arrive in September 3/2)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["4.43"]
+src = ["land:20.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.12"
+title = "Arrival timing and cost"
+summary = "Reinforcements enter at the start of the Naval Convoy Arrival Phase of their stage, with no CP cost for debarking, may move in their arrival stage, and pay no CP for the first hex they are placed in."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:20.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.13"
+title = "Treated as normal units"
+summary = "Once arrived, reinforcements perform all normal game functions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:20.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.14"
+title = "Commonwealth arrival points"
+summary = "Commonwealth reinforcements arrive in Cairo unless stated; Layforce (GT 19) and the Tiger Convoy (GT 32) tank replacement points arrive in Alexandria; returning withdrawn units arrive at Cairo or Alexandria at the player's option, subject to stacking."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:20.14"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "The Layforce (Game-Turn 19) and Tiger Convoy (Game-Turn 32) arrivals fall after the Graziani window"
+
+[[case]]
+id = "20.15"
+title = "Axis arrival ports"
+summary = "All Axis reinforcements arrive in Tripoli, but if no Commonwealth land combat unit is west of Mersa Matruh (inclusive) the Axis player may divert one battalion-equivalent (or two company-equivalents) plus up to ten truck or motorization points to Benghazi, if stacking allows and Benghazi's port efficiency is Level 3 or better; this uses Benghazi's capacity for the stage."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["airlog:55.1"]
+src = ["land:20.15"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Divert an arriving Axis unit to Benghazi"
+params = ["unit", "trucks assigned"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "20.2"
+title = "Replacement Points"
+summary = "Replacement points come in four classes (Infantry, Gun, Tank, Recce), entering from the Axis Replacement Pool (20.6) or Commonwealth Production (20.7); all share the rules in this case. Heading for 20.21-20.24."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:20.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.21"
+title = "Arrival timing"
+summary = "All replacement points arrive in the Naval Convoy Arrival Phase of a stage. Reinforcement-track points arrive as scheduled; Axis pool points arrive in a stage chosen by the Axis player but planned two full Game-Turns ahead; Commonwealth production points arrive in stages chosen by the player but planned four Game-Turns ahead."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["20.6", "20.7"]
+src = ["land:20.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.22"
+title = "Commonwealth points on the track"
+summary = "Commonwealth replacement points listed on the Reinforcement Track are given by exact type (for example 27 points of Matildas)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:20.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.23"
+title = "Axis pool availability"
+summary = "Axis pool points are designated by type only, limited per turn by the pool tables."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.20.66.axis_replacement_pool"]
+src = ["land:20.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.24"
+title = "Commonwealth production availability"
+summary = "Commonwealth production points are designated by type and limited by the production tables."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.20.78.commonwealth_production"]
+src = ["land:20.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.3"
+title = "Replacement Point Conversion Chart"
+summary = "Table: how many replacement points of which class are needed per TOE point of each unit type. Errata folded in: the SGSU entry at the end of the chart is to be ignored; SGSUs come in as desired under 34.82 and need no replacement points. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+tables = ["land.20.3.replacement_point_conversion"]
+errata = ["errata79:20.3"]
+src = ["land:20.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.4"
+title = "How Replacement Points Are Used"
+summary = "Heading for 20.41-20.49."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:20.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.41"
+title = "Assigning trained replacements"
+summary = "Trained replacement points may be assigned to and absorbed by a unit anywhere on the map (even in an enemy ZOC) if in the same hex; they must be assigned to specific units immediately on arrival and reassigned immediately if that unit is eliminated or withdrawn."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["20.49"]
+src = ["land:20.41"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign replacement points to a receiving unit"
+params = ["replacement points", "unit"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "20.42"
+title = "Replacement Point counters"
+summary = "Replacement Point counters are like units except they may not voluntarily enter an enemy ZOC unless a friendly unit is already there, may be used only to defend against Close Assault, have Basic Morale -3 unabsorbed, and if they exceed their CPA (that of the unit they are assigned to) they count as cohesion -26."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:20.42"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.43"
+title = "Training of replacements"
+summary = "Axis and Commonwealth replacement points must train for a set number of Operations Stages (the arrival stage may count) by the rules of 17.3; Axis points train in Tripoli or any major city, Commonwealth points at the 17.32 locations; five replacement points equal a battalion. This training is separate from morale training."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.training"]
+tables = ["land.17.6.training_chart"]
+depends_on = ["17.3", "17.32"]
+src = ["land:20.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.44"
+title = "Moving to the front"
+summary = "Trained infantry replacements are usually trucked forward and transferred to their unit; tank, gun and recce points move on their own or by Commonwealth rail."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["20.46"]
+src = ["land:20.44"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.45"
+title = "Replacement supply needs"
+summary = "Replacement points need stores (and fuel for vehicles) when moving; five points count as a battalion for all purposes; ammunition can be assigned but is a waste."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["airlog:51.0"]
+src = ["land:20.45"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.46"
+title = "Replacements move in the convoy phase"
+summary = "Replacement points moving toward the front for assignment count as truck convoys and move only in the Truck Convoy Movement Phase."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.truck_convoy_movement"]
+depends_on = ["8.98"]
+src = ["land:20.46"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.47"
+title = "Tracking sheets"
+summary = "Players should use the Replacement Point Availability and Assignment sheets for bookkeeping."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:20.47"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.48"
+title = "CP cost to attach replacements"
+summary = "Attaching replacement points to a unit costs CP per the Capability Point Cost Summary, treating replacement points as assigned units."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+tables = ["land.6.3.capability_point_expenditure_summary"]
+src = ["land:20.48"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.49"
+title = "Absorbing replacements"
+summary = "Replacement points are absorbed only in the Reorganization Segment and take on the receiving unit's cohesion, breakdown and other levels."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:20.49"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.5"
+title = "Upgrading Armored Car Effectiveness"
+summary = "Commentary: armored car and recce units were upgraded with light tanks as the war went on. Heading for 20.51-20.55."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+interp = ["land-0013"]
+src = ["land:20.5"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Depends on interpretation land-0013 (the printed start date is a likely typo)"
+
+[[case]]
+id = "20.51"
+title = "Units eligible for upgrade"
+summary = "Armored recce and armored car units (Italian ID ww, German gg, Commonwealth hh through tt) that arrive with an Anti-Armor rating of zero may be upgraded, except Commonwealth recce units assigned to infantry divisions (the 18th Brigade of the 7th Australian Division counts as a division)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+interp = ["land-0013"]
+src = ["land:20.51"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Depends on interpretation land-0013 (the printed start date is a likely typo)"
+
+[[case]]
+id = "20.52"
+title = "How to upgrade"
+summary = "The player adds one TOE point of the allowed tank type to the recce or armored car unit, never above its TOE maximum; the tank point may replace a lost point or be added without raising TOE strength if the unit is at maximum."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.reorganization"]
+interp = ["land-0013"]
+src = ["land:20.52"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Depends on interpretation land-0013 (the printed start date is a likely typo)"
+
+[case.decision]
+what = "Upgrade a recce or armored car unit with a tank TOE point"
+params = ["unit", "tank type"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "20.53"
+title = "Allowed upgrade types"
+summary = "Commonwealth: Stuarts; German: Pz II; Italian: M/11 or L6/40 tank points, or armored recce/car replacement points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+interp = ["land-0013"]
+src = ["land:20.53"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Depends on interpretation land-0013 (the printed start date is a likely typo)"
+
+[[case]]
+id = "20.54"
+title = "Effect of upgrade"
+summary = "An upgraded TOE point has Anti-Armor rating 1 (instead of 0) and Offensive Close Assault rating 3 (instead of 2)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:20.54"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Depends on interpretation land-0013 (the printed start date is a likely typo)"
+
+[[case]]
+id = "20.55"
+title = "Upgrade start date"
+summary = "No unit may be upgraded before the date printed as (January) 1/1939, which is apparently a typo for a campaign-era date."
+kind = "rule"
+disposition = "unresolved"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+interp = ["land-0013"]
+src = ["land:20.55"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Printed as January 1939, before the campaign starts; see interpretation land-0013"
+
+[[case]]
+id = "20.6"
+title = "Axis Planned Replacements"
+summary = "Italian and German replacement points enter from the Axis Replacement Pool (20.66) as a result of direct planning by the Axis player. Heading for 20.61-20.67."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:20.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.61"
+title = "Pool totals and limits"
+summary = "The pool gives the maximum replacement points of each type for the whole campaign (scenarios list their own maxima), further limited per turn by type; the Axis player may never use more than provided."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.20.66.axis_replacement_pool"]
+src = ["land:20.61"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.62"
+title = "Shipping tonnage cost"
+summary = "Any number of replacement points of any class may be brought in during an OpStage, within the pool limits, but each counts against the Game-Turn's shipping tonnage at the per-point tonnage in the pool table (10 Italian Infantry points need 300 tons; the original 350 was corrected to 300)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.20.66.axis_replacement_pool"]
+depends_on = ["airlog:51.5"]
+src = ["land:20.62"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.63"
+title = "Planning two weeks ahead"
+summary = "Axis pool replacement points must be scheduled at least two weeks ahead on the Axis naval convoys and may arrive in any OpStage of the scheduled Game-Turn; the 2021 text rewrites the case (points for the third week of August 1941 are scheduled in the first week of August's Naval Convoy Schedule Phase). The original version, left printed, used a different two-turn rule and is superseded."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["naval_convoy.schedule"]
+depends_on = ["airlog:56.0"]
+interp = ["land-0014"]
+src = ["land:20.63"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Schedule Axis replacement points from the pool for a future arrival turn"
+params = ["point types and numbers", "arrival game-turn"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "20.64"
+title = "Replacements have shipping priority"
+summary = "Replacement points take priority over supplies in Axis shipping space; shipping remains subject to Commonwealth air attack."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+depends_on = ["airlog:51.0"]
+src = ["land:20.64"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.65"
+title = "Absorption needs a free slot"
+summary = "Replacement points may be absorbed only by units with room for them."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+src = ["land:20.65"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.66"
+title = "The Axis Replacement Pool Table"
+summary = "Tables of Axis replacement availability: truck production (20.66a), the German production chart and the Italian production chart. Transcribed in data/tables/land. A handwritten annotation on the image (a 30 beside the Light AA number 15) is noted in the table file. Errata folded in: the Italian production explanations should refer to M 11/39 (and there are no M 11/39 replacements)."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.20.66.axis_replacement_pool"]
+errata = ["errata79:20.66"]
+src = ["land:20.66"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.67"
+title = "Axis Replacement Point Type Limitations Chart"
+summary = "Referenced chart of per-type limits for Axis replacement points; no separate chart image appears among the source charts (the limits seem to be printed with the pool tables, 20.66)."
+kind = "table"
+disposition = "unresolved"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+gaps = ["table-gap-20.67"]
+src = ["land:20.67"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.7"
+title = "Commonwealth Production"
+summary = "Heading for 20.71-20.78."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:20.7"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.71"
+title = "Production vs reinforcement track"
+summary = "Most Commonwealth units and some replacements arrive on the Reinforcement Track; most replacements (drafts and transport) arrive randomly under the Production Tables."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["20.78"]
+src = ["land:20.71"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.72"
+title = "Planning one month ahead"
+summary = "The Commonwealth plans production replacements one month ahead in the first Naval Convoy Schedule Phase of the previous month (August 1942 points planned in July), always using the Production Table for the month of arrival."
+kind = "rule"
+disposition = "decision"
+seat = "logistics"
+timing = ["naval_convoy.schedule"]
+tables = ["land.20.78.commonwealth_production"]
+src = ["land:20.72"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Plan Commonwealth production replacements for next month"
+params = ["point types", "arrival month"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "20.73"
+title = "Randomized infantry and trucks"
+summary = "Production works like the Axis pools except for Infantry and Truck points, whose quantity is rolled on the dice by arrival date."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.20.78.commonwealth_production"]
+src = ["land:20.73"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.74"
+title = "Even split across OpStages"
+summary = "Replacement points for a Game-Turn are divided as evenly as possible among its OpStages, counting all types together."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:20.74"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.75"
+title = "Track points are extra"
+summary = "Replacement points on the Reinforcement Schedule arrive in addition to production; the Commonwealth has no shipping problem."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:20.75"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.76"
+title = "Arrival hexes and training"
+summary = "Planned Commonwealth replacements arrive in any hex of Cairo or Alexandria and must train (20.43)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["20.43"]
+src = ["land:20.76"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.77"
+title = "Upgrading Commonwealth infantry"
+summary = "Infantry units with a 1/2 (Off/Def) Close Assault rating may be upgraded by one Infantry Replacement Point per TOE point, all points at once, raising the rating to 2/2 without raising TOE strength; not before the July 1/I 1942 Game-Turn (planned in June 1942); the points need not be trained; afterwards extra replacements need only 1 Infantry Replacement Point per TOE point rather than 2."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["20.4"]
+src = ["land:20.77"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "Cannot begin before the July 1942 Game-Turn"
+
+[[case]]
+id = "20.78"
+title = "Commonwealth Production System"
+summary = "Tables: Commonwealth truck production (20.78A), infantry production (20.78B) and the production chart (20.78C). Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["naval_convoy.schedule"]
+tables = ["land.20.78.commonwealth_production"]
+src = ["land:20.78"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "20.8"
+title = "Commonwealth Mandatory Withdrawals"
+summary = "Commonwealth units were withdrawn to other theaters; the schedule says which. Heading for 20.81-20.85."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:20.8"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if the scenario's reinforcement schedule lists withdrawals inside the window"
+
+[[case]]
+id = "20.81"
+title = "Withdrawal schedule"
+summary = "Withdrawals are listed in the Reinforcement Schedule as actual units or unit types (for example any two Armor Brigades)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["4.43"]
+src = ["land:20.81"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if the scenario's reinforcement schedule lists withdrawals inside the window"
+
+[[case]]
+id = "20.82"
+title = "Choosing units by type"
+summary = "For a type withdrawal the unit chosen must be at least 75% of maximum TOE or, if none is, the highest-strength unit of its type."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["20.85"]
+src = ["land:20.82"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if the scenario's reinforcement schedule lists withdrawals inside the window"
+
+[case.decision]
+what = "Choose which units satisfy a withdrawal listed by type"
+params = ["units"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "20.83"
+title = "Withdrawal deadline"
+summary = "Withdrawn units must reach Cairo or Alexandria by the withdrawal turn or stage at the required TOE strength, or they are eliminated and cannot return later."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+depends_on = ["20.85"]
+src = ["land:20.83"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if the scenario's reinforcement schedule lists withdrawals inside the window"
+
+[[case]]
+id = "20.84"
+title = "Removal at arrival"
+summary = "Once units reach Cairo or Alexandria they are simply removed from play."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.convoy_arrival"]
+src = ["land:20.84"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if the scenario's reinforcement schedule lists withdrawals inside the window"
+
+[[case]]
+id = "20.85"
+title = "Understrength withdrawals"
+summary = "A unit scheduled for withdrawal below 75% of TOE strength must be brought up to that level with replacements before the date, or an equivalent substitute at 75% or more must be sent."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.reorganization"]
+depends_on = ["20.82"]
+src = ["land:20.85"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Only if the scenario's reinforcement schedule lists withdrawals inside the window"
+
+[[case]]
+id = "20.9"
+title = "Voluntary Commonwealth Withdrawals"
+summary = "At any time the Commonwealth may withdraw small forces to gain Victory Points (they aid campaigns elsewhere and press the enemy); returning them later penalizes the Commonwealth. See the Campaign Game Victory Conditions."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["continuous"]
+depends_on = ["scen:60.0"]
+src = ["land:20.9"]
+
+[case.applies]
+graziani = "conditional"
+graziani_note = "Victory-point consequences are set by the scenario's victory conditions (check scen:60.22)"
+
+[case.decision]
+what = "Voluntarily withdraw (or return) small Commonwealth forces for victory points"
+params = ["units", "withdraw or return"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false

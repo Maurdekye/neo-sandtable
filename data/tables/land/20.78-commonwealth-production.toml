@@ -1,0 +1,280 @@
+# Commonwealth Production System (land:20.78): truck production (A), infantry production (B), production chart (C).
+
+[table]
+id = "land.20.78.commonwealth_production"
+case = "20.78"
+title = "Commonwealth Production System"
+src = ["land:20.78"]
+transcribed_from = ["vassal:20.78 Commonwealth Production System.png"]
+verification = "double"
+dice = "other"
+notes = """
+Three tables. 20.78A (truck production): roll one die for each truck type (three rolls); the number cell is
+the trucks of that type that arrive four Game-Turns later; use the left block for Game-Turns 1 to 30 and the
+right block for 31 to 107 (increased US Lend-Lease); no more than 25% of the trucks produced may arrive at
+Alexandria in one Game-Turn; trucks produced here do not affect or count with trucks arriving as reinforcements.
+20.78B (infantry production): roll two dice (sum 2 to 12) in the column for the Game-Turn the points are
+planned for; they arrive four Game-Turns later and must all be placed in the same city; 'none' means no
+points. 20.78C (production chart): per item the total pool (number), max points per Game-Turn, and the first
+and last Game-Turn on which it may be planned. In this chart a star on the max means the maximum is per month
+(calendar months, not four-week cycles from the original week of availability) and a dagger means the
+maximum is for each half of a month (the first and second weeks, and the third and fourth weeks); this is the
+reverse of the Axis charts. The Tiger Convoy (Game-Turn 32), a shipment of tanks and planes, is in addition to
+this chart.
+"""
+
+
+# 20.78A truck production
+[[truck_row]]
+die = 1
+game_turns_1_to_30 = { light = 0, medium = 10, heavy = 0 }
+game_turns_31_to_107 = { light = 3, medium = 30, heavy = 3 }
+
+[[truck_row]]
+die = 2
+game_turns_1_to_30 = { light = 2, medium = 12, heavy = 0 }
+game_turns_31_to_107 = { light = 5, medium = 38, heavy = 4 }
+
+[[truck_row]]
+die = 3
+game_turns_1_to_30 = { light = 3, medium = 15, heavy = 2 }
+game_turns_31_to_107 = { light = 9, medium = 44, heavy = 6 }
+
+[[truck_row]]
+die = 4
+game_turns_1_to_30 = { light = 4, medium = 15, heavy = 3 }
+game_turns_31_to_107 = { light = 11, medium = 48, heavy = 8 }
+
+[[truck_row]]
+die = 5
+game_turns_1_to_30 = { light = 4, medium = 18, heavy = 3 }
+game_turns_31_to_107 = { light = 13, medium = 55, heavy = 10 }
+
+[[truck_row]]
+die = 6
+game_turns_1_to_30 = { light = 5, medium = 20, heavy = 4 }
+game_turns_31_to_107 = { light = 14, medium = 60, heavy = 13 }
+
+# 20.78B infantry production
+[[infantry_row]]
+dice_sum = 2
+points_by_game_turns = { gt_3_to_30 = 0, gt_31_to_46 = 0, gt_47_to_102 = 5, gt_103_to_107 = 0 }
+none_in = ['gt_3_to_30', 'gt_31_to_46', 'gt_103_to_107']
+
+[[infantry_row]]
+dice_sum = 3
+points_by_game_turns = { gt_3_to_30 = 3, gt_31_to_46 = 4, gt_47_to_102 = 22, gt_103_to_107 = 5 }
+none_in = []
+
+[[infantry_row]]
+dice_sum = 4
+points_by_game_turns = { gt_3_to_30 = 15, gt_31_to_46 = 10, gt_47_to_102 = 25, gt_103_to_107 = 3 }
+none_in = []
+
+[[infantry_row]]
+dice_sum = 5
+points_by_game_turns = { gt_3_to_30 = 0, gt_31_to_46 = 22, gt_47_to_102 = 13, gt_103_to_107 = 2 }
+none_in = ['gt_3_to_30']
+
+[[infantry_row]]
+dice_sum = 6
+points_by_game_turns = { gt_3_to_30 = 5, gt_31_to_46 = 13, gt_47_to_102 = 28, gt_103_to_107 = 11 }
+none_in = []
+
+[[infantry_row]]
+dice_sum = 7
+points_by_game_turns = { gt_3_to_30 = 6, gt_31_to_46 = 15, gt_47_to_102 = 20, gt_103_to_107 = 0 }
+none_in = ['gt_103_to_107']
+
+[[infantry_row]]
+dice_sum = 8
+points_by_game_turns = { gt_3_to_30 = 4, gt_31_to_46 = 8, gt_47_to_102 = 16, gt_103_to_107 = 13 }
+none_in = []
+
+[[infantry_row]]
+dice_sum = 9
+points_by_game_turns = { gt_3_to_30 = 5, gt_31_to_46 = 18, gt_47_to_102 = 30, gt_103_to_107 = 1 }
+none_in = []
+
+[[infantry_row]]
+dice_sum = 10
+points_by_game_turns = { gt_3_to_30 = 8, gt_31_to_46 = 20, gt_47_to_102 = 19, gt_103_to_107 = 5 }
+none_in = []
+
+[[infantry_row]]
+dice_sum = 11
+points_by_game_turns = { gt_3_to_30 = 10, gt_31_to_46 = 25, gt_47_to_102 = 35, gt_103_to_107 = 7 }
+none_in = []
+
+[[infantry_row]]
+dice_sum = 12
+points_by_game_turns = { gt_3_to_30 = 20, gt_31_to_46 = 0, gt_47_to_102 = 8, gt_103_to_107 = 0 }
+none_in = ['gt_31_to_46', 'gt_103_to_107']
+
+# 20.78C production chart
+[[chart_row]]
+item = "Armored Recce/Armored Car"
+number = 90
+max_per_game_turn = 2
+first_game_turn = 3
+
+[[chart_row]]
+item = "Light AA"
+number = 75
+max_per_game_turn = 1
+first_game_turn = 7
+
+[[chart_row]]
+item = "Heavy AA"
+number = 15
+max_per_game_turn = 1
+max_limit_period = "month"
+first_game_turn = 11
+
+[[chart_row]]
+item = "25-pounders"
+number = 250
+max_per_game_turn = 4
+first_game_turn = 11
+
+[[chart_row]]
+item = "4.5-inch Guns"
+number = 25
+max_per_game_turn = 3
+first_game_turn = 76
+
+[[chart_row]]
+item = "5.5-inch Howitzers"
+number = 12
+max_per_game_turn = 1
+first_game_turn = 83
+
+[[chart_row]]
+item = "155mm Howitzers"
+number = 6
+max_per_game_turn = 1
+first_game_turn = 51
+last_game_turn = 59
+
+[[chart_row]]
+item = "2-pounders"
+number = 60
+max_per_game_turn = 5
+max_limit_period = "month"
+first_game_turn = 5
+last_game_turn = 86
+
+[[chart_row]]
+item = "6-pounders"
+number = 80
+max_per_game_turn = 5
+first_game_turn = 75
+
+[[chart_row]]
+item = "SP 6-pounders"
+number = 7
+max_per_game_turn = 3
+first_game_turn = 76
+
+[[chart_row]]
+item = "17-pounders"
+number = 6
+max_per_game_turn = 3
+first_game_turn = 103
+
+[[chart_row]]
+item = "Mark VI Light"
+number = 15
+max_per_game_turn = 3
+max_limit_period = "month"
+first_game_turn = 3
+last_game_turn = 38
+
+[[chart_row]]
+item = "A9 Cruiser"
+number = 8
+max_per_game_turn = 2
+max_limit_period = "month"
+first_game_turn = 3
+last_game_turn = 38
+
+[[chart_row]]
+item = "A10 Cruiser"
+number = 10
+max_per_game_turn = 3
+max_limit_period = "month"
+first_game_turn = 3
+last_game_turn = 38
+
+[[chart_row]]
+item = "A13 Cruiser"
+number = 8
+max_per_game_turn = 2
+max_limit_period = "month"
+first_game_turn = 9
+last_game_turn = 38
+
+[[chart_row]]
+item = "Crusader Mk I"
+number = 35
+max_per_game_turn = 5
+max_limit_period = "month"
+first_game_turn = 31
+last_game_turn = 76
+
+[[chart_row]]
+item = "Crusader Mk II"
+number = 30
+max_per_game_turn = 5
+max_limit_period = "month"
+first_game_turn = 41
+last_game_turn = 78
+
+[[chart_row]]
+item = "Crusader Mk III"
+number = 18
+max_per_game_turn = 6
+max_limit_period = "half_month"
+first_game_turn = 88
+
+[[chart_row]]
+item = "Matilda"
+number = 25
+max_per_game_turn = 2
+max_limit_period = "month"
+first_game_turn = 9
+last_game_turn = 74
+
+[[chart_row]]
+item = "Valentine"
+number = 20
+max_per_game_turn = 3
+max_limit_period = "month"
+first_game_turn = 39
+
+[[chart_row]]
+item = "Stuart"
+number = 44
+max_per_game_turn = 10
+max_limit_period = "month"
+first_game_turn = 35
+last_game_turn = 54
+
+[[chart_row]]
+item = "Grant"
+number = 56
+max_per_game_turn = 8
+max_limit_period = "month"
+first_game_turn = 66
+
+[[chart_row]]
+item = "Sherman"
+number = 62
+max_per_game_turn = 12
+first_game_turn = 89
+
+[[chart_row]]
+item = "Churchill"
+number = 1
+max_per_game_turn_printed_dash = true
+first_game_turn = 90
