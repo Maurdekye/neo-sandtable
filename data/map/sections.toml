@@ -1,0 +1,192 @@
+schema_version = 1
+coordinate_profile = "vassal-2021"
+original_printed_seams = "unresolved"
+orientation = "pointy-top"
+src = ["land:4.1"]
+geometry_source = "vassal/extracted/buildFile.xml"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+
+[[sections]]
+id = "A"
+north_axis_constant = 63
+east_offset = 0
+first_min = 1
+first_max = 56
+second_min = 0
+second_max = 33
+hex_count = 1007
+dx = 72.95
+dy = 85.25
+x0 = 55
+y0 = 48
+max_rows = 56
+h_off = 6
+v_off = 0
+stagger = true
+canonical_hex_count = 1007
+alias_count = 0
+
+[[sections]]
+id = "B"
+north_axis_constant = 63
+east_offset = 33
+first_min = 1
+first_max = 61
+second_min = 1
+second_max = 33
+hex_count = 1959
+dx = 72.95
+dy = 85.25
+x0 = -16
+y0 = 7
+max_rows = 61
+h_off = 2
+v_off = -33
+stagger = false
+canonical_hex_count = 1959
+alias_count = 0
+
+[[sections]]
+id = "C"
+north_axis_constant = 63
+east_offset = 66
+first_min = 1
+first_max = 51
+second_min = 1
+second_max = 33
+hex_count = 1520
+dx = 72.95
+dy = 85.25
+x0 = -16
+y0 = 10
+max_rows = 51
+h_off = 12
+v_off = -66
+stagger = false
+canonical_hex_count = 1520
+alias_count = 0
+
+[[sections]]
+id = "D"
+north_axis_constant = 63
+east_offset = 99
+first_min = 1
+first_max = 42
+second_min = 0
+second_max = 33
+hex_count = 1261
+dx = 72.95
+dy = 85.25
+x0 = -16
+y0 = 16
+max_rows = 42
+h_off = 21
+v_off = -99
+stagger = false
+canonical_hex_count = 1240
+alias_count = 21
+
+[[sections]]
+id = "E"
+north_axis_constant = 63
+east_offset = 132
+first_min = 1
+first_max = 44
+second_min = 0
+second_max = 34
+hex_count = 1308
+dx = 72.95
+dy = 85.25
+x0 = -17
+y0 = -66
+max_rows = 44
+h_off = 19
+v_off = -133
+stagger = false
+canonical_hex_count = 1297
+alias_count = 11
+
+[[off_map_boxes]]
+name = "Alexandria  Holding Box Hex 3613"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Alexandria  Holding Box Hex 3714"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Bardia Holding Box"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Benghazi Holding Box"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Crete Holding Box"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Derna Holding Box"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Gabes"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Gabes-Tripoli"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Italy Holding Box"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Sicily Holding Box"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Tobruk Holding Box"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Tripoli"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Tripoli-Tripolitania"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Tripolitania"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Tripolitania-Nofilia"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Tunis"
+hex_id = ""
+src = ["land:8.8"]
+
+[[off_map_boxes]]
+name = "Tunis-Gabes"
+hex_id = ""
+src = ["land:8.8"]
