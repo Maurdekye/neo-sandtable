@@ -221,6 +221,7 @@ pub fn movement_restrictions(
     Ok(MovementRestrictions {
         may_move: in_play(&unit.location)
             && !activity_dry
+            && history.pasta_saved_cohesion_quarters.is_none()
             && !(pasta_missing && unit.cohesion_quarters <= -40),
         may_exceed_cpa: !(half || pasta_missing || infantry_dry),
         may_enter_enemy_zoc: !half,
@@ -290,10 +291,15 @@ pub(super) fn apply_pasta(content: &CnaContent, state: &mut State, id: &UnitId) 
         return;
     }
     if let Some(unit) = state.land.units.get_mut(id)
+        && history.pasta_saved_cohesion_quarters.is_some()
+    {
+        unit.cohesion_quarters = unit.cohesion_quarters.min(-104);
+    }
+    if let Some(unit) = state.land.units.get_mut(id)
         && unit.cohesion_quarters <= -40
         && history.pasta_saved_cohesion_quarters.is_none()
     {
         history.pasta_saved_cohesion_quarters = Some(unit.cohesion_quarters);
-        unit.cohesion_quarters = -104;
+        unit.cohesion_quarters = unit.cohesion_quarters.min(-104);
     }
 }

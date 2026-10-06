@@ -246,3 +246,31 @@ fn unknown_hq_composition_blocks_full_but_dev_reports_privately_and_continues() 
             .all(|p| p.secrecy == Secrecy::Secret)
     );
 }
+
+/// Cases: airlog:52.6
+#[test]
+fn pasta_disorganization_requires_pasta_to_clear_and_never_improves_worse_cohesion() {
+    let (mut state, id) = setup();
+    state.land.units.get_mut(&id).unwrap().cohesion_quarters = -120;
+    rations::apply_pasta(content(), &mut state, &id);
+    assert_eq!(state.land.units[&id].cohesion_quarters, -120);
+    assert_eq!(
+        state.logistics.rations[&id].pasta_saved_cohesion_quarters,
+        Some(-120)
+    );
+    state.land.units.get_mut(&id).unwrap().cohesion_quarters = -20;
+    assert!(
+        !movement_restrictions(content(), &state, &id)
+            .unwrap()
+            .may_move
+    );
+    rations::apply_pasta(content(), &mut state, &id);
+    assert_eq!(state.land.units[&id].cohesion_quarters, -104);
+    rations::receive_pasta(&mut state, &id);
+    assert_eq!(state.land.units[&id].cohesion_quarters, -120);
+    assert!(
+        state.logistics.rations[&id]
+            .pasta_saved_cohesion_quarters
+            .is_none()
+    );
+}
