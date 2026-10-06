@@ -10,6 +10,8 @@ currently responsible; the lead agent updates this table when responsibility cha
 | Content loading and validation | `crates/cna-content/` | neo-sandtable |
 | Server, runner, persistence, streams, HTTP/WebSocket API | `crates/cna-server/` | server |
 | Sandbox ruleset (synthetic, for integration) | `crates/cna-sandbox/` | neo-sandtable |
+| CNA ruleset framework: sequence of play, shared state, dispatch, views (`seq.rs`, `state.rs`, `steps.rs`, `view.rs`, `lib.rs`) | `crates/cna-rules/` | neo-sandtable |
+| CNA rule procedures by area (see docs/engine.md) | `crates/cna-rules/src/{land,logistics,air}/` | assigned per docket item |
 | Wire protocol types | `crates/cna-protocol/`, `web/src/generated/` | neo-sandtable |
 | AI seat drivers, MCP tool server, transcripts | `crates/cna-seats/` | seats |
 | Map data and map tooling | `data/map/`, `tools/map/` | cartographer |

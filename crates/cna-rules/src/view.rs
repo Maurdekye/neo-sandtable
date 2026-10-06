@@ -1,0 +1,398 @@
+//! What each perspective may see: the board view, the seats' `observe` report and `inspect`
+//! details, filtered by Limited Intelligence (`land:3.6`).
+//!
+//! Baseline (`land:3.61`, `land:3.62`): the presence of every stack on the map is public; the
+//! composition, status and attributes of enemy units are not. Own-side seats see everything their
+//! side knows; the operator sees everything and is labelled as omniscient by the board.
+
+use std::collections::BTreeMap;
+
+use cna_content::units::Toe;
+use cna_core::clock::{Anchor, Clock};
+use cna_core::engine::Rejection;
+use cna_core::ids::{HexId, UnitId};
+use cna_core::visibility::Perspective;
+use cna_protocol::{self as wire, Side};
+use serde_json::{Value, json};
+
+use crate::content::CnaContent;
+use crate::seq::Block;
+use crate::state::{DumpLocation, LandUnit, Location, State};
+use crate::steps::illegal;
+
+/// Whether `perspective` may see the full detail of something belonging to `side`.
+pub(crate) fn sees_side(perspective: Perspective, side: Side) -> bool {
+    match perspective {
+        Perspective::Operator => true,
+        Perspective::Side(s) => s == side,
+        Perspective::Seat(seat) => seat.side == side,
+    }
+}
+
+/// The engine clock for decision requests.
+pub(crate) fn core_clock(state: &State) -> Clock {
+    let c = &state.cursor;
+    Clock {
+        game_turn: c.game_turn,
+        op_stage: c.op_stage,
+        anchor: Anchor::new(c.anchor()),
+        phasing: c.phasing(state.turn.player_a),
+        cycle: (c.block == Block::PlayerHalf).then_some(c.cycle),
+    }
+}
+
+/// The wire clock for the board.
+pub(crate) fn wire_clock(content: &CnaContent, state: &State) -> wire::Clock {
+    let c = &state.cursor;
+    let anchor = c.anchor();
+    let parts: Vec<&str> = anchor.split('.').collect();
+    let (stage, phase, segment, step) = if parts.first() == Some(&"opstage") {
+        (
+            "opstage".to_owned(),
+            parts.get(1).copied().unwrap_or("").to_owned(),
+            parts.get(2).map(|s| (*s).to_owned()),
+            parts.get(3).map(|s| (*s).to_owned()),
+        )
+    } else {
+        (
+            parts.first().copied().unwrap_or("").to_owned(),
+            parts
+                .get(1)
+                .copied()
+                .unwrap_or(parts.first().copied().unwrap_or(""))
+                .to_owned(),
+            None,
+            None,
+        )
+    };
+    wire::Clock {
+        game_turn: c.game_turn,
+        date: turn_date(
+            content.scenario.meta.campaign_start_date.as_deref(),
+            c.game_turn,
+        ),
+        stage,
+        op_stage: c.op_stage,
+        phase,
+        segment,
+        step,
+        phasing: c.phasing(state.turn.player_a),
+    }
+}
+
+/// The ISO date of a game-turn's first day: Game-Turn 1 is the campaign start, each turn a week.
+fn turn_date(start: Option<&str>, game_turn: u16) -> String {
+    let Some((y, m, d)) = start.and_then(parse_date) else {
+        return String::new();
+    };
+    let (y, m, d) =
+        civil_from_days(days_from_civil(y, m, d) + 7 * (i64::from(game_turn.max(1)) - 1));
+    format!("{y:04}-{m:02}-{d:02}")
+}
+
+fn parse_date(s: &str) -> Option<(i64, i64, i64)> {
+    let mut it = s.split('-').map(|p| p.parse::<i64>().ok());
+    Some((it.next()??, it.next()??, it.next()??))
+}
+
+// Days-from-civil / civil-from-days (H. Hinnant), integer only.
+fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = y.div_euclid(400);
+    let yoe = y - era * 400;
+    let mp = (m + 9) % 12;
+    let doy = (153 * mp + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146_097 + doe - 719_468
+}
+
+fn civil_from_days(z: i64) -> (i64, i64, i64) {
+    let z = z + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    (if m <= 2 { y + 1 } else { y }, m, d)
+}
+
+/// The board's symbol kind for a unit class (`web/src/map/counters.ts`).
+fn board_kind(unit_type: &str) -> &'static str {
+    match unit_type {
+        "infantry" => "infantry",
+        "recce" => "recce",
+        "headquarters" => "hq",
+        "artillery" => "artillery",
+        "anti_tank" => "anti_tank",
+        "anti_air" => "aa",
+        "tank" => "armor",
+        "engineer" => "engineers",
+        _ => "unknown",
+    }
+}
+
+/// The board's echelon word.
+fn board_size(echelon: Option<&str>) -> String {
+    match echelon {
+        Some("super_brigade") => "brigade".to_owned(),
+        Some(e) => e.to_owned(),
+        None => String::new(),
+    }
+}
+
+/// TOE strength points a unit holds now (`land:3.5`).
+pub(crate) fn toe_points(content: &CnaContent, unit: &LandUnit) -> Option<i32> {
+    let class = content
+        .units
+        .units
+        .get(&unit.id)
+        .and_then(|oa| oa.class.as_ref())
+        .and_then(|c| content.units.classes.get(c));
+    match unit.toe.as_ref()? {
+        Toe::Normal(_) => class.and_then(|c| c.max_toe),
+        Toe::Under { under } => Some(*under),
+        Toe::Over { over } => Some(*over),
+        Toe::Weapons(list) => Some(list.iter().map(|w| w.n).sum()),
+    }
+}
+
+/// A unit's full board view (own side or operator only).
+pub(crate) fn unit_view(content: &CnaContent, unit: &LandUnit) -> wire::UnitView {
+    let oa = content.units.units.get(&unit.id);
+    let class = oa
+        .and_then(|o| o.class.as_ref())
+        .and_then(|c| content.units.classes.get(c));
+    let mut detail = BTreeMap::new();
+    if let Some(oa) = oa {
+        detail.insert("counter".to_owned(), json!(oa.counter));
+        if let Some(m) = oa.basic_morale {
+            detail.insert("basic_morale".to_owned(), json!(m));
+        }
+        if let Some(sp) = oa.stacking_points {
+            detail.insert("stacking_points".to_owned(), json!(sp));
+        }
+    }
+    if let Some(c) = class {
+        detail.insert("class".to_owned(), json!(c.code));
+        detail.insert("cpa".to_owned(), json!(c.cpa));
+    }
+    if let Some(points) = toe_points(content, unit) {
+        detail.insert("strength".to_owned(), json!(points));
+    }
+    detail.insert("cp_spent".to_owned(), json!(unit.cp_spent));
+    wire::UnitView {
+        id: unit.id.to_string(),
+        side: unit.side,
+        name: oa.map_or_else(|| unit.id.to_string(), |o| o.name.clone()),
+        kind: class
+            .map_or("unknown", |c| board_kind(&c.unit_type))
+            .to_owned(),
+        size: board_size(oa.and_then(|o| o.echelon.as_deref())),
+        nationality: oa.map_or_else(String::new, |o| o.nationality.clone()),
+        hex: unit.location.hex().map(|h| h.to_string()),
+        parent: unit
+            .attached_to
+            .clone()
+            .or_else(|| oa.and_then(|o| o.parent.clone()))
+            .map(|p| p.to_string()),
+        detail: Some(detail),
+    }
+}
+
+/// The board view for one perspective.
+pub(crate) fn view(
+    content: &CnaContent,
+    state: &State,
+    perspective: Perspective,
+) -> wire::ViewState {
+    let mut stacks = Vec::new();
+    let mut units = BTreeMap::new();
+    for ((hex, side), members) in state.stacks() {
+        if sees_side(perspective, side) {
+            stacks.push(wire::Stack {
+                hex: hex.to_string(),
+                side,
+                unit_ids: members.iter().map(|u| u.id.to_string()).collect(),
+                visible_count: Some(u32::try_from(members.len()).unwrap_or(u32::MAX)),
+            });
+            for u in members {
+                units.insert(u.id.to_string(), unit_view(content, u));
+            }
+        } else {
+            // land:3.62: the stack's presence is public, its contents are not.
+            stacks.push(wire::Stack {
+                hex: hex.to_string(),
+                side,
+                unit_ids: Vec::new(),
+                visible_count: None,
+            });
+        }
+    }
+    let mut markers = Vec::new();
+    for dump in state.logistics.dumps.values() {
+        let DumpLocation::Hex { hex } = &dump.location else {
+            continue;
+        };
+        let own = sees_side(perspective, dump.side);
+        markers.push(wire::Marker {
+            id: format!("dump:{}", dump.id),
+            kind: "supply_dump".into(),
+            hex: hex.to_string(),
+            side: Some(dump.side),
+            label: own.then(|| {
+                let s = dump.supplies;
+                format!(
+                    "{}{}: ammo {}, fuel {}, stores {}, water {}",
+                    dump.id,
+                    if dump.dummy { " (dummy)" } else { "" },
+                    s.ammo,
+                    s.fuel,
+                    s.stores,
+                    s.water
+                )
+            }),
+        });
+    }
+    let pending = state
+        .decisions
+        .pending
+        .iter()
+        .filter(|p| perspective.can_see(&cna_core::visibility::Audience::Seat(p.seat)))
+        .map(|p| wire::PendingDecision {
+            id: p.id.to_string(),
+            seat: p.seat.to_string(),
+            kind: p.kind.clone(),
+            summary: p.summary.clone(),
+            opened_seq: 0,
+        })
+        .collect();
+    wire::ViewState {
+        clock: wire_clock(content, state),
+        stacks,
+        units,
+        markers,
+        pending,
+    }
+}
+
+/// A plain-English orientation for AI seats, in our own words.
+pub const RULES_SUMMARY: &str = "THE CAMPAIGN FOR NORTH AFRICA (SPI 1979), digital edition. \
+Each Game-Turn is one week: initiative, strategic air, naval convoys and stores expenditure, then \
+three Operations Stages. In each OpStage both sides do weather and organization (water, \
+reorganization, attrition, construction, training, supply distribution, coastal shipping), \
+convoy arrivals, the Commonwealth fleet and land-support air missions; then Player A runs \
+reserve designation, movement and combat (repeatable), truck convoys, rail, repair and patrols, \
+and Player B does the same. Every action costs capability points; supplies (fuel, ammunition, \
+stores, water) must reach units by truck from dumps and ports. You see the presence of enemy \
+stacks but not their contents. Steps the engine does not implement yet are skipped and reported \
+as such.";
+
+/// The `observe` report for a perspective.
+pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspective) -> Value {
+    let anchor = state.cursor.anchor();
+    let cases: Vec<String> = content
+        .registry
+        .procedural_at(anchor, content.scenario_key())
+        .map(|c| c.citation())
+        .collect();
+    let mut forces = serde_json::Map::new();
+    for side in Side::ALL {
+        if !sees_side(perspective, side) {
+            continue;
+        }
+        let mut on_map = 0;
+        let mut off_map = 0;
+        let mut awaiting = 0;
+        let mut not_arrived = 0;
+        for u in state.units_of(side) {
+            match u.location {
+                Location::Hex { .. } => on_map += 1,
+                Location::OffMap { .. } => off_map += 1,
+                Location::AwaitingSetup { .. } => awaiting += 1,
+                Location::NotArrived => not_arrived += 1,
+                Location::Eliminated => {}
+            }
+        }
+        forces.insert(
+            crate::state::side_key(side).to_owned(),
+            json!({
+                "units_on_map": on_map,
+                "units_off_map": off_map,
+                "units_awaiting_setup_placement": awaiting,
+                "units_not_yet_arrived": not_arrived,
+            }),
+        );
+    }
+    let enemy_stacks: Vec<String> = state
+        .stacks()
+        .keys()
+        .filter(|(_, side)| !sees_side(perspective, *side))
+        .map(|(hex, _)| hex.to_string())
+        .collect();
+    json!({
+        "game": "The Campaign for North Africa",
+        "scenario": content.scenario.meta.name,
+        "rules_summary": RULES_SUMMARY,
+        "clock": wire_clock(content, state),
+        "initiative": state.turn.initiative,
+        "player_a": state.turn.player_a,
+        "current_step": {
+            "anchor": anchor,
+            "applicable_rule_cases": cases,
+        },
+        "your_forces": forces,
+        "enemy_stack_hexes": enemy_stacks,
+        "pending_decisions": view(content, state, perspective).pending,
+        "result": state.result,
+    })
+}
+
+/// Authorized detail about a unit (by id) or a hex (by printed id).
+pub(crate) fn inspect(
+    content: &CnaContent,
+    state: &State,
+    perspective: Perspective,
+    target: &str,
+) -> Result<Value, Rejection> {
+    let hidden = || illegal(format!("{target}: unknown or not visible"));
+    if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
+        if !sees_side(perspective, unit.side) {
+            return Err(hidden());
+        }
+        let view = unit_view(content, unit);
+        return Ok(json!({
+            "unit": view,
+            "location": unit.location,
+            "attached_to": unit.attached_to,
+            "toe": format!("{:?}", unit.toe),
+        }));
+    }
+    let hex = HexId::new(target);
+    if let Some(canonical) = content.map.canonical(&hex) {
+        let record = content.map.get(canonical);
+        let mut stacks = Vec::new();
+        for ((h, side), members) in state.stacks() {
+            if &h != canonical {
+                continue;
+            }
+            if sees_side(perspective, side) {
+                stacks.push(json!({
+                    "side": side,
+                    "units": members.iter().map(|u| unit_view(content, u)).collect::<Vec<_>>(),
+                }));
+            } else {
+                stacks.push(json!({ "side": side, "units": "hidden (land:3.6)" }));
+            }
+        }
+        return Ok(json!({
+            "hex": canonical,
+            "terrain": record.and_then(|r| r.terrain.clone()),
+            "flags": record.map(|r| r.flags.clone()).unwrap_or_default(),
+            "stacks": stacks,
+        }));
+    }
+    Err(hidden())
+}

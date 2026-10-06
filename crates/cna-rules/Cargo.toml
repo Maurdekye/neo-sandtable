@@ -1,0 +1,19 @@
+[package]
+name = "cna-rules"
+description = "The Campaign for North Africa ruleset for neo-sandtable: state, sequence of play and rule procedures."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cna-core.workspace = true
+cna-protocol.workspace = true
+cna-content.workspace = true
+cna-tables = { path = "../cna-tables" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true
