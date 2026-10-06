@@ -56,21 +56,21 @@ scratch `runs/` directory, outside the clone. Do not publish those source images
 
 ## Limits and next audit
 
-**Terrain pilot: 62 classified records, single visual pass; full-map error rate
-unknown. Hexside/facility verification: zero classified records.** The original
+**Terrain coverage: 142 classified records; full-map error rate unknown.
+Hexside verification: zero records. Facilities: one visually checked port.** The original
 grid preview remains neutral; the separate terrain preview renders the pilot. Original sheet
 seams remain unresolved. The complete first acceptance condition is not met
 merely by this module-profile geometry milestone.
 
-Next: resolve coastal base-terrain semantics and the Benghazi token; expand the
-reviewed terrain area on C and D. For future terrain results, report both
+Coastal semantics are adopted in map-0002. Next: resolve the Benghazi token and
+C4026 fragment; expand the reviewed terrain area on C and D. For future terrain results, report both
 sample selection and category-wise error counts; ambiguous cells remain gaps.
 If original 1979 map sheets arrive, compare a stratified sample by section and
 terrain, all ambiguous cells, directional hexsides and referenced facilities,
 and record differences rather than treating the 2021 re-rendering as identical.
 
 
-## Terrain pilot graziani-0001 (2026-10-06)
+## Historical initial terrain pilot graziani-0001 (2026-10-06)
 
 Exact local image SHA256:
 `904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011`.
@@ -114,3 +114,35 @@ rebuilds accepted terrain and explicit coastal deferrals. Changes to source
 identity require re-review. Tests exercise these failure paths and ensure the
 published values/citations correspond to accepted decisions. Reproduce the
 proposal sheet with the command in README, and replay with apply_terrain.py.
+
+## Coastal amendment and inland expansion (2026-10-06)
+
+Current coverage is **142/7023 classified**: 123 clear, 12 rough, seven sea;
+6881 remain unclassified. Three batches cover 143 distinct cells. This remains
+a convenience window, not a random sample or a whole-map accuracy estimate.
+
+`graziani-0002` explicitly supersedes only the 11 previously deferred cells
+under adopted map-0002. All were visually rechecked using the original native
+scale sheet. Ten land substrates are readable: nine clear and one rough
+(C4221). C4026 has visible land but an unreadable substrate; it remains unknown
+and coastal. Six non-abstaining accepted proposals match these ten decisions;
+four were abstentions. C4026's incorrect automatic sea proposal is still
+excluded as an unresolved substrate, with its water-domain error documented.
+The amendment is by the same observer, not an independent second review.
+
+`graziani-0003` covers C first28..34/second18..27: all 70 cells inspected in the
+local native-scale contact sheet, 65 clear and five rough (C3124, C3125, C3024,
+C2922, C2822). All 70 non-abstaining proposals match that single visual pass:
+0/70 disagreements. No original-sheet check or independent observer is claimed.
+Contour marks in C3427 were distinguished from base fill; small off-cell rough
+patches near C2823 were not assigned to its terrain.
+
+Sollum's printed port anchor and associated label were checked in C4022. The
+nearby town dot is C4021 and is kept distinct. `places.toml` records only the
+port location and type, no unknown capacity or other attributes. This is one
+visual facility review, not completion of the coast's port inventory. Its SVG
+marker is a generic circle at the axial center, with no traced source symbol.
+
+Replay requires explicit targeted amendments, rejects conflicting sea/coastal
+flags, validates ports on coastal cells, and reproduces places.toml as well as
+the five earlier generated files. All inspection images stay outside the repo.

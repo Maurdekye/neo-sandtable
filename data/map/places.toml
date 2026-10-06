@@ -1,0 +1,13 @@
+schema_version = 1
+coordinate_profile = "vassal-2021"
+complete = false
+verification = "visual_single_pass"
+
+[[places]]
+id = "port-sollum"
+name = "Sollum"
+hex_id = "C4022"
+type = "port"
+src = ["land:4.1", "airlog:55.0"]
+note = "Printed anchor and associated Sollum label checked locally; nearby town dot lies in C4021 and is not conflated with the port. Capacity and other attributes are unknown."
+review_batch = "graziani-0002"

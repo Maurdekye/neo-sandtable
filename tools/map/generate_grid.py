@@ -162,7 +162,7 @@ def write_grid(sources: Path, output: Path):
     for box in boxes:
         lines.extend(["[[off_map_boxes]]", f'name = "{box}"', 'hex_id = ""',
                       'src = ["land:8.8"]', ""])
-    (output / "sections.toml").write_text("\n".join(lines), encoding="utf-8")
+    (output / "sections.toml").write_text("\n".join(lines), encoding="utf-8", newline="\n")
     write_preview(rows, output / "grid-preview.svg")
     print(f"{len(records)} canonical hexes, {len(aliases)} observed aliases; sections " + ", ".join(f'{s["id"]}={s["hex_count"]}' for s in sections))
 
@@ -183,7 +183,7 @@ def write_preview(rows, path):
                           for a in [30, 90, 150, 210, 270, 330])
         out.append(f'<polygon points="{points}" fill="{colors[h["section"]]}" stroke="#687582" stroke-width="0.35"><title>{h["hex_id"]}: grid geometry</title></polygon>')
     out.append("</svg>")
-    path.write_text("\n".join(out) + "\n", encoding="utf-8")
+    path.write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

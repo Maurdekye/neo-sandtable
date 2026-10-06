@@ -1,7 +1,7 @@
 # Map data: coordinate profile vassal-2021
 
 This first milestone supplies the discrete grid for all five A-E sections.
-**Terrain pilot: 62 reviewed cells; 6961 remain unclassified. This content is not yet playable.** The local map is a
+**Terrain coverage: 142 classified cells; 6881 remain unclassified. One port is recorded. This content is not yet playable.** The local map is a
 2021 VASSAL re-rendering, not a scan of the original 1979 sheets. Scenario ids are
 our independent numbering anchors. The original seam description conflicts with
 this source; see [GAPS.md](GAPS.md) and the [interpretation proposal](../../docs/interpretations/map-0001-grid-numbering.md).
@@ -94,8 +94,10 @@ legend `rock_gravel`. Sea has no movement-cost row in the TEC. The pilot uses
 only `clear`, `rough`, `sea`; village/bir/oasis markers must not replace the
 underlying terrain because their TEC row inherits the other terrain's costs. Axes are decimal integers; ids are
 strings. `terrain=unclassified` is a missing value, not a TEC class. Blank flags
-mean unknown, not false. Flags are pipe-delimited tokens. This pilot publishes `land` and `sea` only
-for reviewed pure-domain cells, and `coastal` alone for deferred mixed cells.
+mean unknown, not false. Flags are pipe-delimited tokens. `sea` means entirely water. Mixed cells publish their readable land substrate
+with `land|coastal`, or `coastal` alone when the substrate remains unreadable.
+See [map-0002](../../docs/interpretations/map-0002-coastal-terrain.md).
+`port` is supplied by a separate reviewed place record, currently C4022.
 These flags describe observed map surface, not complete facilities or movement
 permission. Missing a flag never establishes the absence of an unreviewed layer. CSV citations
 are semicolon-delimited case references. Current `src=land:4.1` identifies the
@@ -117,19 +119,31 @@ has `hex_id,status,terrain,flags,src,proposed_terrain,note`; status is accepted 
 deferred. Only accepted records publish terrain. Deferred records remain
 unclassified with a reason. Image hashes bind reviews to exact local evidence;
 source changes require re-review. No raster pixels or image crops are stored.
+Optional `batch.supersedes` names an earlier batch: only explicitly listed hexes
+from that batch are amended; others are retained. Filename sorting defines replay
+order. Silent duplicate decisions, invalid targets and duplicate batch ids fail.
+Optional `[[place]]` records pin a locally verified facility using `id,name,hex_id,
+type,src,note`. These share the batch's exact source hashes and observer metadata.
 
 `terrain-preview.svg`: original flat terrain colors over the regular axial grid.
 Unclassified cells are gray, including deferred coastal cells. It is generated
 solely from `hexes.csv` and contains no raster or traced coastline.
 
-Planned feature deliverables, **not yet published or complete**:
+`places.toml`: `schema_version,coordinate_profile,complete,verification` plus
+`[[places]]` with `id,name,hex_id,type,src,note,review_batch`. Currently only type
+`port` is verified. Sollum's port is C4022; its nearby town dot is C4021, which
+has not been published as a place. Missing capacities/attributes are unknown.
+The replay tool validates the coastal location and generates the place file and
+its generic SVG marker. This is an incomplete inventory, not all map facilities.
+
+Planned feature deliverables, **not yet complete**:
 - `hexsides.csv`: canonical `hex_id,direction,neighbour_id,feature,high_side,src`;
   one feature per row. `high_side` records a directional escarpment's high hex,
   blank where inapplicable. Feature vocabulary will be pinned against the TEC.
-- `places.toml`: `[[places]]` with `id,name,hex_id,type,src` and sourced attributes;
-  `src` is a citation array. Lists of types and attributes will be pinned with
-  the first verified facilities. Printed structures and dynamic scenario state
-  must remain distinct.
+  Include `all_sea` for an entirely water edge under land:10.21; two coastal
+  endpoints do not by themselves prove this feature.
+- Extend `places.toml` with additional verified facility types and sourced
+  attributes. Printed structures and dynamic scenario state remain distinct.
 
 ## Regeneration and checks
 
@@ -165,6 +179,8 @@ in a source-locked batch, then run `apply_terrain.py` (Python 3.11+ stdlib) to
 rebuild reviewed classifications and the preview. The proposal algorithm only
 recognizes four measured solid colors and can abstain on contours or labels;
 it is not a complete terrain classifier. Never publish its output automatically.
-The first pilot defers all 11 mixed shoreline cells pending coast semantics.
+The original pilot deferred 11 mixed shoreline cells. Amendment graziani-0002
+resolves ten under map-0002; C4026 remains unreadable. Batch graziani-0003
+adds 70 inland cells at C first28..34/second18..27.
 `apply_terrain.py` rejects source changes, duplicate ids, non-TEC classes and
 unreviewed existing classifications that would otherwise be lost.

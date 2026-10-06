@@ -17,8 +17,8 @@
   publishing a corrected place id. Geometry includes both valid hexes and does
   not silently rewrite scenario text.
 - **Water mask:** zone-contained centers include a narrow sea fringe; offshore
-  image hexes outside A-E zones (and Malta) are not in this grid. No land/sea flags
-  have yet been classified. Completeness refers only to the VASSAL A-E mask.
+  image hexes outside A-E zones (and Malta) are not in this grid. Surface-domain flags
+  exist only for the 143 reviewed cells; the rest are unknown. Completeness refers only to the VASSAL A-E mask.
 - **Edge artifacts:** A includes partial column-00 hexes; E includes column 34.
   Confirm their playability and any off-map entry meanings against rules data.
 - **Boxes:** current inventory is names only. No distances, capacities, routes or
@@ -26,21 +26,21 @@
 
 ## Classification and rendering
 
-- Pilot `graziani-0001` reviews 73 source-mask cells at C first35..42/second18..27.
-  Published: 62 classifications (49 clear, 6 rough, 7 sea). Remaining: 6961
-  unclassified cells, including the 11 coastal deferrals listed in the batch.
-- **Coastal base terrain/domain:** the key has a coast symbol but no cost row.
-  Mixed sea/land cells are C4221, C4122, C4021, C4022, C4026, C4027, C3922,
-  C3923, C3924, C3925, C3926. Preserve observed `coastal` flags but leave the
-  single base-terrain value unknown until the lead rules on representing land
-  substrate versus a coast category. Particularly small land fragments and
-  anchor/text symbols can confound raster rules. No water/land majority policy
-  is implemented. The palette's automatic sea proposal for C4026 is quarantined.
+- Three review batches cover 143 distinct cells: 142 classified (123 clear,
+  12 rough, seven sea); 6881 terrain values remain unknown.
+- **C4026 coastal fragment:** map-0002 resolves coastal semantics. Ten original
+  coastal deferrals are now classified by land substrate. C4026 retains the
+  coastal flag and unknown terrain because its tiny land fragment is unreadable.
+  Its automatic sea proposal is rejected; majority color cannot erase land.
+- **Sollum port:** printed anchor and label identify C4022. Published place
+  `port-sollum` has no verified capacity or other attributes. The town dot is in
+  C4021; no town record is silently inferred from the port's hex.
 - The proposal classifier covers only clear/rough/sea and abstains on ochre
   contour color. Desert, gravel, salt marsh, vegetation, mountain, delta, swamp
   and major-city classification methods remain to be validated.
-- Hexside features and facilities remain undigitized. Their schemas are planned.
-- TEC category/feature vocabularies must be pinned before classifications publish.
+- Hexside features remain undigitized, including all_sea edges across bays.
+  Only one port is recorded; all other facilities remain pending.
+- Base TEC vocabulary is pinned; feature extraction still needs local verification.
 - `grid-preview.svg` remains a section-colored geometry preview;
-  `terrain-preview.svg` adds the 62 reviewed terrain fills. Hexside and facility
+  `terrain-preview.svg` adds the 142 reviewed terrain fills and a generic port marker. Hexside and facility
   artwork remains pending.

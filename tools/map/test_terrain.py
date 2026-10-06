@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 import tomllib
-from apply_terrain import load_reviews
+from apply_terrain import load_reviews, load_places
 from propose_terrain import decide
 
 MAP = Path(__file__).resolve().parents[2] / "data/map"
@@ -15,7 +15,9 @@ class TerrainTests(unittest.TestCase):
     def setUpClass(cls):
         cls.review = tomllib.loads((MAP / "reviews/graziani-0001.toml").read_text())
         cls.tec = tomllib.loads(TEC.read_text())
-        cls.records = [SimpleNamespace(hex_id=h["hex_id"]) for h in cls.review["hex"]]
+        import csv
+        with (MAP / "hexes.csv").open(newline="") as f:
+            cls.records = [SimpleNamespace(hex_id=h["hex_id"]) for h in csv.DictReader(f)]
         cls.batch = cls.review["batch"]
 
     def load(self, folder, source_hash=None):
@@ -30,9 +32,11 @@ class TerrainTests(unittest.TestCase):
     def test_deferred_coastline_stays_unknown(self):
         decisions = self.load(MAP / "reviews")
         deferred = [h for h in decisions.values() if h["status"] == "deferred"]
-        self.assertEqual(len(deferred), 11)
+        self.assertEqual([h["hex_id"] for h in deferred], ["C4026"])
         self.assertTrue(all(h["terrain"] == "unclassified" and h["flags"] == ["coastal"] for h in deferred))
-        self.assertEqual(sum(h["status"] == "accepted" for h in decisions.values()), 62)
+        self.assertEqual(sum(h["status"] == "accepted" for h in decisions.values()), 142)
+        self.assertEqual(decisions["C4221"]["terrain"], "rough")
+        self.assertEqual(decisions["C4022"]["flags"], ["land", "coastal"])
 
     def test_duplicate_review_cannot_override_silently(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -51,6 +55,29 @@ class TerrainTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Unknown TEC terrain"):
                 self.load(folder)
 
+    def test_amendment_cannot_target_unreviewed_cell(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            (folder / "a.toml").write_bytes((MAP / "reviews/graziani-0001.toml").read_bytes())
+            data = (MAP / "reviews/graziani-0002.toml").read_text().replace('hex_id = "C4221"', 'hex_id = "C2818"', 1)
+            (folder / "b.toml").write_text(data)
+            with self.assertRaisesRegex(ValueError, "Amendment must target"):
+                self.load(folder)
+
+    def test_sea_and_coastal_flags_conflict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            data = (MAP / "reviews/graziani-0001.toml").read_text().replace('flags = ["sea"]', 'flags = ["sea", "coastal"]', 1)
+            (folder / "a.toml").write_text(data)
+            with self.assertRaisesRegex(ValueError, "Conflicting water-domain"):
+                self.load(folder)
+
+    def test_reviewed_port_requires_coastal_hex(self):
+        with self.assertRaisesRegex(ValueError, "requires a coastal"):
+            load_places(MAP / "reviews", [{"hex_id": "C4022", "flags": "land"}])
+        places = tomllib.loads((MAP / "places.toml").read_text())["places"]
+        self.assertEqual([(p["id"], p["hex_id"]) for p in places], [("port-sollum", "C4022")])
+
     def test_contour_color_causes_abstention(self):
         # Ochre splashes of a hexside symbol must not be called mountain terrain.
         features = dict(clear=.49, rough=0, mountain=.23, sea=0)
@@ -62,7 +89,7 @@ class TerrainTests(unittest.TestCase):
         with (MAP / "hexes.csv").open(newline="") as f:
             rows = list(csv.DictReader(f))
         classified = [r for r in rows if r["terrain"] != "unclassified"]
-        self.assertEqual(len(classified), 62)
+        self.assertEqual(len(classified), 142)
         for row in classified:
             entry = decisions[row["hex_id"]]
             self.assertEqual(entry["status"], "accepted")

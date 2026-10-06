@@ -1,5 +1,6 @@
 """Our original flat-fill map art, built from data only (no source images)."""
 import math
+from html import escape
 from pathlib import Path
 
 # Deliberately new graphic colors; none are sampled from the source artwork.
@@ -10,7 +11,7 @@ COLORS = {"unclassified": "#eceff3", "clear": "#ead8ab", "rough": "#a77c57",
           "village_bir_oasis": "#ead8ab"}
 
 
-def render(rows, path: Path):
+def render(rows, path: Path, places=()):
     radius = 10
     centers = [(math.sqrt(3) * radius * (int(h["q"]) + int(h["r"]) / 2),
                 1.5 * radius * int(h["r"])) for h in rows]
@@ -24,5 +25,10 @@ def render(rows, path: Path):
                           for a in [30, 90, 150, 210, 270, 330])
         color = COLORS[h["terrain"]]
         out.append(f'<polygon points="{points}" fill="{color}" stroke="#657281" stroke-width="0.35"><title>{h["hex_id"]}: {h["terrain"]}</title></polygon>')
+    by_id = {h["hex_id"]: (x, y) for h, (x, y) in zip(rows, centers)}
+    for place in places:
+        x, y = by_id[place["hex_id"]]
+        label = escape(place["name"])
+        out.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>{label}: port</title></circle>')
     out.append("</svg>")
-    path.write_text("\n".join(out)+"\n", encoding="utf-8")
+    path.write_text("\n".join(out)+"\n", encoding="utf-8", newline="\n")
