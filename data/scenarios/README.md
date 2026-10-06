@@ -208,7 +208,7 @@ src = ["scen:60.33"]
 ```
 
 Air facilities (`facilities.toml`): one `[[facility]]` per row of `scen:60.5`, with `kind` (airfield,
-landing_strip, flying_boat_basin, alighting_area), `name`, `hex` (or off-map id), `owner` at start,
+landing_strip, flying_boat_basin, alighting_area), `name`, `hex` (or `location`: an off-map id from `data/map/areas.toml`, e.g. `offmap_deversoir`; `location_area` for a set such as `tripoli_tunisia_boxes`; `printed_location` keeps the printed token), `owner` at start,
 `src`. Ports/repair facilities carry their efficiency level and repair class.
 
 ## Scenario record (`scenario.toml`)
