@@ -36,7 +36,7 @@ fn tomls(directory: &Path, recursive: bool, files: &mut Vec<PathBuf>) -> Result<
 fn content_files(data: &Path) -> Result<Vec<PathBuf>, Error> {
     let mut files = Vec::new();
     let map = data.join("map");
-    let mut map_sources = vec!["hexes.csv", "aliases.csv"];
+    let mut map_sources = vec!["hexes.csv", "aliases.csv", "areas.toml"];
     let layers = [
         "layers.toml",
         "coverage.csv",

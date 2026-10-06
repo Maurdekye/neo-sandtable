@@ -244,6 +244,7 @@ async fn recovery_pins_read_content_but_ignores_unread_notes_and_files() {
         cloned_data.join("map/line_features.csv"),
         cloned_data.join("map/hexsides.csv"),
         cloned_data.join("map/sections.toml"),
+        cloned_data.join("map/areas.toml"),
         first_toml(&cloned_data.join("units/weapons")),
         cloned_data.join("scenarios/graziani/scenario.toml"),
         first_toml(&cloned_data.join("tables")),
@@ -266,7 +267,7 @@ async fn recovery_pins_read_content_but_ignores_unread_notes_and_files() {
         fs::write(&file, original_bytes).unwrap();
     }
     for unused in [
-        "map/areas.toml",
+        "map/GAPS.md",
         "scenarios/graziani/unread.toml",
         "units/weapons/GAPS.md",
         "rules/land/nested/unread.toml",
