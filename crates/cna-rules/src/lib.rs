@@ -12,6 +12,8 @@
 //! `docs/engine.md`.
 
 pub mod content;
+pub mod land;
+pub mod ownership;
 pub mod seq;
 pub mod state;
 mod steps;
@@ -96,9 +98,7 @@ impl Ruleset for Cna {
             }
             if new_op_stage {
                 state.turn.player_a = None;
-                for unit in state.land.units.values_mut() {
-                    unit.cp_spent = 0;
-                }
+                land::capability::finish_opstage(state);
             }
         }
         Err(EngineError::Invariant {

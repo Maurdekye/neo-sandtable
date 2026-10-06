@@ -75,8 +75,20 @@ pub struct LandUnit {
     pub attached_to: Option<UnitId>,
     /// Current TOE: starts as printed on the OA sheet / set-up.
     pub toe: Option<Toe>,
-    /// Capability points spent this OpStage (`land:6`).
-    pub cp_spent: i32,
+    /// Capability expenditure this OpStage, in quarter CP (`land:6`).
+    pub cp_spent_quarters: i32,
+    /// Voluntary CP in the owning half, separate from reaction/retreat, in quarters.
+    #[serde(default)]
+    pub voluntary_cp_quarters: i32,
+    /// Cohesion in quarters of a point; -104 is the movement-stop threshold.
+    #[serde(default)]
+    pub cohesion_quarters: i32,
+    /// Rail and training suppress idle reorganization.
+    #[serde(default)]
+    pub no_idle_recovery: bool,
+    /// Explicit detachment suppresses the printed parent assignment.
+    #[serde(default)]
+    pub detached: bool,
     /// The set-up group the unit was deployed with, if any.
     pub setup_group: Option<String>,
     /// First-line truck points with the unit (`airlog:53`); set-up pools start on the group's HQ.
@@ -231,7 +243,11 @@ impl State {
                             location: location.clone(),
                             attached_to,
                             toe: oa.toe.clone(),
-                            cp_spent: 0,
+                            cp_spent_quarters: 0,
+                            voluntary_cp_quarters: 0,
+                            cohesion_quarters: 0,
+                            no_idle_recovery: false,
+                            detached: false,
                             setup_group: Some(group.id.clone()),
                             trucks: Trucks::default(),
                         };
@@ -259,7 +275,11 @@ impl State {
                 },
                 attached_to: None,
                 toe: oa.toe.clone(),
-                cp_spent: 0,
+                cp_spent_quarters: 0,
+                voluntary_cp_quarters: 0,
+                cohesion_quarters: 0,
+                no_idle_recovery: false,
+                detached: false,
                 setup_group: None,
                 trucks: Trucks::default(),
             });

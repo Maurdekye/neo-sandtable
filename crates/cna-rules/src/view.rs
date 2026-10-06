@@ -182,7 +182,18 @@ pub(crate) fn unit_view(content: &CnaContent, unit: &LandUnit) -> wire::UnitView
     if let Some(points) = toe_points(content, unit) {
         detail.insert("strength".to_owned(), json!(points));
     }
-    detail.insert("cp_spent".to_owned(), json!(unit.cp_spent));
+    detail.insert(
+        "cp_spent_quarters".to_owned(),
+        json!(unit.cp_spent_quarters),
+    );
+    detail.insert(
+        "cohesion_quarters".to_owned(),
+        json!(unit.cohesion_quarters),
+    );
+    detail.insert(
+        "quarter_units".to_owned(),
+        json!("4 quarters = 1 CP or cohesion point"),
+    );
     wire::UnitView {
         id: unit.id.to_string(),
         side: unit.side,
@@ -193,11 +204,14 @@ pub(crate) fn unit_view(content: &CnaContent, unit: &LandUnit) -> wire::UnitView
         size: board_size(oa.and_then(|o| o.echelon.as_deref())),
         nationality: oa.map_or_else(String::new, |o| o.nationality.clone()),
         hex: unit.location.hex().map(|h| h.to_string()),
-        parent: unit
-            .attached_to
-            .clone()
-            .or_else(|| oa.and_then(|o| o.parent.clone()))
-            .map(|p| p.to_string()),
+        parent: if unit.detached {
+            None
+        } else {
+            unit.attached_to
+                .clone()
+                .or_else(|| oa.and_then(|o| o.parent.clone()))
+                .map(|p| p.to_string())
+        },
         detail: Some(detail),
     }
 }
