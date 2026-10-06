@@ -1,0 +1,65 @@
+# Unit Basic Stacking Point Values (land:9.4).
+
+[table]
+id = "land.9.4.stacking_point_values"
+case = "9.4"
+title = "Stacking Point Values"
+src = ["land:9.4"]
+transcribed_from = ["vassal:9.4 Stacking Point Values.png"]
+verification = "double"
+dice = "none"
+notes = """
+Basic stacking point value by organizational level. The printed 'Unit Equivalent' block has two columns,
+Full and Shell: the Full column names the level, and the Shell column names which full-size unit counts as
+this level once it is a shell (land:9.26, 9.28): for example a Division shell is worth a Super Brigade
+(3 points), a Brigade or Battle Group shell is worth a Battalion (1), and a Battalion shell is worth a
+Company (0). A dash means no shell of another level maps onto this row. Convoy truck points and
+replacement points are stacked per block of five (or part of five).
+"""
+
+[[row]]
+level = "division"
+shell_of = []
+stacking_points = 5
+
+[[row]]
+level = "super_brigade"
+shell_of = ["division"]
+stacking_points = 3
+footnotes = [1]
+
+[[row]]
+level = "standard_brigade_or_battle_group"
+shell_of = []
+stacking_points = 2
+
+[[row]]
+level = "battalion"
+shell_of = ["any_brigade", "battle_group"]
+stacking_points = 1
+
+[[row]]
+level = "company"
+shell_of = ["battalion", "hq", "any_attached_units"]
+stacking_points = 0
+
+[[row]]
+level = "truck_points_in_convoy"
+per_block_of_points = 5
+fraction_counts_as_full_block = true
+stacking_points_per_block_x2 = 1
+footnotes = [2]
+
+[[row]]
+level = "replacement_points"
+per_block_of_points = 5
+fraction_counts_as_full_block = true
+stacking_points_per_block_x2 = 2
+
+[[footnote]]
+id = 1
+text = "Super Brigade is a term coined to separate brigades that were in effect infantry-light divisions from standard brigades."
+
+[[footnote]]
+id = 2
+text = "Convoy truck stacking applies only when working out whether road or track CP movement costs apply (land:9.29, 9.33)."

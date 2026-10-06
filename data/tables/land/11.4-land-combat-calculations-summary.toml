@@ -1,0 +1,51 @@
+# Land Combat Calculations Summary (11.4 on the chart sheet; no [11.4] case id is printed in the rules text).
+
+[table]
+id = "land.11.4.combat_calculations_summary"
+case = "11.4"
+title = "Land Combat Calculations Summary"
+src = ["land:11.3"]
+transcribed_from = ["vassal:11.4 Land Combat Calculations Summary.png"]
+verification = "double"
+dice = "none"
+notes = """
+Summary sheet restating how each land combat strength is built. Raw points are the sum of the relevant
+ratings times the TOE strength points assigned to that activity; Actual points are Raw divided by ten
+(land:11.32). The listed modifiers are factors that can change the result; their amounts are defined in the
+combat sections, not on this sheet. This sheet has no [11.4] case in the rules text, so it is cited as
+land:11.3.
+"""
+
+[[activity]]
+id = "barrage"
+raw_points = "sum of barrage ratings times assigned TOE strength points"
+actual_points = "raw points divided by 10"
+modifiers = [
+  { id = "forward_back_italian_combination", note = "Ability to combine fire on one target depends on whether the barraging unit is Forward or Back and/or Italian." },
+  { id = "terrain_benefits_target", note = "Terrain may benefit the target." },
+]
+
+[[activity]]
+id = "anti_armor"
+raw_points = "sum of anti-armor ratings times assigned TOE strength points"
+actual_points = "raw points divided by 10"
+modifiers = [
+  { id = "terrain", note = "Terrain may benefit either player." },
+  { id = "minefields", note = "Minefields benefit the non-phasing player." },
+  { id = "phasing_must_enter_hex", note = "The non-phasing player benefits from the phasing forces having to enter the non-phasing hex." },
+]
+
+[[activity]]
+id = "close_assault"
+raw_points = "sum of the offensive or defensive close assault ratings (as applies) times assigned TOE strength points"
+actual_points = "raw points divided by 10"
+modifiers = [
+  { id = "probe_restriction", note = "The phasing player may be restricted because he is performing a Probe." },
+  { id = "combined_arms", note = "Either player's ratings may be reduced because tank TOE points are not part of a Combined Arms attack." },
+  { id = "terrain", note = "Terrain may benefit either player." },
+  { id = "morale", note = "Morale may benefit either player." },
+  { id = "organizational_size", note = "Organizational size of the units involved may benefit either player." },
+  { id = "two_to_one_raw_superiority", note = "A 2:1 superiority in Raw Close Assault Points may benefit either player." },
+  { id = "minefields", note = "Minefields may benefit the non-phasing player." },
+  { id = "engineers", note = "Engineer units may benefit the phasing player." },
+]

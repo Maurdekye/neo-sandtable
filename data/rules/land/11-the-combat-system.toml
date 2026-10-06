@@ -1,0 +1,342 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "11.0"
+book = "land"
+title = "The Combat System"
+systems = ["land"]
+
+[[case]]
+id = "11.0"
+title = "General rule: The Combat System"
+summary = "Combat is mandatory between adjacent opposing units in controlled hexes. Each Combat Segment runs: gun positions (Forward or Back), simultaneous secret Barrage, non-phasing Retreat Before Assault, secret assignment of TOE points to Anti-Armor and/or Close Assault (with armor/gun units optionally withheld), Anti-Armor fire with all results taken first, then Close Assault by the phasing player with engaged markers and retreats; reserves are then released. Each activity costs CP."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["12.0", "13.0", "14.0", "15.0", "5.2"]
+src = ["land:11.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.1"
+title = "Unit Combat Characteristics"
+summary = "Names the seven land combat characteristics (Barrage, Vulnerability, Anti-Armor, Armor Protection, Offensive and Defensive Close Assault, Anti-Aircraft); they are on the OA sheets, not the counters. Heading for 11.11-11.16."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["3.5"]
+src = ["land:11.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.11"
+title = "Barrage rating"
+summary = "Barrage rating measures long-range indirect fire; only artillery units have it."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:11.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.12"
+title = "Vulnerability rating"
+summary = "Vulnerability abstracts a gun unit's exposure to Close Assault and distance from the front; all Guns (artillery and anti-tank) have it."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:11.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.13"
+title = "Anti-Armor rating"
+summary = "Anti-Armor rating is the unit's ability to destroy armored units by direct fire."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:11.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.14"
+title = "Armor Protection rating"
+summary = "Armor Protection measures a vehicle's resistance to Anti-Armor; held by tanks, recce/armored cars and self-propelled artillery."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:11.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.15"
+title = "Close Assault ratings"
+summary = "Two ratings: Offensive Assault and Defensive Assault."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:11.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.16"
+title = "Anti-Aircraft rating"
+summary = "AA rating is the ability to shoot down aircraft; mostly AA/flak units but also some tanks and HQs."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:11.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.2"
+title = "Capability Point Expenditures for Combat"
+summary = "Heading for 11.21-11.27."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:11.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.21"
+title = "Non-phasing unit CP cost"
+summary = "A non-phasing unit spends 3 CP if it barrages a phasing unit, undergoes any assault other than a Probe (a Probe costs 2), including after retreating into a friendly hex later assaulted, or undergoes a Holding Off barrage. Exception 11.27."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["11.27", "6.3"]
+src = ["land:11.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.22"
+title = "Phasing unit CP cost"
+summary = "A phasing unit spends 5 CP to barrage, or to engage in Anti-Armor or Close Assault (other than a Probe); never more than 5 in one combat, though a new round of combat can cost more."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["6.3"]
+src = ["land:11.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.23"
+title = "Cheaper cases for phasing units"
+summary = "A phasing unit spends only 2 CP to Probe and 3 CP to undergo a Barrage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:11.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.24"
+title = "Per-segment ceilings"
+summary = "A non-phasing unit never spends more than 3 CP, and a phasing unit never more than 5, in a Combat Segment (see 11.27)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:11.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.25"
+title = "CP apply to all units in the hex"
+summary = "Combat CP are charged to every unit in a hex, even those that did not take part (for example a withheld battalion of a division)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:11.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.26"
+title = "Summary of typical CP"
+summary = "Typically phasing units spend 5 and non-phasing 3; a Probe lowers the phasing cost to 2 unless units in the same hex also barrage, in which case 5."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:11.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.27"
+title = "Cheap defence against crushing assault"
+summary = "A unit defending against a full Close Assault whose final differential is -4 or worse spends only 1 CP."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.7"]
+src = ["land:11.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.3"
+title = "Calculation of Combat Strengths"
+summary = "Combat strength in Actual Points is TOE strength times combat rating divided by ten (Armor Protection and Vulnerability are not computed this way). Heading for 11.31-11.38."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+tables = ["land.11.4.combat_calculations_summary"]
+depends_on = ["11.32"]
+src = ["land:11.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.31"
+title = "Actual points usage"
+summary = "Actual Points are applied directly (Barrage, Anti-Armor) or compared against enemy forces (Close Assault, Probe). Case 12.54 is a minor exception."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:11.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.32"
+title = "Actual strength formula"
+summary = "Actual Strength Points = (Combat Rating x TOE strength used) divided by 10, rounded to the nearest whole number (11.4 gives 11, 11.5 gives 12). The 2021 text corrects an original misprint (\"+10\" for \"x10\"/division)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["11.3"]
+src = ["land:11.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.33"
+title = "Tiny totals"
+summary = "Fewer than 5 Raw Points (under 0.5 Actual) count as zero Actual, but if both sides of a Close Assault or Probe have under ten Raw Points the Raw Points are used as if Actual. Raw Points are rating times TOE."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["15.51"]
+src = ["land:11.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.34"
+title = "Sum raw before dividing"
+summary = "All Raw Points against the same target are totaled, within or across hexes, before dividing by ten."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:11.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.35"
+title = "Worked example"
+summary = "Example using the German 90th Light Division: 108 raw barrage points become 11 actual; 65 raw offensive assault points become 7 actual; TOE points may be split among targets."
+kind = "example"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:11.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.36"
+title = "Keep running totals secretly"
+summary = "Players should track Raw and Actual totals per parent formation on their TOE sheets and keep them secret until revealed by attack."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:11.36"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.37"
+title = "AA points are not divided by ten"
+summary = "AA/Flak Actual Points are TOE strength times the AA rating with no division by ten (rating 4, strength 2 gives 8)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["46.3"]
+src = ["land:11.37"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "11.38"
+title = "Vulnerability and Armor Protection not multiplied"
+summary = "Only Vulnerability and Armor Protection skip the strength formula; they set the number of gun and armor losses (see 14.42 and 15.85)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["14.42", "15.85"]
+src = ["land:11.38"]
+
+[case.applies]
+graziani = "yes"

@@ -1,0 +1,361 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "10.0"
+book = "land"
+title = "Zones of Control"
+systems = ["land"]
+
+[[case]]
+id = "10.0"
+title = "General rule: Zones of Control"
+summary = "The six hexes around a unit form its Zone of Control, but only certain units exert one; controlled hexes inhibit enemy movement and all units must stop on entering an enemy-controlled hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["10.1", "10.2"]
+src = ["land:10.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.1"
+title = "Which Units Exert a Zone of Control"
+summary = "Heading for 10.11-10.15 and 10.6."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:10.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.11"
+title = "Units that exert ZOC"
+summary = "All combat units above battalion equivalent (more than one stacking point) exert a ZOC, and so does any hex holding more than one stacking point in total. Truck convoys and HQs with no attached combat units never exert one."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["9.1"]
+src = ["land:10.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.12"
+title = "No ZOC from air, SGSU, ships"
+summary = "Aircraft, Squadron Ground Support Units and warships exert no ZOC."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:10.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.13"
+title = "No ZOC from markers"
+summary = "Informational markers such as dumps, minefields and airfields exert no ZOC."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:10.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.14"
+title = "Cohesion -26 exerts no ZOC"
+summary = "Units at cohesion -26 or worse exert no ZOC."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["6.26"]
+src = ["land:10.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.15"
+title = "Minimum strength to exert ZOC"
+summary = "Whatever the organizational size, the unit(s) in a hex that total fewer than ten Raw Defensive Close Assault Points exert no ZOC; anti-tank units count as Up Front for this purpose."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["12.1", "11.3"]
+src = ["land:10.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.6"
+title = "Disclosure of ZOC"
+summary = "When a phasing unit starts or ends a move in a hex that a non-phasing unit could control, the non-phasing player must say whether that unit exerts a ZOC there. The number 10.6 is printed out of order and likely belongs after 10.15 (see interpretation land-0007)."
+kind = "rule"
+disposition = "display"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["3.62"]
+interp = ["land-0007"]
+src = ["land:10.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.2"
+title = "Effects of Zones of Control"
+summary = "Heading for 10.21-10.29."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:10.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.21"
+title = "Where ZOCs extend"
+summary = "ZOCs reach all adjacent hexes except across all-sea, major river and lake hexsides, across escarpment hexsides, and into hexes the unit could not enter from where it stands (for example a tank unit into salt marsh without a track or road)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.44"]
+src = ["land:10.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.22"
+title = "No CP cost to enter ZOC"
+summary = "Entering an enemy ZOC costs nothing extra (but see 10.3)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:10.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.23"
+title = "Stop on entering; leaving a ZOC"
+summary = "A unit entering an enemy-controlled hex must stop and cannot leave until the next Movement Segment (this stage or the next). A unit already there may leave by paying the break-off cost (the text cites 8.7; the rule is in 8.6). Units may not retreat into an enemy-ZOC hex except per 10.26."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.15", "8.24", "10.26"]
+src = ["land:10.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.24"
+title = "No move from ZOC to ZOC; advance into vacated hex"
+summary = "No unit may move directly from one enemy-controlled hex to another, but terrain permitting it may advance into an adjacent hex vacated by an enemy through combat, Retreat Before Assault or Reaction, at normal CP cost in the next Movement Segment. There is no literal advance-after-combat."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.15"]
+src = ["land:10.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.25"
+title = "Moving through hexes not controlled"
+summary = "Friendly units may move through hexes next to an enemy combat unit that are not controlled by its ZOC."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:10.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.26"
+title = "Friendly units negate enemy ZOC for movement"
+summary = "For all movement purposes, a friendly combat unit in a hex cancels the enemy ZOC there; friendly ZOCs never affect friendly units."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:10.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.27"
+title = "Mutual ZOC"
+summary = "Opposing units that exert ZOC on each other are in each other's ZOC; a hex ZOC'd by both sides is controlled by both."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:10.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.28"
+title = "No stacking of ZOC effects"
+summary = "Multiple ZOCs into the same hex add no extra effect."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:10.28"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.29"
+title = "Non-combat units and ZOC"
+summary = "Truck convoys may enter an enemy ZOC only into a hex already holding a friendly combat unit; non-combat units (bare HQs, Engineers, SGSUs) may never voluntarily enter an unoccupied hex in an enemy ZOC, and if alone with no strength in an enemy ZOC during the enemy's Movement/Combat Phase they are captured."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["3.36", "28.0"]
+src = ["land:10.29"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.3"
+title = "ZOC Combat Requirements (Holding Off)"
+summary = "Heading for 10.31-10.36. Clarified as not applying to the non-phasing player."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:10.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.31"
+title = "Mandatory attack on ZOC-exerting hexes"
+summary = "The phasing player must attack, by Artillery Barrage or Close Assault, every hex containing enemy units that exert a ZOC on his combat units. A Probe satisfies this if the basic differential is -4 or better."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["15.9", "12.0"]
+src = ["land:10.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.32"
+title = "Exemptions from mandatory attack"
+summary = "Friendly units that are only artillery, anti-tank, anti-aircraft or non-combat units, or are pinned (12.42), need not attack."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["12.42"]
+src = ["land:10.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.33"
+title = "Holding Off barrage"
+summary = "A special Holding Off Artillery Barrage may satisfy 10.31 for a hex, so that a division in ZOC from two hexes may hold off one and assault the other."
+kind = "rule"
+disposition = "decision"
+seat = "front_line"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["12.2", "10.34"]
+src = ["land:10.33"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Declare a Holding Off barrage against an enemy hex"
+params = ["target hex", "firing units"]
+trigger = "scheduled"
+secrecy = "secret_simultaneous"
+interrupts = false
+
+[[case]]
+id = "10.34"
+title = "Holding Off barrage strength"
+summary = "To hold off a hex, the barrage must deliver at least as many Actual Barrage Points as the number of non-Gun battalion-equivalent combat units in the target hex (units under 1 stacking point and Gun units do not count); an eleven-battalion division needs 11 points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.barrage"]
+depends_on = ["11.3"]
+src = ["land:10.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.35"
+title = "Failing to hold off means Close Assault"
+summary = "If the phasing player cannot hold off a hex under 10.34 he must Close Assault it, with no minimum strength (remember 10.32)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat"]
+src = ["land:10.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "10.36"
+title = "Unable to assault or hold off"
+summary = "A unit that can neither assault nor hold off must retreat three hexes, paying the CP, taking 3 Disorganization Points plus any from the retreat; the path must end three hexes from the enemy unit, with no doubling back and no ZOC hexes. If forced into an enemy ZOC the unit surrenders entirely."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat"]
+depends_on = ["6.21", "8.12"]
+src = ["land:10.36"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose the three-hex retreat path"
+params = ["unit", "path"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false

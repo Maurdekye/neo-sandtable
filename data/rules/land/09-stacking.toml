@@ -1,0 +1,355 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "9.0"
+book = "land"
+title = "Stacking"
+systems = ["land"]
+
+[[case]]
+id = "9.0"
+title = "General rule: Stacking"
+summary = "Each unit has stacking points and each terrain type has a maximum number of points allowed in a hex."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["9.1"]
+src = ["land:9.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.1"
+title = "The Stacking Point System"
+summary = "Heading for 9.11-9.16."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:9.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.11"
+title = "Printed stacking points"
+summary = "Every counter has a printed stacking point value (for example a Panzer battalion has 1)."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.22"]
+src = ["land:9.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.12"
+title = "HQ parenthesised stacking points"
+summary = "HQ stacking values are printed in parentheses: an HQ with no combat units attached counts 0; the printed number applies when it stands for a division, brigade or regiment as a combat unit."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["9.2", "3.33"]
+src = ["land:9.12"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.13"
+title = "What stacking points represent"
+summary = "Stacking points stand for organizational ability as well as manpower; a full division is 5 points even though its component units may sum to more."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:9.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.14"
+title = "Per-terrain stacking maximum"
+summary = "Each terrain type has a maximum number of stacking points that may be in the hex at the end of any Movement Segment; the limits are on the Terrain Effects Chart."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.37"]
+src = ["land:9.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.15"
+title = "Markers and aircraft have no stacking value"
+summary = "Informational markers and all air units take no stacking space."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:9.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.16"
+title = "Units exempt from stacking limits"
+summary = "Garrison units (a G above the stacking number) stack free in the city or village they garrison and count 1 elsewhere; pure AA/flak units stack free in Major Cities, plus one in an air landing strip and three in an airfield; guns with CPA 0+ that are not currently motorized by attached trucks have zero stacking points."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.4", "8.37"]
+src = ["land:9.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.2"
+title = "Unit Equivalents"
+summary = "Heading for 9.21-9.29: organizational size levels and shell status."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:9.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.21"
+title = "A division represents its attached units"
+summary = "A division counts as all units assigned and attached to its HQ; units assigned but currently detached elsewhere are not part of it for stacking."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["19.1"]
+src = ["land:9.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.22"
+title = "Brigade equivalents and naming"
+summary = "Organizational level is read from the printed stacking points (via 9.4), not the unit's name: Italian regiments count as brigade equivalents, and many British \"brigades\" and \"regiments\" are battalions."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["9.4"]
+src = ["land:9.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.23"
+title = "Battalion equivalent"
+summary = "The basic combat unit is the infantry or tank battalion-equivalent; check stacking points when the name is misleading."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:9.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.24"
+title = "Artillery units are 1 stacking point"
+summary = "Nearly every artillery unit is 1 stacking point (rare artillery HQs may be larger; a few scattered batteries differ)."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+src = ["land:9.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.25"
+title = "Zero-point companies and batteries"
+summary = "Companies and batteries worth 0 stacking points may not exceed five per hex beyond other contents unless attached or assigned to a parent; Major City hexes have no limit. A bare HQ is also 0."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:9.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.26"
+title = "Shell status"
+summary = "A division is a shell if 50% or fewer of its allowed brigade-equivalents are attached; a brigade if under two-thirds of its allowed battalions are attached (a two-battalion brigade is not a shell if both are attached and at least one is not a shell); a battalion if under 50% of maximum TOE points are attached (artillery: under 25%)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["3.1"]
+src = ["land:9.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.27"
+title = "Shell subunits do not count"
+summary = "A shell lower unit does not count toward the number of lower units a parent needs to qualify as full strength."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["9.26"]
+src = ["land:9.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.28"
+title = "Shells drop one level"
+summary = "A shell counts as the next lower formation size for Close Assault unit differentiation and any size-sensitive rule: division shell as brigade equivalent, brigade shell as battalion, battalion shell as company."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.5", "8.54"]
+src = ["land:9.28"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.29"
+title = "Attached trucks and convoys in stacking"
+summary = "First-line (attached) trucks do not count toward unit size or road-space limits. Unattached truck convoys do not count against stacking limits except road-space limits, for which they do."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["9.33"]
+src = ["land:9.29"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.3"
+title = "The Effects of Stacking"
+summary = "Stacking limits apply at the end of a friendly Movement Segment and Operations Stage, restrict motorized movement through friendly units on roads and tracks, and apply to involuntary retreats. Heading for 9.31-9.35."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:9.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.31"
+title = "Cannot end movement over the limit"
+summary = "Units may never cease movement in a hex in violation of the stacking limit."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:9.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.32"
+title = "Move through friendly units freely"
+summary = "Units may always move through friendly units; limits are checked only when movement stops (but see 9.33 and 9.35)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:9.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.33"
+title = "Road and track stacking limit for motorized units"
+summary = "A motorized unit using a road or track may not pass through friendly units if that would exceed the five-point road/track limit; it must go around, entering without the road benefit (not possible if terrain is closed to it). A unit that ends movement in a hex it entered along a road or track counts against the limit for other motorized units using it. Truck convoys are handled separately (9.29). Off-road markers record units that did not use the road bonus."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+tables = ["land.8.37.terrain_effects"]
+depends_on = ["8.34", "9.29"]
+src = ["land:9.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.34"
+title = "No splitting units to evade the road limit"
+summary = "A unit may not be broken into subunits moved one at a time through an occupied road hex and then recombined; this also stops some units from crossing escarpments by track when either side is occupied by blocking friendly units."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["9.33", "8.42"]
+src = ["land:9.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "9.35"
+title = "Stacking during involuntary retreats"
+summary = "Stacking limits apply to forced retreats: a stack may not retreat through a hex in violation; a stack or parent may be divided among different hexes (not through the same hex); any part that cannot retreat because of limits must Stand and take extra losses (15.82). The owner chooses how to split and where to retreat."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.combat.retreat_before_assault", "opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.82", "13.0"]
+src = ["land:9.35"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Divide a retreating stack among legal retreat hexes"
+params = ["units", "retreat hexes"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = true
+
+[[case]]
+id = "9.4"
+title = "Unit Basic Stacking Point Values"
+summary = "Table (separate sheet) of basic stacking point values by unit class and organizational level. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+tables = ["land.9.4.stacking_point_values"]
+src = ["land:9.4"]
+
+[case.applies]
+graziani = "yes"
