@@ -1,0 +1,17 @@
+[package]
+name = "cna-tables"
+description = "Typed, validated bindings for every chart and table in data/tables."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cna-core.workspace = true
+serde.workspace = true
+toml.workspace = true
+serde_path_to_error.workspace = true
+
+[lints]
+workspace = true

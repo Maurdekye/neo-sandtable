@@ -15,6 +15,7 @@ currently responsible; the lead agent updates this table when responsibility cha
 | Map data and map tooling | `data/map/`, `tools/map/` | cartographer |
 | Rule-case registry and tables: Land book | `data/rules/land/`, `data/tables/land/`, `tools/rules/` | rules-land |
 | Rule-case registry and tables: Air & Logistics book | `data/rules/airlog/`, `data/tables/airlog/` | rules-airlog |
+| Typed table bindings (`cna-tables`: loader, validation, lookups for every chart) | `crates/cna-tables/` | rules-airlog |
 | Units, organization, equipment | `data/units/` | oob |
 | Scenarios | `data/scenarios/` | oob |
 | Live board | `web/` | board |

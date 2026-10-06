@@ -16,9 +16,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 ts-rs = { version = "12", features = ["serde-json-impl"] }
 csv = "1"
+toml = "0.9"
+serde_path_to_error = "0.1"
 cna-core = { path = "crates/cna-core" }
 cna-protocol = { path = "crates/cna-protocol" }
 cna-content = { path = "crates/cna-content" }
+cna-tables = { path = "crates/cna-tables" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

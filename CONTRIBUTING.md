@@ -102,6 +102,7 @@ message. Cross-area changes (a shared schema, a core type) go through the lead a
 | Server, runner, persistence, MCP | `crates/cna-server/` and related crates |
 | Map data and map tooling | `data/map/`, `tools/map/` |
 | Rules case registry and tables | `data/rules/`, `data/tables/` |
+| Typed table bindings | `crates/cna-tables/` |
 | Units, organization, equipment | `data/units/` |
 | Scenarios | `data/scenarios/` |
 | Live board | `web/` |
