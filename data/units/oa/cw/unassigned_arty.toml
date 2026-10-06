@@ -1,0 +1,305 @@
+# OA sheet: Unassigned Artillery Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.unassigned_arty"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "Unassigned Artillery Units"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.3rd_field_artillery_regt"
+name = "3rd Field Artillery Regt"
+counter = "3 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.3_7_inch_howitzer", n = 6 } ]
+arrives = { gt = 80, opstage = 2 }
+arrives_raw = "2/80"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.4th_field_artillery_regt"
+name = "4th Field Artillery Regt"
+counter = "4 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 33, opstage = 1 }
+arrives_raw = "1/33"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.8th_field_artillery_regt"
+name = "8th Field Artillery Regt"
+counter = "8 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.11th_field_artillery_regt"
+name = "11th Field Artillery Regt"
+counter = "11 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 86, opstage = 1 }
+arrives_raw = "1/86"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.18th_field_artillery_regt"
+name = "18th Field Artillery Regt"
+counter = "18 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 38, opstage = 3 }
+arrives_raw = "3/38"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.32nd_field_artillery_regt"
+name = "32nd Field Artillery Regt"
+counter = "32 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 85, opstage = 1 }
+arrives_raw = "1/85"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.51st_field_artillery_regt"
+name = "51st Field Artillery Regt"
+counter = "51 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.53rd_field_artillery_regt"
+name = "53rd Field Artillery Regt"
+counter = "53 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 89, opstage = 3 }
+arrives_raw = "3/89"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.60th_field_artillery_regt"
+name = "60th Field Artillery Regt"
+counter = "60 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 48, opstage = 2 }
+arrives_raw = "2/48"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.78th_field_artillery_regt"
+name = "78th Field Artillery Regt"
+counter = "78 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 56, opstage = 1 }
+arrives_raw = "1/56"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.98th_field_artillery_regt"
+name = "98th Field Artillery Regt"
+counter = "98 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 83, opstage = 3 }
+arrives_raw = "3/83"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.111th_field_artillery_regt"
+name = "111th Field Artillery Regt"
+counter = "111 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.3_7_inch_howitzer", n = 6 } ]
+arrives = { gt = 60, opstage = 3 }
+arrives_raw = "3/60"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.121st_field_artillery_regt"
+name = "121st Field Artillery Regt"
+counter = "121 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 85, opstage = 1 }
+arrives_raw = "1/85"
+note = "Attached to the 18th Indian Brigade for a short time, then served with the 10th Indian Division."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.146th_field_artillery_regt"
+name = "146th Field Artillery Regt"
+counter = "146 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 28, opstage = 3 }
+arrives_raw = "3/28"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.154th_field_artillery_regt"
+name = "154th Field Artillery Regt"
+counter = "154 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 60, opstage = 3 }
+arrives_raw = "3/60"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.7th_medium_artillery_regt"
+name = "7th Medium Artillery Regt"
+counter = "7 Med"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.60_pounder_gun", n = 6 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.8th_medium_artillery_regt"
+name = "8th Medium Artillery Regt"
+counter = "8 Med"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.6_inch_howitzer", n = 1 }, { weapon = "cw.60_pounder_gun", n = 3 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.27th_medium_artillery_regt"
+name = "27th Medium Artillery Regt"
+counter = "27 Med"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.4_5_inch_gun", n = 6 } ]
+arrives = { gt = 44, opstage = 2 }
+arrives_raw = "2/44"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.64th_medium_artillery_regt"
+name = "64th Medium Artillery Regt"
+counter = "64 Med"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.4_5_inch_gun", n = 6 } ]
+arrives = { gt = 16, opstage = 1 }
+arrives_raw = "1/16"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.67th_medium_artillery_regt"
+name = "67th Medium Artillery Regt"
+counter = "67 Med"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.155mm_howitzer", n = 6 } ]
+arrives = { gt = 55, opstage = 1 }
+arrives_raw = "1/55"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.68th_medium_artillery_regt"
+name = "68th Medium Artillery Regt"
+counter = "68 Med"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.4_5_inch_gun", n = 6 } ]
+arrives = { gt = 44, opstage = 2 }
+arrives_raw = "2/44"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.69th_medium_artillery_regt"
+name = "69th Medium Artillery Regt"
+counter = "69 Med"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.5_5_inch_gun_howitzer", n = 6 } ]
+arrives = { gt = 83, opstage = 3 }
+arrives_raw = "3/83"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.1st_royal_horse_arty_regt"
+name = "1st Royal Horse Arty Regt"
+counter = "1 RHA"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.5th_royal_horse_arty_regt"
+name = "5th Royal Horse Arty Regt"
+counter = "5 RHA"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.105mm_sp_howitzer", n = 6 } ]
+arrives = { gt = 89, opstage = 3 }
+arrives_raw = "3/89"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.11th_royal_horse_arty_regt"
+name = "11th Royal Horse Arty Regt"
+counter = "11 RHA"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.sp_25_pounder_gun", n = 6 } ]
+arrives = { gt = 92, opstage = 3 }
+arrives_raw = "3/92"
+note = "A refitted version of the 11 RHA of the 1st Armored Division (Bishop-equipped); not a unit per se (see the printed refit note on the sheet)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.104th_royal_horse_arty_regt"
+name = "104th Royal Horse Arty Regt"
+counter = "104 RHA"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 4 } ]
+arrives = { gt = 15, opstage = 2 }
+arrives_raw = "2/15"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_arty.107th_royal_horse_arty_regt"
+name = "107th Royal Horse Arty Regt"
+counter = "107 RHA"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 9, opstage = 3 }
+arrives_raw = "3/9"
+src = ["land:4.45"]

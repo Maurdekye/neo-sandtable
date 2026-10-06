@@ -1,0 +1,166 @@
+# OA sheet: Unassigned Indian Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.unassigned_indian"
+nation = "cw"
+side = "commonwealth"
+nationality = "indian"
+name = "Unassigned Indian Units"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.1st_welch_regt"
+name = "1st Welch Regt"
+counter = "1 Wlch"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+nationality = "british"
+note = "A British unit placed on the Indian sheet; its counter bears the same colouring as Indian units (scenario note, scen:60.41)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.2_5_mahratta_light_inf"
+name = "2/5 Mahratta Light Inf"
+counter = "2/5 Mah"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 29, opstage = 3 }
+arrives_raw = "3/29"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.3_10_baluch_regt"
+name = "3/10 Baluch Regt"
+counter = "3/10 Bal"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 60, opstage = 1 }
+arrives_raw = "1/60"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.1_1_punjab_regt"
+name = "1/1 Punjab Regt"
+counter = "1/1 Pjb"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 60, opstage = 1 }
+arrives_raw = "1/60"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.1_4_the_essex_regt"
+name = "1/4 The Essex Regt"
+counter = "1/4 Essx"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 73, opstage = 2 }
+arrives_raw = "2/73"
+nationality = "british"
+note = "Historically a British unit misplaced on this sheet."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.2_4_gurkha_rifles"
+name = "2/4 Gurkha Rifles"
+counter = "2/4 Grka"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 75, opstage = 3 }
+arrives_raw = "3/75"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.3_9_the_jat_regt"
+name = "3/9 The Jat Regt"
+counter = "3/9 Jats"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 75, opstage = 3 }
+arrives_raw = "3/75"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.1_5_mahratta_light_inf"
+name = "1/5 Mahratta Light Inf"
+counter = "1/5 Mah"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 75, opstage = 3 }
+arrives_raw = "3/75"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.2_7_gurkha_rifles"
+name = "2/7 Gurkha Rifles"
+counter = "2/7 Grka"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 76, opstage = 3 }
+arrives_raw = "3/76"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.2_8_gurkha_rifles"
+name = "2/8 Gurkha Rifles"
+counter = "2/8 Grka"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 84, opstage = 1 }
+arrives_raw = "1/84"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.6th_rajputana_rifles_bn"
+name = "6th Rajputana Rifles Bn"
+counter = "6 RajRf"
+class = "cw.u"
+echelon = "battalion"
+toe = { over = 4 }
+arrives = { gt = 84, opstage = 3 }
+arrives_raw = "3/84"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.3_14_punjab_regt"
+name = "3/14 Punjab Regt"
+counter = "3/14 Pjb"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 87, opstage = 2 }
+arrives_raw = "2/87"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.1_2_gurkha_rifles"
+name = "1/2 Gurkha Rifles"
+counter = "1/2 Grka"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 94, opstage = 2 }
+arrives_raw = "2/94"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_indian.13th_dco_lancers"
+name = "13th DCO Lancers"
+counter = "13 DCL"
+class = "cw.ll"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 86, opstage = 1 }
+arrives_raw = "1/86"
+src = ["land:4.45"]

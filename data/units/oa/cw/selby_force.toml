@@ -1,0 +1,30 @@
+# OA sheet: Selby Force / The Matruh Garrison (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.selby_force"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "Selby Force / The Matruh Garrison"
+note = "Basic morale none (that of attached units)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.selby_force.matruh_garrison_hq"
+name = "Matruh Garrison HQ"
+counter = "Selby"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+note = "Brigade-level HQ, administrative; Mersa Matruh Garrison HQ at the start. Deployed on 1/1 and not voluntarily movable until it becomes Selby Force (OpStage 2, GT 12) or is close-assaulted. No units may be assigned; up to six may be attached and count as garrison units. Disbanded in the Organization Phase of 3/21."
+src = ["land:4.45"]
+
+[[mention]]
+unit = "cw.unassigned_inf.1st_buffs"
+begins_attached_to = "cw.selby_force.matruh_garrison_hq"
+src = ["land:4.45"]
+
+[[mention]]
+unit = "cw.unassigned_inf.1st_hampshire"
+begins_attached_to = "cw.selby_force.matruh_garrison_hq"
+src = ["land:4.45"]

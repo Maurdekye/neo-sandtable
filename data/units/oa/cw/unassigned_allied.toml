@@ -1,0 +1,34 @@
+# OA sheet: Unassigned Allied Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.unassigned_allied"
+nation = "cw"
+side = "commonwealth"
+nationality = "free_french"
+name = "Unassigned Allied Units"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_allied.1st_company_fr_mtr_marine"
+name = "1st Company, Fr Mtr Marine"
+counter = "\"1\""
+class = "cw.v"
+echelon = "company"
+toe = "N"
+arrives = "D"
+note = "A company of the 1st Free French Motor Marine Battalion. Arrival code corrected to D by land:4.44b item 3."
+nationality = "free_french"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_allied.11th_czech_bn"
+name = "11th Czech Bn"
+counter = "11 Czech"
+class = "cw.s"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 8, opstage = 3 }
+arrives_raw = "3/8"
+nationality = "czechoslovak"
+note = "Served as fortress troops at Tobruk with the 70th Infantry Division."
+src = ["land:4.45"]

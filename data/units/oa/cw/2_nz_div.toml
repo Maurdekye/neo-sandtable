@@ -1,0 +1,254 @@
+# OA sheet: 2nd New Zealand Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.2_nz_div"
+nation = "cw"
+side = "commonwealth"
+nationality = "new_zealand"
+name = "2nd New Zealand Division"
+basic_morale = 1
+note = "Originally the New Zealand Division; the 5th NZ Brigade plus the 7th NZ Anti-tank and 5th NZ Field Artillery Regiments arrived March 1941 but went to Greece and entered North African service in August 1941."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.2nd_new_zealand_div_hq"
+name = "2nd New Zealand Div HQ"
+counter = "2 NZ"
+class = "cw.a"
+echelon = "division"
+toe = "N"
+arrives = "D"
+engineer_hq = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.4th_new_zealand_bde_hq"
+name = "4th New Zealand Bde HQ"
+counter = "4 NZ"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.18th_nz_bn"
+name = "18th NZ Bn"
+counter = "18 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.19th_nz_bn"
+name = "19th NZ Bn"
+counter = "19 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.20th_nz_bn"
+name = "20th NZ Bn"
+counter = "20 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.5th_new_zealand_bde_hq"
+name = "5th New Zealand Bde HQ"
+counter = "5 NZ"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.21st_nz_bn"
+name = "21st NZ Bn"
+counter = "21 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = { under = 2 }
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.2_nz_div.5th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.22nd_nz_bn"
+name = "22nd NZ Bn"
+counter = "22 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = { under = 2 }
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.2_nz_div.5th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.23rd_nz_bn"
+name = "23rd NZ Bn"
+counter = "23 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = { under = 2 }
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.2_nz_div.5th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.28th_maori_inf_bn"
+name = "28th Maori Inf Bn"
+counter = "28 Mao"
+class = "cw.k"
+echelon = "battalion"
+toe = { under = 2 }
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.2_nz_div.5th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.6th_new_zealand_bde_hq"
+name = "6th New Zealand Bde HQ"
+counter = "6 NZ"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 6, opstage = 3 }
+arrives_raw = "3/6"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.24th_nz_bn"
+name = "24th NZ Bn"
+counter = "24 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 6, opstage = 3 }
+arrives_raw = "3/6"
+parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.25th_nz_bn"
+name = "25th NZ Bn"
+counter = "25 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 6, opstage = 3 }
+arrives_raw = "3/6"
+parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.26th_nz_bn"
+name = "26th NZ Bn"
+counter = "26 NZ"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 6, opstage = 3 }
+arrives_raw = "3/6"
+parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.27th_new_zealand_mg_bn"
+name = "27th New Zealand MG Bn"
+counter = "27 NZ"
+class = "cw.u"
+echelon = "battalion"
+toe = { under = 2 }
+arrives = "D"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.2nd_new_zealand_cavalry"
+name = "2nd New Zealand Cavalry"
+counter = "2 NZ Cv"
+class = "cw.ll"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.7th_nz_anti_tank_regt"
+name = "7th NZ Anti-tank Regt"
+counter = "7 NZ"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 8 } ]
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.4th_nz_field_artillery_regt"
+name = "4th NZ Field Artillery Regt"
+counter = "4 NZ Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.3_7_inch_howitzer", n = 6 } ]
+arrives = "D"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.5th_nz_field_artillery_regt"
+name = "5th NZ Field Artillery Regt"
+counter = "5 NZ Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.6th_nz_field_artillery_regt"
+name = "6th NZ Field Artillery Regt"
+counter = "6 NZ Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.18_25_pounder_gun", n = 6 } ]
+arrives = { gt = 2, opstage = 3 }
+arrives_raw = "3/2"
+parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_nz_div.14th_nz_light_aa_regt"
+name = "14th NZ Light AA Regt"
+counter = "14 NZ Lt"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+note = "Printed at the division HQ indentation level, not under the HQ."
+src = ["land:4.45"]

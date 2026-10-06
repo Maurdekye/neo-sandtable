@@ -1,0 +1,201 @@
+# OA sheet: 70th Infantry Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.70_inf_div"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "70th Infantry Division"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.70th_infantry_div_hq"
+name = "70th Infantry Div HQ"
+counter = "70"
+class = "cw.a"
+echelon = "division"
+toe = "N"
+arrives = { gt = 21, opstage = 2 }
+arrives_raw = "2/21"
+engineer_hq = true
+note = "Originally the 6th Infantry Division. The 22nd Guards Brigade was assigned to it from OpStage 2 GT 20 through OpStage 1 GT 28."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.14th_infantry_bde_hq"
+name = "14th Infantry Bde HQ"
+counter = "14"
+class = "cw.c"
+echelon = "brigade"
+toe = [ { weapon = "cw.4_5_inch_howitzer", n = 3 } ]
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.70_inf_div.70th_infantry_div_hq"
+note = "Withdrawn to Syria in July 1941; returned October 1941."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.1st_bedfords_and_herts"
+name = "1st Bedfords & Herts"
+counter = "1 B&H"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.70_inf_div.14th_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.2nd_yorks_and_lancashires"
+name = "2nd Yorks & Lancashires"
+counter = "2 Y&L"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.70_inf_div.14th_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.2nd_black_watch"
+name = "2nd Black Watch"
+counter = "2 BlkWa"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 35, opstage = 1 }
+arrives_raw = "1/35"
+parent = "cw.70_inf_div.14th_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.14th_bde_anti_tank_coy"
+name = "14th Bde Anti-tank Coy"
+counter = "14"
+class = "cw.dd"
+echelon = "company"
+toe = [ { weapon = "cw.2_pounder", n = 2 } ]
+arrives = { gt = 47, opstage = 1 }
+arrives_raw = "1/47"
+parent = "cw.70_inf_div.14th_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.16th_infantry_bde_hq"
+name = "16th Infantry Bde HQ"
+counter = "16"
+class = "cw.c"
+echelon = "brigade"
+toe = [ { weapon = "cw.3_7_inch_howitzer", n = 3 } ]
+arrives = "D"
+parent = "cw.70_inf_div.70th_infantry_div_hq"
+note = "Originally attached to the 4th Indian Division; withdrawn to Syria in June 1941 and stayed until September 1941; withdrawn again in March 1942 (3/71)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.2nd_queens_royal_regt"
+name = "2nd Queens Royal Regt"
+counter = "2 Qns"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.70_inf_div.16th_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.2nd_leicesters"
+name = "2nd Leicesters"
+counter = "2 Leicst"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.70_inf_div.16th_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.1st_argyll_and_sutherland"
+name = "1st Argyll & Sutherland"
+counter = "1 A&S"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.70_inf_div.16th_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.16th_bde_anti_tank_coy"
+name = "16th Bde Anti-tank Coy"
+counter = "16"
+class = "cw.dd"
+echelon = "company"
+toe = [ { weapon = "cw.2_pounder", n = 2 } ]
+arrives = { gt = 50, opstage = 1 }
+arrives_raw = "1/50"
+parent = "cw.70_inf_div.16th_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.23rd_infantry_bde_hq"
+name = "23rd Infantry Bde HQ"
+counter = "23"
+class = "cw.c"
+echelon = "brigade"
+toe = [ { weapon = "cw.25_pounder_gun", n = 3 } ]
+arrives = { gt = 51, opstage = 3 }
+arrives_raw = "3/51"
+parent = "cw.70_inf_div.70th_infantry_div_hq"
+note = "Dissolved August 1940 to form the Suez Canal Sub-Area; reformed May 1941, sent to Syria; returned to Egypt October 1941 (3/51); sent to India February 1942 (3/70)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.1st_essex"
+name = "1st Essex"
+counter = "1 Essex"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.70_inf_div.23rd_infantry_bde_hq"
+note = "Not assigned to the 23rd until June 1941 (3/38); went to and returned from Syria with the brigade HQ; detached January 1942."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.1st_durham_light_inf"
+name = "1st Durham Light Inf"
+counter = "1 Dur Lt"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.70_inf_div.23rd_infantry_bde_hq"
+note = "Not assigned to the 23rd until June 1941 (3/38); went to and returned from Syria with the brigade HQ; detached January 1942. Class code printed as capital M."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.4th_borderers"
+name = "4th Borderers"
+counter = "4 Bord"
+class = "cw.m"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 51, opstage = 3 }
+arrives_raw = "3/51"
+parent = "cw.70_inf_div.23rd_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.70_inf_div.23rd_bde_anti_tank_coy"
+name = "23rd Bde Anti-tank Coy"
+counter = "23"
+class = "cw.dd"
+echelon = "company"
+toe = [ { weapon = "cw.2_pounder", n = 2 } ]
+arrives = { gt = 50, opstage = 2 }
+arrives_raw = "2/50"
+parent = "cw.70_inf_div.23rd_infantry_bde_hq"
+src = ["land:4.45"]

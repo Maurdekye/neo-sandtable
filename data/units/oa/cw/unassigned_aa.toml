@@ -1,0 +1,303 @@
+# OA sheet: Unassigned Anti-aircraft Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.unassigned_aa"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "Unassigned Anti-aircraft Units"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.1st_light_aa_regt"
+name = "1st Light AA Regt"
+counter = "1 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 31, opstage = 1 }
+arrives_raw = "1/31"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.13th_light_aa_regt"
+name = "13th Light AA Regt"
+counter = "13 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 11, opstage = 2 }
+arrives_raw = "2/11"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.14th_light_aa_regt"
+name = "14th Light AA Regt"
+counter = "14 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 41, opstage = 2 }
+arrives_raw = "2/41"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.15th_light_aa_regt"
+name = "15th Light AA Regt"
+counter = "15 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.16th_light_aa_regt"
+name = "16th Light AA Regt"
+counter = "16 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 43, opstage = 3 }
+arrives_raw = "3/43"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.25th_light_aa_regt"
+name = "25th Light AA Regt"
+counter = "25 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 48, opstage = 2 }
+arrives_raw = "2/48"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.27th_light_aa_regt"
+name = "27th Light AA Regt"
+counter = "27 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 28, opstage = 3 }
+arrives_raw = "3/28"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.34th_light_aa_regt"
+name = "34th Light AA Regt"
+counter = "34 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 58, opstage = 2 }
+arrives_raw = "2/58"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.37th_light_aa_regt"
+name = "37th Light AA Regt"
+counter = "37 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 30, opstage = 2 }
+arrives_raw = "2/30"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.42nd_light_aa_regt"
+name = "42nd Light AA Regt"
+counter = "42 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 98, opstage = 1 }
+arrives_raw = "1/98"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.52nd_light_aa_regt"
+name = "52nd Light AA Regt"
+counter = "52 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 12, opstage = 3 }
+arrives_raw = "3/12"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.53rd_light_aa_regt"
+name = "53rd Light AA Regt"
+counter = "53 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 86, opstage = 1 }
+arrives_raw = "1/86"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.56th_light_aa_regt"
+name = "56th Light AA Regt"
+counter = "56 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 89, opstage = 1 }
+arrives_raw = "1/89"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.57th_light_aa_regt"
+name = "57th Light AA Regt"
+counter = "57 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.82nd_light_aa_regt"
+name = "82nd Light AA Regt"
+counter = "82 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 66, opstage = 1 }
+arrives_raw = "1/66"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.2nd_light_aa_regt"
+name = "2nd Light AA Regt"
+counter = "2 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 45, opstage = 1 }
+arrives_raw = "1/45"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.2nd_heavy_aa_regt"
+name = "2nd Heavy AA Regt"
+counter = "2 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.9th_heavy_aa_regt"
+name = "9th Heavy AA Regt"
+counter = "9 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.57th_heavy_aa_regt"
+name = "57th Heavy AA Regt"
+counter = "57 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 43, opstage = 1 }
+arrives_raw = "1/43"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.61st_heavy_aa_regt"
+name = "61st Heavy AA Regt"
+counter = "61 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 28, opstage = 1 }
+arrives_raw = "1/28"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.68th_heavy_aa_regt"
+name = "68th Heavy AA Regt"
+counter = "68 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 59, opstage = 2 }
+arrives_raw = "2/59"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.69th_heavy_aa_regt"
+name = "69th Heavy AA Regt"
+counter = "69 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 59, opstage = 2 }
+arrives_raw = "2/59"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.74th_heavy_aa_regt"
+name = "74th Heavy AA Regt"
+counter = "74 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 12, opstage = 3 }
+arrives_raw = "3/12"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.87th_heavy_aa_regt"
+name = "87th Heavy AA Regt"
+counter = "87 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 41, opstage = 2 }
+arrives_raw = "2/41"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.88th_heavy_aa_regt"
+name = "88th Heavy AA Regt"
+counter = "88 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 42, opstage = 3 }
+arrives_raw = "3/42"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.89th_heavy_aa_regt"
+name = "89th Heavy AA Regt"
+counter = "89 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 45, opstage = 1 }
+arrives_raw = "1/45"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_aa.94th_heavy_aa_regt"
+name = "94th Heavy AA Regt"
+counter = "94 HAA"
+class = "cw.gg"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_heavy_3_7", n = 2 } ]
+arrives = { gt = 43, opstage = 3 }
+arrives_raw = "3/43"
+src = ["land:4.45"]

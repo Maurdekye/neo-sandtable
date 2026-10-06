@@ -1,0 +1,80 @@
+# OA sheet: Unassigned Armor-Class Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.unassigned_armor"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "Unassigned Armor-Class Units"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_armor.3rd_kings_own_hussars"
+name = "3rd Kings Own Hussars"
+counter = "3 Hus"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.mk_vi_light", n = 10 } ]
+arrives = { gt = 4, opstage = 3 }
+arrives_raw = "3/4"
+note = "Later assigned to the 9th Armored Brigade (10th Armored Division), by then three Grant and seven Stuart points."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_armor.2nd_royal_tank_regt"
+name = "2nd Royal Tank Regt"
+counter = "2 RTR"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.a13_cruiser", n = 10 } ]
+arrives = { gt = 2, opstage = 3 }
+arrives_raw = "3/2"
+note = "Upon arrival assigned to the 4/7 Armored Brigade."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_armor.7th_royal_tank_regt"
+name = "7th Royal Tank Regt"
+counter = "7 RTR"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.matilda_ii", n = 10 } ]
+arrives = { gt = 2, opstage = 3 }
+arrives_raw = "3/2"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_armor.4th_royal_tank_regt"
+name = "4th Royal Tank Regt"
+counter = "4 RTR"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.matilda_ii", n = 10 } ]
+arrives = { gt = 29, opstage = 2 }
+arrives_raw = "2/29"
+note = "Men arrived mid-February; the tanks did not appear until April."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_armor.10th_qvoc_guides"
+name = "10th, QVOC Guides"
+counter = "10 QVG"
+class = "cw.mm"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 84, opstage = 2 }
+arrives_raw = "2/84"
+note = "10th Queen Victoria's Own Corps of Guides (Frontier Force)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_armor.1st_the_royal_dragoons"
+name = "1st, The Royal Dragoons"
+counter = "1 Royals"
+class = "cw.kk"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 31, opstage = 1 }
+arrives_raw = "1/31"
+note = "Originally a cavalry regiment in Palestine."
+src = ["land:4.45"]

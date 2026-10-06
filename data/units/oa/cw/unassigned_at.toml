@@ -1,0 +1,97 @@
+# OA sheet: Unassigned Anti-tank Regiments (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.unassigned_at"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "Unassigned Anti-tank Regiments"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_at.13th_anti_tank_regt"
+name = "13th Anti-tank Regt"
+counter = "13"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.6_pounder", n = 8 } ]
+arrives = { gt = 92, opstage = 2 }
+arrives_raw = "2/92"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_at.65th_anti_tank_regt"
+name = "65th Anti-tank Regt"
+counter = "65"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 6 } ]
+arrives = "D"
+note = "The Norfolk Yeomanry."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_at.73rd_anti_tank_regt"
+name = "73rd Anti-tank Regt"
+counter = "73"
+class = "cw.z"
+echelon = "battalion"
+toe = [ { weapon = "cw.18_pounder_gun", n = 2 }, { weapon = "cw.2_pounder", n = 8 } ]
+arrives = { gt = 27, opstage = 1 }
+arrives_raw = "1/27"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_at.84th_anti_tank_regt"
+name = "84th Anti-tank Regt"
+counter = "84"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.6_pounder", n = 8 } ]
+arrives = { gt = 75, opstage = 1 }
+arrives_raw = "1/75"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_at.95th_anti_tank_regt"
+name = "95th Anti-tank Regt"
+counter = "95"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 8 } ]
+arrives = { gt = 60, opstage = 3 }
+arrives_raw = "3/60"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_at.102nd_anti_tank_regt"
+name = "102nd Anti-tank Regt"
+counter = "102"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 8 } ]
+arrives = { gt = 45, opstage = 1 }
+arrives_raw = "1/45"
+note = "The Northumberland Hussars (not the 102(NH) anti-tank/light AA unit). The only unit that may be refitted with Deacons (printed refit procedure)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_at.149th_anti_tank_regt"
+name = "149th Anti-tank Regt"
+counter = "149"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 8 } ]
+arrives = "D"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_at.106th_royal_horse_arty_regt"
+name = "106th Royal Horse Arty Regt"
+counter = "106 RHA"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 8 } ]
+arrives = { gt = 11, opstage = 1 }
+arrives_raw = "1/11"
+src = ["land:4.45"]

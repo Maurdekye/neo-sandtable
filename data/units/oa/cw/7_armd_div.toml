@@ -1,0 +1,169 @@
+# OA sheet: 7th Armored Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.7_armd_div"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "7th Armored Division"
+basic_morale = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.7th_armored_div_hq"
+name = "7th Armored Div HQ"
+counter = "7"
+class = "cw.b"
+echelon = "division"
+toe = [ { weapon = "cw.mk_vi_light", n = 1 } ]
+arrives = "D"
+engineer_hq = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.4th_armored_bde_hq"
+name = "4th Armored Bde HQ"
+counter = "4"
+class = "cw.b"
+echelon = "brigade"
+toe = [ { weapon = "cw.mk_vi_light", n = 1 } ]
+arrives = "D"
+parent = "cw.7_armd_div.7th_armored_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.6th_royal_tank_regt"
+name = "6th Royal Tank Regt"
+counter = "6 RTR"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.mk_vi_light", n = 10 } ]
+arrives = "D"
+parent = "cw.7_armd_div.4th_armored_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.7th_queens_own_hussars"
+name = "7th Queens Own Hussars"
+counter = "7 Hus"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.mk_vi_light", n = 10 } ]
+arrives = "D"
+parent = "cw.7_armd_div.4th_armored_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.7th_armored_bde_hq"
+name = "7th Armored Bde HQ"
+counter = "7"
+class = "cw.d"
+echelon = "brigade"
+toe = [ { weapon = "cw.a9_cruiser", n = 1 } ]
+arrives = "D"
+parent = "cw.7_armd_div.7th_armored_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.1st_royal_tank_regt"
+name = "1st Royal Tank Regt"
+counter = "1 RTR"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.a9_cruiser", n = 7 } ]
+arrives = "D"
+parent = "cw.7_armd_div.7th_armored_bde_hq"
+note = "Later assigned to the 22nd Armored Brigade."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.8th_hussars"
+name = "8th Hussars"
+counter = "8 Hus"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.a10_cruiser", n = 7 } ]
+arrives = "D"
+parent = "cw.7_armd_div.7th_armored_bde_hq"
+note = "The 8th King's Royal Irish Hussars."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.7th_support_group_hq"
+name = "7th Support Group HQ"
+counter = "7 Spt"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "cw.7_armd_div.7th_armored_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.7th_motor_bde_hq"
+name = "7th Motor Bde HQ"
+counter = "7 Mtr"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 68, opstage = 2 }
+arrives_raw = "2/68"
+parent = "cw.7_armd_div.7th_armored_div_hq"
+note = "Redesignation of the 7th Support Group in February 1942: the mechanized-infantry HQ counter is replaced by this motorized-infantry HQ counter."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.1st_krrc"
+name = "1st KRRC"
+counter = "1 KRRC"
+class = "cw.n"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.7_armd_div.7th_motor_bde_hq"
+note = "The 1st King's Royal Rifle Corps."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.2nd_rifle_brigade"
+name = "2nd Rifle Brigade"
+counter = "2 RflBde"
+class = "cw.n"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.7_armd_div.7th_motor_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.3rd_ryl_horse_arty"
+name = "3rd Ryl Horse Arty"
+counter = "3 RHA"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 6 } ]
+arrives = "D"
+parent = "cw.7_armd_div.7th_motor_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.4th_ryl_horse_arty"
+name = "4th Ryl Horse Arty"
+counter = "4 RHA"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.18_25_pounder_gun", n = 6 } ]
+arrives = "D"
+parent = "cw.7_armd_div.7th_motor_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.7_armd_div.11th_hussars"
+name = "11th Hussars"
+counter = "11 Hus"
+class = "cw.ll"
+echelon = "battalion"
+toe = { under = 6 }
+arrives = "D"
+parent = "cw.7_armd_div.7th_motor_bde_hq"
+note = "The 11th Prince Albert's Own Hussars; the RAF No. 2 Armored Car Company (Rolls Royce armored cars) served under it October 1940 to February 1941."
+src = ["land:4.45"]

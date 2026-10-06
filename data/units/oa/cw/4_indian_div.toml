@@ -1,0 +1,204 @@
+# OA sheet: 4th Indian Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.4_indian_div"
+nation = "cw"
+side = "commonwealth"
+nationality = "indian"
+name = "4th Indian Division"
+basic_morale = 1
+basic_morale_untrained = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.4th_indian_div_hq"
+name = "4th Indian Div HQ"
+counter = "4 In"
+class = "cw.a"
+echelon = "division"
+toe = "N"
+arrives = "D"
+engineer_hq = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.5th_indian_bde_hq"
+name = "5th Indian Bde HQ"
+counter = "5 In"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.4th_indian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.1st_royal_fusiliers"
+name = "1st Royal Fusiliers"
+counter = "1 RFslr"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.5th_indian_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.3_1_punjab_regt"
+name = "3/1 Punjab Regt"
+counter = "3/1 Pjb"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.5th_indian_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.4_6_rajputana_rifles"
+name = "4/6 Rajputana Rifles"
+counter = "4/6 RajRf"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.5th_indian_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.7th_indian_bde_hq"
+name = "7th Indian Bde HQ"
+counter = "7 In"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 5, opstage = 1 }
+arrives_raw = "1/5"
+parent = "cw.4_indian_div.4th_indian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.1st_royal_sussex"
+name = "1st Royal Sussex"
+counter = "1 RSsx"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 5, opstage = 1 }
+arrives_raw = "1/5"
+parent = "cw.4_indian_div.7th_indian_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.4_11_sikhs"
+name = "4/11 Sikhs"
+counter = "4/11 Skh"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 5, opstage = 1 }
+arrives_raw = "1/5"
+parent = "cw.4_indian_div.7th_indian_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.4_16_punjab_regt"
+name = "4/16 Punjab Regt"
+counter = "4/16 Pjb"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 5, opstage = 1 }
+arrives_raw = "1/5"
+parent = "cw.4_indian_div.7th_indian_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.11th_indian_bde_hq"
+name = "11th Indian Bde HQ"
+counter = "11 In"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.4th_indian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.2nd_camerons"
+name = "2nd Camerons"
+counter = "2 Cmrn"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.11th_indian_bde_hq"
+note = "Full name: 2nd Battalion Queens Own Cameron Highlanders."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.1_6_rajputana_rifles"
+name = "1/6 Rajputana Rifles"
+counter = "1/6 RajRf"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.11th_indian_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.4_7_rajput_regt"
+name = "4/7 Rajput Regt"
+counter = "4/7 Rajpt"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.11th_indian_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.central_india_horse"
+name = "Central India Horse"
+counter = "1 CIH"
+class = "cw.ll"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.4_indian_div.4th_indian_div_hq"
+note = "Also the 21st King George V's Own Horse. Arrives without equipment except trucks; until trained it is treated as a motorized infantry unit (ID code l), then converts to the reconnaissance class kk as listed."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.1st_field_artillery_regt"
+name = "1st Field Artillery Regt"
+counter = "1 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.18_25_pounder_gun", n = 6 } ]
+arrives = { gt = 3, opstage = 3 }
+arrives_raw = "3/3"
+parent = "cw.4_indian_div.4th_indian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.25th_field_artillery_regt"
+name = "25th Field Artillery Regt"
+counter = "25 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.3_7_inch_howitzer", n = 6 } ]
+arrives = "D"
+parent = "cw.4_indian_div.4th_indian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.4_indian_div.31st_field_artillery_regt"
+name = "31st Field Artillery Regt"
+counter = "31 Fld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.18_pounder_gun", n = 6 } ]
+arrives = "D"
+parent = "cw.4_indian_div.4th_indian_div_hq"
+src = ["land:4.45"]

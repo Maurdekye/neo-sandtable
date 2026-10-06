@@ -1,0 +1,33 @@
+# OA sheet: Unassigned New Zealand Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.unassigned_nz"
+nation = "cw"
+side = "commonwealth"
+nationality = "new_zealand"
+name = "Unassigned New Zealand Units"
+basic_morale = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_nz.10th_nz_rr_construction_coy"
+name = "10th NZ RR Construction Coy"
+counter = "10 NZ"
+class = "cw.uu"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 32, opstage = 1 }
+arrives_raw = "1/32"
+note = "Restricted engineering capabilities (railroad)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.unassigned_nz.13th_nz_rr_construction_coy"
+name = "13th NZ RR Construction Coy"
+counter = "13 NZ"
+class = "cw.uu"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 50, opstage = 3 }
+arrives_raw = "3/50"
+note = "Restricted engineering capabilities (railroad)."
+src = ["land:4.45"]

@@ -1,0 +1,193 @@
+# OA sheet: 6th Australian Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[sheet]
+id = "cw.6_aus_div"
+nation = "cw"
+side = "commonwealth"
+nationality = "australian"
+name = "6th Australian Division"
+basic_morale = 1
+basic_morale_untrained = -3
+note = "Arrived early in sections; in poor training and equipment and not committed to battle for several months."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.6th_australian_div_hq"
+name = "6th Australian Div HQ"
+counter = "6 Aus"
+class = "cw.a"
+echelon = "division"
+toe = "N"
+arrives = "D"
+engineer_hq = true
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.16th_aus_infantry_bde_hq"
+name = "16th Aus Infantry Bde HQ"
+counter = "16 Aus"
+class = "cw.f"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.6th_australian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_1_aus_infantry_bn"
+name = "2/1 Aus Infantry Bn"
+counter = "2/1 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.16th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_2_aus_infantry_bn"
+name = "2/2 Aus Infantry Bn"
+counter = "2/2 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.16th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_3_aus_infantry_bn"
+name = "2/3 Aus Infantry Bn"
+counter = "2/3 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.16th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.17th_aus_infantry_bde_hq"
+name = "17th Aus Infantry Bde HQ"
+counter = "17 Aus"
+class = "cw.e"
+echelon = "brigade"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.6th_australian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_5_aus_infantry_bn"
+name = "2/5 Aus Infantry Bn"
+counter = "2/5 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.17th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_6_aus_infantry_bn"
+name = "2/6 Aus Infantry Bn"
+counter = "2/6 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.17th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_7_aus_infantry_bn"
+name = "2/7 Aus Infantry Bn"
+counter = "2/7 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.17th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.19th_aus_infantry_bde_hq"
+name = "19th Aus Infantry Bde HQ"
+counter = "19 Aus"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 9, opstage = 2 }
+arrives_raw = "2/9"
+parent = "cw.6_aus_div.6th_australian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_4_aus_infantry_bn"
+name = "2/4 Aus Infantry Bn"
+counter = "2/4 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 9, opstage = 2 }
+arrives_raw = "2/9"
+parent = "cw.6_aus_div.19th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_8_aus_infantry_bn"
+name = "2/8 Aus Infantry Bn"
+counter = "2/8 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 9, opstage = 2 }
+arrives_raw = "2/9"
+parent = "cw.6_aus_div.19th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_11_aus_infantry_bn"
+name = "2/11 Aus Infantry Bn"
+counter = "2/11 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 9, opstage = 2 }
+arrives_raw = "2/9"
+parent = "cw.6_aus_div.19th_aus_infantry_bde_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.6th_aus_div_cavalry_regt"
+name = "6th Aus Div Cavalry Regt"
+counter = "6 AusCav"
+class = "cw.ll"
+echelon = "battalion"
+toe = "N"
+arrives = "D"
+parent = "cw.6_aus_div.6th_australian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_1_aus_field_artillery_regt"
+name = "2/1 Aus Field Artillery Regt"
+counter = "2/1 AFld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 11, opstage = 1 }
+arrives_raw = "1/11"
+parent = "cw.6_aus_div.6th_australian_div_hq"
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.6_aus_div.2_2_aus_field_artillery_regt"
+name = "2/2 Aus Field Artillery Regt"
+counter = "2/2 AFld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.18_pounder_gun", n = 3 }, { weapon = "cw.4_5_inch_howitzer", n = 3 } ]
+arrives = { gt = 7, opstage = 1 }
+arrives_raw = "1/7"
+parent = "cw.6_aus_div.6th_australian_div_hq"
+src = ["land:4.45"]
