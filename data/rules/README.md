@@ -87,10 +87,13 @@ setup                                  # scenario set-up only
 initiative                             # Stage I
 strategic_air.designation | .malta_availability | .mission_assignment | .malta_raid
 naval_convoy.schedule | .recon | .lane_assignment | .bombing
-logistics.<phase>                      # Logistics-game stages (extend from airlog:48.0; tell the lead)
+logistics.stores_expenditure           # Logistics Stage IV (airlog:48.0): stores issued and expended; fuel and
+                                       # water spillage/evaporation levels adjusted. Logistics game only.
 opstage.initiative_declaration
-opstage.weather
-opstage.organization.reorganization | .construction | .training | .supply_distribution | .tactical_shipping
+opstage.weather                        # includes hot-weather extra fuel/water evaporation (airlog:48.0 V.B)
+opstage.organization.water_distribution | .reorganization | .attrition | .construction | .training | .supply_distribution | .tactical_shipping
+                                       # .water_distribution and .attrition are Logistics-game segments
+                                       # (airlog:48.0 V.C.1 and V.C.3); the Land/Air sequence (33.0) lacks them
 opstage.convoy_arrival
 opstage.cw_fleet.assignment | .repair
 opstage.land_support_air.assignment | .deployment | .air_combat | .flak | .completion | .return | .maintenance
@@ -103,7 +106,7 @@ opstage.truck_convoy_movement
 opstage.cw_rail_movement
 opstage.repair.towing | .maintenance
 opstage.patrol
-strategic_air_recovery.<phase>
+strategic_air_recovery.return_to_base | .maintenance   # Stage VII of 33.0 / Stage VIII of 48.0
 end_of_turn
 continuous                             # a standing constraint checked whenever relevant (e.g. stacking limits)
 end_of_game                            # victory determination
