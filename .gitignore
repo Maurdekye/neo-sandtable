@@ -1,0 +1,37 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Web
+node_modules/
+/web/dist/
+/web/.vite/
+*.tsbuildinfo
+
+# Local campaign databases and run artifacts
+*.sqlite
+*.sqlite3
+*.db
+/runs/
+
+# Local copies of the original game's materials. These are digitization
+# SOURCES only and must never be committed (see CONTRIBUTING.md).
+/local-sources/
+*.vmod
+*.vsav
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Python tooling
+__pycache__/
+*.pyc
+.venv/
+
+# Secrets
+.env
+.env.*
