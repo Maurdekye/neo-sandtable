@@ -28,6 +28,9 @@ pub struct State {
     pub logistics: LogisticsState,
     pub air: AirState,
     pub decisions: Decisions,
+    /// Owner-private setup choices until the simultaneous window closes.
+    #[serde(default)]
+    pub setup: crate::setup::SetupState,
     /// Set when the game is over.
     pub result: Option<String>,
 }
@@ -434,6 +437,7 @@ impl State {
             logistics,
             air,
             decisions: Decisions::default(),
+            setup: crate::setup::SetupState::default(),
             result: None,
         })
     }

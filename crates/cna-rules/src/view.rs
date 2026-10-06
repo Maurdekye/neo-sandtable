@@ -364,6 +364,12 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
                 "units_off_map": off_map,
                 "units_awaiting_setup_placement": awaiting,
                 "units_not_yet_arrived": not_arrived,
+                "setup": {
+                    "window_closed": state.setup.closed,
+                    "unit_destinations": state.setup.unit_locations.iter().filter(|(id, _)| state.land.units.get(*id).is_some_and(|u| u.side == side)).collect::<BTreeMap<_, _>>(),
+                    "dump_destinations": state.setup.dump_locations.iter().filter(|(id, _)| state.logistics.dumps.get(*id).is_some_and(|d| d.side == side)).collect::<BTreeMap<_, _>>(),
+                    "first_line_pools": state.land.undistributed_trucks.iter().filter(|(group, _)| state.units_of(side).any(|u| u.setup_group.as_ref() == Some(*group))).collect::<BTreeMap<_, _>>(),
+                },
             }),
         );
     }
@@ -423,7 +429,9 @@ pub(crate) fn inspect(
             "command_role": crate::ownership::seat_for_unit(content,state,&unit.id),
             "moved_this_segment": state.land.movement.moved.contains(&unit.id),
             "location": unit.location,
+            "setup_destination": state.setup.unit_locations.get(&unit.id),
             "attached_to": unit.attached_to,
+            "trucks": unit.trucks,
             "toe": format!("{:?}", unit.toe),
             "rations": state.logistics.rations.get(&unit.id).cloned().unwrap_or_default(),
             "supplies": state.logistics.unit_supply.get(&unit.id).cloned().unwrap_or_default(),
@@ -433,7 +441,9 @@ pub(crate) fn inspect(
         if !sees_side(perspective, dump.side) {
             return Err(hidden());
         }
-        return Ok(json!({ "dump": dump }));
+        return Ok(
+            json!({ "dump": dump, "setup_destination": state.setup.dump_locations.get(&dump.id) }),
+        );
     }
     let hex = HexId::new(target);
     if let Some(canonical) = content.map.canonical(&hex) {
