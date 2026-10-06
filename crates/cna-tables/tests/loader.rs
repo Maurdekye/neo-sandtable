@@ -51,11 +51,6 @@ const PENDING_BINDINGS: &[&str] = &[
     "land.22.15.vehicle_repair_supply_costs",
     "land.22.44.destroyed_tanks_repair",
     "land.22.8.broken_down_vehicle_repair",
-    "land.6.3.capability_point_expenditure_summary",
-    "land.7.2.initiative_ratings",
-    "land.8.37.terrain_effects",
-    "land.8.89.off_map_movement_distance",
-    "land.9.4.stacking_point_values",
 ];
 
 #[test]

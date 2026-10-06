@@ -10,6 +10,7 @@
 pub mod airlog;
 pub mod calendar;
 pub mod error;
+pub mod land;
 pub mod ranges;
 pub mod raw;
 pub mod units;
@@ -70,6 +71,7 @@ impl RawSet {
 #[derive(Debug, Clone)]
 pub struct Tables {
     pub airlog: airlog::AirlogTables,
+    pub land: land::LandTables,
 }
 
 impl Tables {
@@ -86,12 +88,17 @@ impl Tables {
     pub fn bind_all(set: &RawSet) -> Result<Self, TableError> {
         Ok(Self {
             airlog: airlog::AirlogTables::bind(set)?,
+            land: land::LandTables::bind(set)?,
         })
     }
 
     /// Ids of every table that has a typed binding.
     pub fn bound_ids() -> Vec<&'static str> {
-        airlog::AirlogTables::BOUND_IDS.to_vec()
+        airlog::AirlogTables::BOUND_IDS
+            .iter()
+            .chain(land::LandTables::BOUND_IDS)
+            .copied()
+            .collect()
     }
 }
 
