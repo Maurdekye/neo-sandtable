@@ -1,0 +1,668 @@
+[batch]
+id = "graziani-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-06"
+verification = "visual_single_pass"
+proposal_algorithm = "palette-v0.1"
+selection = "Section C, first axis 35..42, second axis 18..27; exact source mask has 73 cells"
+notes = "Reviewed every cell against local source contact sheet. Eleven mixed land/sea cells remain unclassified until coastal base-terrain semantics are resolved. Terrain review excludes all hexside, road, railway and facility classifications."
+
+[[hex]]
+hex_id = "C4218"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "unclassified"
+note = "Clear ground; ochre symbol is a contour hexside, not mountain fill."
+
+[[hex]]
+hex_id = "C4219"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "unclassified"
+note = "Clear ground; ochre symbol is a contour hexside, not mountain fill."
+
+[[hex]]
+hex_id = "C4220"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4221"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "rough"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C4222"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37"]
+proposed_terrain = "sea"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4118"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4119"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4120"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4121"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "unclassified"
+note = "Clear ground; ochre symbol is a contour hexside, not mountain fill."
+
+[[hex]]
+hex_id = "C4122"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "unclassified"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C4123"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37"]
+proposed_terrain = "unclassified"
+note = "Solid sea; blue place text does not make land."
+
+[[hex]]
+hex_id = "C4126"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37"]
+proposed_terrain = "sea"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4127"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37"]
+proposed_terrain = "sea"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4018"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4019"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4020"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4021"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "unclassified"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C4022"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "unclassified"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C4023"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37"]
+proposed_terrain = "sea"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4024"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37"]
+proposed_terrain = "sea"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4025"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37"]
+proposed_terrain = "sea"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C4026"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "sea"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C4027"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C3918"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3919"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3920"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3921"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3922"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "unclassified"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C3923"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C3924"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C3925"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C3926"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Mixed land/sea source hex; base terrain and movement-domain convention pending."
+
+[[hex]]
+hex_id = "C3927"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3818"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3819"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3820"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3821"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3822"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3823"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3824"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3825"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3826"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3827"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3718"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3719"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3720"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3721"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3722"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3723"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3724"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3725"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3726"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3727"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3618"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3619"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3620"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3621"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3622"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3623"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3624"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "rough"
+note = "Rough fill verified inside the drawn hex."
+
+[[hex]]
+hex_id = "C3625"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "rough"
+note = "Rough fill verified inside the drawn hex."
+
+[[hex]]
+hex_id = "C3626"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "rough"
+note = "Rough fill verified inside the drawn hex."
+
+[[hex]]
+hex_id = "C3627"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "rough"
+note = "Rough fill verified inside the drawn hex."
+
+[[hex]]
+hex_id = "C3518"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3519"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3520"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3521"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3522"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3523"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3524"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3525"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "clear"
+note = "Visual base-terrain check; other feature layers remain unreviewed."
+
+[[hex]]
+hex_id = "C3526"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "rough"
+note = "Rough fill verified inside the drawn hex."
+
+[[hex]]
+hex_id = "C3527"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37"]
+proposed_terrain = "rough"
+note = "Rough fill verified inside the drawn hex."

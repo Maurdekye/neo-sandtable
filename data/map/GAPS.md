@@ -26,8 +26,21 @@
 
 ## Classification and rendering
 
-- All 7023 terrain values are `unclassified`; zero terrain classifications verified.
+- Pilot `graziani-0001` reviews 73 source-mask cells at C first35..42/second18..27.
+  Published: 62 classifications (49 clear, 6 rough, 7 sea). Remaining: 6961
+  unclassified cells, including the 11 coastal deferrals listed in the batch.
+- **Coastal base terrain/domain:** the key has a coast symbol but no cost row.
+  Mixed sea/land cells are C4221, C4122, C4021, C4022, C4026, C4027, C3922,
+  C3923, C3924, C3925, C3926. Preserve observed `coastal` flags but leave the
+  single base-terrain value unknown until the lead rules on representing land
+  substrate versus a coast category. Particularly small land fragments and
+  anchor/text symbols can confound raster rules. No water/land majority policy
+  is implemented. The palette's automatic sea proposal for C4026 is quarantined.
+- The proposal classifier covers only clear/rough/sea and abstains on ochre
+  contour color. Desert, gravel, salt marsh, vegetation, mountain, delta, swamp
+  and major-city classification methods remain to be validated.
 - Hexside features and facilities remain undigitized. Their schemas are planned.
 - TEC category/feature vocabularies must be pinned before classifications publish.
-- `grid-preview.svg` is a section-colored geometry preview; terrain and feature
-  artwork will be generated after data is verified.
+- `grid-preview.svg` remains a section-colored geometry preview;
+  `terrain-preview.svg` adds the 62 reviewed terrain fills. Hexside and facility
+  artwork remains pending.

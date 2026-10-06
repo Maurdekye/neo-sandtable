@@ -1,7 +1,7 @@
 # Map data: coordinate profile vassal-2021
 
 This first milestone supplies the discrete grid for all five A-E sections.
-**Terrain is unclassified; this content is not yet playable.** The local map is a
+**Terrain pilot: 62 reviewed cells; 6961 remain unclassified. This content is not yet playable.** The local map is a
 2021 VASSAL re-rendering, not a scan of the original 1979 sheets. Scenario ids are
 our independent numbering anchors. The original seam description conflicts with
 this source; see [GAPS.md](GAPS.md) and the [interpretation proposal](../../docs/interpretations/map-0001-grid-numbering.md).
@@ -86,13 +86,22 @@ aliases separately from these observed module aliases.
   routes, capacities or a claim that every rules-defined area is complete.
 
 `hexes.csv`: `hex_id,section,printed_first,printed_second,q,r,terrain,flags,src`.
-One row per canonical hex, sorted by `hex_id`. Axes are decimal integers; ids are
+One row per canonical hex, sorted by `hex_id`.
+The pinned base vocabulary uses TEC row ids: `clear`, `gravel`, `salt_marsh`,
+`heavy_vegetation`, `rough`, `mountain`, `delta`, `desert`, `major_city`, `swamp`,
+`village_bir_oasis`, plus the legend-only value `sea`. `gravel` corresponds to
+legend `rock_gravel`. Sea has no movement-cost row in the TEC. The pilot uses
+only `clear`, `rough`, `sea`; village/bir/oasis markers must not replace the
+underlying terrain because their TEC row inherits the other terrain's costs. Axes are decimal integers; ids are
 strings. `terrain=unclassified` is a missing value, not a TEC class. Blank flags
-mean unknown, not false. Future flags are pipe-delimited tokens. CSV citations
+mean unknown, not false. Flags are pipe-delimited tokens. This pilot publishes `land` and `sea` only
+for reviewed pure-domain cells, and `coastal` alone for deferred mixed cells.
+These flags describe observed map surface, not complete facilities or movement
+permission. Missing a flag never establishes the absence of an unreviewed layer. CSV citations
 are semicolon-delimited case references. Current `src=land:4.1` identifies the
 map/assembly case, with exact geometry provenance in the section metadata; it
 does not mean the disputed seam text proves the extracted mask. Classified
-terrain must additionally cite `land:8.37` and its local verification evidence.
+terrain additionally cites `land:8.37` and its local verification evidence.
 
 `aliases.csv`: `alias_id,hex_id,src`, sorted by alias. Targets are canonical
 records; aliases cannot shadow a canonical id or point to another alias.
@@ -101,7 +110,19 @@ records; aliases cannot shadow a canonical id or point to another alias.
 records. Section colors distinguish geometry, not terrain. No scan pixels,
 source polygons, coastline paths or source text occur in the SVG.
 
-Planned terrain deliverables, **not yet published or complete**:
+`reviews/*.toml`: immutable batch metadata and explicit per-cell visual decisions.
+`[batch]` has `id,coordinate_profile,source_image_sha256,build_file_sha256,
+observer,observed_on,verification,proposal_algorithm,selection,notes`. `[[hex]]`
+has `hex_id,status,terrain,flags,src,proposed_terrain,note`; status is accepted or
+deferred. Only accepted records publish terrain. Deferred records remain
+unclassified with a reason. Image hashes bind reviews to exact local evidence;
+source changes require re-review. No raster pixels or image crops are stored.
+
+`terrain-preview.svg`: original flat terrain colors over the regular axial grid.
+Unclassified cells are gray, including deferred coastal cells. It is generated
+solely from `hexes.csv` and contains no raster or traced coastline.
+
+Planned feature deliverables, **not yet published or complete**:
 - `hexsides.csv`: canonical `hex_id,direction,neighbour_id,feature,high_side,src`;
   one feature per row. `high_side` records a directional escarpment's high hex,
   blank where inapplicable. Feature vocabulary will be pinned against the TEC.
@@ -117,6 +138,7 @@ Python 3.11+; stdlib suffices for data and preview. Run from the repository root
 ```powershell
 $env:CNA_SOURCES = 'C:\Users\ncola_k8bx\AppData\Roaming\Orgtree v2\data\workspaces\maurdekye-works\cna-sources'
 py -3.12 tools/map/generate_grid.py
+py -3.12 tools/map/apply_terrain.py
 py -3.12 -m unittest discover -s tools/map -v
 ```
 
@@ -130,3 +152,19 @@ For local inspection, install Pillow outside the repo and run
 This opens the local re-rendered map and writes overlays to that outside folder.
 The script refuses outputs inside either the repository or source directory.
 See [VERIFICATION.md](VERIFICATION.md) for actual checks and limits.
+
+
+Terrain proposals are local-only and require Pillow. Example pilot command:
+
+```powershell
+python tools/map/propose_terrain.py --section C --first 35 42 --second 18 27 --output ../runs/terrain/graziani-0001
+```
+
+Review every selected drawn hex in the resulting contact sheet, record decisions
+in a source-locked batch, then run `apply_terrain.py` (Python 3.11+ stdlib) to
+rebuild reviewed classifications and the preview. The proposal algorithm only
+recognizes four measured solid colors and can abstain on contours or labels;
+it is not a complete terrain classifier. Never publish its output automatically.
+The first pilot defers all 11 mixed shoreline cells pending coast semantics.
+`apply_terrain.py` rejects source changes, duplicate ids, non-TEC classes and
+unreviewed existing classifications that would otherwise be lost.

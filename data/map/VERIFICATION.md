@@ -1,4 +1,4 @@
-# Verification: first geometry milestone
+# Verification: geometry and terrain pilot
 
 Date: 2026-10-06. Profile: `vassal-2021`. Build-definition SHA256:
 `bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac`.
@@ -56,14 +56,61 @@ scratch `runs/` directory, outside the clone. Do not publish those source images
 
 ## Limits and next audit
 
-**Terrain/hexside/facility verification: zero classified records, error rate
-unknown.** The grid preview does not render classified terrain. Original sheet
+**Terrain pilot: 62 classified records, single visual pass; full-map error rate
+unknown. Hexside/facility verification: zero classified records.** The original
+grid preview remains neutral; the separate terrain preview renders the pilot. Original sheet
 seams remain unresolved. The complete first acceptance condition is not met
 merely by this module-profile geometry milestone.
 
-Next: resolve the Benghazi token from its source page; pin TEC categories; classify and
-review the Graziani area on C and D. For future terrain results, report both
+Next: resolve coastal base-terrain semantics and the Benghazi token; expand the
+reviewed terrain area on C and D. For future terrain results, report both
 sample selection and category-wise error counts; ambiguous cells remain gaps.
 If original 1979 map sheets arrive, compare a stratified sample by section and
 terrain, all ambiguous cells, directional hexsides and referenced facilities,
 and record differences rather than treating the 2021 re-rendering as identical.
+
+
+## Terrain pilot graziani-0001 (2026-10-06)
+
+Exact local image SHA256:
+`904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011`.
+TEC vocabulary was read from the double-verified `data/tables/land/8.37-terrain-effects.toml`.
+The review record is `data/map/reviews/graziani-0001.toml`.
+
+Selection: C first-axis35..42, second-axis18..27. Eighty possible rectangular
+ids reduce to 73 actual mask members. All 73 were inspected individually against
+a local contact sheet at source scale, including their drawn boundaries and
+nearby symbols. The whole small window was reviewed; no uninspected proposal was
+published. Source crops remain outside the repository.
+
+| Review outcome | Count |
+|---|---:|
+| Accepted clear | 49 |
+| Accepted rough | 6 |
+| Accepted solid sea | 7 |
+| Deferred mixed coast | 11 |
+| Total examined | 73 |
+
+The palette-v0.1 proposal algorithm recognizes measured solid clear/rough/sea
+colors; ochre in the center triggers an abstention because a contour splash can
+look like mountain fill. Compared with the single visual pass, 58 non-abstaining
+proposals among the 62 accepted records matched; **0/58 disagreements** observed.
+The other four accepted records were abstentions: C4218/C4219/C4121 are clear
+under contour symbols, C4123 is sea obscured by blue text. This is performance
+against one observer's review, not an independent estimate of classification
+accuracy. The 11 unresolved coast cells (including 7 non-abstaining proposals)
+are excluded from that denominator. They do not count as validated successes.
+
+No classification from this pilot is claimed to have a second visual review or
+to have been verified against original 1979 sheets. True post-review error rate
+is unknown. Full-map coverage is 62/7023 (under 1%); 6961 terrain values remain
+unknown. Flags cover only the reviewed surface-domain layer; roads, railways,
+contours, ports, villages, wells, fortifications and other facility layers remain
+unverified even where a base terrain has been accepted.
+
+Replay hashes the exact local image and build definition, checks observer/date
+and review states, rejects duplicate/invalid ids and unknown TEC classes, then
+rebuilds accepted terrain and explicit coastal deferrals. Changes to source
+identity require re-review. Tests exercise these failure paths and ensure the
+published values/citations correspond to accepted decisions. Reproduce the
+proposal sheet with the command in README, and replay with apply_terrain.py.
