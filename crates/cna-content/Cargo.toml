@@ -1,0 +1,16 @@
+[package]
+name = "cna-content"
+description = "Loads and validates neo-sandtable game content from data/."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+cna-core.workspace = true
+csv.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true

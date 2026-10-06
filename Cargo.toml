@@ -15,6 +15,10 @@ rand_chacha = "0.9"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 ts-rs = { version = "12", features = ["serde-json-impl"] }
+csv = "1"
+cna-core = { path = "crates/cna-core" }
+cna-protocol = { path = "crates/cna-protocol" }
+cna-content = { path = "crates/cna-content" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

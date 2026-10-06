@@ -328,6 +328,16 @@ pub enum GameEvent {
     UnitUpdated {
         unit: UnitView,
     },
+    /// The stack of `side` in `hex` now looks like this to the perspective (replaces any
+    /// previous stack of that side in that hex). An enemy stack typically carries no unit ids.
+    StackUpdated {
+        stack: Stack,
+    },
+    /// The stack of `side` in `hex` is gone (moved away, destroyed, or no longer visible).
+    StackRemoved {
+        hex: String,
+        side: Side,
+    },
     /// A unit left play (destroyed, surrendered, withdrawn) or left this perspective's view.
     UnitRemoved {
         unit_id: String,

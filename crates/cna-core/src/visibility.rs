@@ -19,6 +19,10 @@ pub enum Audience {
     Public,
     /// Every seat of one side (and the operator).
     Side(Side),
+    /// Every seat of one side, but NOT the operator. For a redacted copy of a fact whose full
+    /// version goes to the operator under another audience (e.g. an enemy stack moving, seen
+    /// without its contents), so the omniscient view never receives the redacted duplicate.
+    SideOnly(Side),
     /// One seat only (and the operator).
     Seat(SeatId),
     /// Only the omniscient operator view (adjudication internals, secret plots before reveal).
@@ -38,12 +42,13 @@ impl Perspective {
     /// Whether this perspective may see a fact addressed to `audience`.
     pub fn can_see(self, audience: &Audience) -> bool {
         match (self, audience) {
+            (Perspective::Operator, Audience::SideOnly(_)) => false,
             (Perspective::Operator, _) => true,
             (_, Audience::Public) => true,
             (_, Audience::Operator) => false,
-            (Perspective::Side(s), Audience::Side(a)) => s == *a,
+            (Perspective::Side(s), Audience::Side(a) | Audience::SideOnly(a)) => s == *a,
             (Perspective::Side(s), Audience::Seat(seat)) => s == seat.side,
-            (Perspective::Seat(me), Audience::Side(a)) => me.side == *a,
+            (Perspective::Seat(me), Audience::Side(a) | Audience::SideOnly(a)) => me.side == *a,
             (Perspective::Seat(me), Audience::Seat(seat)) => me == *seat,
         }
     }
@@ -131,6 +136,12 @@ mod tests {
         assert!(!me.can_see(&Audience::Seat(axis_log)));
         assert!(!me.can_see(&Audience::Side(Side::Commonwealth)));
         assert!(me.can_see(&Audience::Public));
+
+        // A redacted copy for one side never reaches the operator.
+        assert!(axis.can_see(&Audience::SideOnly(Side::Axis)));
+        assert!(me.can_see(&Audience::SideOnly(Side::Axis)));
+        assert!(!op.can_see(&Audience::SideOnly(Side::Axis)));
+        assert!(!axis.can_see(&Audience::SideOnly(Side::Commonwealth)));
     }
 
     #[test]
