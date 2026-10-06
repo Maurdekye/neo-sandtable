@@ -389,6 +389,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "rations": state.logistics.rations.iter().filter(|(id, _)| {
                 state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
             }).collect::<BTreeMap<_, _>>(),
+            "food_losses": state.logistics.food_losses.iter().filter(|l| sees_side(perspective, l.owner)).collect::<Vec<_>>(),
             "prisoners": state.logistics.prisoners.iter().filter(|(_, p)| sees_side(perspective, p.owner)).collect::<BTreeMap<_, _>>(),
             "unit_supply": state.logistics.unit_supply.iter().filter(|(id, _)| {
                 state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))

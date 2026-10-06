@@ -1,8 +1,8 @@
 //! Incremental movement fuel, retaining whole-point source-rounding credit.
 
 use super::supply::{
-    SupplyDemand, SupplyDraw, SupplyError, SupplySource, apply_draws, available_sources_at,
-    movement_fuel_cost,
+    SupplyDemand, SupplyDraw, SupplyError, SupplySource, apply_draws,
+    available_sources_at_with_content, movement_fuel_cost,
 };
 use crate::seq::Half;
 use crate::{CnaContent, State};
@@ -74,7 +74,10 @@ fn prior_draws(
 }
 
 fn rounded_credit(source: &SupplySource, previous: FuelTenths) -> FuelTenths {
-    if matches!(source, SupplySource::Tank | SupplySource::ReadyAmmo) {
+    if matches!(
+        source,
+        SupplySource::Tank | SupplySource::ReadyAmmo | SupplySource::Unlimited
+    ) {
         return FuelTenths::ZERO;
     }
     // Divide before multiplying so the credit stays representable at i32::MAX.
@@ -108,14 +111,22 @@ fn ledger_for(state: &State, id: &UnitId) -> Result<FuelSegmentLedger, SupplyErr
 }
 
 fn capacities(
+    content: &CnaContent,
     state: &State,
     id: &UnitId,
     ledger: &FuelSegmentLedger,
 ) -> Result<BTreeMap<SupplySource, SupplyDemand>, SupplyError> {
-    let mut sources: BTreeMap<_, _> = available_sources_at(state, id, &ledger.origin)?
-        .into_iter()
-        .map(|s| (s.source, s.amount))
-        .collect();
+    let mut sources: BTreeMap<_, _> = available_sources_at_with_content(
+        content,
+        state,
+        id,
+        &crate::state::Location::Hex {
+            hex: ledger.origin.clone(),
+        },
+    )?
+    .into_iter()
+    .map(|s| (s.source, s.amount))
+    .collect();
     for (source, previous) in prior_draws(ledger)? {
         let credit = rounded_credit(&source, previous);
         if credit.is_zero() {
@@ -153,7 +164,9 @@ pub fn plan_segment_fuel(
         .checked_sub(ledger.paid_cost)
         .ok_or(SupplyError::Invalid)?;
     let prior = prior_draws(&ledger)?;
-    let mut sources: Vec<_> = capacities(state, id, &ledger)?.into_iter().collect();
+    let mut sources: Vec<_> = capacities(content, state, id, &ledger)?
+        .into_iter()
+        .collect();
     sources.sort_by_key(|(source, _)| {
         (
             rounded_credit(source, prior.get(source).copied().unwrap_or_default()).is_zero(),
@@ -214,7 +227,7 @@ pub fn spend_segment_fuel(
 ) -> Result<Vec<SupplyDraw>, SupplyError> {
     let before = ledger_for(state, id)?;
     let plan = plan_segment_fuel(content, state, id, total_cp_quarters)?;
-    let sources = capacities(state, id, &before)?;
+    let sources = capacities(content, state, id, &before)?;
     let prior = prior_draws(&before)?;
     let mut next = apply_draws(
         state,

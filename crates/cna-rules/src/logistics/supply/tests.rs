@@ -477,3 +477,47 @@ fn invalid_truck_quantities_reject_without_arithmetic_overflow() {
     };
     assert_eq!(available_sources(&state, &id), Err(SupplyError::Invalid));
 }
+
+/// Cases: scen:60.44, airlog:51.15, airlog:49.16, airlog:52.11
+#[test]
+fn unlimited_stocks_require_the_scenario_side_and_exact_resolved_city_membership() {
+    let mut state = State::new(content()).unwrap();
+    let cw: UnitId = "cw.unassigned_inf.1st_rnf_mg_bn".into();
+    state.land.units.get_mut(&cw).unwrap().location = Location::Hex {
+        hex: "E1730".into(),
+    };
+    state.land.units.get_mut(&cw).unwrap().trucks.light = 1;
+    state.logistics.dumps.clear();
+    let stocks = available_sources_with_content(content(), &state, &cw).unwrap();
+    assert_eq!(stocks.len(), 1);
+    assert_eq!(stocks[0].source, SupplySource::Unlimited);
+    assert!(stocks[0].amount.water.is_zero());
+    let amount = SupplyDemand {
+        stores: StoresPoints::new(100),
+        ..SupplyDemand::default()
+    };
+    let draws = vec![SupplyDraw {
+        source: SupplySource::Unlimited,
+        amount,
+    }];
+    assert!(spend_for_unit(&mut state, &cw, amount, &draws).is_err());
+    spend_for_unit_with_content(content(), &mut state, &cw, amount, &draws).unwrap();
+    let paid = super::super::spend_segment_fuel(content(), &mut state, &cw, 1).unwrap();
+    assert_eq!(paid[0].source, SupplySource::Unlimited);
+    state.land.units.get_mut(&cw).unwrap().location = Location::Hex {
+        hex: "E1932".into(),
+    };
+    let before = serde_json::to_value(&state).unwrap();
+    assert!(spend_for_unit_with_content(content(), &mut state, &cw, amount, &draws).is_err());
+    assert_eq!(serde_json::to_value(&state).unwrap(), before);
+    let axis: UnitId = "it.1_libyan_div.viii_libyan_bn".into();
+    state.land.units.get_mut(&axis).unwrap().location = Location::Hex {
+        hex: "E1730".into(),
+    };
+    assert!(
+        !available_sources_with_content(content(), &state, &axis)
+            .unwrap()
+            .iter()
+            .any(|s| s.source == SupplySource::Unlimited)
+    );
+}

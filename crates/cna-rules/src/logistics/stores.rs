@@ -1,6 +1,9 @@
 //! Weekly stores choices, mandatory prisoner/guard feeding, and storage losses.
 use super::rations::{self, WaterStage};
-use super::{SupplyDemand, SupplyDraw, SupplyError, available_sources, spend_for_unit};
+use super::{
+    SupplyDemand, SupplyDraw, SupplyError, available_sources_with_content,
+    spend_for_unit_with_content,
+};
 use crate::content::CnaContent;
 use crate::state::{DumpLocation, Location, Pending, State};
 use crate::steps::{illegal, open};
@@ -271,7 +274,8 @@ pub fn answer(
         }
         let required = rations::stores_required(content, state, &id)
             .map_err(|e| Rejection::Engine(engine(e)))?;
-        let sources = available_sources(state, &id).map_err(|e| Rejection::Engine(engine(e)))?;
+        let sources = available_sources_with_content(content, state, &id)
+            .map_err(|e| Rejection::Engine(engine(e)))?;
         let schema = ActionSchema::Record {
             fields: vec![
                 field(
@@ -381,7 +385,7 @@ pub fn issue_unit(
                 "flat-rate HQ and engineer rations cannot be halved",
             ));
         }
-        let available = available_sources(state, id)
+        let available = available_sources_with_content(content, state, id)
             .map_err(|e| Rejection::Engine(engine(e)))?
             .iter()
             .map(|s| i64::from(s.amount.stores.get()))
@@ -405,7 +409,8 @@ pub fn issue_unit(
         ));
     }
     let water = i32::from(pasta);
-    spend_for_unit(
+    spend_for_unit_with_content(
+        content,
         state,
         id,
         SupplyDemand {

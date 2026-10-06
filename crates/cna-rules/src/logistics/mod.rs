@@ -9,6 +9,13 @@
 //! these preserve the segment origin and already-paid rounding credit. A failed allocation changes
 //! nothing. The caller emits the resulting events to the owning side.
 //!
+//! Movement also calls [`movement_restrictions`] before accepting a path. Enforce
+//! its CPA, enemy-ZOC, movement and offensive-assault flags. Call
+//! [`spend_activity_water`] once immediately before the first CPA use; it retains
+//! idle vehicle reserves and does not recharge activity water on repeated moves.
+//! The same water call is needed by other CPA-consuming procedures, and combat
+//! uses the restrictions' defense divisor and offensive-assault flag.
+//!
 //! Tanks and ready ammunition can serve only their own unit. Friendly first-line
 //! truck cargo and active dumps can serve units in the same hex. Second-/third-line
 //! cargo must be unloaded before it enters this interface. Emergency siphoning,
@@ -18,6 +25,7 @@
 //! Cases: airlog:49.13, airlog:49.15, airlog:49.16, airlog:50.13, airlog:50.15
 //! Interpretations: interp:airlog-0001
 
+pub mod attrition;
 mod rations;
 mod segment;
 pub mod stores;
@@ -25,11 +33,13 @@ mod supply;
 pub use segment::{
     FuelDraw, FuelSegmentLedger, SegmentFuelPlan, SegmentKey, plan_segment_fuel, spend_segment_fuel,
 };
+pub mod water;
 pub mod weather;
 pub use supply::{
     SupplyDemand, SupplyDraw, SupplyError, SupplySource, ammunition_cost, available_sources,
-    available_sources_at, available_sources_at_location, movement_fuel_cost, spend_for_unit,
-    toe_strength,
+    available_sources_at, available_sources_at_location, available_sources_at_with_content,
+    available_sources_with_content, movement_fuel_cost, spend_for_unit,
+    spend_for_unit_with_content, toe_strength,
 };
 
 pub use rations::{

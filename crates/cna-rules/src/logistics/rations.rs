@@ -157,22 +157,26 @@ pub(super) fn activity_points(
 }
 
 pub(super) fn hot_multiplier(
-    content: &CnaContent,
+    _content: &CnaContent,
     state: &State,
     id: &UnitId,
 ) -> Result<i32, SupplyError> {
     let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
-    if let Some(hex) = unit.location.hex() {
-        let weather = super::weather::at_hex(content, state, hex)
-            .map_err(|_| SupplyError::Unsupported { case: "land:29.3" })?;
-        Ok(if weather == cna_tables::land::weather::WeatherKind::Hot {
+    if unit.location.hex().is_none() {
+        return Ok(1);
+    }
+    let weather = state
+        .turn
+        .weather
+        .as_ref()
+        .ok_or(SupplyError::Unsupported { case: "land:29.1" })?;
+    Ok(
+        if weather.kind == cna_tables::land::weather::WeatherKind::Hot {
             2
         } else {
             1
-        })
-    } else {
-        Ok(1)
-    }
+        },
+    )
 }
 
 /// Limits apply to voluntary movement and offensive close assault. The movement caller
@@ -215,7 +219,9 @@ pub fn movement_restrictions(
     let pasta_missing = pasta(content, id) && history.pasta_gt != Some(stage.game_turn);
     let dry = infantry_dry || activity_dry;
     Ok(MovementRestrictions {
-        may_move: in_play(&unit.location) && !activity_dry,
+        may_move: in_play(&unit.location)
+            && !activity_dry
+            && !(pasta_missing && unit.cohesion_quarters <= -40),
         may_exceed_cpa: !(half || pasta_missing || infantry_dry),
         may_enter_enemy_zoc: !half,
         may_offensive_close_assault: !dry,

@@ -44,6 +44,12 @@ impl Cna {
                 crate::land::movement::enter(content, state, self.strict, cx)
             }
             "logistics.stores_expenditure" => crate::logistics::stores::enter(content, state, cx),
+            "opstage.organization.water_distribution" => {
+                crate::logistics::water::enter(content, state, cx, self.strict)
+            }
+            "opstage.organization.attrition" => {
+                crate::logistics::attrition::enter(content, state, cx)
+            }
             "opstage.weather" => crate::logistics::weather::determine(content, state, cx),
             "end_of_game" => self.end_of_game(content, state, cx),
             _ => self.unimplemented(content, anchor),
@@ -71,6 +77,14 @@ impl Cna {
                 || kind.starts_with(crate::logistics::stores::ISSUE_PREFIX) =>
             {
                 crate::logistics::stores::answer(content, state, pending, action, cx)
+            }
+            kind if kind == crate::logistics::water::KIND
+                || kind.starts_with(crate::logistics::water::ISSUE_PREFIX) =>
+            {
+                crate::logistics::water::answer(content, state, pending, action, cx, self.strict)
+            }
+            crate::logistics::attrition::KIND => {
+                crate::logistics::attrition::answer(content, state, pending, action, cx)
             }
             other => Err(Rejection::Engine(EngineError::Invariant {
                 detail: format!("no handler for decision kind {other}"),

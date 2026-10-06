@@ -27,6 +27,8 @@ pub struct SupplyDemand {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(tag = "source", content = "id", rename_all = "snake_case")]
 pub enum SupplySource {
+    /// Scenario-authorized unlimited stocks at a resolved friendly location.
+    Unlimited,
     /// The consuming unit's tanks; other units' tanks require siphoning.
     Tank,
     /// The consuming unit's ready ammunition.
@@ -425,6 +427,7 @@ pub(super) fn apply_draws(
     let mut next = state.logistics.clone();
     for (source, amount) in allocations {
         match source {
+            SupplySource::Unlimited => {}
             SupplySource::Tank => {
                 next.unit_supply
                     .get_mut(unit_id)
@@ -509,3 +512,80 @@ fn deduct_stock(
 
 #[cfg(test)]
 mod tests;
+
+/// Scenario supply access is checked against resolved membership, never a city rectangle.
+/// Water remains a well/pipeline draw under52.11, not a fabricated cargo stock.
+/// Cases: scen:60.44, airlog:51.15, airlog:52.11
+pub fn available_sources_with_content(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+) -> Result<Vec<SupplyDraw>, SupplyError> {
+    let location = &state
+        .land
+        .units
+        .get(id)
+        .ok_or(SupplyError::Invalid)?
+        .location;
+    available_sources_at_with_content(content, state, id, location)
+}
+/// Content-aware sources at the trusted movement origin, including scenario supply.
+/// Cases: scen:60.44, airlog:49.16
+pub fn available_sources_at_with_content(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    location: &Location,
+) -> Result<Vec<SupplyDraw>, SupplyError> {
+    let mut sources = available_sources_at_location(state, id, location)?;
+    let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
+    if let Some(unlimited) = &content.scenario.supply.unlimited_supply
+        && unlimited.side == unit.side
+    {
+        for place in &unlimited.locations {
+            let area = content
+                .areas
+                .areas
+                .get(place)
+                .ok_or(SupplyError::Unsupported { case: "scen:60.44" })?;
+            if area.membership_status != "resolved" {
+                return Err(SupplyError::Unsupported { case: "scen:60.44" });
+            }
+            let matches = match location {
+                Location::Hex { hex } => area.hex_ids.contains(hex),
+                Location::OffMap { id } => area.location_ids.contains(id),
+                _ => false,
+            };
+            if matches {
+                sources.push(SupplyDraw {
+                    source: SupplySource::Unlimited,
+                    amount: SupplyDemand {
+                        fuel: FuelTenths::new(i32::MAX),
+                        ammo: AmmoPoints::new(i32::MAX),
+                        stores: StoresPoints::new(i32::MAX),
+                        water: WaterPoints::ZERO,
+                    },
+                });
+                break;
+            }
+        }
+    }
+    Ok(sources)
+}
+/// Spend explicit content-authorized sources; the state-only helper remains limited
+/// to actual holdings. No enemy side gains access to the scenario's supply source.
+/// Cases: scen:60.44, airlog:51.15, airlog:49.15, airlog:50.15
+pub fn spend_for_unit_with_content(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    demand: SupplyDemand,
+    draws: &[SupplyDraw],
+) -> Result<(), SupplyError> {
+    let sources = available_sources_with_content(content, state, id)?
+        .into_iter()
+        .map(|s| (s.source, s.amount))
+        .collect();
+    state.logistics = apply_draws(state, id, demand, draws, &sources, &BTreeMap::new())?;
+    Ok(())
+}

@@ -151,6 +151,10 @@ pub struct LogisticsState {
     /// Private ration and water history; absent entries have not been supplied.
     #[serde(default)]
     pub rations: BTreeMap<UnitId, crate::logistics::Rations>,
+    #[serde(default)]
+    pub attrition_started_stage: Option<crate::logistics::water::WaterStage>,
+    #[serde(default)]
+    pub food_losses: Vec<crate::logistics::attrition::FoodLoss>,
     /// Captured infantry and their separately formed guard points.
     #[serde(default)]
     pub prisoners: BTreeMap<String, crate::logistics::PrisonerGroup>,
