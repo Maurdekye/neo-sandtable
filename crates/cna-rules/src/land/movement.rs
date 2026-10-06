@@ -213,7 +213,7 @@ fn unit_stack(
 /// ignored by the planning pass; execution discloses it only on entry and truncates there.
 /// Cases: land:8.13, land:8.14, land:8.15, land:8.24, land:8.65, land:9.31, land:9.33
 /// Cases: land:29.44, land:29.51
-/// Cases: land:10.22, land:10.23, land:10.24, land:10.25, land:10.26, land:10.29, land:19.42, land:19.44
+/// Cases: land:10.22, land:10.23, land:10.24, land:10.25, land:10.26, land:10.29, land:19.43, land:19.44
 /// Unsupported: land:8.51 - reaction requires the separate reaction procedure.
 #[allow(clippy::too_many_arguments)]
 fn run(

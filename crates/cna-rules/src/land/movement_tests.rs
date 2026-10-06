@@ -605,7 +605,7 @@ fn noncombat_unit_stops_before_undisclosed_enemy_control() {
     );
     assert_eq!(t.game.state.land.units[&actual].cp_spent_quarters, 8);
 }
-/// Cases: land:19.42, land:19.44, land:9.21
+/// Cases: land:19.43, land:19.44, land:9.21
 #[test]
 fn stack_orders_move_all_counters_and_detachment_updates_parent_cp() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
