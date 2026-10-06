@@ -45,6 +45,25 @@ The set-ups mix exact hexes with freedom for the player. Every deployment record
 
 Area names are scenario-local vocabulary; the engine maps them to hex sets via `data/map`.
 
+## Area vocabulary (scenario-local; hex sets belong to `data/map/areas.toml`)
+
+| Area name | One-line definition | Used by |
+|---|---|---|
+| `libya` | Any land hex of Libya on the game-maps (Axis-held territory at the start) | `scen:60.31` Anywhere in Libya; `scen:60.33` trucks |
+| `egypt` | Any land hex of Egypt on the game-maps | `scen:60.44` dump |
+| `map_a_or_b` | Any hex on game-map sections A or B | `scen:60.31` |
+| `map_c_libya` | Hexes of map section C that lie in Libya | `scen:60.34` Dumps 1, 2 and dummies |
+| `map_c_or_d_egypt` | Egyptian hexes of map sections C or D | `scen:60.44` Dump 1 and dummy |
+| `map_d_or_e` | Any hex on game-map sections D or E | `scen:60.41` |
+| `tripoli` | Tripoli (the off-map Tripoli box; Tunisia boxes are separate) | `scen:60.31`, `60.33` |
+| `tripolitania` | Tripolitania (west Libya; the Axis off-map Tripolitania holding area) | `scen:60.31` 4/10 Army |
+| `cairo`, `alexandria`, `helwan` | The city hexes of these places (Cairo area `E(1430)`; Alexandria `E3613`/`E3714`) | `scen:60.41`, `60.43` |
+| `any_air_facility` | Any friendly air facility | `scen:60.33`, `60.43` |
+
+Exclusion qualifiers: `exclusion = { enemy_unit_within_hexes = N }` (no Commonwealth unit within N hexes).
+Off-map and boxed ids (Tripoli/Tunisia boxes, `E(3433)`, `E(1833)` style) are the cartographer's; this
+folder does not mint them.
+
 ## Land deployment records (`land_*.toml`)
 
 One `[[group]]` per set-up line. A group has a placement and a list of `unit` entries. A unit entry
@@ -199,13 +218,29 @@ initiative = { gt1 = "axis", from_gt2 = "normal_rules", src = ["scen:60.6"] }
 [[victory]]                                # scen:60.81 — one entry per level; conditions as structured clauses
 side = "axis"
 level = "strategic"
-require = [ { occupy_any = ["alexandria", "cairo"], by = "combat_unit", supply = "convoy_from_map_d" } ]
+require = [ { occupy_any = ["alexandria", "cairo"] }, { qualifying_unit = "combat_unit" }, { supply_trace = "convoy", to = "map_d" } ]
 src = ["scen:60.81"]
 
 [[abstraction_note]]                       # scen:60.9, recorded but unused under full systems
 case = "60.92"
 note = "Land-game-only supply and motorization substitutions; not applicable."
 ```
+
+## Victory clause vocabulary
+
+`[[victory]]` entries (`side`, `level` ∈ strategic | decisive | tactical, `require = [clauses]`, `src`).
+All clauses in `require` must hold at end of game. Finite clause types:
+
+| Clause | Fields | Meaning |
+|---|---|---|
+| `occupy_all` | `places` | Hold (occupy) every listed place with a qualifying unit |
+| `occupy_any` | `places` | Hold at least one listed place |
+| `retain` | `places` | Possess it at the end (already held at start and not lost) |
+| `qualifying_unit` | `kind = "combat_unit"` | The holder must be a combat unit (non-parenthesized close-assault rating, `scen:60.82` note) |
+| `supply_trace` | `mode = "convoy"` or `"truck_convoy"`, `to` (place, map section, or `"home_base"`) | The holder must be supplyable by that route to that place (as stated in `scen:60.81`) |
+
+Places are city/oasis names resolved by the map data. Both sides' levels are listed separately; a
+side is "highest level achieved" as defined in `scen:60.81`; the evaluation order is the engine's.
 
 ## Arrivals (`arrivals.toml`)
 

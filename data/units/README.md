@@ -28,9 +28,16 @@ by `rules-airlog` (`data/tables/airlog/54.2-…`); scenario and schedule records
 
 ## Conventions specific to this folder
 
-- **Nations / id prefixes.** `it` Italian, `ge` German, `cw` Commonwealth (all British, Indian,
-  Australian, NZ, South African, Free French, Greek and Polish units share the `cw` namespace
-  because they share one unit-characteristics chart (4.46a) and one tank/gun chart (4.47)).
+- **Id prefixes vs. nationality.** The id prefix is the *chart family*: `it` Italian, `ge` German,
+  `cw` Commonwealth/Allied (they share one unit-characteristics chart, `land:4.46a`, and one
+  tank/gun chart, `land:4.47`). Nationality is a separate, explicit field: every OA `[sheet]` has
+  `side` (`axis` | `commonwealth`) and `nationality` (`italian`, `german`, `british`, `australian`,
+  `new_zealand`, `indian`, `south_african`, `free_french`, `greek`, `polish`, ...); a `[[unit]]` may
+  override `nationality` (e.g. the Free French Motor Marine Company on a British sheet). Rules
+  that depend on it: Commonwealth withdrawals (`land:20.8`-`20.9`), morale, national restrictions.
+- **Absent means omitted.** Unknown or not-printed fields are *omitted*, never `""` or `0`. The
+  engine loads them as `Option`. A unit with no parent simply has no `parent` key. A value the
+  source lacks gets a `GAPS.md` entry.
 - **Ratings.** An omitted rating field means the chart prints "–" (not applicable *or* zero).
   A printed `0` is stored as `0`. A rating printed in parentheses `(n)` is stored as `n` plus
   `<field>_paren = true` (usable only when no hex-mate has non-parenthesized ammo-backed values,
@@ -56,6 +63,23 @@ by `rules-airlog` (`data/tables/airlog/54.2-…`); scenario and schedule records
   it is not unique — and lives in `counter`.
 - **Notes** are paraphrased; each OA footnote becomes a structured field where it has rules
   meaning (`reassign = { month = "1942-02", to = … }`), else a short `note`.
+
+## Field meanings (rating fields)
+
+| Field | Unit | Meaning | Defined in |
+|---|---|---|---|
+| `cpa` | capability points | Capability Point Allowance: movement/combat budget per OpStage. | `land:3.5`, `land:6` |
+| `aa` | AA points | Anti-air rating of a TOE point. | `land:3.5`, `airlog:46` |
+| `barrage` | barrage points | Indirect-fire strength of a gun TOE point. | `land:3.5`, `land:12` |
+| `anti_armor` | anti-armor points | Strength vs. armored vehicles in anti-armor fire. | `land:3.5`, `land:14` |
+| `vulnerability` | points | Susceptibility of a gun to loss/capture in a forward position. | `land:3.5`, `land:12.1` |
+| `armor_prot` | points | Armor protection vs. anti-armor fire. | `land:3.5`, `land:14` |
+| `ca_off`, `ca_def` | points | Offensive / defensive close-assault ratings. | `land:3.5`, `land:15` |
+| `fuel_rate` | fuel points per 5 CP (or fraction) of movement | Fuel burned by one TOE point. | `land:3.5`, `airlog:49.13` |
+| `bar` | column shifts | Breakdown adjustment: `shift` columns, `dir` L or R. | `land:21.12`-`21.14` |
+| `max_toe` | TOE strength points | Max TOE points a counter of this class may hold; `max_toe_paren` if printed `(n)` (HQ-held weapon points fight with parenthesized values, `land:3.35`, `land:4.46`). | `land:4.46` |
+| `max_toe_extra` | TOE strength points | The printed "+n" allowance (e.g. AA points on Italian artillery class `kk`). | `land:4.46` |
+| `range_hexes`, `tacair`, `maneuver`, `bomb_capacity`, `fuel_points` | hexes / points | Aircraft ratings. | `airlog:34.11`-`34.17` |
 
 ## Weapon systems (`weapons/<nation>.toml`)
 
@@ -159,6 +183,8 @@ scenario/runtime state and is never stored here.
 [sheet]
 id = "it.1ccnn_div"
 nation = "it"
+side = "axis"
+nationality = "italian"
 name = "1st CCNN (\"23rd March\") Division"
 basic_morale = 0
 src = ["land:4.45"]
@@ -171,7 +197,7 @@ class = "it.g"
 echelon = "division"
 toe = "N"
 arrives = "D"
-parent = ""                    # "" = top of the sheet
+# no `parent` key = top of the sheet
 src = ["land:4.45"]
 
 [[unit]]
@@ -196,13 +222,11 @@ arrives = "D"
 parent = "it.1ccnn_div.219_lgn"
 src = ["land:4.45"]
 
-[[unit]]                       # footnote a: officially part of the Libyan Tank Command, begins attached to 1 CCNN
-id = "it.1ccnn_div.i_m_tank"
-name = "I(M) Tank Battalion"
-counter = "I(M)"
-class = ""                     # class code not printed on this row — see GAPS.md; engine takes it from sheet it.libyan_tank_command
-arrives = "D"
-parent = "it.libyan_tank_command"
+# The I(M) Tank Battalion is ASSIGNED to the Libyan Tank Command, so its single canonical id
+# lives on that sheet (it.libyan_tank_command.i_m). The 1 CCNN sheet prints it with a footnote
+# ("begins attached to 1 CCNN"); that is recorded as a reference, never as a second unit:
+[[mention]]
+unit = "it.libyan_tank_command.i_m"
 begins_attached_to = "it.1ccnn_div.hq"
 src = ["land:4.45"]
 ```
@@ -221,6 +245,13 @@ arrives = "D"
 parent = "cw.7_armd_div.4_armd_bde"
 src = ["land:4.45", "land:4.47"]
 ```
+
+### Id rules and the validator
+
+One canonical id per unit, forever: a unit's id is `<nation>.<sheet>.<...>` of the sheet it is
+**assigned** to. Other sheets that print the same unit use `[[mention]]`. `tools/units/validate.py`
+(owned by `oob`) fails on duplicate unit ids, dangling `parent` / `class` / `weapon` / `unit`
+references, mentions of unknown units, and unknown field names; it is run before every push.
 
 ## Aircraft (`aircraft/<nation>.toml`)
 
@@ -241,9 +272,17 @@ src = ["land:4.44b"]
   tacair = 3                   # tacair_paren = true if printed (n): may not initiate air-to-air combat
   maneuver = 28
   fuel_points = 1
-  missions = { f = "night", s = "day", r = "-", d = "-" }
-  # per-mission value: "night" = N (may fly at night), "day" = ! (daytime only), "-" = not capable
+  missions = { f = "night", s = "day" }
+  # keys: only the missions the plane CAN fly are present; value = "day" (printed "!": not at
+  # night) or "night" (printed "N": may also fly night missions). A "-"/"." in the chart = key omitted.
 ```
+
+Mission letter codes (`airlog:34.18`, `airlog:39`). Fighters chart: `f` offensive or defensive CAP
+and strafing, `s` scramble, `r` reconnaissance, `d` strafe and/or any bombing mission. Bomber/transport
+chart: `d` (as above), `r` reconnaissance, `b` bombing (naval convoy and land support). The Blenheim
+IVF's scramble `0` (night scramble only) is `s = "night_only"`; the Hurricane IID row marked `A`
+(may also strafe armor) is `f = "day"` plus `strafe_armor = true`. Only the values `"day"`,
+`"night"`, `"night_only"` exist.
 
 (Bomber rows add `bomb_capacity`, `torpedo_capacity`, `transport`, `missions = { d, r, b }`.)
 
@@ -265,6 +304,6 @@ lists and weapon-type tags follow the printed legend; trucks arrive attached to 
 
 ## Verification
 
-Each file carries `verification = "single" | "double"` in its header table; `double` means the chart
+Chart images are read directly (the retyped text of tables is OCR-scrambled in places); each file header names its source file names only (never contents). Each file carries `verification = "single" | "double"` in its header table; `double` means the chart
 was read twice independently and diffed. Illegible or missing values are **omitted** and logged in
 `GAPS.md`.
