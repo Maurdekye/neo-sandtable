@@ -29,6 +29,6 @@ def render(rows, path: Path, places=()):
     for place in places:
         x, y = by_id[place["hex_id"]]
         label = escape(place["name"])
-        out.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>{label}: port</title></circle>')
+        out.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>{label}: {escape(place["type"])}</title></circle>')
     out.append("</svg>")
     path.write_text("\n".join(out)+"\n", encoding="utf-8", newline="\n")

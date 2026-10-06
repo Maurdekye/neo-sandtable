@@ -320,9 +320,11 @@ hex_ids = ["E1430"]
 
 [[areas]]
 id = "cairo"
-kind = "unresolved_region"
-src = ["scen:60.41", "scen:60.43"]
-reason = "All Cairo city hexes remain to be visually enumerated; E1430 is Helwan and cannot substitute for all Cairo."
+kind = "hexes"
+src = ["land:17.32", "scen:60.43", "land:8.37"]
+hex_ids = ["E1930", "E1931", "E1829", "E1830", "E1730"]
+verification = "visual_single_pass"
+review_batch = "cairo-0001"
 
 [[areas]]
 id = "any_air_facility"

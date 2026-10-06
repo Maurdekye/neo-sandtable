@@ -4,6 +4,56 @@ complete = false
 verification = "visual_single_pass"
 
 [[places]]
+id = "city-cairo-e1730"
+name = "Cairo"
+hex_id = "E1730"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo group, locally inspected. Training and river features remain separate layers."
+review_batch = "cairo-0001"
+
+[[places]]
+id = "city-cairo-e1829"
+name = "Cairo"
+hex_id = "E1829"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
+review_batch = "cairo-0001"
+
+[[places]]
+id = "city-cairo-e1830"
+name = "Cairo"
+hex_id = "E1830"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
+review_batch = "cairo-0001"
+
+[[places]]
+id = "city-cairo-e1930"
+name = "Cairo"
+hex_id = "E1930"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
+review_batch = "cairo-0001"
+
+[[places]]
+id = "city-cairo-e1931"
+name = "Cairo"
+hex_id = "E1931"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
+review_batch = "cairo-0001"
+
+[[places]]
 id = "port-sollum"
 name = "Sollum"
 hex_id = "C4022"

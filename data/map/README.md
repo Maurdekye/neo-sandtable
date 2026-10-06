@@ -1,7 +1,7 @@
 # Map data: coordinate profile vassal-2021
 
 This first milestone supplies the discrete grid for all five A-E sections.
-**Terrain coverage: 142 classified cells; 6881 remain unclassified. One port is recorded. This content is not yet playable.** The local map is a
+**Terrain coverage: 227 classified cells; 6796 remain unclassified. One port and five Cairo city cells are recorded. This content is not yet playable.** The local map is a
 2021 VASSAL re-rendering, not a scan of the original 1979 sheets. Scenario ids are
 our independent numbering anchors. The original seam description conflicts with
 this source; see [GAPS.md](GAPS.md) and the [interpretation proposal](../../docs/interpretations/map-0001-grid-numbering.md).
@@ -90,14 +90,15 @@ One row per canonical hex, sorted by `hex_id`.
 The pinned base vocabulary uses TEC row ids: `clear`, `gravel`, `salt_marsh`,
 `heavy_vegetation`, `rough`, `mountain`, `delta`, `desert`, `major_city`, `swamp`,
 `village_bir_oasis`, plus the legend-only value `sea`. `gravel` corresponds to
-legend `rock_gravel`. Sea has no movement-cost row in the TEC. The pilot uses
-only `clear`, `rough`, `sea`; village/bir/oasis markers must not replace the
+legend `rock_gravel`. Sea has no movement-cost row in the TEC. Published classifications currently use
+`clear`, `rough`, `sea`, `salt_marsh`, `major_city`; village/bir/oasis markers must not replace the
 underlying terrain because their TEC row inherits the other terrain's costs. Axes are decimal integers; ids are
 strings. `terrain=unclassified` is a missing value, not a TEC class. Blank flags
 mean unknown, not false. Flags are pipe-delimited tokens. `sea` means entirely water. Mixed cells publish their readable land substrate
 with `land|coastal`, or `coastal` alone when the substrate remains unreadable.
 See [map-0002](../../docs/interpretations/map-0002-coastal-terrain.md).
 `port` is supplied by a separate reviewed place record, currently C4022.
+`major_city` is also a place-derived flag for the five Cairo city cells.
 These flags describe observed map surface, not complete facilities or movement
 permission. Missing a flag never establishes the absence of an unreviewed layer. CSV citations
 are semicolon-delimited case references. Current `src=land:4.1` identifies the
@@ -130,10 +131,10 @@ Unclassified cells are gray, including deferred coastal cells. It is generated
 solely from `hexes.csv` and contains no raster or traced coastline.
 
 `places.toml`: `schema_version,coordinate_profile,complete,verification` plus
-`[[places]]` with `id,name,hex_id,type,src,note,review_batch`. Currently only type
-`port` is verified. Sollum's port is C4022; its nearby town dot is C4021, which
+`[[places]]` with `id,name,hex_id,type,src,note,review_batch`. Currently types
+`port` and `major_city` are verified; Cairo city entries share `place_group="cairo"`. Sollum's port is C4022; its nearby town dot is C4021, which
 has not been published as a place. Missing capacities/attributes are unknown.
-The replay tool validates the coastal location and generates the place file and
+The replay tool validates the coastal port location and matching city terrain and generates the place file and
 its generic SVG marker. This is an incomplete inventory, not all map facilities.
 
 Planned feature deliverables, **not yet complete**:
@@ -182,7 +183,7 @@ geometric sets; unit-specific movement/placement restrictions still apply.
 | `offmap_abu_seier`, `offmap_deversoir`, `offmap_kabrit` | Off-map facilities with retained printed references |
 | `offmap_fayid`, `offmap_ismailia`, `offmap_port_said` | Other distinct off-map facilities |
 | `alexandria`, `helwan` | Cited ordinary hex sets; Helwan is E1430 |
-| `cairo` | City-wide membership unresolved; Helwan is not a substitute |
+| `cairo` | Verified city set: E1930, E1931, E1829, E1830, E1730; Helwan remains separate |
 | `any_air_facility` | Requires friendly control, construction and capacity state |
 
 Symbolic location IDs are `box_<name>` for the seven main boxes/bases and the

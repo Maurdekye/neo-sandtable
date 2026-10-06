@@ -56,8 +56,8 @@ scratch `runs/` directory, outside the clone. Do not publish those source images
 
 ## Limits and next audit
 
-**Terrain coverage: 142 classified records; full-map error rate unknown.
-Hexside verification: zero records. Facilities: one visually checked port.** The original
+**Terrain coverage: 227 classified records; full-map error rate unknown.
+Hexside verification: zero records. Places: one visually checked port and five Cairo city cells.** The original
 grid preview remains neutral; the separate terrain preview renders the pilot. Original sheet
 seams remain unresolved. The complete first acceptance condition is not met
 merely by this module-profile geometry milestone.
@@ -115,7 +115,7 @@ identity require re-review. Tests exercise these failure paths and ensure the
 published values/citations correspond to accepted decisions. Reproduce the
 proposal sheet with the command in README, and replay with apply_terrain.py.
 
-## Coastal amendment and inland expansion (2026-10-06)
+## Historical coastal amendment and inland expansion (2026-10-06)
 
 Current coverage is **142/7023 classified**: 123 clear, 12 rough, seven sea;
 6881 remain unclassified. Three batches cover 143 distinct cells. This remains
@@ -147,7 +147,7 @@ Replay requires explicit targeted amendments, rejects conflicting sea/coastal
 flags, validates ports on coastal cells, and reproduces places.toml as well as
 the five earlier generated files. All inspection images stay outside the repo.
 
-## Area selectors and symbolic locations (2026-10-06)
+## Historical initial area selectors and symbolic locations (2026-10-06)
 
 31 areas and 13 distinct off-map locations are published as incomplete data.
 Section sets replay against all canonical records plus alias memberships.
@@ -165,3 +165,36 @@ Printed E1833, E3433 and E4033 also exist as ordinary grid cells; the off-map
 identities remain distinct from them. B5825/C4119/D3231/D3416/D3516/D3903 were
 confirmed by the canonical lookup, with no facility-symbol verification claim.
 National-region/Cairo memberships are still gaps, not accepted classifications.
+
+## Graziani section D and Cairo (2026-10-06)
+
+Current coverage: **227/7023 classified**, 6796 unknown. Counts are 191 clear,
+22 rough, seven sea, two salt marsh and five major city. 228 distinct terrain
+cells have decisions; C4026 remains deferred. Full-map accuracy is unknown.
+
+`graziani-0004` reviews all 80 cells D first28..35/second08..17 at source scale:
+68 clear, ten rough, two salt marsh (D3414, D3315). Against this single visual
+pass, **1/49 non-abstaining proposals disagrees**: D3315 was proposed clear but
+has the yellow-lined salt-marsh pattern. That is about 2.04% for this window's
+non-abstaining predictions, not a full-map error estimate. Its publication is
+manually corrected. The other 31 proposals abstained; all were visually resolved,
+including salt marsh D3414. Contour splashes are separate from base terrain.
+D3517 contains a small blue inland-water symbol: this was not assumed to be
+Mediterranean coast; waterbody and directional hexside features remain unverified.
+
+`cairo-0001` classifies the five building-group cells E1930/E1931/E1829/E1830/E1730
+as major_city and records one place entry per cell, grouped under cairo. Four
+contact sheets cover 54 distinct cells including the surrounding halo: E
+first18..23/second30..34, first18..20/second27..32, first17/second27..32,
+and first15..16/second28..33. Building groups inside
+hex boundaries establish the five-cell city footprint; nearby labels, rail,
+river and training symbols do not expand it into neighboring cells. Only five
+city terrains are published from this inspection, not halo base classifications.
+All five palette proposals abstained. The Cairo area now resolves to those five
+canonical cells; Helwan E1430 remains distinct. Generic center circles in the
+SVG are generated from place data, not traced building artwork.
+
+These are single-observer checks, not an independent second review or 1979-map
+verification. The failed D3315 proposal illustrates why palette agreement must
+never stand in for visual checking. The section-C frontier symbol discrepancy
+remains a gap; no national membership or border classification is claimed.

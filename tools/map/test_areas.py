@@ -24,7 +24,7 @@ class AreaTests(unittest.TestCase):
         self.assertEqual(len(self.lookup.members("map_a_or_b").hex_ids),2966)
 
     def test_unresolved_regions_and_dynamic_facilities_fail_explicitly(self):
-        for id in ["libya","egypt","map_c_libya","map_c_or_d_egypt","cairo"]:
+        for id in ["libya","egypt","map_c_libya","map_c_or_d_egypt"]:
             with self.assertRaises(UnresolvedArea):self.lookup.members(id)
         with self.assertRaises(CampaignStateRequired):self.lookup.members("any_air_facility")
 
@@ -45,6 +45,10 @@ class AreaTests(unittest.TestCase):
         self.assertEqual(len(self.lookup.within("C4218",1)),7)
         self.assertEqual(self.lookup.within("D4200",0),("C4233",))
         with self.assertRaises(ValueError):self.lookup.within("C4218",-1)
+
+    def test_cairo_resolves_complete_reviewed_city_group(self):
+        self.assertEqual(set(self.lookup.members("cairo").hex_ids),{"E1930","E1931","E1829","E1830","E1730"})
+        self.assertEqual(self.lookup.members("helwan").hex_ids,("E1430",))
 
     def test_unknown_location_cannot_publish(self):
         defs=copy.deepcopy(self.definitions)

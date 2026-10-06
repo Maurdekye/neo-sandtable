@@ -26,8 +26,8 @@
 
 ## Classification and rendering
 
-- Three review batches cover 143 distinct cells: 142 classified (123 clear,
-  12 rough, seven sea); 6881 terrain values remain unknown.
+- Five review batches cover 228 distinct terrain cells: 227 classified (191 clear,
+  22 rough, seven sea, two salt marsh, five major city); 6796 remain unknown.
 - **C4026 coastal fragment:** map-0002 resolves coastal semantics. Ten original
   coastal deferrals are now classified by land substrate. C4026 retains the
   coastal flag and unknown terrain because its tiny land fragment is unreadable.
@@ -36,13 +36,14 @@
   `port-sollum` has no verified capacity or other attributes. The town dot is in
   C4021; no town record is silently inferred from the port's hex.
 - The proposal classifier covers only clear/rough/sea and abstains on ochre
-  contour color. Desert, gravel, salt marsh, vegetation, mountain, delta, swamp
-  and major-city classification methods remain to be validated.
+  contour color. D3315 proves clear proposals can conceal salt marsh. Salt marsh
+  and major-city cells are visually identified; automated recognition remains
+  unvalidated. Desert/gravel/vegetation/mountain/delta/swamp are not yet published.
 - Hexside features remain undigitized, including all_sea edges across bays.
-  Only one port is recorded; all other facilities remain pending.
+  One port and five Cairo city records are published; other facilities remain pending.
 - Base TEC vocabulary is pinned; feature extraction still needs local verification.
 - `grid-preview.svg` remains a section-colored geometry preview;
-  `terrain-preview.svg` adds the 142 reviewed terrain fills and a generic port marker. Hexside and facility
+  `terrain-preview.svg` adds the 227 reviewed terrain fills and generic place markers. Hexside and facility
   artwork remains pending.
 
 ## Scenario area memberships and off-map range
@@ -50,8 +51,8 @@
 - Stable region IDs libya, egypt, map_c_libya and map_c_or_d_egypt are published,
   but exact national frontier and complete land masks are not yet verified.
   Their membership_status is unresolved; empty lists are not legal placement sets.
-- Cairo's full city membership still needs visual enumeration. Helwan E1430
-  is published separately; scenario freedom in Cairo cannot become Helwan-only.
+- Cairo city cells E1930/E1931/E1829/E1830/E1730 are now visually enumerated and
+  published as a resolved area. Helwan E1430 remains separate.
 - Six off-map facility identities follow scen:60.5 text and oob's page
   transcription. Their printed references are retained without assigning ordinary
   grid occupancy, flight distance or facility capacities. E(1833) identifies both
@@ -64,3 +65,14 @@
   Crete's initial unavailability belongs to scenario state, not static map data.
 - B5825, C4119, D3231, D3416, D3516, D3903 are valid canonical grid IDs. This
   membership check does not verify facility symbols or supply/owner attributes.
+
+## Frontier symbol discrepancy (requires lead ruling)
+
+The prominent blue ticked line in section C, near the Libya/Egypt labels,
+appears graphically similar to the TEC unfinished-railroad key, while its long
+north-south alignment could denote a frontier or fence in the 2021 re-rendering.
+Neither name/geometry alone proves its feature identity. The TEC border example
+uses a different appearance. No border feature or country division has been
+published from this line. Local labeled section/whole-map inspection overviews
+are in cartographer scratch runs/frontier, outside the repo. Ask the lead to
+establish the intended source symbol/authority before national sets depend on it.

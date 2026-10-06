@@ -34,7 +34,7 @@ class TerrainTests(unittest.TestCase):
         deferred = [h for h in decisions.values() if h["status"] == "deferred"]
         self.assertEqual([h["hex_id"] for h in deferred], ["C4026"])
         self.assertTrue(all(h["terrain"] == "unclassified" and h["flags"] == ["coastal"] for h in deferred))
-        self.assertEqual(sum(h["status"] == "accepted" for h in decisions.values()), 142)
+        self.assertEqual(sum(h["status"] == "accepted" for h in decisions.values()), 227)
         self.assertEqual(decisions["C4221"]["terrain"], "rough")
         self.assertEqual(decisions["C4022"]["flags"], ["land", "coastal"])
 
@@ -73,10 +73,24 @@ class TerrainTests(unittest.TestCase):
                 self.load(folder)
 
     def test_reviewed_port_requires_coastal_hex(self):
+        import csv
+        with (MAP / "hexes.csv").open(newline="") as f:
+            rows=list(csv.DictReader(f))
+        next(r for r in rows if r["hex_id"]=="C4022")["flags"]="land"
         with self.assertRaisesRegex(ValueError, "requires a coastal"):
-            load_places(MAP / "reviews", [{"hex_id": "C4022", "flags": "land"}])
+            load_places(MAP / "reviews", rows)
         places = tomllib.loads((MAP / "places.toml").read_text())["places"]
-        self.assertEqual([(p["id"], p["hex_id"]) for p in places], [("port-sollum", "C4022")])
+        self.assertEqual([(p["id"], p["hex_id"]) for p in places if p["type"]=="port"], [("port-sollum", "C4022")])
+
+    def test_marsh_and_city_corrections_are_reviewed(self):
+        decisions=self.load(MAP/"reviews")
+        self.assertEqual(decisions["D3315"]["proposed_terrain"],"clear")
+        self.assertEqual(decisions["D3315"]["terrain"],"salt_marsh")
+        self.assertEqual(decisions["D3414"]["terrain"],"salt_marsh")
+        places=tomllib.loads((MAP/"places.toml").read_text())["places"]
+        city={p["hex_id"] for p in places if p["type"]=="major_city"}
+        self.assertEqual(city,{"E1930","E1931","E1829","E1830","E1730"})
+        self.assertTrue(all(decisions[h]["terrain"]=="major_city" for h in city))
 
     def test_contour_color_causes_abstention(self):
         # Ochre splashes of a hexside symbol must not be called mountain terrain.
@@ -89,7 +103,7 @@ class TerrainTests(unittest.TestCase):
         with (MAP / "hexes.csv").open(newline="") as f:
             rows = list(csv.DictReader(f))
         classified = [r for r in rows if r["terrain"] != "unclassified"]
-        self.assertEqual(len(classified), 142)
+        self.assertEqual(len(classified), 227)
         for row in classified:
             entry = decisions[row["hex_id"]]
             self.assertEqual(entry["status"], "accepted")

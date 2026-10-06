@@ -1,0 +1,101 @@
+[batch]
+id = "cairo-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-06"
+verification = "visual_single_pass"
+proposal_algorithm = "palette-v0.1"
+selection = "Five Cairo city cells; 54 distinct cells across four sheets: E18..23/30..34, E18..20/27..32, E17/27..32, E15..16/28..33"
+notes = "Cairo city footprint is E1930,E1931,E1829,E1830,E1730. Four native-scale contact sheets and their surrounding cells inspected. No independent observer/original1979check; halo base terrains are not published."
+
+[[hex]]
+hex_id = "E1930"
+status = "accepted"
+terrain = "major_city"
+flags = ["land"]
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+proposed_terrain = "unclassified"
+note = "Cairo building group inside drawn hex; adjacent halo checked for complete city grouping. Freshwater river is a separate feature, not sea/coastal."
+
+[[hex]]
+hex_id = "E1931"
+status = "accepted"
+terrain = "major_city"
+flags = ["land"]
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+proposed_terrain = "unclassified"
+note = "Cairo building group inside drawn hex; adjacent halo checked for complete city grouping. Freshwater river is a separate feature, not sea/coastal."
+
+[[hex]]
+hex_id = "E1829"
+status = "accepted"
+terrain = "major_city"
+flags = ["land"]
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+proposed_terrain = "unclassified"
+note = "Cairo building group inside drawn hex; adjacent halo checked for complete city grouping. Freshwater river is a separate feature, not sea/coastal."
+
+[[hex]]
+hex_id = "E1830"
+status = "accepted"
+terrain = "major_city"
+flags = ["land"]
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+proposed_terrain = "unclassified"
+note = "Cairo building group inside drawn hex; adjacent halo checked for complete city grouping. Freshwater river is a separate feature, not sea/coastal."
+
+[[place]]
+id = "city-cairo-e1930"
+name = "Cairo"
+hex_id = "E1930"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
+
+[[place]]
+id = "city-cairo-e1931"
+name = "Cairo"
+hex_id = "E1931"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
+
+[[place]]
+id = "city-cairo-e1829"
+name = "Cairo"
+hex_id = "E1829"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
+
+[[place]]
+id = "city-cairo-e1830"
+name = "Cairo"
+hex_id = "E1830"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
+
+[[hex]]
+hex_id = "E1730"
+status = "accepted"
+terrain = "major_city"
+flags = ["land"]
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+proposed_terrain = "unclassified"
+note = "Southern Cairo building-group hex; farther-south neighbors checked to distinguish it from separate Helwan area. Freshwater river is a separate feature."
+
+[[place]]
+id = "city-cairo-e1730"
+name = "Cairo"
+hex_id = "E1730"
+type = "major_city"
+place_group = "cairo"
+src = ["land:8.37", "land:17.32", "scen:60.43"]
+note = "One hex of the five-hex Cairo group, locally inspected. Training and river features remain separate layers."

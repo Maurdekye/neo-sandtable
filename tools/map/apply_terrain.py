@@ -86,10 +86,12 @@ def load_places(folder, rows):
         for place in review.get("place", []):
             if place["id"] in places or place["hex_id"] not in hexes:
                 raise ValueError("Duplicate place or invalid place hex")
-            if place["type"] != "port" or not place["name"] or not place["src"] or not place.get("note"):
+            if place["type"] not in {"port", "major_city"} or not place["name"] or not place["src"] or not place.get("note"):
                 raise ValueError("Unreviewed or unsupported facility record")
-            if "coastal" not in hexes[place["hex_id"]]["flags"].split("|"):
+            if place["type"] == "port" and "coastal" not in hexes[place["hex_id"]]["flags"].split("|"):
                 raise ValueError("Reviewed port requires a coastal hex")
+            if place["type"] == "major_city" and hexes[place["hex_id"]]["terrain"] != "major_city":
+                raise ValueError("Reviewed city requires major_city terrain")
             places[place["id"]] = dict(place, review_batch=review["batch"]["id"])
     return sorted(places.values(), key=lambda p: p["id"])
 
@@ -128,7 +130,7 @@ def apply(sources, output, reviews, tec_path):
     by_id = {row["hex_id"]: row for row in rows}
     for place in places:
         row = by_id[place["hex_id"]]
-        row["flags"] += "|port"
+        row["flags"] += "|" + place["type"]
         row["src"] = ";".join(dict.fromkeys(row["src"].split(";") + place["src"]))
     write_csv(output / "hexes.csv", fields, rows)
     write_places(output / "places.toml", places)
