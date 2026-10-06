@@ -1,0 +1,40 @@
+# Training Chart (land:17.6).
+
+[table]
+id = "land.17.6.training_chart"
+case = "17.6"
+title = "Training Chart"
+src = ["land:17.6"]
+transcribed_from = ["vassal:17.6 Training Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Number of Operations Stages needed to train a replacement point of each type, or to raise the Basic Morale of
+an untrained Commonwealth unit by one point (land:17.34). A Commando replacement point must be trained by its
+assigned unit. The chart remarks that the one stage listed for guns is more an uncrating cost than a training
+necessity.
+"""
+
+[[row]]
+type = "infantry_except_commando"
+op_stages = 3
+
+[[row]]
+type = "tank_or_recce"
+op_stages = 6
+
+[[row]]
+type = "gun"
+op_stages = 1
+
+[[row]]
+type = "commando"
+op_stages = 12
+
+[[row]]
+type = "commonwealth_unit_morale_point"
+op_stages = 6
+
+[[footnote]]
+id = "training_note"
+text = "The number is the Operations Stages needed to train that type of replacement point or raise any untrained Commonwealth unit's Basic Morale one point. The Commando replacement point must be trained by its assigned unit. The time for guns is more an uncrating cost than a training necessity."

@@ -1,0 +1,208 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "18.0"
+book = "land"
+title = "Reserve Status"
+systems = ["land"]
+
+[[case]]
+id = "18.0"
+title = "General rule: Reserve Status"
+summary = "Reserve is a status that lets a unit use the Continual Movement rules without being within two hexes of an enemy (the exception to 8.23). Units go into Reserve in the Reserve Designation Phase and can be released at the Reserve Release Segment, with restrictions depending on how long they stayed in Reserve."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["8.23"]
+src = ["land:18.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.1"
+title = "Which Units May Be Placed in Reserve"
+summary = "Heading for 18.11-18.15."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:18.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.11"
+title = "Only the phasing player"
+summary = "Any unit of the phasing player may be placed in Reserve; the non-phasing player may not."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.reserve_designation"]
+src = ["land:18.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.12"
+title = "Reserve I marker"
+summary = "Units must be designated in the Reserve Designation Phase of the stage by placing a Reserve I marker on them."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.reserve_designation"]
+depends_on = ["18.15"]
+src = ["land:18.12"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Place units in Reserve I"
+params = ["units"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "18.13"
+title = "First release segment"
+summary = "Units still in Reserve at the first Reserve Release Segment of each Movement/Combat Phase must be released or have their marker flipped to Reserve II."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.movement_and_combat.reserve_release"]
+depends_on = ["18.23"]
+src = ["land:18.13"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Release each Reserve I unit or turn it to Reserve II"
+params = ["units"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "18.14"
+title = "Reserve II duration"
+summary = "Reserve II units stay in that status until released in a later Reserve Release Segment of that stage or the stage ends."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.reserve_release"]
+src = ["land:18.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.15"
+title = "Only designated in the designation phase"
+summary = "Units may be placed in Reserve only in the Reserve Designation Phase, never during Movement/Combat."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.reserve_designation"]
+src = ["land:18.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.2"
+title = "Effects of Reserve Status"
+summary = "Heading for 18.21-18.26."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:18.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.21"
+title = "Two states"
+summary = "There are Reserve I and Reserve II, shown by the marker."
+kind = "definition"
+disposition = "none"
+seat = "none"
+timing = ["continuous"]
+src = ["land:18.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.22"
+title = "Movement in Reserve"
+summary = "In a Movement Segment a Reserve I unit may move one hex (regardless of CP) provided it does not enter an enemy-controlled hex; a Reserve II unit may never move."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:18.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.23"
+title = "Release from Reserve I"
+summary = "A Reserve I unit may be released in the first Reserve Release Segment of the stage (after other units have moved once) and then moves and fights without voluntarily exceeding its CPA and with only one offensive Close Assault in the stage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.reserve_release"]
+depends_on = ["8.22"]
+src = ["land:18.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.24"
+title = "Release from Reserve II"
+summary = "A Reserve II unit may be released in any later Release Segment but may not voluntarily exceed half its CPA (rounded down), may make only one offensive Close Assault or Probe, and earns one extra Disorganization Point if it voluntarily engages in any Close Assault, Anti-Armor or Barrage."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.reserve_release"]
+depends_on = ["6.21"]
+src = ["land:18.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.25"
+title = "Exception to the two-hex rule"
+summary = "A unit released from Reserve may move in the immediately following Movement Segment even if not within two hexes of an enemy, an exception to 8.23."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["8.23"]
+src = ["land:18.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "18.26"
+title = "No CP for entering or leaving Reserve"
+summary = "Placing a unit in or releasing it from Reserve costs no CP."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.reserve_designation", "opstage.movement_and_combat.reserve_release"]
+src = ["land:18.26"]
+
+[case.applies]
+graziani = "yes"

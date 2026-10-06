@@ -1,0 +1,42 @@
+# Patrol Survival Table (land:16.6).
+
+[table]
+id = "land.16.6.patrol_survival"
+case = "16.6"
+title = "Patrol Survival Table"
+src = ["land:16.6"]
+transcribed_from = ["vassal:16.6 Patrol Survival Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Roll one die. If all patrolling TOE strength points come from Recce units, subtract one from the roll first
+(so the roll can be 0). The cell is the TOE strength points of the patrolling force killed and captured.
+"""
+
+[[row]]
+die_min = 0
+die_max = 3
+killed = 0
+captured = 0
+
+[[row]]
+die_min = 4
+die_max = 4
+killed = 0
+captured = 1
+
+[[row]]
+die_min = 5
+die_max = 5
+killed = 1
+captured = 0
+
+[[row]]
+die_min = 6
+die_max = 6
+killed = 1
+captured = 1
+
+[[footnote]]
+id = "recce_modifier"
+text = "If all patrolling TOE strength points are from Recce units, subtract one from the die roll."

@@ -1,0 +1,522 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "16.0"
+book = "land"
+title = "Patrols and Reconnaissance"
+systems = ["land"]
+
+[[case]]
+id = "16.0"
+title = "General rule: Patrols and Reconnaissance"
+summary = "In a stage with no Anti-Armor or Close Assault, the phasing player may pull men out of eligible units as Patrol Points to reconnoiter an adjacent-area enemy hex. He announces the points and hex, spends supplies, rolls on the Patrol Survival table for casualties, then on the Reconnaissance table to learn how many enemy units must be revealed, then on the Objective Loss table for enemy casualties. Nothing actually moves."
+kind = "procedure"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+tables = ["land.16.6.patrol_survival", "land.16.7.patrol_recon", "land.16.8.objective_loss"]
+depends_on = ["16.1"]
+src = ["land:16.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.1"
+title = "Which Units May Patrol"
+summary = "Heading for 16.11-16.17."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:16.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.11"
+title = "Eligible patrol units"
+summary = "Only Recce-type, light tanks (Italian CV/33, British Mark VI, German Panzer I) and motorized infantry may supply Patrol Points; the addition also allows Italian L/6, Commonwealth Stuarts and anyone's mechanized infantry or Panzergrenadiers."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+src = ["land:16.11"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.12"
+title = "Assigning Patrol Points"
+summary = "The phasing player detaches TOE points from eligible units and designates them as Patrol Points against a named enemy-occupied hex, noting assignments and casualties on his sheets."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.patrol"]
+depends_on = ["16.13", "16.14", "16.22"]
+src = ["land:16.12"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Detach TOE points as Patrol Points and name the hex to reconnoiter"
+params = ["source hex", "TOE points", "target hex"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "16.13"
+title = "Two points per hex"
+summary = "No more than 2 TOE points may be assigned as Patrol Points from any one hex."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+src = ["land:16.13"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.14"
+title = "Three points per target"
+summary = "At most 3 Patrol Points may go to one enemy-occupied hex, with points from different hexes combining."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+src = ["land:16.14"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.15"
+title = "Cohesion limit"
+summary = "No unit at cohesion -8 or worse may assign TOE points to patrol."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+depends_on = ["6.2"]
+src = ["land:16.15"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.16"
+title = "Patrol supply cost"
+summary = "Each Patrol Point costs one ammunition point and 2 fuel points from the originating hex, spent whatever the outcome."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+depends_on = ["airlog:50.0", "airlog:49.0"]
+src = ["land:16.16"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.17"
+title = "No patrols in storms"
+summary = "No patrol may originate from or be directed into a hex affected by a Rainstorm or Sandstorm."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+depends_on = ["29.0"]
+src = ["land:16.17"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.2"
+title = "Restrictions on Patrolling"
+summary = "Heading for 16.21-16.22."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:16.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.21"
+title = "When patrols are allowed"
+summary = "A phasing player who did no Anti-Armor or Close Assault in the stage may patrol, as many patrols as he wants; Barrage does not prevent patrol but no hex that suffered any Barrage or Air Bombardment may be reconnoitered."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+src = ["land:16.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.22"
+title = "Patrol range"
+summary = "Patrol Points may reconnoiter any enemy-occupied hex within five hexes of their origin over a path passable to the patrol units and not through enemy-controlled or occupied hexes other than the target's own ZOC."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+depends_on = ["10.2"]
+src = ["land:16.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.3"
+title = "Patrol Losses"
+summary = "Heading for 16.31-16.34."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:16.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.31"
+title = "Both sides check losses"
+summary = "Both the patroller and the patrolled check for combat losses, at different times."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:16.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.32"
+title = "Empty hex skips survival roll"
+summary = "The non-phasing player must say whether the target hex has any combat units (AA/flak and engineers do not count); if none, the patrol skips the Survival table and takes no losses."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+depends_on = ["3.62"]
+src = ["land:16.32"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.33"
+title = "Patrol Survival roll"
+summary = "The phasing player rolls one die on the Patrol Survival table (minus one if all Patrol Points are Recce). Losses (eliminated or captured, including trucks) come off at once at the phasing player's choice of unit type; captured points become prisoners. If no Patrol Point survives the patrol learns nothing."
+kind = "procedure"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.patrol"]
+tables = ["land.16.6.patrol_survival"]
+src = ["land:16.33"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose which Patrol Points are lost"
+params = ["unit types and points"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "16.34"
+title = "Objective Loss roll"
+summary = "After the information step (or after the patrol is wiped out) the phasing player rolls one die on the Objective Loss table for enemy casualties, even if his patrol was lost; a Captured result becomes Eliminated if the patrol was destroyed entirely. The non-phasing player chooses losses from a combat unit, or if none, from trucks, then AA/flak, engineers and HQs, in that order."
+kind = "procedure"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.patrol"]
+tables = ["land.16.8.objective_loss"]
+src = ["land:16.34"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose which enemy TOE points take the objective losses"
+params = ["TOE points"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "16.4"
+title = "Dummy Tank Formations"
+summary = "Background: dummy tank formations were mock-ups meant to fool enemy intelligence. Heading for 16.41-16.47."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:16.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.41"
+title = "Dummy battalions"
+summary = "Each player may use Dummy Tank Formations: tank-battalion equivalent in size, worth nothing in combat, CPA zero."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:16.41"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.42"
+title = "Creating a dummy"
+summary = "Bringing a Dummy Tank battalion into play costs 10 Stores present in its hex, and it is placed in the Construction Segment; there are no counters for dummies."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.construction"]
+depends_on = ["24.0"]
+src = ["land:16.42"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Place a Dummy Tank battalion in a hex, paying stores"
+params = ["hex", "stores source"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "16.43"
+title = "Dummy limits"
+summary = "At most three dummies per player at once, at most one per hex; Italian formations may never use dummies, even mixed with German ones."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["continuous"]
+src = ["land:16.43"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.44"
+title = "Dummy identities"
+summary = "A dummy may be given the identity of any real tank battalion even one in play elsewhere (for example 4th Royal Tank Regiment)."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.organization.construction"]
+src = ["land:16.44"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Assign a historical identity to a Dummy Tank battalion"
+params = ["dummy", "claimed identity"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "16.45"
+title = "Dummies deceive reconnaissance"
+summary = "A dummy is useless alone in a hex. When enemy reconnaissance targets its hex the owner may report a tank battalion of any TOE strength in place of real information; the patroller cannot tell until attacking."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.patrol"]
+depends_on = ["16.5"]
+src = ["land:16.45"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Report a dummy as a tank battalion of chosen strength during reconnaissance"
+params = ["claimed battalion", "claimed strength"]
+trigger = "triggered"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "16.46"
+title = "Dummies are eliminated"
+summary = "A formation with a dummy that undergoes any Close Assault loses the dummy; so does one that undergoes Anti-Armor fire and has no armor or loses all its armor; Anti-Armor fire aimed at a hex whose only armor is dummies may not be switched to Assault."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault", "opstage.movement_and_combat.combat.anti_armor"]
+depends_on = ["14.23"]
+src = ["land:16.46"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.47"
+title = "Household Cavalry note"
+summary = "Historical note: the Household Cavalry Regiment armored car unit is not in the OA sheets because it mainly handled the Commonwealth dummy formations."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:16.47"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.5"
+title = "Results of Patrols"
+summary = "Reconnaissance table results are a number of battalion-size units about which information must be revealed; heading for 16.51-16.55."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:16.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.51"
+title = "Information that must be revealed"
+summary = "For each unit selected the non-phasing player discloses historical designation, unit type, whether motorized, and the exact TOE strength to within two points (not the types of TOE points)."
+kind = "rule"
+disposition = "display"
+seat = "none"
+timing = ["opstage.patrol"]
+depends_on = ["3.62"]
+src = ["land:16.51"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.52"
+title = "Defender chooses which units"
+summary = "When more units are present than the table requires, the non-phasing player chooses which units to disclose (subject to 16.53-16.55)."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.patrol"]
+depends_on = ["16.53", "16.54", "16.55"]
+src = ["land:16.52"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose which units to reveal to a patrol"
+params = ["units"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "16.53"
+title = "Battalion-size units"
+summary = "Information must be given about battalion-size units unless only smaller or larger units are present."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+src = ["land:16.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.54"
+title = "HQ and AA excluded"
+summary = "Information may not be given about HQ or AA/flak units unless no combat units are in the hex; engineers may be revealed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.patrol"]
+src = ["land:16.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.55"
+title = "Excluded units list"
+summary = "The phasing player may name units about which he does not want information, such as ones he already knows from earlier patrols or combats; they cannot be chosen to satisfy the requirement."
+kind = "rule"
+disposition = "decision"
+seat = "commander"
+timing = ["opstage.patrol"]
+src = ["land:16.55"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "List units to exclude from patrol disclosure"
+params = ["excluded units"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "16.6"
+title = "Patrol Survival Table"
+summary = "Table: patrol casualties by die roll and Patrol Points. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.patrol"]
+tables = ["land.16.6.patrol_survival"]
+src = ["land:16.6"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.7"
+title = "Reconnaissance Table"
+summary = "Table: number of enemy units revealed by die roll and surviving Patrol Points. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.patrol"]
+tables = ["land.16.7.patrol_recon"]
+src = ["land:16.7"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "16.8"
+title = "Objective Loss Table"
+summary = "Table: enemy casualties inflicted by the patrol by die roll. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.patrol"]
+tables = ["land.16.8.objective_loss"]
+src = ["land:16.8"]
+
+[case.applies]
+graziani = "yes"

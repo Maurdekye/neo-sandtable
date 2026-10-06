@@ -1,0 +1,38 @@
+# Objective Loss Table (land:16.8).
+
+[table]
+id = "land.16.8.objective_loss"
+case = "16.8"
+title = "Objective Loss Table"
+src = ["land:16.8"]
+transcribed_from = ["vassal:16.8 Objective Loss Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Roll one die. The cell is the TOE strength points killed and captured among the units in the reconnoitered
+hex (losses suffered by the patrolled side, land:16.34). If the patrolling force was completely eliminated, a
+captured result is treated as 1 TOE strength point killed.
+"""
+
+[[row]]
+die_min = 1
+die_max = 4
+killed = 0
+captured = 0
+
+[[row]]
+die_min = 5
+die_max = 5
+killed = 0
+captured = 1
+footnotes = ["patrol_eliminated"]
+
+[[row]]
+die_min = 6
+die_max = 6
+killed = 1
+captured = 0
+
+[[footnote]]
+id = "patrol_eliminated"
+text = "Results are losses suffered by units in the hex under reconnaissance. If the patrolling force was completely eliminated, treat the result as 1 TOE strength point killed."

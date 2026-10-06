@@ -1,0 +1,423 @@
+# Land Game rulebook registry (Land 2021 retype). Summaries are paraphrases.
+[section]
+id = "17.0"
+book = "land"
+title = "Morale"
+systems = ["land"]
+
+[[case]]
+id = "17.0"
+title = "General rule: Morale"
+summary = "Morale combines a fixed Basic Morale Rating with the unit's Cohesion Level at the instant of Close Assault; the adjusted rating is compared with the opponent's to shift the assault differential."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["17.1", "17.2", "15.6"]
+src = ["land:17.0"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.1"
+title = "Unit Basic Morale Ratings"
+summary = "Every unit has a Basic Morale Rating on its OA sheet, from +3 to -3, that changes only through Training; a battalion's or brigade's rating is that of its assigned parent unless attached elsewhere or on its own."
+kind = "rule"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.45", "17.3"]
+src = ["land:17.1"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.2"
+title = "Adjustments to Basic Morale Ratings"
+summary = "Heading for 17.21-17.28."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+src = ["land:17.2"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.21"
+title = "Adjusted at each assault"
+summary = "Whenever a unit takes part in a Close Assault or Probe its Basic Morale may be adjusted by its Cohesion Level at that instant."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["15.6"]
+src = ["land:17.21"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.22"
+title = "Morale Modification roll"
+summary = "The player rolls two dice (read in sequence) on the Morale Modification Table, row by Cohesion Level, columns giving the modifier (example: Basic +1, cohesion -4, roll 42 gives -2, adjusted -1)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.17.4.morale_modifier"]
+depends_on = ["17.4"]
+src = ["land:17.22"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.23"
+title = "Morale clamp"
+summary = "Adjusted Morale is never above +3 or below -3 (except the Rommel bonus, 17.28)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["17.28"]
+src = ["land:17.23"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.24"
+title = "Extreme rows"
+summary = "All cohesion levels of -17 or worse use the \"-17 et seq.\" row; +8 or higher use the +8 row."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.17.4.morale_modifier"]
+src = ["land:17.24"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.25"
+title = "Surrender column"
+summary = "A modifier in the rightmost (Surrender) column makes the affected units surrender at once and become prisoners (exception 17.26). If both sides get Surrender, they are ignored, no assault occurs and both are Engaged."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["17.26", "28.0"]
+src = ["land:17.25"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.26"
+title = "Good-morale units resist Surrender"
+summary = "A unit or formation with Basic Morale (individual or combined) of +1 or better treats Surrender as a -4 adjustment, unless it has cohesion -11 or worse, or the enemy has at least three times its strength (enemy Raw Offensive to friendly Raw Defensive)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["17.25"]
+src = ["land:17.26"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.27"
+title = "Largest-unit cohesion"
+summary = "Units with differing cohesion in one assault use the Largest Unit rule of 6.27."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["6.27"]
+src = ["land:17.27"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.28"
+title = "Rommel morale bonus"
+summary = "Axis units stacked with General Rommel at the instant of assault get an extra +1 to Adjusted Morale (so final morale can reach +4)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+depends_on = ["31.0"]
+src = ["land:17.28"]
+
+[case.applies]
+graziani = "no"
+graziani_note = "German units and Rommel do not appear in Graziani's Offensive"
+
+[[case]]
+id = "17.3"
+title = "Training"
+summary = "Only Commonwealth units train (Axis Training Centers train replacements, 20.43); heading for 17.31-17.37."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["20.43"]
+src = ["land:17.3"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.31"
+title = "Two morale ratings"
+summary = "Units needing training show two Basic Morale Ratings on their OA sheet: the parenthesised Untrained rating and the maximum trained rating."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["continuous"]
+depends_on = ["4.45"]
+src = ["land:17.31"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.32"
+title = "Training places"
+summary = "A Commonwealth unit trains in Cairo (any city hex), Helwan (1430), Alexandria (any city hex), Amiriya, Abouqir or Deghelia."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.training"]
+depends_on = ["17.37"]
+src = ["land:17.32"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Place a Commonwealth unit in training at an allowed location"
+params = ["unit", "location"]
+trigger = "scheduled"
+secrecy = "secret"
+interrupts = false
+
+[[case]]
+id = "17.33"
+title = "No CP while training"
+summary = "A unit in training may spend no CP in the stage; spending any CP interrupts training."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.training"]
+src = ["land:17.33"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.34"
+title = "Six stages per morale point"
+summary = "Each six Operations Stages of training raises the Untrained rating by one, never above the designated Basic Morale."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.training"]
+tables = ["land.17.6.training_chart"]
+src = ["land:17.34"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.35"
+title = "Instruction battalion"
+summary = "Training requires a combat battalion at its full designated morale present in the hex in every training stage (infantry-type for infantry formations, a tank battalion for tank units), at least 1/3 of its assigned TOE, taking no stacking space and able to train every unit stacked there."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.organization.training"]
+depends_on = ["9.0"]
+src = ["land:17.35"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.36"
+title = "Training optional"
+summary = "Units need not train; they may fight at their lower morale and be withdrawn to train later. Only training permanently raises Basic Morale."
+kind = "rule"
+disposition = "decision"
+seat = "rear_area"
+timing = ["opstage.organization.training"]
+depends_on = ["17.32"]
+src = ["land:17.36"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Choose whether an untrained unit trains or fights"
+params = ["unit"]
+trigger = "scheduled"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "17.37"
+title = "Training areas on the map"
+summary = "Commonwealth and Axis (20.43) training areas are marked on the game maps."
+kind = "definition"
+disposition = "data"
+seat = "none"
+timing = ["opstage.organization.training"]
+depends_on = ["20.43"]
+src = ["land:17.37"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.4"
+title = "The Morale Modification Table"
+summary = "Table: morale modifier by cohesion level and sequential dice reading, including the Surrender column. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.movement_and_combat.combat.close_assault"]
+tables = ["land.17.4.morale_modifier"]
+src = ["land:17.4"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.5"
+title = "Voluntary Surrender of Units"
+summary = "A player's units may be captured through lack of combat ability, or surrender because of morale, ammunition or 26 or more Disorganization Points; this section covers voluntary surrender. Heading for 17.51-17.56."
+kind = "commentary"
+disposition = "none"
+seat = "none"
+timing = []
+depends_on = ["6.26", "15.88", "17.25"]
+src = ["land:17.5"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.51"
+title = "Voluntary surrender"
+summary = "A player may voluntarily surrender units; they are treated as captured: infantry become prisoners, tanks, guns and aircraft become replacements for the enemy."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["17.52", "28.0"]
+src = ["land:17.51"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Voluntarily surrender all units in a hex"
+params = ["hex"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "17.52"
+title = "Conditions for voluntary surrender"
+summary = "Allowed only when the event is not in steps b to f of a Combat Segment, everything in the hex surrenders together, and the surrendering units are adjacent to an enemy combat unit into whose hex they could move directly."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:17.52"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.53"
+title = "Surrender to any enemy unit"
+summary = "Units may surrender to an enemy combat unit of any size or status (except 17.54)."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:17.53"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.54"
+title = "Enemy must accept"
+summary = "The enemy unit must accept the surrender, spending 2 CP; if it cannot spend 2 CP voluntary surrender is not allowed."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["6.3"]
+src = ["land:17.54"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.55"
+title = "Destroying material on surrender"
+summary = "After declaring a voluntary surrender the owner may try to destroy part of his material, but nothing that cannot be moved or can be moved only in his Truck Convoy or Repair Phase."
+kind = "rule"
+disposition = "decision"
+seat = "either"
+timing = ["opstage.movement_and_combat.movement"]
+depends_on = ["17.56"]
+src = ["land:17.55"]
+
+[case.applies]
+graziani = "yes"
+
+[case.decision]
+what = "Declare which tanks, guns and trucks to attempt to destroy before surrender"
+params = ["material"]
+trigger = "triggered"
+secrecy = "open"
+interrupts = false
+
+[[case]]
+id = "17.56"
+title = "Destruction roll"
+summary = "Two rolls: for tanks and guns roll one die, subtract one and multiply by 10%; for trucks and motorization points multiply the modified roll by 20%; round fractions down."
+kind = "rule"
+disposition = "automatic"
+seat = "none"
+timing = ["opstage.movement_and_combat.movement"]
+src = ["land:17.56"]
+
+[case.applies]
+graziani = "yes"
+
+[[case]]
+id = "17.6"
+title = "Training Chart"
+summary = "Table: training progression by stage. Transcribed in data/tables/land."
+kind = "table"
+disposition = "data"
+seat = "none"
+timing = ["opstage.organization.training"]
+tables = ["land.17.6.training_chart"]
+src = ["land:17.6"]
+
+[case.applies]
+graziani = "yes"

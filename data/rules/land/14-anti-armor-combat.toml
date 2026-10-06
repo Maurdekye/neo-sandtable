@@ -184,7 +184,7 @@ kind = "rule"
 disposition = "automatic"
 seat = "none"
 timing = ["opstage.movement_and_combat.combat.anti_armor"]
-depends_on = ["50.0"]
+depends_on = ["airlog:50.0"]
 src = ["land:14.24"]
 
 [case.applies]

@@ -1,0 +1,275 @@
+# Morale Modifier Table (land:17.4), the Morale Modification Table.
+
+[table]
+id = "land.17.4.morale_modifier"
+case = "17.4"
+title = "Morale Modifier Table"
+src = ["land:17.4"]
+transcribed_from = ["vassal:17.4 Morale Modifier Table.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+Roll two dice read in sequence (larger die as tens, land:17.22) in the row for the unit's Cohesion Level
+(Disorganization Level on the chart; plus is better). The column whose dice range contains the reading is
+the modifier added to the unit's Basic Morale for that combat: plus_4 to plus_1 raise it, no_change leaves
+it, minus_1 to minus_4 lower it, and surrender means all the units surrender (land:17.25; exception 17.26).
+The adjusted rating is clamped to +3 .. -3 (land:17.23). Levels of +8 or higher use the first row and
+-17 or worse the last row (land:17.24). A column missing from a row is a printed dash. In every row the cells
+cover all 36 dice readings exactly once with one exception, recorded in [[gap]].
+"""
+
+[[gap]]
+cohesion_level = -4
+readings = [56]
+description = "The printed -4 row leaves reading 56 uncovered: minus_2 ends at 55 and minus_3 starts at 61. Values are transcribed as printed; see interpretation land-0012 for the proposed fill."
+interp = "land-0012"
+
+[[row]]
+cohesion_level_min = 8
+cells = [
+  { column = "plus_4", dice = [11, 26] },
+  { column = "plus_3", dice = [31, 46] },
+  { column = "plus_2", dice = [51, 65] },
+  { column = "plus_1", dice = [66, 66] },
+]
+
+[[row]]
+cohesion_level_min = 7
+cohesion_level_max = 7
+cells = [
+  { column = "plus_4", dice = [11, 16] },
+  { column = "plus_3", dice = [21, 36] },
+  { column = "plus_2", dice = [41, 56] },
+  { column = "plus_1", dice = [61, 66] },
+]
+
+[[row]]
+cohesion_level_min = 6
+cohesion_level_max = 6
+cells = [
+  { column = "plus_4", dice = [11, 12] },
+  { column = "plus_3", dice = [13, 25] },
+  { column = "plus_2", dice = [26, 36] },
+  { column = "plus_1", dice = [41, 66] },
+]
+
+[[row]]
+cohesion_level_min = 5
+cohesion_level_max = 5
+cells = [
+  { column = "plus_4", dice = [11, 11] },
+  { column = "plus_3", dice = [12, 21] },
+  { column = "plus_2", dice = [22, 33] },
+  { column = "plus_1", dice = [34, 65] },
+  { column = "no_change", dice = [66, 66] },
+]
+
+[[row]]
+cohesion_level_min = 4
+cohesion_level_max = 4
+cells = [
+  { column = "plus_3", dice = [11, 14] },
+  { column = "plus_2", dice = [15, 31] },
+  { column = "plus_1", dice = [32, 56] },
+  { column = "no_change", dice = [61, 66] },
+]
+
+[[row]]
+cohesion_level_min = 3
+cohesion_level_max = 3
+cells = [
+  { column = "plus_3", dice = [11, 13] },
+  { column = "plus_2", dice = [14, 21] },
+  { column = "plus_1", dice = [22, 44] },
+  { column = "no_change", dice = [45, 66] },
+]
+
+[[row]]
+cohesion_level_min = 2
+cohesion_level_max = 2
+cells = [
+  { column = "plus_2", dice = [11, 12] },
+  { column = "plus_1", dice = [13, 36] },
+  { column = "no_change", dice = [41, 66] },
+]
+
+[[row]]
+cohesion_level_min = 1
+cohesion_level_max = 1
+cells = [
+  { column = "plus_1", dice = [11, 26] },
+  { column = "no_change", dice = [31, 66] },
+]
+
+[[row]]
+cohesion_level_min = 0
+cohesion_level_max = 0
+cells = [
+  { column = "plus_1", dice = [11, 11] },
+  { column = "no_change", dice = [12, 65] },
+  { column = "minus_1", dice = [66, 66] },
+]
+
+[[row]]
+cohesion_level_min = -1
+cohesion_level_max = -1
+cells = [
+  { column = "no_change", dice = [11, 54] },
+  { column = "minus_1", dice = [55, 65] },
+  { column = "minus_2", dice = [66, 66] },
+]
+
+[[row]]
+cohesion_level_min = -2
+cohesion_level_max = -2
+cells = [
+  { column = "no_change", dice = [11, 46] },
+  { column = "minus_1", dice = [51, 56] },
+  { column = "minus_2", dice = [61, 66] },
+]
+
+[[row]]
+cohesion_level_min = -3
+cohesion_level_max = -3
+cells = [
+  { column = "no_change", dice = [11, 42] },
+  { column = "minus_1", dice = [43, 46] },
+  { column = "minus_2", dice = [51, 66] },
+]
+
+[[row]]
+cohesion_level_min = -4
+cohesion_level_max = -4
+cells = [
+  { column = "no_change", dice = [11, 33] },
+  { column = "minus_1", dice = [34, 41] },
+  { column = "minus_2", dice = [42, 55] },
+  { column = "minus_3", dice = [61, 66] },
+]
+
+[[row]]
+cohesion_level_min = -5
+cohesion_level_max = -5
+cells = [
+  { column = "no_change", dice = [11, 23] },
+  { column = "minus_1", dice = [24, 32] },
+  { column = "minus_2", dice = [33, 46] },
+  { column = "minus_3", dice = [51, 66] },
+]
+
+[[row]]
+cohesion_level_min = -6
+cohesion_level_max = -6
+cells = [
+  { column = "no_change", dice = [11, 12] },
+  { column = "minus_1", dice = [13, 25] },
+  { column = "minus_2", dice = [26, 36] },
+  { column = "minus_3", dice = [41, 63] },
+  { column = "minus_4", dice = [64, 66] },
+]
+
+[[row]]
+cohesion_level_min = -7
+cohesion_level_max = -7
+cells = [
+  { column = "no_change", dice = [11, 11] },
+  { column = "minus_1", dice = [12, 16] },
+  { column = "minus_2", dice = [21, 33] },
+  { column = "minus_3", dice = [34, 51] },
+  { column = "minus_4", dice = [52, 63] },
+  { column = "surrender", dice = [64, 66] },
+]
+
+[[row]]
+cohesion_level_min = -8
+cohesion_level_max = -8
+cells = [
+  { column = "minus_1", dice = [11, 13] },
+  { column = "minus_2", dice = [14, 31] },
+  { column = "minus_3", dice = [32, 44] },
+  { column = "minus_4", dice = [45, 61] },
+  { column = "surrender", dice = [62, 66] },
+]
+
+[[row]]
+cohesion_level_min = -9
+cohesion_level_max = -9
+cells = [
+  { column = "minus_1", dice = [11, 11] },
+  { column = "minus_2", dice = [12, 26] },
+  { column = "minus_3", dice = [31, 41] },
+  { column = "minus_4", dice = [42, 55] },
+  { column = "surrender", dice = [56, 66] },
+]
+
+[[row]]
+cohesion_level_min = -10
+cohesion_level_max = -10
+cells = [
+  { column = "minus_2", dice = [11, 21] },
+  { column = "minus_3", dice = [22, 34] },
+  { column = "minus_4", dice = [35, 53] },
+  { column = "surrender", dice = [54, 66] },
+]
+
+[[row]]
+cohesion_level_min = -11
+cohesion_level_max = -11
+cells = [
+  { column = "minus_2", dice = [11, 14] },
+  { column = "minus_3", dice = [15, 33] },
+  { column = "minus_4", dice = [34, 46] },
+  { column = "surrender", dice = [51, 66] },
+]
+
+[[row]]
+cohesion_level_min = -12
+cohesion_level_max = -12
+cells = [
+  { column = "minus_2", dice = [11, 11] },
+  { column = "minus_3", dice = [12, 26] },
+  { column = "minus_4", dice = [31, 44] },
+  { column = "surrender", dice = [45, 66] },
+]
+
+[[row]]
+cohesion_level_min = -13
+cohesion_level_max = -13
+cells = [
+  { column = "minus_2", dice = [11, 11] },
+  { column = "minus_3", dice = [12, 21] },
+  { column = "minus_4", dice = [22, 36] },
+  { column = "surrender", dice = [41, 66] },
+]
+
+[[row]]
+cohesion_level_min = -14
+cohesion_level_max = -14
+cells = [
+  { column = "minus_3", dice = [11, 16] },
+  { column = "minus_4", dice = [21, 33] },
+  { column = "surrender", dice = [34, 66] },
+]
+
+[[row]]
+cohesion_level_min = -15
+cohesion_level_max = -15
+cells = [
+  { column = "minus_3", dice = [11, 11] },
+  { column = "minus_4", dice = [12, 26] },
+  { column = "surrender", dice = [31, 66] },
+]
+
+[[row]]
+cohesion_level_min = -16
+cohesion_level_max = -16
+cells = [
+  { column = "minus_4", dice = [11, 21] },
+  { column = "surrender", dice = [22, 66] },
+]
+
+[[row]]
+cohesion_level_max = -17
+cells = [
+  { column = "surrender", dice = [11, 66] },
+]

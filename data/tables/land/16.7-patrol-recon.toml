@@ -1,0 +1,39 @@
+# Patrol Reconnaissance Table (land:16.7).
+
+[table]
+id = "land.16.7.patrol_recon"
+case = "16.7"
+title = "Patrol Reconnaissance Table"
+src = ["land:16.7"]
+transcribed_from = ["vassal:16.7 Patrol Recon Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Roll one die and read the column for the net Patrol Points that survived. The cell is the number of
+battalion-size-equivalent units in the hex about which the patrolling player receives reconnaissance
+information; 'all' means every such unit in the hex (land:16.5).
+"""
+
+[[row]]
+die = 1
+units_revealed = { net_points_1 = 0, net_points_2 = 0, net_points_3 = 1 }
+
+[[row]]
+die = 2
+units_revealed = { net_points_1 = 0, net_points_2 = 1, net_points_3 = 1 }
+
+[[row]]
+die = 3
+units_revealed = { net_points_1 = 1, net_points_2 = 1, net_points_3 = 2 }
+
+[[row]]
+die = 4
+units_revealed = { net_points_1 = 1, net_points_2 = 2, net_points_3 = 3 }
+
+[[row]]
+die = 5
+units_revealed = { net_points_1 = 2, net_points_2 = 3, net_points_3 = 4 }
+
+[[row]]
+die = 6
+units_revealed = { net_points_1 = 3, net_points_2 = 4, net_points_3 = "all" }
