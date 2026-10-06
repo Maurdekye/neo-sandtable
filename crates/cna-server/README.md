@@ -1,32 +1,72 @@
 ﻿# cna-server
 
-The first milestone is a library around `cna_core::engine::evaluate`. `Campaign<R>` exclusively
-owns one SQLite connection and one campaign game. `step()` performs a single safe runner boundary:
-advance automatic play, accept one scripted answer, or report an idle/paused seat. A caller must
-serialize all access; the bounded actor, local HTTP API and WebSocket service are the next layer.
+Run the local server from the repository:
 
-`Campaign::create` pins profile/content/engine versions and saves the initial full game.
-`Campaign::recover` verifies the latest checkpoint and re-evaluates later commands, checking every
-state/RNG and emitted-transition hash. Checkpoints are made every 32 accepted commands.
+```sh
+cargo run -p cna-server
+```
 
-An accepted command, audience-tagged events, all 13 contiguous perspective streams, pending
-windows, RNG, revision, lifecycle and optional checkpoint commit in one SQLite transaction. The
-in-memory game changes only after commit. Rejections consume no campaign randomness. Submit
-receipts contain no global revision or state hash. Idempotency keys are scoped per seat; exact
-replays return duplicate receipts, while reuse for another command is refused.
+It listens on `127.0.0.1:3000`, recovers existing campaign databases and serves `web/dist` when
+present. Set `CNA_PORT`, `CNA_DATA_DIR` and `CNA_CAMPAIGN_DIR` to override the port, published data
+folder and database folder. The default database folder is the agent scratch folder's
+`campaigns/`, outside the repository. Browser requests require a loopback Host and an approved
+local Origin; the Vite origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed.
 
-Handover persists a new controller configuration and incremented epoch, retaining the game and
-any accepted secret answer. A failed scripted controller pauses its seat without inventing an
-order. `scripted::Candidates` is the ruleset adapter hook for paths and unenumerated hex domains.
-The action generator has depth/node limits and a retry budget of 64; its own randomness never
-uses the game's dice.
+Only `sandbox-v1` is implemented: a **synthetic game, not CNA**. Creation accepts JSON with
+`rules_profile`, `seed` (32 byte values), optional `title`, `paused` (default false) and
+`controller` (`legal_random`, `pass_when_possible`, `aggressive` / `scripted:aggressive`, or
+`human`). Use `paused: true` to attach viewers before starting a fast campaign. No LLM driver or
+paid provider is started by the server.
 
-Transcript ingestion commits the seat's sequence and a separate alignment sequence for each
-perspective allowed to see that seat. Perspective readers do not receive global event counts,
-enemy transcripts, operator-only events, or enemy runtime metadata. Event readers are bounded
-pages; live subscribers, resume/resync and slow-client isolation will be implemented in the actor
-and WebSocket milestone.
+| HTTP endpoint | Purpose |
+|---|---|
+| `GET/POST /api/campaigns` | List metadata / create a sandbox campaign |
+| `GET /api/campaigns/{id}` | Inspect metadata, status and projected snapshot |
+| `POST /api/campaigns/{id}/pause` or `/resume` | Campaign control at a safe boundary |
+| `GET /api/campaigns/{id}/seats` | Seat metadata |
+| `POST /api/campaigns/{id}/seats/{seat}/controller` | Handover `{controller, config}`; returns new epoch |
+| `POST /api/campaigns/{id}/seats/{seat}/pause` | Pause one seat without substituting an order |
+| `GET /api/campaigns/{id}/seats/{seat}/observe` | Authorized observation, pending requests, epoch and failure |
+| `GET /api/campaigns/{id}/seats/{seat}/inspect/{target}` | Authorized ruleset detail |
+| `GET /api/campaigns/{id}/seats/{seat}/decisions/{decision}/actions` | Request and action schema |
+| `POST /api/campaigns/{id}/seats/{seat}/decisions/{decision}/validate` | Pure draft validation `{action}` |
+| `POST /api/campaigns/{id}/seats/{seat}/decisions/{decision}/submit` | Full core `DecisionResponse` |
+| `GET /api/campaigns/{id}/transcripts?perspective=...&seat=...&after=...` | At most 512 authorized transcript rows |
+| `GET /api/campaigns/{id}/stream` | WebSocket implementing `docs/protocol.md` |
 
-Run `cargo test -p cna-server` for synthetic full-campaign, recovery, rollback injection, epoch,
-idempotency, visibility, engine-stop and controller-failure checks. This is infrastructure with a
-tiny synthetic ruleset, not a playable CNA scenario.
+Metadata queries accept `?perspective=operator|side:...|seat:...`; the default is the local
+operator. The WebSocket accepts `subscribe`, then emits `hello`, a fresh `snapshot` or events
+after `from_seq`, authorized historical transcripts, and live events/transcripts. A gap or a
+lagged subscriber gets `resync`; resubscribe with `from_seq: null` for a fresh snapshot. Slow
+writes time out and close the connection. Transcript reconnect replay is identified by
+`(seat,tseq)`; clients should deduplicate those entries. Each historical catch-up has a fixed
+upper cursor even when new entries keep arriving.
+
+`CampaignHandle` is a bounded actor interface and implements the asynchronous `cna-seats`
+`GameBackend`, `SeatMemory` and `TranscriptStore`. `watch_seat(seat)` publishes only changes to
+that seat's authorized pending requests, observation or binding, including reissues after
+handover. `mark_failure(seat, reason)` durably pauses a failed controller, retaining the reason.
+`handover` installs a controller and a new epoch and clears its pause. `shutdown` joins the
+writer thread. Submit receipts are stable acknowledgements; observations are fetched separately.
+The legacy unscoped `GameBackend::game_seq()` returns zero; use a seat projection's sequence
+instead. Transcript alignment is assigned inside the persistent store.
+
+One OS thread exclusively owns each `Campaign<R>`, its game and its SQLite connection. Accepted
+commands, audience-tagged events, all 13 contiguous perspective streams, pending windows, RNG,
+revision, lifecycle and optional checkpoint commit in one transaction. The in-memory game
+changes only after commit. Rejections consume no campaign randomness. Exact idempotent replays
+are acknowledged; reuse for a different command is refused. Handover preserves accepted secret
+answers. Scripted controllers use their own deterministic randomness and pause after bounded
+retries; `spawn_with_candidates` accepts the ruleset adapter's hook for paths and arbitrary hexes.
+
+Checkpoints are made every 32 accepted commands. Recovery verifies immutable input pins, the
+checkpoint and every later re-evaluated state/RNG/transition hash. Seat notes, team messages,
+controller epochs, failure state and transcript counters survive recovery. Team-message numbers
+are per recipient; game events and transcript alignment are per perspective, so neither exposes
+hidden activity through sequence gaps.
+
+Live game/transcript channels have 128 slots and never wait for a viewer. Snapshots are immutable
+committed projections; replay pages use independent read-only SQLite connections off the writer.
+The tests exercise rollback injection, recovery, stale epochs, exact duplicates, secret state,
+13-perspective filtering, a real-map sandbox reaching Finished with an unread lagged viewer,
+durable seat memory and HTTP/WebSocket snapshot/live/resume/switch/resync flows.

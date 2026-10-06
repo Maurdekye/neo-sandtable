@@ -29,11 +29,13 @@ struct State {
 }
 struct Tiny {
     unsupported: bool,
+    empty_progress: bool,
     impossible: bool,
 }
 fn rules() -> Tiny {
     Tiny {
         unsupported: false,
+        empty_progress: false,
         impossible: false,
     }
 }
@@ -56,6 +58,11 @@ impl Ruleset for Tiny {
         "tiny-v1"
     }
     fn advance(&self, _: &(), state: &mut State, cx: &mut Cx<'_>) -> Result<Progress, EngineError> {
+        if self.empty_progress {
+            state.round = 999;
+            cx.rng.d6();
+            return Ok(Progress::AwaitingDecisions);
+        }
         if self.unsupported {
             state.round = 999;
             cx.rng.d6();
@@ -252,7 +259,7 @@ fn response(campaign: &Campaign<Tiny>, seat: SeatId) -> DecisionResponse {
         public_explanation: None,
     }
 }
-fn scripted(campaign: &mut Campaign<Tiny>) {
+fn scripted<R: Ruleset>(campaign: &mut Campaign<R>) {
     for seat in SeatId::all() {
         campaign
             .handover(
@@ -491,6 +498,7 @@ fn engine_failure_stops_without_an_invented_order_and_bad_controller_pauses_seat
         &path,
         Tiny {
             unsupported: true,
+            empty_progress: false,
             impossible: false,
         },
     );
@@ -507,6 +515,7 @@ fn engine_failure_stops_without_an_invented_order_and_bad_controller_pauses_seat
             &path,
             Tiny {
                 unsupported: true,
+                empty_progress: false,
                 impossible: false
             },
             (),
@@ -520,6 +529,7 @@ fn engine_failure_stops_without_an_invented_order_and_bad_controller_pauses_seat
         &dir.path().join("bad-controller.sqlite"),
         Tiny {
             unsupported: false,
+            empty_progress: false,
             impossible: true,
         },
     );
@@ -534,4 +544,111 @@ fn engine_failure_stops_without_an_invented_order_and_bad_controller_pauses_seat
     assert_eq!(game.pending().len(), 10);
     game.set_paused(true).unwrap();
     assert!(matches!(game.step(&NoCandidates).unwrap(), Step::Idle));
+}
+
+#[test]
+fn inconsistent_progress_stops_without_committing_a_transition() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("broken.sqlite");
+    let mut ruleset = rules();
+    ruleset.empty_progress = true;
+    let mut game = campaign(&path, ruleset);
+    let before = game.state_hash().unwrap();
+    assert!(game.advance().is_err());
+    assert_eq!(before, game.state_hash().unwrap());
+    assert!(matches!(game.status(), CampaignStatus::Stopped { .. }));
+    let db = rusqlite::Connection::open(&path).unwrap();
+    assert_eq!(
+        db.query_row("SELECT COUNT(*) FROM commands", [], |r| r.get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+}
+
+struct Sticky;
+impl Ruleset for Sticky {
+    type State = State;
+    type Content = ();
+    fn profile_id(&self) -> &str {
+        "tiny-v1"
+    }
+    fn advance(&self, c: &(), s: &mut State, cx: &mut Cx<'_>) -> Result<Progress, EngineError> {
+        rules().advance(c, s, cx)
+    }
+    fn respond(
+        &self,
+        _: &(),
+        _: &mut State,
+        _: &DecisionResponse,
+        _: &mut Cx<'_>,
+    ) -> Result<(), Rejection> {
+        Ok(())
+    }
+    fn pending(&self, c: &(), s: &State) -> Vec<DecisionRequest> {
+        rules().pending(c, s)
+    }
+    fn observe(&self, c: &(), s: &State, p: Perspective) -> Value {
+        rules().observe(c, s, p)
+    }
+    fn view(&self, c: &(), s: &State, p: Perspective) -> ViewState {
+        rules().view(c, s, p)
+    }
+}
+#[test]
+fn unchanged_scripted_request_pauses_instead_of_spinning_on_duplicate_receipts() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("sticky.sqlite");
+    let mut game = Campaign::create(
+        &path,
+        Sticky,
+        (),
+        Game {
+            state: State::default(),
+            rng: CampaignRng::from_seed([7; 32]).state(),
+        },
+        CampaignMeta {
+            id: "sticky".into(),
+            scenario_id: "sticky".into(),
+            rules_profile: "tiny-v1".into(),
+            title: "Sticky".into(),
+            seats: vec![],
+        },
+        pins(),
+    )
+    .unwrap();
+    scripted(&mut game);
+    game.advance().unwrap();
+    assert!(matches!(
+        game.step(&NoCandidates).unwrap(),
+        Step::Responded { .. }
+    ));
+    assert!(matches!(
+        game.step(&NoCandidates).unwrap(),
+        Step::SeatPaused { .. }
+    ));
+    let db = rusqlite::Connection::open(&path).unwrap();
+    assert_eq!(
+        db.query_row("SELECT COUNT(*) FROM commands", [], |r| r.get::<_, u64>(0))
+            .unwrap(),
+        2
+    );
+}
+#[test]
+fn unsupported_scripted_configuration_is_not_an_implicit_random_fallback() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut game = campaign(&dir.path().join("bad-binding.sqlite"), rules());
+    let seat = SeatId::all().next().unwrap();
+    let binding = game.binding(seat).clone();
+    assert!(
+        game.handover(
+            seat,
+            Some(ControllerInfo {
+                kind: ControllerKind::Scripted,
+                label: "unimplemented".into()
+            }),
+            json!({"mode":"conservative"})
+        )
+        .is_err()
+    );
+    assert_eq!(&binding, game.binding(seat));
 }

@@ -59,6 +59,8 @@ pub struct Binding {
     pub controller_epoch: u64,
     /// A failure is a pause, never an automatically substituted order.
     pub paused: bool,
+    #[serde(default)]
+    pub failure: Option<String>,
 }
 
 impl Default for Binding {
@@ -68,6 +70,7 @@ impl Default for Binding {
             config: serde_json::Value::Null,
             controller_epoch: 0,
             paused: false,
+            failure: None,
         }
     }
 }
@@ -83,8 +86,8 @@ pub struct Receipt {
 pub struct Campaign<R: Ruleset> {
     db: Connection,
     ruleset: R,
-    content: R::Content,
-    game: Game<R>,
+    pub(crate) content: R::Content,
+    pub(crate) game: Game<R>,
     meta: CampaignMeta,
     revision: u64,
     status: CampaignStatus,
@@ -340,6 +343,18 @@ impl<R: Ruleset> Campaign<R> {
         controller: Option<ControllerInfo>,
         config: serde_json::Value,
     ) -> Result<Binding, Error> {
+        if controller
+            .as_ref()
+            .is_some_and(|c| c.kind == cna_protocol::ControllerKind::Scripted)
+            && !matches!(
+                config["mode"].as_str(),
+                Some("legal_random" | "pass_when_possible" | "aggressive")
+            )
+        {
+            return Err(Error::Invalid(
+                "scripted controller requires a supported mode".into(),
+            ));
+        }
         let epoch = self
             .binding(seat)
             .controller_epoch
@@ -350,6 +365,7 @@ impl<R: Ruleset> Campaign<R> {
             config,
             controller_epoch: epoch,
             paused: false,
+            failure: None,
         };
         self.store_binding(seat, &binding)?;
         Ok(binding)
@@ -363,8 +379,15 @@ impl<R: Ruleset> Campaign<R> {
         Ok(())
     }
     pub fn pause_seat(&mut self, seat: SeatId) -> Result<(), Error> {
+        self.pause_seat_with_reason(seat, "paused; retry or hand over the seat")
+    }
+    pub fn pause_seat_with_reason(&mut self, seat: SeatId, reason: &str) -> Result<(), Error> {
+        if reason.len() > 4096 {
+            return Err(Error::Invalid("failure reason too long".into()));
+        }
         let mut binding = self.binding(seat).clone();
         binding.paused = true;
+        binding.failure = Some(reason.into());
         self.store_binding(seat, &binding)
     }
     fn check_response(&self, response: &DecisionResponse) -> Result<(), Error> {
@@ -459,6 +482,24 @@ impl<R: Ruleset> Campaign<R> {
             _ => self.status.clone(),
         };
         let pending = self.ruleset.pending(&self.content, &transition.game.state);
+        let mut identities = std::collections::BTreeSet::new();
+        let invalid = pending.iter().any(|d| !identities.insert(d.id.clone()))
+            || (matches!(transition.progress, Some(Progress::AwaitingDecisions))
+                && pending.is_empty())
+            || (matches!(transition.progress, Some(Progress::Finished { .. }))
+                && !pending.is_empty());
+        if invalid {
+            let error = cna_core::engine::EngineError::Invariant {
+                detail: "ruleset progress and pending decisions disagree".into(),
+            };
+            let stopped = CampaignStatus::Stopped {
+                error: error.to_string(),
+            };
+            self.db
+                .execute("UPDATE campaign SET status=? WHERE id=1", [json(&stopped)?])?;
+            self.status = stopped;
+            return Err(Rejection::Engine(error).into());
+        }
         let clock = self
             .ruleset
             .view(&self.content, &self.game.state, Perspective::Operator)
@@ -671,5 +712,105 @@ impl<R: Ruleset> Campaign<R> {
             });
         }
         Ok(messages)
+    }
+}
+
+impl<R: Ruleset> Campaign<R> {
+    pub fn inspect(&self, seat: SeatId, target: &str) -> Result<serde_json::Value, Error> {
+        Ok(self.ruleset.inspect(
+            &self.content,
+            &self.game.state,
+            Perspective::Seat(seat),
+            target,
+        )?)
+    }
+    pub fn prior_response(
+        &self,
+        seat: SeatId,
+        key: &str,
+    ) -> Result<Option<DecisionResponse>, Error> {
+        let command: Option<String> = self
+            .db
+            .query_row(
+                "SELECT command FROM commands WHERE seat=? AND idempotency_key=?",
+                params![seat.to_string(), key],
+                |r| r.get(0),
+            )
+            .optional()?;
+        match command.map(|c| decode::<Command>(&c)).transpose()? {
+            Some(Command::Respond(response)) => Ok(Some(response)),
+            _ => Ok(None),
+        }
+    }
+    pub fn notebook(&self, seat: SeatId) -> Result<String, Error> {
+        Ok(self
+            .db
+            .query_row(
+                "SELECT text FROM notebooks WHERE seat=? AND key='main'",
+                [seat.to_string()],
+                |r| r.get(0),
+            )
+            .optional()?
+            .unwrap_or_default())
+    }
+    pub fn write_notebook(
+        &mut self,
+        seat: SeatId,
+        mode: cna_seats::memory::WriteMode,
+        text: &str,
+    ) -> Result<usize, Error> {
+        let next = match mode {
+            cna_seats::memory::WriteMode::Replace => text.to_owned(),
+            cna_seats::memory::WriteMode::Append => self.notebook(seat)? + text,
+        };
+        if next.len() > cna_seats::memory::NOTEBOOK_LIMIT_BYTES {
+            return Err(Error::Invalid("notebook size limit exceeded".into()));
+        }
+        self.db.execute("INSERT INTO notebooks VALUES (?, 'main', ?) ON CONFLICT(seat,key) DO UPDATE SET text=excluded.text", params![seat.to_string(), next])?;
+        Ok(next.len())
+    }
+    pub fn team_message(&mut self, from: SeatId, text: &str) -> Result<usize, Error> {
+        if text.len() > 32768 {
+            return Err(Error::Invalid("message size limit exceeded".into()));
+        }
+        let tx = self.db.transaction()?;
+        let mut sent = 0;
+        for recipient in SeatId::all().filter(|s| s.side == from.side && *s != from) {
+            // Per-recipient counters never reveal how many enemy or other-seat messages exist.
+            let n: u64 = tx.query_row(
+                "SELECT COALESCE(MAX(json_extract(message, '$.n')),0)+1 FROM messages WHERE seat=?",
+                [recipient.to_string()],
+                |r| r.get(0),
+            )?;
+            let message = cna_seats::memory::TeamMessage {
+                n,
+                from,
+                text: text.into(),
+            };
+            tx.execute(
+                "INSERT INTO messages(side,seat,message) VALUES (?, ?, ?)",
+                params![
+                    from.side.to_string(),
+                    recipient.to_string(),
+                    json(&message)?
+                ],
+            )?;
+            sent += 1;
+        }
+        tx.commit()?;
+        Ok(sent)
+    }
+    pub fn read_messages(
+        &self,
+        seat: SeatId,
+        after: u64,
+    ) -> Result<Vec<cna_seats::memory::TeamMessage>, Error> {
+        let mut stmt = self.db.prepare("SELECT message FROM messages WHERE seat=? AND json_extract(message, '$.n')>? ORDER BY json_extract(message, '$.n') LIMIT 512")?;
+        let rows = stmt.query_map(params![seat.to_string(), after], |r| r.get::<_, String>(0))?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(decode(&row?)?);
+        }
+        Ok(out)
     }
 }

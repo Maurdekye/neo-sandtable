@@ -203,14 +203,22 @@ impl<R: Ruleset> Campaign<R> {
                     }
                 };
                 match self.submit(response) {
-                    Ok(_) => return Ok(Step::Responded { seat: request.seat }),
+                    Ok(receipt) if !receipt.duplicate => {
+                        return Ok(Step::Responded { seat: request.seat });
+                    }
+                    Ok(_) => {
+                        last_error =
+                            "ruleset retained an already-answered request without a new revision"
+                                .into();
+                        break;
+                    }
                     Err(Error::Rejected(cna_core::engine::Rejection::Illegal { message })) => {
                         last_error = message
                     }
                     Err(e) => return Err(e),
                 }
             }
-            self.pause_seat(request.seat)?;
+            self.pause_seat_with_reason(request.seat, &last_error)?;
             return Ok(Step::SeatPaused {
                 seat: request.seat,
                 error: last_error,

@@ -216,11 +216,17 @@ dependencies = [
 name = "cna-server"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
+ "cna-content",
  "cna-core",
  "cna-protocol",
+ "cna-sandbox",
+ "cna-seats",
+ "futures-util",
  "rand_chacha",
  "rand_core",
+ "reqwest",
  "rusqlite",
  "serde",
  "serde_json",
@@ -228,8 +234,10 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
+ "tokio-tungstenite",
  "tower-http",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
