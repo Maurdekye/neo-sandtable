@@ -26,23 +26,44 @@ impl WaterStage {
 
 /// Cases: airlog:51.21, airlog:51.22, airlog:51.23, airlog:52.53, airlog:52.6
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Rations {
+    #[serde(skip_serializing_if = "is_default")]
     pub issued_gt: Option<u16>,
+    #[serde(skip_serializing_if = "is_default")]
     pub stores_received: i32,
+    #[serde(skip_serializing_if = "is_default")]
     pub stores_required: i32,
+    #[serde(skip_serializing_if = "is_default")]
     pub half: bool,
+    #[serde(skip_serializing_if = "is_default")]
     pub finalized_gt: Option<u16>,
+    #[serde(skip_serializing_if = "is_default")]
     pub last_short_gt: Option<u16>,
+    #[serde(skip_serializing_if = "is_default")]
     pub consecutive_short_gt: u16,
+    #[serde(skip_serializing_if = "is_default")]
     pub pasta_gt: Option<u16>,
+    #[serde(skip_serializing_if = "is_default")]
     pub pasta_saved_cohesion_quarters: Option<i32>,
+    #[serde(skip_serializing_if = "is_default")]
     pub water_stage: Option<WaterStage>,
+    #[serde(skip_serializing_if = "is_default")]
     pub infantry_water_received: i32,
+    #[serde(skip_serializing_if = "is_default")]
     pub last_short_water_stage: Option<WaterStage>,
+    #[serde(skip_serializing_if = "is_default")]
     pub consecutive_short_water_stages: u32,
+    #[serde(skip_serializing_if = "is_default")]
     pub water_finalized_stage: Option<WaterStage>,
+    #[serde(skip_serializing_if = "is_default")]
     pub activity_used_stage: Option<WaterStage>,
+    #[serde(skip_serializing_if = "is_default")]
     pub attrition_stage: Option<WaterStage>,
+}
+
+fn is_default<T: Default + PartialEq>(value: &T) -> bool {
+    value == &T::default()
 }
 
 /// Separate guard points are already removed from their parent infantry TOE.
