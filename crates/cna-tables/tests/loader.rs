@@ -25,8 +25,6 @@ const PENDING_BINDINGS: &[&str] = &[
     "land.27.91.desert_raider_raids",
     "land.27.92.raid_on_rommel",
     "land.27.93.sas_brigade_raid",
-    "land.29.6.weather",
-    "land.29.7.foul_weather_location",
     "land.30.46.chariot_raid",
     "land.30.6.cw_fleet_reinforcement",
     "land.32.46.axis_supply_availability",

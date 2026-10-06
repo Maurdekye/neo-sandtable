@@ -333,3 +333,86 @@ fn malformed_land_tables_name_the_file_and_field() {
     .unwrap_err();
     assert!(err.field.contains("row"), "{err}");
 }
+
+/// Cases: land:29.6, land:29.61, land:29.1
+/// Interpretations: interp:land-0019
+#[test]
+fn weather_preserves_seasonal_chart_cells_and_boundaries() {
+    use cna_tables::land::weather::{Season, WeatherKind};
+    let read = |tens, units| cna_core::dice::TwoDiceReading {
+        tens: cna_core::dice::Die::new(tens).unwrap(),
+        units: cna_core::dice::Die::new(units).unwrap(),
+    };
+    let t = &tables().land.weather;
+    for (turn, season) in [
+        (1, Season::Fall),
+        (12, Season::Fall),
+        (13, Season::Winter),
+        (24, Season::Winter),
+        (25, Season::Spring),
+        (36, Season::Spring),
+        (37, Season::Summer),
+        (48, Season::Summer),
+        (49, Season::Fall),
+        (110, Season::Winter),
+    ] {
+        assert_eq!(t.season(turn), Some(season));
+    }
+    assert_eq!(t.result(1, read(4, 2)), Some(WeatherKind::Normal));
+    assert_eq!(t.result(1, read(4, 3)), Some(WeatherKind::Hot));
+    assert_eq!(t.result(1, read(5, 6)), Some(WeatherKind::Sandstorm));
+    assert_eq!(t.result(1, read(6, 5)), Some(WeatherKind::Rainstorm));
+    assert_eq!(t.result(37, read(6, 1)), Some(WeatherKind::Rainstorm));
+    assert_eq!(t.result(13, read(3, 1)), Some(WeatherKind::Hot));
+    assert_eq!(t.season(0), None);
+    assert_eq!(t.season(111), None);
+    assert_eq!(t.result(111, read(1, 1)), None);
+    // Check every supported turn and every actual sequential reading, without inventing 17-20, etc.
+    for turn in 1..=110 {
+        for tens in 1..=6 {
+            for units in 1..=6 {
+                assert!(t.result(turn, read(tens, units)).is_some());
+            }
+        }
+    }
+}
+
+/// Cases: land:29.7, land:29.1
+#[test]
+fn storm_sections_match_every_hand_checked_chart_cell() {
+    use cna_tables::land::weather::MapSection::{A, B, C, D, E};
+    let t = &tables().land.foul_weather_location;
+    for (face, expected) in [
+        (1, vec![A, B]),
+        (2, vec![C, D]),
+        (3, vec![D, E]),
+        (4, vec![B, C]),
+        (5, vec![B, D]),
+        (6, vec![B, C, D]),
+    ] {
+        assert_eq!(
+            t.sections(cna_core::dice::Die::new(face).unwrap()),
+            expected
+        );
+    }
+}
+
+#[test]
+fn weather_tables_reject_new_roll_gaps_and_duplicate_sections() {
+    use cna_tables::land::weather::{FoulWeatherLocation, WeatherTable};
+    let err = bind_edited::<WeatherTable>("land/29.6-", |s| {
+        replace_once(s, "normal = [11, 42]", "normal = [11, 41]")
+    })
+    .unwrap_err();
+    assert!(err.field.contains("row"), "{err}");
+    assert!(err.message.contains("42"), "{err}");
+    let err = bind_edited::<FoulWeatherLocation>("land/29.7-", |s| {
+        replace_once(
+            s,
+            "map_sections = [\"A\", \"B\"]",
+            "map_sections = [\"A\", \"A\"]",
+        )
+    })
+    .unwrap_err();
+    assert!(err.field.contains("map_sections"), "{err}");
+}

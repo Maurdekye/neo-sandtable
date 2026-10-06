@@ -22,4 +22,5 @@ Implement the table exactly as printed in the 2021 retype, with the Game-Turn ra
 No source in hand supports a different set of numbers; changing them would be inventing data.
 
 ## Affected behaviour and tests
-Weather determination (29.1). Test: a Game-Turn in 37-48 with reading 60 yields a rainstorm; a Game-Turn in 13-24 with reading 30 yields hot weather. A coverage test asserts each row covers all readings once.
+Weather determination (29.1). Test: a Game-Turn in 37-48 with reading 61 yields a rainstorm; a Game-Turn in 13-24 with reading 31 yields hot weather. A coverage test asserts each row covers all readings once.
+
