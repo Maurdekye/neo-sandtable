@@ -23,7 +23,7 @@ Format: `U-NNN` · area · what is missing or unclear · source checked · statu
 - **U-019** · formations · OA units carry no `tags` (bersaglieri, motorized, machinegun, cavalry, armored car, recon, light/heavy AA ...), so kinds that depend on them cannot yet be tested against counters; add per-unit tags when the engine needs the slot check. · planned
 
 - **U-020** · `it.unassigned_armored` · OA chart leaves all class codes blank. I(L), II(L), V(M), XXI(M) counters also show no ID code. Equipment and TOE counts are entered; `class` is omitted for all nine rows. · open
-- **U-021** · Sirte 43rd / Ariete 132nd artillery regiments · OA sheets each print 6 light AA points, while class `it.kk` permits only 3. Preserve the OA weapon counts; formation legality requires a ruling. · open
+- **U-021** · Sirte 43rd / Ariete 132nd artillery regiments · OA sheets each print 6 light AA points, while class `it.kk` permits only 3. Preserve the OA weapon counts; capacity conflict is recorded in interpretation units-0004. · open
 - **U-022** · January 1941 air arrivals · airlog:34.84 narrative example mentions 59 planes (including 2 Wellingtons and 1 Maryland), but the schedule chart totals 57 (1 Wellington, no Maryland). The schedule chart supplies the data; narrative example is illustrative. · see interpretation units-0003
 - **U-023** ? Rommel ? CPA60 from land:31.0; GT20 OpStage2 from land:4.43b; original PNG counter confirms stacking 0. ? resolved
 - **U-024** ? 18th Australian Brigade ? counter and land:19.31 confirm stacking 3 despite the X brigade mark; entered as `super_brigade`, matching land:9.4. ? resolved

@@ -169,14 +169,14 @@ arrives_raw = "1/18"
 parent = "it.ariete_div.ariete_132nd_div_hq"
 note = "The sheet prints 6 light AA points, above the class limit of 3 (GAPS U-021); entered as printed. The regiment took on 75/18 self-propelled guns from the Littorio later."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "interp:units-0004"]
 
 [[mention]]
 unit = "it.unassigned_armored.i_l_tank_bn"
 begins_attached_to = "it.ariete_div.ariete_132nd_div_hq"
-src = ["land:4.45"]
+src = ["land:4.45", "interp:units-0004"]
 
 [[mention]]
 unit = "it.unassigned_armored.ii_l_tank_bn"
 begins_attached_to = "it.ariete_div.ariete_132nd_div_hq"
-src = ["land:4.45"]
+src = ["land:4.45", "interp:units-0004"]

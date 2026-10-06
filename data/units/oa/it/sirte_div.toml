@@ -165,7 +165,7 @@ arrives_raw = "3/10"
 parent = "it.sirte_div.61st_sirte_div_hq"
 note = "The sheet prints 6 light AA points, above the class limit of 3 (GAPS U-021); entered as printed."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "interp:units-0004"]
 
 [[unit]]
 id = "it.sirte_div.61st_engineer_bn"
