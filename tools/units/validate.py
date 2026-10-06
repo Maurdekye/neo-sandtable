@@ -301,6 +301,27 @@ for p in sorted((units / "schedules").glob("*.toml")) if (units / "schedules").e
                 if pl.get("type") not in aircraft:
                     err(p, f"unknown aircraft type {pl.get('type')!r}")
 
+# off-map location / area ids used by scenario files must exist in the cartographer's areas.toml
+areas_file = root / "data" / "map" / "areas.toml"
+if scen.exists() and areas_file.exists():
+    ad = load(areas_file)
+    loc_ids = {x.get("id") for x in ad.get("locations", [])}
+    area_ids = {x.get("id") for x in ad.get("areas", [])}
+    for p in sorted(scen.rglob("*.toml")):
+        def walk_loc(x):
+            if isinstance(x, dict):
+                for k, v in x.items():
+                    if k == "location" and isinstance(v, str) and v not in loc_ids:
+                        err(p, f"unknown map location id {v!r}")
+                    elif k in ("area", "location_area") and isinstance(v, str) and v not in area_ids and not v.startswith("unclear_"):
+                        err(p, f"unknown map area id {v!r}")
+                    else:
+                        walk_loc(v)
+            elif isinstance(x, list):
+                for i in x:
+                    walk_loc(i)
+        walk_loc(load(p))
+
 n = len(errors)
 print(f"weapons={len(weapons)} classes={len(classes)} aircraft={len(aircraft)} units={len(unit_ids)} "
       f"kinds={len(kinds)} formations={len(formations)}  errors={n}")
