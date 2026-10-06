@@ -79,10 +79,10 @@ npm run smoke -- server.spec.ts
 ```
 
 Campaign lifecycle status refreshes every five seconds through the projected
-HTTP inspection API. The current server's scripted baseline does not emit seat
-transcripts yet; the actual live transcript view is empty. The positive transcript
-path is verified through mock and WebSocket fixtures until real driver entries
-become available. The sandbox is synthetic and is not faithful CNA adjudication.
+HTTP inspection API. The server emits truthful scripted decision entries through its persisted
+transcript channel; browser checks verify live display and side filtering. Assistant
+text, tool pairing and System 1 entries are verified through mock and WebSocket
+fixtures; this smoke does not run a paid LLM driver. The sandbox is synthetic and is not faithful CNA adjudication.
 
 ## Renderer and measurement
 

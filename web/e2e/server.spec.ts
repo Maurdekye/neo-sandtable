@@ -43,8 +43,11 @@ test('watches a real sandbox server and uses operator HTTP controls', async ({
     .getByRole('button', { name: 'Resume campaign', exact: true })
     .click()
   await expect(page.locator('.event-feed button').first()).toBeVisible()
-  // Current scripted baseline does not yet publish transcript entries.
-  await expect(page.locator('.transcript-scroll')).toContainText('No entries')
+  await expect(page.locator('.entry-decision_submitted').first()).toBeVisible()
+  await page.screenshot({
+    path: '../../board-live-transcripts.png',
+    fullPage: true,
+  })
   await page
     .getByLabel('Perspective', { exact: true })
     .selectOption('side:commonwealth')
@@ -53,6 +56,9 @@ test('watches a real sandbox server and uses operator HTTP controls', async ({
     page.locator('.formations .formation').first().getByRole('button'),
   ).toHaveCount(0)
   await expect(page.getByRole('tab')).toHaveCount(10)
+  await expect(page.locator('.entry-decision_submitted')).toHaveCount(0)
+  await page.getByRole('tab', { name: 'commonwealth · commander' }).click()
+  await expect(page.locator('.entry-decision_submitted').first()).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Pause campaign', exact: true }),
   ).toBeDisabled()

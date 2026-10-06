@@ -5,6 +5,7 @@ test('uses the real adapter, renders objectives, and replaces server projections
 }) => {
   const errors: string[] = [],
     requests: Subscribe[] = []
+  let releaseProjection: (() => void) | undefined
   page.on('pageerror', (e) => errors.push(e.message))
   await page.route('**/api/campaigns/fixture?perspective=*', (route) =>
     route.fulfill({ json: { status: { state: 'paused' } } }),
@@ -102,7 +103,10 @@ test('uses the real adapter, renders objectives, and replaces server projections
           entry: { kind: 'assistant_text', text: 'Fixture streamed session' },
         },
       ]
-      messages.forEach((message) => socket.send(JSON.stringify(message)))
+      const send = () =>
+        messages.forEach((message) => socket.send(JSON.stringify(message)))
+      if (request.perspective === 'side:commonwealth') releaseProjection = send
+      else send()
     })
   })
   await page.goto('/?campaign=fixture')
@@ -120,9 +124,34 @@ test('uses the real adapter, renders objectives, and replaces server projections
   await page.getByRole('button', { name: 'Fixture objective' }).click()
   await expect(page.locator('.inspector')).toContainText('holder: unheld')
   await expect(page.locator('.unit-row')).toHaveCount(1)
+  async function counterPixels() {
+    const png = await page.locator('.board canvas').screenshot()
+    return page.evaluate(async (base64) => {
+      const image = new Image()
+      image.src = `data:image/png;base64,${base64}`
+      await image.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = image.width
+      canvas.height = image.height
+      const context = canvas.getContext('2d')!
+      context.drawImage(image, 0, 0)
+      const pixels = context.getImageData(0, 0, image.width, image.height).data
+      let count = 0
+      for (let i = 0; i < pixels.length; i += 4)
+        if (pixels[i] === 219 && pixels[i + 1] === 200 && pixels[i + 2] === 160)
+          count++
+      return count
+    }, png.toString('base64'))
+  }
+  await expect(page.getByTestId('fps')).not.toContainText('0 FPS')
+  expect(await counterPixels()).toBeGreaterThan(20)
   await page
     .getByLabel('Perspective', { exact: true })
     .selectOption('side:commonwealth')
+  await expect.poll(() => Boolean(releaseProjection)).toBeTruthy()
+  await expect(page.getByTestId('playback-status')).toHaveText('CONNECTING')
+  expect(await counterPixels()).toBe(0)
+  releaseProjection!()
   await expect(page.locator('.unit-row')).toHaveCount(0)
   await expect(page.locator('.inspector')).toContainText(
     'Presence disclosed; composition unavailable',

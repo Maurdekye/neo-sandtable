@@ -254,7 +254,11 @@ export function Board({ view, selected, focus, onSelect }: Props) {
   }, [])
   useEffect(() => {
     const s = scene.current
-    if (!s || !view || !ready) return
+    if (!s || !ready) return
+    if (!view) {
+      s.counters.removeChildren().forEach((c) => c.destroy())
+      return
+    }
     let canceled = false
     async function draw() {
       const units = Object.values(view!.units)
