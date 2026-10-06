@@ -251,6 +251,7 @@ export function createMockStream(deliver: (message: ServerMessage) => void) {
               kind: 'movement',
               summary: 'Choose the next synthetic move',
               opened_seq: seq,
+              rules: [],
             },
           }
         : count % 12 === 8

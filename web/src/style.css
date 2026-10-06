@@ -756,3 +756,16 @@ dd {
 .unit-detail dd {
   overflow-wrap: anywhere;
 }
+
+.rule-citations {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.rule-citations span {
+  padding: 3px 5px;
+  background: #203741;
+  color: #e5c893;
+  font-size: 10px;
+}

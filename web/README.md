@@ -146,7 +146,8 @@ the map are labelled and inspected without panning to invented coordinates.
 Only projected units participate; undisclosed members are never inferred.
 
 The read-only pending panel displays the server's open decision windows, seat,
-kind and sequence. Rule citations and detailed off-map/setup locations await the
-lead-owned generated contract: the initial CNA view currently omits units outside
-mapped stacks and the initial PendingDecision type omits rules. No client field
-or rule citation is invented to fill those gaps.
+kind, sequence and `rules` citations. CNA special-unit locations arrive in
+`UnitView.detail.location`: `{at: "off_map", id}` or
+`{at: "awaiting_setup", group}`, with `hex: null`. The roster groups and inspector
+use this published location detail; missing detail is labelled "No map position".
+Actual CNA transport verification follows the server's campaign adapter landing.

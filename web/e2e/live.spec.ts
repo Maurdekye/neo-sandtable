@@ -85,7 +85,18 @@ test('uses the real adapter, renders objectives, and replaces server projections
                 label: 'Fixture objective',
               },
             ],
-            pending: [],
+            pending: own
+              ? [
+                  {
+                    id: 'fixture-initiative',
+                    seat: 'axis.commander',
+                    kind: 'initiative',
+                    summary: 'Choose Player A',
+                    opened_seq: 0,
+                    rules: ['land:7.11'],
+                  },
+                ]
+              : [],
           },
         },
         {
@@ -124,6 +135,7 @@ test('uses the real adapter, renders objectives, and replaces server projections
   await page.getByRole('button', { name: 'Fixture objective' }).click()
   await expect(page.locator('.inspector')).toContainText('holder: unheld')
   await expect(page.locator('.unit-row')).toHaveCount(1)
+  await expect(page.getByLabel('Rule citations')).toHaveText('land:7.11')
   async function counterPixels() {
     const png = await page.locator('.board canvas').screenshot()
     return page.evaluate(async (base64) => {
@@ -151,6 +163,7 @@ test('uses the real adapter, renders objectives, and replaces server projections
   await expect.poll(() => Boolean(releaseProjection)).toBeTruthy()
   await expect(page.getByTestId('playback-status')).toHaveText('CONNECTING')
   expect(await counterPixels()).toBe(0)
+  await expect(page.getByLabel('Rule citations')).toHaveCount(0)
   releaseProjection!()
   await expect(page.locator('.unit-row')).toHaveCount(0)
   await expect(page.locator('.inspector')).toContainText(

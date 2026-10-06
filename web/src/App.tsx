@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { GameEvent, Perspective } from './protocol'
 import { Board } from './map/Board'
 import { Formations } from './Formations'
-import { locationLabel } from './location'
+import { locationLabel, unitLocation } from './location'
 import { StackList } from './StackList'
 import { PendingDecisions } from './PendingDecisions'
 import { HEX_BY_ID, INITIAL_HEX, TERRAIN } from './map/fixture'
@@ -353,10 +353,10 @@ export function App() {
             <span className="eyebrow">INSPECTOR</span>
           </div>
           <h2>
-            {selected
-              ? locationLabel(selected)
-              : unit
-                ? 'Awaiting setup'
+            {unit
+              ? unitLocation(unit)
+              : selected
+                ? locationLabel(selected)
                 : 'Select a hex'}
           </h2>
           {hex && (
@@ -407,7 +407,7 @@ export function App() {
                     : '—'}
                 </dd>
                 <dt>Location</dt>
-                <dd>{locationLabel(unit.hex)}</dd>
+                <dd>{unitLocation(unit)}</dd>
               </dl>
               <dl>
                 {Object.entries(unit.detail ?? {}).map(([key, value]) => (

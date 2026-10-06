@@ -1,5 +1,5 @@
 import type { PendingDecision } from './generated/PendingDecision'
-/** Read-only decision windows; citations will use the lead's generated contract. */
+/** Read-only, perspective-projected decision windows and server rule citations. */
 export function PendingDecisions({ pending }: { pending: PendingDecision[] }) {
   return (
     <section className="pending-decisions">
@@ -10,6 +10,11 @@ export function PendingDecisions({ pending }: { pending: PendingDecision[] }) {
           <small>
             {d.seat} · {d.kind}
           </small>
+          <div className="rule-citations" aria-label="Rule citations">
+            {d.rules?.map((rule) => (
+              <span key={rule}>{rule}</span>
+            ))}
+          </div>
           <small>
             {d.id} · opened #{d.opened_seq}
           </small>

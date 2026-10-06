@@ -186,6 +186,7 @@ describe('stream and replay invariants', () => {
       kind: 'move',
       summary: 'Fixture',
       opened_seq: 8,
+      rules: [],
     }
     let v = applyEvent(view, { kind: 'decision_opened', decision: d })
     expect(v.pending).toEqual([d])

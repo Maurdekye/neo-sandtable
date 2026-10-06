@@ -28,7 +28,9 @@ test('inspects dense stacks, OA descendants and units outside the map', async ({
     .locator('.formation-unit')
     .filter({ hasText: 'Synthetic reserve 1' })
     .click()
-  await expect(page.locator('.inspector h2')).toHaveText('Awaiting setup')
+  await expect(page.locator('.inspector h2')).toHaveText(
+    'Awaiting setup · synthetic-setup',
+  )
   await expect(page.locator('.unit-detail')).toContainText(
     'Synthetic reserve 1',
   )

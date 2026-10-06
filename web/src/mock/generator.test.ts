@@ -42,6 +42,7 @@ it('projects the fixture upstream without leaking enemy composition or pending d
         kind: 'move',
         summary: 'Secret',
         opened_seq: 1,
+        rules: [],
       },
     ],
   }

@@ -48,7 +48,10 @@ function decision(value: unknown) {
     ['id', 'seat', 'kind', 'summary'].every(
       (key) => typeof value[key] === 'string',
     ) &&
-    sequence(value.opened_seq)
+    sequence(value.opened_seq) &&
+    (value.rules === undefined ||
+      (Array.isArray(value.rules) &&
+        value.rules.every((rule) => typeof rule === 'string')))
   )
 }
 function gameEvent(value: unknown) {

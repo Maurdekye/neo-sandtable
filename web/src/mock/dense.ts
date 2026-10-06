@@ -50,11 +50,14 @@ export function denseView(clock: Clock): ViewState {
       kind: 'infantry',
       size: 'battalion',
       nationality: 'synthetic',
-      hex: i < 3 ? null : 'box_tripoli',
+      hex: null,
       parent: null,
       detail: {
         provenance: 'Synthetic stress fixture',
-        location: i < 3 ? 'awaiting_setup' : 'off_map',
+        location:
+          i < 3
+            ? { at: 'awaiting_setup', group: 'synthetic-setup' }
+            : { at: 'off_map', id: 'box_tripoli' },
       },
     }
   }
@@ -78,6 +81,7 @@ export function denseView(clock: Clock): ViewState {
         kind: 'setup',
         summary: 'Place synthetic reserves',
         opened_seq: 0,
+        rules: [],
       },
     ],
   }

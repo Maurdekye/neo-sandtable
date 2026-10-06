@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import type { UnitView } from './protocol'
 import { formationTree, filterTree, type FormationNode } from './hierarchy'
-import { HEX_BY_ID } from './map/fixture'
-import { locationLabel } from './location'
+import { unitLocation, isOffMap } from './location'
 function Branch({
   node,
   depth,
@@ -21,7 +20,7 @@ function Branch({
       title={node.unit.name}
     >
       {node.unit.name}
-      <small>{locationLabel(node.unit.hex)}</small>
+      <small>{unitLocation(node.unit)}</small>
     </button>
   )
   if (!node.children.length) return <div className="oa-leaf">{button}</div>
@@ -55,8 +54,8 @@ export function Formations({
 }) {
   const [query, setQuery] = useState(''),
     list = Object.values(units)
-  const unplaced = list.filter((u) => u.hex === null),
-    offmap = list.filter((u) => u.hex !== null && !HEX_BY_ID.has(u.hex))
+  const unplaced = list.filter((u) => u.hex === null && !isOffMap(u)),
+    offmap = list.filter(isOffMap)
   return (
     <>
       <label className="formation-search">
@@ -107,7 +106,7 @@ export function Formations({
               {group.map((unit) => (
                 <button key={unit.id} onClick={() => onUnit(unit.id)}>
                   {unit.name}
-                  <small>{locationLabel(unit.hex)}</small>
+                  <small>{unitLocation(unit)}</small>
                 </button>
               ))}
             </details>
