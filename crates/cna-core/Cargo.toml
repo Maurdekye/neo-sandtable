@@ -11,6 +11,8 @@ authors.workspace = true
 rand_core.workspace = true
 rand_chacha.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+cna-protocol = { path = "../cna-protocol" }
 
 [lints]
 workspace = true

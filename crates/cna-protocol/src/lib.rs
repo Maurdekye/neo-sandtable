@@ -24,6 +24,40 @@ pub enum Side {
     Commonwealth,
 }
 
+impl Side {
+    pub const ALL: [Side; 2] = [Side::Axis, Side::Commonwealth];
+
+    pub fn opponent(self) -> Side {
+        match self {
+            Side::Axis => Side::Commonwealth,
+            Side::Commonwealth => Side::Axis,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Side::Axis => "axis",
+            Side::Commonwealth => "commonwealth",
+        }
+    }
+}
+
+impl std::fmt::Display for Side {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl std::str::FromStr for Side {
+    type Err = UnknownName;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Side::ALL
+            .into_iter()
+            .find(|v| v.as_str() == s)
+            .ok_or_else(|| UnknownName::new("side", s))
+    }
+}
+
 /// A command role. Each side has one seat per role.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, TS)]
 #[serde(rename_all = "snake_case")]
@@ -34,6 +68,66 @@ pub enum Role {
     Logistics,
     Air,
 }
+
+impl Role {
+    pub const ALL: [Role; 5] = [
+        Role::Commander,
+        Role::FrontLine,
+        Role::RearArea,
+        Role::Logistics,
+        Role::Air,
+    ];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Role::Commander => "commander",
+            Role::FrontLine => "front_line",
+            Role::RearArea => "rear_area",
+            Role::Logistics => "logistics",
+            Role::Air => "air",
+        }
+    }
+}
+
+impl std::fmt::Display for Role {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl std::str::FromStr for Role {
+    type Err = UnknownName;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Role::ALL
+            .into_iter()
+            .find(|v| v.as_str() == s)
+            .ok_or_else(|| UnknownName::new("role", s))
+    }
+}
+
+/// A name that does not match any variant.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnknownName {
+    pub kind: &'static str,
+    pub value: String,
+}
+
+impl UnknownName {
+    pub fn new(kind: &'static str, value: &str) -> Self {
+        Self {
+            kind,
+            value: value.to_owned(),
+        }
+    }
+}
+
+impl std::fmt::Display for UnknownName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "unknown {}: {:?}", self.kind, self.value)
+    }
+}
+
+impl std::error::Error for UnknownName {}
 
 /// A seat id of the form `<side>.<role>`, e.g. `axis.logistics`.
 pub type SeatId = String;
