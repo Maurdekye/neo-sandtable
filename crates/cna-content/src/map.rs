@@ -2,6 +2,9 @@
 //!
 //! Schema: `data/map/README.md` (owned by the map digitization work).
 
+mod layers;
+pub use layers::{HexsideFeature, LineKind, SideKind, Survey};
+
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -30,6 +33,7 @@ pub struct MapContent {
     hexes: BTreeMap<HexId, HexRecord>,
     by_axial: BTreeMap<Axial, HexId>,
     aliases: BTreeMap<HexId, HexId>,
+    layers: layers::Layers,
 }
 
 #[derive(Debug, Deserialize)]
@@ -105,6 +109,7 @@ impl MapContent {
                 map.aliases.insert(alias, target);
             }
         }
+        map.layers = layers::Layers::load(map_dir, &map)?;
         Ok(map)
     }
 
