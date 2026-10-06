@@ -160,8 +160,10 @@ name = "cna-content"
 version = "0.1.0"
 dependencies = [
  "cna-core",
+ "cna-protocol",
  "csv",
  "serde",
+ "toml",
 ]
 
 [[package]]

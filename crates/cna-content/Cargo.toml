@@ -9,8 +9,10 @@ authors.workspace = true
 
 [dependencies]
 cna-core.workspace = true
+cna-protocol.workspace = true
 csv.workspace = true
 serde.workspace = true
+toml.workspace = true
 
 [lints]
 workspace = true
