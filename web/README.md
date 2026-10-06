@@ -39,6 +39,36 @@ happens in the server before delivery (or the development mock transport). The r
 an undisclosed enemy stack. The real server must enforce the same authorization on
 every channel; client filtering is not an access-control boundary.
 
+## Campaign access
+
+Open the local board access URL printed by `cna-server`. Its `#cap=` fragment is
+captured and removed from the visible URL immediately. The board retains the
+capability in memory and this tab's sessionStorage, keyed by backend origin;
+credentials for a different port or hostname are never reused. If browser storage
+is disabled, the access link still works in memory for that page. Forget access
+clears the stored capability and reloads to discard board and transcript state.
+Treat access links and the server's capability file as secrets.
+
+Real connections require a capability. Without one, the page displays access
+instructions and sends no API requests or campaign sockets. `/api/session` supplies
+the initial perspective, campaign binding and operator status before the viewer
+mounts. Side and seat access stays in its assigned campaign; forbidden perspectives
+and campaign controls are disabled. The server enforces access on all channels.
+
+Every API fetch sends `Authorization: Bearer <capability>` and refuses redirects.
+The WebSocket uses `?cap=<capability>` because browser sockets cannot set an
+Authorization header. Error messages never echo token-bearing URLs or raw response
+bodies. An HTTP 401 unmounts the viewer and clears retained private state and the stored
+credential. Scope-denied socket close code 1008 clears retained view/transcript state
+and stops retries for that subscription. Network failures still reconnect normally.
+Backend URLs are restricted to local HTTP(S) origins (`localhost`, `127.0.0.1`,
+`[::1]`) without embedded user information.
+
+For Vite against a separate backend, append `#cap=<capability>` to the existing
+`?server=<encoded backend origin>` URL. Real browser integration tests take the
+operator credential from `CNA_SMOKE_CAPABILITY`; they seed tab storage without
+placing a real credential in navigation URLs or test output.
+
 ## Stream and ownership
 
 Protocol structures are imported from lead-owned `src/generated/`; Rust
@@ -57,7 +87,7 @@ absent from the production build. To connect a campaign, open
 `/?campaign=<id>`. The adapter uses the page origin by default; when using Vite
 against a separate backend, add `&server=http://127.0.0.1:<port>` (URL-encode the
 server value). It connects to `/api/campaigns/{id}/stream`, using WSS for HTTPS.
-A bare production URL lists existing campaigns for selection. In development,
+An authenticated operator on a bare production URL lists existing campaigns for selection. In development,
 `/?server=<encoded URL>` opens the same campaign chooser; a bare development URL
 continues to use the mock fixture.
 
@@ -75,6 +105,7 @@ pause/resume. Run it against a server from this checkout:
 
 ```powershell
 $env:CNA_SMOKE_SERVER='http://127.0.0.1:3000'
+# Set CNA_SMOKE_CAPABILITY privately from the server's capability file.
 npm run smoke -- server.spec.ts
 ```
 
@@ -150,4 +181,31 @@ kind, sequence and `rules` citations. CNA special-unit locations arrive in
 `UnitView.detail.location`: `{at: "off_map", id}` or
 `{at: "awaiting_setup", group}`, with `hex: null`. The roster groups and inspector
 use this published location detail; missing detail is labelled "No map position".
-Actual CNA transport verification follows the server's campaign adapter landing.
+
+## Actual Graziani browser verification
+
+The CNA check uses `kind: "cna"`, `rules_profile: "cna-2021-dev"`, a zero seed,
+`paused: true`, and `controller: "legal_random"`. Start the server with
+`CNA_CAMPAIGN_DIR` pointing at a fresh scratch directory; old databases remain
+pinned to their original executable/content. Then run:
+
+```powershell
+$env:CNA_SMOKE_SERVER='http://127.0.0.1:3000'
+# Set CNA_SMOKE_CAPABILITY privately from the server's capability file.
+npm run smoke -- cna.spec.ts
+```
+
+Verified against server adapter `194c2fd`: 286 disclosed units, of which 211 are
+mapped, 53 await setup and 22 occupy off-map boxes; 32 stacks with a largest stack
+of 24, and six dump markers. The browser selects the last member of that dense
+stack, follows an actual declared OA parent, inspects setup groups and off-map ids,
+and displays owning-side dump labels. This run opens the production bundle served
+by Rust and receives 18 factual scripted decision entries, with perspective-filtered
+seat replay. A second campaign holds a human-controlled initiative window open
+and verifies its real rule citations at the top of the formations panel.
+
+These are actual scenario data and transport checks. The development ruleset
+currently resolves initiative declarations and skips unimplemented procedures;
+Finished does not mean the full CNA rules are implemented. This check starts no
+paid LLM driver and makes no full-campaign throughput claim. Evidence files and
+screenshots are saved in the owning scratch folder.

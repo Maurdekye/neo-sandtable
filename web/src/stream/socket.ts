@@ -1,5 +1,6 @@
 import type { ServerMessage, Subscribe } from '../protocol'
 import { decodeMessage } from './wire'
+import { validToken } from '../access'
 export type Socket = Pick<
   WebSocket,
   | 'readyState'
@@ -14,13 +15,19 @@ export interface SocketStatus {
   phase: 'connecting' | 'connected' | 'retrying' | 'stopped'
   message: string
 }
-export function streamUrl(server: string, campaign: string): string {
+export function streamUrl(
+  server: string,
+  campaign: string,
+  token: string,
+): string {
   const url = new URL(
     `/api/campaigns/${encodeURIComponent(campaign)}/stream`,
     server,
   )
   if (url.protocol !== 'http:' && url.protocol !== 'https:')
     throw new Error('Server URL must use HTTP or HTTPS')
+  if (!validToken(token)) throw new Error('Campaign access required')
+  url.searchParams.set('cap', token)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
   return url.href
 }
@@ -75,8 +82,8 @@ export function createSocketStream(options: {
     let current: Socket
     try {
       current = factory(options.url)
-    } catch (error) {
-      retry(String(error))
+    } catch {
+      retry('Cannot open the campaign stream')
       return
     }
     socket = current
@@ -89,8 +96,8 @@ export function createSocketStream(options: {
       if (socket === current && !stopped && request) {
         try {
           current.send(JSON.stringify(request))
-        } catch (error) {
-          retry(String(error))
+        } catch {
+          retry('Cannot send the campaign subscription')
         }
       }
     }
@@ -99,8 +106,8 @@ export function createSocketStream(options: {
       let message: ServerMessage | null
       try {
         message = decodeMessage(event.data)
-      } catch (error) {
-        retry(String(error))
+      } catch {
+        retry('Invalid campaign stream response')
         return
       }
       if (!message) return
@@ -131,9 +138,17 @@ export function createSocketStream(options: {
         options.status({ phase: 'connected', message: 'Live server stream' })
       }
     }
-    current.onclose = () => {
-      if (socket === current)
-        retry('Connection closed; reconnecting from the last good event')
+    current.onclose = (event) => {
+      if (socket !== current) return
+      if (event.code === 1008) {
+        detach()
+        options.status({
+          phase: 'stopped',
+          message: 'This access does not allow the requested perspective',
+        })
+        return
+      }
+      retry('Connection closed; reconnecting from the last good event')
     }
     current.onerror = () => {
       if (socket === current) retry('Connection failed; retrying')

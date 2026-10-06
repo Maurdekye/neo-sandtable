@@ -1,27 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { CampaignMeta, Perspective } from './protocol'
 import { decodeMessage } from './stream/wire'
-async function request(
-  server: string,
-  path: string,
-  options?: RequestInit,
-): Promise<unknown> {
-  const response = await fetch(new URL(path, server), {
-    ...options,
-    signal: options?.signal
-      ? AbortSignal.any([options.signal, AbortSignal.timeout(10000)])
-      : AbortSignal.timeout(10000),
-  })
-  if (!response.ok)
-    throw new Error(`Campaign request failed (${response.status})`)
-  return response.json()
-}
-export function CampaignChooser({ server }: { server: string }) {
+import { apiRequest as request, type Access } from './access'
+export function CampaignChooser({ access }: { access: Access }) {
   const [campaigns, setCampaigns] = useState<CampaignMeta[]>([]),
     [note, setNote] = useState('Loading campaigns')
   useEffect(() => {
     const abort = new AbortController()
-    void request(server, '/api/campaigns', { signal: abort.signal })
+    void request(access, '/api/campaigns', { signal: abort.signal })
       .then((data) => {
         if (!Array.isArray(data)) throw new Error('Invalid campaign list')
         const rows = data.map((campaign) => {
@@ -47,7 +33,7 @@ export function CampaignChooser({ server }: { server: string }) {
         if (!abort.signal.aborted) setNote(String(error))
       })
     return () => abort.abort()
-  }, [server])
+  }, [access])
   return (
     <>
       <span className="view-note">{note}</span>
@@ -71,12 +57,12 @@ export function CampaignChooser({ server }: { server: string }) {
   )
 }
 export function CampaignControl({
-  server,
+  access,
   campaign,
   perspective,
   history,
 }: {
-  server: string
+  access: Access
   campaign: string
   perspective: Perspective
   history: boolean
@@ -91,7 +77,7 @@ export function CampaignControl({
     async function refresh() {
       try {
         const data = await request(
-          server,
+          access,
           `${path}?perspective=${encodeURIComponent(perspective)}`,
           { signal: abort.signal },
         )
@@ -119,13 +105,15 @@ export function CampaignControl({
       abort.abort()
       clearTimeout(timer)
     }
-  }, [server, path, perspective])
+  }, [access, path, perspective])
   async function toggle() {
+    if (!access.session.operator || history || perspective !== 'operator')
+      return
     setBusy(true)
     setError('')
     try {
       const data = await request(
-        server,
+        access,
         `${path}/${state === 'paused' ? 'resume' : 'pause'}`,
         { method: 'POST' },
       )
@@ -153,6 +141,7 @@ export function CampaignControl({
         disabled={
           busy ||
           history ||
+          !access.session.operator ||
           perspective !== 'operator' ||
           !['running', 'paused'].includes(state)
         }

@@ -17,16 +17,19 @@ import { selectedFrame } from './stream/model'
 import { Transcripts } from './Transcripts'
 import { createSocketStream, streamUrl } from './stream/socket'
 import { CampaignControl, CampaignChooser } from './Campaigns'
+import { AccessGate } from './AccessGate'
+import { forgetCredential, mayView, type Access } from './access'
 const denseFixture =
   import.meta.env.DEV &&
   new URLSearchParams(location.search).get('fixture') === 'dense'
-const campaignId = new URLSearchParams(location.search).get('campaign')
+const requestedCampaign = new URLSearchParams(location.search).get('campaign')
 const serverUrl =
   new URLSearchParams(location.search).get('server') ?? location.origin
 const mockMode =
   import.meta.env.DEV &&
-  !campaignId &&
-  !new URLSearchParams(location.search).has('server')
+  !requestedCampaign &&
+  !new URLSearchParams(location.search).has('server') &&
+  !new URLSearchParams(location.hash.slice(1)).has('cap')
 function sameLocation(a: string | null, b: string | null) {
   return (
     a === b ||
@@ -85,6 +88,18 @@ function eventHex(event: GameEvent) {
               : null
 }
 export function App() {
+  return mockMode ? (
+    <Viewer />
+  ) : (
+    <AccessGate server={serverUrl} campaign={requestedCampaign}>
+      {(access) => <Viewer access={access} />}
+    </AccessGate>
+  )
+}
+function Viewer({ access }: { access?: Access }) {
+  const campaignId = access?.session.campaign_id ?? requestedCampaign
+  const allowed = (perspective: Perspective) =>
+    !access || mayView(access.session, perspective)
   const state = useViewer(),
     frame = selectedFrame(state),
     view = frame?.view
@@ -110,25 +125,27 @@ export function App() {
     let disposed = false,
       stop = () => {},
       disconnect = () => {}
-    if (campaignId) {
+    if (access) actions.perspective(access.session.perspective)
+    if (campaignId && access) {
       try {
         const server = serverUrl
         const transport = createSocketStream({
-          url: streamUrl(server, campaignId),
+          url: streamUrl(server, campaignId, access.token),
           deliver,
           lastGoodSeq: () =>
             getViewer().frames.length ? getViewer().lastSeq : null,
           status: (status) => {
             if (!disposed) {
               setTransportNote(status.message)
-              if (status.phase !== 'connected') actions.connecting()
+              if (status.phase === 'stopped') actions.clear()
+              else if (status.phase !== 'connected') actions.connecting()
             }
           },
         })
         disconnect = setTransport(transport.subscribe)
         stop = transport.close
-      } catch (error) {
-        setTransportNote(String(error))
+      } catch {
+        setTransportNote('Cannot open the campaign stream')
       }
     } else if (mockMode)
       void import('./mock/generator').then(({ createMockStream }) => {
@@ -143,7 +160,7 @@ export function App() {
       disconnect()
       stop()
     }
-  }, [])
+  }, [access, campaignId])
   useEffect(() => {
     const timer = window.setInterval(actions.tick, 900 / state.speed)
     return () => window.clearInterval(timer)
@@ -259,17 +276,35 @@ export function App() {
           aria-label="Perspective"
           value={state.perspective}
           onChange={(e) => {
+            if (!allowed(e.target.value as Perspective)) return
             actions.perspective(e.target.value as Perspective)
             setUnitId(null)
             setCampaignPaused(false)
             control?.(false)
           }}
         >
-          <option value="operator">Operator · OMNISCIENT</option>
-          <option value="side:axis">Axis side</option>
-          <option value="side:commonwealth">Commonwealth side</option>
+          <option disabled={!allowed('operator')} value="operator">
+            Operator · OMNISCIENT
+          </option>
+          <option disabled={!allowed('side:axis')} value="side:axis">
+            Axis side
+          </option>
+          <option
+            disabled={!allowed('side:commonwealth')}
+            value="side:commonwealth"
+          >
+            Commonwealth side
+          </option>
+          {state.perspective.startsWith('seat:') &&
+            !state.campaign?.seats.some(
+              (seat) => `seat:${seat.id}` === state.perspective,
+            ) && <option value={state.perspective}>{state.perspective}</option>}
           {state.campaign?.seats.map((seat) => (
-            <option key={seat.id} value={`seat:${seat.id}`}>
+            <option
+              disabled={!allowed(`seat:${seat.id}`)}
+              key={seat.id}
+              value={`seat:${seat.id}`}
+            >
               Seat · {seat.id.replaceAll('_', ' ')}
             </option>
           ))}
@@ -280,10 +315,15 @@ export function App() {
             : 'Projection supplied by server'}
         </span>
         <span className="grow" />
-        {!mockMode && !campaignId && <CampaignChooser server={serverUrl} />}
-        {!mockMode && campaignId && (
+        {access && !campaignId && <CampaignChooser access={access} />}
+        {access && (
+          <button onClick={() => forgetCredential(access.server)}>
+            Forget access
+          </button>
+        )}
+        {access && campaignId && (
           <CampaignControl
-            server={serverUrl}
+            access={access}
             campaign={campaignId}
             perspective={state.perspective}
             history={state.cursor !== null}

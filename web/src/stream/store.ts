@@ -31,6 +31,9 @@ export function useViewer() {
 }
 export const getViewer = () => state
 export const actions = {
+  clear() {
+    publish(initialState(state.perspective))
+  },
   connecting() {
     publish({ ...state, connection: 'connecting' })
   },

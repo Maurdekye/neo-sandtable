@@ -769,3 +769,26 @@ dd {
   color: #e5c893;
   font-size: 10px;
 }
+
+.access-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+.access-form {
+  max-width: 480px;
+  background: #132b35;
+  padding: 32px;
+  border: 1px solid #34515c;
+  border-radius: 12px;
+}
+.access-form label {
+  display: grid;
+  gap: 8px;
+  margin: 24px 0;
+}
+.access-form input {
+  padding: 10px;
+  width: 100%;
+}

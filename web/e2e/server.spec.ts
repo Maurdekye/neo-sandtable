@@ -1,14 +1,26 @@
 import { expect, test } from '@playwright/test'
 const server = process.env.CNA_SMOKE_SERVER
+const capability = process.env.CNA_SMOKE_CAPABILITY
+const headers = { Authorization: `Bearer ${capability ?? ''}` }
+test.beforeEach(async ({ page }) => {
+  if (server && capability)
+    await page.addInitScript(
+      ({ server, capability }) => {
+        sessionStorage.setItem(`cna:cap:${new URL(server).origin}`, capability)
+      },
+      { server, capability },
+    )
+})
 test('watches a real sandbox server and uses operator HTTP controls', async ({
   page,
   request,
 }) => {
   test.skip(
-    !server,
+    !server || !capability,
     'Set CNA_SMOKE_SERVER to a running own-clone sandbox server',
   )
   const created = await request.post(`${server}/api/campaigns`, {
+    headers,
     data: {
       rules_profile: 'sandbox-v1',
       seed: Array(32).fill(12),
@@ -99,7 +111,7 @@ test('watches a real sandbox server and uses operator HTTP controls', async ({
     page.getByRole('button', { name: 'Pause campaign', exact: true }),
   ).toBeDisabled()
   await page.screenshot({ path: '../../board-live-side.png', fullPage: true })
-  await request.post(`${server}/api/campaigns/${meta.id}/pause`)
+  await request.post(`${server}/api/campaigns/${meta.id}/pause`, { headers })
   expect(errors).toEqual([])
 })
 
@@ -108,10 +120,11 @@ test('HTTP operator pause and resume stay separate from playback', async ({
   request,
 }) => {
   test.skip(
-    !server,
+    !server || !capability,
     'Set CNA_SMOKE_SERVER to a running own-clone sandbox server',
   )
   const created = await request.post(`${server}/api/campaigns`, {
+    headers,
     data: {
       rules_profile: 'sandbox-v1',
       seed: Array(32).fill(4),

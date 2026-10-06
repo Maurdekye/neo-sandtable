@@ -87,10 +87,10 @@ beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
 describe('live transport', () => {
   it('builds secure URLs and escapes campaign path components', () => {
-    expect(streamUrl('https://example.test/', 'a/b')).toBe(
-      'wss://example.test/api/campaigns/a%2Fb/stream',
+    expect(streamUrl('https://example.test/', 'a/b', 'a'.repeat(64))).toBe(
+      `wss://example.test/api/campaigns/a%2Fb/stream?cap=${'a'.repeat(64)}`,
     )
-    expect(() => streamUrl('file:///tmp', 'id')).toThrow('HTTP')
+    expect(() => streamUrl('file:///tmp', 'id', 'a'.repeat(64))).toThrow('HTTP')
   })
   it('subscribes after opening and accepts a hello then snapshot', () => {
     const h = setup(),
@@ -291,4 +291,32 @@ it('rejects unsafe sequence values and malformed transcript content at the JSON 
       }),
     ),
   ).toMatchObject({ seq: 8 })
+})
+
+it('halts policy denials without retrying or displaying a server reason', () => {
+  const h = setup()
+  h.sockets[0].onclose?.call(
+    h.sockets[0] as unknown as WebSocket,
+    { code: 1008, reason: 'secret capability' } as CloseEvent,
+  )
+  vi.advanceTimersByTime(60000)
+  expect(h.sockets).toHaveLength(1)
+  expect(h.statuses.at(-1)?.phase).toBe('stopped')
+  expect(JSON.stringify(h.statuses)).not.toContain('secret')
+  h.stream.close()
+})
+it('does not echo token-bearing connection errors', () => {
+  const statuses: SocketStatus[] = []
+  const stream = createSocketStream({
+    url: 'ws://localhost/?cap=secret',
+    deliver: () => {},
+    lastGoodSeq: () => null,
+    status: (s) => statuses.push(s),
+    factory: () => {
+      throw new Error('ws://localhost/?cap=secret')
+    },
+  })
+  stream.subscribe(subscribe)
+  expect(JSON.stringify(statuses)).not.toContain('secret')
+  stream.close()
 })

@@ -2,6 +2,17 @@ import { expect, test } from '@playwright/test'
 import { writeFileSync } from 'node:fs'
 import type { ViewState, ServerMessage } from '../src/protocol'
 const server = process.env.CNA_SMOKE_SERVER
+const capability = process.env.CNA_SMOKE_CAPABILITY
+const headers = { Authorization: `Bearer ${capability ?? ''}` }
+test.beforeEach(async ({ page }) => {
+  if (server && capability)
+    await page.addInitScript(
+      ({ server, capability }) => {
+        sessionStorage.setItem(`cna:cap:${new URL(server).origin}`, capability)
+      },
+      { server, capability },
+    )
+})
 const payload = {
   kind: 'cna',
   rules_profile: 'cna-2021-dev',
@@ -15,15 +26,18 @@ test('watches actual Graziani positions and private scripted decisions in produc
   request,
 }) => {
   test.skip(
-    !server,
+    !server || !capability,
     'Set CNA_SMOKE_SERVER to a published CNA server with a fresh database directory',
   )
   const created = await request.post(`${server}/api/campaigns`, {
+    headers,
     data: payload,
   })
   expect(created.ok()).toBeTruthy()
   const meta = await created.json()
-  const inspected = await request.get(`${server}/api/campaigns/${meta.id}`)
+  const inspected = await request.get(`${server}/api/campaigns/${meta.id}`, {
+    headers,
+  })
   expect(inspected.ok()).toBeTruthy()
   const projection = await inspected.json()
   const view: ViewState = projection.snapshot.view
@@ -81,10 +95,14 @@ test('watches actual Graziani positions and private scripted decisions in produc
     path: '../../board-graziani-stack.png',
     fullPage: true,
   })
-  const related = units.find(u => u.parent !== null)!
+  const related = units.find((u) => u.parent !== null)!
   expect(related).toBeTruthy()
   await select(related.id)
   await expect(page.locator('.oa-branch').first()).toBeVisible()
+  await page.screenshot({
+    path: '../../board-graziani-formation.png',
+    fullPage: true,
+  })
   await select(awaiting.id)
   await expect(page.locator('.inspector h2')).toContainText('Awaiting setup')
   await expect(page.locator('.unit-detail')).toContainText(
@@ -149,7 +167,13 @@ test('watches actual Graziani positions and private scripted decisions in produc
   await expect(page.getByTestId('playback-status')).toContainText('LIVE')
   await expect(page.locator('.entry-decision_submitted')).toHaveCount(0)
   await page.getByRole('tab', { name: 'commonwealth · commander' }).click()
-  await expect(page.locator('.entry-decision_submitted')).toHaveCount(9)
+  const expectedCommonwealth = decisions.filter(
+    (m) => m.type === 'transcript' && m.seat === 'commonwealth.commander',
+  ).length
+  expect(expectedCommonwealth).toBeGreaterThan(0)
+  await expect(page.locator('.entry-decision_submitted')).toHaveCount(
+    expectedCommonwealth,
+  )
   await expect(page.locator('.map-error')).toHaveCount(0)
   expect(errors).toEqual([])
   writeFileSync(
@@ -182,8 +206,12 @@ test('shows actual CNA decision citations while a human seat holds the window op
   page,
   request,
 }) => {
-  test.skip(!server, 'Set CNA_SMOKE_SERVER to a running CNA server')
+  test.skip(
+    !server || !capability,
+    'Set CNA_SMOKE_SERVER to a running CNA server',
+  )
   const created = await request.post(`${server}/api/campaigns`, {
+    headers,
     data: {
       ...payload,
       controller: 'human',
@@ -207,5 +235,139 @@ test('shows actual CNA decision citations while a human seat holds the window op
     path: '../../board-graziani-decisions.png',
     fullPage: true,
   })
-  await request.post(`${server}/api/campaigns/${meta.id}/pause`)
+  await request.post(`${server}/api/campaigns/${meta.id}/pause`, { headers })
+})
+
+// New isolated contexts ensure restricted access never inherits operator storage.
+test('uses actual campaign-bound side and seat capabilities and rejects privilege escalation', async ({
+  browser,
+  request,
+}) => {
+  test.skip(
+    !server || !capability,
+    'Set CNA_SMOKE_SERVER and CNA_SMOKE_CAPABILITY to the authenticated server',
+  )
+  const created = await request.post(`${server}/api/campaigns`, {
+    headers,
+    data: payload,
+  })
+  expect(created.ok()).toBeTruthy()
+  const meta = await created.json()
+  const issued = await request.get(
+    `${server}/api/campaigns/${meta.id}/capabilities`,
+    { headers },
+  )
+  expect(issued.ok()).toBeTruthy()
+  const credentials = await issued.json()
+  const other = await request.post(`${server}/api/campaigns`, {
+    headers,
+    data: { ...payload, title: 'Other campaign' },
+  })
+  expect(other.ok()).toBeTruthy()
+  const otherId = (await other.json()).id
+  for (const [restricted, perspective] of [
+    [credentials.sides.axis, 'side:axis'],
+    [credentials.seats['axis.commander'], 'seat:axis.commander'],
+  ]) {
+    expect(typeof restricted).toBe('string')
+    const scopedHeaders = { Authorization: `Bearer ${restricted}` }
+    const own = await request.get(
+      `${server}/api/campaigns/${meta.id}?perspective=${perspective}`,
+      { headers: scopedHeaders },
+    )
+    expect(own.ok()).toBeTruthy()
+    expect(
+      (
+        await request.get(`${server}/api/campaigns/${otherId}`, {
+          headers: scopedHeaders,
+        })
+      ).status(),
+    ).toBe(403)
+    expect(
+      (
+        await request.post(`${server}/api/campaigns/${meta.id}/resume`, {
+          headers: scopedHeaders,
+        })
+      ).status(),
+    ).toBe(403)
+    const context = await browser.newContext({
+      viewport: { width: 1800, height: 1050 },
+    })
+    try {
+      await context.addInitScript(
+        ({ server, restricted }) => {
+          sessionStorage.setItem(
+            `cna:cap:${new URL(server).origin}`,
+            restricted,
+          )
+        },
+        { server: server!, restricted },
+      )
+      const page = await context.newPage()
+      await page.goto(`${server}/`)
+      await expect(page.getByTestId('playback-status')).toContainText('LIVE')
+      await expect(page.getByLabel('Perspective', { exact: true })).toHaveValue(
+        perspective,
+      )
+      await expect(
+        page
+          .getByLabel('Perspective', { exact: true })
+          .locator('option[value="operator"]'),
+      ).toBeDisabled()
+      await expect(
+        page
+          .getByLabel('Perspective', { exact: true })
+          .locator('option[value="side:commonwealth"]'),
+      ).toBeDisabled()
+      await expect(
+        page.getByRole('button', { name: 'Resume campaign' }),
+      ).toBeDisabled()
+      await expect(page.getByLabel('Campaign', { exact: true })).toHaveCount(0)
+      // Server, not disabled UI options, is the authorization boundary.
+      const denial = await page.evaluate(
+        async ({ id, restricted }) => {
+          const socket = new WebSocket(
+            `${location.origin.replace('http', 'ws')}/api/campaigns/${encodeURIComponent(id)}/stream?cap=${restricted}`,
+          )
+          let frames = 0
+          return await new Promise<{ code: number; frames: number }>(
+            (resolve, reject) => {
+              const timer = setTimeout(() => {
+                socket.close()
+                reject(new Error('Policy denial timed out'))
+              }, 5000)
+              socket.onmessage = () => {
+                frames++
+              }
+              socket.onerror = () => {
+                clearTimeout(timer)
+                reject(new Error('Policy socket failed'))
+              }
+              socket.onopen = () =>
+                socket.send(
+                  JSON.stringify({
+                    type: 'subscribe',
+                    perspective: 'operator',
+                    from_seq: null,
+                  }),
+                )
+              socket.onclose = (event) => {
+                clearTimeout(timer)
+                resolve({ code: event.code, frames })
+              }
+            },
+          )
+        },
+        { id: meta.id, restricted },
+      )
+      expect(denial).toEqual({ code: 1008, frames: 0 })
+      await page.reload()
+      await expect(page.getByLabel('Perspective', { exact: true })).toHaveValue(
+        perspective,
+      )
+    } finally {
+      await context.close()
+    }
+  }
+  expect((await request.get(`${server}/api/session`)).status()).toBe(401)
 })
