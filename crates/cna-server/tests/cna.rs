@@ -494,3 +494,54 @@ async fn legacy_geometry_only_map_does_not_pin_unread_layer_provenance() {
     restored.shutdown().await.unwrap();
     assert_eq!(stored(&path), original);
 }
+
+#[tokio::test]
+async fn loader_manifest_pins_reused_setup_files_outside_the_selected_scenario() {
+    let directory = tempfile::tempdir().unwrap();
+    let cloned_data = directory.path().join("data");
+    copy(&data(), &cloned_data);
+    let main = cloned_data.join("scenarios/graziani/scenario.toml");
+    let metadata = fs::read_to_string(&main).unwrap();
+    assert!(metadata.contains("[scenario]"));
+    assert!(metadata.contains("\"land_axis.toml\","));
+    let metadata = metadata
+        .replace(
+            "[scenario]",
+            "[scenario]\nsetup_from = \"pin_source\"\nsetup_files = [\"land_axis.toml\"]",
+        )
+        .replace("\"land_axis.toml\",", "");
+    fs::write(&main, metadata).unwrap();
+    let source = cloned_data.join("scenarios/pin_source/land_axis.toml");
+    fs::create_dir_all(source.parent().unwrap()).unwrap();
+    let local_setup = cloned_data.join("scenarios/graziani/land_axis.toml");
+    fs::copy(&local_setup, &source).unwrap();
+    fs::remove_file(&local_setup).unwrap();
+    let files = cna_rules::content::source_files(&cloned_data, "graziani").unwrap();
+    assert!(files.contains(&source));
+    assert!(!files.contains(&local_setup));
+    // A component-normalized caller path must yield the same relative-name hash.
+    let handle = campaigns::create(
+        directory.path(),
+        &cloned_data.join("."),
+        request(cna_rules::PROFILE_DEV, "human", true),
+    )
+    .unwrap();
+    let path = directory.path().join(format!(
+        "{}.sqlite",
+        handle.projection(Perspective::Operator).meta.id
+    ));
+    handle.shutdown().await.unwrap();
+    let before = stored(&path);
+    let recovered = campaigns::recover(&path, &cloned_data).unwrap();
+    recovered.shutdown().await.unwrap();
+    assert_eq!(stored(&path), before);
+    let original = fs::read(&source).unwrap();
+    let mut changed = original.clone();
+    changed.extend_from_slice(b"\n# inherited setup pin drift\n");
+    fs::write(&source, changed).unwrap();
+    assert!(
+        matches!(campaigns::recover(&path, &cloned_data), Err(Error::Recovery(reason)) if reason.contains("pins changed"))
+    );
+    assert_eq!(stored(&path), before);
+    fs::write(source, original).unwrap();
+}

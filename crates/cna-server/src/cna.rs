@@ -8,91 +8,21 @@ use cna_core::{dice::CampaignRng, engine::Game, ids::SeatId};
 use cna_protocol::{CampaignMeta, ControllerInfo, ControllerKind, SeatInfo, SeatStatus};
 use cna_rules::{Cna, CnaContent, State};
 use sha2::{Digest, Sha256};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::Path};
 
 fn invalid(error: std::io::Error) -> Error {
     Error::Invalid(error.to_string())
 }
-fn tomls(directory: &Path, recursive: bool, files: &mut Vec<PathBuf>) -> Result<(), Error> {
-    if !directory.exists() {
-        return Ok(());
-    }
-    for entry in fs::read_dir(directory).map_err(invalid)? {
-        let path = entry.map_err(invalid)?.path();
-        if recursive && path.is_dir() {
-            tomls(&path, true, files)?;
-        } else if path.extension().is_some_and(|e| e == "toml") {
-            files.push(path);
-        }
-    }
-    Ok(())
-}
-
-// Mirrors the lead-owned loaders, including their non-recursive unit and registry folders.
-// Notes, unused map metadata and unknown registry books are intentionally absent.
-fn content_files(data: &Path) -> Result<Vec<PathBuf>, Error> {
-    let mut files = Vec::new();
-    let map = data.join("map");
-    let mut map_sources = vec!["hexes.csv", "aliases.csv", "areas.toml"];
-    let layers = [
-        "layers.toml",
-        "coverage.csv",
-        "line_features.csv",
-        "hexsides.csv",
-    ];
-    // The loader skips sections provenance when all movement-layer files are absent.
-    if layers.iter().any(|name| map.join(name).exists()) {
-        map_sources.extend(layers);
-        map_sources.push("sections.toml");
-    }
-    for name in map_sources {
-        let path = map.join(name);
-        if path.exists() {
-            files.push(path);
-        }
-    }
-    for folder in ["weapons", "classes", "aircraft", "schedules"] {
-        tomls(&data.join("units").join(folder), false, &mut files)?;
-    }
-    for entry in fs::read_dir(data.join("units/oa")).map_err(invalid)? {
-        let path = entry.map_err(invalid)?.path();
-        if path.is_dir() {
-            tomls(&path, false, &mut files)?;
-        }
-    }
-    for name in [
-        "scenario.toml",
-        "land_axis.toml",
-        "land_cw.toml",
-        "air_axis.toml",
-        "air_cw.toml",
-        "supply.toml",
-        "facilities.toml",
-        "construction.toml",
-        "fleet.toml",
-        "arrivals.toml",
-    ] {
-        let path = data.join("scenarios/graziani").join(name);
-        if path.exists() {
-            files.push(path);
-        }
-    }
-    tomls(&data.join("tables"), true, &mut files)?;
-    for book in ["land", "airlog", "scen"] {
-        tomls(&data.join("rules").join(book), false, &mut files)?;
-    }
-    files.sort();
-    Ok(files)
-}
 fn content_hash(data: &Path) -> Result<String, Error> {
+    // The loader records actual reads, including conditional/reused scenario inputs.
+    // Normalize the prefix exactly as those recorded paths before deriving relative names.
+    let data = cna_content::normalize(data);
+    let files = cna_rules::content::source_files(&data, "graziani").map_err(Error::Invalid)?;
     let mut digest = Sha256::new();
     digest.update(b"cna-graziani-inputs-v1");
-    for path in content_files(data)? {
+    for path in files {
         let name = path
-            .strip_prefix(data)
+            .strip_prefix(&data)
             .map_err(|e| Error::Invalid(e.to_string()))?
             .to_string_lossy()
             .replace('\\', "/");
