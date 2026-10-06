@@ -27,6 +27,7 @@ use tokio::task::JoinHandle;
 
 pub const CALL_CAP: u64 = 40;
 pub const WALL_LIMIT: Duration = Duration::from_secs(150);
+pub const SCRIPTED_WALL_LIMIT: Duration = Duration::from_secs(600);
 pub const TURN_LIMIT: Duration = Duration::from_secs(60);
 
 pub struct Demo {
@@ -228,7 +229,7 @@ impl Demo {
         }
         let result = if drivers.is_empty() {
             let mut state = self.handle.watch_status();
-            tokio::time::timeout(WALL_LIMIT, async {
+            tokio::time::timeout(SCRIPTED_WALL_LIMIT, async {
                 loop {
                     match state.borrow_and_update().clone() {
                         CampaignStatus::Running => {}
@@ -241,7 +242,7 @@ impl Demo {
                 }
             })
             .await
-            .unwrap_or_else(|_| Err("bounded campaign wall-clock budget exhausted".into()))
+            .unwrap_or_else(|_| Err("scripted campaign wall-clock budget exhausted".into()))
         } else {
             let (cancel, stop) = tokio::sync::watch::channel(false);
             let mut tasks = FuturesUnordered::new();

@@ -56,12 +56,19 @@ provider is started by the server.
 - `kind: "sandbox"`, `rules_profile: "sandbox-v1"` runs the **synthetic game**. Controllers:
   `legal_random`, `pass_when_possible`, `aggressive` / `scripted:aggressive`, or `human`.
 - `kind: "cna"`, `rules_profile: "cna-2021-dev"` runs the real Graziani's Offensive setup and
-  sequence through the development ruleset. Currently it resolves initiative declarations and
+  sequence through the development ruleset. It resolves supported initiative and movement windows and
   skips unimplemented steps; reaching Finished does not mean all CNA rules are implemented.
   Controllers: `legal_random`, `pass_when_possible`, or `human`.
 - `kind: "cna"`, `rules_profile: "cna-2021-full"` uses the strict ruleset and stops visibly at the
   first unsupported applicable procedure. It never substitutes an order. Aggressive is available
   only for the sandbox (including handover). Unknown kinds, profiles and mismatched pairs are rejected.
+
+CNA legal-random movement uses `cna_rules::baseline::random_orders` inside the campaign writer,
+with a deterministic controller-local RNG seeded by request and controller epoch. It chooses
+a declared pass with the usual one-in-five legal-random probability, otherwise one legal
+complete unit path or an empty order list. Creation and recovery install the same
+policy; pass-when-possible remains a separate controller, and aggressive stays sandbox-only.
+Rejected policy actions pause the seat after one attempt, without a substitute or retry.
 
 Legal-random samples enumerable schemas and preserves ruleset-provided hex/path candidate hooks.
 Without such a hook, a schema containing unenumerated hexes or paths uses its declared pass as

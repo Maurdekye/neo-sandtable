@@ -37,11 +37,30 @@ async fn terminal(handle: &CampaignHandle) -> CampaignStatus {
             ) {
                 return current;
             }
-            status.changed().await.expect("writer closed unexpectedly");
+            for seat in SeatId::all() {
+                let binding = handle.seat(seat).binding;
+                assert!(
+                    !binding.paused,
+                    "scripted seat {seat} paused: {:?}",
+                    binding.failure
+                );
+            }
+            tokio::select! {
+                result = status.changed() => result.expect("writer closed unexpectedly"),
+                _ = tokio::time::sleep(Duration::from_millis(100)) => {},
+            }
         }
     })
     .await
-    .expect("campaign timeout")
+    .unwrap_or_else(|_| {
+        panic!(
+            "campaign timeout at {:?}; seats {:?}",
+            handle.projection(Perspective::Operator).view.clock,
+            SeatId::all()
+                .map(|s| (s, handle.seat(s).binding))
+                .collect::<Vec<_>>()
+        )
+    })
 }
 fn stored(path: &Path) -> (u64, String, String) {
     let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
@@ -127,6 +146,43 @@ async fn real_graziani_baselines_finish_with_private_transcripts_and_exact_recov
             );
         }
         assert_initiative_and_transcript_count(&path, count);
+        let movement_ids: std::collections::BTreeSet<_> = resolved_decisions(&path)
+            .into_iter()
+            .filter(|d| d.kind == cna_rules::land::movement::KIND)
+            .map(|d| d.id)
+            .collect();
+        assert!(!movement_ids.is_empty());
+        let db = Connection::open_with_flags(&path, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+        let mut statement = db
+            .prepare("SELECT command FROM commands WHERE seat != ''")
+            .unwrap();
+        let commands: Vec<cna_core::engine::Command> = statement
+            .query_map([], |row| row.get::<_, String>(0))
+            .unwrap()
+            .map(|row| serde_json::from_str(&row.unwrap()).unwrap())
+            .collect();
+        let actions: Vec<_> = commands
+            .iter()
+            .filter_map(|command| match command {
+                cna_core::engine::Command::Respond(r) if movement_ids.contains(&r.decision_id) => {
+                    Some(&r.action)
+                }
+                _ => None,
+            })
+            .collect();
+        if mode == "legal_random" {
+            assert!(
+                actions.iter().any(|action| action.is_array()),
+                "movement policy actually dispatched"
+            );
+        } else {
+            assert!(
+                actions.iter().all(|action| action.is_null()),
+                "pass controller remains separate"
+            );
+        }
+        drop(statement);
+        drop(db);
         handle.shutdown().await.unwrap();
         let before = stored(&path);
         let db = Connection::open(&path).unwrap();

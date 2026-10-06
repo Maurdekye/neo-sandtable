@@ -40,6 +40,11 @@ pub struct SeatState {
 pub type Baseline<R> =
     Box<dyn Fn(&<R as Ruleset>::Content, &<R as Ruleset>::State, &DecisionRequest) -> Value + Send>;
 
+pub(crate) type ActionPolicy<R> = Box<
+    dyn Fn(&<R as Ruleset>::Content, &<R as Ruleset>::State, &DecisionRequest, u64) -> Option<Value>
+        + Send,
+>;
+
 enum Op {
     Pause(bool),
     Handover(SeatId, Option<ControllerInfo>, Value),
@@ -191,6 +196,32 @@ impl CampaignHandle {
         R::State: Send,
         R::Content: Send,
     {
+        Self::spawn_with_controllers(campaign, path, baseline, candidates, None)
+    }
+    pub(crate) fn spawn_with_policy<R>(
+        campaign: Campaign<R>,
+        path: &Path,
+        policy: ActionPolicy<R>,
+    ) -> Result<Self, Error>
+    where
+        R: Ruleset + Send + 'static,
+        R::State: Send,
+        R::Content: Send,
+    {
+        Self::spawn_with_controllers(campaign, path, None, Box::new(NoCandidates), Some(policy))
+    }
+    fn spawn_with_controllers<R>(
+        campaign: Campaign<R>,
+        path: &Path,
+        baseline: Option<Baseline<R>>,
+        candidates: Box<dyn Candidates + Send>,
+        policy: Option<ActionPolicy<R>>,
+    ) -> Result<Self, Error>
+    where
+        R: Ruleset + Send + 'static,
+        R::State: Send,
+        R::Content: Send,
+    {
         let (tx, mut rx) = mpsc::channel::<Envelope>(COMMAND_BUFFER);
         let mut projections = BTreeMap::new();
         let mut projection_senders = BTreeMap::new();
@@ -241,7 +272,12 @@ impl CampaignHandle {
                             Err(mpsc::error::TryRecvError::Disconnected) => return Ok(()),
                             Err(mpsc::error::TryRecvError::Empty) => {}
                         }
-                        let step = auto_step(&mut campaign, baseline.as_ref(), candidates.as_ref());
+                        let step = auto_step(
+                            &mut campaign,
+                            baseline.as_ref(),
+                            candidates.as_ref(),
+                            policy.as_ref(),
+                        );
                         match step {
                             Ok(Step::Idle) => {
                                 // An idle writer waits for control or a seat submission without polling.
@@ -433,6 +469,7 @@ fn auto_step<R: Ruleset>(
     campaign: &mut Campaign<R>,
     baseline: Option<&Baseline<R>>,
     candidates: &dyn Candidates,
+    policy: Option<&ActionPolicy<R>>,
 ) -> Result<Step, Error> {
     if campaign.status() != &CampaignStatus::Running {
         return Ok(Step::Idle);
@@ -445,6 +482,18 @@ fn auto_step<R: Ruleset>(
                 .as_ref()
                 .is_some_and(|c| c.kind == cna_protocol::ControllerKind::Scripted)
     });
+    if let Some(request) = first_scripted.as_ref()
+        && campaign.binding(request.seat).config["mode"] == "legal_random"
+        && let Some(policy) = policy
+        && let Some(action) = policy(
+            &campaign.content,
+            &campaign.game.state,
+            request,
+            campaign.binding(request.seat).controller_epoch,
+        )
+    {
+        return apply_baseline(campaign, request, action, "scripted:legal_random");
+    }
     if let Some(request) =
         first_scripted.filter(|d| campaign.binding(d.seat).config["mode"] == "aggressive")
     {
@@ -455,38 +504,46 @@ fn auto_step<R: Ruleset>(
                 error: "aggressive baseline unavailable".into(),
             });
         };
-        let epoch = campaign.binding(request.seat).controller_epoch;
         let action = baseline(&campaign.content, &campaign.game.state, &request);
-        let response = DecisionResponse {
-            decision_id: request.id.clone(),
-            seat: request.seat,
-            controller_epoch: epoch,
-            decision_revision: request.revision,
-            idempotency_key: format!("aggressive:{}:{epoch}:{}", request.id, request.revision),
-            action,
-            public_explanation: None,
-        };
-        match campaign.submit(response) {
-            Ok(receipt) if !receipt.duplicate => return Ok(Step::Responded { seat: request.seat }),
-            Ok(_) => {
-                let message = "ruleset retained an already-answered request without a new revision";
-                campaign.pause_seat_with_reason(request.seat, message)?;
-                return Ok(Step::SeatPaused {
-                    seat: request.seat,
-                    error: message.into(),
-                });
-            }
-            Err(Error::Rejected(Rejection::Illegal { message })) => {
-                campaign.pause_seat_with_reason(request.seat, &message)?;
-                return Ok(Step::SeatPaused {
-                    seat: request.seat,
-                    error: message,
-                });
-            }
-            Err(e) => return Err(e),
-        }
+        return apply_baseline(campaign, &request, action, "aggressive");
     }
     campaign.step(candidates)
+}
+fn apply_baseline<R: Ruleset>(
+    campaign: &mut Campaign<R>,
+    request: &DecisionRequest,
+    action: Value,
+    label: &str,
+) -> Result<Step, Error> {
+    let epoch = campaign.binding(request.seat).controller_epoch;
+    let response = DecisionResponse {
+        decision_id: request.id.clone(),
+        seat: request.seat,
+        controller_epoch: epoch,
+        decision_revision: request.revision,
+        idempotency_key: format!("{label}:{}:{epoch}:{}", request.id, request.revision),
+        action,
+        public_explanation: None,
+    };
+    match campaign.submit(response) {
+        Ok(receipt) if !receipt.duplicate => Ok(Step::Responded { seat: request.seat }),
+        Ok(_) => {
+            let message = "ruleset retained an already-answered request without a new revision";
+            campaign.pause_seat_with_reason(request.seat, message)?;
+            Ok(Step::SeatPaused {
+                seat: request.seat,
+                error: message.into(),
+            })
+        }
+        Err(Error::Rejected(Rejection::Illegal { message })) => {
+            campaign.pause_seat_with_reason(request.seat, &message)?;
+            Ok(Step::SeatPaused {
+                seat: request.seat,
+                error: message,
+            })
+        }
+        Err(e) => Err(e),
+    }
 }
 fn serialize<T: Serialize>(value: T) -> Result<Value, Error> {
     Ok(serde_json::to_value(value)?)

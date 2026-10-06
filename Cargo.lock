@@ -256,6 +256,7 @@ dependencies = [
  "cna-rules",
  "cna-sandbox",
  "cna-seats",
+ "cna-tables",
  "futures-util",
  "rand_chacha",
  "rand_core",
