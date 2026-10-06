@@ -209,13 +209,15 @@ impl Ruleset for NumberDuel {
                 got: response.decision_revision,
             });
         }
-        let card: u8 = response
-            .action
-            .as_str()
-            .and_then(|s| s.parse().ok())
-            .ok_or_else(|| Rejection::Illegal {
-                message: "action must be the id of one card in your hand, e.g. \"5\"".into(),
-            })?;
+        // Models often send the id as a JSON number; accept both spellings of the same choice.
+        let card: Option<u8> = match &response.action {
+            Value::String(s) => s.trim().parse().ok(),
+            Value::Number(n) => n.as_u64().and_then(|n| u8::try_from(n).ok()),
+            _ => None,
+        };
+        let card = card.ok_or_else(|| Rejection::Illegal {
+            message: "action must be the id of one card in your hand, e.g. \"5\"".into(),
+        })?;
         let Some(pos) = state.hands[me].iter().position(|c| *c == card) else {
             return Err(Rejection::Illegal {
                 message: format!("card {card} is not in your hand {:?}", state.hands[me]),
@@ -506,7 +508,7 @@ mod tests {
             Err(ToolError::Illegal(_))
         ));
         assert!(matches!(
-            g.submit(AXIS, req(1, json!(5))),
+            g.submit(AXIS, req(1, json!([5]))),
             Err(ToolError::Illegal(_))
         ));
         assert_eq!(
