@@ -43,7 +43,7 @@ pub type Baseline<R> =
 enum Op {
     Pause(bool),
     Handover(SeatId, Option<ControllerInfo>, Value),
-    PauseSeat(SeatId, String),
+    PauseSeat(SeatId, Option<u64>, String),
     Submit(DecisionResponse),
     SubmitAction(SeatId, SubmitRequest),
     Validate(SeatId, String, Value),
@@ -332,11 +332,24 @@ impl CampaignHandle {
         self.call(Op::Handover(seat, controller, config)).await
     }
     pub async fn pause_seat(&self, seat: SeatId) -> Result<(), Error> {
-        self.call(Op::PauseSeat(seat, "paused by operator".into()))
+        self.call(Op::PauseSeat(seat, None, "paused by operator".into()))
             .await
     }
+    /// Unconditional administrative pause. Controller callbacks must use
+    /// `mark_failure_if_epoch` so a superseded controller cannot pause its replacement.
     pub async fn mark_failure(&self, seat: SeatId, reason: &str) -> Result<(), Error> {
-        self.call(Op::PauseSeat(seat, reason.into())).await
+        self.call(Op::PauseSeat(seat, None, reason.into())).await
+    }
+    /// Compare the controller epoch and apply its failure pause on the single writer.
+    /// Stale callbacks leave the replacement binding and transcript history unchanged.
+    pub async fn mark_failure_if_epoch(
+        &self,
+        seat: SeatId,
+        expected_epoch: u64,
+        reason: &str,
+    ) -> Result<(), Error> {
+        self.call(Op::PauseSeat(seat, Some(expected_epoch), reason.into()))
+            .await
     }
     pub async fn submit(&self, response: DecisionResponse) -> Result<Receipt, Error> {
         self.call(Op::Submit(response)).await
@@ -512,7 +525,11 @@ fn dispatch<R: Ruleset>(campaign: &mut Campaign<R>, op: Op) -> Result<Value, Err
         Op::Handover(seat, controller, config) => {
             serialize(campaign.handover(seat, controller, config)?)
         }
-        Op::PauseSeat(seat, reason) => {
+        Op::PauseSeat(seat, expected_epoch, reason) => {
+            if expected_epoch.is_some_and(|epoch| epoch != campaign.binding(seat).controller_epoch)
+            {
+                return Err(Error::StaleEpoch);
+            }
             campaign.pause_seat_with_reason(seat, &reason)?;
             Ok(Value::Null)
         }

@@ -45,7 +45,10 @@ upper cursor even when new entries keep arriving.
 `CampaignHandle` is a bounded actor interface and implements the asynchronous `cna-seats`
 `GameBackend`, `SeatMemory` and `TranscriptStore`. `watch_seat(seat)` publishes only changes to
 that seat's authorized pending requests, observation or binding, including reissues after
-handover. `mark_failure(seat, reason)` durably pauses a failed controller, retaining the reason.
+handover. Controller callbacks use `mark_failure_if_epoch(seat, expected_epoch, reason)` to
+durably pause a failed controller: the writer rejects a superseded epoch without pausing its
+replacement or adding a transcript. `mark_failure(seat, reason)` and `pause_seat` remain
+unconditional operator controls.
 `handover` installs a controller and a new epoch and clears its pause. `shutdown` joins the
 writer thread. Submit receipts are stable acknowledgements; observations are fetched separately.
 Scripted baselines emit factual `decision_submitted` entries with the accepted action, and

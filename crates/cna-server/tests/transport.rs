@@ -639,3 +639,104 @@ async fn scripted_baselines_emit_truthful_live_and_replayed_private_transcripts(
         restored.shutdown().await.unwrap();
     }
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn delayed_controller_failure_cannot_pause_or_report_for_replacement_epoch() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", false)).unwrap();
+    let decision = pending(&handle).await;
+    let seat = decision.seat;
+    handle.pause(true).await.unwrap();
+    let old_epoch = handle.seat(seat).binding.controller_epoch;
+    let old_controller = handle.clone();
+    let (release, callback) = tokio::sync::oneshot::channel();
+    let failure = tokio::spawn(async move {
+        callback.await.unwrap();
+        old_controller
+            .mark_failure_if_epoch(seat, old_epoch, "old controller timed out")
+            .await
+    });
+    let replacement = handle
+        .handover(
+            seat,
+            Some(cna_protocol::ControllerInfo {
+                kind: cna_protocol::ControllerKind::Scripted,
+                label: "scripted:legal_random".into(),
+            }),
+            serde_json::json!({"mode":"legal_random"}),
+        )
+        .await
+        .unwrap();
+    assert_eq!(replacement.controller_epoch, old_epoch + 1);
+    let before = handle.seat(seat);
+    assert_eq!(before.pending[0].id, decision.id);
+    let mut state = handle.watch_seat(seat);
+    state.borrow_and_update();
+    let mut stream = handle.subscribe(Perspective::Operator);
+    release.send(()).unwrap();
+    assert!(matches!(
+        failure.await.unwrap(),
+        Err(cna_server::Error::StaleEpoch)
+    ));
+    assert_eq!(handle.seat(seat), before);
+    assert!(!state.has_changed().unwrap());
+    assert!(matches!(
+        stream.try_recv(),
+        Err(tokio::sync::broadcast::error::TryRecvError::Empty)
+    ));
+    assert!(
+        handle
+            .replay()
+            .transcripts(Perspective::Operator, seat, 0)
+            .unwrap()
+            .is_empty()
+    );
+    handle
+        .mark_failure_if_epoch(
+            seat,
+            replacement.controller_epoch,
+            "current controller budget exhausted",
+        )
+        .await
+        .unwrap();
+    assert!(handle.seat(seat).binding.paused);
+    assert_eq!(
+        handle.seat(seat).binding.failure.as_deref(),
+        Some("current controller budget exhausted")
+    );
+    let rows = handle
+        .replay()
+        .transcripts(Perspective::Operator, seat, 0)
+        .unwrap();
+    assert_eq!(rows.len(), 1);
+    assert!(
+        matches!(&rows[0], ServerMessage::Transcript { entry:TranscriptEntry::System {text}, .. }
+        if text == "Scripted controller paused: current controller budget exhausted")
+    );
+    assert!(matches!(
+        handle
+            .mark_failure_if_epoch(seat, old_epoch, "old controller retries timeout")
+            .await,
+        Err(cna_server::Error::StaleEpoch)
+    ));
+    assert_eq!(
+        handle
+            .replay()
+            .transcripts(Perspective::Operator, seat, 0)
+            .unwrap(),
+        rows
+    );
+    let id = handle.projection(Perspective::Operator).meta.id;
+    let accepted_binding = handle.seat(seat).binding;
+    handle.shutdown().await.unwrap();
+    let restored = sandbox::recover(&dir.path().join(format!("{id}.sqlite")), &data()).unwrap();
+    assert_eq!(restored.seat(seat).binding, accepted_binding);
+    assert_eq!(
+        restored
+            .replay()
+            .transcripts(Perspective::Operator, seat, 0)
+            .unwrap(),
+        rows
+    );
+    restored.shutdown().await.unwrap();
+}
