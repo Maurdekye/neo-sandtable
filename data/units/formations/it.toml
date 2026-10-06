@@ -1,0 +1,426 @@
+# Italian Formation Organization Chart, land:19.32 (chart image "Italian Formation Chart").
+# Schema: data/units/README.md, section "Formations". Each member is one printed symbol:
+# `sp` is the stacking-point number printed in front of it (absent = no number printed).
+[file]
+nation = "it"
+src = ["land:19.32"]
+transcribed_from = ["vassal:Italian Formation Chart.png"]
+verification = "single"
+
+# ---- legend: unit kinds -------------------------------------------------------------------
+
+[[kind]]
+id = "it.tank_bn"
+nation = "it"
+name = "Tank battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "tank", echelon = "battalion" }
+sp = 1
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.inf_bn"
+nation = "it"
+name = "Infantry battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "infantry", echelon = "battalion", tags_any = ["leg", "motorized", "parachute"] }
+sp = 1
+note = "Leg, motorized or parachute battalion. A regiment is normally made of battalions of one style."
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.brs_mot_inf_bn"
+nation = "it"
+name = "Bersaglieri motorized infantry battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "infantry", echelon = "battalion", tags_all = ["bersaglieri", "motorized"] }
+sp = 1
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.brs_cycle_inf_bn"
+nation = "it"
+name = "Bersaglieri motorcycle infantry battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "infantry", echelon = "battalion", tags_all = ["bersaglieri", "motorcycle"] }
+sp = 1
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.mg_inf_bn"
+nation = "it"
+name = "Machinegun infantry battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "infantry", echelon = "battalion", tags_all = ["machinegun"] }
+sp = 1
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.mot_mg_inf_co"
+nation = "it"
+name = "Motorized machinegun infantry company"
+echelon = "company"
+symbol_echelon = "I"
+match = { unit_type = "infantry", echelon = "company", tags_all = ["machinegun", "motorized"] }
+sp = 0
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.at_bn"
+nation = "it"
+name = "Anti-tank battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "anti_tank", echelon = "battalion" }
+sp = 1
+fill_by = [ { kind = "it.at_co", max = 3 } ]
+note = "May instead be filled by up to three anti-tank companies."
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.at_co"
+nation = "it"
+name = "Anti-tank company"
+echelon = "company"
+symbol_echelon = "I"
+match = { unit_type = "anti_tank", echelon = "company" }
+sp = 0
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.at_unit"
+nation = "it"
+name = "Anti-tank unit"
+any_of_kinds = ["it.at_bn", "it.at_co"]
+note = "Either an anti-tank battalion or an anti-tank company; the chart row prints no number with it."
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.arty_regt"
+nation = "it"
+name = "Artillery regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "artillery" }
+sp = 1
+fill_by = [ { kind = "it.arty_bn", max = 3 } ]
+note = "One artillery regiment, up to three artillery battalions, or a parachute artillery regiment."
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.arty_bn"
+nation = "it"
+name = "Artillery battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "artillery", echelon = "battalion" }
+sp = 1
+note = "Armored divisions may also assign a self-propelled artillery battalion here."
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.aa_unit"
+nation = "it"
+name = "Anti-aircraft unit"
+match = { unit_type = "anti_air" }
+note = "Any anti-aircraft unit; the chart row prints no number with it."
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.cav_bn"
+nation = "it"
+name = "Cavalry battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { echelon = "battalion", tags_any = ["cavalry", "camel_cavalry"] }
+sp = 1
+note = "A cavalry battalion or a camel cavalry battalion."
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.armored_car_regt"
+nation = "it"
+name = "Armored car regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "recce", tags_all = ["armored_car"] }
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.armored_car_bn"
+nation = "it"
+name = "Armored car battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "recce", echelon = "battalion", tags_all = ["armored_car"] }
+sp = 1
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.motorcycle_recon_co"
+nation = "it"
+name = "Bersaglieri motorcycle reconnaissance company"
+echelon = "company"
+symbol_echelon = "I"
+match = { unit_type = "recce", echelon = "company", tags_all = ["bersaglieri", "motorcycle"] }
+sp = 0
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.eng_bn"
+nation = "it"
+name = "Engineer battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "engineer", echelon = "battalion" }
+classes = ["it.bbb"]
+sp = 1
+src = ["land:19.32"]
+
+# Regiment-sized kinds (their compositions are the [[formation]] records below).
+
+[[kind]]
+id = "it.tank_regt"
+nation = "it"
+name = "Tank regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "headquarters", echelon = "brigade", tags_all = ["tank"] }
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.brs_regt"
+nation = "it"
+name = "Bersaglieri infantry regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "headquarters", echelon = "brigade", tags_all = ["bersaglieri"] }
+sp = 2
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.inf_regt"
+nation = "it"
+name = "Infantry regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "headquarters", echelon = "brigade", tags_any = ["leg", "motorized", "parachute"] }
+sp = 2
+note = "Plain, motorized or parachute regiment. The 54th Territorial and the 4th of the 10th Army regiments are single counters, not four."
+src = ["land:19.32"]
+
+[[kind]]
+id = "it.cav_regt"
+nation = "it"
+name = "Cavalry regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "headquarters", echelon = "brigade", tags_all = ["cavalry"] }
+sp = 2
+src = ["land:19.32"]
+
+# ---- composition rows ---------------------------------------------------------------------
+
+[[formation]]
+id = "it.armored_div"
+nation = "it"
+name = "Armored division"
+echelon = "division"
+sp = 5
+members = [
+  { kind = "it.tank_regt", formation = "it.tank_regt_3bn", sp = 2 },
+  { kind = "it.inf_regt", sp = 2 },
+  { kind = "it.armored_car_bn", sp = 1 },
+  { kind = "it.at_bn", sp = 1 },
+  { kind = "it.arty_regt", sp = 1 },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.tank_group"
+nation = "it"
+name = "Tank group (specifically the Libyan Tank Command)"
+echelon = "division"
+sp = 5
+periods = [ { gt_from = 1, gt_to = 26 } ]
+applies_to = ["it.libyan_tank_command.libyan_tank_command_hq"]
+members = [
+  { kind = "it.tank_regt", formation = "it.tank_regt_5bn", sp = 3 },
+  { kind = "it.tank_regt", formation = "it.tank_regt_5bn", sp = 3 },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.motorized_inf_div"
+nation = "it"
+name = "Motorized infantry division"
+echelon = "division"
+sp = 5
+members = [
+  { kind = "it.inf_regt", sp = 2, style = "motorized" },
+  { kind = "it.inf_regt", sp = 2, style = "motorized" },
+  { kind = "it.brs_regt", sp = 2 },
+  { kind = "it.at_bn", sp = 1 },
+  { kind = "it.arty_bn", sp = 1 },
+  { kind = "it.aa_unit" },
+  { kind = "it.mg_inf_bn", sp = 1 },
+  { kind = "it.eng_bn", sp = 1 },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.semi_motorized_inf_div"
+nation = "it"
+name = "Semi-motorized infantry division"
+echelon = "division"
+sp = 5
+members = [
+  { kind = "it.inf_regt", sp = 2 },
+  { kind = "it.inf_regt", sp = 2 },
+  { kind = "it.at_unit" },
+  { kind = "it.arty_regt", sp = 1 },
+  { kind = "it.mg_inf_bn", sp = 1 },
+  { kind = "it.eng_bn", sp = 1 },
+  { any_of = [ { kind = "it.brs_mot_inf_bn", sp = 1 }, { kind = "it.motorcycle_recon_co", sp = 0 } ] },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.libyan_inf_div"
+nation = "it"
+name = "Libyan infantry division"
+echelon = "division"
+sp = 5
+designation = "Libyan"
+shares_row_with = "it.parachute_inf_div"
+members = [
+  { kind = "it.inf_regt", sp = 2 },
+  { kind = "it.inf_regt", sp = 2 },
+  { kind = "it.at_co", sp = 0 },
+  { kind = "it.arty_regt", sp = 1, gap = "U-016" },
+]
+exceptions = [
+  { holder_sheet = "it.gruppo_maletti", add = { kind = "it.inf_regt", sp = 2 }, note = "Gruppo Maletti may assign a third regiment." },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.parachute_inf_div"
+nation = "it"
+name = "Parachute infantry division"
+echelon = "division"
+sp = 5
+shares_row_with = "it.libyan_inf_div"
+members = [
+  { kind = "it.inf_regt", sp = 2, style = "parachute" },
+  { kind = "it.inf_regt", sp = 2, style = "parachute" },
+  { kind = "it.at_co", sp = 0 },
+  { kind = "it.arty_regt", sp = 1, gap = "U-016" },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.tank_regt_5bn"
+nation = "it"
+kind = "it.tank_regt"
+name = "Tank regiment, five battalions (3 stacking points)"
+echelon = "brigade"
+sp = 3
+members = [
+  { kind = "it.tank_bn", sp = 1 }, { kind = "it.tank_bn", sp = 1 }, { kind = "it.tank_bn", sp = 1 },
+  { kind = "it.tank_bn", sp = 1 }, { kind = "it.tank_bn", sp = 1 },
+]
+note = "Historically four light-tank battalions and one medium-tank battalion."
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.tank_regt_3bn"
+nation = "it"
+kind = "it.tank_regt"
+name = "Tank regiment, three battalions (2 stacking points)"
+echelon = "brigade"
+sp = 2
+members = [
+  { kind = "it.tank_bn", sp = 1 }, { kind = "it.tank_bn", sp = 1 }, { kind = "it.tank_bn", sp = 1 },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.brs_regt"
+nation = "it"
+kind = "it.brs_regt"
+name = "Bersaglieri infantry regiment"
+echelon = "brigade"
+sp = 2
+members = [
+  { kind = "it.brs_mot_inf_bn", sp = 1 },
+  { kind = "it.brs_mot_inf_bn", sp = 1 },
+  { any_of = [ { kind = "it.brs_cycle_inf_bn", sp = 1 }, { kind = "it.brs_mot_inf_bn", sp = 1 } ] },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.inf_regt"
+nation = "it"
+kind = "it.inf_regt"
+name = "Infantry regiment"
+echelon = "brigade"
+sp = 2
+members = [
+  { kind = "it.inf_bn", sp = 1 }, { kind = "it.inf_bn", sp = 1 }, { kind = "it.inf_bn", sp = 1 },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.cav_regt"
+nation = "it"
+kind = "it.cav_regt"
+name = "Cavalry regiment"
+echelon = "brigade"
+sp = 2
+members = [
+  { kind = "it.cav_bn", sp = 1 }, { kind = "it.cav_bn", sp = 1 }, { kind = "it.cav_bn", sp = 1 },
+]
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.sahara_regt"
+nation = "it"
+kind = "it.inf_regt"
+name = "Saharan detachment (an infantry regiment)"
+echelon = "brigade"
+sp = 2
+designation = "Sahara"
+applies_to = ["it.sahara_det.saharan_detachment_hq"]
+members = [
+  { kind = "it.inf_bn", sp = 1 },
+  { kind = "it.inf_bn", sp = 1 },
+  { any_of = [ { kind = "it.inf_bn", sp = 1 }, { kind = "it.cav_bn", sp = 1 } ] },
+  { kind = "it.mg_inf_bn", sp = 1 },
+  { kind = "it.mot_mg_inf_co", sp = 0 },
+  { kind = "it.arty_regt", sp = 1 },
+]
+note = "The printed 'or' is read as covering the third infantry slot only: see interpretation units-0001."
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.recam_regt"
+nation = "it"
+kind = "it.armored_car_regt"
+name = "Reggruppamento Esplorante del Corpo di Manovra (RECAM)"
+echelon = "brigade"
+sp = 2
+designation = "RECAM"
+members = [
+  { kind = "it.armored_car_bn", sp = 1 },
+  { kind = "it.mot_mg_inf_co", sp = 0 },
+  { kind = "it.arty_regt", sp = 1 },
+  { kind = "it.eng_bn", sp = 1 },
+]
+note = "Not an armored regiment for the purposes of armored division assignment."
+src = ["land:19.32"]

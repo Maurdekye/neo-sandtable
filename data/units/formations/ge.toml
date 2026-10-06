@@ -1,0 +1,349 @@
+# German Formation Organization Chart, land:19.33 (chart image "German Formation Chart").
+# Schema: data/units/README.md, section "Formations". Each member is one printed symbol:
+# `sp` is the stacking-point number printed in front of it (absent = no number printed or unreadable;
+# an unreadable one carries a `gap` id).
+[file]
+nation = "ge"
+src = ["land:19.33"]
+transcribed_from = ["vassal:German Formation Chart.png"]
+verification = "single"
+
+# ---- legend: unit kinds -------------------------------------------------------------------
+
+[[kind]]
+id = "ge.tank_bn"
+nation = "ge"
+name = "Tank battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "tank", echelon = "battalion" }
+sp = 1
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.td_bn"
+nation = "ge"
+name = "Tank destroyer battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "anti_tank", echelon = "battalion", tags_any = ["tank_destroyer", "anti_tank"] }
+sp = 1
+note = "The tank destroyer symbol may be filled by a tank destroyer battalion or an anti-tank battalion."
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.at_bn"
+nation = "ge"
+name = "Anti-tank battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "anti_tank", echelon = "battalion" }
+sp = 1
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.inf_bn"
+nation = "ge"
+name = "Infantry-type battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "infantry", echelon = "battalion", tags_none = ["heavy_weapons_parachute"] }
+sp = 1
+note = "Any infantry-type battalion except a heavy weapons parachute infantry battalion."
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.hw_para_inf_bn"
+nation = "ge"
+name = "Heavy weapons parachute infantry battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "infantry", echelon = "battalion", tags_all = ["heavy_weapons_parachute"] }
+sp = 1
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.arty_unit_1sp"
+nation = "ge"
+name = "Artillery unit (one stacking point)"
+match = { unit_type = "artillery" }
+sp = 1
+note = "Any artillery unit whose counter shows a one stacking point indicator."
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.arty_group"
+nation = "ge"
+name = "Artillery group"
+match = { unit_type = "artillery" }
+sp = 2
+note = "Either any artillery headquarters (except the ArKo) together with all its units, or any three artillery units whose counters show one stacking point."
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.armd_recon_bn"
+nation = "ge"
+name = "Armored reconnaissance battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "recce", echelon = "battalion", tags_all = ["armored_recon"] }
+sp = 1
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.heavy_aa_unit"
+nation = "ge"
+name = "Heavy anti-aircraft unit"
+symbol_echelon = "II"
+match = { unit_type = "anti_air", tags_all = ["heavy"] }
+sp = 1
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.light_aa_unit"
+nation = "ge"
+name = "Light anti-aircraft unit"
+symbol_echelon = "II"
+match = { unit_type = "anti_air", tags_all = ["light"] }
+sp = 1
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.eng_bn"
+nation = "ge"
+name = "Engineer battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "engineer", echelon = "battalion" }
+sp = 1
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.eng_co"
+nation = "ge"
+name = "Engineer company"
+echelon = "company"
+symbol_echelon = "I"
+match = { unit_type = "engineer", echelon = "company" }
+sp = 0
+src = ["land:19.33"]
+
+# Regiment-sized kinds (compositions are the [[formation]] records below).
+
+[[kind]]
+id = "ge.armd_regt"
+nation = "ge"
+name = "Armored regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "headquarters", echelon = "brigade", tags_all = ["tank"] }
+sp = 2
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.inf_regt"
+nation = "ge"
+name = "Infantry regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "headquarters", echelon = "brigade", tags_all = ["infantry"] }
+sp = 2
+src = ["land:19.33"]
+
+[[kind]]
+id = "ge.inf_bde"
+nation = "ge"
+name = "Infantry brigade"
+echelon = "super_brigade"
+symbol_echelon = "X"
+match = { unit_type = "headquarters", echelon = "super_brigade" }
+sp = 3
+src = ["land:19.33"]
+
+# ---- divisions ----------------------------------------------------------------------------
+
+[[formation]]
+id = "ge.5_le_pz_div"
+nation = "ge"
+name = "5th Light Panzer Division (becomes the 21st Panzer Division)"
+echelon = "division"
+sp = 5
+designation = "5 Le"
+members = [
+  { kind = "ge.armd_regt", formation = "ge.armd_regt", sp = 2 },
+  { kind = "ge.inf_bn", sp = 1 },
+  { kind = "ge.inf_bn", gap = "U-017" },
+  { kind = "ge.td_bn", sp = 1 },
+  { kind = "ge.at_bn", sp = 1 },
+  { kind = "ge.arty_unit_1sp", sp = 1 },
+  { kind = "ge.heavy_aa_unit", sp = 1 },
+  { kind = "ge.light_aa_unit", sp = 1 },
+  { kind = "ge.armd_recon_bn", sp = 1 },
+  { kind = "ge.eng_bn", sp = 1 },
+]
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.21_pz_div"
+nation = "ge"
+name = "21st Panzer Division"
+echelon = "division"
+sp = 5
+designation = "21"
+members = [
+  { kind = "ge.armd_regt", formation = "ge.armd_regt", sp = 2 },
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+  { kind = "ge.td_bn", sp = 1 },
+  { kind = "ge.at_bn", sp = 1 },
+  { kind = "ge.arty_unit_1sp", sp = 1 },
+  { kind = "ge.arty_unit_1sp", sp = 1 },
+  { kind = "ge.heavy_aa_unit", sp = 1 },
+  { kind = "ge.light_aa_unit", sp = 1 },
+  { kind = "ge.armd_recon_bn", sp = 1 },
+  { kind = "ge.eng_bn", sp = 1 },
+]
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.15_pz_div"
+nation = "ge"
+name = "15th Panzer Division"
+echelon = "division"
+sp = 5
+designation = "15"
+members = [
+  { kind = "ge.armd_regt", formation = "ge.armd_regt", sp = 2 },
+  { kind = "ge.inf_bde", formation = "ge.15_inf_bde", sp = 3 },
+  { kind = "ge.td_bn", sp = 1 },
+  { kind = "ge.arty_group", sp = 2 },
+  { kind = "ge.armd_recon_bn", sp = 1 },
+  { kind = "ge.eng_bn", sp = 1 },
+]
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.90_le_div"
+nation = "ge"
+name = "90th Leichte Afrika Division"
+echelon = "division"
+sp = 5
+designation = "90 Le"
+members = [
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+  { kind = "ge.inf_bn", sp = 1 },
+  { kind = "ge.inf_bn", sp = 1 },
+  { kind = "ge.at_bn", sp = 1 },
+  { kind = "ge.arty_unit_1sp", sp = 1 },
+  { kind = "ge.armd_recon_bn", sp = 1 },
+  { kind = "ge.eng_bn", sp = 1 },
+]
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.164_le_div"
+nation = "ge"
+name = "164th Leichte Afrika Division"
+echelon = "division"
+sp = 5
+designation = "164 Le"
+members = [
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+  { kind = "ge.at_bn", sp = 1 },
+  { kind = "ge.arty_group", sp = 2 },
+  { kind = "ge.light_aa_unit", sp = 1 },
+  { kind = "ge.armd_recon_bn", sp = 1 },
+  { kind = "ge.eng_bn", sp = 1 },
+]
+src = ["land:19.33"]
+
+# ---- regiments and brigades ---------------------------------------------------------------
+
+[[formation]]
+id = "ge.armd_regt"
+nation = "ge"
+kind = "ge.armd_regt"
+name = "Armored regiment"
+echelon = "brigade"
+sp = 2
+members = [ { kind = "ge.tank_bn", sp = 1 }, { kind = "ge.tank_bn", sp = 1 } ]
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.15_inf_bde"
+nation = "ge"
+kind = "ge.inf_bde"
+name = "15th Infantry Brigade"
+echelon = "super_brigade"
+sp = 3
+designation = "15"
+members = [
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+  { kind = "ge.inf_regt", formation = "ge.inf_regt", sp = 2 },
+]
+limits = [ { what = "infantry_battalions", max = 6 } ]
+note = "The brigade may never hold more than six infantry battalions."
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.ramcke_bde"
+nation = "ge"
+kind = "ge.inf_bde"
+name = "Ramcke Brigade"
+echelon = "super_brigade"
+sp = 3
+designation = "Ramcke"
+members = [
+  { kind = "ge.hw_para_inf_bn", sp = 1, glyph_note = "U-018" },
+  { kind = "ge.hw_para_inf_bn", sp = 1, glyph_note = "U-018" },
+  { kind = "ge.hw_para_inf_bn", sp = 1, glyph_note = "U-018" },
+  { kind = "ge.hw_para_inf_bn", sp = 1, glyph_note = "U-018" },
+  { kind = "ge.hw_para_inf_bn", sp = 1, glyph_note = "U-018" },
+]
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.inf_regt"
+nation = "ge"
+kind = "ge.inf_regt"
+name = "Infantry regiment"
+echelon = "brigade"
+sp = 2
+members = [
+  { kind = "ge.inf_bn", sp = 1 }, { kind = "ge.inf_bn", sp = 1 }, { kind = "ge.inf_bn", sp = 1 },
+]
+note = "The 28th Sonderverband and 361st Afrika regiments may be freely substituted for any ordinary infantry regiment. No Battle Group may be assigned to a division."
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.288_son_regt"
+nation = "ge"
+kind = "ge.inf_regt"
+name = "288th Sonderverband regiment"
+echelon = "brigade"
+sp = 2
+designation = "288 Son"
+members = [
+  { kind = "ge.inf_bn", sp = 1 }, { kind = "ge.inf_bn", sp = 1 }, { kind = "ge.inf_bn", sp = 1 },
+  { kind = "ge.at_bn", sp = 1 },
+  { kind = "ge.eng_co", sp = 0 },
+]
+src = ["land:19.33"]
+
+[[formation]]
+id = "ge.361_af_regt"
+nation = "ge"
+kind = "ge.inf_regt"
+name = "361st Afrika regiment"
+echelon = "brigade"
+sp = 2
+designation = "361 Af"
+parent_note = "The chart row is labeled 90 Le."
+members = [
+  { kind = "ge.inf_bn", sp = 1 }, { kind = "ge.inf_bn", sp = 1 },
+  { kind = "ge.arty_unit_1sp", sp = 1 },
+]
+src = ["land:19.33"]

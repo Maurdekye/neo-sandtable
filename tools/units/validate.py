@@ -135,6 +135,120 @@ for p in sorted((units / "schedules").glob("*.toml")) if (units / "schedules").e
                 if "unit" in u:
                     pending_refs.append((p, "unit", u["unit"], kind))
 
+# formation charts (land:19.3x): unit kinds and composition rows
+KIND_ALLOWED = {"id", "nation", "name", "echelon", "symbol_echelon", "match", "classes", "sp", "fill_by", "any_of_kinds",
+                "note", "src"}
+KIND_MATCH_ALLOWED = {"unit_type", "echelon", "tags_any", "tags_all", "tags_none"}
+FORMATION_ALLOWED = {"id", "nation", "name", "kind", "echelon", "sp", "periods", "designation", "applies_to",
+                     "shares_row_with", "members", "exceptions", "limits", "note", "parent_note", "src"}
+MEMBER_ALLOWED = {"kind", "formation", "sp", "any_of", "style", "gap", "glyph_note", "echelon_mark", "note"}
+ECHELONS = {"company", "battalion", "brigade", "super_brigade", "division", "battle_group"}
+SYMBOL_ECHELONS = {"I", "II", "III", "X", "XX"}
+kinds, formations = {}, {}
+form_refs = []  # (path, owner, field, ref)
+for p in sorted((units / "formations").glob("*.toml")) if (units / "formations").exists() else []:
+    d = load(p)
+    nation = d.get("file", {}).get("nation")
+    unit_types = {c.get("unit_type") for c in classes.values()}
+    for k in d.get("kind", []):
+        check_fields(p, k, ["id", "nation", "name", "src"], KIND_ALLOWED, "kind")
+        kid = k.get("id")
+        if kid in kinds:
+            err(p, f"duplicate kind id {kid}")
+        kinds[kid] = k
+        if not str(kid).startswith(f"{nation}."):
+            err(p, f"kind {kid}: id does not start with file nation {nation!r}")
+        if "echelon" in k and k["echelon"] not in ECHELONS:
+            err(p, f"kind {kid}: bad echelon {k['echelon']!r}")
+        if "symbol_echelon" in k and k["symbol_echelon"] not in SYMBOL_ECHELONS:
+            err(p, f"kind {kid}: bad symbol_echelon {k['symbol_echelon']!r}")
+        m = k.get("match", {})
+        for f in m:
+            if f not in KIND_MATCH_ALLOWED:
+                err(p, f"kind {kid}: unknown match field {f!r}")
+        if "unit_type" in m and m["unit_type"] not in unit_types:
+            err(p, f"kind {kid}: match.unit_type {m['unit_type']!r} is not a class unit_type")
+        if "echelon" in m and m["echelon"] not in ECHELONS:
+            err(p, f"kind {kid}: bad match.echelon {m['echelon']!r}")
+        for c in k.get("classes", []):
+            form_refs.append((p, kid, "class", c))
+        for r in k.get("any_of_kinds", []):
+            form_refs.append((p, kid, "kind", r))
+        for r in k.get("fill_by", []):
+            form_refs.append((p, kid, "kind", r.get("kind")))
+    for f in d.get("formation", []):
+        check_fields(p, f, ["id", "nation", "name", "echelon", "sp", "members", "src"], FORMATION_ALLOWED, "formation")
+        fid = f.get("id")
+        if fid in formations:
+            err(p, f"duplicate formation id {fid}")
+        formations[fid] = f
+        if not str(fid).startswith(f"{nation}."):
+            err(p, f"formation {fid}: id does not start with file nation {nation!r}")
+        if f.get("echelon") not in ECHELONS:
+            err(p, f"formation {fid}: bad echelon {f.get('echelon')!r}")
+        for pr in f.get("periods", []):
+            if set(pr) - {"gt_from", "gt_to"} or pr.get("gt_to", 10**6) < pr.get("gt_from", 1):
+                err(p, f"formation {fid}: bad period {pr}")
+        if "kind" in f:
+            form_refs.append((p, fid, "kind", f["kind"]))
+        for u in f.get("applies_to", []):
+            form_refs.append((p, fid, "unit", u))
+        if "shares_row_with" in f:
+            form_refs.append((p, fid, "formation", f["shares_row_with"]))
+        for e in f.get("exceptions", []):
+            form_refs.append((p, fid, "sheet", e.get("holder_sheet")))
+            if "kind" in e.get("add", {}):
+                form_refs.append((p, fid, "kind", e["add"]["kind"]))
+        if not f.get("members"):
+            err(p, f"formation {fid}: no members")
+
+        def check_member(m, top):
+            check_fields(p, {**m, "id": fid}, [], MEMBER_ALLOWED | {"id"}, "member")
+            if "any_of" in m:
+                if not top:
+                    err(p, f"formation {fid}: nested any_of")
+                if len(m["any_of"]) < 2 or set(m) - {"any_of", "note"}:
+                    err(p, f"formation {fid}: any_of needs >=2 options and nothing else")
+                for o in m["any_of"]:
+                    check_member(o, False)
+                return
+            if "kind" not in m and "formation" not in m:
+                err(p, f"formation {fid}: member has neither kind nor formation")
+            if "kind" in m:
+                form_refs.append((p, fid, "kind", m["kind"]))
+            if "formation" in m:
+                form_refs.append((p, fid, "formation", m["formation"]))
+            if "sp" not in m and "gap" not in m and "kind" in m:
+                pass  # no number printed
+            if "sp" in m and not isinstance(m["sp"], int):
+                err(p, f"formation {fid}: member sp must be an integer")
+            form_refs.append((p, fid, "member_sp", m))
+
+        for m in f.get("members", []):
+            check_member(m, True)
+
+# sp consistency of member rows vs. the referenced kind / formation
+for p, owner, what, ref in form_refs:
+    if what == "member_sp":
+        m = ref
+        if "sp" in m and "kind" in m and m["kind"] in kinds and "sp" in kinds[m["kind"]] and m["sp"] != kinds[m["kind"]]["sp"]:
+            err(p, f"{owner}: member {m['kind']} sp {m['sp']} differs from the kind's sp {kinds[m['kind']]['sp']}")
+        if "formation" in m and m["formation"] in formations:
+            tf = formations[m["formation"]]
+            if "sp" in m and m["sp"] != tf.get("sp"):
+                err(p, f"{owner}: member formation {m['formation']} sp {m['sp']} differs from its sp {tf.get('sp')}")
+            if "kind" in m and tf.get("kind") not in (None, m["kind"]):
+                err(p, f"{owner}: member kind {m['kind']} != kind {tf.get('kind')} of formation {m['formation']}")
+
+formation_sheet_ids = {u.rsplit(".", 1)[0] for u in unit_ids}
+for p, owner, what, ref in form_refs:
+    if what == "member_sp":
+        continue
+    table = {"class": classes, "kind": kinds, "formation": formations, "unit": unit_ids,
+             "sheet": dict.fromkeys(formation_sheet_ids)}[what]
+    if ref not in table:
+        err(p, f"{owner}: dangling {what} reference {ref!r}")
+
 tables = {"class": classes, "weapon": weapons, "unit": unit_ids}
 for p, kind, ref, owner in pending_refs:
     if ref not in tables[kind]:
@@ -188,7 +302,8 @@ for p in sorted((units / "schedules").glob("*.toml")) if (units / "schedules").e
                     err(p, f"unknown aircraft type {pl.get('type')!r}")
 
 n = len(errors)
-print(f"weapons={len(weapons)} classes={len(classes)} aircraft={len(aircraft)} units={len(unit_ids)}  errors={n}")
+print(f"weapons={len(weapons)} classes={len(classes)} aircraft={len(aircraft)} units={len(unit_ids)} "
+      f"kinds={len(kinds)} formations={len(formations)}  errors={n}")
 for e in errors:
     print("ERROR", e)
 sys.exit(1 if n else 0)

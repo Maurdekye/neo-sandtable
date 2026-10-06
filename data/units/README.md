@@ -265,6 +265,65 @@ printed superscript E: engineering-capable HQ, `land:23.14`), `immobile`, `never
 (the San Giorgio), `stacking_points` and `echelon_symbol` (read from the counter, `land:9.22`: the
 printed Stacking Point value, not the unit name, defines the organizational level).
 
+## Formations (`formations/<nation>.toml`)
+
+The Formation Organization charts (land section 19.3) say what a parent formation is *assigned* in
+the historical organization: how many battalions, regiments and support units, and of which kinds.
+Case numbers: **19.31 Commonwealth** (`cw.toml`), **19.32 Italian** (`it.toml`), **19.33 German**
+(`ge.toml`). Every printed symbol is one slot; the number printed in front of it is that unit's
+stacking-point value, and the small mark above it (`I`, `II`, `III`, `X`, `XX`) is its echelon.
+
+Two record types per file. A **kind** is one legend entry (what may fill a slot); a **formation** is
+one composition row (what a parent contains). The engine matches real counters to a slot through the
+kind's `match` and `classes`.
+
+```toml
+[[kind]]
+id = "it.inf_bn"                 # <nation>.<slug>, unique per file family
+nation = "it"
+name = "Infantry battalion"
+echelon = "battalion"            # same vocabulary as classes/OA; a regiment is "brigade" (land:9.2)
+symbol_echelon = "II"            # the printed mark: I | II | III | X | XX
+sp = 1                           # printed stacking points (omit when the chart prints none)
+match = { unit_type = "infantry", echelon = "battalion", tags_any = ["leg", "motorized", "parachute"] }
+classes = ["it.bbb"]             # optional: exact ID-code classes (each resolves in classes/)
+fill_by = [ { kind = "it.at_co", max = 3 } ]   # optional: smaller units that may stand in
+any_of_kinds = ["it.at_bn", "it.at_co"]        # optional: a kind that is a union of others
+src = ["land:19.32"]
+
+[[formation]]
+id = "it.semi_motorized_inf_div"
+nation = "it"
+name = "Semi-motorized infantry division"
+kind = "it.inf_regt"             # optional: the unit kind this composition belongs to (regiment rows)
+echelon = "division"
+sp = 5                           # the parent's own stacking points
+periods = [ { gt_from = 19, gt_to = 70 }, { gt_from = 92 } ]   # optional; inclusive; gt_to absent = open end
+designation = "Sahara"           # optional: the label printed under the symbol (a specific named unit)
+applies_to = ["it.sahara_det.saharan_detachment_hq"]           # optional: OA unit ids it describes
+members = [
+  { kind = "it.inf_regt", sp = 2 },                            # one slot
+  { kind = "it.at_unit" },                                     # no number printed
+  { kind = "it.tank_regt", formation = "it.tank_regt_3bn", sp = 2 },   # slot filled by a sub-formation row
+  { any_of = [ { kind = "it.brs_mot_inf_bn", sp = 1 }, { kind = "it.motorcycle_recon_co", sp = 0 } ] },   # printed "or"
+]
+exceptions = [ { holder_sheet = "it.gruppo_maletti", add = { kind = "it.inf_regt", sp = 2 } } ]
+limits = [ { what = "infantry_battalions", max = 6 } ]         # chart-text caps
+src = ["land:19.32"]
+```
+
+Conventions:
+- `match.tags_*` name unit-level properties that classes alone do not carry (`bersaglieri`,
+  `motorized`, `motorcycle`, `machinegun`, `cavalry`, `armored_car`, `armored_recon`, `tank_destroyer`,
+  `light`, `heavy`, ...). OA units do not carry `tags` yet (GAPS U-019); until they do, the
+  slot test can use only `unit_type`, `echelon` and `classes`, and tags are a documented intent.
+- A period variant is a separate record (`cw.armd_div_i` .. `iv`). The reorganization rule
+  (`land:19.25`) chooses the record whose `periods` contain the current Game-Turn.
+- `sp` on a member must equal the kind's `sp` (or the referenced formation's `sp`); the validator
+  checks it, and that every `kind`, `formation`, `classes`, `applies_to` and sheet reference resolves.
+- Unreadable or ambiguous chart values carry a `gap = "U-nnn"` / `glyph_note` pointer into `GAPS.md`.
+- `19.5` Maximum Attachment is a table owned by `rules-land` (`data/tables/land/`); not stored here.
+
 ## Aircraft (`aircraft/<nation>.toml`)
 
 Rows with several lines of characteristics ("or") are stored as `[[aircraft.mode]]` entries; the

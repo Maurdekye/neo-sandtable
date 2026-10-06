@@ -1,0 +1,334 @@
+# Commonwealth Formation Organization Chart, land:19.31 (chart image "Allied Formation Chart").
+# Schema: data/units/README.md, section "Formations". Each member is one printed symbol:
+# `sp` is the stacking-point number printed in front of it (absent = no number printed).
+# Period variants are separate records; `periods` lists the inclusive Game-Turn ranges (gt_to absent = open end).
+[file]
+nation = "cw"
+src = ["land:19.31"]
+transcribed_from = ["vassal:Allied Formation Chart.png"]
+verification = "single"
+
+# ---- legend: unit kinds -------------------------------------------------------------------
+
+[[kind]]
+id = "cw.tank_bn"
+nation = "cw"
+name = "Tank battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "tank", echelon = "battalion" }
+sp = 1
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.inf_bn"
+nation = "cw"
+name = "Infantry battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "infantry", echelon = "battalion", tags_any = ["leg", "motorized", "marine", "commando"] }
+sp = 1
+note = "Also covers a motorized, a marine or a commando infantry battalion."
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.arty_unit"
+nation = "cw"
+name = "Artillery unit"
+match = { unit_type = "artillery" }
+sp = 1
+note = "An artillery regiment, an artillery battalion or a self-propelled artillery regiment."
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.at_regt"
+nation = "cw"
+name = "Anti-tank regiment"
+echelon = "brigade"
+symbol_echelon = "III"
+match = { unit_type = "anti_tank", tags_any = ["anti_tank", "anti_tank_anti_air", "tank_destroyer"] }
+sp = 1
+note = "An anti-tank regiment, an anti-tank/anti-aircraft regiment or a tank destroyer regiment."
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.at_unit"
+nation = "cw"
+name = "Anti-tank unit"
+match = { unit_type = "anti_tank" }
+note = "Any of the anti-tank regiment kinds above, or an anti-tank company (0 stacking points); the chart rows print no number with it."
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.light_aa_unit"
+nation = "cw"
+name = "Light anti-aircraft unit"
+match = { unit_type = "anti_air", tags_any = ["light"] }
+sp = 1
+note = "A light anti-aircraft regiment (III) or battalion (II). Printed without a number in the infantry-division row."
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.mg_inf_bn"
+nation = "cw"
+name = "Machinegun infantry battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "infantry", echelon = "battalion", tags_all = ["machinegun"] }
+sp = 1
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.armored_car_unit"
+nation = "cw"
+name = "Armored car unit"
+match = { unit_type = "recce", tags_all = ["armored_car"] }
+sp = 1
+note = "An armored car regiment (III) or battalion (II)."
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.armd_recon_unit"
+nation = "cw"
+name = "Armored reconnaissance unit"
+match = { unit_type = "recce", tags_all = ["armored_recon"] }
+sp = 1
+note = "An armored reconnaissance regiment (III) or battalion (II)."
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.eng_bn"
+nation = "cw"
+name = "Engineer battalion"
+echelon = "battalion"
+symbol_echelon = "II"
+match = { unit_type = "engineer", echelon = "battalion" }
+classes = ["cw.uu"]
+sp = 1
+note = "Either the 2/1 Australian Pioneer Battalion or a tank battalion made up solely of Scorpion tanks."
+src = ["land:19.31"]
+
+[[kind]]
+id = "cw.any_small_unit"
+nation = "cw"
+name = "Any unit (stacking value one or zero)"
+note = "Any unit other than a tank battalion whose counter shows a stacking point value of one or zero."
+src = ["land:19.31"]
+
+# ---- armored divisions (periods I-IV) -----------------------------------------------------
+
+[[formation]]
+id = "cw.armd_div_i"
+nation = "cw"
+name = "Armored division, Organization Type I"
+echelon = "division"
+sp = 5
+periods = [ { gt_from = 1, gt_to = 18 } ]
+members = [
+  { formation = "cw.armd_bde_i", sp = 2 },
+  { formation = "cw.armd_bde_i", sp = 2 },
+  { formation = "cw.support_group_i", sp = 2 },
+]
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.armd_div_ii"
+nation = "cw"
+name = "Armored division, Organization Type II"
+echelon = "division"
+sp = 5
+periods = [ { gt_from = 19, gt_to = 70 } ]
+members = [
+  { formation = "cw.armd_bde_ii", sp = 2 },
+  { formation = "cw.armd_bde_ii", sp = 2 },
+  { formation = "cw.support_group_ii", sp = 2 },
+  { any_of = [ { kind = "cw.armored_car_unit", sp = 1 }, { kind = "cw.armd_recon_unit", sp = 1 } ] },
+]
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.armd_div_iii"
+nation = "cw"
+name = "Armored division, Organization Type III"
+echelon = "division"
+sp = 5
+periods = [ { gt_from = 71, gt_to = 91 } ]
+members = [
+  { formation = "cw.armd_bde_iii", sp = 2 },
+  { formation = "cw.support_group_iii", sp = 2 },
+  { kind = "cw.armored_car_unit", sp = 1 },
+]
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.armd_div_iv"
+nation = "cw"
+name = "Armored division, Organization Type IV"
+echelon = "division"
+sp = 5
+periods = [ { gt_from = 92 } ]
+members = [
+  { formation = "cw.armd_bde_ii", sp = 2 },
+  { formation = "cw.inf_bde", sp = 2 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.at_regt", sp = 1 },
+  { kind = "cw.light_aa_unit", sp = 1, echelon_mark = "III" },
+  { kind = "cw.mg_inf_bn", sp = 1 },
+  { kind = "cw.eng_bn", sp = 1 },
+  { any_of = [ { kind = "cw.armored_car_unit", sp = 1 }, { kind = "cw.armd_recon_unit", sp = 1 } ] },
+]
+src = ["land:19.31"]
+
+# ---- infantry division --------------------------------------------------------------------
+
+[[formation]]
+id = "cw.inf_div"
+nation = "cw"
+name = "Infantry division"
+echelon = "division"
+sp = 5
+members = [
+  { formation = "cw.inf_bde", sp = 2 },
+  { formation = "cw.inf_bde", sp = 2 },
+  { formation = "cw.inf_bde", sp = 2 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.at_regt", sp = 1 },
+  { kind = "cw.light_aa_unit" },
+  { kind = "cw.mg_inf_bn", sp = 1 },
+  { kind = "cw.eng_bn", sp = 1 },
+  { any_of = [ { kind = "cw.armored_car_unit", sp = 1 }, { kind = "cw.armd_recon_unit", sp = 1 } ] },
+]
+src = ["land:19.31"]
+
+# ---- armored brigades (periods I-III) -----------------------------------------------------
+
+[[formation]]
+id = "cw.armd_bde_i"
+nation = "cw"
+name = "Armored brigade, Organization Type I"
+echelon = "brigade"
+sp = 2
+periods = [ { gt_from = 1, gt_to = 18 } ]
+members = [
+  { kind = "cw.tank_bn", sp = 1 }, { kind = "cw.tank_bn", sp = 1 }, { kind = "cw.tank_bn", sp = 1 },
+]
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.armd_bde_ii"
+nation = "cw"
+name = "Armored brigade, Organization Type II"
+echelon = "brigade"
+sp = 2
+periods = [ { gt_from = 19, gt_to = 70 }, { gt_from = 92 } ]
+members = [
+  { kind = "cw.tank_bn", sp = 1 }, { kind = "cw.tank_bn", sp = 1 }, { kind = "cw.tank_bn", sp = 1 },
+  { kind = "cw.inf_bn", sp = 1 },
+]
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.armd_bde_iii"
+nation = "cw"
+name = "Armored brigade, Organization Type III"
+echelon = "brigade"
+sp = 2
+periods = [ { gt_from = 71, gt_to = 91 } ]
+members = [
+  { kind = "cw.tank_bn", sp = 1 }, { kind = "cw.tank_bn", sp = 1 }, { kind = "cw.tank_bn", sp = 1 },
+  { kind = "cw.inf_bn", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+]
+src = ["land:19.31"]
+
+# ---- support groups (periods I-III) -------------------------------------------------------
+
+[[formation]]
+id = "cw.support_group_i"
+nation = "cw"
+name = "Support Group, Organization Type I"
+echelon = "brigade"
+sp = 2
+periods = [ { gt_from = 1, gt_to = 18 } ]
+members = [
+  { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.at_regt", sp = 1 },
+  { any_of = [ { kind = "cw.armored_car_unit", sp = 1 }, { kind = "cw.armd_recon_unit", sp = 1 } ] },
+]
+note = "Renamed Motor Brigade Group after GT 70 in history; the counter symbol keeps the Support Group form."
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.support_group_ii"
+nation = "cw"
+name = "Support Group, Organization Type II"
+echelon = "brigade"
+sp = 2
+periods = [ { gt_from = 19, gt_to = 70 } ]
+members = [
+  { kind = "cw.inf_bn", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.at_regt", sp = 1 },
+]
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.support_group_iii"
+nation = "cw"
+name = "Support Group, Organization Type III"
+echelon = "brigade"
+sp = 2
+periods = [ { gt_from = 71, gt_to = 91 } ]
+members = [
+  { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+]
+src = ["land:19.31"]
+
+# ---- infantry brigades --------------------------------------------------------------------
+
+[[formation]]
+id = "cw.inf_bde_battle_group"
+nation = "cw"
+name = "Infantry brigade (effectively a battle group): 18th Australian, 1st Free French, Polish"
+echelon = "super_brigade"
+sp = 3
+members = [
+  { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 },
+  { kind = "cw.arty_unit", sp = 1 },
+  { kind = "cw.at_unit" },
+  { any_of = [ { kind = "cw.light_aa_unit", sp = 1 }, { kind = "cw.mg_inf_bn" } ] },
+  { any_of = [ { kind = "cw.armored_car_unit" }, { kind = "cw.armd_recon_unit", sp = 1 } ] },
+  { kind = "cw.any_small_unit" },
+]
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.inf_bde"
+nation = "cw"
+name = "Infantry brigade (also the 3rd and 161st Indian Motor Brigade Groups)"
+echelon = "brigade"
+sp = 2
+members = [
+  { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 },
+]
+src = ["land:19.31"]
+
+[[formation]]
+id = "cw.allied_inf_bde"
+nation = "cw"
+name = "Allied infantry brigade: 2nd Free French or 1st Greek"
+echelon = "brigade"
+sp = 2
+designation = "A"
+members = [
+  { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 }, { kind = "cw.inf_bn", sp = 1 },
+  { any_of = [ { kind = "cw.arty_unit", sp = 1 }, { kind = "cw.at_unit" } ] },
+  { kind = "cw.any_small_unit" },
+]
+src = ["land:19.31"]
