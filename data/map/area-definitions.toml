@@ -1,0 +1,331 @@
+schema_version = 1
+coordinate_profile = "vassal-2021"
+
+[[locations]]
+id = "box_tripolitania"
+kind = "box"
+name = "Tripolitania"
+off_map = true
+range_status = "unresolved"
+src = ["land:8.81", "land:8.85"]
+departure_hex = "A2802"
+
+[[locations]]
+id = "box_tripoli"
+kind = "box"
+name = "Tripoli"
+off_map = true
+range_status = "unresolved"
+src = ["land:8.81"]
+
+[[locations]]
+id = "box_gabes"
+kind = "box"
+name = "Gabes"
+off_map = true
+range_status = "unresolved"
+src = ["land:8.81"]
+
+[[locations]]
+id = "box_tunis"
+kind = "box"
+name = "Tunis"
+off_map = true
+range_status = "unresolved"
+src = ["land:8.81"]
+
+[[locations]]
+id = "box_italy"
+kind = "box"
+name = "Italy"
+off_map = true
+range_status = "unresolved"
+src = ["airlog:34.81", "airlog:43.1"]
+
+[[locations]]
+id = "box_sicily"
+kind = "box"
+name = "Sicily"
+off_map = true
+range_status = "unresolved"
+src = ["airlog:34.81", "airlog:43.1"]
+
+[[locations]]
+id = "box_crete"
+kind = "box"
+name = "Crete"
+off_map = true
+range_status = "unresolved"
+src = ["airlog:34.81", "airlog:43.1"]
+
+[[locations]]
+id = "offmap_abu_seier"
+kind = "air_facility"
+name = "Abu Seier"
+off_map = true
+facility_type = "airfield"
+printed_location = "E(3433)"
+range_status = "unresolved"
+src = ["scen:60.5", "airlog:36.5"]
+reference_hex = "E3433"
+reference_status = "printed_only"
+note = "Stable off-map identity only. Printed reference is retained; no ordinary hex occupancy, distance, capacity or attachment is inferred."
+
+[[locations]]
+id = "offmap_deversoir"
+kind = "air_facility"
+name = "Deversoir"
+off_map = true
+facility_type = "airfield"
+printed_location = "E(1833)"
+range_status = "unresolved"
+src = ["scen:60.5", "airlog:36.5"]
+reference_hex = "E1833"
+reference_status = "printed_only"
+note = "Stable off-map identity only. Printed reference is retained; no ordinary hex occupancy, distance, capacity or attachment is inferred."
+
+[[locations]]
+id = "offmap_kabrit"
+kind = "air_facility"
+name = "Kabrit"
+off_map = true
+facility_type = "airfield"
+printed_location = "E(1833)"
+range_status = "unresolved"
+src = ["scen:60.5", "airlog:36.5"]
+reference_hex = "E1833"
+reference_status = "printed_only"
+note = "Stable off-map identity only. Printed reference is retained; no ordinary hex occupancy, distance, capacity or attachment is inferred."
+
+[[locations]]
+id = "offmap_fayid"
+kind = "air_facility"
+name = "Fayid"
+off_map = true
+facility_type = "airfield"
+printed_location = "Off-Map"
+range_status = "unresolved"
+src = ["scen:60.5", "airlog:36.5"]
+note = "Stable off-map identity only. Printed reference is retained; no ordinary hex occupancy, distance, capacity or attachment is inferred."
+
+[[locations]]
+id = "offmap_ismailia"
+kind = "air_facility"
+name = "Ismailia"
+off_map = true
+facility_type = "airfield"
+printed_location = "Off-Map"
+range_status = "unresolved"
+src = ["scen:60.5", "airlog:36.5"]
+note = "Stable off-map identity only. Printed reference is retained; no ordinary hex occupancy, distance, capacity or attachment is inferred."
+
+[[locations]]
+id = "offmap_port_said"
+kind = "air_facility"
+name = "Port Said"
+off_map = true
+facility_type = "flying_boat_basin"
+printed_location = "E4033"
+range_status = "unresolved"
+src = ["scen:60.5", "airlog:36.5"]
+reference_hex = "E4033"
+reference_status = "printed_only"
+note = "Stable off-map identity only. Printed reference is retained; no ordinary hex occupancy, distance, capacity or attachment is inferred."
+
+[[areas]]
+id = "map_a"
+kind = "sections"
+src = ["land:4.1"]
+sections = ["A"]
+
+[[areas]]
+id = "map_b"
+kind = "sections"
+src = ["land:4.1"]
+sections = ["B"]
+
+[[areas]]
+id = "map_c"
+kind = "sections"
+src = ["land:4.1"]
+sections = ["C"]
+
+[[areas]]
+id = "map_d"
+kind = "sections"
+src = ["land:4.1"]
+sections = ["D"]
+
+[[areas]]
+id = "map_e"
+kind = "sections"
+src = ["land:4.1"]
+sections = ["E"]
+
+[[areas]]
+id = "map_a_or_b"
+kind = "sections"
+src = ["scen:60.31"]
+sections = ["A", "B"]
+
+[[areas]]
+id = "map_d_or_e"
+kind = "sections"
+src = ["scen:60.41"]
+sections = ["D", "E"]
+
+[[areas]]
+id = "libya"
+kind = "unresolved_region"
+src = ["scen:60.31"]
+country = "libya"
+sections = ["A", "B", "C", "D", "E"]
+requires_land = true
+reason = "Printed national frontier and full land membership not yet verified. No legal placement set may be inferred from this empty placeholder."
+
+[[areas]]
+id = "egypt"
+kind = "unresolved_region"
+src = ["scen:60.44"]
+country = "egypt"
+sections = ["A", "B", "C", "D", "E"]
+requires_land = true
+reason = "Printed national frontier and full land membership not yet verified. No legal placement set may be inferred from this empty placeholder."
+
+[[areas]]
+id = "map_c_libya"
+kind = "unresolved_region"
+src = ["scen:60.34"]
+country = "libya"
+sections = ["C"]
+requires_land = true
+reason = "Printed national frontier and full land membership not yet verified. No legal placement set may be inferred from this empty placeholder."
+
+[[areas]]
+id = "map_c_or_d_egypt"
+kind = "unresolved_region"
+src = ["scen:60.44"]
+country = "egypt"
+sections = ["C", "D"]
+requires_land = true
+reason = "Printed national frontier and full land membership not yet verified. No legal placement set may be inferred from this empty placeholder."
+
+[[areas]]
+id = "tripolitania"
+kind = "locations"
+src = ["land:8.81"]
+location_ids = ["box_tripolitania"]
+
+[[areas]]
+id = "tripoli"
+kind = "locations"
+src = ["land:8.81"]
+location_ids = ["box_tripoli"]
+
+[[areas]]
+id = "gabes"
+kind = "locations"
+src = ["land:8.81"]
+location_ids = ["box_gabes"]
+
+[[areas]]
+id = "tunis"
+kind = "locations"
+src = ["land:8.81"]
+location_ids = ["box_tunis"]
+
+[[areas]]
+id = "italy"
+kind = "locations"
+src = ["airlog:34.81", "airlog:43.1"]
+location_ids = ["box_italy"]
+
+[[areas]]
+id = "sicily"
+kind = "locations"
+src = ["airlog:34.81", "airlog:43.1"]
+location_ids = ["box_sicily"]
+
+[[areas]]
+id = "crete"
+kind = "locations"
+src = ["airlog:34.81", "airlog:43.1"]
+location_ids = ["box_crete"]
+
+[[areas]]
+id = "tripoli_tunisia_boxes"
+kind = "locations"
+src = ["land:8.81", "scen:60.5"]
+location_ids = ["box_tripolitania", "box_tripoli", "box_gabes", "box_tunis"]
+
+[[areas]]
+id = "tunisia_boxes"
+kind = "locations"
+src = ["land:8.81"]
+location_ids = ["box_gabes", "box_tunis"]
+
+[[areas]]
+id = "axis_mediterranean_bases"
+kind = "locations"
+src = ["airlog:34.81"]
+location_ids = ["box_italy", "box_sicily", "box_crete"]
+
+[[areas]]
+id = "offmap_abu_seier"
+kind = "locations"
+src = ["scen:60.5", "airlog:36.5"]
+location_ids = ["offmap_abu_seier"]
+
+[[areas]]
+id = "offmap_deversoir"
+kind = "locations"
+src = ["scen:60.5", "airlog:36.5"]
+location_ids = ["offmap_deversoir"]
+
+[[areas]]
+id = "offmap_kabrit"
+kind = "locations"
+src = ["scen:60.5", "airlog:36.5"]
+location_ids = ["offmap_kabrit"]
+
+[[areas]]
+id = "offmap_fayid"
+kind = "locations"
+src = ["scen:60.5", "airlog:36.5"]
+location_ids = ["offmap_fayid"]
+
+[[areas]]
+id = "offmap_ismailia"
+kind = "locations"
+src = ["scen:60.5", "airlog:36.5"]
+location_ids = ["offmap_ismailia"]
+
+[[areas]]
+id = "offmap_port_said"
+kind = "locations"
+src = ["scen:60.5", "airlog:36.5"]
+location_ids = ["offmap_port_said"]
+
+[[areas]]
+id = "alexandria"
+kind = "hexes"
+src = ["scen:60.5"]
+hex_ids = ["E3613", "E3714"]
+
+[[areas]]
+id = "helwan"
+kind = "hexes"
+src = ["scen:60.41"]
+hex_ids = ["E1430"]
+
+[[areas]]
+id = "cairo"
+kind = "unresolved_region"
+src = ["scen:60.41", "scen:60.43"]
+reason = "All Cairo city hexes remain to be visually enumerated; E1430 is Helwan and cannot substitute for all Cairo."
+
+[[areas]]
+id = "any_air_facility"
+kind = "dynamic_facilities"
+src = ["scen:59.35"]
+reason = "Requires campaign facility construction, control, friendly-side and capacity state; no static membership can satisfy this selector."

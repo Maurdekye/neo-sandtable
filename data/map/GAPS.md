@@ -44,3 +44,23 @@
 - `grid-preview.svg` remains a section-colored geometry preview;
   `terrain-preview.svg` adds the 142 reviewed terrain fills and a generic port marker. Hexside and facility
   artwork remains pending.
+
+## Scenario area memberships and off-map range
+
+- Stable region IDs libya, egypt, map_c_libya and map_c_or_d_egypt are published,
+  but exact national frontier and complete land masks are not yet verified.
+  Their membership_status is unresolved; empty lists are not legal placement sets.
+- Cairo's full city membership still needs visual enumeration. Helwan E1430
+  is published separately; scenario freedom in Cairo cannot become Helwan-only.
+- Six off-map facility identities follow scen:60.5 text and oob's page
+  transcription. Their printed references are retained without assigning ordinary
+  grid occupancy, flight distance or facility capacities. E(1833) identifies both
+  Deversoir and Kabrit, so names/IDs must disambiguate. All range_status values
+  remain unresolved pending local map/table audit.
+- Tripolitania is a main off-map box for this scenario selector, not a newly
+  inferred polygon of western Libya. Four main Tripoli/Tunisia boxes are pinned
+  by land:8.81; transit boxes and route distances are not included in this group.
+- Italy/Sicily/Crete identities do not establish availability at any game date.
+  Crete's initial unavailability belongs to scenario state, not static map data.
+- B5825, C4119, D3231, D3416, D3516, D3903 are valid canonical grid IDs. This
+  membership check does not verify facility symbols or supply/owner attributes.

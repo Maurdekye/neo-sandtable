@@ -146,3 +146,22 @@ marker is a generic circle at the axial center, with no traced source symbol.
 Replay requires explicit targeted amendments, rejects conflicting sea/coastal
 flags, validates ports on coastal cells, and reproduces places.toml as well as
 the five earlier generated files. All inspection images stay outside the repo.
+
+## Area selectors and symbolic locations (2026-10-06)
+
+31 areas and 13 distinct off-map locations are published as incomplete data.
+Section sets replay against all canonical records plus alias memberships.
+Tests pin 1261 members on section D (including canonical C4233 through D4200),
+2558 in D/E and 2966 in A/B. Union membership is deduplicated. Seven tests check
+seam membership, explicit failures for missing national sets/dynamic facilities,
+four-box grouping, separate Deversoir/Kabrit identities despite a shared printed
+token, grid-only distance sets, rejection of invented locations and byte replay.
+
+Boxes are grounded in land:8.81 and airlog:34.81/43.1. Off-map facility names
+and locators use scen:60.5 text plus the oob clerk's page transcription; this
+is not an independent visual audit of the off-map facility table. No flight
+range/connection, occupancy hex, capacity or original-sheet accuracy is claimed.
+Printed E1833, E3433 and E4033 also exist as ordinary grid cells; the off-map
+identities remain distinct from them. B5825/C4119/D3231/D3416/D3516/D3903 were
+confirmed by the canonical lookup, with no facility-symbol verification claim.
+National-region/Cairo memberships are still gaps, not accepted classifications.

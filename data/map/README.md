@@ -145,6 +145,53 @@ Planned feature deliverables, **not yet complete**:
 - Extend `places.toml` with additional verified facility types and sourced
   attributes. Printed structures and dynamic scenario state remain distinct.
 
+## Area and off-map identities (schema 1)
+
+`area-definitions.toml` is the cited selector/identity input. `generate_areas.py`
+replays it against published grid membership and aliases to write `areas.toml`.
+This does not complete national-region digitization or off-map range data.
+
+`areas.toml` has `schema_version,coordinate_profile,complete,build_file_sha256,
+definitions_source`, `[[locations]]`, and `[[areas]]`. Locations have stable
+`id,kind,name,off_map,range_status,src`, optional `facility_type,printed_location,
+reference_hex,reference_status,departure_hex,note`. All current distances remain
+unresolved. `reference_hex` retains a normalized printed locator, never an
+ordinary occupancy hex or a verified flight connection. Deversoir and Kabrit
+share E(1833) but are distinct locations. An ambiguous printed token must fail
+lookup rather than merge facilities. `Off-Map` alone is similarly ambiguous.
+
+Areas have `id,kind,src,membership_status,hex_ids,location_ids` plus selector
+fields (`sections`, `country`, `requires_land`) or a `reason` where needed.
+Membership status is `resolved`, `unresolved`, or `requires_state`. The empty
+arrays on an unresolved area are placeholders, **never an empty legal placement
+set**. `tools/map/areas.py` raises explicitly for unresolved regions or dynamic
+facilities; callers must preserve this distinction when loading the TOML.
+Resolved section selectors include canonical seam cells through alias section
+membership, not only the section letter of each canonical name. They define
+geometric sets; unit-specific movement/placement restrictions still apply.
+
+| Requested ID | Meaning/status |
+|---|---|
+| `map_a` through `map_e` | Exact canonical membership of each source section |
+| `map_a_or_b`, `map_d_or_e` | Exact section unions, including observed aliases |
+| `libya`, `egypt`, `map_c_libya`, `map_c_or_d_egypt` | Stable IDs; unresolved frontier/full-land membership |
+| `tripoli`, `tripolitania`, `gabes`, `tunis` | Separate main boxes from land:8.81 |
+| `tripoli_tunisia_boxes` | The four boxes above; no transit boxes included |
+| `tunisia_boxes` | Gabes and Tunis boxes |
+| `italy`, `sicily`, `crete`, `axis_mediterranean_bases` | Separate bases and their union; campaign availability is separate |
+| `offmap_abu_seier`, `offmap_deversoir`, `offmap_kabrit` | Off-map facilities with retained printed references |
+| `offmap_fayid`, `offmap_ismailia`, `offmap_port_said` | Other distinct off-map facilities |
+| `alexandria`, `helwan` | Cited ordinary hex sets; Helwan is E1430 |
+| `cairo` | City-wide membership unresolved; Helwan is not a substitute |
+| `any_air_facility` | Requires friendly control, construction and capacity state |
+
+Symbolic location IDs are `box_<name>` for the seven main boxes/bases and the
+six `offmap_<facility>` IDs. These are separate from canonical grid IDs and
+carry no invented axial coordinates. `Areas.within(hex,n)` generates a sorted
+canonical grid set by integer hex distance, includes the center, resolves source
+aliases, rejects invalid radii, and never invents cells outside the grid. It does
+not apply dynamic enemy-distance exclusions or facility capacity constraints.
+
 ## Regeneration and checks
 
 Python 3.11+; stdlib suffices for data and preview. Run from the repository root:
@@ -153,6 +200,7 @@ Python 3.11+; stdlib suffices for data and preview. Run from the repository root
 $env:CNA_SOURCES = 'C:\Users\ncola_k8bx\AppData\Roaming\Orgtree v2\data\workspaces\maurdekye-works\cna-sources'
 py -3.12 tools/map/generate_grid.py
 py -3.12 tools/map/apply_terrain.py
+py -3.12 tools/map/generate_areas.py
 py -3.12 -m unittest discover -s tools/map -v
 ```
 
