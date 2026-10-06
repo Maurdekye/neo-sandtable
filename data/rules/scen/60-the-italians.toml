@@ -106,7 +106,7 @@ disposition = "decision"
 seat = "commander"
 timing = ["setup"]
 src = ["scen:60.31"]
-interp = ["scen-0001", "scen-0002", "scen-0005"]
+interp = ["scen-0001", "scen-0004", "scen-0005"]
 [case.applies]
 graziani = "yes"
 italian_campaign = "yes"
@@ -242,7 +242,7 @@ disposition = "decision"
 seat = "commander"
 timing = ["setup"]
 src = ["scen:60.41"]
-interp = ["scen-0005"]
+interp = ["scen-0002", "scen-0003", "scen-0005"]
 [case.applies]
 graziani = "yes"
 italian_campaign = "yes"
