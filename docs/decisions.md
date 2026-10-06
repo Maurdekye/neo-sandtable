@@ -78,3 +78,12 @@ every run carries limits on concurrent sessions, calls, and elapsed time.
   gets a clearly labelled omniscient view; AI seats only ever receive their own filtered view.
 - Team communication: free structured messages within a team, none across teams; the commander
   arbitrates shared resources.
+
+## D10 (O) — Watch the board and the agents' transcripts live
+Spectators can watch, in real time and side by side, the board and each AI seat's session
+transcript (messages, tool calls and results, and any reasoning the CLI exposes; System 1 seats
+show their typed questions and answers). Transcripts are captured from each CLI's streaming
+output, persisted with the campaign, and streamed on a channel separate from game events (see
+[`protocol.md`](protocol.md)). A seat's transcript reveals that seat's private knowledge, so the
+operator view sees every transcript, a side's view sees only its own seats', and the opposing side
+never sees them. Transcripts are for watching only; adjudication never depends on them.
