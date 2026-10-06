@@ -183,7 +183,8 @@ fn open_menu(
         &["airlog:52.41", "airlog:52.42", "airlog:52.6", "land:3.6"],
         Trigger::Scheduled,
         Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Choice { options }),
+        ActionSpace::new(ActionSchema::Choice { options })
+            .with_pass("Finish water distribution and record remaining shortages"),
     );
     Ok(())
 }
@@ -207,9 +208,13 @@ pub fn answer(
 ) -> Result<String, Rejection> {
     let side = pending.seat.side;
     if pending.kind == KIND {
-        let selected = action
-            .as_str()
-            .ok_or_else(|| illegal("select a unit or done"))?;
+        let selected = if action.is_null() {
+            "done"
+        } else {
+            action
+                .as_str()
+                .ok_or_else(|| illegal("select a unit or done"))?
+        };
         if selected == "done" {
             finalize(content, state, side, strict).map_err(Rejection::Engine)?;
             return Ok("Water distribution finished; shortages recorded privately.".into());
@@ -270,7 +275,7 @@ pub fn answer(
             Trigger::Scheduled,
             Secrecy::Secret,
             ActionSpace::new(ActionSchema::Record { fields })
-                .with_pass("Return to unit selection without issuing water"),
+                .with_pass("Leave this unit without additional water and return to unit selection"),
         );
         return Ok(format!("Selected {id} for water."));
     }
@@ -286,7 +291,9 @@ pub fn answer(
     {
         return Err(illegal("unit is no longer eligible"));
     }
-    if !action.is_null() {
+    if action.is_null() {
+        issue_unit(content, state, &id, 0, 0, false, &[])?;
+    } else {
         let issue: Issue =
             serde_json::from_value(action.clone()).map_err(|_| illegal("invalid water issue"))?;
         issue_unit(

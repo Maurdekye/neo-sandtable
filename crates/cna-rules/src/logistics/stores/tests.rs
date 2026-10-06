@@ -366,3 +366,21 @@ fn invalid_sources_and_missing_pasta_keep_the_entire_state_unchanged() {
     rations::receive_pasta(&mut state, &id);
     assert_eq!(state.land.units[&id].cohesion_quarters, -40);
 }
+
+/// Cases: airlog:51.15, land:3.6
+#[test]
+fn empty_stock_domain_requires_an_empty_allocation_list() {
+    let empty = vec![SupplyDraw {
+        source: SupplySource::Tank,
+        amount: SupplyDemand::default(),
+    }];
+    let ActionSchema::List { min, max, .. } = draw_schema(&empty, 20, 1) else {
+        panic!("list required")
+    };
+    assert_eq!((min, max), (0, 0));
+    let source = allocation(1, 0);
+    let ActionSchema::List { min, max, .. } = draw_schema(&source, 20, 1) else {
+        panic!("list required")
+    };
+    assert_eq!((min, max), (0, 1));
+}

@@ -161,7 +161,8 @@ fn open_menu(
         &["airlog:51.0", "airlog:51.12", "airlog:51.23", "land:3.6"],
         Trigger::Scheduled,
         Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Choice { options }),
+        ActionSpace::new(ActionSchema::Choice { options })
+            .with_pass("Finish stores distribution and record remaining shortages"),
     );
     Ok(())
 }
@@ -187,7 +188,10 @@ struct Issue {
 pub(super) fn draw_schema(sources: &[SupplyDraw], stores_max: i32, water_max: i32) -> ActionSchema {
     ActionSchema::List {
         min: 0,
-        max: sources.len() as u32,
+        max: sources
+            .iter()
+            .filter(|s| s.amount.stores.get() > 0 || s.amount.water.get() > 0)
+            .count() as u32,
         item: Box::new(ActionSchema::Record {
             fields: vec![
                 field(
@@ -256,9 +260,13 @@ pub fn answer(
 ) -> Result<String, Rejection> {
     let side = pending.seat.side;
     if pending.kind == KIND {
-        let selected = action
-            .as_str()
-            .ok_or_else(|| illegal("select a unit or done"))?;
+        let selected = if action.is_null() {
+            "done"
+        } else {
+            action
+                .as_str()
+                .ok_or_else(|| illegal("select a unit or done"))?
+        };
         if selected == "done" {
             finalize(content, state, side).map_err(Rejection::Engine)?;
             return Ok(
@@ -312,7 +320,8 @@ pub fn answer(
             &["airlog:51.11", "airlog:51.23", "airlog:52.6", "land:3.6"],
             Trigger::Scheduled,
             Secrecy::Secret,
-            ActionSpace::new(schema).with_pass("Return to unit selection without issuing supplies"),
+            ActionSpace::new(schema)
+                .with_pass("Leave this unit short of stores and return to unit selection"),
         );
         return Ok(format!("Selected {id} for stores."));
     }
@@ -328,7 +337,9 @@ pub fn answer(
     {
         return Err(illegal("unit is no longer eligible"));
     }
-    if !action.is_null() {
+    if action.is_null() {
+        issue_unit(content, state, &id, 0, false, false, &[])?;
+    } else {
         let issue: Issue =
             serde_json::from_value(action.clone()).map_err(|_| illegal("invalid stores issue"))?;
         issue_unit(
