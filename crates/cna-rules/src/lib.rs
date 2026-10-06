@@ -16,6 +16,7 @@ pub mod land;
 pub mod logistics;
 pub mod ownership;
 pub mod seq;
+pub mod setup;
 pub mod state;
 mod steps;
 mod view;
