@@ -1,0 +1,19 @@
+# Construction on the map at the start, scen:60.7.
+[file]
+src = ["scen:60.7"]
+verification = "single"
+
+[construction]
+minefields = "none"
+fortifications = "none"
+pipeline = "none beyond the railroad"
+railroad = { terminus = { kind = "hex", hex = "D3714", name = "Mersa Matruh" }, note = "The railroad runs to Mersa Matruh and ends there." }
+ports = "All ports start at their listed efficiency, except Tobruk."
+src = ["scen:60.7"]
+
+[[port_override]]
+port = "tobruk"
+hex = "C4807"
+efficiency_level = 7
+note = "The San Giorgio is partially sunk, blocking the harbor."
+src = ["scen:60.7"]

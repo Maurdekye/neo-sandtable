@@ -1,0 +1,60 @@
+# Commonwealth land reinforcements and withdrawals, land:4.43a. PARTIAL: only rows with GT <= 6 are
+# entered so far (the schedule is designed for the whole war; see GAPS U-005/U-006). `subtree = true`
+# means the unit with every assigned unit that arrives at that stage. Reinforcements arrive in any hex of
+# Cairo unless noted (land:20.14).
+# Arrival times are GT then OpStage (the schedule's own order).
+[file]
+side = "commonwealth"
+src = ["land:4.43a"]
+transcribed_from = ["vassal:Allied Land Unit Reinf Schedule.png"]
+verification = "single"
+partial = true
+covers_gt = [1, 6]
+
+[[arrival]]
+gt = 1
+opstage = 3
+location = "cairo"
+units = [ { unit = "cw.polish_bde.polish_brigade_hq", subtree = true } ]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 2
+opstage = 3
+location = "cairo"
+units = [
+  { unit = "cw.unassigned_armor.2nd_royal_tank_regt" },
+  { unit = "cw.unassigned_armor.7th_royal_tank_regt" },
+  { unit = "cw.2_nz_div.6th_nz_field_artillery_regt" },
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 3
+opstage = 3
+location = "cairo"
+units = [ { unit = "cw.4_indian_div.1st_field_artillery_regt" } ]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 4
+opstage = 3
+location = "cairo"
+units = [ { unit = "cw.unassigned_armor.3rd_kings_own_hussars" } ]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 5
+opstage = 1
+location = "cairo"
+units = [ { unit = "cw.4_indian_div.7th_indian_bde_hq", subtree = true } ]
+trucks = { light = 5, medium = 20 }
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 6
+opstage = 3
+location = "cairo"
+units = [ { unit = "cw.2_nz_div.6th_new_zealand_bde_hq", subtree = true } ]
+trucks = { light = 25, medium = 85, heavy = 5 }
+src = ["land:4.43a"]

@@ -1,0 +1,104 @@
+# Graziani's Offensive (scen:60.22): the first playable scenario, full Land + Air + Logistics systems
+# (decision D2). Record format: data/scenarios/README.md.
+[scenario]
+id = "graziani"
+name = "Graziani's Offensive"
+src = ["scen:60.22"]
+start = { gt = 1, opstage = 1 }
+end = { gt = 6, opstage = 3 }
+systems = ["land", "air", "logistics"]
+estimated_play_hours = { min = 25, max = 50 }
+campaign_start_date = "1940-09-15"
+campaign_start_note = "Scenario group one covers 15 September 1940 through mid-February 1941 (scen:60.1); June to early September 1940 is ignored."
+sequel = "italian_campaign"
+files = [
+  "land_axis.toml", "land_cw.toml", "air_axis.toml", "air_cw.toml", "facilities.toml",
+  "supply.toml", "construction.toml", "fleet.toml", "arrivals.toml",
+]
+
+[initiative]
+gt1 = "axis"
+from_gt2 = "normal_rules"
+src = ["scen:60.6"]
+
+[[victory]]
+side = "axis"
+level = "strategic"
+require = [
+  { occupy_any = ["alexandria", "cairo"] },
+  { qualifying_unit = "combat_unit" },
+  { supply_trace = "convoy", to = "map_d", from = "any_hex" },
+]
+note = "Take and hold either Alexandria or Cairo (any hex) with a combat unit that can be supplied by convoy from any hex of game-map D."
+src = ["scen:60.81"]
+
+[[victory]]
+side = "axis"
+level = "decisive"
+require = [
+  { occupy_all = ["mersa_matruh", "siwa"] },
+  { qualifying_unit = "combat_unit" },
+  { supply_trace = "convoy", to = "tobruk" },
+]
+src = ["scen:60.81"]
+
+[[victory]]
+side = "axis"
+level = "tactical"
+require = [
+  { occupy_all = ["sidi_barrani"] },
+  { retain = ["sollum", "fort_maddalena", "giarabub"] },
+  { qualifying_unit = "combat_unit" },
+  { supply_trace = "convoy", to = "tobruk" },
+]
+note = "Hold Sidi Barrani and retain possession of Sollum (C4021), with Fort Maddalena and Giarabub in supply to Tobruk."
+src = ["scen:60.81"]
+
+[[victory]]
+side = "commonwealth"
+level = "tactical"
+require = [
+  { occupy_all = ["sollum", "halfaya_pass", "siwa"] },
+  { qualifying_unit = "combat_unit" },
+  { supply_trace = "truck_convoy", to = "home_base", home_base = ["alexandria", "cairo"] },
+]
+note = "Take and hold Sollum, Halfaya Pass (C3922) and Siwa (C0127), tracing supply by truck convoy back to Alexandria or Cairo."
+src = ["scen:60.81"]
+
+[[victory]]
+side = "commonwealth"
+level = "decisive"
+require = [
+  { occupy_all = ["bardia", "fort_maddalena", "sidi_omar", "sollum", "siwa"] },
+  { qualifying_unit = "combat_unit" },
+  { supply_trace = "truck_convoy", to = "home_base", home_base = ["alexandria", "cairo"] },
+]
+src = ["scen:60.81"]
+
+[[victory]]
+side = "commonwealth"
+level = "strategic"
+require = [
+  { occupy_all = ["tobruk"] },
+  { qualifying_unit = "combat_unit" },
+  { supply_trace = "truck_convoy", to = "home_base", home_base = ["alexandria", "cairo"] },
+]
+src = ["scen:60.81"]
+
+[victory_notes]
+qualifying_unit = "A combat unit is one with a non-parenthesized close-assault rating (scen:60.82 definition; scen:60.81 says 'combat unit')."
+levels_precedence = "The printed text lists levels from lowest to highest per side; the engine evaluates the highest level met (interpretation to be recorded if challenged)."
+italian_campaign_victory = "scen:60.82 (victory points) applies to the Italian Campaign (scen:60.23), not to this scenario."
+src = ["scen:60.81", "scen:60.82"]
+
+# Abstraction register (scen:60.9): none are used under full systems; recorded for the record.
+[[abstraction_note]]
+case = "60.91"
+note = "Air abstracted (Land & Logistics games): none."
+used = false
+
+[[abstraction_note]]
+case = "60.92"
+note = "Air and Logistics abstracted (Land game only): motorization points equal medium-truck points; the Axis initial supply is replaced by supply units (Tobruk 3 units 15 ammo/50 fuel each, Bardia 2 units 10/40, Benghazi 1 unit 10/10, ...). Not applicable under full systems."
+used = false
+src = ["scen:60.92"]

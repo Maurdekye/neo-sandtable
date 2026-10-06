@@ -1,0 +1,27 @@
+# Axis airplane reinforcements, airlog:34.84, 34.87 (chart 34.85). PARTIAL: only entries touching GT 1-6.
+# `gt_from`/`gt_to` entries are monthly totals divided as evenly as possible among the Game-Turns of the
+# period; Axis reinforcements may be placed at the bases in the Tripoli-Tunisia boxes and Italy/Sicily/
+# Crete (airlog:34.81).
+[file]
+side = "axis"
+src = ["airlog:34.84", "airlog:34.87"]
+transcribed_from = ["vassal:Axis Aircraft Withdrawal Schedule.png"]
+verification = "single"
+partial = true
+covers_gt = [1, 6]
+
+[[arrival]]
+label = "1940 Sept IV"
+nationality = "italian"
+gt = 2
+planes = [ { type = "it.ba65", n = 12 } ]
+src = ["airlog:34.87"]
+
+[[arrival]]
+label = "1940 Oct"
+nationality = "italian"
+gt_from = 3
+gt_to = 6
+planes = [ { type = "it.ba65", n = 12 } ]
+distribution = "even_per_game_turn"
+src = ["airlog:34.87"]

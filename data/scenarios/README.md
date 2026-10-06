@@ -72,16 +72,20 @@ booklet's vocabulary (`scen:59.2`):
 
 | Field | Booklet notation | Meaning |
 |---|---|---|
+| `unit` | the listed unit | OA unit id; the entry includes every assigned unit of its subtree that arrives `D`, minus `less` and `det` |
+| `sheet` | a whole garrison or "unassigned" group listed by name | every `D` unit of that OA sheet |
+| `hq_only = true` | "HQ:" | only the HQ counter |
 | `att = [unit ids]` | "Att:" | attached (not assigned) to this parent in the same hex |
 | `assg = [unit ids]` | "Assg:" | additionally assigned (not originally on the OA sheet) |
 | `less = [unit ids]` | "Less:" | assigned units that are not with the parent |
-| `det = [unit ids]` | "Det:" | assigned units detached (they are placed separately) |
-| `consists_of = [unit ids]` | "Consists of" | a wholly new roster |
-| `weapon_type` | `[T]`, `[I]`, `[R]`, `[Ar]` in brackets | the unit-type tag the booklet prints (T tank, I infantry, R recce, Ar artillery, AT anti-tank, AA anti-air, HQ) |
-| `parent_tag` | italic names like "Ar/LTC", "7Spt/7" | the printed parent-counter hint (display aid, not rules) |
-| `toe` | "(I; U@6)" etc. | TOE strength override if printed |
-| `trucks = { light, medium, heavy }` | "Trucks:" | first-line truck points, distributed by the player among the hex's units (`scen:59.42`) |
+| `det = [unit ids]` | "Det:" | assigned units detached (they are placed in their own groups); a detached unit whose arrival is after the start is simply not on the map yet |
+| `consists_of = [unit ids]` | "Consists of" | a wholly new roster (not used in Graziani's) |
+| `note` | | paraphrased clarification |
+| `trucks = { light, medium, heavy }` (group level) | "Trucks:" | first-line truck points, distributed by the player among the hex's units (`scen:59.42`) |
+| `state = "in_training"` (group level) | "In Training" | the group starts in training (`land:17`) |
 | `src` | | `["scen:60.31"]` |
+
+The printed unit-type tags in brackets (`[T]`, `(I)`, `(Ar)`) and parent-counter hints (`Ar/LTC`, `7Spt/7`) are display aids only; they are derived from the OA sheets and are not stored.
 
 The booklet also uses placement of whole sets: a *parent* listed as "Det: all …" means all its
 assigned units are on the map elsewhere in the list. Both ends are recorded: the parent has
@@ -150,6 +154,10 @@ one = 15
 [sgsu]
 available = 39
 ```
+
+Further record kinds in the Graziani folder: `[[bonus_toe]]` (the two Autoblinda points), `[[broken_down_vehicles]]` (Alexandria), `[[dump]]`/`[[dummy_dump]]`/`[air_supply_pool.<side>]`/`[[second_third_line_trucks]]`/`[unlimited_supply]` (supply.toml), `[[facility]]`/`[[repair_facility]]` (facilities.toml), `[construction]`/`[[port_override]]`, `[axis_coastal_shipping]`/`[commonwealth_fleet]` (fleet.toml), `[malta]` in air_cw.toml.
+
+Tools: `python tools/units/validate.py` (schema and reference checks) and `python tools/units/coverage.py` (every `D`-arrival OA unit is placed exactly once).
 
 Planes may start at any friendly air facility within capacity (`scen:59.35`); pilots, planes and SGSUs
 are assigned by the player. Malta (`scen:60.46`) uses the same shape with `theatre = "malta"` plus

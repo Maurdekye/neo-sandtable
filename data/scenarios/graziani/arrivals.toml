@@ -1,0 +1,25 @@
+# Arrivals and withdrawals falling inside GT 1-6. This file only points at the rows of the whole-war
+# schedules in data/units/schedules/ that apply; it carries no unit definitions of its own.
+[file]
+src = ["land:4.43a", "land:4.43b", "airlog:34.84", "airlog:34.87"]
+range = { from_gt = 1, to_gt = 6 }
+
+[[source]]
+file = "data/units/schedules/land_cw.toml"
+rows = "all rows (GT 1-6)"
+
+[[source]]
+file = "data/units/schedules/land_axis.toml"
+rows = "none (first Axis land row is GT 9)"
+
+[[source]]
+file = "data/units/schedules/air_cw.toml"
+rows = "all rows (GT 2-3), including the GT 3 squadron withdrawal"
+
+[[source]]
+file = "data/units/schedules/air_axis.toml"
+rows = "all rows (GT 2-6)"
+
+[not_included]
+note = "Naval convoy arrivals, replacement points and pilot/SGSU arrivals are driven by tables owned by the rules clerks (data/tables); the scenario text says the Italians receive all reinforcements per the Reinforcement Track and no Commonwealth replacement points before November 1940."
+src = ["scen:60.37", "scen:60.47"]

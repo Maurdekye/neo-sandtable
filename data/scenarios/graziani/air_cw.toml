@@ -1,0 +1,125 @@
+# Commonwealth North African air force at the start, scen:60.42, and the Malta air force, scen:60.46.
+# "total" = Total Available; "ready" = Total Refitted. Planes, pilots and SGSUs may be placed at any
+# Commonwealth N. African air facility within capacity (scen:60.42).
+[force]
+side = "commonwealth"
+theatre = "north_africa"
+src = ["scen:60.42", "scen:59.3"]
+transcribed_from = ["scenarios-booklet-2021.pdf pp.27-28 (page image)"]
+verification = "single"
+
+[[plane]]
+type = "cw.lysander_i"
+total = 12
+ready = 8
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.bombay_i"
+total = 15
+ready = 12
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.sunderland"
+total = 18
+ready = 11
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.blenheim_i"
+total = 26
+ready = 18
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.blenheim_iv"
+total = 12
+ready = 12
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.blenheim_ivf"
+total = 9
+ready = 5
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.gladiator_ii"
+total = 36
+ready = 30
+note = "Printed as \"Gladiators\"; the only non-naval Gladiator in the chart is the Gladiator Mk. II."
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.hurricane_i"
+total = 6
+ready = 4
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.ms406"
+total = 4
+ready = 2
+squadron_note = "May be in the same squadron as the Potez 63/11 (Free French)."
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.potez_63_11"
+total = 2
+ready = 2
+squadron_note = "May be in the same squadron as the Morane 406 (Free French)."
+src = ["scen:60.42"]
+
+[[plane]]
+type = "cw.valentia"
+total = 3
+ready = 1
+src = ["scen:60.42"]
+
+[pilots]
+three = 1
+two = 5
+one = 8
+src = ["scen:60.42"]
+
+[sgsu]
+available = 14
+src = ["scen:60.42"]
+
+# ---- Malta (scen:60.46)
+[malta]
+src = ["scen:60.46"]
+pilots = { two = 4, one = 6 }
+aa_points = 17
+aa_note = "17 AA points distributed as the player sees fit."
+facility_capacity_sgsu = 5
+facility_note = "Initial capacity five SGSUs, spread among the Malta facilities as the player wishes; construction to increase capacity may begin in October 1940."
+
+[[malta.plane]]
+type = "cw.hurricane_i"
+total = 15
+ready = 12
+sgsu = 2
+src = ["scen:60.46"]
+
+[[malta.plane]]
+type = "cw.swordfish_i"
+total = 12
+ready = 9
+sgsu = 1
+src = ["scen:60.46"]
+
+[[malta.plane]]
+type = "cw.gladiator_ii"
+total = 3
+ready = 3
+sgsu = 1
+src = ["scen:60.46"]
+
+[[malta.plane]]
+type = "cw.sea_gladiator"
+total = 1
+ready = 1
+sgsu = 1
+src = ["scen:60.46"]

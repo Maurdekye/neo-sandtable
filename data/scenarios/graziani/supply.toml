@@ -1,0 +1,215 @@
+# Initial supply dumps and second/third-line trucks, scen:60.33-60.34 (Axis) and scen:60.43-60.44
+# (Commonwealth). Amounts are supply points. A "-" in the printed table is an omitted field.
+# First-line trucks are listed with the land deployment groups; they may be loaded with any supplies at
+# no cost and over and above the amounts below (scen:59.45).
+[file]
+src = ["scen:60.33", "scen:60.34", "scen:60.43", "scen:60.44", "scen:59.4", "scen:59.5"]
+transcribed_from = ["scenarios-booklet-2021.pdf pp.27-28 (page image)"]
+verification = "single"
+
+# ---------------- Axis dumps (scen:60.34)
+[[dump]]
+id = "ax_tobruk"
+side = "axis"
+location = { kind = "hex", hex = "C4807" }
+ammo = 200
+fuel = 2000
+stores = 500
+active = true
+src = ["scen:60.34"]
+
+[[dump]]
+id = "ax_bardia"
+side = "axis"
+location = { kind = "hex", hex = "C4321" }
+ammo = 100
+fuel = 1000
+stores = 200
+active = true
+src = ["scen:60.34"]
+
+[[dump]]
+id = "ax_benghazi"
+side = "axis"
+location = { kind = "city", city = "benghazi" }
+ammo = 100
+fuel = 250
+stores = 100
+active = true
+src = ["scen:60.34"]
+
+[[dump]]
+id = "ax_derna"
+side = "axis"
+location = { kind = "hex", hex = "B5925" }
+fuel = 250
+stores = 50
+active = true
+src = ["scen:60.34"]
+
+[[dump]]
+id = "ax_tripoli"
+side = "axis"
+location = { kind = "city", city = "tripoli" }
+ammo = 250
+fuel = 5000
+stores = 250
+active = true
+src = ["scen:60.34"]
+
+[[dump]]
+id = "ax_dump_1"
+side = "axis"
+location = { kind = "area", area = "map_c_libya", exclusion = { enemy_unit_within_hexes = 4 } }
+ammo = 1000
+fuel = 1500
+stores = 1500
+water = 200
+active = true
+src = ["scen:60.34"]
+
+[[dump]]
+id = "ax_dump_2"
+side = "axis"
+location = { kind = "area", area = "map_c_libya", exclusion = { enemy_unit_within_hexes = 4 } }
+ammo = 1000
+fuel = 1500
+stores = 1000
+water = 200
+active = true
+src = ["scen:60.34"]
+
+[[dump]]
+id = "ax_c0716"
+side = "axis"
+location = { kind = "hex", hex = "C0716" }
+ammo = 100
+fuel = 50
+stores = 50
+active = true
+src = ["scen:60.34"]
+
+[[dummy_dump]]
+side = "axis"
+count = 2
+location = { kind = "area", area = "map_c_libya", exclusion = { enemy_unit_within_hexes = 4 } }
+src = ["scen:60.34"]
+
+[air_supply_pool.axis]
+ammo = 1200
+fuel = 850
+stores = 100
+water = 100
+note = "May be freely distributed among Axis airfields; never to off-map facilities (scen:59.52)."
+src = ["scen:60.34"]
+
+# ---------------- Axis second-third line trucks (scen:60.33)
+[[second_third_line_trucks]]
+side = "axis"
+purpose = "supplies"
+placement = { kind = "city", city = "tripoli" }
+light = 25
+medium = 140
+heavy = 40
+src = ["scen:60.33"]
+
+[[second_third_line_trucks]]
+side = "axis"
+purpose = "supplies"
+placement = { kind = "area", area = "libya" }
+light = 30
+medium = 100
+heavy = 25
+src = ["scen:60.33"]
+
+[[second_third_line_trucks]]
+side = "axis"
+purpose = "air_facilities"
+placement = { kind = "area", area = "any_air_facility" }
+light = 10
+medium = 50
+src = ["scen:60.33"]
+
+# ---------------- Commonwealth dumps (scen:60.44; the table has no water column)
+[[dump]]
+id = "cw_mersa_matruh"
+side = "commonwealth"
+location = { kind = "hex", hex = "D3714" }
+ammo = 1000
+fuel = 3000
+stores = 4000
+active = true
+src = ["scen:60.44"]
+
+[[dump]]
+id = "cw_sidi_barrani"
+side = "commonwealth"
+location = { kind = "hex", hex = "C4131" }
+ammo = 250
+fuel = 500
+stores = 100
+active = true
+src = ["scen:60.44"]
+
+[[dump]]
+id = "cw_dump_1"
+side = "commonwealth"
+location = { kind = "area", area = "map_c_or_d_egypt" }
+ammo = 500
+fuel = 750
+stores = 500
+active = true
+src = ["scen:60.44"]
+
+[[dummy_dump]]
+side = "commonwealth"
+count = 1
+location = { kind = "area", area = "map_c_or_d_egypt" }
+src = ["scen:60.44"]
+
+[air_supply_pool.commonwealth]
+ammo = 200
+fuel = 250
+stores = 50
+note = "Distributed among Commonwealth air facilities as desired."
+src = ["scen:60.44"]
+
+[unlimited_supply]
+side = "commonwealth"
+locations = ["cairo", "alexandria"]
+src = ["scen:60.44"]
+
+# ---------------- Commonwealth second-third line trucks (scen:60.43)
+[[second_third_line_trucks]]
+side = "commonwealth"
+purpose = "supplies"
+placement = { kind = "city", city = "cairo", note = "any hex of Cairo" }
+medium = 40
+heavy = 10
+src = ["scen:60.43"]
+
+[[second_third_line_trucks]]
+side = "commonwealth"
+purpose = "supplies"
+placement = { kind = "city", city = "alexandria" }
+light = 10
+medium = 20
+src = ["scen:60.43"]
+
+[[second_third_line_trucks]]
+side = "commonwealth"
+purpose = "supplies"
+placement = { kind = "area", area = "unclear_anywhere_maps", note = "printed as \"Anywhere, maps\" (see GAPS S-004)" }
+light = 15
+medium = 40
+heavy = 5
+src = ["scen:60.43"]
+
+[[second_third_line_trucks]]
+side = "commonwealth"
+purpose = "air_facilities"
+placement = { kind = "area", area = "any_air_facility" }
+light = 5
+medium = 30
+heavy = 20
+src = ["scen:60.43"]

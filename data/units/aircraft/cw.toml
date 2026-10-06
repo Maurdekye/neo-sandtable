@@ -21,6 +21,34 @@ manufacturer = "Bristol"
   missions = { f = "night", s = "night_only" }
 
 [[aircraft]]
+id = "cw.fulmar_ii"
+nation = "cw"
+name = "Fulmar Mk. II"
+role = "fighter"
+manufacturer = "Fairey"
+[[aircraft.mode]]
+  range_hexes = 74
+  tacair = 4
+  maneuver = 29
+  fuel_points = 1
+  missions = { f = "night", s = "day" }
+
+[[aircraft]]
+id = "cw.skua_ii"
+nation = "cw"
+name = "Skua Mk. II"
+role = "fighter"
+manufacturer = "Blackburn"
+note = "A dive-bomber (printed note); never listed in the Graziani set-up, arrives GT 3."
+[[aircraft.mode]]
+  range_hexes = 76
+  tacair = 3
+  maneuver = 18
+  bomb_capacity = 4
+  fuel_points = 1
+  missions = { f = "day", d = "day" }
+
+[[aircraft]]
 id = "cw.gladiator_ii"
 nation = "cw"
 name = "Gladiator Mk. II"

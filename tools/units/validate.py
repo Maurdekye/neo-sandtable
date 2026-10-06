@@ -164,6 +164,29 @@ if scen.exists():
 
         walk(d)
 
+# sheet references and aircraft types in schedules
+sheet_ids = {u.rsplit(".", 1)[0] for u in unit_ids}
+if scen.exists():
+    for p in sorted(scen.rglob("*.toml")):
+        def walk_sheet(x):
+            if isinstance(x, dict):
+                for k, v in x.items():
+                    if k == "sheet" and isinstance(v, str) and v not in sheet_ids:
+                        err(p, f"dangling sheet reference {v!r}")
+                    else:
+                        walk_sheet(v)
+            elif isinstance(x, list):
+                for i in x:
+                    walk_sheet(i)
+        walk_sheet(load(p))
+for p in sorted((units / "schedules").glob("*.toml")) if (units / "schedules").exists() else []:
+    d = load(p)
+    for kind in ("arrival", "withdrawal", "replacement"):
+        for r in d.get(kind, []):
+            for pl in r.get("planes", []):
+                if pl.get("type") not in aircraft:
+                    err(p, f"unknown aircraft type {pl.get('type')!r}")
+
 n = len(errors)
 print(f"weapons={len(weapons)} classes={len(classes)} aircraft={len(aircraft)} units={len(unit_ids)}  errors={n}")
 for e in errors:

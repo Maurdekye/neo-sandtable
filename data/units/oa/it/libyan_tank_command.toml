@@ -142,6 +142,6 @@ class = "it.l"
 echelon = "battalion"
 toe = [ { weapon = "it.m11_39", n = 7 } ]
 arrives = "D"
-parent = "it.libyan_tank_command.libyan_tank_command_hq"
+parent = "it.libyan_tank_command.trivioli_2nd_regt_hq"
 note = "Begins attached to the Maletti."
 src = ["land:4.45"]

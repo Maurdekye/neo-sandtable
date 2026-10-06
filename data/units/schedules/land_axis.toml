@@ -1,0 +1,10 @@
+# Axis land reinforcements, land:4.43b. PARTIAL: the schedule's first row is GT 9 OpStage 2, so there are
+# no Axis land reinforcement rows in GT 1-6 (and none to enter yet).
+[file]
+side = "axis"
+src = ["land:4.43b"]
+transcribed_from = ["vassal:Axis Land Unit Reinf Schedule.png"]
+verification = "single"
+partial = true
+covers_gt = [1, 6]
+rows_in_covered_range = 0

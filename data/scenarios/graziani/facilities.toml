@@ -1,0 +1,489 @@
+# Air facilities in existence at the start, scen:60.5. Ownership: all facilities in Egypt belong to the
+# Commonwealth and all in Libya to the Italians; where the owner is not given here it follows the map's
+# country of the hex (owner_by_country = true). Facilities may be used by whoever controls them.
+# Names and hexes were read from the booklet page image (p.28); the table's name/hex columns are in the
+# same row order. Four unnamed rows are recorded without a name (GAPS S-005).
+[file]
+src = ["scen:60.5"]
+transcribed_from = ["scenarios-booklet-2021.pdf p.28 (page image)"]
+verification = "single"
+note_landing_strips = "The set contains too few air-landing-strip counters; blank counters are used (printed note)."
+
+[[facility]]
+id = "airfield_abbassia"
+kind = "airfield"
+name = "Abbassia"
+hex = "E2132"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_aboukir"
+kind = "airfield"
+name = "Aboukir"
+hex = "E3815"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_abu_seier"
+kind = "airfield"
+name = "Abu Seier"
+off_map = true
+printed_location = "E(3433)"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_alexandria"
+kind = "airfield"
+name = "Alexandria"
+hexes = ["E3613", "E3714"]
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_almaza"
+kind = "airfield"
+name = "Almaza"
+hex = "E2133"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_amiriya"
+kind = "airfield"
+name = "Amiriya"
+hex = "E2212"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_barce"
+kind = "airfield"
+name = "Barce"
+hex = "B5504"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_benina"
+kind = "airfield"
+name = "Benina"
+hex = "A4829"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_dekheila"
+kind = "airfield"
+name = "Dekheila"
+hex = "E3512"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_deversoir"
+kind = "airfield"
+name = "Deversoir"
+off_map = true
+printed_location = "E(1833)"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_el_adem"
+kind = "airfield"
+name = "El Adem"
+hex = "C4507"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_el_berea"
+kind = "airfield"
+name = "El Berea"
+hex = "A4728"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_fayid"
+kind = "airfield"
+name = "Fayid"
+off_map = true
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_ft_maddalena"
+kind = "airfield"
+name = "Ft. Maddalena"
+hex = "C3019"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_ismailia"
+kind = "airfield"
+name = "Ismailia"
+off_map = true
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_kabrit"
+kind = "airfield"
+name = "Kabrit"
+off_map = true
+printed_location = "E(1833)"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_martuba"
+kind = "airfield"
+name = "Martuba"
+hex = "B5526"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_mersa_matruh"
+kind = "airfield"
+name = "Mersa Matruh"
+hex = "D3714"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_soluch"
+kind = "airfield"
+name = "Soluch"
+hex = "A4130"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_unnamed_b5825"
+kind = "airfield"
+hex = "B5825"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_augila"
+kind = "air_landing_strip"
+name = "Augila"
+hex = "B0707"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_bardia"
+kind = "air_landing_strip"
+name = "Bardia"
+hex = "C4321"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_bir_el_gubi"
+kind = "air_landing_strip"
+name = "Bir el Gubi"
+hex = "C4108"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_burg_el_arab"
+kind = "air_landing_strip"
+name = "Burg el Arab"
+hex = "E3109"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_buq_buq"
+kind = "air_landing_strip"
+name = "Buq Buq"
+hex = "C3926"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_el_agheila"
+kind = "air_landing_strip"
+name = "El Agheila"
+hex = "A1816"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_el_hamman"
+kind = "air_landing_strip"
+name = "El Hamman"
+hex = "E3007"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_ft_capuzzo"
+kind = "air_landing_strip"
+name = "Ft. Capuzzo"
+hex = "C4020"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_fuka"
+kind = "air_landing_strip"
+name = "Fuka"
+hex = "D3323"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_gambut"
+kind = "air_landing_strip"
+name = "Gambut"
+hex = "C4414"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_gazala"
+kind = "air_landing_strip"
+name = "Gazala"
+hex = "B4933"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_giarabub"
+kind = "air_landing_strip"
+name = "Giarabub"
+hex = "C1014"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_maraua"
+kind = "air_landing_strip"
+name = "Maraua"
+hex = "B5410"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_matten_baggush"
+kind = "air_landing_strip"
+name = "Matten Baggush"
+hex = "D3520"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_mechili"
+kind = "air_landing_strip"
+name = "Mechili"
+hex = "B4921"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_menastir"
+kind = "air_landing_strip"
+name = "Menastir"
+hex = "C4419"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_qotifiya"
+kind = "air_landing_strip"
+name = "Qotifiya"
+hex = "D3227"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_sidi_azeiz"
+kind = "air_landing_strip"
+name = "Sidi Azeiz"
+hex = "C4218"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_sidi_barrani"
+kind = "air_landing_strip"
+name = "Sidi Barrani"
+hex = "C4131"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_sidi_haneish"
+kind = "air_landing_strip"
+name = "Sidi Haneish"
+hex = "D3418"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_sidi_omar"
+kind = "air_landing_strip"
+name = "Sidi Omar"
+hex = "C3618"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_sollum"
+kind = "air_landing_strip"
+name = "Sollum"
+hex = "C4021"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_siwa"
+kind = "air_landing_strip"
+name = "Siwa"
+hex = "C0127"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_tmimi"
+kind = "air_landing_strip"
+name = "Tmimi"
+hex = "B5229"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_tobruk"
+kind = "air_landing_strip"
+name = "Tobruk"
+hex = "C4807"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_ztert"
+kind = "air_landing_strip"
+name = "Ztert"
+hex = "B5917"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_unnamed_c4119"
+kind = "air_landing_strip"
+hex = "C4119"
+owner_by_country = true
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_unnamed_d3231"
+kind = "air_landing_strip"
+hex = "D3231"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_unnamed_d3416"
+kind = "air_landing_strip"
+hex = "D3416"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_unnamed_d3516"
+kind = "air_landing_strip"
+hex = "D3516"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "air_landing_strip_unnamed_d3903"
+kind = "air_landing_strip"
+hex = "D3903"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "flying_boat_basin_alexandria"
+kind = "flying_boat_basin"
+name = "Alexandria"
+hex = "E3614"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "flying_boat_basin_bomba"
+kind = "flying_boat_basin"
+name = "Bomba"
+hex = "B5331"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "flying_boat_basin_port_said"
+kind = "flying_boat_basin"
+name = "Port Said"
+off_map = true
+printed_location = "E4033"
+owner = "commonwealth"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "flying_boat_alighting_area_derna"
+kind = "flying_boat_alighting_area"
+name = "Derna"
+hex = "B5925"
+owner = "axis"
+src = ["scen:60.5"]
+
+[[facility]]
+id = "airfield_tripoli_tunisia_boxes"
+kind = "airfield"
+name = "Tripoli/Tunisia boxes"
+off_map = true
+count = 4
+owner = "axis"
+note = "The four Tripoli/Tunisia boxes (off-map) are listed as air facilities."
+src = ["scen:60.5"]
+
+# ---- repair facilities, ports (scen:60.33, 60.44)
+[[repair_facility]]
+side = "axis"
+class = "major"
+location = { kind = "city", city = "tripoli" }
+src = ["scen:60.33"]
+
+[[repair_facility]]
+side = "axis"
+class = "temporary"
+location = { kind = "city", city = "tobruk" }
+src = ["scen:60.33"]
+
+[[repair_facility]]
+side = "axis"
+class = "temporary"
+location = { kind = "city", city = "benghazi" }
+src = ["scen:60.33"]
+
+[[repair_facility]]
+side = "commonwealth"
+class = "major"
+location = { kind = "city", city = "alexandria" }
+src = ["scen:60.44"]
+
+[[repair_facility]]
+side = "commonwealth"
+class = "temporary"
+location = { kind = "hex", hex = "D3714", name = "Mersa Matruh" }
+src = ["scen:60.44"]

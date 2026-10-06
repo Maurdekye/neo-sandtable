@@ -1,0 +1,206 @@
+# Commonwealth initial land deployment, scen:60.41. Same semantics as land_axis.toml.
+[file]
+side = "commonwealth"
+src = ["scen:60.41"]
+transcribed_from = ["scenarios-booklet-2021.pdf p.27 (page image)"]
+verification = "single"
+
+[[broken_down_vehicles]]
+location = { kind = "city", city = "alexandria" }
+vehicles = [ { weapon = "cw.a9_cruiser", toe_points = 2 }, { weapon = "cw.a10_cruiser", toe_points = 1 } ]
+src = ["scen:60.41"]
+
+[[group]]
+id = "cw_c4131"
+placement = { kind = "hex", hex = "C4131" }
+trucks = { medium = 10 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.unassigned_inf.2nd_scots_guards"
+
+[[group.unit]]
+unit = "cw.4_indian_div.31st_field_artillery_regt"
+
+[[group]]
+id = "cw_c3926"
+placement = { kind = "hex", hex = "C3926" }
+trucks = { medium = 2 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.unassigned_allied.1st_company_fr_mtr_marine"
+
+[[group]]
+id = "cw_c3922"
+placement = { kind = "hex", hex = "C3922" }
+trucks = { medium = 15, heavy = 5 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.unassigned_inf.3rd_coldstream_guards"
+
+[[group.unit]]
+unit = "cw.7_armd_div.1st_krrc"
+
+[[group.unit]]
+unit = "cw.7_armd_div.4th_ryl_horse_arty"
+
+[[group.unit]]
+unit = "cw.unassigned_arty.7th_medium_artillery_regt"
+
+[[group]]
+id = "cw_c3721"
+placement = { kind = "hex", hex = "C3721" }
+trucks = { medium = 5, light = 5 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.unassigned_inf.1st_rnf_mg_bn"
+
+[[group.unit]]
+unit = "cw.7_armd_div.3rd_ryl_horse_arty"
+
+[[group]]
+id = "cw_c3520"
+placement = { kind = "hex", hex = "C3520" }
+trucks = { medium = 5 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.7_armd_div.1st_royal_tank_regt"
+
+[[group]]
+id = "cw_c3320"
+placement = { kind = "hex", hex = "C3320" }
+trucks = { medium = 10 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.7_armd_div.2nd_rifle_brigade"
+
+[[group]]
+id = "cw_c3020"
+placement = { kind = "hex", hex = "C3020" }
+trucks = { medium = 3 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.7_armd_div.11th_hussars"
+
+[[group]]
+id = "cw_matruh"
+placement = { kind = "hex", hex = "D3714" }
+trucks = { light = 5, medium = 15, heavy = 5 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.selby_force.matruh_garrison_hq"
+att = [ "cw.70_inf_div.1st_essex", "cw.70_inf_div.1st_durham_light_inf", "cw.unassigned_inf.1st_south_staffordshires", "cw.unassigned_inf.1st_buffs", "cw.unassigned_inf.1st_hampshire" ]
+note = "scen:60.41 lists the first three; the 1st Buffs and 1st Hampshire are added by land:4.44b item 2 and the OA-sheet asterisk (interpretation scen-0002)."
+
+[[group]]
+id = "cw_d3612_7armd"
+placement = { kind = "hex", hex = "D3612" }
+trucks = { light = 5, medium = 5, heavy = 5 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.7_armd_div.7th_armored_div_hq"
+det = [ "cw.7_armd_div.1st_krrc", "cw.7_armd_div.4th_ryl_horse_arty", "cw.7_armd_div.3rd_ryl_horse_arty", "cw.7_armd_div.1st_royal_tank_regt", "cw.7_armd_div.2nd_rifle_brigade", "cw.7_armd_div.11th_hussars" ]
+note = "\"Det: all 7th Armoured Division units listed above\": only the six listed 7th Armoured units are detached; the rest of the assigned D-arrival units stay with the HQ."
+
+[[group]]
+id = "cw_d3615_4indian"
+placement = { kind = "hex", hex = "D3615" }
+trucks = { light = 5, medium = 20, heavy = 2 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.4_indian_div.4th_indian_div_hq"
+det = [ "cw.4_indian_div.31st_field_artillery_regt", "cw.4_indian_div.7th_indian_bde_hq" ]
+note = "7th Indian Bde HQ arrives 1/5 (GT 5 OpStage 1) so it is not on the map at the start; see interpretation scen-0003."
+
+[[group]]
+id = "cw_e1829_16bde"
+placement = { kind = "hex", hex = "E1829" }
+trucks = { medium = 20 }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.70_inf_div.16th_infantry_bde_hq"
+
+[[group]]
+id = "cw_alexandria"
+placement = { kind = "hexes_any", hexes = [ "E3613", "E3714" ] }
+trucks = { light = 10, medium = 15, heavy = 5 }
+note = "Alexandria (E3613 and/or E3714)."
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.2_nz_div.2nd_new_zealand_div_hq"
+hq_only = true
+
+[[group.unit]]
+unit = "cw.2_nz_div.4th_new_zealand_bde_hq"
+
+[[group.unit]]
+unit = "cw.2_nz_div.27th_new_zealand_mg_bn"
+
+[[group.unit]]
+unit = "cw.2_nz_div.2nd_new_zealand_cavalry"
+
+[[group.unit]]
+unit = "cw.2_nz_div.4th_nz_field_artillery_regt"
+
+[[group]]
+id = "cw_cairo_helwan_6aus"
+placement = { kind = "hexes_any", hexes = [ "E1430" ] }
+state = "in_training"
+note = "Cairo and/or Helwan (E1430); in training."
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.6_aus_div.6th_australian_div_hq"
+less = [ "cw.6_aus_div.19th_aus_infantry_bde_hq", "cw.6_aus_div.2_1_aus_field_artillery_regt", "cw.6_aus_div.2_2_aus_field_artillery_regt" ]
+
+[[group]]
+id = "cw_cairo"
+placement = { kind = "city", city = "cairo" }
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.unassigned_arty.8th_field_artillery_regt"
+
+[[group.unit]]
+unit = "cw.unassigned_indian.1st_welch_regt"
+
+[[group.unit]]
+unit = "cw.unassigned_inf.1st_cheshire_mg_bn"
+
+[[group.unit]]
+unit = "cw.unassigned_inf.2nd_kings_own_royal_regt"
+
+[[group]]
+id = "cw_map_d_or_e"
+placement = { kind = "area", area = "map_d_or_e" }
+note = "Units may be split among hexes of game-map sections D or E as the Commonwealth player chooses."
+src = ["scen:60.41"]
+
+[[group.unit]]
+unit = "cw.unassigned_arty.8th_medium_artillery_regt"
+
+[[group.unit]]
+unit = "cw.unassigned_at.65th_anti_tank_regt"
+
+[[group.unit]]
+unit = "cw.unassigned_at.149th_anti_tank_regt"
+
+[[group.unit]]
+unit = "cw.unassigned_aa.9th_heavy_aa_regt"
+
+[[group.unit]]
+unit = "cw.unassigned_aa.15th_light_aa_regt"
+
+[[group.unit]]
+unit = "cw.unassigned_aa.57th_light_aa_regt"

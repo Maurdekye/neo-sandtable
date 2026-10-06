@@ -1,0 +1,33 @@
+# Commonwealth airplane reinforcements and squadron withdrawals, airlog:34.84-34.86 (chart 34.84).
+# PARTIAL: only entries touching GT 1-6 are entered. An entry with `gt_from`/`gt_to` is a monthly total to
+# be divided as evenly as possible among those Game-Turns' weeks; an entry with a single `gt` is that
+# Game-Turn's total. All planes of a Game-Turn may arrive in its first OpStage (airlog:34.84).
+# Commonwealth reinforcements may be placed at any air facility in Malta, Cairo, Alexandria or off-map
+# (airlog:34.81); at most 10% of a month's planes may go to Malta.
+[file]
+side = "commonwealth"
+src = ["airlog:34.84", "airlog:34.86"]
+transcribed_from = ["vassal:Allied Aircraft Withdrawal Schedule.png"]
+verification = "single"
+partial = true
+covers_gt = [1, 6]
+
+[[arrival]]
+label = "1940 Sept IV"
+gt = 2
+planes = [ { type = "cw.fulmar_ii", n = 3 }, { type = "cw.hurricane_i", n = 2 } ]
+src = ["airlog:34.84"]
+
+[[arrival]]
+label = "1940 Oct I"
+gt = 3
+planes = [ { type = "cw.blenheim_i", n = 30 }, { type = "cw.skua_ii", n = 6 } ]
+src = ["airlog:34.84"]
+
+[[withdrawal]]
+label = "1940 Oct I"
+gt = 3
+when = "beginning_of_month"
+squadrons = [ { role = "fighter", count = 1, min_planes = 12 } ]
+note = "WD: 1F - one squadron of at least 12 planes capable of Combat Air Patrol, from Malta or the Allied off-map airfields."
+src = ["airlog:34.85", "airlog:34.84"]

@@ -1,0 +1,318 @@
+# Italian initial land deployment, scen:60.31. See data/scenarios/README.md for the record format.
+# Semantics: `unit` = an OA unit with its whole assigned subtree that arrives "D" (minus `less`/`det`);
+# `sheet` = every "D" unit of that OA sheet; `att` = units attached from elsewhere; `det` = assigned
+# units placed elsewhere (they appear in their own group); `hq_only` = the HQ counter alone.
+[file]
+side = "axis"
+src = ["scen:60.31"]
+transcribed_from = ["scenarios-booklet-2021.pdf p.27 (page image)"]
+verification = "single"
+
+[[bonus_toe]]
+id = "it_autoblinda_40"
+kind = "recce_toe_points"
+count = 2
+id_code = "it.ww"
+rule = "Each point may be attached to any unit (not both to the same), ignoring composition restrictions; or both may be deployed in Tobruk as regular trained and fuelled replacement points."
+src = ["scen:60.31"]
+
+[[group]]
+id = "it_c4218_1ccnn"
+placement = { kind = "hex", hex = "C4218" }
+trucks = { light = 10, medium = 25, heavy = 10 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.1ccnn_div.1st_ccnn_div_hq"
+att = [ "it.libyan_tank_command.i_m_tank_bn" ]
+
+[[group]]
+id = "it_c4120_cirene"
+placement = { kind = "hex", hex = "C4120" }
+trucks = { medium = 45, heavy = 5 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.63_cirene_div.63rd_cirene_div_hq"
+att = [ "it.libyan_tank_command.lxiii_l_tank_bn" ]
+
+[[group]]
+id = "it_c4020_1libyan"
+placement = { kind = "hex", hex = "C4020" }
+trucks = { light = 10, medium = 15 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.1_libyan_div.1st_libyan_infantry_hq"
+
+[[group]]
+id = "it_c3920_2libyan"
+placement = { kind = "hex", hex = "C3920" }
+trucks = { light = 15, medium = 15 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.2_libyan_div.2nd_libyan_infantry_hq"
+att = [ "it.libyan_tank_command.ix_l_tank_bn" ]
+
+[[group]]
+id = "it_c3919_aresca"
+placement = { kind = "hex", hex = "C3919" }
+trucks = { medium = 5, heavy = 5 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.libyan_tank_command.aresca_1st_regt_hq"
+det = [ "it.libyan_tank_command.lxii_l_tank_bn", "it.libyan_tank_command.lxiii_l_tank_bn", "it.libyan_tank_command.i_m_tank_bn" ]
+
+[[group]]
+id = "it_c3918_marmarica"
+placement = { kind = "hex", hex = "C3918" }
+trucks = { medium = 40, heavy = 5 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.62_marmarica_div.62nd_marmarica_div_hq"
+att = [ "it.libyan_tank_command.lxii_l_tank_bn" ]
+
+[[group]]
+id = "it_c3617_maletti"
+placement = { kind = "hex", hex = "C3617" }
+trucks = { light = 5, medium = 30, heavy = 5 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.gruppo_maletti.maletti_div_hq"
+att = [ "it.libyan_tank_command.ii_m_tank_bn" ]
+
+[[group]]
+id = "it_c4707_catanzaro"
+placement = { kind = "hex", hex = "C4707" }
+trucks = { medium = 30, heavy = 5 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.64_catanzaro_div.64th_catanzaro_div_hq"
+
+[[group]]
+id = "it_c4507_4ccnn"
+placement = { kind = "hex", hex = "C4507" }
+trucks = { light = 10, medium = 25, heavy = 10 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.4ccnn_div.4th_ccnn_div_hq"
+
+[[group]]
+id = "it_bardia"
+placement = { kind = "hex", hex = "C4321" }
+trucks = { medium = 20 }
+note = "Bardia (C4321)"
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.libyan_tank_command.trivioli_2nd_regt_hq"
+det = [ "it.libyan_tank_command.ii_m_tank_bn", "it.libyan_tank_command.ix_l_tank_bn" ]
+
+[[group.unit]]
+sheet = "it.bardia_garrison"
+
+[[group]]
+id = "it_tobruk"
+placement = { kind = "hex", hex = "C4807" }
+trucks = { medium = 5 }
+note = "Tobruk (C4807)"
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.libyan_tank_command.libyan_tank_command_hq"
+hq_only = true
+
+[[group.unit]]
+sheet = "it.tobruk_garrison"
+
+[[group]]
+id = "it_benghazi"
+placement = { kind = "hex", hex = "A4827" }
+note = "Printed B4827 in scen:60.31; the Benghazi Garrison OA sheet gives A4827 (see interpretation scen-0001)."
+src = ["scen:60.31"]
+
+[[group.unit]]
+sheet = "it.benghazi_garrison"
+
+[[group]]
+id = "it_barce"
+placement = { kind = "hex", hex = "B5504" }
+trucks = { medium = 5 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.unassigned_inf_recon.libyan_parachute_regt_hq"
+
+[[group]]
+id = "it_derna"
+placement = { kind = "hex", hex = "B5925" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+sheet = "it.derna_garrison"
+
+[[group]]
+id = "it_mechili"
+placement = { kind = "hex", hex = "B4921" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.minor_garrisons.mechili_garrison_bn"
+
+[[group]]
+id = "it_giarabub"
+placement = { kind = "hex", hex = "C1014" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+sheet = "it.giariabub_garrison"
+
+[[group]]
+id = "it_bir_sceferzen"
+placement = { kind = "hex", hex = "C3419" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.minor_garrisons.sceferzen_oasis_garrison_bn"
+
+[[group]]
+id = "it_fort_maddalena"
+placement = { kind = "hex", hex = "C3019" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.minor_garrisons.fort_maddalenna_garrison_bn"
+
+[[group]]
+id = "it_el_grein"
+placement = { kind = "hex", hex = "C1715" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.minor_garrisons.egug_garrison_bn"
+
+[[group]]
+id = "it_benina"
+placement = { kind = "hex", hex = "A4829" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.minor_garrisons.benina_aa_battery"
+
+[[group]]
+id = "it_soluch"
+placement = { kind = "hex", hex = "A4130" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.minor_garrisons.soluch_garrison_at_coy"
+
+[[group.unit]]
+unit = "it.minor_garrisons.soluch_garrison_arty_regt"
+
+[[group.unit]]
+unit = "it.unassigned_guns.x_corps_artillery_regt"
+
+[[group]]
+id = "it_anywhere_libya_guns"
+placement = { kind = "area", area = "libya" }
+note = "Units may be split among hexes of Libya as the Italian player chooses."
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.unassigned_guns.1st_bn_1_arty_rgppmnto"
+
+[[group.unit]]
+unit = "it.unassigned_guns.2nd_bn_1_arty_rgppmnto"
+
+[[group.unit]]
+unit = "it.unassigned_guns.3rd_bn_1_arty_rgppmnto"
+
+[[group.unit]]
+unit = "it.unassigned_guns.4th_bn_1_arty_rgppmnto"
+
+[[group.unit]]
+unit = "it.unassigned_guns.xxi_corps_artillery_regt"
+
+[[group.unit]]
+unit = "it.unassigned_guns.xxvi_corps_artillery_regt"
+
+[[group]]
+id = "it_saharan_det"
+placement = { kind = "within", hex = "C0716", n = 3 }
+trucks = { light = 5 }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.sahara_det.saharan_detachment_hq"
+
+[[group]]
+id = "it_map_a_or_b"
+placement = { kind = "area", area = "map_a_or_b" }
+note = "Units may be split among hexes of game-map sections A or B as the Italian player chooses."
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.without_parent.xviii_libyan_bn"
+
+[[group.unit]]
+unit = "it.without_parent.xxxii_libyan_bn"
+
+[[group.unit]]
+unit = "it.unassigned_guns.147th_artiglieri_bn"
+
+[[group.unit]]
+unit = "it.unassigned_guns.131st_artiglieri_bn"
+
+[[group.unit]]
+unit = "it.unassigned_guns.2nd_bn_24th_artiglieri"
+
+[[group.unit]]
+unit = "it.unassigned_guns.5th_bn_1st_artiglieri"
+
+[[group.unit]]
+unit = "it.unassigned_guns.6th_gaf_s_di_c_arty_regt"
+
+[[group.unit]]
+unit = "it.unassigned_guns.16th_gaf_s_di_c_arty_regt"
+
+[[group.unit]]
+unit = "it.unassigned_guns.22nd_gaf_s_di_c_arty_regt"
+
+[[group.unit]]
+unit = "it.unassigned_guns.42nd_gaf_s_di_c_arty_regt"
+
+[[group.unit]]
+unit = "it.unassigned_guns.350th_gaf_s_di_c_arty_regt"
+
+[[group]]
+id = "it_tripoli"
+placement = { kind = "city", city = "tripoli" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.2ccnn_div.2nd_ccnn_div_hq"
+
+[[group.unit]]
+sheet = "it.3ccnn_div"
+note = "Printed as \"3 CCNN Div\"; the sheet has no divisional HQ, so all its listed units are placed (GAPS S-003)."
+
+[[group.unit]]
+unit = "it.unassigned_guns.xxii_corps_artillery_regt"
+
+[[group.unit]]
+unit = "it.unassigned_guns.xxiii_corps_artillery_regt"
+
+[[group]]
+id = "it_tripolitania"
+placement = { kind = "area", area = "tripolitania" }
+src = ["scen:60.31"]
+
+[[group.unit]]
+unit = "it.unassigned_inf_recon.4th_fanterie_mtr_regt"
