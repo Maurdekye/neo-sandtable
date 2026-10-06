@@ -3,9 +3,18 @@ import type { GameEvent, Perspective } from './protocol'
 import { Board } from './map/Board'
 import { counterSvg } from './map/counters'
 import { HEX_BY_ID, INITIAL_HEX, TERRAIN } from './map/fixture'
-import { actions, deliver, setTransport, useViewer } from './stream/store'
+import {
+  actions,
+  deliver,
+  getViewer,
+  setTransport,
+  useViewer,
+} from './stream/store'
 import { selectedFrame } from './stream/model'
 import { Transcripts } from './Transcripts'
+import { createSocketStream, streamUrl } from './stream/socket'
+const campaignId = new URLSearchParams(location.search).get('campaign')
+const mockMode = import.meta.env.DEV && !campaignId
 function eventText(event: GameEvent): string {
   switch (event.kind) {
     case 'stack_updated':
@@ -61,12 +70,38 @@ export function App() {
     [focus, setFocus] = useState<{ hex: string; nonce: number } | null>(null)
   const [eventFilter, setEventFilter] = useState('all'),
     [campaignPaused, setCampaignPaused] = useState(false),
-    [control, setControl] = useState<((paused: boolean) => void) | null>(null)
+    [control, setControl] = useState<((paused: boolean) => void) | null>(null),
+    [transportNote, setTransportNote] = useState(
+      mockMode
+        ? 'Development fixture · no CNA adjudication'
+        : 'Open a campaign with ?campaign=<id>',
+    ),
+    [liveFocus, setLiveFocus] = useState(false)
   useEffect(() => {
     let disposed = false,
       stop = () => {},
       disconnect = () => {}
-    if (import.meta.env.DEV)
+    if (campaignId) {
+      try {
+        const server =
+          new URLSearchParams(location.search).get('server') ?? location.origin
+        const transport = createSocketStream({
+          url: streamUrl(server, campaignId),
+          deliver,
+          lastGoodSeq: () => getViewer().lastSeq,
+          status: (status) => {
+            if (!disposed) {
+              setTransportNote(status.message)
+              if (status.phase !== 'connected') actions.connecting()
+            }
+          },
+        })
+        disconnect = setTransport(transport.subscribe)
+        stop = transport.close
+      } catch (error) {
+        setTransportNote(String(error))
+      }
+    } else if (import.meta.env.DEV)
       void import('./mock/generator').then(({ createMockStream }) => {
         if (disposed) return
         const transport = createMockStream(deliver)
@@ -84,6 +119,16 @@ export function App() {
     const timer = window.setInterval(actions.tick, 900 / state.speed)
     return () => window.clearInterval(timer)
   }, [state.speed])
+  useEffect(() => {
+    if (!mockMode && view && !liveFocus) {
+      const hex = view.stacks[0]?.hex ?? view.markers[0]?.hex
+      if (hex) {
+        setSelected(hex)
+        setFocus({ hex, nonce: Date.now() })
+        setLiveFocus(true)
+      }
+    }
+  }, [view, liveFocus])
   const hex = selected ? HEX_BY_ID.get(selected) : undefined,
     stacks = view?.stacks.filter((s) => s.hex === selected) ?? []
   const unit =
@@ -126,11 +171,7 @@ export function App() {
         </div>
         <div className="campaign-title">
           <strong>{state.campaign?.title ?? 'Campaign viewer'}</strong>
-          <small>
-            {import.meta.env.DEV
-              ? 'Development fixture · no CNA adjudication'
-              : 'Server transport not connected yet'}
-          </small>
+          <small>{transportNote}</small>
         </div>
         <div className="clock">
           <span>{view?.clock.date ?? '—'}</span>
@@ -170,16 +211,16 @@ export function App() {
           <option value="operator">Operator · OMNISCIENT</option>
           <option value="side:axis">Axis side</option>
           <option value="side:commonwealth">Commonwealth side</option>
-          <option value="seat:axis.commander">Seat · Axis commander</option>
-          <option value="seat:commonwealth.front_line">
-            Seat · Commonwealth front line
-          </option>
-          <option value="seat:axis.logistics">Seat · Axis logistics</option>
+          {state.campaign?.seats.map((seat) => (
+            <option key={seat.id} value={`seat:${seat.id}`}>
+              Seat · {seat.id.replaceAll('_', ' ')}
+            </option>
+          ))}
         </select>
         <span className="view-note">
           {state.perspective === 'operator'
             ? 'OMNISCIENT · all authorized data'
-            : 'Projection supplied by mock server'}
+            : 'Projection supplied by server'}
         </span>
         <span className="grow" />
         <button
@@ -193,7 +234,11 @@ export function App() {
             control?.(!campaignPaused)
           }}
         >
-          {campaignPaused ? 'Resume campaign (mock)' : 'Pause campaign (mock)'}
+          {!mockMode
+            ? 'Campaign control pending API'
+            : campaignPaused
+              ? 'Resume campaign (mock)'
+              : 'Pause campaign (mock)'}
         </button>
       </div>
       <main className="workspace">
@@ -224,6 +269,16 @@ export function App() {
                 ))}
             </div>
           ))}
+          <section className="formation">
+            <h3>Objectives & markers</h3>
+            {view?.markers.map((marker) => (
+              <button key={marker.id} onClick={() => locate(marker.hex)}>
+                {marker.label ?? marker.kind}
+                <small> · {marker.side ?? 'unheld'}</small>
+              </button>
+            ))}
+            {!view?.markers.length && <small>No disclosed markers</small>}
+          </section>
           <div className="overlay-controls">
             <span className="eyebrow">OVERLAYS</span>
             {['Supply', 'Transport', 'Air missions', 'Control'].map((label) => (
@@ -244,6 +299,7 @@ export function App() {
         <Transcripts
           seats={state.campaign?.seats ?? []}
           messages={transcriptMessages}
+          mock={mockMode}
         />
         <aside className="inspector">
           <div className="panel-heading">
@@ -256,7 +312,10 @@ export function App() {
                 {TERRAIN[hex.terrain].label} · axial {hex.q}, {hex.r}
               </p>
               <div className="inspect-coordinates">
-                {hex.label ?? 'Real coordinate grid / synthetic units'}
+                {hex.label ??
+                  (mockMode
+                    ? 'Real coordinate grid / synthetic units'
+                    : 'Published map grid')}
               </div>
             </>
           )}
@@ -293,6 +352,16 @@ export function App() {
               })}
             </section>
           ))}
+          {view?.markers
+            .filter((marker) => marker.hex === selected)
+            .map((marker) => (
+              <section key={marker.id}>
+                <h3>{marker.label ?? marker.kind}</h3>
+                <p className="muted">
+                  {marker.kind} · holder: {marker.side ?? 'unheld'}
+                </p>
+              </section>
+            ))}
           {!stacks.length && <p className="empty">No visible stack.</p>}
           {unit && (
             <section className="unit-detail">

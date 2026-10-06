@@ -259,8 +259,7 @@ export function Board({ view, selected, focus, onSelect }: Props) {
     async function draw() {
       const units = Object.values(view!.units)
       await Promise.all(
-        units.map(async (u) => {
-          const key = counterSvg(u)
+        [...new Set(units.map(counterSvg))].map(async (key) => {
           if (!s!.textures.has(key)) {
             const texture = await rasterize(key)
             if (canceled) texture.destroy(true)
@@ -279,6 +278,42 @@ export function Board({ view, selected, focus, onSelect }: Props) {
           texture.destroy(true)
         }
       }
+      view!.markers.forEach((marker) => {
+        const hex = HEX_BY_ID.get(marker.hex)
+        if (!hex) return
+        const p = center(hex),
+          color =
+            marker.side === 'axis'
+              ? 0xdec08c
+              : marker.side === 'commonwealth'
+                ? 0x8ebbbb
+                : 0xf5dfa1
+        const glyph = new Graphics()
+          .poly([
+            p.x,
+            p.y + 17,
+            p.x + 8,
+            p.y + 25,
+            p.x,
+            p.y + 33,
+            p.x - 8,
+            p.y + 25,
+          ])
+          .fill({ color: 0x172d35, alpha: 0.9 })
+          .stroke({ color, width: 2 })
+        s!.counters.addChild(glyph)
+        const label = new Text({
+          text: marker.label ?? marker.kind,
+          style: {
+            fontFamily: 'sans-serif',
+            fontSize: 9,
+            fill: color,
+            stroke: { color: 0x172d35, width: 2 },
+          },
+        })
+        label.position.set(p.x + 11, p.y + 22)
+        s!.counters.addChild(label)
+      })
       view!.stacks.forEach((stack) => {
         const h = HEX_BY_ID.get(stack.hex)
         if (!h) return
@@ -357,7 +392,7 @@ export function Board({ view, selected, focus, onSelect }: Props) {
       className="board"
       ref={host}
       role="img"
-      aria-label="Synthetic hex map; drag to pan, wheel to zoom"
+      aria-label="Hex map; drag to pan, wheel to zoom"
     >
       <div className="map-caption">
         {MAP_LABEL}{' '}
@@ -370,16 +405,18 @@ export function Board({ view, selected, focus, onSelect }: Props) {
       </output>
       {error && <div className="map-error">Renderer unavailable: {error}</div>}
       <div className="legend">
-        {Object.entries(TERRAIN).map(([key, t]) => (
-          <span key={key}>
-            <i
-              style={{
-                background: `#${t.color.toString(16).padStart(6, '0')}`,
-              }}
-            />
-            {t.label}
-          </span>
-        ))}
+        {Object.entries(TERRAIN)
+          .filter(([key]) => HEXES.some((h) => h.terrain === key))
+          .map(([key, t]) => (
+            <span key={key}>
+              <i
+                style={{
+                  background: `#${t.color.toString(16).padStart(6, '0')}`,
+                }}
+              />
+              {t.label}
+            </span>
+          ))}
       </div>
     </div>
   )

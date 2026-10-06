@@ -22,7 +22,7 @@ independent 10,000-hex terrain fixture for development and measurement.
 ## Controls
 
 Drag the map to pan; wheel to zoom. Select a hex to fan its stack out, then choose
-any unit in the inspector list. Formations and event cards focus the map. Agent
+any unit in the inspector list. Formations, objective markers and event cards focus the map. Objective diamonds and labels come from the authorized marker stream. Agent
 sessions are tabbed beside the board. Each seat offers kind filters and auto-scroll;
 scrolling away from the bottom pauses following, and Follow live resumes it.
 Calls and results are paired by `call_id`, including results received first.
@@ -31,11 +31,11 @@ Pause playback freezes the viewed frame while live events continue to buffer.
 Step, the history slider and Play history navigate retained frames; speed affects
 only replay. Return to live follows the newest frame. The HISTORY badge identifies
 a past view. Pause campaign is a separate, clearly labelled **mock** operator
-control; the real HTTP control and server transport are not connected yet.
+control. Live campaign controls remain disabled until the HTTP control API is published.
 Overlays are disabled with a pending-data label until their data exists.
 
 Perspective changes clear previous authorized state and subscribe again. Filtering
-happens in the mock server before delivery. The renderer never invents details for
+happens in the server before delivery (or the development mock transport). The renderer never invents details for
 an undisclosed enemy stack. The real server must enforce the same authorization on
 every channel; client filtering is not an access-control boundary.
 
@@ -51,8 +51,22 @@ advance the cursor without applying an unknown transition. Buffers retain at mos
 retained frame on eviction. Transcripts align to event frames via `game_seq`.
 
 The mock generator is dynamically imported only under `import.meta.env.DEV` and is
-absent from the production build. Production presently shows the grid and an
-unconnected state until the server adapter is implemented.
+absent from the production build. To connect a campaign, open
+`/?campaign=<id>`. The adapter uses the page origin by default; when using Vite
+against a separate backend, add `&server=http://127.0.0.1:<port>` (URL-encode the
+server value). It connects to `/api/campaigns/{id}/stream`, using WSS for HTTPS.
+A bare production URL displays connection instructions until a campaign is chosen.
+
+The adapter guards incoming JSON before rendering and retries failed connections
+with a 500 ms to 10 s exponential delay, subscribing with the last good event
+sequence. A new socket is opened for every perspective change or resubscription,
+so queued messages from an old projection cannot populate the new view. Hello
+must acknowledge the requested perspective before the snapshot; unsupported
+protocol versions and malformed payloads produce a visible retry status.
+
+Transport tests use injected sockets and a browser WebSocket fixture. The actual
+server transport is still being implemented; an end-to-end sandbox run and HTTP
+campaign discovery/control integration remain to be verified when it lands.
 
 ## Renderer and measurement
 

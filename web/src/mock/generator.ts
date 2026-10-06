@@ -101,7 +101,21 @@ function fixtureView(): ViewState {
       visible_count: list.length,
     }
   })
-  return { clock, stacks, units, markers: [], pending: [] }
+  return {
+    clock,
+    stacks,
+    units,
+    markers: [
+      {
+        id: 'demo-objective',
+        kind: 'objective',
+        hex: demoHex(25, 12),
+        side: null,
+        label: 'Demo objective',
+      },
+    ],
+    pending: [],
+  }
 }
 /** The mock server projects BEFORE delivery. Renderer consumes only this authorized payload. */
 export function project(view: ViewState, perspective: Perspective): ViewState {

@@ -124,7 +124,9 @@ function SeatTranscript({
 export function Transcripts({
   seats,
   messages,
+  mock = false,
 }: {
+  mock?: boolean
   seats: SeatInfo[]
   messages: TranscriptMessage[]
 }) {
@@ -134,7 +136,9 @@ export function Transcripts({
     <section className="sessions">
       <div className="panel-heading">
         <span className="eyebrow">AGENT SESSIONS</span>
-        <span className="pill">MOCK TRANSCRIPTS</span>
+        <span className="pill">
+          {mock ? 'MOCK TRANSCRIPTS' : 'LIVE TRANSCRIPTS'}
+        </span>
       </div>
       <div className="seat-tabs" role="tablist" aria-label="AI seats">
         {seats.map((s) => (

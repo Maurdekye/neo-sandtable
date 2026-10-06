@@ -1,6 +1,6 @@
 import hexCsv from '../../../data/map/hexes.csv?raw'
 import aliasCsv from '../../../data/map/aliases.csv?raw'
-/** Synthetic geometry only. Map ingestion will use data/map's owned schema when published. */
+/** Renderer data consumes the published map schema; synthetic terrain is DEV-only. */
 export type Terrain =
   | 'sea'
   | 'clear'
@@ -9,6 +9,13 @@ export type Terrain =
   | 'salt_marsh'
   | 'sand'
   | 'unclassified'
+  | 'gravel'
+  | 'heavy_vegetation'
+  | 'delta'
+  | 'desert'
+  | 'major_city'
+  | 'swamp'
+  | 'village_bir_oasis'
 export interface Hex {
   id: string
   q: number
@@ -25,6 +32,13 @@ export const TERRAIN: Record<Terrain, { color: number; label: string }> = {
   rough: { color: 0x957e57, label: 'Rough' },
   mountain: { color: 0x716c5b, label: 'Mountain' },
   salt_marsh: { color: 0x7e9b8c, label: 'Salt marsh' },
+  gravel: { color: 0xaa9a80, label: 'Gravel' },
+  heavy_vegetation: { color: 0x6d8964, label: 'Heavy vegetation' },
+  delta: { color: 0x75958b, label: 'Delta' },
+  desert: { color: 0xd3bc86, label: 'Desert' },
+  major_city: { color: 0x8e8580, label: 'Major city' },
+  swamp: { color: 0x657f78, label: 'Swamp' },
+  village_bir_oasis: { color: 0x93a477, label: 'Village / bir / oasis' },
   sand: { color: 0xd3bc86, label: 'Sand' },
 }
 export const HEX_SIZE = 26

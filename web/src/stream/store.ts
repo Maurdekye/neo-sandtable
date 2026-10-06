@@ -29,7 +29,11 @@ export function useViewer() {
     () => state,
   )
 }
+export const getViewer = () => state
 export const actions = {
+  connecting() {
+    publish({ ...state, connection: 'connecting' })
+  },
   perspective(value: Perspective) {
     publish(initialState(value))
     send?.({ type: 'subscribe', perspective: value, from_seq: null })
