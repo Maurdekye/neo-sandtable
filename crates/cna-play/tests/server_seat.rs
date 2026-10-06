@@ -1097,3 +1097,64 @@ async fn two_active_seats_submit_through_separate_scoped_endpoints() {
     }
     demo.shutdown().await.unwrap();
 }
+
+#[test]
+fn measured_cna_haiku_fixture_keeps_real_decision_and_notebook_tools_paired() {
+    use std::collections::BTreeSet;
+    let fixture = include_str!("fixtures/claude_cna_transcript.jsonl");
+    assert!(!fixture.contains("@gmail.com"));
+    assert!(!fixture.contains("/mcp/"));
+    assert!(!fixture.contains("#cap="));
+    let mut pending = BTreeSet::new();
+    let mut calls = 0;
+    let mut decisions = 0;
+    let mut last_seq = 0;
+    let mut notebook_written = false;
+    let mut cna_window = false;
+    let mut count = 0;
+    for (index, line) in fixture.lines().enumerate() {
+        let ServerMessage::Transcript {
+            seat,
+            tseq,
+            game_seq,
+            entry,
+            ..
+        } = serde_json::from_str(line).unwrap()
+        else {
+            panic!("not a transcript")
+        };
+        count += 1;
+        assert_eq!(seat, "axis.commander");
+        assert_eq!(tseq, index as u64 + 1);
+        assert!(game_seq >= last_seq);
+        last_seq = game_seq;
+        match entry {
+            TranscriptEntry::ToolCall { call_id, tool, .. } => {
+                assert!(pending.insert(call_id));
+                calls += 1;
+                notebook_written |= tool == "notebook_write";
+            }
+            TranscriptEntry::ToolResult {
+                call_id,
+                ok,
+                detail,
+                ..
+            } => {
+                assert!(ok);
+                assert!(pending.remove(&call_id));
+                if let Some(detail) = detail {
+                    cna_window |= detail["request"]["kind"] == "cna.initiative_declaration";
+                }
+            }
+            TranscriptEntry::DecisionSubmitted { decision_id, .. } => {
+                assert_eq!(decision_id, "d1");
+                decisions += 1;
+            }
+            _ => {}
+        }
+    }
+    assert!(pending.is_empty());
+    assert_eq!((count, calls, decisions), (18, 5, 1));
+    assert!(notebook_written && cna_window);
+    assert!(last_seq > 0);
+}

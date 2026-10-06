@@ -75,6 +75,12 @@ creating a campaign or touching a CLI unless `CNA_LIVE_CLI_TESTS=1`; CI never se
 The measured sandbox fixture contains 22 entries, three accepted commander orders
 and eight paired tools, with account/session redacted; reported cost was ~$0.038.
 
+A measured CNA run on Claude Code 2.1.289 / Haiku 4.5 accepted one initiative
+order through five paired tools, including a standing-plan notebook write. Its
+18-entry protocol fixture is saved with account/session redacted; reported cost
+was \$0.022854. The production board displayed all 18 entries without page errors.
+The campaign paused at the next OpStage decision, leaving it unanswered.
+
 Known limits: this remains a bounded launcher, with no durable launcher session ID
 or restart/resume scheduler. Campaign-long sessions, compaction/context budgets and
 notebook-based recovery are the next milestone, followed by Codex and Antigravity.
