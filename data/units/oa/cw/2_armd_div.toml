@@ -1,0 +1,182 @@
+# OA sheet: 2nd Armored Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[file]
+verification = "double"
+
+[sheet]
+id = "cw.2_armd_div"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "2nd Armored Division"
+basic_morale = 2
+basic_morale_untrained = 1
+note = "Printed notes: the division was under strength and disbanded in captivity before the end of 1941. The 1st Armored Bde went to Greece in March 1941 and returned in May without tanks as a battalion-size training unit; it may not serve as an armored brigade HQ before OpStage 1 of GT 72. On 1 October 1941 the 3rd Armored Bde became the 32nd Army Tank Bde (counter swap, no game effect). The 1st Tower Hamlet Rifles was later renamed the 9th Rifle Brigade; the 1st Rangers is also the 9th KRRC."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.2nd_armored_div_hq"
+name = "2nd Armored Div HQ"
+counter = "2"
+class = "cw.b"
+echelon = "division"
+toe = [ { weapon = "cw.mk_vi_light", n = 1 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+stacking_points = 5
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.1st_armored_bde_hq"
+name = "1st Armored Bde HQ"
+counter = "1"
+class = "cw.b"
+echelon = "brigade"
+toe = [ { weapon = "cw.mk_vi_light", n = 1 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.2nd_armored_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.4th_hussars"
+name = "4th Hussars"
+counter = "4 Hus"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.a9_cruiser", n = 5 }, { weapon = "cw.a10_cruiser", n = 5 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.1st_armored_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.3rd_royal_tank_regt"
+name = "3rd Royal Tank Regt"
+counter = "3 RTR"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.mk_vi_light", n = 10 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.1st_armored_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.3rd_armored_bde_hq"
+name = "3rd Armored Bde HQ"
+counter = "3"
+class = "cw.d"
+echelon = "brigade"
+toe = [ { weapon = "cw.crusader_i", n = 1 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.2nd_armored_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.32nd_army_tank_bde_hq"
+name = "32nd Army Tank Bde HQ"
+counter = "32 Army"
+class = "cw.d"
+echelon = "brigade"
+arrives = { gt = 51, opstage = 1 }
+arrives_raw = "1/51"
+parent = "cw.2_armd_div.2nd_armored_div_hq"
+note = "Replaces the 3rd Armored Bde counter from 1 October 1941; no weapon system is printed."
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.5th_royal_tank_regt"
+name = "5th Royal Tank Regt"
+counter = "5 RTR"
+class = "cw.g"
+echelon = "battalion"
+toe = [ { weapon = "cw.a13_cruiser", n = 10 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.3rd_armored_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.2nd_support_group_hq"
+name = "2nd Support Group HQ"
+counter = "2 Spt"
+class = "cw.a"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.2nd_armored_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.1st_tower_hamlet_rifles"
+name = "1st Tower Hamlet Rifles"
+counter = "1 THRf"
+class = "cw.l"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.2nd_support_group_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.1st_rangers"
+name = "1st Rangers"
+counter = "1 Ranger"
+class = "cw.l"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.2nd_support_group_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.2nd_royal_horse_arty"
+name = "2nd Royal Horse Arty"
+counter = "2 RHA"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.2nd_support_group_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.102nd_nh_light_aa_anti_tank_regt"
+name = "102nd/NH Light AA/Anti-tank Regt"
+counter = "102(NH)"
+class = "cw.bb"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 2 }, { weapon = "cw.aa_light_bofors_40mm", n = 2 } ]
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.2nd_support_group_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.2_armd_div.kings_dragoon_guards"
+name = "Kings Dragoon Guards"
+counter = "KDGd"
+class = "cw.pp"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 15, opstage = 1 }
+arrives_raw = "1/15"
+parent = "cw.2_armd_div.2nd_support_group_hq"
+stacking_points = 1
+src = ["land:4.45"]

@@ -5,7 +5,7 @@
 nation = "it"
 src = ["land:19.32"]
 transcribed_from = ["vassal:Italian Formation Chart.png"]
-verification = "single"
+verification = "double"
 
 # ---- legend: unit kinds -------------------------------------------------------------------
 
@@ -302,7 +302,7 @@ members = [
   { kind = "it.inf_regt", sp = 2 },
   { kind = "it.inf_regt", sp = 2 },
   { kind = "it.at_co", sp = 0 },
-  { kind = "it.arty_regt", sp = 1, gap = "U-016" },
+  { kind = "it.arty_regt", sp = 1 },
 ]
 exceptions = [
   { holder_sheet = "it.gruppo_maletti", add = { kind = "it.inf_regt", sp = 2 }, note = "Gruppo Maletti may assign a third regiment." },
@@ -320,7 +320,7 @@ members = [
   { kind = "it.inf_regt", sp = 2, style = "parachute" },
   { kind = "it.inf_regt", sp = 2, style = "parachute" },
   { kind = "it.at_co", sp = 0 },
-  { kind = "it.arty_regt", sp = 1, gap = "U-016" },
+  { kind = "it.arty_regt", sp = 1 },
 ]
 src = ["land:19.32"]
 

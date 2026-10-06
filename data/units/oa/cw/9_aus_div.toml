@@ -1,0 +1,291 @@
+# OA sheet: 9th Australian Division (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[file]
+verification = "double"
+
+[sheet]
+id = "cw.9_aus_div"
+nation = "cw"
+side = "commonwealth"
+nationality = "australian"
+name = "9th Australian Division"
+basic_morale = 1
+note = "Basic morale +1 with the printed note (a): the 20th Brigade arrives with an untrained morale of 0, trainable to +1; the brigade actually arrived with the 7th Australian Division but is treated as part of the 9th."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.9th_australian_div_hq"
+name = "9th Australian Div HQ"
+counter = "9 Aus"
+class = "cw.a"
+echelon = "division"
+toe = "N"
+arrives = { gt = 20, opstage = 3 }
+arrives_raw = "3/20"
+stacking_points = 5
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.20th_australian_inf_bde_hq"
+name = "20th Australian Inf Bde HQ"
+counter = "20 Aus"
+class = "cw.f"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 13, opstage = 1 }
+arrives_raw = "1/13"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+morale_untrained = 0
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_13_aus_inf_bn"
+name = "2/13 Aus Inf Bn"
+counter = "2/13 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 13, opstage = 1 }
+arrives_raw = "1/13"
+parent = "cw.9_aus_div.20th_australian_inf_bde_hq"
+morale_untrained = 0
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_15_aus_inf_bn"
+name = "2/15 Aus Inf Bn"
+counter = "2/15 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 13, opstage = 1 }
+arrives_raw = "1/13"
+parent = "cw.9_aus_div.20th_australian_inf_bde_hq"
+morale_untrained = 0
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_17_aus_inf_bn"
+name = "2/17 Aus Inf Bn"
+counter = "2/17 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 13, opstage = 1 }
+arrives_raw = "1/13"
+parent = "cw.9_aus_div.20th_australian_inf_bde_hq"
+morale_untrained = 0
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.24th_australian_inf_bde_hq"
+name = "24th Australian Inf Bde HQ"
+counter = "24 Aus"
+class = "cw.f"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 21, opstage = 2 }
+arrives_raw = "2/21"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_28_aus_inf_bn"
+name = "2/28 Aus Inf Bn"
+counter = "2/28 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 21, opstage = 2 }
+arrives_raw = "2/21"
+parent = "cw.9_aus_div.24th_australian_inf_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_32_aus_inf_bn"
+name = "2/32 Aus Inf Bn"
+counter = "2/32 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 30, opstage = 1 }
+arrives_raw = "1/30"
+parent = "cw.9_aus_div.24th_australian_inf_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_43_aus_inf_bn"
+name = "2/43 Aus Inf Bn"
+counter = "2/43 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 21, opstage = 2 }
+arrives_raw = "2/21"
+parent = "cw.9_aus_div.24th_australian_inf_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.26th_australian_inf_bde_hq"
+name = "26th Australian Inf Bde HQ"
+counter = "26 Aus"
+class = "cw.f"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 20, opstage = 3 }
+arrives_raw = "3/20"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_23_aus_inf_bn"
+name = "2/23 Aus Inf Bn"
+counter = "2/23 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 20, opstage = 3 }
+arrives_raw = "3/20"
+parent = "cw.9_aus_div.26th_australian_inf_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_24_aus_inf_bn"
+name = "2/24 Aus Inf Bn"
+counter = "2/24 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 20, opstage = 3 }
+arrives_raw = "3/20"
+parent = "cw.9_aus_div.26th_australian_inf_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_48_aus_inf_bn"
+name = "2/48 Aus Inf Bn"
+counter = "2/48 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 20, opstage = 3 }
+arrives_raw = "3/20"
+parent = "cw.9_aus_div.26th_australian_inf_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.9th_aus_div_cavalry_regt"
+name = "9th Aus Div Cavalry Regt"
+counter = "9 AusCav"
+class = "cw.ll"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 29, opstage = 3 }
+arrives_raw = "3/29"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_3_aus_anti_tank_regt"
+name = "2/3 Aus Anti-tank Regt"
+counter = "2/3 Aus"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 8 } ]
+arrives = { gt = 20, opstage = 3 }
+arrives_raw = "3/20"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_2_aus_mg_bn"
+name = "2/2 Aus MG Bn"
+counter = "2/2 Aus"
+class = "cw.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 30, opstage = 1 }
+arrives_raw = "1/30"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_7_aus_field_artillery_regt"
+name = "2/7 Aus Field Artillery Regt"
+counter = "2/7 AFld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 29, opstage = 3 }
+arrives_raw = "3/29"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_8_aus_field_artillery_regt"
+name = "2/8 Aus Field Artillery Regt"
+counter = "2/8 AFld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 29, opstage = 3 }
+arrives_raw = "3/29"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_12_aus_field_arty_regt"
+name = "2/12 Aus Field Arty Regt"
+counter = "2/12 AFld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.4_5_inch_howitzer", n = 6 } ]
+arrives = { gt = 29, opstage = 3 }
+arrives_raw = "3/29"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_1_pioneer_bn"
+name = "2/1 Pioneer Bn"
+counter = "2/1 AusP"
+class = "cw.q"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 29, opstage = 3 }
+arrives_raw = "3/29"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+note = "Pioneer battalions have full infantry capabilities in addition to engineer ones. Originally of the 6th Australian Division; replaced by the 2/3 Pioneer when the 9th returned from Palestine. One counter covers both units."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.9_aus_div.2_3_aus_light_aa_regt"
+name = "2/3 Aus Light AA Regt"
+counter = "2/3 LAA"
+class = "cw.ee"
+echelon = "battalion"
+toe = [ { weapon = "cw.aa_light_bofors_40mm", n = 6 } ]
+arrives = { gt = 29, opstage = 3 }
+arrives_raw = "3/29"
+parent = "cw.9_aus_div.9th_australian_div_hq"
+note = "Replaced by the 2/4 when the division returned from Palestine; the 2/3 counter is considered the 2/4 from then."
+stacking_points = 1
+src = ["land:4.45"]

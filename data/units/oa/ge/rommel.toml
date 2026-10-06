@@ -1,0 +1,27 @@
+# Special counter: General Rommel (land:31.0). No OA sheet exists; the reinforcement schedule (land:4.43b) arrives
+# him at GT 20 OpStage 2 with the parent label DAK (a formation with no counter).
+[file]
+verification = "double"
+
+[sheet]
+id = "ge.rommel"
+nation = "ge"
+side = "axis"
+nationality = "german"
+name = "General Rommel"
+note = "No OA sheet; values from land:31.0 and the counter. The DAK printed with the counter is the parent label of the schedule row, not a counter."
+src = ["land:31.0", "land:4.43b"]
+
+[[unit]]
+id = "ge.rommel.rommel"
+name = "Rommel"
+counter = "Rommel"
+kind = "commander"
+commander = true
+vehicle = "4_wheel_drive_medium_truck_am_radio"
+cpa = 60
+arrives = { gt = 20, opstage = 2 }
+arrives_raw = "2/20"
+stacking_points = 0
+note = "Treated as a vehicle (4-wheel-drive medium truck, AM radio only, no air conditioning); has no combat ratings."
+src = ["land:31.0", "land:4.43b"]

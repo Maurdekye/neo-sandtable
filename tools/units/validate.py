@@ -52,13 +52,13 @@ CLASS_ALLOWED = (
     | set(RATING) | {r + "_paren" for r in RATING} | {"ca_off_paren", "ca_def_paren"}
 )
 AIRCRAFT_ALLOWED = {"id", "nation", "name", "role", "manufacturer", "mode", "src", "note"}
-MODE_ALLOWED = {"range_hexes", "tacair", "tacair_paren", "maneuver", "bomb_capacity", "torpedo_capacity", "fuel_points",
+MODE_ALLOWED = {"range_hexes", "tacair", "tacair_paren", "maneuver", "maneuver_night", "bomb_capacity", "torpedo_capacity", "fuel_points",
                 "missions", "transport", "rng_is_transfer_range"}
 MISSION_VALUES = {"day", "night", "night_only", "strafe_only"}
 UNIT_ALLOWED = {"id", "name", "counter", "class", "echelon", "toe", "arrives", "arrives_raw", "parent", "nationality",
                 "note", "src", "reassign", "training", "morale_untrained", "shell", "garrison_of", "immobile",
                 "toe_note", "arrives_note", "kind", "group", "engineer_hq", "never_arrived_parent", "stacking_points",
-                "echelon_symbol", "engineer", "garrison", "basic_morale", "begins_attached_to_sheet", "immobile"}
+                "echelon_symbol", "engineer", "garrison", "basic_morale", "begins_attached_to_sheet", "immobile", "cpa", "vehicle", "commander"}
 SHEET_ALLOWED = {"id", "nation", "side", "nationality", "name", "basic_morale", "basic_morale_untrained", "src", "note"}
 MENTION_ALLOWED = {"unit", "begins_attached_to", "note", "src"}
 
@@ -126,14 +126,68 @@ for p in sorted((units / "oa").glob("*/*.toml")) if (units / "oa").exists() else
         if "begins_attached_to" in m:
             pending_refs.append((p, "unit", m["begins_attached_to"], "mention"))
 
-# schedules reference units/formations
-for p in sorted((units / "schedules").glob("*.toml")) if (units / "schedules").exists() else []:
+# Schedule shapes and references (both land and air).
+ROW_ALLOWED = {"gt", "opstage", "gt_from", "gt_to", "label", "nationality", "location", "units", "trucks",
+               "planes", "distribution", "squadrons", "when", "note", "src", "transport"}
+SELECTOR_ALLOWED = {"unit", "subtree", "hq_only", "less", "att", "assg"}
+for p in sorted((units / "schedules").glob("*.toml")):
     d = load(p)
+    covered = d.get("file", {}).get("covers_gt", [])
+    if len(covered) != 2 or any(type(v) is not int or v < 1 for v in covered) or covered[0] > covered[1]:
+        err(p, "file: covers_gt must be an ordered inclusive pair")
     for kind in ("arrival", "withdrawal", "replacement"):
         for r in d.get(kind, []):
+            check_fields(p, r, ["src"], ROW_ALLOWED, kind)
+            single = "gt" in r
+            interval = "gt_from" in r or "gt_to" in r
+            if single == interval:
+                err(p, f"{kind}: exactly one of gt or gt_from/gt_to is required")
+            for k in ("gt", "gt_from", "gt_to"):
+                if k in r and (type(r[k]) is not int or r[k] < 1):
+                    err(p, f"{kind}: {k} must be a positive integer")
+            if interval:
+                if not {"gt_from", "gt_to"} <= r.keys() or r.get("gt_to", 0) < r.get("gt_from", 1):
+                    err(p, f"{kind}: incomplete or reversed monthly interval")
+                if r.get("distribution") != "even_per_game_turn":
+                    err(p, f"{kind}: monthly interval needs even_per_game_turn distribution")
+                if "units" in r:
+                    err(p, f"{kind}: land selectors require an exact stage")
+            if "opstage" in r and (type(r["opstage"]) is not int or r["opstage"] not in (1, 2, 3)):
+                err(p, f"{kind}: invalid opstage")
+            if "units" in r and "opstage" not in r:
+                err(p, f"{kind}: land row needs opstage")
+            if not any(r.get(k) for k in ("units", "planes", "squadrons")):
+                err(p, f"{kind}: row has no scheduled entities")
             for u in r.get("units", []):
-                if "unit" in u:
-                    pending_refs.append((p, "unit", u["unit"], kind))
+                check_fields(p, u, ["unit"], SELECTOR_ALLOWED, "unit selector")
+                pending_refs.append((p, "unit", u.get("unit"), kind))
+                if u.get("subtree") and u.get("hq_only"):
+                    err(p, f"{kind}: subtree and hq_only conflict")
+                for flag in ("subtree", "hq_only"):
+                    if flag in u and type(u[flag]) is not bool:
+                        err(p, f"{kind}: {flag} must be boolean")
+                for field in ("less", "att", "assg"):
+                    for ref in u.get(field, []):
+                        pending_refs.append((p, "unit", ref, kind))
+            for pl in r.get("planes", []):
+                check_fields(p, pl, ["type", "n"], {"type", "n"}, "plane arrival")
+                if type(pl.get("n")) is not int or pl["n"] < 1:
+                    err(p, f"{kind}: plane count must be positive")
+            for sq in r.get("squadrons", []):
+                check_fields(p, sq, ["role", "count", "min_planes"],
+                             {"role", "count", "min_planes", "min_bomb_points_each", "note"}, "squadron selector")
+                if sq.get("role") not in {"fighter", "bomber", "reconnaissance"}:
+                    err(p, f"{kind}: unknown squadron role")
+                for field in ("count", "min_planes", "min_bomb_points_each"):
+                    if field in sq and (type(sq[field]) is not int or sq[field] < 1):
+                        err(p, f"{kind}: {field} must be positive")
+            for field, allowed in (("trucks", {"light", "medium", "heavy"}),
+                                   ("transport", {"truck_points", "truck_value"})):
+                if field in r:
+                    check_fields(p, r[field], sorted(allowed) if field == "transport" else [], allowed, field)
+                    for k, v in r[field].items():
+                        if type(v) is not int or v < 0:
+                            err(p, f"{kind}: {field}.{k} must be a nonnegative integer")
 
 # formation charts (land:19.3x): unit kinds and composition rows
 KIND_ALLOWED = {"id", "nation", "name", "echelon", "symbol_echelon", "match", "classes", "sp", "fill_by", "any_of_kinds",

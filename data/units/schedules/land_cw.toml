@@ -1,15 +1,13 @@
-# Commonwealth land reinforcements and withdrawals, land:4.43a. PARTIAL: only rows with GT <= 6 are
-# entered so far (the schedule is designed for the whole war; see GAPS U-005/U-006). `subtree = true`
-# means the unit with every assigned unit that arrives at that stage. Reinforcements arrive in any hex of
-# Cairo unless noted (land:20.14).
-# Arrival times are GT then OpStage (the schedule's own order).
+# Commonwealth land arrivals and mandatory withdrawals through GT20 (land:4.43a).
+# subtree selects assigned units arriving at this stage; hq_only selects just the counter.
+# Withdrawal transport records the schedule's total truck points and truck value.
 [file]
 side = "commonwealth"
 src = ["land:4.43a"]
 transcribed_from = ["vassal:Allied Land Unit Reinf Schedule.png"]
-verification = "single"
+verification = "double"
 partial = true
-covers_gt = [1, 6]
+covers_gt = [1, 20]
 
 [[arrival]]
 gt = 1
@@ -58,3 +56,169 @@ location = "cairo"
 units = [ { unit = "cw.2_nz_div.6th_new_zealand_bde_hq", subtree = true } ]
 trucks = { light = 25, medium = 85, heavy = 5 }
 src = ["land:4.43a"]
+
+[[arrival]]
+gt = 7
+opstage = 1
+location = "cairo"
+units = [
+  { unit = "cw.6_aus_div.2_2_aus_field_artillery_regt" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 8
+opstage = 3
+location = "cairo"
+units = [
+  { unit = "cw.unassigned_allied.11th_czech_bn" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 9
+opstage = 2
+location = "cairo"
+units = [
+  { unit = "cw.6_aus_div.19th_aus_infantry_bde_hq", subtree = true }
+]
+trucks = { light = 28, medium = 74, heavy = 15 }
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 9
+opstage = 3
+location = "cairo"
+units = [
+  { unit = "cw.unassigned_arty.107th_royal_horse_arty_regt" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 11
+opstage = 1
+location = "cairo"
+units = [
+  { unit = "cw.6_aus_div.2_1_aus_field_artillery_regt" },
+  { unit = "cw.unassigned_at.106th_royal_horse_arty_regt" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 11
+opstage = 2
+location = "cairo"
+units = [
+  { unit = "cw.unassigned_aa.13th_light_aa_regt" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 12
+opstage = 3
+location = "cairo"
+units = [
+  { unit = "cw.unassigned_aa.74th_heavy_aa_regt" },
+  { unit = "cw.unassigned_aa.52nd_light_aa_regt" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 13
+opstage = 1
+location = "cairo"
+units = [
+  { unit = "cw.9_aus_div.20th_australian_inf_bde_hq", subtree = true }
+]
+trucks = { light = 10, medium = 25, heavy = 6 }
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 14
+opstage = 3
+location = "cairo"
+units = [
+  { unit = "cw.18_aus_bde.18th_aus_infantry_bde_hq", subtree = true }
+]
+trucks = { light = 12, medium = 30, heavy = 10 }
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 15
+opstage = 1
+location = "cairo"
+units = [
+  { unit = "cw.2_armd_div.2nd_armored_div_hq", subtree = true },
+  { unit = "cw.unassigned_arty.1st_royal_horse_arty_regt" },
+  { unit = "cw.unassigned_arty.51st_field_artillery_regt" },
+  { unit = "cw.unassigned_aa.2nd_heavy_aa_regt" }
+]
+trucks = { light = 4, medium = 72, heavy = 13 }
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 15
+opstage = 2
+location = "cairo"
+units = [
+  { unit = "cw.unassigned_arty.104th_royal_horse_arty_regt" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 16
+opstage = 1
+location = "cairo"
+units = [
+  { unit = "cw.unassigned_arty.64th_medium_artillery_regt" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 19
+opstage = 2
+location = "alexandria"
+units = [
+  { unit = "cw.unassigned_inf.a_bn_special_service_bde" }
+]
+src = ["land:4.43a"]
+
+[[arrival]]
+gt = 20
+opstage = 3
+location = "cairo"
+units = [
+  { unit = "cw.9_aus_div.9th_australian_div_hq", hq_only = true },
+  { unit = "cw.9_aus_div.26th_australian_inf_bde_hq", subtree = true },
+  { unit = "cw.9_aus_div.2_3_aus_anti_tank_regt" },
+  { unit = "cw.22_guards_bde.22nd_guards_bde_hq", hq_only = true }
+]
+trucks = { light = 10, medium = 25, heavy = 6 }
+src = ["land:4.43a"]
+
+[[withdrawal]]
+gt = 13
+opstage = 3
+units = [
+  { unit = "cw.4_indian_div.5th_indian_bde_hq", subtree = true }
+]
+transport = { truck_points = 10, truck_value = 10 }
+src = ["land:4.43a", "land:20.8"]
+
+[[withdrawal]]
+gt = 14
+opstage = 3
+units = [
+  { unit = "cw.4_indian_div.7th_indian_bde_hq", subtree = true }
+]
+transport = { truck_points = 23, truck_value = 20 }
+src = ["land:4.43a", "land:20.8"]
+
+[[withdrawal]]
+gt = 15
+opstage = 2
+units = [
+  { unit = "cw.4_indian_div.4th_indian_div_hq", subtree = true, less = ["cw.4_indian_div.5th_indian_bde_hq", "cw.4_indian_div.7th_indian_bde_hq"] }
+]
+transport = { truck_points = 16, truck_value = 12 }
+src = ["land:4.43a", "land:20.8"]

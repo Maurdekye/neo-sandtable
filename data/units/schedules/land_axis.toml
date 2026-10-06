@@ -1,10 +1,125 @@
-# Axis land reinforcements, land:4.43b. PARTIAL: the schedule's first row is GT 9 OpStage 2, so there are
-# no Axis land reinforcement rows in GT 1-6 (and none to enter yet).
+# Axis land schedule: all printed arrival rows through GT20 (land:4.43b).
+# Tripoli is the default; the conditional Benghazi diversion is resolved by land:20.15.
 [file]
 side = "axis"
 src = ["land:4.43b"]
 transcribed_from = ["vassal:Axis Land Unit Reinf Schedule.png"]
-verification = "single"
+verification = "double"
 partial = true
-covers_gt = [1, 6]
-rows_in_covered_range = 0
+covers_gt = [1, 20]
+
+[[arrival]]
+gt = 9
+opstage = 2
+location = "tripoli"
+units = [
+  { unit = "it.unassigned_guns.xxv_corps_artillery_regt" }
+]
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 10
+opstage = 1
+location = "tripoli"
+units = [
+  { unit = "it.unassigned_inf_recon.22nd_bersaglieri_mitrg_coy" }
+]
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 10
+opstage = 2
+location = "tripoli"
+units = [
+  { unit = "it.without_parent.xxxiii_libyan_bn" }
+]
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 10
+opstage = 3
+location = "tripoli"
+units = [
+  { unit = "it.sirte_div.61st_sirte_div_hq", subtree = true }
+]
+trucks = { light = 10, medium = 35, heavy = 15 }
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 11
+opstage = 1
+location = "tripoli"
+units = [
+  { unit = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq", subtree = true }
+]
+trucks = { light = 2, medium = 25, heavy = 3 }
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 12
+opstage = 1
+location = "tripoli"
+units = [
+  { unit = "it.sabratha_div.60th_sabratha_div_hq", subtree = true }
+]
+trucks = { light = 10, medium = 35, heavy = 15 }
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 12
+opstage = 2
+location = "tripoli"
+units = [
+  { unit = "it.without_parent.xxxiv_libyan_bn" }
+]
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 13
+opstage = 3
+location = "tripoli"
+units = [
+  { unit = "it.unassigned_armored.v_m_tank_bn" },
+  { unit = "it.unassigned_blackshirt.140th_ccnn_bn" }
+]
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 15
+opstage = 2
+location = "tripoli"
+units = [
+  { unit = "it.without_parent.xxxv_libyan_bn" },
+  { unit = "it.without_parent.2_87_fanterie_bn" }
+]
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 17
+opstage = 3
+location = "tripoli"
+units = [
+  { unit = "it.unassigned_armored.xxi_m_tank_bn" }
+]
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 18
+opstage = 1
+location = "tripoli"
+units = [
+  { unit = "it.ariete_div.ariete_132nd_div_hq", subtree = true },
+  { unit = "it.unassigned_armored.i_l_tank_bn" },
+  { unit = "it.unassigned_armored.ii_l_tank_bn" }
+]
+trucks = { light = 25, medium = 40, heavy = 5 }
+src = ["land:4.43b"]
+
+[[arrival]]
+gt = 20
+opstage = 2
+location = "tripoli"
+units = [
+  { unit = "ge.rommel.rommel" }
+]
+src = ["land:4.43b"]

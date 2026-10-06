@@ -5,8 +5,7 @@ stands* (that is `data/scenarios/`). Owner: `oob`. Schema reviewed by the lead b
 Sources: land `4.44`–`4.49` (characteristics charts, OA sheets), `19.3` (formation chart), `4.43`
 and `20`/`34` (schedules); see the citation rules in `CONTRIBUTING.md` §2.
 
-**Status: DRAFT v0 for lead review. Example records are real values read from the charts, but the
-files they would live in are not yet bulk-populated.**
+**Status: charts and schedules for Graziani and the Italian Campaign are populated; whole-war schedules remain partial.**
 
 ## Layout
 
@@ -59,8 +58,8 @@ by `rules-airlog` (`data/tables/airlog/54.2-…`); scenario and schedule records
   (`land:9.22`, `land:3.33`) and `land:9.4` maps it to the organizational level (division 5, super
   brigade 3, brigade/regiment 2, battalion 1, company 0). Values here follow the echelon through that
   table and were checked against the printed counters of every headquarters in the Graziani set-up
-  and a sample of the others; the only deviations from the plain table found are the two Libyan Tank
-  Command regiment HQs (Aresca, Trivioli: super brigade, 3). `echelon` is one of `company`, `battalion`,
+  and a sample of the others; deviations from the plain table include the two Libyan Tank
+  Command regiment HQs (Aresca, Trivioli: super brigade, 3) and the 18th Australian Brigade (3). `echelon` is one of `company`, `battalion`,
   `brigade`, `super_brigade`, `division`, `battle_group`. Shell values (`land:9.2`) are rule-driven and not stored.
 - **Ids** are lowercase snake_case, stable forever: `<nation>.<sheet>.<unit>` for units
   (`it.1ccnn_div.129th_infantry_bn`: sheet id + slug of the printed unit name; a counter suffix is added only if two names in a sheet collide), `<nation>.<weapon>` for weapons (`it.m13_40`),
@@ -361,20 +360,41 @@ IVF's scramble `0` (night scramble only) is `s = "night_only"`; the Hurricane II
 
 ```toml
 [[arrival]]
-side = "axis"
 gt = 9
 opstage = 2
-units = [ { unit = "it.xxv_corps_arty_regt", mode = "formation" } ]
-trucks = {}
+location = "tripoli"
+units = [ { unit = "it.unassigned_guns.xxv_corps_artillery_regt" } ]
 src = ["land:4.43b"]
 ```
 
 One `[[arrival]]` / `[[withdrawal]]` / `[[replacement]]` row per printed schedule row; `att`/`less`
 lists and weapon-type tags follow the printed legend; trucks arrive attached to units unless marked
-`alone`. Designed for the whole war; only rows touching GT 1–6 are populated for Graziani's.
+`alone`. Designed for the whole war; rows touching GT 1-20 are populated for both group-one scenarios.
 
 ## Verification
 
 Chart images are read directly (the retyped text of tables is OCR-scrambled in places); each file header names its source file names only (never contents). Each file carries `verification = "single" | "double"` in its header table; `double` means the chart
 was read twice independently and diffed. Illegible or missing values are **omitted** and logged in
 `GAPS.md`.
+
+## Schedule selection and withdrawal transport
+
+`covers_gt = [1, 20]` is inclusive. `partial = true` means later campaign rows remain unentered.
+Each land arrival has `gt`, `opstage`, `location`, `units` and `src`; optional `trucks` gives light,
+medium and heavy points for that printed row. A unit selector with `subtree = true` includes assigned
+units whose OA arrival equals the row's stage. `hq_only = true` selects the headquarters counter.
+Mandatory withdrawals use the same selectors, but include assigned units already present; `less`
+excludes named subtrees. `transport = { truck_points, truck_value }` preserves the schedule's Tpt pair
+(total truck count and the value needed on withdrawal/return), with conversion governed by the chart
+legend and Logistics rules. No choice of individual truck types is invented here.
+
+Air monthly rows retain the whole `gt_from`/`gt_to` interval even when the scenario stops mid-month.
+`distribution = "even_per_game_turn"` constrains the weekly total; players choose its plane types
+(airlog:34.84). Single `gt` rows are that turn's totals. Squadron withdrawal selectors have `role`,
+`count`, `min_planes`; `min_bomb_points_each` is the required capability of each qualifying bomber.
+Pilot/SGSU arrivals are player/rule driven (airlog:34.82 and airlog:34.83), not fixed chart schedule rows.
+
+`maneuver_night` overrides an aircraft mode's daytime `maneuver` for night missions.
+Rommel is a classless `kind = "commander"` unit with `commander = true`, `cpa` and `vehicle`.
+OA class codes left blank by the source remain omitted (U-020); explicit weapon/TOE data still applies.
+OA file headers record verification separately from the cited sheet and unit records.

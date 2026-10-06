@@ -6,7 +6,7 @@
 nation = "cw"
 src = ["land:19.31"]
 transcribed_from = ["vassal:Allied Formation Chart.png"]
-verification = "single"
+verification = "double"
 
 # ---- legend: unit kinds -------------------------------------------------------------------
 

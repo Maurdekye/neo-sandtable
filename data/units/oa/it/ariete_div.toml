@@ -1,0 +1,182 @@
+# OA sheet: 132nd "Ariete" Divisione Corazzata (Armored) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[file]
+verification = "double"
+
+[sheet]
+id = "it.ariete_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "132nd \"Ariete\" Divisione Corazzata (Armored)"
+basic_morale = 1
+note = "Printed notes: the sheet covers only the first arrival of the division, which later changed organization and was reinforced from the Littorio; the 132nd Regt Corazzata was originally the 32nd; the anti-tank battalion is a conglomeration of the 72nd, 132nd and 142nd anti-tank companies; the artillery later took on self-propelled guns from the Littorio; the two light tank battalions are attached, not assigned."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.ariete_132nd_div_hq"
+name = "Ariete (132nd) Div HQ"
+counter = "Ariete"
+class = "it.d"
+echelon = "division"
+toe = [ { weapon = "it.m13_40", n = 1 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+engineer_hq = true
+stacking_points = 5
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.132_regt_corazzata_hq"
+name = "132 Regt Corazzata HQ"
+counter = "132 RC"
+class = "it.d"
+echelon = "brigade"
+toe = [ { weapon = "it.m13_40", n = 1 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.ariete_132nd_div_hq"
+note = "Originally the 32nd Regt Corazzata."
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.vii_m_tank_bn"
+name = "VII(M) Tank Bn"
+counter = "VII(M)"
+class = "it.l"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.132_regt_corazzata_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.viii_m_tank_bn"
+name = "VIII(M) Tank Bn"
+counter = "VIII(M)"
+class = "it.l"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.132_regt_corazzata_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.ix_m_tank_bn"
+name = "IX(M) Tank Bn"
+counter = "IX(M)"
+class = "it.l"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.132_regt_corazzata_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.8th_bersaglieri_regt_hq"
+name = "8th Bersaglieri Regt HQ"
+counter = "8Brs"
+class = "it.c"
+echelon = "brigade"
+toe = "N"
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.ariete_132nd_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.3rd_bersaglieri_mitrg_bn"
+name = "3rd Bersaglieri Mitrg Bn"
+counter = "3/8 Brs"
+class = "it.n"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.8th_bersaglieri_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.5th_bersaglieri_mitrg_bn"
+name = "5th Bersaglieri Mitrg Bn"
+counter = "5/8 Brs"
+class = "it.t"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.8th_bersaglieri_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.12th_bersaglieri_mitrg_bn"
+name = "12th Bersaglieri Mitrg Bn"
+counter = "12/8 Brs"
+class = "it.t"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.8th_bersaglieri_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.2nd_anti_tank_bn"
+name = "2nd Anti-tank Bn"
+counter = "2"
+class = "it.qq"
+echelon = "battalion"
+toe = [ { weapon = "it.47_32_mod37", n = 6 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.ariete_132nd_div_hq"
+note = "A conglomeration of the 72nd, 132nd and 142nd anti-tank companies."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.reco_nizza_cavalleria"
+name = "RECo 'Nizza Cavalleria'"
+counter = "NizCav"
+class = "it.ww"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.ariete_132nd_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.ariete_div.132nd_artillery_regt"
+name = "132nd Artillery Regt"
+counter = "132"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 3 }, { weapon = "it.75_18_gun_howitzer", n = 3 }, { weapon = "it.105_28_gun", n = 3 }, { weapon = "it.aa_light_20mm", n = 6 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+parent = "it.ariete_div.ariete_132nd_div_hq"
+note = "The sheet prints 6 light AA points, above the class limit of 3 (GAPS U-021); entered as printed. The regiment took on 75/18 self-propelled guns from the Littorio later."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[mention]]
+unit = "it.unassigned_armored.i_l_tank_bn"
+begins_attached_to = "it.ariete_div.ariete_132nd_div_hq"
+src = ["land:4.45"]
+
+[[mention]]
+unit = "it.unassigned_armored.ii_l_tank_bn"
+begins_attached_to = "it.ariete_div.ariete_132nd_div_hq"
+src = ["land:4.45"]

@@ -1,0 +1,121 @@
+# OA sheet: Unassigned Armored Units (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[file]
+verification = "double"
+
+[sheet]
+id = "it.unassigned_armored"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "Unassigned Armored Units"
+basic_morale = 0
+note = "No ID codes are printed on this sheet or the counters checked for GT1-20; class is omitted (GAPS U-020)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.i_l_tank_bn"
+name = "I(L) Tank Bn"
+counter = "I(L)"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 4 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+note = "Arrives attached to the 132nd Ariete Armored Division."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.ii_l_tank_bn"
+name = "II(L) Tank Bn"
+counter = "II(L)"
+echelon = "battalion"
+toe = [ { weapon = "it.cv33", n = 4 } ]
+arrives = { gt = 18, opstage = 1 }
+arrives_raw = "1/18"
+note = "Arrives attached to the 132nd Ariete Armored Division."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.iii_m_tank_bn"
+name = "III(M) Tank Bn"
+counter = "III(M)"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 55, opstage = 1 }
+arrives_raw = "1/55"
+note = "One of three units that formed the ad hoc Brigata Corazzata Speciale."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.iv_m_tank_bn"
+name = "IV(M) Tank Bn"
+counter = "IV(M)"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 90, opstage = 2 }
+arrives_raw = "2/90"
+note = "Assigned to the 133rd RC (Littorio) to replace units stripped and sent to the Ariete."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.v_m_tank_bn"
+name = "V(M) Tank Bn"
+counter = "V(M)"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 13, opstage = 3 }
+arrives_raw = "3/13"
+note = "One of three units that formed the ad hoc Brigata Corazzata Speciale."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.xiii_m_tank_bn"
+name = "XIII(M) Tank Bn"
+counter = "XIII(M)"
+echelon = "battalion"
+toe = [ { weapon = "it.m14_41", n = 7 } ]
+arrives = { gt = 92, opstage = 1 }
+arrives_raw = "1/92"
+note = "Attached to the 132nd RC (Ariete) at one time or another during the campaign."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.xxi_m_tank_bn"
+name = "XXI(M) Tank Bn"
+counter = "XXI(M)"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 17, opstage = 3 }
+arrives_raw = "3/17"
+note = "One of three units that formed the ad hoc Brigata Corazzata Speciale."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.li_m_tank_bn"
+name = "LI(M) Tank Bn"
+counter = "LI(M)"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 71, opstage = 3 }
+arrives_raw = "3/71"
+note = "Assigned to the 133rd RC (Littorio) to replace units stripped and sent to the Ariete."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.unassigned_armored.lii_m_tank_bn"
+name = "LII(M) Tank Bn"
+counter = "LII(M)"
+echelon = "battalion"
+toe = [ { weapon = "it.m13_40", n = 7 } ]
+arrives = { gt = 55, opstage = 3 }
+arrives_raw = "3/55"
+note = "Attached to the 132nd RC (Ariete) at one time or another during the campaign."
+stacking_points = 1
+src = ["land:4.45"]

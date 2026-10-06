@@ -1,0 +1,193 @@
+# OA sheet: 60th "Sabratha" Division (Semi-motorized) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[file]
+verification = "double"
+
+[sheet]
+id = "it.sabratha_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "60th \"Sabratha\" Division (Semi-motorized)"
+basic_morale = -1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.60th_sabratha_div_hq"
+name = "60th Sabratha Div HQ"
+counter = "60 Sab"
+class = "it.b"
+echelon = "division"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+stacking_points = 5
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.85th_infantry_regt_hq"
+name = "85th Infantry Regt HQ"
+counter = "85"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.60th_sabratha_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.i_85_infantry_bn"
+name = "I/85 Infantry Bn"
+counter = "I/85"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.85th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.ii_85_infantry_bn"
+name = "II/85 Infantry Bn"
+counter = "II/85"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.85th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.iii_85_infantry_bn"
+name = "III/85 Infantry Bn"
+counter = "III/85"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.85th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.86th_infantry_regt_hq"
+name = "86th Infantry Regt HQ"
+counter = "86"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.60th_sabratha_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.i_86_infantry_bn"
+name = "I/86 Infantry Bn"
+counter = "I/86"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.86th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.ii_86_infantry_bn"
+name = "II/86 Infantry Bn"
+counter = "II/86"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.86th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.iii_86_infantry_bn"
+name = "III/86 Infantry Bn"
+counter = "III/86"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.86th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.60th_machinegun_bn"
+name = "60th Machinegun Bn"
+counter = "60"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.60th_sabratha_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.60th_anti_tank_coy"
+name = "60th Anti-tank Coy"
+counter = "60"
+class = "it.rr"
+echelon = "company"
+toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.60th_sabratha_div_hq"
+stacking_points = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.42nd_artillery_regt"
+name = "42nd Artillery Regt"
+counter = "42"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 6 }, { weapon = "it.100_17_howitzer", n = 3 }, { weapon = "it.aa_heavy_75_46", n = 3 } ]
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.60th_sabratha_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.60th_engineer_bn"
+name = "60th Engineer Bn"
+counter = "60"
+class = "it.bbb"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.60th_sabratha_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sabratha_div.60th_bersaglieri_mitrg_coy"
+name = "60th Bersaglieri Mitrg Coy"
+counter = "60 Brs"
+class = "it.aaa"
+echelon = "company"
+toe = "N"
+arrives = { gt = 12, opstage = 1 }
+arrives_raw = "1/12"
+parent = "it.sabratha_div.60th_sabratha_div_hq"
+stacking_points = 0
+src = ["land:4.45"]

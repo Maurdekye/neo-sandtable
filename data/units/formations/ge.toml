@@ -6,7 +6,7 @@
 nation = "ge"
 src = ["land:19.33"]
 transcribed_from = ["vassal:German Formation Chart.png"]
-verification = "single"
+verification = "double"
 
 # ---- legend: unit kinds -------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 # Aircraft types, land:4.44a (and the 4.44 corrections). Field meanings: data/units/README.md.
-# PARTIAL: only types that occur in the Graziani set-up and schedules are entered so far (README: whole-war completion later).
+# PARTIAL: only types that occur in the group-one set-up and schedules are entered so far (README: whole-war completion later).
 [file]
 nation = "cw"
 src = ["land:4.44a"]
@@ -39,7 +39,7 @@ nation = "cw"
 name = "Skua Mk. II"
 role = "fighter"
 manufacturer = "Blackburn"
-note = "A dive-bomber (printed note); never listed in the Graziani set-up, arrives GT 3."
+note = "A dive-bomber (printed note); never listed in the group-one set-up, arrives GT 3."
 [[aircraft.mode]]
   range_hexes = 76
   tacair = 3
@@ -238,3 +238,64 @@ note = "Biplane; never arrives as a reinforcement (land:4.44b). tacair printed a
   fuel_points = 1
   missions = { b = "day" }
   transport = { toe_quarter_points = 1, or_half_tons = 10 }
+
+[[aircraft]]
+id = "cw.b17d"
+nation = "cw"
+name = "B-17/D Flying Fortress"
+role = "bomber"
+manufacturer = "Boeing"
+note = "First mode range is printed with ** (range when flown on a transfer mission)."
+[[aircraft.mode]]
+  range_hexes = 275
+  tacair = 5
+  tacair_paren = true
+  maneuver = 29
+  fuel_points = 5
+  rng_is_transfer_range = true
+[[aircraft.mode]]
+  range_hexes = 186
+  tacair = 5
+  tacair_paren = true
+  maneuver = 27
+  bomb_capacity = 37
+  fuel_points = 4
+  missions = { b = "day" }
+
+[[aircraft]]
+id = "cw.maryland"
+nation = "cw"
+name = "167 Maryland"
+role = "bomber"
+manufacturer = "Glenn Martin"
+[[aircraft.mode]]
+  range_hexes = 76
+  tacair = 3
+  tacair_paren = true
+  maneuver = 20
+  bomb_capacity = 9
+  fuel_points = 3
+  missions = { r = "day", b = "day" }
+
+[[aircraft]]
+id = "cw.wellington_i"
+nation = "cw"
+name = "Wellington Mk. I"
+role = "bomber"
+manufacturer = "Vickers"
+[[aircraft.mode]]
+  range_hexes = 229
+  tacair = 3
+  tacair_paren = true
+  maneuver = 20
+  bomb_capacity = 5
+  fuel_points = 4
+  missions = { b = "night" }
+[[aircraft.mode]]
+  range_hexes = 108
+  tacair = 3
+  tacair_paren = true
+  maneuver = 18
+  bomb_capacity = 23
+  fuel_points = 4
+  missions = { b = "night" }

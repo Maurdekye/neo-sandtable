@@ -1,0 +1,205 @@
+# Aircraft types, land:4.44c (German Aircraft Characteristics Chart). Field meanings: data/units/README.md.
+# The Bf. 110 prints two maneuver ratings for its first mode (32 at night, 30 by day): `maneuver` is the day
+# value and `maneuver_night` the night one.
+[file]
+nation = "ge"
+src = ["land:4.44c"]
+transcribed_from = ["vassal:4.44c German Aircraft.png"]
+verification = "double"
+partial = false
+
+[[aircraft]]
+id = "ge.bf109e"
+nation = "ge"
+name = "Bf. 109E"
+role = "fighter"
+manufacturer = "Messerschmitt"
+[[aircraft.mode]]
+  range_hexes = 41
+  tacair = 6
+  maneuver = 34
+  fuel_points = 1
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "ge.bf109f"
+nation = "ge"
+name = "Bf. 109F"
+role = "fighter"
+manufacturer = "Messerschmitt"
+[[aircraft.mode]]
+  range_hexes = 44
+  tacair = 6
+  maneuver = 39
+  fuel_points = 1
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "ge.bf109g"
+nation = "ge"
+name = "Bf. 109G"
+role = "fighter"
+manufacturer = "Messerschmitt"
+[[aircraft.mode]]
+  range_hexes = 53
+  tacair = 8
+  maneuver = 36
+  fuel_points = 1
+  missions = { f = "day", s = "day" }
+
+[[aircraft]]
+id = "ge.bf110"
+nation = "ge"
+name = "Bf. 110"
+role = "fighter"
+manufacturer = "Messerschmitt"
+note = "May be assigned only night scramble missions; it has no daylight scramble capability."
+[[aircraft.mode]]
+  range_hexes = 70
+  tacair = 5
+  maneuver = 30
+  maneuver_night = 32
+  fuel_points = 1
+  missions = { f = "night", s = "night_only", d = "day" }
+[[aircraft.mode]]
+  range_hexes = 57
+  tacair = 5
+  tacair_paren = true
+  maneuver = 28
+  bomb_capacity = 5
+  fuel_points = 1
+  missions = { r = "day" }
+
+[[aircraft]]
+id = "ge.ju88c"
+nation = "ge"
+name = "Ju. 88c"
+role = "fighter"
+manufacturer = "Junkers"
+note = "May be assigned only night scramble missions; it has no daylight scramble capability."
+[[aircraft.mode]]
+  range_hexes = 140
+  tacair = 6
+  maneuver = 30
+  fuel_points = 2
+  missions = { f = "night", s = "night_only" }
+
+[[aircraft]]
+id = "ge.ar196"
+nation = "ge"
+name = "Ar. 196"
+role = "flying_boat"
+manufacturer = "Arado"
+note = "A flying boat."
+[[aircraft.mode]]
+  range_hexes = 60
+  tacair = 3
+  tacair_paren = true
+  maneuver = 10
+  bomb_capacity = 1
+  fuel_points = 1
+  missions = { r = "day", b = "day" }
+
+[[aircraft]]
+id = "ge.fw200c"
+nation = "ge"
+name = "Fw. 200 C"
+role = "bomber"
+manufacturer = "Focke Wulf"
+[[aircraft.mode]]
+  range_hexes = 205
+  tacair = 5
+  tacair_paren = true
+  maneuver = 21
+  bomb_capacity = 14
+  fuel_points = 3
+  missions = { d = "day", r = "day" }
+
+[[aircraft]]
+id = "ge.he111"
+nation = "ge"
+name = "He. 111"
+role = "bomber"
+manufacturer = "Heinkel"
+[[aircraft.mode]]
+  range_hexes = 112
+  tacair = 6
+  tacair_paren = true
+  maneuver = 22
+  bomb_capacity = 27
+  fuel_points = 3
+  missions = { d = "night" }
+
+[[aircraft]]
+id = "ge.hs126"
+nation = "ge"
+name = "Hs. 126"
+role = "bomber"
+manufacturer = "Henschel"
+[[aircraft.mode]]
+  range_hexes = 45
+  tacair = 2
+  tacair_paren = true
+  maneuver = 14
+  bomb_capacity = 2
+  fuel_points = 1
+  missions = { d = "day", r = "day" }
+
+[[aircraft]]
+id = "ge.ju52_3m"
+nation = "ge"
+name = "Ju. 52/3m"
+role = "transport"
+manufacturer = "Junkers"
+[[aircraft.mode]]
+  range_hexes = 72
+  tacair = 2
+  tacair_paren = true
+  maneuver = 8
+  fuel_points = 2
+  transport = { toe_quarter_points = 4, or_half_tons = 5 }
+
+[[aircraft]]
+id = "ge.ju87b"
+nation = "ge"
+name = "Ju. 87B"
+role = "bomber"
+manufacturer = "Junkers"
+[[aircraft.mode]]
+  range_hexes = 36
+  tacair = 3
+  tacair_paren = true
+  maneuver = 25
+  bomb_capacity = 5
+  fuel_points = 1
+  missions = { d = "day" }
+
+[[aircraft]]
+id = "ge.ju87d"
+nation = "ge"
+name = "Ju. 87D"
+role = "bomber"
+manufacturer = "Junkers"
+[[aircraft.mode]]
+  range_hexes = 62
+  tacair = 4
+  tacair_paren = true
+  maneuver = 22
+  bomb_capacity = 20
+  fuel_points = 2
+  missions = { d = "day" }
+
+[[aircraft]]
+id = "ge.ju88d"
+nation = "ge"
+name = "Ju. 88D"
+role = "bomber"
+manufacturer = "Junkers"
+[[aircraft.mode]]
+  range_hexes = 118
+  tacair = 5
+  tacair_paren = true
+  maneuver = 25
+  bomb_capacity = 33
+  fuel_points = 2
+  missions = { d = "day", r = "day" }

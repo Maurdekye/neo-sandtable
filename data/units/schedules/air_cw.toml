@@ -1,5 +1,5 @@
 # Commonwealth airplane reinforcements and squadron withdrawals, airlog:34.84-34.86 (chart 34.84).
-# PARTIAL: only entries touching GT 1-6 are entered. An entry with `gt_from`/`gt_to` is a monthly total to
+# PARTIAL: entries touching GT 1-20 are entered. An entry with `gt_from`/`gt_to` is a monthly total to
 # be divided as evenly as possible among those Game-Turns' weeks; an entry with a single `gt` is that
 # Game-Turn's total. All planes of a Game-Turn may arrive in its first OpStage (airlog:34.84).
 # Placement: Malta, Cairo or Alexandria facilities, or off-map (airlog:34.81); at most 10% of a month's planes may go to Malta.
@@ -7,9 +7,9 @@
 side = "commonwealth"
 src = ["airlog:34.84", "airlog:34.86"]
 transcribed_from = ["vassal:Allied Aircraft Withdrawal Schedule.png"]
-verification = "single"
+verification = "double"
 partial = true
-covers_gt = [1, 6]
+covers_gt = [1, 20]
 
 [[arrival]]
 label = "1940 Sept IV"
@@ -30,3 +30,67 @@ when = "beginning_of_month"
 squadrons = [ { role = "fighter", count = 1, min_planes = 12 } ]
 note = "WD: 1F - one squadron of at least 12 planes capable of Combat Air Patrol, from Malta or the Allied off-map airfields."
 src = ["airlog:34.85", "airlog:34.84"]
+
+[[arrival]]
+label = "1940 Nov II"
+gt = 8
+planes = [ { type = "cw.b17d", n = 4 } ]
+src = ["airlog:34.84"]
+
+[[withdrawal]]
+label = "1940 Nov II"
+gt = 8
+when = "game_turn"
+squadrons = [ { role = "fighter", count = 2, min_planes = 12 }, { role = "bomber", count = 2, min_planes = 12, min_bomb_points_each = 9, note = "each of the two squadrons must have a bombload capacity of at least 9 bomb points" } ]
+note = "WD: 2F, 2B (double-star note: each bomber squadron needs bombload capacity of at least 9 bomb points). This entry is the one exception to month-start removal: it applies at the start of the named Game-Turn (the chart states the exception for Nov II 1940)."
+src = ["airlog:34.84"]
+
+[[arrival]]
+label = "1940 Dec I"
+gt = 11
+planes = [ { type = "cw.blenheim_iv", n = 12 }, { type = "cw.wellington_i", n = 40 } ]
+src = ["airlog:34.84"]
+
+[[withdrawal]]
+label = "1940 Dec I"
+gt = 11
+when = "beginning_of_month"
+squadrons = [ { role = "bomber", count = 1, min_planes = 12 } ]
+note = "WD: 1B."
+src = ["airlog:34.84"]
+
+[[arrival]]
+label = "1941 Jan"
+gt_from = 15
+gt_to = 18
+planes = [ { type = "cw.hurricane_i", n = 44 }, { type = "cw.blenheim_i", n = 12 }, { type = "cw.wellington_i", n = 1 } ]
+distribution = "even_per_game_turn"
+src = ["airlog:34.84"]
+
+[[withdrawal]]
+label = "1941 Jan"
+gt = 15
+when = "beginning_of_month"
+squadrons = [ { role = "fighter", count = 1, min_planes = 12 }, { role = "bomber", count = 2, min_planes = 12, min_bomb_points_each = 9 } ]
+note = "WD: 1F, 2B (double-star note: two bomber squadrons each with bombload capacity of at least 9 bomb points)."
+src = ["airlog:34.84"]
+
+# February 1941 spans GT 19-22; only GT 19-20 fall inside the Italian Campaign, but the entry is the whole month's total.
+[[arrival]]
+label = "1941 Feb"
+gt_from = 19
+gt_to = 22
+planes = [
+  { type = "cw.hurricane_i", n = 30 }, { type = "cw.blenheim_i", n = 24 }, { type = "cw.blenheim_iv", n = 14 },
+  { type = "cw.maryland", n = 2 }, { type = "cw.wellington_i", n = 2 },
+]
+distribution = "even_per_game_turn"
+src = ["airlog:34.84"]
+
+[[withdrawal]]
+label = "1941 Feb"
+gt = 19
+when = "beginning_of_month"
+squadrons = [ { role = "fighter", count = 1, min_planes = 12 } ]
+note = "WD: 1F."
+src = ["airlog:34.84"]

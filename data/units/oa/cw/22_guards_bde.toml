@@ -1,0 +1,24 @@
+# OA sheet: 22nd Guards Brigade (200th Guards Brigade) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[file]
+verification = "double"
+
+[sheet]
+id = "cw.22_guards_bde"
+nation = "cw"
+side = "commonwealth"
+nationality = "british"
+name = "22nd Guards Brigade (200th Guards Brigade)"
+note = "An infantry brigade HQ with no battalions initially assigned; it has no basic morale of its own (attached units use theirs). Attached to an armored division it takes on the attributes of a Motor Brigade Group. It was renamed several times (200th Guards in January 1942, 200th Guards Motor Brigade Group in April 1942, 201st in May 1942); two counters (22 Gds and 200 Gds) exist. Assigned to the 70th Infantry Division from February to April 1941 (the schedule row arrives it at GT 20 OpStage 3: see interpretation units-0002)."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.22_guards_bde.22nd_guards_bde_hq"
+name = "22nd Guards Bde HQ"
+counter = "22 Gds"
+class = "cw.a"
+echelon = "brigade"
+arrives = { gt = 20, opstage = 3 }
+arrives_raw = "3/20"
+note = "Arrival comes from the reinforcement schedule; the sheet text speaks of formation in February 1941 (see interpretation units-0002)."
+stacking_points = 2
+src = ["land:4.45"]

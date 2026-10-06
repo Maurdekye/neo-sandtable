@@ -1,0 +1,194 @@
+# OA sheet: 61st "Sirte" Division (Semi-motorized) (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[file]
+verification = "double"
+
+[sheet]
+id = "it.sirte_div"
+nation = "it"
+side = "axis"
+nationality = "italian"
+name = "61st \"Sirte\" Division (Semi-motorized)"
+basic_morale = -1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.61st_sirte_div_hq"
+name = "61st Sirte Div HQ"
+counter = "61 Srt"
+class = "it.b"
+echelon = "division"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+stacking_points = 5
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.69th_infantry_regt_hq"
+name = "69th Infantry Regt HQ"
+counter = "69"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.61st_sirte_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.i_69_infantry_bn"
+name = "I/69 Infantry Bn"
+counter = "I/69"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.69th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.ii_69_infantry_bn"
+name = "II/69 Infantry Bn"
+counter = "II/69"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.69th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.iii_69_infantry_bn"
+name = "III/69 Infantry Bn"
+counter = "III/69"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.69th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.70th_infantry_regt_hq"
+name = "70th Infantry Regt HQ"
+counter = "70"
+class = "it.h"
+echelon = "brigade"
+toe = [ { weapon = "it.65_17_gun", n = 1 } ]
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.61st_sirte_div_hq"
+stacking_points = 2
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.i_70_infantry_bn"
+name = "I/70 Infantry Bn"
+counter = "I/70"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.70th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.ii_70_infantry_bn"
+name = "II/70 Infantry Bn"
+counter = "II/70"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.70th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.iii_70_infantry_bn"
+name = "III/70 Infantry Bn"
+counter = "III/70"
+class = "it.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.70th_infantry_regt_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.61st_machinegun_bn"
+name = "61st Machinegun Bn"
+counter = "61"
+class = "it.bb"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.61st_sirte_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.61st_anti_tank_coy"
+name = "61st Anti-tank Coy"
+counter = "61"
+class = "it.rr"
+echelon = "company"
+toe = [ { weapon = "it.47_32_mod37", n = 2 } ]
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.61st_sirte_div_hq"
+stacking_points = 0
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.43rd_artillery_regt"
+name = "43rd Artillery Regt"
+counter = "43"
+class = "it.kk"
+echelon = "battalion"
+toe = [ { weapon = "it.75_27_gun", n = 6 }, { weapon = "it.100_17_howitzer", n = 3 }, { weapon = "it.aa_light_20mm", n = 6 } ]
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.61st_sirte_div_hq"
+note = "The sheet prints 6 light AA points, above the class limit of 3 (GAPS U-021); entered as printed."
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.61st_engineer_bn"
+name = "61st Engineer Bn"
+counter = "61"
+class = "it.bbb"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.61st_sirte_div_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "it.sirte_div.61st_bersaglieri_mitrg_coy"
+name = "61st Bersaglieri Mitrg Coy"
+counter = "61 Brs"
+class = "it.aaa"
+echelon = "company"
+toe = "N"
+arrives = { gt = 10, opstage = 3 }
+arrives_raw = "3/10"
+parent = "it.sirte_div.61st_sirte_div_hq"
+stacking_points = 0
+src = ["land:4.45"]

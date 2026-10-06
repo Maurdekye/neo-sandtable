@@ -1,13 +1,13 @@
-# Axis airplane reinforcements, airlog:34.84, 34.87 (chart 34.85). PARTIAL: only entries touching GT 1-6.
+# Axis airplane reinforcements, airlog:34.84, 34.87 (chart 34.85). PARTIAL: entries touching GT 1-20.
 # `gt_from`/`gt_to` entries are monthly totals divided as evenly as possible among the Game-Turns of the
 # period. Placement: Tripoli and Tunisia boxes, or bases in Italy, Sicily and Crete (airlog:34.81).
 [file]
 side = "axis"
 src = ["airlog:34.84", "airlog:34.87"]
 transcribed_from = ["vassal:Axis Aircraft Withdrawal Schedule.png"]
-verification = "single"
+verification = "double"
 partial = true
-covers_gt = [1, 6]
+covers_gt = [1, 20]
 
 [[arrival]]
 label = "1940 Sept IV"
@@ -24,3 +24,56 @@ gt_to = 6
 planes = [ { type = "it.ba65", n = 12 } ]
 distribution = "even_per_game_turn"
 src = ["airlog:34.87"]
+
+[[arrival]]
+label = "1940 Nov"
+nationality = "italian"
+gt_from = 7
+gt_to = 10
+planes = [ { type = "it.cr42", n = 16 } ]
+distribution = "even_per_game_turn"
+src = ["airlog:34.87"]
+
+[[arrival]]
+label = "1940 Dec"
+nationality = "italian"
+gt_from = 11
+gt_to = 14
+planes = [
+  { type = "it.cr42", n = 40 }, { type = "it.g50", n = 24 }, { type = "it.ba65", n = 24 },
+  { type = "it.z501", n = 3 }, { type = "it.ro37bis", n = 2 }, { type = "it.sm79", n = 53 },
+]
+distribution = "even_per_game_turn"
+src = ["airlog:34.87"]
+
+[[arrival]]
+label = "1941 Jan"
+nationality = "italian"
+gt_from = 15
+gt_to = 18
+planes = [ { type = "it.cr42", n = 36 }, { type = "it.g50", n = 12 }, { type = "it.ba65", n = 12 }, { type = "it.sm79", n = 12 } ]
+distribution = "even_per_game_turn"
+src = ["airlog:34.87"]
+
+# February 1941 spans GT 19-22; only GT 19-20 fall inside the Italian Campaign, but the entry is the whole month's total.
+[[arrival]]
+label = "1941 Feb"
+nationality = "german"
+gt_from = 19
+gt_to = 22
+planes = [ { type = "ge.bf110", n = 30 }, { type = "ge.fw200c", n = 15 }, { type = "ge.ju87b", n = 30 }, { type = "ge.ju88d", n = 36 } ]
+distribution = "even_per_game_turn"
+src = ["airlog:34.85"]
+
+[[arrival]]
+label = "1941 Feb"
+nationality = "italian"
+gt_from = 19
+gt_to = 22
+planes = [
+  { type = "it.cr42", n = 12 }, { type = "it.g50", n = 24 }, { type = "it.ba65", n = 6 }, { type = "it.z501", n = 6 },
+  { type = "it.z1007bis", n = 6 }, { type = "it.ro37bis", n = 12 },
+]
+distribution = "even_per_game_turn"
+note = "The chart prints Z1007 for the Z.1007bis."
+src = ["airlog:34.85"]

@@ -1,0 +1,117 @@
+# OA sheet: 18th Australian Brigade (land:4.45). Rows read from the chart image; see data/units/README.md for the schema.
+[file]
+verification = "double"
+
+[sheet]
+id = "cw.18_aus_bde"
+nation = "cw"
+side = "commonwealth"
+nationality = "australian"
+name = "18th Australian Brigade"
+basic_morale = 1
+basic_morale_untrained = 0
+note = "Printed note: the brigade belonged to the 7th Australian Division; it was reassigned to the 9th for game purposes, and the listed support units were really 6th Division units placed with it. The 21st and 25th Brigades and the divisional HQ are excluded from the game."
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
+name = "18th Aus Infantry Bde HQ"
+counter = "18 Aus"
+class = "cw.f"
+echelon = "super_brigade"
+toe = "N"
+arrives = { gt = 14, opstage = 3 }
+arrives_raw = "3/14"
+stacking_points = 3
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.18_aus_bde.2_9_aus_infantry_bn"
+name = "2/9 Aus Infantry Bn"
+counter = "2/9 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 14, opstage = 3 }
+arrives_raw = "3/14"
+parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.18_aus_bde.2_10_aus_infantry_bn"
+name = "2/10 Aus Infantry Bn"
+counter = "2/10 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 14, opstage = 3 }
+arrives_raw = "3/14"
+parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.18_aus_bde.2_12_aus_infantry_bn"
+name = "2/12 Aus Infantry Bn"
+counter = "2/12 Aus"
+class = "cw.p"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 14, opstage = 3 }
+arrives_raw = "3/14"
+parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.18_aus_bde.7th_aus_div_cavalry_regt"
+name = "7th Aus Div Cavalry Regt"
+counter = "7 AusCav"
+class = "cw.ll"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 14, opstage = 3 }
+arrives_raw = "3/14"
+parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.18_aus_bde.2_1_aus_mg_bn"
+name = "2/1 Aus MG Bn"
+counter = "2/1 Aus"
+class = "cw.u"
+echelon = "battalion"
+toe = "N"
+arrives = { gt = 14, opstage = 3 }
+arrives_raw = "3/14"
+parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.18_aus_bde.2_1_aus_anti_tank_regt"
+name = "2/1 Aus Anti-tank Regt"
+counter = "2/1 Aus"
+class = "cw.aa"
+echelon = "battalion"
+toe = [ { weapon = "cw.2_pounder", n = 8 } ]
+arrives = { gt = 14, opstage = 3 }
+arrives_raw = "3/14"
+parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
+
+[[unit]]
+id = "cw.18_aus_bde.2_3_aus_field_artillery_regt"
+name = "2/3 Aus Field Artillery Regt"
+counter = "2/3 AFld"
+class = "cw.x"
+echelon = "battalion"
+toe = [ { weapon = "cw.25_pounder_gun", n = 6 } ]
+arrives = { gt = 14, opstage = 3 }
+arrives_raw = "3/14"
+parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
+stacking_points = 1
+src = ["land:4.45"]
