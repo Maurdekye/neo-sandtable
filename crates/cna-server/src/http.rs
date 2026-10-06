@@ -1,12 +1,17 @@
 //! Local-only HTTP API and bounded WebSocket protocol implementation.
-use crate::{CampaignStatus, Error, actor::CampaignHandle, seats::seat_error};
+use crate::{
+    CampaignStatus, Error,
+    actor::CampaignHandle,
+    auth::{Capabilities, Grant},
+    seats::seat_error,
+};
 use axum::{
-    Json, Router,
+    Extension, Json, Router,
     extract::{
         Path as RoutePath, Query, State, WebSocketUpgrade,
-        ws::{Message, WebSocket},
+        ws::{CloseFrame, Message, WebSocket, close_code},
     },
-    http::{HeaderMap, Method, StatusCode},
+    http::{Method, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -60,6 +65,7 @@ pub struct App {
     directory: PathBuf,
     factory: Factory,
     port: u16,
+    capabilities: Arc<Capabilities>,
 }
 impl App {
     pub fn new(directory: PathBuf, port: u16, factory: Factory) -> Self {
@@ -68,14 +74,39 @@ impl App {
             directory,
             factory,
             port,
+            capabilities: Arc::new(Capabilities::new()),
         }
     }
     pub fn register(&self, campaign: CampaignHandle) {
         let id = campaign.projection(Perspective::Operator).meta.id;
+        self.capabilities.register(&id);
         self.campaigns
             .write()
             .expect("campaign registry")
             .insert(id, campaign);
+    }
+    pub fn operator_token(&self) -> String {
+        self.capabilities.operator_token()
+    }
+    pub fn side_token(&self, id: &str, side: cna_protocol::Side) -> Option<String> {
+        self.capabilities
+            .campaign_tokens(id)?
+            .sides
+            .get(&side)
+            .cloned()
+    }
+    pub fn seat_token(&self, id: &str, seat: SeatId) -> Option<String> {
+        self.capabilities
+            .campaign_tokens(id)?
+            .seats
+            .get(&seat)
+            .cloned()
+    }
+    /// Trusted launcher export only. Never give this path or operator token to a seat process.
+    pub fn write_credentials(&self, path: &Path) -> Result<(), Error> {
+        self.capabilities
+            .write_credentials(path)
+            .map_err(|e| Error::Invalid(e.to_string()))
     }
     fn campaign(&self, id: &str) -> Result<CampaignHandle, ApiError> {
         self.campaigns
@@ -115,8 +146,13 @@ impl App {
                 "http://localhost:5173".parse().expect("origin"),
             ])
             .allow_methods([Method::GET, Method::POST])
-            .allow_headers([axum::http::header::CONTENT_TYPE]);
+            .allow_headers([
+                axum::http::header::CONTENT_TYPE,
+                axum::http::header::AUTHORIZATION,
+            ]);
         Router::new()
+            .route("/api/session", get(session))
+            .route("/api/campaigns/{id}/capabilities", get(capabilities))
             .route("/api/campaigns", get(list).post(create))
             .route("/api/campaigns/{id}", get(inspect_campaign))
             .route("/api/campaigns/{id}/pause", post(pause))
@@ -213,13 +249,84 @@ async fn local_requests(
             return StatusCode::FORBIDDEN.into_response();
         }
     }
-    next.run(request).await
+    let mut request = request;
+    if request.method() != Method::OPTIONS
+        && (request.uri().path() == "/api" || request.uri().path().starts_with("/api/"))
+    {
+        let header = match request.headers().get(axum::http::header::AUTHORIZATION) {
+            None => None,
+            Some(raw) => match raw.to_str().ok().and_then(|h| h.strip_prefix("Bearer ")) {
+                Some(token) => Some(token),
+                None => return StatusCode::UNAUTHORIZED.into_response(),
+            },
+        };
+        let query = if request.uri().path().ends_with("/stream") {
+            match Query::<CapabilityQuery>::try_from_uri(request.uri()) {
+                Ok(query) => query.0.cap,
+                Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+            }
+        } else {
+            None
+        };
+        let token = match (header, query.as_deref()) {
+            (Some(a), Some(b)) if a != b => return StatusCode::UNAUTHORIZED.into_response(),
+            (Some(a), _) => Some(a),
+            (None, b) => b,
+        };
+        let Some(grant) = token.and_then(|token| app.capabilities.authenticate(token)) else {
+            return StatusCode::UNAUTHORIZED.into_response();
+        };
+        request.extensions_mut().insert(grant);
+    }
+    let api = request.uri().path() == "/api" || request.uri().path().starts_with("/api/");
+    let mut response = next.run(request).await;
+    response.headers_mut().insert(
+        axum::http::header::REFERRER_POLICY,
+        "no-referrer".parse().expect("header"),
+    );
+    if api {
+        response.headers_mut().insert(
+            axum::http::header::CACHE_CONTROL,
+            "no-store".parse().expect("header"),
+        );
+    }
+    response
+}
+#[derive(Deserialize)]
+struct CapabilityQuery {
+    cap: Option<String>,
+}
+fn authorized(ok: bool) -> Result<(), ApiError> {
+    if ok {
+        Ok(())
+    } else {
+        Err(ApiError(
+            StatusCode::FORBIDDEN,
+            "capability scope denied".into(),
+        ))
+    }
+}
+async fn session(Extension(grant): Extension<Grant>) -> Json<Value> {
+    Json(
+        json!({"perspective":grant.perspective.to_string(),"campaign_id":grant.campaign_id,"operator":grant.operator()}),
+    )
+}
+async fn capabilities(
+    State(app): State<App>,
+    Extension(grant): Extension<Grant>,
+    RoutePath(id): RoutePath<String>,
+) -> Result<Json<Value>, ApiError> {
+    authorized(grant.operator())?;
+    app.campaign(&id)?;
+    Ok(Json(json!(app.capabilities.campaign_tokens(&id))))
 }
 async fn list(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     Query(query): Query<PerspectiveQuery>,
 ) -> Result<Json<Value>, ApiError> {
     let p = perspective(&query)?;
+    authorized(grant.perspective(p))?;
     let campaigns: Vec<_> = app
         .campaigns
         .read()
@@ -230,14 +337,17 @@ async fn list(
             )
         })?
         .values()
+        .filter(|h| grant.campaign(&h.projection(p).meta.id))
         .map(|h| h.projection(p).meta)
         .collect();
     Ok(Json(json!(campaigns)))
 }
 async fn create(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     Json(request): Json<CreateRequest>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
+    authorized(grant.operator())?;
     let factory = app.factory.clone();
     let dir = app.directory.clone();
     let handle = tokio::task::spawn_blocking(move || factory(request, &dir))
@@ -254,10 +364,12 @@ async fn create(
 }
 async fn inspect_campaign(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath(id): RoutePath<String>,
     Query(query): Query<PerspectiveQuery>,
 ) -> Result<Json<Value>, ApiError> {
     let p = perspective(&query)?;
+    authorized(grant.campaign(&id) && grant.perspective(p))?;
     let handle = app.campaign(&id)?;
     let status = match handle.status() {
         CampaignStatus::Stopped { error: _ } if p != Perspective::Operator => {
@@ -271,23 +383,29 @@ async fn inspect_campaign(
 }
 async fn pause(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath(id): RoutePath<String>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.operator())?;
     app.campaign(&id)?.pause(true).await?;
     Ok(Json(json!({"paused":true})))
 }
 async fn resume(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath(id): RoutePath<String>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.operator())?;
     app.campaign(&id)?.pause(false).await?;
     Ok(Json(json!({"paused":false})))
 }
 async fn seats(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath(id): RoutePath<String>,
     Query(query): Query<PerspectiveQuery>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.campaign(&id) && grant.perspective(perspective(&query)?))?;
     Ok(Json(json!(
         app.campaign(&id)?
             .projection(perspective(&query)?)
@@ -303,9 +421,11 @@ struct Handover {
 }
 async fn handover(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath((id, s)): RoutePath<(String, String)>,
     Json(request): Json<Handover>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.operator())?;
     Ok(Json(json!(
         app.campaign(&id)?
             .handover(seat(&s)?, request.controller, request.config)
@@ -314,15 +434,19 @@ async fn handover(
 }
 async fn pause_seat(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath((id, s)): RoutePath<(String, String)>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.operator())?;
     app.campaign(&id)?.pause_seat(seat(&s)?).await?;
     Ok(Json(json!({"paused":true})))
 }
 async fn observe(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath((id, s)): RoutePath<(String, String)>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.campaign(&id) && grant.seat(seat(&s)?, false))?;
     let state = app.campaign(&id)?.seat(seat(&s)?);
     Ok(Json(
         json!({"observation":state.observation,"pending":state.pending,"controller_epoch":state.binding.controller_epoch,"paused":state.binding.paused,"failure":state.binding.failure}),
@@ -330,14 +454,18 @@ async fn observe(
 }
 async fn inspect_target(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath((id, s, target)): RoutePath<(String, String, String)>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.campaign(&id) && grant.seat(seat(&s)?, false))?;
     Ok(Json(app.campaign(&id)?.inspect(seat(&s)?, &target).await?))
 }
 async fn actions(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath((id, s, decision)): RoutePath<(String, String, String)>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.campaign(&id) && grant.seat(seat(&s)?, false))?;
     let request = app
         .campaign(&id)?
         .seat(seat(&s)?)
@@ -360,9 +488,11 @@ struct Draft {
 }
 async fn validate(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath((id, s, decision)): RoutePath<(String, String, String)>,
     Json(draft): Json<Draft>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.campaign(&id) && grant.seat(seat(&s)?, false))?;
     app.campaign(&id)?
         .validate_action(seat(&s)?, &decision, draft.action)
         .await?;
@@ -370,9 +500,11 @@ async fn validate(
 }
 async fn submit(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath((id, s, decision)): RoutePath<(String, String, String)>,
     Json(response): Json<DecisionResponse>,
 ) -> Result<Json<Value>, ApiError> {
+    authorized(grant.campaign(&id) && grant.seat(seat(&s)?, true))?;
     if response.seat != seat(&s)? || response.decision_id.as_str() != decision {
         return Err(ApiError(
             StatusCode::BAD_REQUEST,
@@ -390,6 +522,7 @@ struct TranscriptQuery {
 }
 async fn transcripts(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath(id): RoutePath<String>,
     Query(query): Query<TranscriptQuery>,
 ) -> Result<Json<Value>, ApiError> {
@@ -398,6 +531,7 @@ async fn transcripts(
         .parse()
         .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid perspective".into()))?;
     let s = seat(&query.seat)?;
+    authorized(grant.campaign(&id) && grant.perspective(p) && grant.seat(s, false))?;
     let reader = app.campaign(&id)?.replay();
     let rows = tokio::task::spawn_blocking(move || reader.transcripts(p, s, query.after))
         .await
@@ -406,16 +540,17 @@ async fn transcripts(
 }
 async fn upgrade(
     State(app): State<App>,
+    Extension(grant): Extension<Grant>,
     RoutePath(id): RoutePath<String>,
     ws: WebSocketUpgrade,
-    _headers: HeaderMap,
 ) -> Result<Response, ApiError> {
+    authorized(grant.campaign(&id))?;
     let handle = app.campaign(&id)?;
     Ok(ws
         .max_message_size(16384)
         .max_frame_size(16384)
         .max_write_buffer_size(2 * 1024 * 1024)
-        .on_upgrade(move |socket| stream(socket, handle)))
+        .on_upgrade(move |socket| stream(socket, handle, grant)))
 }
 async fn send(socket: &mut WebSocket, message: &ServerMessage) -> Result<(), ()> {
     let text = serde_json::to_string(message).map_err(|_| ())?;
@@ -443,7 +578,7 @@ async fn subscribe(socket: &mut WebSocket) -> Option<(Perspective, Option<u64>)>
         }
     }
 }
-async fn stream(mut socket: WebSocket, handle: CampaignHandle) {
+async fn stream(mut socket: WebSocket, handle: CampaignHandle, grant: Grant) {
     let mut lifecycle = handle.watch_status();
     let mut pending_subscription = None;
     'subscriptions: loop {
@@ -455,6 +590,15 @@ async fn stream(mut socket: WebSocket, handle: CampaignHandle) {
         }) else {
             return;
         };
+        if !grant.perspective(p) {
+            let _ = socket
+                .send(Message::Close(Some(CloseFrame {
+                    code: close_code::POLICY,
+                    reason: "capability scope denied".into(),
+                })))
+                .await;
+            return;
+        }
         // Register first, then read one immutable seq+view projection: no snapshot/live race.
         let mut live = handle.subscribe(p);
         let projection = handle.projection(p);
@@ -564,6 +708,12 @@ async fn stream(mut socket: WebSocket, handle: CampaignHandle) {
                         Some(Ok(Message::Text(text))) => {
                             let Ok(ClientMessage::Subscribe {perspective,from_seq})=serde_json::from_str(&text) else {return;};
                             let Ok(next_p) = perspective.parse::<Perspective>() else { return; };
+                            if !grant.perspective(next_p) {
+                                let _ = socket.send(Message::Close(Some(CloseFrame {
+                                    code: close_code::POLICY, reason: "capability scope denied".into(),
+                                }))).await;
+                                return;
+                            }
                             pending_subscription = Some((next_p, from_seq));
                             continue 'subscriptions;
                         }

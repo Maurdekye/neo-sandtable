@@ -345,7 +345,15 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
         axum::serve(listener, router).await.unwrap();
     });
     let base = format!("http://127.0.0.1:{port}");
-    let client = reqwest::Client::new();
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(
+        reqwest::header::AUTHORIZATION,
+        format!("Bearer {}", app.operator_token()).parse().unwrap(),
+    );
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .unwrap();
     let response = client
         .post(format!("{base}/api/campaigns"))
         .json(&request(cna_rules::PROFILE_DEV, "legal_random", true))

@@ -12,6 +12,42 @@ folder and database folder. The default database folder is the agent scratch fol
 `campaigns/`, outside the repository. Browser requests require a loopback Host and an approved
 local Origin; the Vite origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed.
 
+Every API request requires a capability. Startup generates fresh high-entropy credentials,
+prints `http://127.0.0.1:PORT/#cap=TOKEN`, and writes a trusted launcher credential document to
+`CNA_CAMPAIGN_DIR/operator-capabilities.json` (override with `CNA_CAPABILITY_FILE`). The fragment
+is for the board to capture; it is not sent in HTTP request lines. The file refreshes after campaign
+registration. Credentials rotate on every `App::new` / server restart; saved campaigns retain their
+state but clients need newly issued capabilities. The static board assets contain no credentials.
+
+Use `Authorization: Bearer TOKEN` for HTTP. Browser WebSockets use
+`/api/campaigns/{id}/stream?cap=TOKEN`; native clients may use the Bearer header. Never log that
+WebSocket URI or expose it in error text. Conflicting header/query credentials are rejected.
+Missing, malformed or unknown credentials return 401. Valid credentials outside their campaign
+or perspective scope return 403. An unauthorized WebSocket subscription or perspective switch
+closes with code 1008 and reason `capability scope denied` before sending any unauthorized data.
+Host/Origin checks remain active. Approved CORS preflights need no token; application requests do.
+API responses use `Cache-Control: no-store`; responses use `Referrer-Policy: no-referrer`.
+
+`GET /api/session` returns `{perspective, campaign_id, operator}`. Only operator authority can
+create/control campaigns, hand over or pause seats, or fetch
+`GET /api/campaigns/{id}/capabilities`, which returns `{sides, seats}` credentials for that campaign.
+Side capabilities read only their side and its seats. Seat capabilities read only that exact seat
+and may submit its decisions; side credentials cannot submit. Every restricted credential is bound
+to one campaign. Metadata endpoints still require an explicit authorized `perspective` when using
+a restricted token; their default is operator. HTTP transcript requests also require an authorized
+seat. Client discovery is filtered to the capability's campaign.
+
+Trusted Rust launchers keep `App::operator_token()` in memory and may print the fragment URL without
+creating a credential file. `App::side_token(id, side)` and `App::seat_token(id, seat)` return
+`Option<String>` after registration. Optional `App::write_credentials(path)` is synchronous and
+returns `Result<(), cna_server::Error>`; it atomically exports the operator and all campaign scopes.
+Never pass the operator capability, export path, environment or working directory to a seat CLI.
+Capabilities require seat confinement: each driver has an empty seat directory, built-in shell,
+file and network tools disabled, and only its own token-scoped MCP endpoint. A driver that cannot
+provide this confinement must not take a seat. Unrestricted same-user processes can read files or
+process memory; bearer tokens alone cannot protect against that authority. The direct bound-epoch
+`CampaignHandle` MCP bridge does not require an App capability.
+
 Creation accepts JSON with `kind` (`sandbox`, the default, or `cna`), `rules_profile`, `seed`
 (32 byte values), optional `title` (default "Campaign"), `paused` (default false), and `controller`.
 Use `paused: true` to attach viewers before starting a fast campaign. No LLM driver or paid
@@ -35,6 +71,8 @@ sandbox-specific factory.
 
 | HTTP endpoint | Purpose |
 |---|---|
+| `GET /api/session` | Current capability scope |
+| `GET /api/campaigns/{id}/capabilities` | Operator-only restricted credential issuance |
 | `GET/POST /api/campaigns` | List metadata / create a campaign |
 | `GET /api/campaigns/{id}` | Inspect metadata, status and projected snapshot |
 | `POST /api/campaigns/{id}/pause` or `/resume` | Campaign control at a safe boundary |
@@ -96,10 +134,14 @@ CNA startup recovery dispatches from the persisted scenario/profile pair using a
 metadata query before opening a writer. Its input fingerprint includes the map CSVs, the TOMLs
 actually read by the unit and Graziani setup loaders, every table TOML, and the `land`, `airlog`
 and `scen` registry folders. Unread files and notes do not affect it. Paths and bytes are hashed
-in sorted order; a change during loading is rejected. The CNA engine fingerprint is embedded at
-build time from the core, protocol, content, tables and rules Rust sources, their manifests and
-Cargo.lock. It is conservative: rebuilding with changed inputs requires matching saved pins;
-there is no migration or implicit profile fallback. Existing sandbox pinning remains unchanged.
+in sorted order; a change during loading is rejected. Both CNA and sandbox use the same complete engine fingerprint, embedded at
+build time from core, protocol, content, tables, rules and sandbox Rust sources, their manifests,
+the workspace manifest and Cargo.lock. It includes helpers such as hex geometry and dependency
+versions. Directory watches catch newly added source files. Changed pins are rejected before
+interpreting a checkpoint, including campaigns with no later commands. There is no migration or
+implicit profile fallback: databases saved with the older partial sandbox fingerprint (or earlier
+CNA fingerprint) are intentionally rejected. Use a fresh campaign directory for new campaigns;
+do not relabel saved pins to bypass that check.
 The real-scenario tests cover both baselines reaching Finished, private transcript replay,
 checkpoint plus tail recovery, strict-profile rollback, HTTP creation/control, input drift and
 mixed sandbox/CNA recovery. No provider invocation is needed for these tests.

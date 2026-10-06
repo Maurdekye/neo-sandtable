@@ -1,5 +1,7 @@
 //! A single campaign writer. The engine is pure; acknowledged state is durable.
+mod auth;
 pub mod campaign;
+pub use auth::CampaignCapabilities;
 pub mod scripted;
 
 pub use campaign::{Binding, Campaign, CampaignStatus, Error, Pins, Receipt};

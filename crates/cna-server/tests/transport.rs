@@ -125,6 +125,19 @@ impl Server {
             url: format!("http://127.0.0.1:{port}"),
         }
     }
+    fn client(&self) -> reqwest::Client {
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            format!("Bearer {}", self.app.operator_token())
+                .parse()
+                .unwrap(),
+        );
+        reqwest::Client::builder()
+            .default_headers(headers)
+            .build()
+            .unwrap()
+    }
     async fn stop(self) {
         self.app.shutdown().await;
         self.task.abort();
@@ -269,8 +282,9 @@ async fn websocket_snapshot_live_resume_switch_and_ahead_cursor_resync() {
     let id = handle.projection(Perspective::Operator).meta.id;
     let server = Server::new(dir.path(), Some(handle.clone())).await;
     let address = format!(
-        "{}/api/campaigns/{id}/stream",
-        server.url.replace("http:", "ws:")
+        "{}/api/campaigns/{id}/stream?cap={}",
+        server.url.replace("http:", "ws:"),
+        server.app.operator_token()
     );
     let (mut socket, _) = tokio_tungstenite::connect_async(&address).await.unwrap();
     subscribe(&mut socket, "side:axis", None).await;
@@ -396,7 +410,7 @@ async fn websocket_snapshot_live_resume_switch_and_ahead_cursor_resync() {
 async fn http_creation_control_and_local_origin_are_checked() {
     let dir = tempfile::tempdir().unwrap();
     let server = Server::new(dir.path(), None).await;
-    let client = reqwest::Client::new();
+    let client = server.client();
     let response = client
         .post(format!("{}/api/campaigns", server.url))
         .json(&request("aggressive", true))
@@ -613,8 +627,9 @@ async fn scripted_baselines_emit_truthful_live_and_replayed_private_transcripts(
         );
         let server = Server::new(dir.path(), Some(handle.clone())).await;
         let address = format!(
-            "{}/api/campaigns/{id}/stream",
-            server.url.replace("http://", "ws://")
+            "{}/api/campaigns/{id}/stream?cap={}",
+            server.url.replace("http://", "ws://"),
+            server.app.operator_token()
         );
         let (mut socket, _) = tokio_tungstenite::connect_async(address).await.unwrap();
         subscribe(&mut socket, &format!("seat:{seat}"), None).await;
@@ -740,4 +755,706 @@ async fn delayed_controller_failure_cannot_pause_or_report_for_replacement_epoch
         rows
     );
     restored.shutdown().await.unwrap();
+}
+
+// Compare all persisted rows, including RNG, receipts, windows, transcripts and bindings.
+fn persisted(path: &Path) -> Vec<String> {
+    let db =
+        rusqlite::Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .unwrap();
+    let transaction = db.unchecked_transaction().unwrap();
+    let mut tables = transaction.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").unwrap();
+    let names: Vec<String> = tables
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    let mut result = Vec::new();
+    for name in names {
+        let mut rows = transaction
+            .prepare(&format!("SELECT * FROM {name} ORDER BY rowid"))
+            .unwrap();
+        let columns = rows.column_count();
+        result.extend(
+            rows.query_map([], |r| {
+                let values = (0..columns)
+                    .map(|i| r.get::<_, rusqlite::types::Value>(i))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(format!("{name}:{values:?}"))
+            })
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap(),
+        );
+    }
+    result
+}
+fn all_views(handle: &CampaignHandle) -> Vec<String> {
+    Perspective::all()
+        .map(|p| format!("{:?}", handle.projection(p)))
+        .collect()
+}
+fn unchanged(handle: &CampaignHandle, path: &Path, rows: &[String], views: &[String]) {
+    assert_eq!(persisted(path), rows);
+    assert_eq!(all_views(handle), views);
+}
+async fn denied(socket: &mut Socket) {
+    let frame = tokio::time::timeout(Duration::from_secs(5), socket.next())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    match frame {
+        Message::Close(Some(close)) => {
+            assert_eq!(u16::from(close.code), 1008);
+            assert_eq!(close.reason, "capability scope denied");
+        }
+        other => panic!("unauthorized subscription sent a frame: {other:?}"),
+    }
+}
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn capabilities_authorize_every_http_route_without_mutation_on_denial() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", false)).unwrap();
+    let decision = pending(&handle).await;
+    handle.pause(true).await.unwrap();
+    let id = handle.projection(Perspective::Operator).meta.id;
+    let path = dir.path().join(format!("{id}.sqlite"));
+    let enemy: SeatId = "commonwealth.commander".parse().unwrap();
+    let own = decision.seat;
+    handle
+        .append(
+            enemy,
+            "2026-10-07T00:00:00Z".into(),
+            TranscriptEntry::Reasoning {
+                text: "enemy-private-canary".into(),
+            },
+        )
+        .await
+        .unwrap();
+    let server = Server::new(dir.path(), Some(handle.clone())).await;
+    let second = sandbox::create(dir.path(), &data(), request("human", true)).unwrap();
+    let other_id = second.projection(Perspective::Operator).meta.id;
+    server.app.register(second);
+    let rows = persisted(&path);
+    let views = all_views(&handle);
+    let client = reqwest::Client::new();
+    let operator = server.app.operator_token();
+    let side = server.app.side_token(&id, Side::Axis).unwrap();
+    let seat_cap = server.app.seat_token(&id, own).unwrap();
+    let wrong_side = server.app.side_token(&id, Side::Commonwealth).unwrap();
+    let draft = scripted::answer(
+        &decision,
+        handle.seat(own).binding.controller_epoch,
+        Mode::PassWhenPossible,
+        0,
+        &NoCandidates,
+    )
+    .unwrap();
+    let root = format!("/api/campaigns/{id}");
+    let seat_path = format!("{root}/seats/{own}");
+    let decision_path = format!("{seat_path}/decisions/{}", decision.id);
+    let routes = vec![
+        ("GET", "/api/session".into(), Value::Null),
+        ("GET", "/api/campaigns".into(), Value::Null),
+        (
+            "POST",
+            "/api/campaigns".into(),
+            serde_json::to_value(request("human", true)).unwrap(),
+        ),
+        ("GET", root.clone(), Value::Null),
+        ("GET", format!("{root}/seats"), Value::Null),
+        ("GET", format!("{root}/capabilities"), Value::Null),
+        ("POST", format!("{root}/pause"), Value::Null),
+        ("POST", format!("{root}/resume"), Value::Null),
+        ("POST", format!("{seat_path}/pause"), Value::Null),
+        (
+            "POST",
+            format!("{seat_path}/controller"),
+            serde_json::json!({"controller":null}),
+        ),
+        ("GET", format!("{seat_path}/observe"), Value::Null),
+        ("GET", format!("{seat_path}/inspect/unknown"), Value::Null),
+        ("GET", format!("{decision_path}/actions"), Value::Null),
+        (
+            "POST",
+            format!("{decision_path}/validate"),
+            serde_json::json!({"action":draft.action}),
+        ),
+        (
+            "POST",
+            format!("{decision_path}/submit"),
+            serde_json::to_value(&draft).unwrap(),
+        ),
+        (
+            "GET",
+            format!("{root}/transcripts?perspective=operator&seat={enemy}"),
+            Value::Null,
+        ),
+    ];
+    for (method, route, body) in &routes {
+        let response = client
+            .request(
+                method.parse::<reqwest::Method>().unwrap(),
+                format!("{}{route}", server.url),
+            )
+            .json(body)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 401, "{method} {route}");
+        unchanged(&handle, &path, &rows, &views);
+    }
+    for token in ["wrong-token".to_owned(), "0".repeat(64)] {
+        assert_eq!(
+            client
+                .get(format!("{}{root}", server.url))
+                .bearer_auth(token)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            401
+        );
+        unchanged(&handle, &path, &rows, &views);
+    }
+    assert_eq!(
+        client
+            .get(format!("{}{root}?cap={operator}", server.url))
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        401
+    );
+    for token in [&side, &seat_cap, &wrong_side] {
+        for (method, route, body) in routes.iter().filter(|(_, route, _)| {
+            route.ends_with("/pause")
+                || route.ends_with("/resume")
+                || route.ends_with("/controller")
+                || route.ends_with("/capabilities")
+                || route == "/api/campaigns"
+        }) {
+            // Restricted discovery is permitted only with an authorized explicit perspective.
+            let response = client
+                .request(
+                    method.parse::<reqwest::Method>().unwrap(),
+                    format!("{}{route}", server.url),
+                )
+                .bearer_auth(token)
+                .json(body)
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(response.status(), 403, "{method} {route}");
+            unchanged(&handle, &path, &rows, &views);
+        }
+    }
+    for (token, route) in [
+        (&wrong_side, format!("{seat_path}/observe")),
+        (&side, format!("{root}?perspective=operator")),
+        (&side, format!("{root}?perspective=side:commonwealth")),
+        (
+            &side,
+            format!("{root}/transcripts?perspective=side:axis&seat={enemy}"),
+        ),
+        (&seat_cap, format!("{root}?perspective=side:axis")),
+        (&seat_cap, format!("{root}/seats/axis.air/observe")),
+        (&seat_cap, format!("{root}/seats/{enemy}/observe")),
+        (
+            &seat_cap,
+            format!("/api/campaigns/{other_id}?perspective=seat:{own}"),
+        ),
+    ] {
+        assert_eq!(
+            client
+                .get(format!("{}{route}", server.url))
+                .bearer_auth(token)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            403,
+            "{route}"
+        );
+        unchanged(&handle, &path, &rows, &views);
+    }
+    assert_eq!(
+        client
+            .post(format!("{}{decision_path}/submit", server.url))
+            .bearer_auth(&side)
+            .json(&draft)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        403
+    );
+    unchanged(&handle, &path, &rows, &views);
+    for (token, p) in [
+        (&side, "side:axis".to_owned()),
+        (&seat_cap, format!("seat:{own}")),
+        (&operator, "operator".to_owned()),
+    ] {
+        assert_eq!(
+            client
+                .get(format!("{}{root}?perspective={p}", server.url))
+                .bearer_auth(token)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            200
+        );
+        assert_eq!(
+            client
+                .get(format!("{}/api/session", server.url))
+                .bearer_auth(token)
+                .send()
+                .await
+                .unwrap()
+                .json::<Value>()
+                .await
+                .unwrap()["perspective"],
+            p
+        );
+    }
+    for token in [&side, &seat_cap, &operator] {
+        for route in [
+            format!("{seat_path}/observe"),
+            format!("{decision_path}/actions"),
+        ] {
+            assert_eq!(
+                client
+                    .get(format!("{}{route}", server.url))
+                    .bearer_auth(token)
+                    .send()
+                    .await
+                    .unwrap()
+                    .status(),
+                200
+            );
+        }
+        assert_eq!(
+            client
+                .post(format!("{}{decision_path}/validate", server.url))
+                .bearer_auth(token)
+                .json(&serde_json::json!({"action":draft.action}))
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            200
+        );
+    }
+    let listed: Vec<Value> = client
+        .get(format!(
+            "{}/api/campaigns?perspective=side:axis",
+            server.url
+        ))
+        .bearer_auth(&side)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0]["id"], id);
+    let private: Vec<Value> = client
+        .get(format!(
+            "{}{root}/transcripts?perspective=operator&seat={enemy}",
+            server.url
+        ))
+        .bearer_auth(&operator)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(private[0]["entry"]["text"], "enemy-private-canary");
+    let issued: Value = server
+        .client()
+        .get(format!("{}{root}/capabilities", server.url))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(issued["seats"][own.to_string()], seat_cap);
+    assert_eq!(issued["sides"]["axis"], side);
+    assert!(issued.get("operator").is_none());
+    unchanged(&handle, &path, &rows, &views);
+    let preflight = client
+        .request(reqwest::Method::OPTIONS, format!("{}{root}", server.url))
+        .header("origin", "http://localhost:5173")
+        .header("access-control-request-method", "GET")
+        .header("access-control-request-headers", "authorization")
+        .send()
+        .await
+        .unwrap();
+    assert!(preflight.status().is_success());
+    assert_eq!(
+        preflight.headers()["access-control-allow-origin"],
+        "http://localhost:5173"
+    );
+    let authorized = client
+        .get(format!("{}{root}", server.url))
+        .header("origin", "http://localhost:5173")
+        .bearer_auth(&operator)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(authorized.status(), 200);
+    assert_eq!(authorized.headers()["cache-control"], "no-store");
+    assert_eq!(authorized.headers()["referrer-policy"], "no-referrer");
+    // Administrative authority remains available to the operator.
+    assert_eq!(
+        server
+            .client()
+            .post(format!("{}{root}/resume", server.url))
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        200
+    );
+    assert_eq!(
+        server
+            .client()
+            .post(format!("{}{root}/pause", server.url))
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        200
+    );
+    server.stop().await;
+}
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn websocket_capabilities_guard_upgrade_initial_subscription_and_every_switch() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", true)).unwrap();
+    let id = handle.projection(Perspective::Operator).meta.id;
+    let own: SeatId = "axis.commander".parse().unwrap();
+    let enemy: SeatId = "commonwealth.commander".parse().unwrap();
+    for (s, text) in [(own, "own-private-canary"), (enemy, "enemy-private-canary")] {
+        handle
+            .append(
+                s,
+                "2026-10-07T00:00:00Z".into(),
+                TranscriptEntry::Reasoning { text: text.into() },
+            )
+            .await
+            .unwrap();
+    }
+    let server = Server::new(dir.path(), Some(handle.clone())).await;
+    let side = server.app.side_token(&id, Side::Axis).unwrap();
+    let seat_cap = server.app.seat_token(&id, own).unwrap();
+    let address = format!(
+        "{}/api/campaigns/{id}/stream",
+        server.url.replace("http:", "ws:")
+    );
+    for (url, status) in [
+        (address.clone(), 401),
+        (format!("{address}?cap={}", "0".repeat(64)), 401),
+        (
+            format!(
+                "{}/api/campaigns/other/stream?cap={seat_cap}",
+                server.url.replace("http:", "ws:")
+            ),
+            403,
+        ),
+    ] {
+        match tokio_tungstenite::connect_async(url).await {
+            Err(tokio_tungstenite::tungstenite::Error::Http(response)) => {
+                assert_eq!(response.status(), status)
+            }
+            other => panic!("unexpected upgrade: {other:?}"),
+        }
+    }
+    for (token, p) in [
+        (&side, "operator"),
+        (&side, "side:commonwealth"),
+        (&seat_cap, "side:axis"),
+        (&seat_cap, "seat:axis.air"),
+    ] {
+        let (mut socket, _) = tokio_tungstenite::connect_async(format!("{address}?cap={token}"))
+            .await
+            .unwrap();
+        subscribe(&mut socket, p, None).await;
+        denied(&mut socket).await;
+    }
+    for token in [&side, &seat_cap] {
+        let (mut socket, _) = tokio_tungstenite::connect_async(format!("{address}?cap={token}"))
+            .await
+            .unwrap();
+        subscribe(&mut socket, "seat:axis.commander", None).await;
+        assert!(
+            matches!(read(&mut socket).await,ServerMessage::Hello { perspective,.. } if perspective=="seat:axis.commander")
+        );
+        assert!(matches!(
+            read(&mut socket).await,
+            ServerMessage::Snapshot { .. }
+        ));
+        assert!(
+            matches!(read(&mut socket).await,ServerMessage::Transcript {seat,entry:TranscriptEntry::Reasoning{text},..} if seat==own.to_string() && text=="own-private-canary")
+        );
+        subscribe(&mut socket, "operator", None).await;
+        denied(&mut socket).await;
+    }
+    // Side tokens may switch among that side and its seats; never the enemy side.
+    let (mut socket, _) = tokio_tungstenite::connect_async(format!("{address}?cap={side}"))
+        .await
+        .unwrap();
+    subscribe(&mut socket, "side:axis", None).await;
+    assert!(matches!(
+        read(&mut socket).await,
+        ServerMessage::Hello { .. }
+    ));
+    assert!(matches!(
+        read(&mut socket).await,
+        ServerMessage::Snapshot { .. }
+    ));
+    assert!(
+        matches!(read(&mut socket).await,ServerMessage::Transcript {seat,..} if seat==own.to_string())
+    );
+    subscribe(&mut socket, "seat:axis.commander", None).await;
+    assert!(matches!(
+        read(&mut socket).await,
+        ServerMessage::Hello { .. }
+    ));
+    assert!(matches!(
+        read(&mut socket).await,
+        ServerMessage::Snapshot { .. }
+    ));
+    assert!(
+        matches!(read(&mut socket).await,ServerMessage::Transcript {seat,..} if seat==own.to_string())
+    );
+    subscribe(&mut socket, "side:commonwealth", None).await;
+    denied(&mut socket).await;
+    use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+    let mut header_request = address.clone().into_client_request().unwrap();
+    header_request.headers_mut().insert(
+        "authorization",
+        format!("Bearer {}", server.app.operator_token())
+            .parse()
+            .unwrap(),
+    );
+    let (mut socket, _) = tokio_tungstenite::connect_async(header_request)
+        .await
+        .unwrap();
+    subscribe(&mut socket, "operator", None).await;
+    assert!(matches!(
+        read(&mut socket).await,
+        ServerMessage::Hello { .. }
+    ));
+    assert!(matches!(
+        read(&mut socket).await,
+        ServerMessage::Snapshot { .. }
+    ));
+    let transcripts = [read(&mut socket).await, read(&mut socket).await];
+    assert!(transcripts.iter().any(|entry|matches!(entry,ServerMessage::Transcript {entry:TranscriptEntry::Reasoning{text},..} if text=="enemy-private-canary")));
+    socket.close(None).await.unwrap();
+    let mut ambiguous = format!("{address}?cap={seat_cap}")
+        .into_client_request()
+        .unwrap();
+    ambiguous.headers_mut().insert(
+        "authorization",
+        format!("Bearer {}", server.app.operator_token())
+            .parse()
+            .unwrap(),
+    );
+    assert!(
+        matches!(tokio_tungstenite::connect_async(ambiguous).await,Err(tokio_tungstenite::tungstenite::Error::Http(response)) if response.status()==401)
+    );
+    server.stop().await;
+}
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn http_submit_retry_and_rejections_preserve_all_persistence_and_projections() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", false)).unwrap();
+    let d = pending(&handle).await;
+    let id = handle.projection(Perspective::Operator).meta.id;
+    let path = dir.path().join(format!("{id}.sqlite"));
+    let response = scripted::answer(
+        &d,
+        handle.seat(d.seat).binding.controller_epoch,
+        Mode::PassWhenPossible,
+        0,
+        &NoCandidates,
+    )
+    .unwrap();
+    let server = Server::new(dir.path(), Some(handle.clone())).await;
+    let client = server.client();
+    let root = format!("{}/api/campaigns/{id}", server.url);
+    let endpoint = format!("{root}/seats/{}/decisions/{}/submit", d.seat, d.id);
+    let rows = persisted(&path);
+    let views = all_views(&handle);
+    let mut stale = response.clone();
+    stale.controller_epoch -= 1;
+    let mut unknown = response.clone();
+    unknown.decision_id = "unknown".into();
+    for (url, body, status) in [
+        (
+            format!(
+                "{root}/seats/commonwealth.commander/decisions/{}/submit",
+                d.id
+            ),
+            response.clone(),
+            400,
+        ),
+        (
+            format!("{root}/seats/{}/decisions/another/submit", d.seat),
+            response.clone(),
+            400,
+        ),
+        (
+            format!(
+                "{}/api/campaigns/missing/seats/{}/decisions/{}/submit",
+                server.url, d.seat, d.id
+            ),
+            response.clone(),
+            404,
+        ),
+        (endpoint.clone(), stale, 400),
+        (
+            format!("{root}/seats/{}/decisions/unknown/submit", d.seat),
+            unknown,
+            400,
+        ),
+    ] {
+        assert_eq!(
+            client.post(url).json(&body).send().await.unwrap().status(),
+            status
+        );
+        unchanged(&handle, &path, &rows, &views);
+    }
+    assert_eq!(
+        client
+            .post(&endpoint)
+            .header("content-type", "application/json")
+            .body("{")
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        400
+    );
+    unchanged(&handle, &path, &rows, &views);
+    let wrong = server
+        .app
+        .seat_token(&id, "commonwealth.commander".parse().unwrap())
+        .unwrap();
+    assert_eq!(
+        reqwest::Client::new()
+            .post(&endpoint)
+            .bearer_auth(wrong)
+            .json(&response)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        403
+    );
+    unchanged(&handle, &path, &rows, &views);
+    let cap = server.app.seat_token(&id, d.seat).unwrap();
+    let accepted = reqwest::Client::new()
+        .post(&endpoint)
+        .bearer_auth(&cap)
+        .json(&response)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(accepted.status(), 200);
+    let accepted: Value = accepted.json().await.unwrap();
+    assert_eq!(accepted["duplicate"], false);
+    assert_eq!(accepted["decision_id"], d.id.as_str());
+    // Freeze automatic progress before measuring the exact retry; retries survive pause.
+    handle.pause(true).await.unwrap();
+    let after = persisted(&path);
+    let after_views = all_views(&handle);
+    let retry = reqwest::Client::new()
+        .post(&endpoint)
+        .bearer_auth(&cap)
+        .json(&response)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(retry.status(), 200);
+    let mut retry: Value = retry.json().await.unwrap();
+    assert_eq!(retry["duplicate"], true);
+    retry["duplicate"] = Value::Bool(false);
+    assert_eq!(retry, accepted);
+    unchanged(&handle, &path, &after, &after_views);
+    let db = rusqlite::Connection::open(&path).unwrap();
+    assert_eq!(
+        db.query_row(
+            "SELECT COUNT(*) FROM commands WHERE seat=? AND idempotency_key=?",
+            rusqlite::params![d.seat.to_string(), response.idempotency_key],
+            |r| r.get::<_, u64>(0)
+        )
+        .unwrap(),
+        1
+    );
+    drop(db);
+    server.stop().await;
+}
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn trusted_credential_export_refreshes_atomically_and_restart_rotates_tokens() {
+    let dir = tempfile::tempdir().unwrap();
+    let server = Server::new(dir.path(), None).await;
+    let file = dir.path().join("trusted/operator-capabilities.json");
+    server.app.write_credentials(&file).unwrap();
+    let initial: Value = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
+    assert_eq!(initial["operator"], server.app.operator_token());
+    assert_eq!(initial["campaigns"], serde_json::json!({}));
+    let handle = sandbox::create(dir.path(), &data(), request("human", true)).unwrap();
+    let id = handle.projection(Perspective::Operator).meta.id;
+    server.app.register(handle);
+    server.app.write_credentials(&file).unwrap();
+    let exported: Value = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
+    let caps = &exported["campaigns"][&id];
+    let tokens: std::collections::BTreeSet<_> = caps["sides"]
+        .as_object()
+        .unwrap()
+        .values()
+        .chain(caps["seats"].as_object().unwrap().values())
+        .map(|v| v.as_str().unwrap())
+        .chain([initial["operator"].as_str().unwrap()])
+        .collect();
+    assert_eq!(tokens.len(), 13);
+    assert!(
+        tokens
+            .iter()
+            .all(|token| token.len() == 64 && token.bytes().all(|b| b.is_ascii_hexdigit()))
+    );
+    let second = Server::new(dir.path(), None).await;
+    assert_ne!(server.app.operator_token(), second.app.operator_token());
+    assert_eq!(
+        reqwest::Client::new()
+            .get(format!("{}/api/session", second.url))
+            .bearer_auth(server.app.operator_token())
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        401
+    );
+    assert_eq!(
+        std::fs::read_dir(file.parent().unwrap()).unwrap().count(),
+        1
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            std::fs::metadata(file).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+    server.stop().await;
+    second.stop().await;
 }

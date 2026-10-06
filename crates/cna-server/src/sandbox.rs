@@ -23,20 +23,12 @@ fn inputs(data: &Path) -> Result<(SandboxContent, Pins), Error> {
             digest.update(std::fs::read(path).map_err(|e| Error::Invalid(e.to_string()))?);
         }
     }
-    let engine = Sha256::digest(
-        concat!(
-            include_str!("../../cna-core/src/engine.rs"),
-            include_str!("../../cna-core/src/dice.rs"),
-            include_str!("../../cna-sandbox/src/lib.rs")
-        )
-        .as_bytes(),
-    );
     Ok((
         content,
         Pins {
             rules_profile: cna_sandbox::PROFILE_ID.into(),
             content_hash: format!("{:x}", digest.finalize()),
-            engine_version: format!("{engine:x}"),
+            engine_version: env!("CNA_ENGINE_SOURCE_HASH").into(),
         },
     ))
 }

@@ -35,8 +35,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
+    let credentials = std::env::var_os("CNA_CAPABILITY_FILE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| campaigns.join("operator-capabilities.json"));
+    if let Err(error) = app.write_credentials(&credentials) {
+        app.shutdown().await;
+        return Err(error.into());
+    }
     println!(
-        "neo-sandtable local server http://127.0.0.1:{port} (sandbox-v1; cna-2021-dev/full on Graziani)"
+        "neo-sandtable operator board http://127.0.0.1:{port}/#cap={}",
+        app.operator_token()
+    );
+    println!(
+        "Operator credentials (trusted launcher only): {}",
+        credentials.display()
     );
     let shutdown = app.clone();
     let router = app.router(&root.join("../../web/dist"));
