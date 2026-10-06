@@ -311,6 +311,11 @@ pub struct PendingDecision {
     /// Rule citations governing the decision (`land:7.11`); empty when the ruleset gives none.
     #[serde(default)]
     pub rules: Vec<String>,
+    /// The legal action space as JSON Schema, for the owning seat, its side and the operator
+    /// (pending decisions are filtered by perspective). Absent when the ruleset gives none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub space: Option<serde_json::Value>,
 }
 
 /// Game events as seen by a perspective. Viewers must ignore kinds they do not know.

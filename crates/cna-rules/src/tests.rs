@@ -205,6 +205,18 @@ fn limited_intelligence_hides_enemy_stack_contents() {
         off_map > 0,
         "axis units in off-map boxes or awaiting set-up are listed"
     );
+    // Own units on the map say whether they have used their move this segment.
+    let on_map = axis.units.values().find(|u| u.hex.is_some()).unwrap();
+    assert_eq!(
+        on_map.detail.as_ref().unwrap().get("moved_this_segment"),
+        Some(&serde_json::json!(false))
+    );
+    // Pending decisions carry their action space as JSON Schema.
+    let request = ruleset.pending(content, &state);
+    assert!(
+        request.is_empty(),
+        "no decision is open before the first advance"
+    );
     // The operator sees both sides in full.
     let op = ruleset.view(content, &state, Perspective::Operator);
     assert!(op.units.values().any(|u| u.side == Side::Commonwealth));

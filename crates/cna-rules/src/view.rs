@@ -233,7 +233,15 @@ pub(crate) fn view(
                 visible_count: Some(u32::try_from(members.len()).unwrap_or(u32::MAX)),
             });
             for u in members {
-                units.insert(u.id.to_string(), unit_view(content, u));
+                let mut view = unit_view(content, u);
+                // Own units only: whether the unit has already used its move this segment.
+                if let Some(detail) = view.detail.as_mut() {
+                    detail.insert(
+                        "moved_this_segment".to_owned(),
+                        json!(state.land.movement.moved.contains(&u.id)),
+                    );
+                }
+                units.insert(u.id.to_string(), view);
             }
         } else {
             // land:3.62: the stack's presence is public, its contents are not.
@@ -299,6 +307,7 @@ pub(crate) fn view(
             summary: p.summary.clone(),
             opened_seq: 0,
             rules: p.rules.clone(),
+            space: Some(p.space.to_json_schema()),
         })
         .collect();
     wire::ViewState {

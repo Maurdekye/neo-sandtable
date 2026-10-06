@@ -365,6 +365,7 @@ impl Ruleset for NumberDuel {
                     summary: d.summary,
                     opened_seq: 0,
                     rules: Vec::new(),
+                    space: None,
                 })
                 .collect(),
         }

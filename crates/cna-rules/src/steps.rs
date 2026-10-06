@@ -138,6 +138,7 @@ pub(crate) fn open(
                 summary: summary.clone(),
                 opened_seq: 0,
                 rules: rules.iter().map(|r| (*r).to_owned()).collect(),
+                space: Some(space.to_json_schema()),
             },
         },
     ));

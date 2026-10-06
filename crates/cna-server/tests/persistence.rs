@@ -92,6 +92,7 @@ impl Ruleset for Tiny {
                         summary: request.summary,
                         opened_seq: 999999,
                         rules: Vec::new(),
+                        space: None,
                     },
                 },
             ));
@@ -205,6 +206,7 @@ impl Ruleset for Tiny {
                     summary: d.summary,
                     opened_seq: 999999,
                     rules: Vec::new(),
+                    space: None,
                 })
                 .collect(),
         }

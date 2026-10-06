@@ -543,6 +543,7 @@ impl Sandbox {
                     summary: summary.clone(),
                     opened_seq: 0,
                     rules: Vec::new(),
+                    space: None,
                 },
             },
         ));
@@ -1687,6 +1688,7 @@ impl Ruleset for Sandbox {
                 summary: p.summary.clone(),
                 opened_seq: 0,
                 rules: Vec::new(),
+                space: None,
             })
             .collect();
         wire::ViewState {
