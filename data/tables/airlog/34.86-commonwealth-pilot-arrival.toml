@@ -1,0 +1,59 @@
+[table]
+id = "airlog.34.86.commonwealth_pilot_arrival"
+case = "34.86"
+title = "Commonwealth Pilot Arrival Table"
+src = ["airlog:34.86", "airlog:34.83", "airlog:34.88"]
+transcribed_from = ["vassal:34.86 Commonwealth Pilot Arrival Table.png"]
+verification = "double"
+dice = "2d6_sum"
+notes = """
+Number of pilots received of each rating (One to Four) for a two-dice total. A printed dash means
+none and is stored as 0. The Commonwealth rolls once a month, only for the months November 1940
+through October 1942 inclusive. The chart prints case number 34.86; the text calls it 34.88.
+"""
+roll_months = { first = "1940-11", last = "1942-10" }
+pilot_ratings = [1, 2, 3, 4]    # column order of pilots below
+
+[[row]]
+dice_total = 2
+pilots = [0, 0, 0, 0]
+
+[[row]]
+dice_total = 3
+pilots = [0, 3, 0, 0]
+
+[[row]]
+dice_total = 4
+pilots = [1, 0, 0, 1]
+
+[[row]]
+dice_total = 5
+pilots = [1, 2, 1, 0]
+
+[[row]]
+dice_total = 6
+pilots = [0, 1, 1, 0]
+
+[[row]]
+dice_total = 7
+pilots = [2, 4, 0, 0]
+
+[[row]]
+dice_total = 8
+pilots = [1, 3, 0, 0]
+
+[[row]]
+dice_total = 9
+pilots = [2, 0, 1, 0]
+
+[[row]]
+dice_total = 10
+pilots = [0, 1, 0, 1]
+
+[[row]]
+dice_total = 11
+pilots = [2, 1, 0, 0]
+
+[[row]]
+dice_total = 12
+pilots = [0, 0, 1, 0]

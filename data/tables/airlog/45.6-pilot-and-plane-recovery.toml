@@ -1,0 +1,51 @@
+[table]
+id = "airlog.45.6.plane_and_pilot_recovery"
+case = "45.6"
+title = "Pilot and Plane Recovery Table"
+src = ["airlog:45.6", "airlog:45.62", "airlog:45.63", "airlog:45.66"]
+transcribed_from = ["vassal:45.6 Pilot and Plane Recovery Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+One die per plane. 'strafed' = any plane lost to a destroyed result on the Strafing table; 'flak_air_air'
+= only fighter/fighter-bombers (and their pilots) lost in plane-to-plane combat or to flak. Codes:
+R = the plane is repairable; L = the plane is permanently eliminated (lost); A = the pilot survives;
+K = the pilot is eliminated (killed). Recovery and repair may be attempted only in the first
+eligible Maintenance Segment/Phase after the plane was lost, spending 1 Fuel and 1 Stores Point per
+reparable plane; a repaired plane is unfueled, unarmed and unfit and cannot be maintained until
+one Game-Turn has passed from the saving roll; a surviving pilot cannot return to his squadron until
+one Game-Turn (three OpStages, as in 45.66) after the saving roll.
+"""
+
+[[row]]
+cause = "strafed"
+die_range = [1, 1]
+plane = "repairable"
+
+[[row]]
+cause = "strafed"
+die_range = [2, 2]
+plane = "repairable"
+
+[[row]]
+cause = "strafed"
+die_range = [3, 6]
+plane = "lost"
+
+[[row]]
+cause = "flak_air_air"
+die_range = [1, 1]
+plane = "repairable"
+pilot = "survives"
+
+[[row]]
+cause = "flak_air_air"
+die_range = [2, 2]
+plane = "lost"
+pilot = "survives"
+
+[[row]]
+cause = "flak_air_air"
+die_range = [3, 6]
+plane = "lost"
+pilot = "killed"

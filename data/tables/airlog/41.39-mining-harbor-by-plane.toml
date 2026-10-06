@@ -1,0 +1,41 @@
+[table]
+id = "airlog.41.39.mining_harbor_by_plane"
+case = "41.39"
+title = "Mining Harbor by Plane Table"
+src = ["airlog:41.39", "airlog:41.52"]
+transcribed_from = ["vassal:41.39 Mining Harbor by Plane Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+For each group of six planes attempting to mine a harbor, take the average bombload of the six, find
+its row, and roll one die: the harbor is mined if the die roll is equal to or less than the
+listed number (0 means it cannot succeed).
+"""
+
+[[row]]
+average_bombload = { min = 0, max = 5 }
+mined_on_die_at_most = 0
+
+[[row]]
+average_bombload = { min = 6, max = 10 }
+mined_on_die_at_most = 1
+
+[[row]]
+average_bombload = { min = 11, max = 15 }
+mined_on_die_at_most = 2
+
+[[row]]
+average_bombload = { min = 16, max = 20 }
+mined_on_die_at_most = 3
+
+[[row]]
+average_bombload = { min = 21, max = 25 }
+mined_on_die_at_most = 4
+
+[[row]]
+average_bombload = { min = 26, max = 30 }
+mined_on_die_at_most = 5
+
+[[row]]
+average_bombload = { min = 31 }
+mined_on_die_at_most = 6

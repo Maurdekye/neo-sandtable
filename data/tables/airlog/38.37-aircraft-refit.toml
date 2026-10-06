@@ -1,0 +1,64 @@
+[table]
+id = "airlog.38.37.aircraft_refit"
+case = "38.37"
+title = "Aircraft Refit Table"
+src = ["airlog:38.34", "airlog:38.35", "airlog:38.38", "airlog:38.39"]
+transcribed_from = ["vassal:38.37 Aircraft Refit Table.png"]
+verification = "double"
+dice = "other"
+notes = """
+Part A (per plane, optional method 38.39): roll two dice and the plane is refitted on a total
+within the nationality's range (Commonwealth 2-8, German 2-7, Italian 2-6); add two to the roll if the
+plane is not assigned to the SGSU doing the refit. Part B (per squadron, standard method 38.34):
+roll one die, modify, and read the percentage of the squadron's planes refitted (rounded up). The
+chart prints this table under case 38.37; the text calls it 38.38. The text's 38.35 repeats the part B
+modifiers; part A uses +2 for the wrong squadron where 38.35 uses +1 (see 38.39).
+"""
+
+[[by_plane]]
+nationality = "commonwealth"
+refit_on_dice_total_range = [2, 8]
+
+[[by_plane]]
+nationality = "german"
+refit_on_dice_total_range = [2, 7]
+
+[[by_plane]]
+nationality = "italian"
+refit_on_dice_total_range = [2, 6]
+
+[by_plane_modifier]
+planes_not_assigned_to_refitting_sgsu = 2
+
+[[by_squadron]]
+die_range = [1, 1]
+percent_refitted = 100
+
+[[by_squadron]]
+die_range = [2, 2]
+percent_refitted = 80
+
+[[by_squadron]]
+die_range = [3, 3]
+percent_refitted = 70
+
+[[by_squadron]]
+die_range = [4, 4]
+percent_refitted = 60
+
+[[by_squadron]]
+die_range = [5, 5]
+percent_refitted = 50
+
+[[by_squadron]]
+die_range = [6, 7]
+percent_refitted = 40
+
+[[by_squadron]]
+die_range = [8, 9]
+percent_refitted = 33
+
+[by_squadron_modifier]
+german_sgsu = 1
+italian_sgsu = 2
+planes_not_assigned_to_refitting_sgsu = 1

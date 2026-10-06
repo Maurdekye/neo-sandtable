@@ -1,0 +1,94 @@
+[table]
+id = "airlog.40.8.strafing"
+case = "40.8"
+title = "Strafing Table"
+src = ["airlog:40.8", "airlog:40.6"]
+transcribed_from = ["vassal:40.8 Strafing Table.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+Roll two dice read sequentially (11-66) in the column for the TacAir points applied to the target
+(pilot ratings are not added). Each row lists, per column, the inclusive range of readings giving
+that result (an empty list is a dash). In every column the rows tile the roll range without gaps
+(checked in the second pass). Column shifts and the meaning of results are in the footnotes.
+"""
+
+[[column]]
+index = 1
+tacair_points = { min = 1, max = 5 }
+
+[[column]]
+index = 2
+tacair_points = { min = 6, max = 10 }
+
+[[column]]
+index = 3
+tacair_points = { min = 11, max = 15 }
+
+[[column]]
+index = 4
+tacair_points = { min = 16, max = 20 }
+
+[[column]]
+index = 5
+tacair_points = { min = 21, max = 25 }
+
+[[column]]
+index = 6
+tacair_points = { min = 26, max = 30 }
+
+[[column]]
+index = 7
+tacair_points = { min = 31, max = 35 }
+
+[[column]]
+index = 8
+tacair_points = { min = 36, max = 40 }
+
+[[column]]
+index = 9
+tacair_points = { min = 41, max = 45 }
+
+[[column]]
+index = 10
+tacair_points = { min = 46 }     # 46 +
+
+[[row]]
+result = 0
+rolls = [[11,63],[11,56],[11,53],[11,46],[11,42],[11,34],[11,25],[11,16],[],[]]
+
+[[row]]
+result = 1
+rolls = [[64,66],[61,66],[54,65],[51,64],[43,63],[35,62],[26,61],[21,56],[11,55],[11,46]]
+
+[[row]]
+result = 2
+rolls = [[],[],[66,66],[65,66],[64,66],[63,66],[62,66],[61,66],[56,65],[51,64]]
+
+[[row]]
+result = 3
+rolls = [[],[],[],[],[],[],[],[],[66,66],[65,66]]
+
+[[column_shift]]
+applies_to = "trucks_in_convoy"
+columns = 1       # shift one column to the right
+
+[[column_shift]]
+applies_to = "supply_dump"
+columns = 1       # shift one column to the right
+
+[[column_shift]]
+applies_to = "infantry_in_fortification_level_0_or_1_hex"
+columns = -1      # one column left
+
+[[column_shift]]
+applies_to = "infantry_in_fortification_level_2_hex"
+columns = -2
+
+[[column_shift]]
+applies_to = "armor_in_fortification_level_2_hex"
+columns = -1
+
+[[footnote]]
+id = "results"
+meaning = "Trucks: that number of Truck Points and their cargo eliminated. Infantry: that number of TOE strength points, with any transporting Truck Points, eliminated. Supply dump: multiply the result by 10% to get the percentage of every supply type in the dump eliminated. Pipeline: a result of 2 or 3 destroys it. Grounded airplanes: the number of dice to be rolled, the sum being the number of planes destroyed. Armor: the number of dice to be rolled, the sum being the minimum Armour Protection Points eliminated. Strafing of ports counts, for determining results only, as part of any bombardment mission against that port."

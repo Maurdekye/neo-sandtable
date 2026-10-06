@@ -1,0 +1,86 @@
+[table]
+id = "airlog.45.5.tacair_kill"
+case = "45.5"
+title = "TacAir Kill Table"
+src = ["airlog:45.5", "airlog:45.0"]
+transcribed_from = ["vassal:45.5 TacAir Kill.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+The adjusted TacAir differential is the firing plane's total TacAir (with pilot rating or formation
+bonus) plus the Maneuver Adjustment (negative for the less maneuverable plane), minus the opposing
+plane's total TacAir. Roll two dice read sequentially (11-66): a roll equal to or less than the listed
+number eliminates the defending plane. 'na' means the plane may never be eliminated at that
+differential. The chart column label says 'Adj TacAir Diff'.
+Check against worked examples in 45.3x: differential -2 kills on 11-12 (listed 12);
+differential +5 kills on 11-26 (listed 26). The 45.3 example that says +2 needs 11-22 disagrees
+with the listed 16 (see interpretation airlog-0005).
+"""
+
+[[row]]
+differential_max = -13          # -13 or less
+kill_on_roll_at_most = "na"
+
+[[row]]
+differential = [-12, -5]
+kill_on_roll_at_most = 11
+
+[[row]]
+differential = [-4, -2]
+kill_on_roll_at_most = 12
+
+[[row]]
+differential = [-1, -1]
+kill_on_roll_at_most = 13
+
+[[row]]
+differential = [0, 0]
+kill_on_roll_at_most = 14
+
+[[row]]
+differential = [1, 1]
+kill_on_roll_at_most = 15
+
+[[row]]
+differential = [2, 2]
+kill_on_roll_at_most = 16
+
+[[row]]
+differential = [3, 3]
+kill_on_roll_at_most = 22
+
+[[row]]
+differential = [4, 4]
+kill_on_roll_at_most = 24
+
+[[row]]
+differential = [5, 5]
+kill_on_roll_at_most = 26
+
+[[row]]
+differential = [6, 6]
+kill_on_roll_at_most = 32
+
+[[row]]
+differential = [7, 7]
+kill_on_roll_at_most = 34
+
+[[row]]
+differential = [8, 8]
+kill_on_roll_at_most = 36
+
+[[row]]
+differential = [9, 9]
+kill_on_roll_at_most = 43
+
+[[row]]
+differential = [10, 10]
+kill_on_roll_at_most = 46
+
+[[row]]
+differential = [11, 11]
+kill_on_roll_at_most = 53
+
+[[row]]
+differential_min = 12           # +12 or more
+kill_on_roll_at_most = 56

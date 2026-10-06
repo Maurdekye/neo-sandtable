@@ -1,0 +1,115 @@
+[table]
+id = "airlog.37.42.land_distance"
+case = "37.42"
+title = "Land Distance Chart"
+src = ["airlog:37.4", "airlog:37.42"]
+transcribed_from = ["vassal:37.42 Land Distance Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Shortest distance in hexes between twenty named places (lower triangle: each row lists the distance
+to every place listed BEFORE it). Counted from one location (exclusive) to the other (inclusive),
+including cutting across the Mediterranean as if it were an all-sea hex grid where needed. The
+chart's footnote adds that a hex on one map section is always 33 hexes from the hex with the same
+number on an adjacent map section (for example D4102 is 33 from C4102 and from E4102); the
+reference 'Determining Shortest Distance above' points to text not in the transcribed image.
+Alexandria and Cairo are single major-city hexes. Hex ids are the places' map hexes.
+"""
+places = [
+  { id = "nofilia", hex = "A2703" },
+  { id = "el_agheila", hex = "A1816" },
+  { id = "benghazi", hex = "A4827" },
+  { id = "agedabia", hex = "A2629" },
+  { id = "soluch", hex = "A4130" },
+  { id = "barce", hex = "B5504" },
+  { id = "ben_gania", hex = "B3715" },
+  { id = "mechili", hex = "B4921" },
+  { id = "derna", hex = "B5925" },
+  { id = "c2803", hex = "C2803" },
+  { id = "tobruk", hex = "C4807" },
+  { id = "giarabub", hex = "C1014" },
+  { id = "ft_maddalena", hex = "C3019" },
+  { id = "bardia", hex = "C4321" },
+  { id = "bir_el_qatrani", hex = "D2903" },
+  { id = "mersa_matruh", hex = "D3714" },
+  { id = "gerawla", hex = "D3516" },
+  { id = "alexandria", hex = "E3613" },
+  { id = "wadi_natrun", hex = "E2418" },
+  { id = "cairo", hex = "E1829" },
+]
+
+[[row]]
+place = "el_agheila"
+to = [18]
+
+[[row]]
+place = "benghazi"
+to = [35, 30]
+
+[[row]]
+place = "agedabia"
+to = [27, 17, 22]
+
+[[row]]
+place = "soluch"
+to = [34, 25, 7, 15]
+
+[[row]]
+place = "barce"
+to = [48, 39, 13, 29, 14]
+
+[[row]]
+place = "ben_gania"
+to = [50, 41, 26, 24, 20, 20]
+
+[[row]]
+place = "mechili"
+to = [62, 53, 27, 36, 28, 20, 12]
+
+[[row]]
+place = "derna"
+to = [71, 61, 36, 45, 37, 23, 22, 10]
+
+[[row]]
+place = "c2803"
+to = [67, 57, 52, 41, 46, 46, 26, 26, 31]
+
+[[row]]
+place = "tobruk"
+to = [81, 71, 46, 55, 47, 40, 31, 20, 21, 20]
+
+[[row]]
+place = "giarabub"
+to = [86, 68, 72, 59, 66, 66, 46, 46, 49, 20, 38]
+
+[[row]]
+place = "ft_maddalena"
+to = [84, 75, 67, 58, 61, 61, 41, 41, 42, 17, 21, 20]
+
+[[row]]
+place = "bardia"
+to = [92, 83, 62, 67, 59, 56, 42, 36, 37, 25, 16, 33, 13]
+
+[[row]]
+place = "bir_el_qatrani"
+to = [100, 91, 84, 74, 77, 80, 58, 58, 59, 33, 38, 31, 17, 22]
+
+[[row]]
+place = "mersa_matruh"
+to = [115, 106, 91, 89, 85, 85, 65, 65, 66, 48, 45, 46, 31, 29, 15]
+
+[[row]]
+place = "gerawla"
+to = [116, 107, 94, 90, 88, 88, 68, 68, 69, 49, 48, 47, 32, 32, 16, 3]
+
+[[row]]
+place = "alexandria"
+to = [147, 138, 124, 121, 118, 118, 98, 98, 99, 79, 78, 78, 63, 62, 47, 33, 31]
+
+[[row]]
+place = "wadi_natrun"
+to = [149, 137, 135, 122, 130, 129, 109, 109, 110, 83, 89, 76, 68, 73, 51, 44, 41, 12]
+
+[[row]]
+place = "cairo"
+to = [163, 145, 149, 136, 143, 143, 123, 123, 124, 98, 103, 85, 82, 87, 65, 58, 55, 25, 14]

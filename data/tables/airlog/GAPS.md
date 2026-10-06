@@ -11,3 +11,9 @@ Values the sources do not give clearly. Nothing here has been guessed into the d
 | 56.26 Road Distance Table | Case mismatch | The chart is filed under 56.26 but 56.26 in the text concerns bombing of convoys; the text never cites the chart. |
 | 56.18 Axis Naval Convoy Air Distance | Lane 1 / Crete | Printed as a dash; recorded as omitted (`dash_columns`). |
 | 54.17 Demolition | Rolls below -2 | See interpretation airlog-0002. |
+| 35.23 Squadron Capacity | CW capacity change date | Text says July 1941; chart rows are labelled 1940-41 and 1942-43. See interpretation airlog-0006. |
+| 45.5 TacAir Kill | +2 example | The 45.x worked example gives 11-22 for +2; the table says 16. Table governs (airlog-0005). |
+| 46.4 Flak Adjustment | Non-multiples of 12 | Chart has no numbers, only a rule. See airlog-0005. |
+| 34.86 / 34.87 | Reinforcement schedules | CW and Axis airplane reinforcement/withdrawal schedules are data owned by the units/OOB area (images `Allied Aircraft Withdrawal Schedule.png`, `Axis Aircraft Withdrawal Schedule.png` and the reinforcement tracks); not transcribed here. |
+| 34.6 | Aircraft Characteristics Charts | Owned by the units area (4.44a-c). |
+| 42.53 | Chart location | Retype says the chart is in the CW Chart Booklet; the image was available and is transcribed. |

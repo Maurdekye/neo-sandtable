@@ -1,0 +1,37 @@
+[table]
+id = "airlog.44.5.maltese_air_facility_construction"
+case = "44.5"
+title = "Maltese Air Facility Construction Table"
+src = ["airlog:44.5", "airlog:44.13", "airlog:36.5"]
+transcribed_from = ["vassal:44.5 Maltese Air Facility Construction Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+One die roll gives the total number of levels of air facility repaired and/or constructed. The
+Commonwealth rolls once per Game-Turn for each Malta facility (44.13); off-map Commonwealth
+facilities use one roll per Game-Turn for all of them (36.5).
+"""
+
+[[row]]
+die = 1
+levels = 0
+
+[[row]]
+die = 2
+levels = 1
+
+[[row]]
+die = 3
+levels = 1
+
+[[row]]
+die = 4
+levels = 1
+
+[[row]]
+die = 5
+levels = 1
+
+[[row]]
+die = 6
+levels = 2

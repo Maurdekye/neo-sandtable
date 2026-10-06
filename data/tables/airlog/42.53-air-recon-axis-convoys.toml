@@ -1,0 +1,52 @@
+[table]
+id = "airlog.42.53.air_recon_axis_convoys"
+case = "42.53"
+title = "Air Reconnaissance of Axis Naval Convoys"
+src = ["airlog:42.53", "errata79:42.53"]
+transcribed_from = ["vassal:42.53 Air Recon of Axis Naval Convoys.png"]
+verification = "double"
+dice = "2d6_reading"
+notes = """
+Roll two dice read sequentially (11-66). If the roll is equal to or less than the listed number
+for the count of recon planes assigned to the lane (8 or more planes use the last row), the Axis
+must say whether any convoy sails in that Shipping Lane; if there is one, he says whether it is Small
+(5,000 tons or less), Medium (3,000 to 10,000 tons) or Large (7,000+ tons); the overlapping ranges
+let the Axis choose among the permitted answers.
+"""
+size_classes = [
+  { class = "small", max_tons = 5000 },
+  { class = "medium", min_tons = 3000, max_tons = 10000 },
+  { class = "large", min_tons = 7000 },
+]
+
+[[row]]
+planes = 1
+respond_on_roll_at_most = 12
+
+[[row]]
+planes = 2
+respond_on_roll_at_most = 14
+
+[[row]]
+planes = 3
+respond_on_roll_at_most = 22
+
+[[row]]
+planes = 4
+respond_on_roll_at_most = 32
+
+[[row]]
+planes = 5
+respond_on_roll_at_most = 43
+
+[[row]]
+planes = 6
+respond_on_roll_at_most = 53
+
+[[row]]
+planes = 7
+respond_on_roll_at_most = 62
+
+[[row]]
+planes_min = 8
+respond_on_roll_at_most = 66

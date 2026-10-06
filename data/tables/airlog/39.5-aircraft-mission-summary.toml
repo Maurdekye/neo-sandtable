@@ -1,0 +1,211 @@
+[table]
+id = "airlog.39.5.aircraft_mission_summary"
+case = "39.5"
+title = "Aircraft Mission Summary"
+src = ["airlog:39.5"]
+transcribed_from = ["vassal:39.5 Aircraft Mission Summary.png"]
+verification = "double"
+dice = "none"
+notes = """
+List of missions grouped by strategic and land-support families, with the rule case describing each.
+Footnotes mark missions that may be flown at night, strafing target types handled on the Air
+Bombardment table, and the Hurricane IID tank-strafing restriction. Planes may be assigned two
+land-support missions in the same OpStage only where combined missions allow (39.2).
+"""
+
+[[mission]]
+family = "strategic"
+side = "commonwealth"
+mission = "recon_axis_naval_convoys"
+case = "42.5"
+
+[[mission]]
+family = "strategic"
+side = "commonwealth"
+mission = "bomb_axis_naval_convoys"
+case = "41.6"
+
+[[mission]]
+family = "strategic"
+side = "commonwealth"
+mission = "defensive_cap_over_axis_naval_convoys"
+case = "41.63"
+
+[[mission]]
+family = "strategic"
+side = "commonwealth"
+mission = "flak_suppression_of_axis_naval_convoys"
+case = "41.63"
+
+[[mission]]
+family = "strategic"
+side = "commonwealth"
+mission = "cap_over_malta"
+
+[[mission]]
+family = "strategic"
+side = "axis"
+mission = "bomb_maltese_air_facilities"
+case = "44.2"
+
+[[mission]]
+family = "strategic"
+side = "axis"
+mission = "cap_over_malta"
+
+[[mission]]
+family = "strategic"
+side = "axis"
+mission = "flak_suppression_of_maltese_air_facilities"
+case = "44.2"
+
+[[mission]]
+family = "strategic"
+side = "axis"
+mission = "offensive_cap_over_axis_naval_convoys"
+case = "41.63"
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "scramble"
+case = "40.3"
+night = true
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "combat_air_patrol_offensive_defensive"
+case = "40.2"
+night = true
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "strafe_first_line_trucks"
+case = "40.5"
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "strafe_flak_suppression"
+case = "40.5"
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "strafe_grounded_aircraft"
+case = "40.5"
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "strafe_infantry_type_units"
+case = "40.5"
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "strafe_ports"
+case = "40.5"
+resolved_on = "air_bombardment_crt"
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "strafe_tanks"
+case = "40.5"
+restriction = "only_non_captured_commonwealth_hurricane_iid"
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "strafe_trucks_in_convoy_second_third_line"
+case = "40.5"
+
+[[mission]]
+family = "land_support"
+class = "fighter"
+mission = "strafe_water_pipeline"
+case = "40.5"
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "bomb_air_facilities"
+case = "41.36"
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "bomb_fortifications_major_cities"
+case = "41.37"
+night = true
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "flak_destruction"
+case = "41.33"
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "mining_harbors"
+case = "41.39"
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "bomb_personnel"
+case = "41.31"
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "bomb_ports"
+case = "41.39"
+night = true
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "bomb_railroad_road"
+case = "41.38"
+night = true
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "bomb_commonwealth_ships"
+case = "41.34"
+
+[[mission]]
+family = "land_support"
+class = "bombing"
+mission = "bomb_supply_dumps"
+case = "41.35"
+
+[[mission]]
+family = "land_support"
+class = "non_combat"
+mission = "airdrop"
+case = "42.4"
+
+[[mission]]
+family = "land_support"
+class = "non_combat"
+mission = "recon_land_units"
+case = "42.2"
+
+[[mission]]
+family = "land_support"
+class = "non_combat"
+mission = "transfer"
+case = "42.1"
+
+[[mission]]
+family = "land_support"
+class = "non_combat"
+mission = "transport"
+case = "42.3"

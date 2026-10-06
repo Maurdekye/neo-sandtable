@@ -1,0 +1,55 @@
+[table]
+id = "airlog.42.27.air_recon_land_units"
+case = "42.27"
+title = "Air Reconnaissance of Land Units Table"
+src = ["airlog:42.27", "airlog:42.23"]
+transcribed_from = ["vassal:42.27 Air Recon of Land Units Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Roll one die and add one for every four planes (ignoring fractions) that completed the
+Reconnaissance Mission. The result is the number of battalion-equivalents of units in the hex that
+are revealed; 'all' reveals every unit in the hex regardless of size-equivalency. The modified roll
+can exceed 6, hence the 13+ column.
+"""
+modifier = { per_planes = 4, add = 1 }
+
+[[row]]
+modified_roll = [1, 2]
+reveal_battalion_equivalents = 0
+
+[[row]]
+modified_roll = [3, 4]
+reveal_battalion_equivalents = 1
+
+[[row]]
+modified_roll = [5, 6]
+reveal_battalion_equivalents = 2
+
+[[row]]
+modified_roll = [7, 7]
+reveal_battalion_equivalents = 3
+
+[[row]]
+modified_roll = [8, 8]
+reveal_battalion_equivalents = 4
+
+[[row]]
+modified_roll = [9, 9]
+reveal_battalion_equivalents = 5
+
+[[row]]
+modified_roll = [10, 10]
+reveal_battalion_equivalents = 6
+
+[[row]]
+modified_roll = [11, 11]
+reveal_battalion_equivalents = 7
+
+[[row]]
+modified_roll = [12, 12]
+reveal_battalion_equivalents = 8
+
+[[row]]
+modified_roll_min = 13
+reveal_all = true

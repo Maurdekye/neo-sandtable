@@ -1,0 +1,21 @@
+[table]
+id = "airlog.46.4.flak_adjustment"
+case = "46.4"
+title = "Flak Adjustment Chart"
+src = ["airlog:46.4", "airlog:46.3", "errata79:46.4"]
+transcribed_from = ["vassal:46.4 Flak Adjustment Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+The chart image contains no numeric cells, only the rule that is also printed as the notes to the
+Anti-Aircraft Combat Results table (46.3). The addenda say this chart is wrong and the 46.3 notes are
+correct; in the 2021 retype the two statements are the same. How a count that is not an exact multiple
+of twelve is treated is open (interpretation airlog-0005).
+"""
+
+[adjustment]
+applies_to = "target_group_planes_on_other_missions"
+counts = ["bomber_class", "transport_class"]
+unit_size_aircraft = 12
+columns_shift_right_per_unit_exceeding_first = 1     # each twelve aircraft beyond the first twelve; 24 aircraft = one column
+example = { aircraft = 24, columns_shifted_right = 1 }

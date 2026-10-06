@@ -1,0 +1,37 @@
+[table]
+id = "airlog.45.4.maneuver_adjustment"
+case = "45.4"
+title = "Air-Air Combat Maneuver Adjustment Chart"
+src = ["airlog:45.4", "airlog:45.0"]
+transcribed_from = ["vassal:45.4 Air-Air Combat Maneuver Adjustment Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+The maneuver differential is the absolute difference between the two planes' Maneuver Ratings; the
+adjustment is added to the TacAir differential of the plane with the higher Maneuver Rating and
+subtracted from that of the lower-rated plane.
+"""
+
+[[row]]
+maneuver_differential = [0, 0]
+adjustment = 0
+
+[[row]]
+maneuver_differential = [1, 3]
+adjustment = 1
+
+[[row]]
+maneuver_differential = [4, 7]
+adjustment = 2
+
+[[row]]
+maneuver_differential = [8, 14]
+adjustment = 3
+
+[[row]]
+maneuver_differential = [15, 20]
+adjustment = 4
+
+[[row]]
+maneuver_differential_min = 21
+adjustment = 5

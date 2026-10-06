@@ -1,0 +1,37 @@
+[table]
+id = "airlog.40.4.scramble"
+case = "40.4"
+title = "Scramble Table"
+src = ["airlog:40.4", "airlog:40.33"]
+transcribed_from = ["vassal:40.4 Scramble Table.png"]
+verification = "double"
+dice = "1d6"
+notes = """
+Distance in hexes from the scrambling squadron's base to the target hex, against the highest die
+roll that still succeeds: a die roll equal to or less than the number listed scrambles the squadron's
+planes. The table has no entry beyond 15 hexes.
+"""
+
+[[row]]
+distance_hexes = [0, 2]
+scramble_on_die_at_most = 6
+
+[[row]]
+distance_hexes = [3, 4]
+scramble_on_die_at_most = 5
+
+[[row]]
+distance_hexes = [5, 6]
+scramble_on_die_at_most = 4
+
+[[row]]
+distance_hexes = [7, 8]
+scramble_on_die_at_most = 3
+
+[[row]]
+distance_hexes = [9, 10]
+scramble_on_die_at_most = 2
+
+[[row]]
+distance_hexes = [11, 15]
+scramble_on_die_at_most = 1

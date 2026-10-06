@@ -1,0 +1,108 @@
+[table]
+id = "airlog.37.4.air_distance"
+case = "37.4"
+title = "Air Distance Chart"
+src = ["airlog:37.4", "airlog:41.82"]
+transcribed_from = ["vassal:37.4 Air Distance Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Air distances in hexes. Part A: between the Axis off-map North African areas (Tripolitania, Tripoli,
+Gabes, Tunis) and Malta, Nofilia and Benghazi, as a lower triangle for the four areas plus rows for
+Malta, Nofilia and Benghazi giving the distance to each of the four. Part B: between the northern
+Mediterranean off-map areas (columns Crete, Malta, Sicily, Italy) and map places. P means prohibited:
+not possible to traverse air distance directly between those points (recorded as prohibited = true).
+"""
+
+# Part A. Lower triangle among the four Axis off-map areas.
+[[part_a_pair]]
+from = "tripoli"
+to = "tripolitania"
+hexes = 32
+
+[[part_a_pair]]
+from = "gabes"
+to = "tripolitania"
+hexes = 68
+
+[[part_a_pair]]
+from = "gabes"
+to = "tripoli"
+hexes = 40
+
+[[part_a_pair]]
+from = "tunis"
+to = "tripolitania"
+hexes = 91
+
+[[part_a_pair]]
+from = "tunis"
+to = "tripoli"
+hexes = 60
+
+[[part_a_pair]]
+from = "tunis"
+to = "gabes"
+hexes = 40
+
+# Part A. Rows for Malta, Nofilia and Benghazi to each of the four areas.
+[[part_a_row]]
+place = "malta"
+to = { tripolitania = 60, tripoli = 42, gabes = 58, tunis = 52 }
+
+[[part_a_row]]
+place = "nofilia"
+to = { tripolitania = 32, tripoli = 64, gabes = 104, tunis = 120 }
+
+[[part_a_row]]
+place = "benghazi"
+to = { tripolitania = 44, tripoli = 88, gabes = 124, tunis = 136 }
+
+# Part B. N. Mediterranean off-map areas. A missing key with prohibited listing means 'P'.
+[[part_b_row]]
+place = "malta"
+crete = 105
+sicily = 24
+italy = 72
+dash_columns = ["malta"]
+
+[[part_b_row]]
+place = "nofilia"
+malta = 80
+prohibited = ["crete", "sicily", "italy"]
+
+[[part_b_row]]
+place = "benghazi"
+crete = 62
+malta = 84
+sicily = 96
+italy = 138
+
+[[part_b_row]]
+place = "derna"
+crete = 27
+malta = 108
+sicily = 105
+italy = 147
+
+[[part_b_row]]
+place = "tobruk"
+crete = 48
+malta = 126
+prohibited = ["sicily", "italy"]
+
+[[part_b_row]]
+place = "bardia"
+crete = 50
+malta = 144
+prohibited = ["sicily", "italy"]
+
+[[part_b_row]]
+place = "mersa_matruh"
+crete = 66
+prohibited = ["malta", "sicily", "italy"]
+
+[[part_b_row]]
+place = "alexandria"
+crete = 84
+prohibited = ["malta", "sicily", "italy"]

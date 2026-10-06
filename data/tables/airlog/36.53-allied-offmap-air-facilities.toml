@@ -1,0 +1,58 @@
+[table]
+id = "airlog.36.53.allied_offmap_air_facilities"
+case = "36.53"
+title = "Allied Off-Map Air Facilities Chart"
+src = ["airlog:36.5", "airlog:36.53"]
+transcribed_from = ["vassal:36.53 Allied Off-Map Air Facilities Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Commonwealth off-map air facilities on map section E: the map hex at which planes enter or leave the
+map, the distance in hexes from the facility to that hex, and the maximum number of squadrons based
+there. Port Said is a flying boat basin (footnote). No planes may be based in Ethiopia until the
+first OpStage of Game-Turn 35.
+"""
+
+[[row]]
+entry_exit_hex = "E4033"
+facility = "port_said"
+facility_type = "flying_boat_basin"
+distance_hexes = 12
+max_squadrons = 3
+
+[[row]]
+entry_exit_hex = "E3433"
+facility = "abu_seier"
+distance_hexes = 7
+max_squadrons = 9
+
+[[row]]
+entry_exit_hex = "E3433"
+facility = "ismailia"
+distance_hexes = 9
+max_squadrons = 9
+
+[[row]]
+entry_exit_hex = "E1833"
+facility = "fayid"
+distance_hexes = 11
+max_squadrons = 9
+
+[[row]]
+entry_exit_hex = "E1833"
+facility = "deversoir"
+distance_hexes = 12
+max_squadrons = 9
+
+[[row]]
+entry_exit_hex = "E1833"
+facility = "kabrit"
+distance_hexes = 13
+max_squadrons = 9
+
+[[row]]
+entry_exit_hex = "E0127"
+facility = "ethiopia"
+distance_hexes = 60
+max_squadrons = "unlimited"
+available_from = { game_turn = 35, opstage = 1 }

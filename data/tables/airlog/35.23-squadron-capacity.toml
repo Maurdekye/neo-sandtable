@@ -1,0 +1,37 @@
+[table]
+id = "airlog.35.23.squadron_capacity"
+case = "35.23"
+title = "Squadron Capacity Chart"
+src = ["airlog:35.23"]
+transcribed_from = ["vassal:35.23 Squadron Capacity Chart.png"]
+verification = "double"
+dice = "none"
+notes = """
+Planes per squadron: ready capacity, reserve, and total (ready + reserve; reserve is one third of
+ready). Commonwealth squadrons use the larger capacity from July 1941 per the text of 35.23, although
+the chart's row labels read 1940-41 and 1942-43 (see GAPS.md).
+"""
+
+[[row]]
+squadron = "italian_squadriglia"
+ready = 9
+reserve = 3
+total = 12
+
+[[row]]
+squadron = "german_staffel"
+ready = 12
+reserve = 4
+total = 16
+
+[[row]]
+squadron = "commonwealth_squadron_1940_41"
+ready = 12
+reserve = 4
+total = 16
+
+[[row]]
+squadron = "commonwealth_squadron_1942_43"
+ready = 18
+reserve = 6
+total = 24
