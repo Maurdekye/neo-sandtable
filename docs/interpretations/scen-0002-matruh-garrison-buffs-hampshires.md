@@ -12,7 +12,7 @@ Light Infantry, 1st South Staffordshires). Where are the 1st Buffs and the 1st H
 
 ## Evidence
 - land:4.44b item 2 says the 1st Buffs and 1st Hampshires start the campaign and the Italian
-  scenarios as part of (assigned to) the Matruh Garrison.
+  scenarios assigned to the Matruh Garrison formation.
 - The British unassigned-infantry OA sheet marks both "D" (deployed at start) with an asterisk meaning
   "attached to the Matruh Garrison".
 - The Matruh Garrison sheet says no units may be assigned to it, but up to six may be attached.

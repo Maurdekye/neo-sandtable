@@ -29,7 +29,7 @@ require = [
   { qualifying_unit = "combat_unit" },
   { supply_trace = "convoy", to = "map_d", from = "any_hex" },
 ]
-note = "Take and hold either Alexandria or Cairo (any hex) with a combat unit that can be supplied by convoy from any hex of game-map D."
+note = "Alexandria or Cairo must be held by a combat unit that is supplied via convoy from some hex of map D."
 src = ["scen:60.81"]
 
 [[victory]]
@@ -62,7 +62,7 @@ require = [
   { qualifying_unit = "combat_unit" },
   { supply_trace = "truck_convoy", to = "home_base", home_base = ["alexandria", "cairo"] },
 ]
-note = "Take and hold Sollum, Halfaya Pass (C3922) and Siwa (C0127), tracing supply by truck convoy back to Alexandria or Cairo."
+note = "Needs Sollum, Halfaya Pass (C3922) and Siwa (C0127) all occupied, with supply reaching the holder by truck convoy from Alexandria or Cairo."
 src = ["scen:60.81"]
 
 [[victory]]

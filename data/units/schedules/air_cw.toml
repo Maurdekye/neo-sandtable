@@ -2,8 +2,7 @@
 # PARTIAL: only entries touching GT 1-6 are entered. An entry with `gt_from`/`gt_to` is a monthly total to
 # be divided as evenly as possible among those Game-Turns' weeks; an entry with a single `gt` is that
 # Game-Turn's total. All planes of a Game-Turn may arrive in its first OpStage (airlog:34.84).
-# Commonwealth reinforcements may be placed at any air facility in Malta, Cairo, Alexandria or off-map
-# (airlog:34.81); at most 10% of a month's planes may go to Malta.
+# Placement: Malta, Cairo or Alexandria facilities, or off-map (airlog:34.81); at most 10% of a month's planes may go to Malta.
 [file]
 side = "commonwealth"
 src = ["airlog:34.84", "airlog:34.86"]

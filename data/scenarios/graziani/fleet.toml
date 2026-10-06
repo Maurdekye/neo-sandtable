@@ -6,7 +6,7 @@ verification = "single"
 
 [axis_coastal_shipping]
 location = { kind = "city", city = "tripoli" }
-note = "The Italian player may use all Axis coastal shipping counters; they start in Tripoli (empty, scen:59.54)."
+note = "Every Axis coastal shipping counter is available to Italy and begins empty in Tripoli (scen:59.54)."
 src = ["scen:60.35", "scen:59.54"]
 
 [axis_malta_strategic_attacks]

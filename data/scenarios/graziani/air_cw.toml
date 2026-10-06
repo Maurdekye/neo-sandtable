@@ -1,6 +1,6 @@
 # Commonwealth North African air force at the start, scen:60.42, and the Malta air force, scen:60.46.
-# "total" = Total Available; "ready" = Total Refitted. Planes, pilots and SGSUs may be placed at any
-# Commonwealth N. African air facility within capacity (scen:60.42).
+# "total" = Total Available; "ready" = Total Refitted. Placement: any CW North African facility, up to
+# its capacity (scen:60.42).
 [force]
 side = "commonwealth"
 theatre = "north_africa"
