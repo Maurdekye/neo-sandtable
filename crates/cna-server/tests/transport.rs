@@ -461,3 +461,115 @@ async fn http_creation_control_and_local_origin_are_checked() {
     assert!(denied.is_empty());
     server.stop().await;
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn committed_receipt_survives_publication_failure_and_writer_stop_is_durable() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", false)).unwrap();
+    let d = pending(&handle).await;
+    let id = handle.projection(Perspective::Operator).meta.id;
+    let path = dir.path().join(format!("{id}.sqlite"));
+    let db = rusqlite::Connection::open(&path).unwrap();
+    let before: u64 = db
+        .query_row("SELECT revision FROM campaign", [], |r| r.get(0))
+        .unwrap();
+    // Fault injection: the command can commit, but its new operator stream row cannot be
+    // decoded by the publisher. Preserve original rows so recovery can exercise exact retry.
+    db.execute_batch("CREATE TABLE publication_backup AS SELECT * FROM perspective_events WHERE 0;
+        CREATE TRIGGER publication_failure AFTER INSERT ON perspective_events
+        WHEN NEW.perspective='operator' BEGIN
+            INSERT INTO publication_backup VALUES (NEW.perspective,NEW.seq,NEW.event_id,NEW.message);
+            UPDATE perspective_events SET message='broken-json' WHERE perspective=NEW.perspective AND seq=NEW.seq;
+        END;").unwrap();
+    let candidate = scripted::answer(
+        &d,
+        handle.seat(d.seat).binding.controller_epoch,
+        Mode::PassWhenPossible,
+        0,
+        &NoCandidates,
+    )
+    .unwrap();
+    let req = SubmitRequest {
+        decision_id: d.id.to_string(),
+        epoch: candidate.controller_epoch,
+        revision: Some(d.revision),
+        idempotency_key: candidate.idempotency_key,
+        action: candidate.action,
+        public_explanation: None,
+    };
+    let receipt = handle.submit_action(d.seat, req.clone()).await.unwrap();
+    assert!(!receipt.duplicate);
+    let mut lifecycle = handle.watch_status();
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        lifecycle.wait_for(|s| matches!(s, CampaignStatus::Stopped { .. })),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    let stored_status: String = db
+        .query_row("SELECT status FROM campaign", [], |r| r.get(0))
+        .unwrap();
+    assert!(matches!(
+        serde_json::from_str::<CampaignStatus>(&stored_status).unwrap(),
+        CampaignStatus::Stopped { .. }
+    ));
+    let committed: u64 = db
+        .query_row("SELECT revision FROM campaign", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(committed, before + 1);
+    assert!(handle.shutdown().await.is_err());
+    db.execute_batch("DROP TRIGGER publication_failure;
+        UPDATE perspective_events SET message=(SELECT message FROM publication_backup b
+            WHERE b.perspective=perspective_events.perspective AND b.seq=perspective_events.seq)
+        WHERE EXISTS (SELECT 1 FROM publication_backup b WHERE b.perspective=perspective_events.perspective AND b.seq=perspective_events.seq);
+        DROP TABLE publication_backup;").unwrap();
+    let restored = sandbox::recover(&path, &data()).unwrap();
+    assert!(matches!(restored.status(), CampaignStatus::Stopped { .. }));
+    let retry = restored.submit_action(d.seat, req).await.unwrap();
+    assert!(retry.duplicate);
+    assert_eq!(retry.decision_id, receipt.decision_id);
+    let after_retry: u64 = db
+        .query_row("SELECT revision FROM campaign", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(after_retry, committed);
+    restored.shutdown().await.unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn storage_operation_failure_reports_a_stop_without_claiming_success() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", true)).unwrap();
+    let id = handle.projection(Perspective::Operator).meta.id;
+    let path = dir.path().join(format!("{id}.sqlite"));
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch(
+        "CREATE TRIGGER notebook_failure BEFORE INSERT ON notebooks
+        BEGIN SELECT RAISE(ABORT,'injected storage failure'); END;",
+    )
+    .unwrap();
+    let seat = "axis.commander".parse().unwrap();
+    assert!(
+        handle
+            .write_notebook(seat, WriteMode::Replace, "not committed")
+            .await
+            .is_err()
+    );
+    let mut lifecycle = handle.watch_status();
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        lifecycle.wait_for(|s| matches!(s, CampaignStatus::Stopped { .. })),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM notebooks", [], |r| r.get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+    assert!(handle.shutdown().await.is_err());
+    let restored = sandbox::recover(&path, &data()).unwrap();
+    assert!(matches!(restored.status(), CampaignStatus::Stopped { .. }));
+    restored.shutdown().await.unwrap();
+}

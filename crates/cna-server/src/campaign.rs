@@ -336,6 +336,19 @@ impl<R: Ruleset> Campaign<R> {
         Ok(())
     }
 
+    /// Runtime failure cannot resume automatically, even if publishing a committed projection
+    /// failed. Persist the stop when storage permits; retain it in memory if storage is broken.
+    pub(crate) fn stop_runtime(&mut self, error: &Error) -> Result<(), Error> {
+        self.status = CampaignStatus::Stopped {
+            error: error.to_string(),
+        };
+        self.db.execute(
+            "UPDATE campaign SET status=? WHERE id=1",
+            [json(&self.status)?],
+        )?;
+        Ok(())
+    }
+
     /// Handover preserves the entire game and its accepted secret submissions.
     pub fn handover(
         &mut self,

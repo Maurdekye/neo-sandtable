@@ -200,51 +200,54 @@ impl CampaignHandle {
             .name("campaign-writer".into())
             .spawn(move || {
                 let mut campaign = campaign;
-                loop {
-                    match rx.try_recv() {
-                        Ok(envelope) => {
-                            if matches!(envelope.op, Op::Shutdown) {
-                                let _ = envelope.reply.send(Ok(Value::Null));
-                                return Ok(());
+                let result = (|| {
+                    loop {
+                        match rx.try_recv() {
+                            Ok(envelope) => {
+                                if matches!(envelope.op, Op::Shutdown) {
+                                    let _ = envelope.reply.send(Ok(Value::Null));
+                                    return Ok(());
+                                }
+                                dispatch_and_publish(&mut campaign, envelope, &publisher)?;
                             }
-                            let result = dispatch(&mut campaign, envelope.op, &publisher);
-                            publisher.update(&campaign)?;
-                            let _ = envelope.reply.send(result);
+                            Err(mpsc::error::TryRecvError::Disconnected) => return Ok(()),
+                            Err(mpsc::error::TryRecvError::Empty) => {}
                         }
-                        Err(mpsc::error::TryRecvError::Disconnected) => return Ok(()),
-                        Err(mpsc::error::TryRecvError::Empty) => {}
-                    }
-                    let step = auto_step(&mut campaign, baseline.as_ref(), candidates.as_ref());
-                    match step {
-                        Ok(Step::Idle) => {
-                            // An idle writer waits for control or a seat submission without polling.
-                            publisher.update(&campaign)?;
-                            let Some(envelope) = rx.blocking_recv() else {
-                                return Ok(());
-                            };
-                            if matches!(envelope.op, Op::Shutdown) {
-                                let _ = envelope.reply.send(Ok(Value::Null));
-                                return Ok(());
+                        let step = auto_step(&mut campaign, baseline.as_ref(), candidates.as_ref());
+                        match step {
+                            Ok(Step::Idle) => {
+                                // An idle writer waits for control or a seat submission without polling.
+                                publisher.update(&campaign)?;
+                                let Some(envelope) = rx.blocking_recv() else {
+                                    return Ok(());
+                                };
+                                if matches!(envelope.op, Op::Shutdown) {
+                                    let _ = envelope.reply.send(Ok(Value::Null));
+                                    return Ok(());
+                                }
+                                dispatch_and_publish(&mut campaign, envelope, &publisher)?;
                             }
-                            let result = dispatch(&mut campaign, envelope.op, &publisher);
-                            publisher.update(&campaign)?;
-                            let _ = envelope.reply.send(result);
+                            Err(_error)
+                                if matches!(campaign.status(), CampaignStatus::Stopped { .. }) =>
+                            {
+                                publisher.update(&campaign)?;
+                            }
+                            Err(error) => return Err(error),
+                            Ok(_) => publisher.update(&campaign)?,
                         }
-                        Err(_error)
-                            if matches!(campaign.status(), CampaignStatus::Stopped { .. }) =>
-                        {
-                            publisher.update(&campaign)?;
-                        }
-                        Err(error) => {
-                            publisher.update(&campaign)?;
-                            publisher.status.send_replace(CampaignStatus::Stopped {
-                                error: error.to_string(),
-                            });
-                            return Err(error);
-                        }
-                        Ok(_) => publisher.update(&campaign)?,
                     }
+                })();
+                if let Err(error) = &result {
+                    tracing::error!(%error, "campaign writer stopped");
+                    if let Err(storage_error) = campaign.stop_runtime(error) {
+                        tracing::error!(%storage_error, "could not persist campaign writer stop");
+                    }
+                    // Publishing may itself be the failing operation. Status remains visible
+                    // through its separate watch even when a projection cannot be read.
+                    let _ = publisher.update(&campaign);
+                    publisher.status.send_replace(campaign.status().clone());
                 }
+                result
             })
             .map_err(|e| Error::Invalid(format!("cannot start campaign writer: {e}")))?;
         Ok(Self {
@@ -450,6 +453,28 @@ fn submit<R: Ruleset>(
             Err(e)
         }
         Err(e) => Err(e),
+    }
+}
+fn dispatch_and_publish<R: Ruleset>(
+    campaign: &mut Campaign<R>,
+    envelope: Envelope,
+    publisher: &Publisher,
+) -> Result<(), Error> {
+    let result = dispatch(campaign, envelope.op, publisher);
+    let publication = publisher.update(campaign);
+    let fatal = match &result {
+        Err(error @ (Error::Storage(_) | Error::Json(_) | Error::Recovery(_))) => {
+            Some(Error::Recovery(error.to_string()))
+        }
+        _ => None,
+    };
+    // A committed operation retains its original receipt even if stream publication fails.
+    // A retry after recovery therefore resolves to the same durable command, not a new order.
+    let _ = envelope.reply.send(result);
+    publication?;
+    match fatal {
+        Some(error) => Err(error),
+        None => Ok(()),
     }
 }
 fn dispatch<R: Ruleset>(
