@@ -73,6 +73,12 @@ pub struct PortOverride {
 }
 
 impl ScenarioConstruction {
+    /// Actual tracked setup path, including inherited setup; omitted data has no path.
+    /// Cases: scen:60.7, scen:60.23
+    pub fn source_path(&self) -> Option<&Path> {
+        self.source_path.as_deref()
+    }
+
     /// Decode through the tracked content reader, preserving inherited source provenance.
     /// Cases: scen:60.7, scen:60.23
     pub(crate) fn load(path: &Path) -> Result<Self, ContentError> {
@@ -342,6 +348,7 @@ mod tests {
             crate::record_reads(|| super::super::ScenarioContent::load(&fixture.dir()));
         let scenario = loaded.unwrap();
         assert_eq!(scenario.construction, ScenarioConstruction::default());
+        assert_eq!(scenario.construction.source_path(), None);
         assert_eq!(
             reads,
             vec![crate::normalize(&fixture.dir().join("scenario.toml"))]

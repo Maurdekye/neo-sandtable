@@ -35,7 +35,7 @@ pub struct Port {
     pub name: PortName,
     pub location: Location,
 }
-fn named(name: &str) -> PortName {
+pub(super) fn named(name: &str) -> PortName {
     match name.to_ascii_lowercase().as_str() {
         "tripoli" => PortName::Tripoli,
         "bizerta" | "tunis" => PortName::Bizerta,
