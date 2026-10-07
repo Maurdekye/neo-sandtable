@@ -271,6 +271,10 @@ impl ActionSchema {
         }
     }
 
+    /// The `x-` annotations repeat what the description says in a form programs can use:
+    /// `x-options` (each choice's id, label and detail), `x-kind` (`unit`, `hex` or `path`, for
+    /// fields picked on the map) and `x-from` (where a path starts). JSON Schema validators
+    /// ignore them.
     pub fn to_json_schema(&self) -> Value {
         match self {
             ActionSchema::Choice { options } => json!({
@@ -284,6 +288,13 @@ impl ActionSchema {
                     })
                     .collect::<Vec<_>>()
                     .join("; "),
+                "x-options": options
+                    .iter()
+                    .map(|o| match &o.detail {
+                        Some(d) => json!({ "id": o.id, "label": o.label, "detail": d }),
+                        None => json!({ "id": o.id, "label": o.label }),
+                    })
+                    .collect::<Vec<_>>(),
             }),
             ActionSchema::Integer { min, max } => {
                 json!({ "type": "integer", "minimum": min, "maximum": max })
@@ -293,17 +304,20 @@ impl ActionSchema {
                 "type": "string",
                 "enum": among.iter().map(|u| u.as_str().to_owned()).collect::<Vec<_>>(),
                 "description": "unit id",
+                "x-kind": "unit",
             }),
             ActionSchema::Hex { among } => match among {
                 Some(hexes) => json!({
                     "type": "string",
                     "enum": hexes.iter().map(|h| h.as_str().to_owned()).collect::<Vec<_>>(),
                     "description": "hex id",
+                    "x-kind": "hex",
                 }),
                 None => json!({
                     "type": "string",
                     "pattern": "^[A-E][0-9]{4}$",
                     "description": "printed hex id, e.g. C4218",
+                    "x-kind": "hex",
                 }),
             },
             ActionSchema::Path { from, max_steps } => json!({
@@ -313,6 +327,8 @@ impl ActionSchema {
                 "description": format!(
                     "hexes entered in order, each adjacent to the previous, starting next to {from}"
                 ),
+                "x-kind": "path",
+                "x-from": from.as_str(),
             }),
             ActionSchema::Text {
                 min_length,
@@ -498,6 +514,41 @@ mod tests {
         assert_eq!(obj["required"], json!(["unit", "path"]));
         assert_eq!(obj["properties"]["unit"]["enum"], json!(["it.a", "it.b"]));
         assert_eq!(schema["anyOf"][1]["type"], "null");
+        // Map-picked fields say what they pick, and a path says where it starts.
+        assert_eq!(obj["properties"]["unit"]["x-kind"], "unit");
+        assert_eq!(obj["properties"]["path"]["x-kind"], "path");
+        assert_eq!(obj["properties"]["path"]["x-from"], "C4218");
+        assert_eq!(
+            ActionSchema::Hex { among: None }.to_json_schema()["x-kind"],
+            "hex"
+        );
+    }
+
+    #[test]
+    fn choices_export_their_labels_as_structured_options() {
+        let schema = ActionSchema::Choice {
+            options: vec![
+                ChoiceOption {
+                    id: "a".into(),
+                    label: "Alpha".into(),
+                    detail: Some("first".into()),
+                },
+                ChoiceOption {
+                    id: "b".into(),
+                    label: "Beta".into(),
+                    detail: None,
+                },
+            ],
+        }
+        .to_json_schema();
+        assert_eq!(
+            schema["x-options"],
+            json!([
+                { "id": "a", "label": "Alpha", "detail": "first" },
+                { "id": "b", "label": "Beta" },
+            ])
+        );
+        assert_eq!(schema["description"], "a: Alpha (first); b: Beta");
     }
 
     #[test]
