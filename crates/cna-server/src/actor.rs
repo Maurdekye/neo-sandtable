@@ -545,6 +545,17 @@ fn apply_baseline<R: Ruleset>(
     action: Value,
     label: &str,
 ) -> Result<Step, Error> {
+    if action.is_null() && request.space.pass.is_none() {
+        let message = format!(
+            "{label} returned no allocation for mandatory decision {}; explicit owner allocation required",
+            request.kind
+        );
+        campaign.pause_seat_with_reason(request.seat, &message)?;
+        return Ok(Step::SeatPaused {
+            seat: request.seat,
+            error: message,
+        });
+    }
     let epoch = campaign.binding(request.seat).controller_epoch;
     let response = DecisionResponse {
         decision_id: request.id.clone(),
@@ -677,3 +688,7 @@ fn dispatch<R: Ruleset>(campaign: &mut Campaign<R>, op: Op) -> Result<Value, Err
         Op::Shutdown => Ok(Value::Null),
     }
 }
+
+#[cfg(test)]
+#[path = "actor_policy_tests.rs"]
+mod policy_tests;
