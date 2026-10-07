@@ -48,6 +48,9 @@ impl Cna {
             "opstage.organization.water_distribution" => {
                 crate::logistics::water::enter(content, state, cx, self.strict)
             }
+            "opstage.organization.supply_distribution" => {
+                crate::logistics::distribution::enter(content, state, cx)
+            }
             "opstage.organization.attrition" => {
                 crate::logistics::attrition::enter(content, state, cx)
             }
@@ -92,6 +95,11 @@ impl Cna {
                 || kind.starts_with(crate::logistics::wells::ALLOCATE_PREFIX) =>
             {
                 crate::logistics::wells::answer(content, state, pending, action, cx, self.strict)
+            }
+            kind if kind == crate::logistics::distribution::KIND
+                || kind.starts_with(crate::logistics::distribution::PREFIX) =>
+            {
+                crate::logistics::distribution::answer(content, state, pending, action, cx)
             }
             crate::logistics::attrition::KIND => {
                 crate::logistics::attrition::answer(content, state, pending, action, cx)
