@@ -271,6 +271,13 @@ fn opposing_hidden_buffers_do_not_change_answer_validation_and_collision_retries
             hex: "A0102".into(),
         },
     );
+    crate::testkit::assert_indistinguishable(
+        &Cna::dev(),
+        &c,
+        &game.state,
+        &alternate.state,
+        Side::Commonwealth,
+    );
     let cmd = Command::Respond(DecisionResponse {
         decision_id: second.id.clone(),
         seat: second.seat,
@@ -921,4 +928,33 @@ fn setup_context_identifies_each_owner_asset_and_survives_checkpointing() {
     assert!(game.state.setup.closed);
     assert!(seen.contains(crate::setup::KIND_POOL));
     assert!(seen.contains(crate::setup::KIND_PRELOAD));
+}
+
+/// Cases: scen:59.2, scen:59.35, scen:59.43, land:3.6
+#[test]
+fn enemy_initial_air_and_pool_holdings_are_indistinguishable_during_setup() {
+    let c = content();
+    let game = opened(&c);
+    for observer in [Side::Axis, Side::Commonwealth] {
+        let mut other = game.state.clone();
+        for pool in &mut other.logistics.truck_pools {
+            if pool.side != observer {
+                pool.trucks.light += 1;
+                pool.cargo.fuel += 1;
+            }
+        }
+        for (id, force) in &mut other.air.forces {
+            let side = if id == "axis" {
+                Side::Axis
+            } else {
+                Side::Commonwealth
+            };
+            if side != observer {
+                for planes in force.planes.values_mut() {
+                    planes.total += 1;
+                }
+            }
+        }
+        crate::testkit::assert_indistinguishable(&Cna::dev(), &c, &game.state, &other, observer);
+    }
 }
