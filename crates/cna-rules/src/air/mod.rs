@@ -9,3 +9,5 @@ pub mod facilities;
 pub mod inventory;
 pub mod sgsu;
 pub mod state;
+
+pub mod designation;

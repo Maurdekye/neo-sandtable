@@ -908,6 +908,12 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "forces": state.air.forces.iter().filter(|(force,_)|sees_side(perspective,if force.as_str()=="axis"{Side::Axis}else{Side::Commonwealth})).collect::<BTreeMap<_,_>>(),
             // Squadron detail is for the seats that fly them (and the side and operator views);
             // the ground seats' observations stay small. Any seat may still inspect a squadron.
+            "designation": if flies_air(perspective) {
+                json!([Side::Axis, Side::Commonwealth].into_iter()
+                    .filter(|side| sees_side(perspective, *side))
+                    .map(|side| (side, crate::air::designation::own_report(state, side)))
+                    .collect::<BTreeMap<_, _>>())
+            } else { Value::Null },
             "squadrons": if flies_air(perspective) {
                 json!(state.air.squadrons.iter().filter(|(_,s)|sees_side(perspective,s.side)).collect::<BTreeMap<_,_>>())
             } else {
@@ -1117,7 +1123,9 @@ pub(crate) fn inspect(
         if !sees_side(perspective, squadron.side) {
             return Err(hidden());
         }
-        return Ok(json!({"squadron":squadron}));
+        return Ok(json!({"squadron":squadron,
+            "designation":{"game_turn":state.cursor.game_turn,
+                "family":crate::air::designation::squadron_family(state,target)}}));
     }
     if let Some(marker) = state.land.breakdown.markers.get(target) {
         if !sees_side(perspective, marker.side) {

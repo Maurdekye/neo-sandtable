@@ -51,6 +51,7 @@ impl Cna {
             "opstage.organization.attrition" => {
                 crate::logistics::attrition::finish(content, state, cx)
             }
+            crate::air::designation::ANCHOR => crate::air::designation::finish(content, state),
             "opstage.organization.water_distribution" => {
                 crate::logistics::batches::finish_water(content, state, cx, self.strict)
             }
@@ -107,6 +108,7 @@ impl Cna {
     ) -> Result<(), EngineError> {
         let anchor = state.cursor.anchor();
         match anchor {
+            crate::air::designation::ANCHOR => crate::air::designation::enter(content, state, cx),
             "setup" => {
                 crate::logistics::dump_markers::initialize(state, cx)?;
                 crate::setup::enter(content, state, cx, self.strict)
@@ -188,6 +190,9 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<String, Rejection> {
         match pending.kind.as_str() {
+            crate::air::designation::KIND => {
+                crate::air::designation::answer(state, pending, action)
+            }
             crate::logistics::arrivals::KIND => {
                 crate::logistics::arrivals::answer(content, state, pending, action, self.strict, cx)
             }
