@@ -437,3 +437,12 @@ are reviewed absent on both crossings. No new complete strip is emitted.
 All observations were directly reviewed by one observer; post-review
 error rate, independent agreement and original1979 equivalence remain
 unmeasured. Source images and locator crops stay outside the repository.
+
+
+## Cartographer retained corridor surface batch (2026-10-07)
+
+See review-notes/map-cartographer-0001.md and its source-bound raw batch:
+122 cells individually inspected,121 new classifications105clear9rough7sea,
+six coastal flags. The prior C4026 abstention is retained. No new edge
+masks, facilities or completed movement strips are inferred. Single-observer
+post-review error and original1979 equivalence remain unmeasured.

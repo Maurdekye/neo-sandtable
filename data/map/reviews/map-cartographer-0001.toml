@@ -1,0 +1,978 @@
+[batch]
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+id = "map-cartographer-0001"
+selection = "Retained C and D00..10 corridor share;122 unclassified cells individually viewed,121 newly accepted; existing C4026 abstention preserved"
+notes = "Eight native2x full-cell sheets plus16 enlarged6x boundary/coast detail cells.105clear9rough7sea;6newcoastalclear. Beige rough patches distinguished from brown/gray hexside contours and neighboring terrain outside shared sides. Facilities and all edge layers remain separately reviewed. No classifier output, random holdout, independent observer or original1979 accuracy claim."
+
+[[hex]]
+hex_id = "C2833"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3028"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3029"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3030"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3031"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3032"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3033"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3128"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3129"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3130"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3131"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3132"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3133"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3228"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3229"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3230"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3231"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3232"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3233"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3328"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3329"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3330"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3331"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3332"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3333"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3428"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3429"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3430"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3431"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3432"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3433"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3528"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3529"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3530"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3531"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3532"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3533"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3628"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3629"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3630"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3631"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3632"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3633"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3728"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3729"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3730"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3731"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3732"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3733"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3828"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3829"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3830"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3831"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3832"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+
+[[hex]]
+hex_id = "C3833"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3928"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3929"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3930"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3931"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3932"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C3933"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C4028"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Visible white land substrate and water are both inside the full cell; coastal clear. Village/road symbols and future named-place records remain separate."
+
+[[hex]]
+hex_id = "C4029"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C4030"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C4031"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C4032"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C4033"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "C4128"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Whole cell boundary is water. Enlarged C4128 check keeps adjacent southeast shore fragment outside the cell; no majority-water inference."
+
+[[hex]]
+hex_id = "C4129"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Visible white land substrate and water are both inside the full cell; coastal clear. Village/road symbols and future named-place records remain separate."
+
+[[hex]]
+hex_id = "C4130"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Visible white land substrate and water are both inside the full cell; coastal clear. Village/road symbols and future named-place records remain separate."
+
+[[hex]]
+hex_id = "C4131"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Visible white land substrate and water are both inside the full cell; coastal clear. Village/road symbols and future named-place records remain separate."
+
+[[hex]]
+hex_id = "C4132"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Visible white land substrate and water are both inside the full cell; coastal clear. Village/road symbols and future named-place records remain separate."
+
+[[hex]]
+hex_id = "C4133"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Visible white land substrate and water are both inside the full cell; coastal clear. Village/road symbols and future named-place records remain separate."
+
+[[hex]]
+hex_id = "C4228"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Whole cell boundary is water. Enlarged C4128 check keeps adjacent southeast shore fragment outside the cell; no majority-water inference."
+
+[[hex]]
+hex_id = "C4229"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Whole cell boundary is water. Enlarged C4128 check keeps adjacent southeast shore fragment outside the cell; no majority-water inference."
+
+[[hex]]
+hex_id = "C4230"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Whole cell boundary is water. Enlarged C4128 check keeps adjacent southeast shore fragment outside the cell; no majority-water inference."
+
+[[hex]]
+hex_id = "C4231"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Whole cell boundary is water. Enlarged C4128 check keeps adjacent southeast shore fragment outside the cell; no majority-water inference."
+
+[[hex]]
+hex_id = "C4232"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Whole cell boundary is water. Enlarged C4128 check keeps adjacent southeast shore fragment outside the cell; no majority-water inference."
+
+[[hex]]
+hex_id = "C4233"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Whole cell boundary is water. Enlarged C4128 check keeps adjacent southeast shore fragment outside the cell; no majority-water inference."
+
+[[hex]]
+hex_id = "D2801"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2802"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2803"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2804"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2805"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2806"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2807"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2901"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2902"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2903"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2904"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2905"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2906"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D2907"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3001"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3002"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3003"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3004"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3005"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3006"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3007"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3101"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3102"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3103"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3104"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3105"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3106"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3107"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3201"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3202"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3203"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3204"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3205"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3206"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3207"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3301"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3302"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3303"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3304"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3305"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3306"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
+
+[[hex]]
+hex_id = "D3307"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire native cell and boundary reviewed; white ground remains clear. Labels, point facilities, tracks and brown/gray edge-aligned contour bands do not classify the substrate."
