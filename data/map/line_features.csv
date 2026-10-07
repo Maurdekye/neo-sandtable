@@ -43,6 +43,9 @@ C4517,C4617,track,land:8.37;land:8.33,validation-0001
 C4518,C4519,road,land:8.37;land:8.33,validation-0001
 C4616,C4717,track,land:8.37;land:8.33,validation-0001
 C4716,C4717,track,land:8.37;land:8.33,validation-0001
+D2926,D3025,track,land:8.33;land:8.37,map-terrain-edges-0002
+D2926,D3026,track,land:8.33;land:8.37,map-terrain-edges-0002
+D3024,D3025,track,land:8.33;land:8.37,map-terrain-edges-0002
 D3133,D3232,road,land:8.33;land:8.37,map-lines-2-0004
 D3133,D3233,road,land:8.33;land:8.37,map-lines-2-0004
 D3133,E3101,road,land:8.33;land:8.37,map-lines-2-0004
