@@ -35,7 +35,8 @@ pub struct Projection {
 #[derive(Clone, Debug, PartialEq)]
 pub struct SeatState {
     pub pending: Vec<DecisionRequest>,
-    pub observation: Value,
+    /// This seat's contiguous stream sequence, never a global revision.
+    pub seq: u64,
     pub binding: Binding,
 }
 
@@ -68,7 +69,7 @@ struct Envelope {
 }
 struct Inner {
     tx: mpsc::Sender<Envelope>,
-    projections: BTreeMap<Perspective, watch::Receiver<Projection>>,
+    published: watch::Receiver<Arc<Published>>,
     streams: BTreeMap<Perspective, broadcast::Sender<ServerMessage>>,
     seats: BTreeMap<SeatId, watch::Receiver<SeatState>>,
     status: watch::Receiver<CampaignStatus>,
@@ -82,22 +83,43 @@ pub struct CampaignHandle {
     inner: Arc<Inner>,
 }
 struct Publisher {
-    projections: BTreeMap<Perspective, watch::Sender<Projection>>,
+    published: watch::Sender<Arc<Published>>,
     streams: BTreeMap<Perspective, broadcast::Sender<ServerMessage>>,
     seats: BTreeMap<SeatId, watch::Sender<SeatState>>,
     status: watch::Sender<CampaignStatus>,
     transcript_cursors: BTreeMap<(Perspective, SeatId), u64>,
 }
-fn seat_state<R: Ruleset>(campaign: &Campaign<R>, seat: SeatId) -> SeatState {
-    SeatState {
-        pending: campaign
-            .pending()
-            .into_iter()
-            .filter(|d| d.seat == seat)
-            .collect(),
-        observation: campaign.observe(seat),
-        binding: campaign.binding(seat).clone(),
-    }
+pub(crate) type Observer = Arc<dyn Fn(SeatId) -> Value + Send + Sync>;
+struct Published {
+    projections: BTreeMap<Perspective, Projection>,
+    seats: BTreeMap<SeatId, SeatState>,
+    observer: Observer,
+}
+fn published<R>(campaign: &Campaign<R>) -> Result<Arc<Published>, Error>
+where
+    R: Ruleset + Send + Sync + 'static,
+    R::State: Send + Sync,
+    R::Content: Send + Sync,
+{
+    let projections: BTreeMap<_, _> = build_projections(campaign)?.into_iter().collect();
+    let pending = campaign.pending();
+    let seats = SeatId::all()
+        .map(|seat| {
+            (
+                seat,
+                SeatState {
+                    pending: pending.iter().filter(|d| d.seat == seat).cloned().collect(),
+                    seq: projections[&Perspective::Seat(seat)].seq,
+                    binding: campaign.binding(seat).clone(),
+                },
+            )
+        })
+        .collect();
+    Ok(Arc::new(Published {
+        projections,
+        seats,
+        observer: campaign.observer(),
+    }))
 }
 fn build_projections<R: Ruleset>(
     campaign: &Campaign<R>,
@@ -120,19 +142,19 @@ fn build_projections<R: Ruleset>(
         .collect()
 }
 impl Publisher {
-    fn update<R: Ruleset>(&mut self, campaign: &Campaign<R>) -> Result<(), Error> {
+    fn update<R>(&mut self, campaign: &Campaign<R>) -> Result<(), Error>
+    where
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
+    {
         let start = Instant::now();
-        for (p, next) in build_projections(campaign)? {
-            let previous_seq = self.projections[&p].borrow().seq;
-            let end = next.seq;
-            self.projections[&p].send_if_modified(|current| {
-                if *current == next {
-                    false
-                } else {
-                    *current = next;
-                    true
-                }
-            });
+        let next = published(campaign)?;
+        // One atomic root binds projections, pending, bindings and observation to one commit.
+        let previous = self.published.send_replace(Arc::clone(&next));
+        for (&p, projection) in &next.projections {
+            let previous_seq = previous.projections[&p].seq;
+            let end = projection.seq;
             let mut from = previous_seq;
             while from < end {
                 let events = campaign.events_after(p, from, 512)?;
@@ -166,7 +188,7 @@ impl Publisher {
             }
         }
         for seat in SeatId::all() {
-            let next = seat_state(campaign, seat);
+            let next = next.seats[&seat].clone();
             self.seats[&seat].send_if_modified(|current| {
                 if *current == next {
                     false
@@ -200,9 +222,9 @@ impl CampaignHandle {
         baseline: Option<Baseline<R>>,
     ) -> Result<Self, Error>
     where
-        R: Ruleset + Send + 'static,
-        R::State: Send,
-        R::Content: Send,
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
     {
         Self::spawn_with_candidates(campaign, path, baseline, Box::new(NoCandidates))
     }
@@ -213,9 +235,9 @@ impl CampaignHandle {
         candidates: Box<dyn Candidates + Send>,
     ) -> Result<Self, Error>
     where
-        R: Ruleset + Send + 'static,
-        R::State: Send,
-        R::Content: Send,
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
     {
         Self::spawn_with_controllers(campaign, path, baseline, candidates, None)
     }
@@ -225,9 +247,9 @@ impl CampaignHandle {
         policy: ActionPolicy<R>,
     ) -> Result<Self, Error>
     where
-        R: Ruleset + Send + 'static,
-        R::State: Send,
-        R::Content: Send,
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
     {
         Self::spawn_with_controllers(campaign, path, None, Box::new(NoCandidates), Some(policy))
     }
@@ -239,24 +261,21 @@ impl CampaignHandle {
         policy: Option<ActionPolicy<R>>,
     ) -> Result<Self, Error>
     where
-        R: Ruleset + Send + 'static,
-        R::State: Send,
-        R::Content: Send,
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
     {
         let (tx, mut rx) = mpsc::channel::<Envelope>(COMMAND_BUFFER);
-        let mut projections = BTreeMap::new();
-        let mut projection_senders = BTreeMap::new();
+        let initial = published(&campaign)?;
+        let (published_send, published_recv) = watch::channel(Arc::clone(&initial));
         let mut streams = BTreeMap::new();
         let mut seats = BTreeMap::new();
         let mut seat_senders = BTreeMap::new();
-        for (p, projection) in build_projections(&campaign)? {
-            let (send, recv) = watch::channel(projection);
-            projections.insert(p, recv);
-            projection_senders.insert(p, send);
+        for p in Perspective::all() {
             streams.insert(p, broadcast::channel(VIEWER_BUFFER).0);
         }
         for seat in SeatId::all() {
-            let (send, recv) = watch::channel(seat_state(&campaign, seat));
+            let (send, recv) = watch::channel(initial.seats[&seat].clone());
             seats.insert(seat, recv);
             seat_senders.insert(seat, send);
         }
@@ -269,7 +288,7 @@ impl CampaignHandle {
             }
         }
         let mut publisher = Publisher {
-            projections: projection_senders,
+            published: published_send,
             streams: streams.clone(),
             seats: seat_senders,
             status: status_send,
@@ -339,7 +358,7 @@ impl CampaignHandle {
         Ok(Self {
             inner: Arc::new(Inner {
                 tx,
-                projections,
+                published: published_recv,
                 streams,
                 seats,
                 status: status_recv,
@@ -365,10 +384,20 @@ impl CampaignHandle {
         *self.inner.metrics.lock().expect("runtime metrics lock")
     }
     pub fn projection(&self, p: Perspective) -> Projection {
-        self.inner.projections[&p].borrow().clone()
+        self.inner.published.borrow().projections[&p].clone()
     }
     pub fn seat(&self, seat: SeatId) -> SeatState {
-        self.inner.seats[&seat].borrow().clone()
+        self.inner.published.borrow().seats[&seat].clone()
+    }
+    /// Read outside the writer from one immutable published commit.
+    pub fn observation(&self, seat: SeatId) -> Value {
+        let snapshot = Arc::clone(&self.inner.published.borrow());
+        (snapshot.observer)(seat)
+    }
+    /// HTTP observation and its pending/epoch metadata must describe the same commit.
+    pub fn observation_state(&self, seat: SeatId) -> (Value, SeatState) {
+        let snapshot = Arc::clone(&self.inner.published.borrow());
+        ((snapshot.observer)(seat), snapshot.seats[&seat].clone())
     }
     /// Changes are scoped to this seat, including handover reissues with a new epoch.
     pub fn watch_seat(&self, seat: SeatId) -> watch::Receiver<SeatState> {
@@ -622,11 +651,16 @@ fn submit<R: Ruleset>(
         Err(e) => Err(e),
     }
 }
-fn dispatch_and_publish<R: Ruleset>(
+fn dispatch_and_publish<R>(
     campaign: &mut Campaign<R>,
     envelope: Envelope,
     publisher: &mut Publisher,
-) -> Result<(), Error> {
+) -> Result<(), Error>
+where
+    R: Ruleset + Send + Sync + 'static,
+    R::State: Send + Sync,
+    R::Content: Send + Sync,
+{
     let result = dispatch(campaign, envelope.op);
     let publication = publisher.update(campaign);
     let fatal = match &result {

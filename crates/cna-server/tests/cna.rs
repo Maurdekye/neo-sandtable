@@ -217,10 +217,16 @@ async fn check_real_baselines(whole: bool) {
             let expected: Vec<_> = Perspective::all()
                 .map(|p| (p, handle.projection(p)))
                 .collect();
+            let observations: Vec<_> = SeatId::all()
+                .map(|seat| (seat, handle.observation(seat)))
+                .collect();
             handle.shutdown().await.unwrap();
             let before = stored(&path);
             let restored = campaigns::recover(&path, &data()).unwrap();
             assert_eq!(restored.status(), CampaignStatus::Paused);
+            for (seat, expected) in observations {
+                assert_eq!(restored.observation(seat), expected);
+            }
             for (p, projection) in expected {
                 assert_eq!(restored.projection(p), projection);
             }
@@ -325,6 +331,9 @@ async fn check_real_baselines(whole: bool) {
         }
         drop(statement);
         drop(db);
+        let observations: Vec<_> = SeatId::all()
+            .map(|seat| (seat, handle.observation(seat)))
+            .collect();
         handle.shutdown().await.unwrap();
         let before = stored(&path);
         let db = Connection::open(&path).unwrap();
@@ -335,6 +344,9 @@ async fn check_real_baselines(whole: bool) {
         drop(db);
         let restored = campaigns::recover(&path, &data()).unwrap();
         assert_eq!(restored.status(), handle.status());
+        for (seat, expected) in observations {
+            assert_eq!(restored.observation(seat), expected);
+        }
         for (p, expected) in projections {
             assert_eq!(restored.projection(p), expected);
         }

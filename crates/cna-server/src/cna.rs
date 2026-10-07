@@ -519,7 +519,7 @@ mod tests {
             engine_time += tick.elapsed();
             assert_eq!(
                 serde_json::to_value(&transition.game).unwrap(),
-                serde_json::to_value(&campaign.game).unwrap()
+                serde_json::to_value(campaign.game.as_ref()).unwrap()
             );
             if let Command::Respond(response) = &command {
                 submitted += 1;
@@ -967,7 +967,7 @@ mod tests {
                 }
             }
         }
-        let game = serde_json::to_value(&campaign.game).unwrap();
+        let game = serde_json::to_value(campaign.game.as_ref()).unwrap();
         let hash = campaign.state_hash().unwrap();
         drop(campaign);
         let campaign = Campaign::recover(
@@ -978,7 +978,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(campaign.state_hash().unwrap(), hash);
-        assert_eq!(serde_json::to_value(&campaign.game).unwrap(), game);
+        assert_eq!(serde_json::to_value(campaign.game.as_ref()).unwrap(), game);
     }
 
     /// Cases: land:3.6,land:13.21,land:13.24,land:13.28
@@ -1533,7 +1533,7 @@ mod tests {
                     let expected = evaluate(&Cna::dev(), &content, &previous, &command).unwrap();
                     assert_eq!(
                         serde_json::to_value(expected.game).unwrap(),
-                        serde_json::to_value(&campaign.game).unwrap()
+                        serde_json::to_value(campaign.game.as_ref()).unwrap()
                     );
                     allocations += 1;
                 } else {

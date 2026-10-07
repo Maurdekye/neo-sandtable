@@ -95,10 +95,11 @@ pub struct RuntimeMetrics {
     pub engine: Duration,
     /// Serialization, state hashing, pending/stream rows and SQLite FULL transaction commit.
     pub durable_writer: Duration,
-    /// All perspective snapshots, seat observations and committed stream publication.
+    /// All perspective snapshots and committed stream publication.
     pub projections: Duration,
     /// Ruleset board construction/projection, excluding local sequence lookups.
     pub projection_views: Duration,
+    /// On-demand observation reads, outside publisher and writer time.
     pub projection_observe: Duration,
     pub projection_opened_seq: Duration,
     pub projection_events_after: Duration,
@@ -110,9 +111,9 @@ pub struct RuntimeMetrics {
 pub struct Campaign<R: Ruleset> {
     db: Connection,
     pub(crate) metrics: Arc<Mutex<RuntimeMetrics>>,
-    ruleset: R,
-    pub(crate) content: R::Content,
-    pub(crate) game: Game<R>,
+    ruleset: Arc<R>,
+    pub(crate) content: Arc<R::Content>,
+    pub(crate) game: Arc<Game<R>>,
     meta: CampaignMeta,
     revision: u64,
     status: CampaignStatus,
@@ -236,9 +237,9 @@ impl<R: Ruleset> Campaign<R> {
         Ok(Self {
             db,
             metrics: Arc::new(Mutex::new(RuntimeMetrics::default())),
-            ruleset,
-            content,
-            game,
+            ruleset: Arc::new(ruleset),
+            content: Arc::new(content),
+            game: Arc::new(game),
             meta,
             revision: 0,
             status: CampaignStatus::Running,
@@ -337,9 +338,9 @@ impl<R: Ruleset> Campaign<R> {
         let campaign = Self {
             db,
             metrics: Arc::new(Mutex::new(RuntimeMetrics::default())),
-            ruleset,
-            content,
-            game,
+            ruleset: Arc::new(ruleset),
+            content: Arc::new(content),
+            game: Arc::new(game),
             meta: decode(&meta)?,
             revision,
             status: decode(&status)?,
@@ -366,7 +367,7 @@ impl<R: Ruleset> Campaign<R> {
         &self.status
     }
     pub fn state_hash(&self) -> Result<String, Error> {
-        hash(&self.game)
+        hash(self.game.as_ref())
     }
     pub fn pending(&self) -> Vec<DecisionRequest> {
         self.ruleset.pending(&self.content, &self.game.state)
@@ -384,6 +385,27 @@ impl<R: Ruleset> Campaign<R> {
             .expect("runtime metrics lock")
             .projection_observe += start.elapsed();
         observation
+    }
+    /// Captures the exact committed game, with no writer or database access on read.
+    pub(crate) fn observer(&self) -> crate::actor::Observer
+    where
+        R: Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
+    {
+        let ruleset = Arc::clone(&self.ruleset);
+        let content = Arc::clone(&self.content);
+        let game = Arc::clone(&self.game);
+        let metrics = Arc::clone(&self.metrics);
+        Arc::new(move |seat| {
+            let start = Instant::now();
+            let result = ruleset.observe(&content, &game.state, Perspective::Seat(seat));
+            metrics
+                .lock()
+                .expect("runtime metrics lock")
+                .projection_observe += start.elapsed();
+            result
+        })
     }
     pub fn actions(&self, seat: SeatId, id: &str) -> Result<DecisionRequest, Error> {
         self.pending()
@@ -529,7 +551,7 @@ impl<R: Ruleset> Campaign<R> {
     pub fn validate(&self, response: &DecisionResponse) -> Result<(), Error> {
         self.check_response(response)?;
         evaluate(
-            &self.ruleset,
+            self.ruleset.as_ref(),
             &self.content,
             &self.game,
             &Command::Respond(response.clone()),
@@ -574,7 +596,8 @@ impl<R: Ruleset> Campaign<R> {
             return Err(Error::NotRunning);
         }
         let engine_start = Instant::now();
-        let transition = match evaluate(&self.ruleset, &self.content, &self.game, &command) {
+        let transition = match evaluate(self.ruleset.as_ref(), &self.content, &self.game, &command)
+        {
             Ok(t) => t,
             Err(Rejection::Engine(error)) => {
                 let stopped = CampaignStatus::Stopped {
@@ -726,7 +749,7 @@ impl<R: Ruleset> Campaign<R> {
         }
         tx.commit()?;
         // A failed transaction cannot advance the in-memory state or produce an acknowledgement.
-        self.game = transition.game;
+        self.game = Arc::new(transition.game);
         self.revision = revision;
         self.status = status;
         {

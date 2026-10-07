@@ -1156,3 +1156,173 @@ async fn real_publisher_uses_one_batch_override_for_initial_and_updated_projecti
         assert_eq!(handle.projection(p).view, view);
     }
 }
+
+// A real actor observer with a controllable reader stall. The rules still use Tiny's exact
+// visibility semantics, so the probe checks concurrency and scope rather than a mock cache.
+type ReaderGate = std::sync::Arc<
+    std::sync::Mutex<
+        Option<(
+            std::sync::mpsc::SyncSender<()>,
+            std::sync::mpsc::Receiver<()>,
+        )>,
+    >,
+>;
+struct LazyObserved {
+    calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    gate: ReaderGate,
+}
+impl Ruleset for LazyObserved {
+    type State = State;
+    type Content = ();
+    fn profile_id(&self) -> &str {
+        "tiny-v1"
+    }
+    fn advance(&self, c: &(), s: &mut State, cx: &mut Cx<'_>) -> Result<Progress, EngineError> {
+        rules().advance(c, s, cx)
+    }
+    fn respond(
+        &self,
+        c: &(),
+        s: &mut State,
+        r: &DecisionResponse,
+        cx: &mut Cx<'_>,
+    ) -> Result<(), Rejection> {
+        rules().respond(c, s, r, cx)
+    }
+    fn pending(&self, c: &(), s: &State) -> Vec<DecisionRequest> {
+        rules().pending(c, s)
+    }
+    fn view(&self, c: &(), s: &State, p: Perspective) -> ViewState {
+        rules().view(c, s, p)
+    }
+    fn observe(&self, c: &(), s: &State, p: Perspective) -> Value {
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let gate = self.gate.lock().unwrap().take();
+        if let Some((started, release)) = gate {
+            started.send(()).unwrap();
+            release
+                .recv_timeout(std::time::Duration::from_secs(10))
+                .unwrap();
+        }
+        rules().observe(c, s, p)
+    }
+}
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn lazy_committed_observation_does_not_block_writer_or_wake_enemy_seat() {
+    use cna_server::actor::CampaignHandle;
+    use std::sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+        mpsc,
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("lazy.sqlite");
+    let calls = Arc::new(AtomicUsize::new(0));
+    let gate: ReaderGate = Arc::new(Mutex::new(None));
+    let mut game = Campaign::create(
+        &path,
+        LazyObserved {
+            calls: calls.clone(),
+            gate: gate.clone(),
+        },
+        (),
+        Game {
+            state: State::default(),
+            rng: CampaignRng::from_seed([7; 32]).state(),
+        },
+        CampaignMeta {
+            id: "lazy".into(),
+            scenario_id: "tiny".into(),
+            rules_profile: "tiny-v1".into(),
+            title: "Lazy".into(),
+            seats: vec![],
+        },
+        pins(),
+    )
+    .unwrap();
+    game.advance().unwrap();
+    game.set_paused(true).unwrap();
+    let own: SeatId = "axis.commander".parse().unwrap();
+    let enemy: SeatId = "commonwealth.commander".parse().unwrap();
+    let request = game.pending().into_iter().find(|d| d.seat == own).unwrap();
+    let answer = DecisionResponse {
+        decision_id: request.id,
+        seat: own,
+        controller_epoch: 0,
+        decision_revision: request.revision,
+        idempotency_key: "lazy-own".into(),
+        action: json!(2),
+        public_explanation: None,
+    };
+    let before = game.observe(own);
+    calls.store(0, Ordering::SeqCst);
+    let handle = CampaignHandle::spawn(game, &path, None).unwrap();
+    handle.pause(false).await.unwrap();
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        0,
+        "publication must never evaluate observation"
+    );
+    let mut enemy_watch = handle.watch_seat(enemy);
+    enemy_watch.borrow_and_update();
+    let (started_send, started_recv) = mpsc::sync_channel(1);
+    let (release_send, release_recv) = mpsc::sync_channel(1);
+    *gate.lock().unwrap() = Some((started_send, release_recv));
+    let reader_handle = handle.clone();
+    let reader = std::thread::spawn(move || reader_handle.observation_state(own));
+    started_recv
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .unwrap();
+    let accepted =
+        tokio::time::timeout(std::time::Duration::from_secs(3), handle.submit(answer)).await;
+    let handover = tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        handle.handover(own, None, Value::Null),
+    )
+    .await;
+    // Release and join before assertions, including on a writer regression.
+    release_send.send(()).unwrap();
+    let (old_observation, old_seat) = reader.join().unwrap();
+    accepted
+        .expect("an observation reader cannot block the writer")
+        .unwrap();
+    handover
+        .expect("observation cannot block handover")
+        .unwrap();
+    assert_eq!(old_seat.binding.controller_epoch, 0);
+    assert_eq!(handle.seat(own).binding.controller_epoch, 1);
+    assert_eq!(old_observation, before);
+    assert_eq!(old_seat.pending.len(), 1);
+    assert!(handle.seat(own).pending.is_empty());
+    assert!(
+        !enemy_watch.has_changed().unwrap(),
+        "hidden own answer cannot wake enemy watcher"
+    );
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        1,
+        "writer performs no eager reads"
+    );
+    let (new_observation, new_seat) = handle.observation_state(own);
+    assert_eq!(new_seat, handle.seat(own));
+    assert!(new_seat.seq > old_seat.seq);
+    assert_eq!(new_observation, json!({"answers":{"axis.commander":2}}));
+    let expected: Vec<_> = SeatId::all()
+        .map(|seat| (seat, handle.observation(seat)))
+        .collect();
+    handle.shutdown().await.unwrap();
+    let recovered = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+    for (seat, observation) in &expected {
+        assert_eq!(*observation, recovered.observe(*seat));
+        assert_eq!(
+            *observation,
+            handle.observation(*seat),
+            "retained shutdown snapshot"
+        );
+    }
+    let recovered_handle = CampaignHandle::spawn(recovered, &path, None).unwrap();
+    for (seat, observation) in expected {
+        assert_eq!(observation, recovered_handle.observation(seat));
+    }
+    recovered_handle.shutdown().await.unwrap();
+}

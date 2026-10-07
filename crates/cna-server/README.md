@@ -185,7 +185,8 @@ Ignored whole-campaign tests emit `CNA_PROFILE` on CI with wall time, accepted c
 resolved decision counts by kind, and runtime engine, durable writer, projection and controller
 costs. The durable writer includes serialization, state/event hashing, pending and stream rows,
 and the SQLite `synchronous=FULL` transaction commit; it excludes engine evaluation. Projection
-time includes all 13 snapshots, 10 seat observations and committed stream fanout. Controller
+time includes all 13 snapshots and committed stream fanout. Observation time is measured
+separately on demand outside the writer. Controller
 time includes scripted selection and pure validation outside those measured commit costs.
 These cumulative diagnostics reset on recovery and are available only through the trusted
 in-process handle, with no HTTP, WebSocket or MCP tool exposure. They do not alter game state,
@@ -206,3 +207,12 @@ from their authorized stream rows. Checkpoint/tail recovery preserves the same s
 The next campaign measurements report views, observations, opening lookups and event-page
 costs separately. Timings are trusted-process diagnostics; durability and per-command
 acknowledgment stay unchanged.
+
+Seat observations run on demand against an immutable committed game. The published root swaps
+all perspective projections, seat pending/binding metadata and its snapshot observer together.
+HTTP returns observation and epoch metadata from that same root. Readers retain their snapshot
+while newer commands commit; observation computation never holds the writer, watch or database
+lock. Seat notifications use only their own contiguous stream sequence, pending and binding.
+The snapshot remains readable after shutdown, and recovery produces identical observations.
+Server spawn requires immutable rules/content/state to be Send + Sync; scripted controllers
+remain owned by the writer. This does not change command durability or acknowledgment.

@@ -43,7 +43,7 @@ impl GameBackend for CampaignHandle {
         self.seat(seat).pending
     }
     async fn observe(&self, seat: SeatId) -> Value {
-        self.seat(seat).observation
+        self.observation(seat)
     }
     async fn inspect(&self, seat: SeatId, target: &str) -> Result<Value, ToolError> {
         CampaignHandle::inspect(self, seat, target)

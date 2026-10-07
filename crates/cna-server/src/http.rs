@@ -447,9 +447,9 @@ async fn observe(
     RoutePath((id, s)): RoutePath<(String, String)>,
 ) -> Result<Json<Value>, ApiError> {
     authorized(grant.campaign(&id) && grant.seat(seat(&s)?, false))?;
-    let state = app.campaign(&id)?.seat(seat(&s)?);
+    let (observation, state) = app.campaign(&id)?.observation_state(seat(&s)?);
     Ok(Json(
-        json!({"observation":state.observation,"pending":state.pending,"controller_epoch":state.binding.controller_epoch,"paused":state.binding.paused,"failure":state.binding.failure}),
+        json!({"observation":observation,"pending":state.pending,"controller_epoch":state.binding.controller_epoch,"paused":state.binding.paused,"failure":state.binding.failure}),
     ))
 }
 async fn inspect_target(
