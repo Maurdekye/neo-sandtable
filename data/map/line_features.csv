@@ -289,6 +289,15 @@ E2705,E2805,track,land:8.33;land:8.37,map-lines-2-0007
 E2706,E2805,track,land:8.33;land:8.37,map-lines-2-0007
 E2710,E2809,track,land:8.33;land:8.37,map-lines-2-0008
 E2801,E2902,track,land:8.33;land:8.37,map-lines-2-0008
+E2804,E2905,track,land:8.33;land:8.37,map-lines-2-0011
+E2805,E2806,track,land:8.33;land:8.37,map-lines-2-0011
+E2805,E2905,track,land:8.33;land:8.37,map-lines-2-0011
+E2806,E2807,track,land:8.33;land:8.37,map-lines-2-0011
+E2807,E2808,track,land:8.33;land:8.37,map-lines-2-0011
+E2808,E2809,track,land:8.33;land:8.37,map-lines-2-0011
+E2809,E2909,track,land:8.33;land:8.37,map-lines-2-0011
+E2809,E2910,track,land:8.33;land:8.37,map-lines-2-0011
+E2814,E2915,road,land:8.33;land:8.37,map-lines-2-0011
 E2901,E3001,track,land:8.33;land:8.37,map-lines-2-0004
 E2902,E3001,track,land:8.33;land:8.37,map-lines-2-0004
 E2905,E3004,track,land:8.33;land:8.37,map-lines-2-0004
