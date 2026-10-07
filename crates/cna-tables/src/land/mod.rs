@@ -7,14 +7,19 @@ pub mod barrage;
 pub mod breakdown;
 pub mod capability;
 pub mod combat;
+pub mod engineering;
 mod grid;
 pub mod morale;
+pub mod raids;
 pub mod terrain;
 pub mod weather;
 
 crate::tables_group! {
     /// Land tables currently bound; the loader test records the remaining tables explicitly.
     LandTables {
+        desert_raider_raids: raids::DesertRaiderRaids,
+        construction: engineering::ConstructionChart,
+        demolition: engineering::DemolitionChart,
         combat_calculations: combat::CombatCalculations,
         organization_size: combat::OrganizationSize,
         prisoners_captured: combat::PrisonersCaptured,
