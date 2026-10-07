@@ -268,3 +268,10 @@ it('retains moved metadata after event eviction and clears it at segment boundar
   state = receive(state, { type: 'resync' }).state
   expect(state.frames).toEqual([])
 })
+
+it('retains authorized event locators through replay and clears them on resync',()=>{
+ const packet={type:'event' as const,seq:8,clock,hex:'C4218',unit_id:'u',event:{kind:'note' as const,text:'stop'}}
+ const s=receive(connected(),packet).state
+ expect(selectedFrame(seek(s,8))).toMatchObject({hex:'C4218',unit_id:'u'})
+ expect(receive(s,{type:'resync'}).state.frames).toEqual([])
+})

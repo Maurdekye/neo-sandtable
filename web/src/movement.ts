@@ -10,6 +10,7 @@ export interface Point {
 export interface Motion {
   key: string
   unitId?: string
+  cpSpent?: number
   points: Point[]
 }
 function object(
@@ -113,7 +114,15 @@ export function motionEvents(
         continue
       const key = `unit:${event.unit_id}`,
         points = [origin, ...route].map((h) => center(h!))
-      results.set(key, { key, unitId: event.unit_id, points })
+      results.set(key, {
+        key,
+        unitId: event.unit_id,
+        points,
+        ...(typeof event.cp_spent === 'number' &&
+        Number.isFinite(event.cp_spent)
+          ? { cpSpent: event.cp_spent }
+          : {}),
+      })
     } else if (event?.kind === 'unit_updated') {
       const previousUnit = frames[i - 1].view.units[event.unit.id]
       const location = previousUnit?.detail?.location

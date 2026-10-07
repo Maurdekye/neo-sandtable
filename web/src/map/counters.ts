@@ -1,5 +1,6 @@
 import type { UnitView } from '../protocol'
 export const SYMBOLS: Record<string, string> = {
+  broken_vehicle: '<path d="M20 16L40 28M40 16L20 28"/><path d="M20 32H40"/>',
   infantry: '<path d="M18 15L42 29M42 15L18 29"/>',
   armor: '<ellipse cx="30" cy="22" rx="9" ry="5"/>',
   artillery: '<circle cx="30" cy="22" r="3" fill="currentColor"/>',

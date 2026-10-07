@@ -178,7 +178,12 @@ export function decodeMessage(data: unknown): ServerMessage | null {
         m.view.pending.every(decision)
       break
     case 'event':
-      valid = sequence(m.seq) && clock(m.clock) && gameEvent(m.event)
+      valid =
+        sequence(m.seq) &&
+        clock(m.clock) &&
+        gameEvent(m.event) &&
+        (m.hex === undefined || typeof m.hex === 'string') &&
+        (m.unit_id === undefined || typeof m.unit_id === 'string')
       break
     case 'transcript':
       valid =

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { StatusBadges } from './StatusBadges'
 import type { UnitView } from './protocol'
 import type { Stack } from './generated/Stack'
 import { counterSvg } from './map/counters'
@@ -62,6 +63,7 @@ export function StackList({
                 {u.size} · {u.kind}
                 {moved.has(u.id) ? ' - moved' : ''}
               </small>
+              <StatusBadges unit={u} />
             </span>
           </button>
         ))}

@@ -62,6 +62,8 @@ def main() -> None:
         "schema": 1,
         "map_manifest": tomllib.loads(
             (REPO / "data/map/layers.toml").read_text(encoding="utf-8")),
+        "map_corridor": tomllib.loads((REPO / "data/map/graziani-corridor.toml").read_text(encoding="utf-8")) if (REPO / "data/map/graziani-corridor.toml").exists() else {},
+        "map_strips": tomllib.loads((REPO / "data/map/strips.toml").read_text(encoding="utf-8")) if (REPO / "data/map/strips.toml").exists() else {},
         "registry_sha256": registry_digest.hexdigest(),
         "engine_sha256": engine_digest.hexdigest(),
         "rules": records,

@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { GameEvent, Perspective } from './protocol'
+import type { Perspective } from './protocol'
 import { Board } from './map/Board'
 import { Formations } from './Formations'
 import { locationLabel, unitLocation } from './location'
 import { StackList } from './StackList'
 import { PendingDecisions } from './PendingDecisions'
 import { RulesCoverage } from './Rules'
+import { EventFeed } from './EventFeed'
+import { eventMatches } from './events'
+import { StatusBadges } from './StatusBadges'
+import {
+  TerrainCoverageControls,
+  TerrainCoverageInspector,
+} from './map/TerrainCoveragePanel'
 import { LayerControls, LayerInspector } from './map/LayerControls'
 import { movedUnits } from './movement'
 import { isPlacement, placementDestinations, placementHexes } from './setup'
@@ -46,52 +53,6 @@ function sameLocation(a: string | null, b: string | null) {
     )
   )
 }
-function eventText(event: GameEvent): string {
-  switch (event.kind) {
-    case 'stack_updated':
-      return `${event.stack.side} stack at ${event.stack.hex}`
-    case 'stack_removed':
-      return `${event.side} stack left ${event.hex}`
-    case 'unit_moved':
-      return `${event.unit_id} → ${event.path.at(-1)}`
-    case 'phase_changed':
-      return `Phase · ${event.clock.segment ?? event.clock.phase}`
-    case 'combat_resolved':
-    case 'decision_resolved':
-      return event.summary
-    case 'decision_opened':
-      return event.decision.summary
-    case 'note':
-      return event.text
-    case 'unit_updated':
-      return `${event.unit.name} updated`
-    case 'unit_removed':
-      return `${event.unit_id} removed · ${event.reason}`
-    case 'dice_rolled':
-      return `${event.purpose} · ${event.dice.join(', ')}`
-    case 'marker_placed':
-      return `${event.marker.kind} placed`
-    case 'marker_removed':
-      return `${event.marker_id} removed`
-    default:
-      return 'Unknown event'
-  }
-}
-function eventHex(event: GameEvent) {
-  return event.kind === 'stack_updated'
-    ? event.stack.hex
-    : event.kind === 'stack_removed'
-      ? event.hex
-      : event.kind === 'unit_moved'
-        ? event.path.at(-1)
-        : event.kind === 'combat_resolved'
-          ? event.hex
-          : event.kind === 'marker_placed'
-            ? event.marker.hex
-            : event.kind === 'unit_updated'
-              ? event.unit.hex
-              : null
-}
 export function App() {
   return mockMode ? (
     <Viewer />
@@ -116,6 +77,7 @@ function Viewer({ access }: { access?: Access }) {
       bounds?: string[]
     } | null>(null)
   const [layers, setLayers] = useState(DEFAULT_LAYERS)
+  const [terrainCoverage, setTerrainCoverage] = useState(false)
   const [moving, setMoving] = useState(
     !matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
@@ -227,7 +189,7 @@ function Viewer({ access }: { access?: Access }) {
       (f) =>
         f.event &&
         (state.cursor === null || f.seq <= (frame?.seq ?? 0)) &&
-        (eventFilter === 'all' || f.event.kind === eventFilter),
+        eventMatches(f.event, eventFilter),
     )
     .slice(-60)
     .reverse()
@@ -397,6 +359,11 @@ function Viewer({ access }: { access?: Access }) {
             onHex={locate}
           />
           <LayerControls options={layers} onChange={setLayers} />
+          <TerrainCoverageControls
+            enabled={terrainCoverage}
+            onChange={setTerrainCoverage}
+            onHex={locate}
+          />
           <label className="motion-control">
             <input
               type="checkbox"
@@ -446,6 +413,7 @@ function Viewer({ access }: { access?: Access }) {
           allowBatch={state.cursor === null || state.playing}
           moved={moved}
           placement={placement}
+          terrainCoverage={terrainCoverage}
         />
         <Transcripts
           seats={state.campaign?.seats ?? []}
@@ -477,7 +445,10 @@ function Viewer({ access }: { access?: Access }) {
             </>
           )}
           {selected && (
-            <LayerInspector hexId={selected} layer={layers.coverage} />
+            <>
+              <LayerInspector hexId={selected} layer={layers.coverage} />
+              <TerrainCoverageInspector hexId={selected} />
+            </>
           )}
           {stacks.map((stack) => (
             <StackList
@@ -503,6 +474,7 @@ function Viewer({ access }: { access?: Access }) {
           {unit && (
             <section className="unit-detail">
               <h3>{unit.name}</h3>
+              <StatusBadges unit={unit} />
               {moved.has(unit.id) && (
                 <p className="moved-label">Moved this segment</p>
               )}
@@ -587,7 +559,10 @@ function Viewer({ access }: { access?: Access }) {
             onChange={(e) => setEventFilter(e.target.value)}
           >
             <option value="all">All events</option>
-            <option value="unit_moved">Movement</option>
+            <option value="unit_moved">Movement &amp; notes</option>
+            <option value="note">Notes / stops</option>
+            <option value="dice_rolled">Dice</option>
+            <option value="unit_removed">Removals</option>
             <option value="combat_resolved">Combat</option>
             <option value="phase_changed">Phase</option>
           </select>
@@ -596,28 +571,7 @@ function Viewer({ access }: { access?: Access }) {
             1,200
           </small>
         </div>
-        <div className="event-feed">
-          {events.map((f) => {
-            const h = eventHex(f.event!)
-            return (
-              <button
-                key={String(f.seq)}
-                disabled={!h}
-                onClick={() => {
-                  if (h) locate(h)
-                }}
-              >
-                <span>#{String(f.seq)}</span>
-                <strong>{f.event!.kind.replaceAll('_', ' ')}</strong>
-                <small>{eventText(f.event!)}</small>
-                {h && <em>Locate ↗</em>}
-              </button>
-            )
-          })}
-          {!events.length && (
-            <p className="empty">Waiting for campaign events.</p>
-          )}
-        </div>
+        <EventFeed frames={events} onLocate={locate} />
       </footer>
     </div>
   )

@@ -19,6 +19,8 @@ import {
   vertices,
 } from './fixture'
 import { createMotions } from './motion'
+import { createTerrainOverlay } from './terrainOverlay'
+import { unitBadges, unitCp } from '../status'
 import { createPlacements } from './placements'
 import { motionEvents } from '../movement'
 import type { Frame } from '../stream/model'
@@ -38,6 +40,7 @@ interface Props {
   allowBatch: boolean
   moved: Set<string>
   placement: { label: string; hexes: string[] } | null
+  terrainCoverage: boolean
 }
 interface Scene {
   app: Application
@@ -48,6 +51,7 @@ interface Scene {
   updateVisibility: () => void
   overlays: ReturnType<typeof createOverlays>
   placements: ReturnType<typeof createPlacements>
+  classification: ReturnType<typeof createTerrainOverlay>
   motions: ReturnType<typeof createMotions>
   motionCursor: { scope: string; seq: number | null }
 }
@@ -74,6 +78,7 @@ export function Board({
   allowBatch,
   moved,
   placement,
+  terrainCoverage,
 }: Props) {
   const host = useRef<HTMLDivElement>(null),
     scene = useRef<Scene | null>(null),
@@ -107,12 +112,14 @@ export function Board({
       const world = new Container(),
         terrain = new Container(),
         overlay = new Container(),
+        classificationLayer = new Container(),
         placementLayer = new Container(),
         counters = new Container(),
         motion = new Container(),
         selection = new Graphics()
       world.addChild(
         terrain,
+        classificationLayer,
         overlay,
         placementLayer,
         counters,
@@ -121,6 +128,7 @@ export function Board({
       )
       const motions = createMotions(motion)
       const placements = createPlacements(placementLayer)
+      const classification = createTerrainOverlay(classificationLayer)
       app.stage.addChild(world)
       const chunks = new Map<
         string,
@@ -184,6 +192,13 @@ export function Board({
       )
       const updateVisibility = () => {
         const scale = world.scale.x
+        classification.visibility(
+          scale,
+          world.x,
+          world.y,
+          element.clientWidth,
+          element.clientHeight,
+        )
         placements.visibility(
           scale,
           world.x,
@@ -208,6 +223,7 @@ export function Board({
         updateVisibility,
         overlays,
         placements,
+        classification,
         motions,
         motionCursor: { scope: '', seq: null },
       }
@@ -299,6 +315,7 @@ export function Board({
         app.canvas.removeEventListener('pointercancel', up)
         app.canvas.removeEventListener('wheel', wheel)
         placements.clear()
+        classification.clear()
         motions.clear()
         scene.current?.textures.forEach((t) => t.destroy(true))
         scene.current = null
@@ -320,6 +337,9 @@ export function Board({
     s.placements.build(placement?.hexes ?? [])
     s.updateVisibility()
   }, [placement, ready])
+  useEffect(() => {
+    scene.current?.classification.toggle(terrainCoverage)
+  }, [terrainCoverage, ready])
   useEffect(() => {
     const s = scene.current
     if (!s || !ready) return
@@ -430,6 +450,26 @@ export function Board({
           )
           s!.counters.addChild(sprite)
           unitSprites.set(id, sprite)
+          if (expanded) {
+            const badges = unitBadges(u).filter((b) => !b.startsWith('Moved')),
+              cp = unitCp(u)
+            if (badges.length || cp !== null) {
+              const status = new Text({
+                text: [
+                  ...badges.slice(0, 2),
+                  ...(cp !== null ? [`${cp} CP`] : []),
+                ].join(' / '),
+                style: {
+                  fontFamily: 'sans-serif',
+                  fontSize: 7,
+                  fill: 0xffffff,
+                  stroke: { color: 0x172d35, width: 2 },
+                },
+              })
+              status.position.set(sprite.x, sprite.y + 25)
+              s!.counters.addChild(status)
+            }
+          }
           if (moved.has(id)) {
             const flag = new Graphics().circle(0, 0, 3).fill(0x8be4c0)
             flag.position.set(sprite.x + 3, sprite.y + 3)

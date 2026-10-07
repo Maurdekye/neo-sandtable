@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Texture } from 'pixi.js'
+import { Container, Graphics, Sprite, Texture, Text } from 'pixi.js'
 import { routeSampler, type Motion } from '../movement'
 /** Presentation only: the stream reducer applies the adjudicated positions immediately. */
 export function createMotions(parent: Container) {
@@ -62,6 +62,7 @@ export function createMotions(parent: Container) {
           route.moveTo(points[0].x, points[0].y)
           points.slice(1).forEach((p) => route.lineTo(p.x, p.y))
           route.stroke({ color: 0x8be4c0, width: 2, alpha: 0.65 })
+          points.forEach((p) => route.circle(p.x, p.y, 2.5).fill(0x8be4c0))
         }
         const tex = motion.unitId ? texture(motion.unitId) : undefined
         if (tex) {
@@ -76,6 +77,19 @@ export function createMotions(parent: Container) {
               .circle(0, 0, 21)
               .stroke({ color: 0x8be4c0, width: 2 }),
           )
+        if (motion.cpSpent !== undefined) {
+          const label = new Text({
+            text: `${motion.cpSpent} CP`,
+            style: {
+              fontFamily: 'sans-serif',
+              fontSize: 11,
+              fill: 0xffffff,
+              stroke: { color: 0x172d35, width: 3 },
+            },
+          })
+          label.position.set(-18, -32)
+          glyph.addChild(label)
+        }
         if (motion.unitId) {
           const sprite = sprites.get(motion.unitId)
           if (sprite) sprite.visible = false
@@ -83,7 +97,7 @@ export function createMotions(parent: Container) {
         const duration =
           points.length === 1
             ? 700
-            : Math.min(1600, 600 + (points.length - 2) * 110)
+            : Math.min(3600, 700 + (points.length - 2) * 240)
         glyph.position.copyFrom(points[0])
         active.set(motion.key, {
           motion,

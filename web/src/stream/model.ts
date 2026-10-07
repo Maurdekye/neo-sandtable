@@ -13,6 +13,8 @@ export interface Frame {
   view: ViewState
   event: GameEvent | null
   moved?: string[]
+  hex?: string
+  unit_id?: string
 }
 export function segmentKey(clock: Clock) {
   return [
@@ -257,6 +259,8 @@ export function receive(
       view: updatedView,
       moved: movementState(updatedView, last, message.event),
       event: message.event,
+      ...(message.hex !== undefined ? { hex: message.hex } : {}),
+      ...(message.unit_id !== undefined ? { unit_id: message.unit_id } : {}),
     }
     const frames = [...state.frames, frame].slice(-MAX_FRAMES)
     return {

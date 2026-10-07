@@ -1040,3 +1040,93 @@ dd {
   border-bottom: 1px solid #35505a;
   padding-bottom: 8px;
 }
+
+/* Disclosed status and projected event details remain readable beside the map. */
+.status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0;
+}
+.status-badges > span {
+  font-size: 10px;
+  border: 1px solid #477279;
+  border-radius: 4px;
+  padding: 2px 5px;
+  color: #b9e8d7;
+  background: #17353b;
+}
+.terrain-coverage {
+  padding: 10px 0;
+  border-bottom: 1px solid #29434b;
+}
+.terrain-coverage small {
+  display: block;
+  color: #b3c5c5;
+  margin: 5px 0;
+}
+.terrain-classification {
+  font-size: 11px;
+  color: #8bcee1;
+}
+.event-feed .event-row {
+  flex: 0 0 280px;
+  max-width: 340px;
+  border: 1px solid #29434b;
+  border-radius: 4px;
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #102a32;
+}
+.event-row > span {
+  font-size: 10px;
+  color: #849ba3;
+}
+.event-row strong {
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.event-row small {
+  font-size: 11px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.event-row pre {
+  font-size: 10px;
+  max-height: 120px;
+  overflow: auto;
+}
+.event-row .event-locate {
+  padding: 4px;
+  font-size: 11px;
+}
+.unlocated {
+  font-size: 10px;
+  color: #8599a1;
+}
+.event-warning {
+  color: #e9c58d;
+}
+
+.event-feed {
+  height: 170px;
+  flex-shrink: 0;
+}
+.event-row {
+  overflow-y: auto;
+}
+.event-feed .event-row button {
+  min-width: 0;
+  max-width: none;
+  display: block;
+}
+.event-feed .event-row .citation {
+  width: fit-content;
+}
+.event-feed .event-row small {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
