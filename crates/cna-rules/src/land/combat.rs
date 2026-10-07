@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
+pub mod assignment;
 pub mod barrage;
 pub mod retreat;
 
@@ -39,6 +40,7 @@ pub struct PositionOrder {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CombatState {
+    pub assignment: assignment::AssignmentState,
     #[serde(default)]
     pub barrage: barrage::BarrageState,
     #[serde(default)]
@@ -101,6 +103,7 @@ pub fn enter_positions(
     state: &mut State,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    state.land.combat.assignment = assignment::AssignmentState::default();
     state.land.combat.retreat = retreat::RetreatState::default();
     state.land.combat.position_orders.clear();
     state.land.combat.barrage.targets.clear();

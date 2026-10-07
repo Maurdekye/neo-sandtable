@@ -733,6 +733,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "dumps": state.logistics.dumps.iter().filter(|(_, d)| sees_side(perspective, d.side)).collect::<BTreeMap<_, _>>(),
         },
         "combat": {
+            "force_assignment":crate::land::combat::assignment::disclosed(content,state,perspective),
             "barrage_targets": crate::land::combat::barrage::disclosed(state,perspective),
             "barrage_plans": state.land.combat.barrage.plans.iter().filter(|(seat,_)|sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),
             "retreat_plans": state.land.combat.retreat.plans.iter().filter(|(seat,_)|sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),

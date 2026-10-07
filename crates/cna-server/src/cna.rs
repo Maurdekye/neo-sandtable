@@ -143,7 +143,8 @@ fn movement_policy() -> ActionPolicy<Cna> {
             cna_rules::land::movement::KIND
                 | cna_rules::land::reaction::KIND
                 | cna_rules::land::reaction::CONTINUE
-        ) && request.kind != cna_rules::land::combat::retreat::KIND
+        ) && request.kind != cna_rules::land::combat::assignment::KIND
+            && request.kind != cna_rules::land::combat::retreat::KIND
             && request.kind != cna_rules::land::combat::POSITION_KIND
             && !request.kind.starts_with("cna.combat.barrage")
             && !request.kind.starts_with("cna.logistics.")
@@ -197,6 +198,11 @@ fn movement_policy() -> ActionPolicy<Cna> {
             if choice == 1 {
                 return Some(serde_json::Value::Null);
             }
+        }
+        if request.kind == cna_rules::land::combat::assignment::KIND {
+            return Some(cna_rules::baseline::random_assignments(
+                content, state, request, &mut rng,
+            ));
         }
         if request.kind == cna_rules::land::combat::retreat::KIND {
             return Some(cna_rules::baseline::random_retreats(
@@ -1152,6 +1158,214 @@ mod tests {
         let campaign = Campaign::recover(&path, Cna::dev(), movement_fixture().0, &pins).unwrap();
         assert_eq!(campaign.state_hash().unwrap(), hash);
         assert_eq!(campaign.game.state.land.units[&id].cp_spent_quarters, cp);
+        let db = rusqlite::Connection::open(&path).unwrap();
+        let mut rows=db.prepare("SELECT p.seq,e.payload FROM perspective_events p JOIN events e USING(event_id) WHERE p.perspective=? ORDER BY p.seq").unwrap();
+        for perspective in Perspective::all() {
+            for (index, row) in rows
+                .query_map([perspective.to_string()], |r| {
+                    Ok((r.get::<_, u64>(0)?, r.get::<_, String>(1)?))
+                })
+                .unwrap()
+                .enumerate()
+            {
+                let (seq, payload) = row.unwrap();
+                let event: cna_core::event::EngineEvent = serde_json::from_str(&payload).unwrap();
+                assert_eq!(seq, index as u64 + 1);
+                assert!(event.visible_to(perspective));
+            }
+        }
+    }
+
+    /// Real force plans survive a closed-window checkpoint, exact retry and failed commits.
+    /// Cases: land:3.6,land:14.26,land:15.16,airlog:50.14
+    #[test]
+    fn closed_force_assignment_is_durable_private_and_spends_no_stocks_or_dice() {
+        use cna_core::{decision::DecisionResponse, visibility::Perspective};
+        use cna_protocol::{Role, Side};
+        let (content, mut game) = movement_fixture();
+        for unit in game.state.land.units.values_mut() {
+            unit.location = Location::Eliminated;
+        }
+        for (id, hex) in [
+            ("it.libyan_tank_command.i_m_tank_bn", "C4020"),
+            ("cw.unassigned_inf.1st_rnf_mg_bn", "C4021"),
+        ] {
+            let id: UnitId = id.into();
+            let unit = game.state.land.units.get_mut(&id).unwrap();
+            unit.location = Location::Hex { hex: hex.into() };
+            unit.detached = true;
+            unit.attached_to = None;
+            game.state.logistics.unit_supply.insert(
+                id.clone(),
+                UnitSupply {
+                    ready_ammo: AmmoPoints::new(10000),
+                    activity_water: WaterPoints::new(10000),
+                    ..Default::default()
+                },
+            );
+            game.state.logistics.rations.insert(
+                id,
+                cna_rules::logistics::Rations {
+                    water_stage: Some(cna_rules::logistics::water::WaterStage::current(
+                        &game.state,
+                    )),
+                    infantry_water_received: 2,
+                    issued_gt: Some(game.state.cursor.game_turn),
+                    pasta_gt: Some(game.state.cursor.game_turn),
+                    ..Default::default()
+                },
+            );
+        }
+        game.state.turn.player_a = Some(Side::Axis);
+        game.state.decisions.pending.clear();
+        game.state.cursor.index = cna_rules::seq::PLAYER_HALF
+            .iter()
+            .position(|x| x.anchor == cna_rules::land::combat::assignment::ANCHOR)
+            .unwrap();
+        game.state.cursor.entered = false;
+        let rng = game.rng.clone();
+        let holdings = serde_json::to_value(&game.state.logistics).unwrap();
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("force.sqlite");
+        let pins = Pins {
+            rules_profile: cna_rules::PROFILE_DEV.into(),
+            content_hash: "force-real-roster-test-map".into(),
+            engine_version: env!("CNA_ENGINE_SOURCE_HASH").into(),
+        };
+        let meta = CampaignMeta {
+            id: "force".into(),
+            scenario_id: "graziani".into(),
+            rules_profile: cna_rules::PROFILE_DEV.into(),
+            title: "Force plan recovery".into(),
+            seats: SeatId::all()
+                .map(|s| SeatInfo {
+                    id: s.to_string(),
+                    side: s.side,
+                    role: s.role,
+                    controller: None,
+                    status: SeatStatus::Idle,
+                })
+                .collect(),
+        };
+        let mut campaign =
+            Campaign::create(&path, Cna::dev(), content, game, meta, pins.clone()).unwrap();
+        campaign.advance().unwrap();
+        let policy = movement_policy();
+        let mut retry = None;
+        for request in campaign.pending() {
+            assert_eq!(request.seat.role, Role::FrontLine);
+            let (epoch, action) = (1..64)
+                .find_map(|epoch| {
+                    let action =
+                        policy(&campaign.content, &campaign.game.state, &request, epoch).unwrap();
+                    assert_eq!(
+                        action,
+                        policy(&campaign.content, &campaign.game.state, &request, epoch).unwrap()
+                    );
+                    action
+                        .as_array()
+                        .is_some_and(|a| !a.is_empty())
+                        .then_some((epoch, action))
+                })
+                .expect("actual force baseline supplies a nonempty plan");
+            while campaign.binding(request.seat).controller_epoch < epoch {
+                campaign
+                    .handover(
+                        request.seat,
+                        Some(ControllerInfo {
+                            kind: ControllerKind::Scripted,
+                            label: "scripted:legal_random".into(),
+                        }),
+                        serde_json::json!({"mode":"legal_random"}),
+                    )
+                    .unwrap();
+            }
+            let response = DecisionResponse {
+                decision_id: request.id.clone(),
+                seat: request.seat,
+                controller_epoch: campaign.binding(request.seat).controller_epoch,
+                decision_revision: request.revision,
+                idempotency_key: request.id.to_string(),
+                action,
+                public_explanation: None,
+            };
+            campaign.validate(&response).unwrap();
+            let before = campaign.state_hash().unwrap();
+            let db = rusqlite::Connection::open(&path).unwrap();
+            db.execute_batch("CREATE TRIGGER fail_force BEFORE INSERT ON commands BEGIN SELECT RAISE(ABORT, 'force failure'); END;").unwrap();
+            assert!(campaign.submit(response.clone()).is_err());
+            assert_eq!(campaign.state_hash().unwrap(), before);
+            db.execute_batch("DROP TRIGGER fail_force").unwrap();
+            drop(db);
+            campaign.submit(response.clone()).unwrap();
+            retry = Some(response);
+            assert_eq!(campaign.game.rng, rng);
+            assert_eq!(
+                serde_json::to_value(&campaign.game.state.logistics).unwrap(),
+                holdings
+            );
+        }
+        assert!(campaign.game.state.land.combat.assignment.closed);
+        assert!(!campaign.game.state.land.combat.assignment.frozen);
+        let hash = campaign.state_hash().unwrap();
+        let expected: Vec<_> = Perspective::all()
+            .map(|p| {
+                (
+                    p,
+                    campaign.view(p).unwrap(),
+                    campaign.events_after(p, 0, 512).unwrap(),
+                )
+            })
+            .collect();
+        drop(campaign);
+        let mut campaign =
+            Campaign::recover(&path, Cna::dev(), movement_fixture().0, &pins).unwrap();
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        assert!(campaign.submit(retry.unwrap()).unwrap().duplicate);
+        for (p, view, events) in expected {
+            assert_eq!(campaign.view(p).unwrap(), view);
+            assert_eq!(campaign.events_after(p, 0, 512).unwrap(), events);
+            let observation = Cna::dev().observe(&campaign.content, &campaign.game.state, p);
+            let disclosed = &observation["combat"]["force_assignment"]["plans"];
+            for side in Side::ALL {
+                if p != Perspective::Operator
+                    && !p.can_see(&cna_core::visibility::Audience::Side(side))
+                {
+                    assert!(
+                        !disclosed
+                            .as_object()
+                            .unwrap()
+                            .contains_key(&side.to_string())
+                    );
+                }
+            }
+        }
+        let db = rusqlite::Connection::open(&path).unwrap();
+        let count: i64 = db
+            .query_row("SELECT COUNT(*) FROM commands", [], |r| r.get(0))
+            .unwrap();
+        db.execute_batch("CREATE TRIGGER fail_freeze BEFORE INSERT ON commands BEGIN SELECT RAISE(ABORT, 'freeze failure'); END;").unwrap();
+        assert!(campaign.advance().is_err());
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        assert_eq!(campaign.game.rng, rng);
+        assert_eq!(
+            db.query_row("SELECT COUNT(*) FROM commands", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            count
+        );
+        db.execute_batch("DROP TRIGGER fail_freeze").unwrap();
+        drop(db);
+        campaign.advance().unwrap();
+        assert!(campaign.game.state.land.combat.assignment.frozen);
+        assert_eq!(campaign.game.rng, rng);
+        assert_eq!(
+            serde_json::to_value(&campaign.game.state.logistics).unwrap(),
+            holdings
+        );
+        let hash = campaign.state_hash().unwrap();
+        drop(campaign);
+        let campaign = Campaign::recover(&path, Cna::dev(), movement_fixture().0, &pins).unwrap();
+        assert_eq!(campaign.state_hash().unwrap(), hash);
         let db = rusqlite::Connection::open(&path).unwrap();
         let mut rows=db.prepare("SELECT p.seq,e.payload FROM perspective_events p JOIN events e USING(event_id) WHERE p.perspective=? ORDER BY p.seq").unwrap();
         for perspective in Perspective::all() {

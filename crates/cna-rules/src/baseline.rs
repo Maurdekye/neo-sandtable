@@ -115,3 +115,4 @@ pub fn random_breakdown(
         .and_then(|p| serde_json::to_value(p).ok())
         .unwrap_or(Value::Null)
 }
+pub use crate::land::combat::assignment::random_orders as random_assignments;
