@@ -985,28 +985,10 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
         if !request.kind.starts_with("cna.setup.") {
             after_setup += 1;
         }
-        let action = if request.kind == KIND {
-            let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng);
+        let action = profiling_answer(&c, &g.state, &request, &mut rng);
+        if request.kind == KIND {
             moves += action.as_array().unwrap().len();
-            action
-        } else if request.kind == super::super::breakdown::window::KIND {
-            let action = crate::baseline::random_breakdown(&c, &g.state, &request, &mut rng);
-            assert!(
-                !action.is_null(),
-                "mandatory breakdown baseline must preserve every holding"
-            );
-            action
-        } else if request.space.pass.is_some()
-            && matches!(&request.space.schema, ActionSchema::Choice { options } if options.is_empty())
-        {
-            Value::Null
-        } else if matches!(request.space.schema, ActionSchema::Choice { .. })
-            || request.space.pass.is_none()
-        {
-            mandatory_profile_answer(&request.space.schema)
-        } else {
-            Value::Null
-        };
+        }
         g = evaluate(
             &rules,
             &c,
@@ -1030,6 +1012,37 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
     );
     assert_eq!(after_setup, answer_limit);
     assert!(!must_finish, "profile campaign did not finish");
+}
+fn profiling_answer(
+    c: &CnaContent,
+    state: &State,
+    request: &cna_core::decision::DecisionRequest,
+    rng: &mut CampaignRng,
+) -> Value {
+    if matches!(
+        request.kind.as_str(),
+        KIND | super::super::reaction::KIND | super::super::reaction::CONTINUE
+    ) {
+        // A mandatory continuation needs a legal remaining path, not a schema placeholder.
+        crate::baseline::random_orders(c, state, request, rng)
+    } else if request.kind == super::super::breakdown::window::KIND {
+        let action = crate::baseline::random_breakdown(c, state, request, rng);
+        assert!(
+            !action.is_null(),
+            "mandatory breakdown baseline must preserve every holding"
+        );
+        action
+    } else if request.space.pass.is_some()
+        && matches!(&request.space.schema, ActionSchema::Choice { options } if options.is_empty())
+    {
+        Value::Null
+    } else if matches!(request.space.schema, ActionSchema::Choice { .. })
+        || request.space.pass.is_none()
+    {
+        mandatory_profile_answer(&request.space.schema)
+    } else {
+        Value::Null
+    }
 }
 fn mandatory_profile_answer(schema: &ActionSchema) -> Value {
     match schema {
@@ -2148,7 +2161,7 @@ fn reaction_in_overfull_transit_hex_requires_a_legal_continuation() {
     assert!(respond(&c, &t.game, mover, Value::Null, true).is_err());
     let request = Cna::full().pending(&c, &t.game.state)[0].clone();
     for n in 0..24u8 {
-        let action = crate::baseline::random_orders(
+        let action = profiling_answer(
             &c,
             &t.game.state,
             &request,
