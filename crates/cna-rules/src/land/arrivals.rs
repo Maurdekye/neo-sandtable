@@ -785,6 +785,10 @@ fn prepare_withdrawals(
                     if let Some(hex) = state.land.units[unit].location.hex() {
                         changed.insert(hex.clone());
                     }
+                    let trucks = state.land.units[unit].trucks;
+                    retire_truck_history(content, state, unit, trucks)
+                        .map_err(|r| invariant(format!("{r:?}")))?;
+                    state.logistics.rations.remove(unit);
                     let u = state.land.units.get_mut(unit).unwrap();
                     u.location = Location::NotArrived;
                     u.trucks = Trucks::default();
@@ -801,6 +805,10 @@ fn prepare_withdrawals(
                     if let Some(hex) = state.land.units[unit].location.hex() {
                         changed.insert(hex.clone());
                     }
+                    let trucks = state.land.units[unit].trucks;
+                    retire_truck_history(content, state, unit, trucks)
+                        .map_err(|r| invariant(format!("{r:?}")))?;
+                    state.logistics.rations.remove(unit);
                     let u = state.land.units.get_mut(unit).unwrap();
                     u.location = Location::Eliminated;
                     u.trucks = Trucks::default();
@@ -904,7 +912,8 @@ fn open_withdrawal_transport(
             return Err(EngineError::Unsupported{case:"land:20.83".into(),detail:"printed withdrawal truck minimum cannot be satisfied; no penalty is specified in land:4.43a".into()});
         }
         for (asset, trucks) in assets {
-            remove_empty_trucks(state, &asset, trucks).map_err(|r| invariant(format!("{r:?}")))?;
+            remove_empty_trucks(content, state, &asset, trucks)
+                .map_err(|r| invariant(format!("{r:?}")))?;
         }
         state
             .land
@@ -943,8 +952,41 @@ fn open_withdrawal_transport(
     Ok(())
 }
 
-fn remove_empty_trucks(state: &mut State, asset: &str, amount: Trucks) -> Result<(), Rejection> {
+/// Retire departing cohorts before changing physical counts; paid funding remains spent.
+/// Cases: land:20.83, airlog:49.13, airlog:49.16, airlog:52.42
+fn retire_truck_history(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    amount: Trucks,
+) -> Result<(), Rejection> {
+    if amount.total() == 0 {
+        return Ok(());
+    }
+    if state.logistics.fuel_segments.contains_key(id) {
+        crate::logistics::remove_segment_fuel_cohorts(state, id, amount)
+            .map_err(|_| illegal("truck fuel history cannot be reconciled"))?;
+    }
+    let stage = crate::logistics::water::WaterStage::current(state);
+    if state.logistics.rations.get(id).is_some_and(|r| {
+        r.activity_used_stage == Some(stage)
+            || r.activity_water_ledger
+                .as_ref()
+                .is_some_and(|l| l.stage == stage)
+    }) {
+        crate::logistics::remove_activity_water_credit(content, state, id, amount)
+            .map_err(|_| illegal("truck water history cannot be reconciled"))?;
+    }
+    Ok(())
+}
+fn remove_empty_trucks(
+    content: &CnaContent,
+    state: &mut State,
+    asset: &str,
+    amount: Trucks,
+) -> Result<(), Rejection> {
     if let Some(id) = asset.strip_prefix("unit:") {
+        retire_truck_history(content, state, &UnitId::new(id), amount)?;
         let unit = state
             .land
             .units
@@ -1286,7 +1328,7 @@ pub(crate) fn answer(
                     .get(&source)
                     .ok_or_else(|| illegal("empty truck source is no longer eligible"))?;
                 let amount = parse_trucks(action, available)?;
-                remove_empty_trucks(state, &source, amount)?;
+                remove_empty_trucks(content, state, &source, amount)?;
                 let value = weights(content).map_err(Rejection::Engine)?.value(amount);
                 let w = state.land.arrivals.withdrawals.get_mut(&row).unwrap();
                 w.needed_halves = (w.needed_halves - value).max(0);
@@ -2217,5 +2259,91 @@ mod tests {
             assert!(response(&c, &game, &p, action).is_err());
             assert_eq!(serde_json::to_value(&game).unwrap(), before);
         }
+    }
+    /// Cases: land:20.83, airlog:49.13, airlog:49.16, airlog:52.42
+    #[test]
+    fn empty_truck_withdrawal_retires_cohorts_without_refunding_paid_body_history() {
+        use cna_content::units::{Toe, WeaponPoints};
+        use cna_core::quantity::WaterPoints;
+        let (c, mut game) = fixture();
+        game.state.cursor.op_stage = Some(1);
+        game.state.turn.weather = Some(crate::state::WeatherState {
+            kind: cna_tables::land::weather::WeatherKind::Normal,
+            storm_sections: vec![],
+        });
+        let id = UnitId::new("cw.4_indian_div.1st_royal_fusiliers");
+        let location = city_domain(&c, "cairo").unwrap()[0].clone();
+        let u = game.state.land.units.get_mut(&id).unwrap();
+        u.location = location.clone();
+        u.toe = Some(Toe::Weapons(vec![WeaponPoints {
+            weapon: "it.cv33".into(),
+            n: 1,
+        }]));
+        u.trucks.light = 3;
+        game.state.logistics.dumps.insert(
+            "funding".into(),
+            crate::state::Dump {
+                marker: "funding-marker".into(),
+                id: "funding".into(),
+                side: Side::Commonwealth,
+                location: crate::state::DumpLocation::Hex {
+                    hex: location.hex().unwrap().clone(),
+                },
+                supplies: Supplies {
+                    fuel: 10,
+                    ..Supplies::default()
+                },
+                active: true,
+                dummy: false,
+            },
+        );
+        crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 4).unwrap();
+        game.state
+            .logistics
+            .unit_supply
+            .entry(id.clone())
+            .or_default()
+            .activity_water = WaterPoints::new(100);
+        crate::logistics::spend_activity_water(&c, &mut game.state, &id).unwrap();
+        let paid_fuel = game.state.logistics.fuel_accounts[&id].paid_cost;
+        let water = game.state.logistics.rations[&id]
+            .activity_water_ledger
+            .clone()
+            .unwrap();
+        remove_empty_trucks(
+            &c,
+            &mut game.state,
+            &format!("unit:{id}"),
+            Trucks {
+                light: 1,
+                ..Trucks::default()
+            },
+        )
+        .unwrap();
+        let stock = game.state.logistics.dumps["funding"].supplies;
+        assert_eq!(game.state.land.units[&id].trucks.light, 2);
+        assert_eq!(game.state.logistics.fuel_accounts[&id].paid_cost, paid_fuel);
+        assert_eq!(
+            game.state.logistics.fuel_segments[&id]
+                .cohorts
+                .iter()
+                .map(|c| c.count)
+                .sum::<i32>(),
+            2
+        );
+        let after = game.state.logistics.rations[&id]
+            .activity_water_ledger
+            .as_ref()
+            .unwrap();
+        assert_eq!(after.body_paid, water.body_paid);
+        assert_eq!(after.truck_required.light, water.truck_required.light - 1);
+        assert_eq!(after.truck_paid.light, water.truck_paid.light - 1);
+        assert_eq!(
+            crate::logistics::activity_water_due(&c, &game.state, &id).unwrap(),
+            0
+        );
+        crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 4).unwrap();
+        assert_eq!(game.state.logistics.dumps["funding"].supplies, stock);
+        crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 8).unwrap();
     }
 }
