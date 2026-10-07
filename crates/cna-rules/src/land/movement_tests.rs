@@ -2780,3 +2780,100 @@ fn terminal_barrage_loss_reconciles_engagement_before_the_same_advance_opens_ret
         serde_json::from_value(serde_json::to_value(&t.game.state).unwrap()).unwrap();
     assert!(!restored.land.units[&tank].engaged && restored.land.engagements.is_empty());
 }
+
+/// Cases: land:8.56, land:8.92, airlog:49.16
+#[test]
+fn incoming_cohort_search_restores_foreign_origin_stock_and_shared_rounding_credit() {
+    use crate::state::{Dump, DumpLocation};
+    use cna_content::{
+        scenario::Supplies,
+        units::{Toe, Trucks},
+    };
+    let (c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+    let donor = UnitId::new(LEG);
+    let child = UnitId::new("cw.2_nz_div.21st_nz_bn");
+    place(&mut s, LEG, "C4020");
+    place(&mut s, child.as_str(), "C4024");
+    s.logistics.dumps.clear();
+    for id in [&donor, &child] {
+        s.land.units.get_mut(id).unwrap().trucks = Trucks::default();
+        s.land.units.get_mut(id).unwrap().transport_trucks = Trucks::default();
+        s.logistics.unit_supply.get_mut(id).unwrap().tank_fuel = FuelTenths::new(0);
+    }
+    s.land.units.get_mut(&child).unwrap().toe = Some(Toe::Under { under: 1 });
+    s.land.units.get_mut(&donor).unwrap().trucks.medium = 1;
+    s.logistics.dumps.insert(
+        "foreign-origin".into(),
+        Dump {
+            id: "foreign-origin".into(),
+            marker: String::new(),
+            side: Side::Commonwealth,
+            location: DumpLocation::Hex {
+                hex: "C4020".into(),
+            },
+            supplies: Supplies {
+                fuel: 3,
+                ..Supplies::default()
+            },
+            active: true,
+            dummy: false,
+        },
+    );
+    logistics::spend_segment_fuel(&c, &mut s, &donor, 4).unwrap();
+    s.land.units.get_mut(&donor).unwrap().location = Location::Hex {
+        hex: "C4024".into(),
+    };
+    let cohorts = logistics::segment_fuel_cohorts(&s, &donor).unwrap();
+    logistics::transfer_selected_segment_fuel_cohorts(
+        &mut s,
+        &donor,
+        &child,
+        &[logistics::FuelCohortSelection {
+            id: cohorts[0].id.clone(),
+            count: 1,
+        }],
+    )
+    .unwrap();
+    s.land.units.get_mut(&donor).unwrap().trucks.medium = 0;
+    s.land.units.get_mut(&child).unwrap().trucks.medium = 1;
+    s.land
+        .units
+        .get_mut(&child)
+        .unwrap()
+        .transport_trucks
+        .medium = 1;
+    assert_eq!(
+        s.logistics.fuel_segments[&child].origin.hex(),
+        Some(&"C4024".into())
+    );
+    assert_eq!(
+        s.logistics.fuel_accounts[&donor].origin.hex(),
+        Some(&"C4020".into())
+    );
+    let before = serde_json::to_value(&s).unwrap();
+    let paths = reachable(&c, &s, &child, true);
+    assert!(paths.iter().any(|p| p.hex.as_str() == "C4033"));
+    assert!(paths.iter().any(|p| p.hex.as_str() == "C4010"));
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    let seat = SeatId::new(Side::Commonwealth, Role::FrontLine);
+    for r in &paths {
+        let order = Order {
+            unit: child.clone(),
+            path: r.path.clone(),
+            with_stack: false,
+            close_assault: vec![],
+        };
+        let cost =
+            validate_nonphasing(&c, &s, &order, seat, true, NonPhasingMove::Retreat).unwrap();
+        assert_eq!(cost.cp_quarters, r.cp_quarters, "{}", r.hex);
+    }
+    assert_eq!(
+        serde_json::to_value(reachable(&c, &s, &child, true)).unwrap(),
+        serde_json::to_value(&paths).unwrap()
+    );
+    let restored: State = serde_json::from_value(before).unwrap();
+    assert_eq!(
+        serde_json::to_value(reachable(&c, &restored, &child, true)).unwrap(),
+        serde_json::to_value(&paths).unwrap()
+    );
+}

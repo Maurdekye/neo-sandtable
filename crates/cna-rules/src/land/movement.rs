@@ -1592,7 +1592,7 @@ fn reachable_inner(
     // Fuel can debit the current members' tanks and friendly stocks at each captured
     // segment origin. Activity water changes members and a stationary detached parent.
     // These source identities are query-local; no other holding can change in this search.
-    let origins: BTreeSet<_> = members
+    let mut origins: BTreeSet<_> = members
         .iter()
         .map(|m| {
             state
@@ -1610,7 +1610,31 @@ fn reachable_inner(
                 .unwrap_or_else(|| origin.clone())
         })
         .collect();
+    // Incoming physical cohorts retain their original funding account and sources.
+    // Restore both credit and the corresponding holdings when exploring another branch.
+    let accounts: BTreeSet<_> = members
+        .iter()
+        .flat_map(|id| {
+            state
+                .logistics
+                .fuel_segments
+                .get(id)
+                .into_iter()
+                .flat_map(|l| {
+                    std::iter::once(id.clone()).chain(l.cohorts.iter().map(|g| g.account.clone()))
+                })
+        })
+        .collect();
+    for account in accounts
+        .iter()
+        .filter_map(|id| state.logistics.fuel_accounts.get(id))
+    {
+        if let Some(hex) = account.origin.hex() {
+            origins.insert(hex.clone());
+        }
+    }
     let mut stocks: BTreeSet<_> = changed.iter().cloned().collect();
+    stocks.extend(accounts.iter().cloned());
     stocks.extend(
         state
             .units_of(seat.side)
@@ -1630,6 +1654,22 @@ fn reachable_inner(
                     }
                     _ => {}
                 }
+            }
+        }
+    }
+    for account in accounts
+        .iter()
+        .filter_map(|id| state.logistics.fuel_accounts.get(id))
+    {
+        for draw in &account.draws {
+            match &draw.source {
+                logistics::SupplySource::UnitStock(id) => {
+                    stocks.insert(id.clone());
+                }
+                logistics::SupplySource::Dump(id) => {
+                    dumps.insert(id.clone());
+                }
+                _ => {}
             }
         }
     }
