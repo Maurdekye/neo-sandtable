@@ -775,7 +775,10 @@ fn run(
                 state,
                 seat.side,
                 &Location::Hex { hex: to.clone() },
-            );
+                strict,
+                events,
+            )
+            .map_err(Rejection::Engine)?;
             emit_stacks(
                 content,
                 state,

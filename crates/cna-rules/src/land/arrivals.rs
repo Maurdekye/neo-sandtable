@@ -1516,7 +1516,20 @@ mod tests {
         s.setup.closed = true;
         s.setup.started = true;
         s.logistics.convoys_initialized = true;
-        crate::logistics::ports::initialize(&c, &mut s);
+        {
+            let mut rng = CampaignRng::from_seed([0; 32]);
+            let mut events = Vec::new();
+            crate::logistics::ports::initialize(
+                &c,
+                &mut s,
+                false,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut events,
+                },
+            )
+            .unwrap();
+        }
         s.turn.player_a = Some(Side::Axis);
         s.turn.weather = Some(crate::state::WeatherState {
             kind: cna_tables::land::weather::WeatherKind::Normal,
