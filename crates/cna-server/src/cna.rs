@@ -1392,6 +1392,206 @@ mod tests {
         }
     }
 
+    /// Exercise the real actor dispatcher, SQLite recovery, and mandatory loss continuation.
+    /// Cases: land:21.24, land:21.31, land:21.43, land:3.6
+    #[test]
+    fn mandatory_breakdown_actor_dispatch_allocates_and_resumes_in_both_scripted_modes() {
+        use crate::{
+            actor::auto_step,
+            scripted::{NoCandidates, Step},
+        };
+        use cna_core::decision::DecisionResponse;
+        for mode in ["pass_when_possible", "legal_random"] {
+            let (content, mut game) = movement_fixture();
+            let id: UnitId = "it.libyan_tank_command.xxi_l_tank_bn".into();
+            // A saved earlier journey makes the next completed actual move require a roll.
+            cna_rules::land::breakdown::record_edge(
+                &mut game.state,
+                &id,
+                &"C4020".into(),
+                280,
+                8,
+                WeatherKind::Normal,
+            )
+            .unwrap();
+            let directory = tempfile::tempdir().unwrap();
+            let path = directory.path().join("mandatory-dispatch.sqlite");
+            let pins = Pins {
+                rules_profile: cna_rules::PROFILE_DEV.into(),
+                content_hash: "real-roster-test-map".into(),
+                engine_version: env!("CNA_ENGINE_SOURCE_HASH").into(),
+            };
+            let meta = CampaignMeta {
+                id: "mandatory-dispatch".into(),
+                scenario_id: "graziani".into(),
+                rules_profile: pins.rules_profile.clone(),
+                title: "Mandatory dispatch".into(),
+                seats: vec![],
+            };
+            let mut campaign = Campaign::create(
+                &path,
+                Cna::dev(),
+                movement_fixture().0,
+                game,
+                meta,
+                pins.clone(),
+            )
+            .unwrap();
+            let request = campaign
+                .pending()
+                .into_iter()
+                .find(|r| r.kind == cna_rules::land::movement::KIND)
+                .unwrap();
+            campaign
+                .handover(
+                    request.seat,
+                    Some(ControllerInfo {
+                        kind: ControllerKind::Scripted,
+                        label: format!("scripted:{mode}"),
+                    }),
+                    serde_json::json!({"mode":mode}),
+                )
+                .unwrap();
+            let before_roll = campaign.game.rng.clone();
+            campaign
+                .submit(DecisionResponse {
+                    decision_id: request.id,
+                    seat: request.seat,
+                    controller_epoch: campaign.binding(request.seat).controller_epoch,
+                    decision_revision: request.revision,
+                    idempotency_key: "actual-move".into(),
+                    action: serde_json::json!([{"unit":id,"path":["C4021"]}]),
+                    public_explanation: None,
+                })
+                .unwrap();
+            let policy = movement_policy();
+            for _ in 0..4 {
+                if campaign
+                    .pending()
+                    .iter()
+                    .any(|r| r.kind == cna_rules::land::breakdown::window::KIND)
+                {
+                    break;
+                }
+                assert!(matches!(
+                    auto_step(&mut campaign, None, &NoCandidates, Some(&policy)).unwrap(),
+                    Step::Advanced
+                ));
+            }
+            let loss = campaign
+                .pending()
+                .into_iter()
+                .find(|r| r.kind == cna_rules::land::breakdown::window::KIND)
+                .expect("real completed move opens a mandatory loss window");
+            assert!(loss.space.pass.is_none());
+            assert_eq!(loss.seat, request.seat);
+            assert_ne!(
+                campaign.game.rng, before_roll,
+                "breakdown dice must actually roll"
+            );
+            let hash = campaign.state_hash().unwrap();
+            let rng = campaign.game.rng.clone();
+            drop(campaign);
+            campaign = Campaign::recover(&path, Cna::dev(), movement_fixture().0, &pins).unwrap();
+            assert_eq!(campaign.state_hash().unwrap(), hash);
+            assert_eq!(campaign.game.rng, rng);
+            assert_eq!(campaign.pending()[0], loss);
+            let mut allocations = 0;
+            for _ in 0..16 {
+                let pending_loss = campaign
+                    .pending()
+                    .into_iter()
+                    .find(|r| r.kind == cna_rules::land::breakdown::window::KIND);
+                let previous = campaign.game.clone();
+                let step = auto_step(&mut campaign, None, &NoCandidates, Some(&policy)).unwrap();
+                if let Some(loss) = pending_loss {
+                    assert!(
+                        matches!(step, Step::Responded { seat } if seat == loss.seat),
+                        "{mode}: {step:?}"
+                    );
+                    assert_eq!(
+                        campaign.game.rng, previous.rng,
+                        "allocation cannot draw campaign dice"
+                    );
+                    let db = rusqlite::Connection::open(&path).unwrap();
+                    let text: String = db
+                        .query_row(
+                            "SELECT command FROM commands ORDER BY revision DESC LIMIT 1",
+                            [],
+                            |r| r.get(0),
+                        )
+                        .unwrap();
+                    let command: Command = serde_json::from_str(&text).unwrap();
+                    let Command::Respond(response) = &command else {
+                        panic!("allocator must submit a real response")
+                    };
+                    assert_eq!(response.decision_id, loss.id);
+                    assert!(
+                        !response.action.is_null(),
+                        "compulsory losses have no fabricated pass"
+                    );
+                    let expected = evaluate(&Cna::dev(), &content, &previous, &command).unwrap();
+                    assert_eq!(
+                        serde_json::to_value(expected.game).unwrap(),
+                        serde_json::to_value(&campaign.game).unwrap()
+                    );
+                    allocations += 1;
+                } else {
+                    assert!(matches!(step, Step::Advanced), "{mode}: {step:?}");
+                }
+                assert!(
+                    !campaign.binding(request.seat).paused,
+                    "{mode}: allocator must not park the driver"
+                );
+                if !campaign.game.state.land.breakdown.window.parked
+                    && campaign.game.state.land.breakdown.stopped.is_empty()
+                    && campaign
+                        .game
+                        .state
+                        .land
+                        .breakdown
+                        .window
+                        .outcomes
+                        .is_empty()
+                {
+                    break;
+                }
+            }
+            assert!(allocations > 0);
+            assert!(!campaign.game.state.land.breakdown.window.parked);
+            assert!(campaign.game.state.land.breakdown.stopped.is_empty());
+            assert!(
+                !campaign.game.state.land.breakdown.markers.is_empty(),
+                "physical loss application must complete"
+            );
+            assert!(
+                !campaign
+                    .pending()
+                    .iter()
+                    .any(|r| r.kind == cna_rules::land::breakdown::window::KIND)
+            );
+            let hash = campaign.state_hash().unwrap();
+            let rng = campaign.game.rng.clone();
+            let views: Vec<_> = cna_core::visibility::Perspective::all()
+                .map(|p| {
+                    (
+                        p,
+                        campaign.view(p).unwrap(),
+                        campaign.current_seq(p).unwrap(),
+                    )
+                })
+                .collect();
+            drop(campaign);
+            let campaign = Campaign::recover(&path, Cna::dev(), content, &pins).unwrap();
+            assert_eq!(campaign.state_hash().unwrap(), hash);
+            assert_eq!(campaign.game.rng, rng);
+            for (p, view, seq) in views {
+                assert_eq!(campaign.view(p).unwrap(), view);
+                assert_eq!(campaign.current_seq(p).unwrap(), seq);
+            }
+        }
+    }
+
     /// Mandatory loss policies return exact real allocations before generic pass/generation handling.
     /// Cases: land:21.24,land:21.31,land:21.43,land:3.6
     #[test]

@@ -513,7 +513,9 @@ fn auto_step_inner<R: Ruleset>(
                 .is_some_and(|c| c.kind == cna_protocol::ControllerKind::Scripted)
     });
     if let Some(request) = first_scripted.as_ref()
-        && campaign.binding(request.seat).config["mode"] == "legal_random"
+        && (campaign.binding(request.seat).config["mode"] == "legal_random"
+            || (campaign.binding(request.seat).config["mode"] == "pass_when_possible"
+                && request.space.pass.is_none()))
         && let Some(policy) = policy
         && let Some(action) = policy(
             &campaign.content,
@@ -522,7 +524,12 @@ fn auto_step_inner<R: Ruleset>(
             campaign.binding(request.seat).controller_epoch,
         )
     {
-        return apply_baseline(campaign, request, action, "scripted:legal_random");
+        let label = if campaign.binding(request.seat).config["mode"] == "pass_when_possible" {
+            "scripted:pass_when_possible"
+        } else {
+            "scripted:legal_random"
+        };
+        return apply_baseline(campaign, request, action, label);
     }
     if let Some(request) =
         first_scripted.filter(|d| campaign.binding(d.seat).config["mode"] == "aggressive")
