@@ -4,7 +4,7 @@ pub mod campaign;
 pub use auth::CampaignCapabilities;
 pub mod scripted;
 
-pub use campaign::{Binding, Campaign, CampaignStatus, Error, Pins, Receipt};
+pub use campaign::{Binding, Campaign, CampaignStatus, Error, Pins, Receipt, RunBoundary};
 pub mod actor;
 pub mod campaigns;
 pub mod cna;

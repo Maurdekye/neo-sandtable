@@ -1519,3 +1519,134 @@ async fn metadata_discovery_and_retained_websocket_resume_build_no_views() {
     socket.close(None).await.unwrap();
     server.stop().await;
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn run_boundary_http_is_operator_only_and_persists_without_resuming() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", true)).unwrap();
+    let id = handle.header(Perspective::Operator).meta.id;
+    let path = dir.path().join(format!("{id}.sqlite"));
+    let server = Server::new(dir.path(), Some(handle.clone())).await;
+    let root = format!("{}/api/campaigns/{id}/run-boundary", server.url);
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({"boundary":{"game_turn":1,"op_stage":1}});
+    let original = persisted(&path);
+    for method in [reqwest::Method::GET, reqwest::Method::POST] {
+        assert_eq!(
+            client
+                .request(method.clone(), &root)
+                .json(&body)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            401
+        );
+        for token in [
+            server.app.side_token(&id, Side::Axis).unwrap(),
+            server
+                .app
+                .seat_token(&id, "axis.commander".parse().unwrap())
+                .unwrap(),
+        ] {
+            assert_eq!(
+                client
+                    .request(method.clone(), &root)
+                    .bearer_auth(token)
+                    .json(&body)
+                    .send()
+                    .await
+                    .unwrap()
+                    .status(),
+                403
+            );
+            assert_eq!(handle.run_boundary().await.unwrap(), None);
+            assert_eq!(persisted(&path), original);
+        }
+    }
+    let operator = server.client();
+    assert_eq!(
+        operator
+            .post(&root)
+            .json(&body)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        200
+    );
+    assert_eq!(
+        operator
+            .get(&root)
+            .send()
+            .await
+            .unwrap()
+            .json::<Value>()
+            .await
+            .unwrap(),
+        body
+    );
+    assert_eq!(handle.status(), CampaignStatus::Paused);
+    for invalid in [
+        serde_json::json!({}),
+        serde_json::json!({"boundary":{"game_turn":0}}),
+        serde_json::json!({"boundary":{"game_turn":1,"op_stage":4}}),
+        serde_json::json!({"boundary":{"game_turn":1,"typo":2}}),
+    ] {
+        assert!(
+            !operator
+                .post(&root)
+                .json(&invalid)
+                .send()
+                .await
+                .unwrap()
+                .status()
+                .is_success()
+        );
+        assert_eq!(
+            operator
+                .get(&root)
+                .send()
+                .await
+                .unwrap()
+                .json::<Value>()
+                .await
+                .unwrap(),
+            body
+        );
+        assert_eq!(handle.status(), CampaignStatus::Paused);
+    }
+    assert_eq!(
+        operator
+            .get(format!("{}/api/campaigns/unknown/run-boundary", server.url))
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        404
+    );
+    // Only the independently persisted operator control row changes.
+    assert_eq!(
+        persisted(&path)
+            .into_iter()
+            .filter(|r| !r.starts_with("run_control:"))
+            .collect::<Vec<_>>(),
+        original
+            .into_iter()
+            .filter(|r| !r.starts_with("run_control:"))
+            .collect::<Vec<_>>()
+    );
+    server.stop().await;
+    let restored = sandbox::recover(&path, &data()).unwrap();
+    let status = restored.status();
+    let boundary = restored.run_boundary().await.unwrap();
+    restored.shutdown().await.unwrap();
+    assert_eq!(status, CampaignStatus::Paused);
+    assert_eq!(
+        boundary,
+        Some(cna_server::RunBoundary {
+            game_turn: 1,
+            op_stage: Some(1)
+        })
+    );
+}

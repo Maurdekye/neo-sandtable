@@ -228,3 +228,17 @@ state reconnects replay events without building a snapshot. Existing `projection
 supported and materialize a snapshot only when called. View timings now measure demanded reads,
 separately from eager publisher time. Recovery tests compare all thirteen views with direct
 ruleset projections, including a delayed read after a decision reissue.
+
+
+An operator may set a durable `RunBoundary { game_turn, op_stage }` through
+`CampaignHandle::set_run_boundary` or POST `/api/campaigns/{id}/run-boundary`
+with `{"boundary":{"game_turn":1,"op_stage":1}}`. GET returns the current limit;
+POST `{"boundary":null}` clears it. Both HTTP operations require the operator capability.
+A stage is 1..3; omitting it covers the whole turn. The writer previews every Advance
+and pauses before committing a resulting clock beyond the limit. The discarded preview
+leaves commands, events, pending decisions, RNG and controller health unchanged.
+A clock with no stage inside the chosen turn is allowed. Pending answers can still be
+submitted while campaign-paused; they do not adjudicate the next step. Clearing or
+raising the limit does not resume implicitly: use the existing resume control.
+Recovery preserves the boundary and last committed state, and resumption re-evaluates
+the same deterministic Advance.

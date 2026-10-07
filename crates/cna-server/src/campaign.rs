@@ -34,6 +34,8 @@ pub enum Error {
     IdempotencyConflict,
     #[error("campaign is not running")]
     NotRunning,
+    #[error("campaign run boundary reached")]
+    RunBoundaryReached,
     #[error("campaign recovery mismatch: {0}")]
     Recovery(String),
     #[error("invalid request: {0}")]
@@ -55,6 +57,25 @@ pub enum CampaignStatus {
     Paused,
     Finished { summary: String },
     Stopped { error: String },
+}
+
+/// Operator run limit; never part of a seat's game or observation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RunBoundary {
+    pub game_turn: u16,
+    /// None includes the whole turn, including its pre/post-stage blocks.
+    pub op_stage: Option<u8>,
+}
+impl RunBoundary {
+    fn exceeded(self, clock: &cna_protocol::Clock) -> bool {
+        clock.game_turn > self.game_turn
+            || (clock.game_turn == self.game_turn
+                && self
+                    .op_stage
+                    .zip(clock.op_stage)
+                    .is_some_and(|(limit, stage)| stage > limit))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -118,6 +139,7 @@ pub struct Campaign<R: Ruleset> {
     revision: u64,
     status: CampaignStatus,
     bindings: BTreeMap<SeatId, Binding>,
+    run_boundary: Option<RunBoundary>,
 }
 
 fn json<T: Serialize + ?Sized>(value: &T) -> Result<String, Error> {
@@ -243,6 +265,7 @@ impl<R: Ruleset> Campaign<R> {
             meta,
             revision: 0,
             status: CampaignStatus::Running,
+            run_boundary: None,
             bindings,
         })
     }
@@ -335,6 +358,10 @@ impl<R: Ruleset> Campaign<R> {
         if bindings.len() != SeatId::all().count() {
             return Err(Error::Recovery("controller bindings missing".into()));
         }
+        let run_boundary: String =
+            db.query_row("SELECT boundary FROM run_control WHERE id=1", [], |r| {
+                r.get(0)
+            })?;
         let campaign = Self {
             db,
             metrics: Arc::new(Mutex::new(RuntimeMetrics::default())),
@@ -344,6 +371,7 @@ impl<R: Ruleset> Campaign<R> {
             meta: decode(&meta)?,
             revision,
             status: decode(&status)?,
+            run_boundary: decode(&run_boundary)?,
             bindings,
         };
         let mut persisted = campaign
@@ -460,6 +488,26 @@ impl<R: Ruleset> Campaign<R> {
                 }
                 .into()
             })
+    }
+
+    pub fn run_boundary(&self) -> Option<RunBoundary> {
+        self.run_boundary
+    }
+    /// Persist a control change without changing the game, bindings, or paused status.
+    pub fn set_run_boundary(&mut self, boundary: Option<RunBoundary>) -> Result<(), Error> {
+        if boundary
+            .is_some_and(|b| b.game_turn == 0 || b.op_stage.is_some_and(|s| !(1..=3).contains(&s)))
+        {
+            return Err(Error::Invalid(
+                "run boundary requires a positive turn and stage 1..3".into(),
+            ));
+        }
+        self.db.execute(
+            "UPDATE run_control SET boundary=? WHERE id=1",
+            [json(&boundary)?],
+        )?;
+        self.run_boundary = boundary;
+        Ok(())
     }
 
     pub fn set_paused(&mut self, paused: bool) -> Result<(), Error> {
@@ -635,7 +683,9 @@ impl<R: Ruleset> Campaign<R> {
         )
     }
     fn commit(&mut self, command: Command, seat: String, key: String) -> Result<Receipt, Error> {
-        if self.status != CampaignStatus::Running {
+        if self.status != CampaignStatus::Running
+            && !(self.status == CampaignStatus::Paused && matches!(&command, Command::Respond(_)))
+        {
             return Err(Error::NotRunning);
         }
         let engine_start = Instant::now();
@@ -654,6 +704,16 @@ impl<R: Ruleset> Campaign<R> {
             }
             Err(e) => return Err(e.into()),
         };
+        // Answering only records a plan. Preview the automatic transition at its
+        // adjudication boundary; discard every engine mutation and RNG draw on a stop.
+        if matches!(&command, Command::Advance)
+            && self.run_boundary.is_some_and(|b| {
+                b.exceeded(&self.ruleset.clock(&self.content, &transition.game.state))
+            })
+        {
+            self.set_paused(true)?;
+            return Err(Error::RunBoundaryReached);
+        }
         let engine_elapsed = engine_start.elapsed();
         let writer_start = Instant::now();
         let revision = self.revision + 1;

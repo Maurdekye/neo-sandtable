@@ -155,6 +155,10 @@ impl App {
             .route("/api/campaigns/{id}/capabilities", get(capabilities))
             .route("/api/campaigns", get(list).post(create))
             .route("/api/campaigns/{id}", get(inspect_campaign))
+            .route(
+                "/api/campaigns/{id}/run-boundary",
+                get(run_boundary).post(set_run_boundary),
+            )
             .route("/api/campaigns/{id}/pause", post(pause))
             .route("/api/campaigns/{id}/resume", post(resume))
             .route("/api/campaigns/{id}/seats", get(seats))
@@ -381,6 +385,34 @@ async fn inspect_campaign(
         let projection = handle.projection(p);
         json!({"campaign":projection.meta,"status":status,"snapshot":projection})
     }))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BoundaryRequest {
+    #[serde(deserialize_with = "Deserialize::deserialize")]
+    boundary: Option<crate::RunBoundary>,
+}
+async fn run_boundary(
+    State(app): State<App>,
+    Extension(grant): Extension<Grant>,
+    RoutePath(id): RoutePath<String>,
+) -> Result<Json<Value>, ApiError> {
+    authorized(grant.operator())?;
+    Ok(Json(
+        json!({"boundary":app.campaign(&id)?.run_boundary().await?}),
+    ))
+}
+async fn set_run_boundary(
+    State(app): State<App>,
+    Extension(grant): Extension<Grant>,
+    RoutePath(id): RoutePath<String>,
+    Json(request): Json<BoundaryRequest>,
+) -> Result<Json<Value>, ApiError> {
+    authorized(grant.operator())?;
+    app.campaign(&id)?
+        .set_run_boundary(request.boundary)
+        .await?;
+    Ok(Json(json!({"boundary":request.boundary})))
 }
 async fn pause(
     State(app): State<App>,

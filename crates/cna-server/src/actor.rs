@@ -77,6 +77,8 @@ pub(crate) type ActionPolicy<R> = Box<
 
 enum Op {
     Pause(bool),
+    RunBoundary,
+    SetRunBoundary(Option<crate::RunBoundary>),
     Handover(SeatId, Option<ControllerInfo>, Value),
     PauseSeat(SeatId, Option<u64>, String),
     Submit(DecisionResponse),
@@ -448,6 +450,16 @@ impl CampaignHandle {
     pub fn replay(&self) -> ReplayReader {
         self.inner.reader.clone()
     }
+    /// Trusted launcher/operator control; never exposed through the seat MCP bridge.
+    pub async fn run_boundary(&self) -> Result<Option<crate::RunBoundary>, Error> {
+        self.call(Op::RunBoundary).await
+    }
+    pub async fn set_run_boundary(
+        &self,
+        boundary: Option<crate::RunBoundary>,
+    ) -> Result<(), Error> {
+        self.call(Op::SetRunBoundary(boundary)).await
+    }
     pub async fn pause(&self, paused: bool) -> Result<(), Error> {
         self.call(Op::Pause(paused)).await
     }
@@ -713,6 +725,11 @@ where
 }
 fn dispatch<R: Ruleset>(campaign: &mut Campaign<R>, op: Op) -> Result<Value, Error> {
     match op {
+        Op::RunBoundary => serialize(campaign.run_boundary()),
+        Op::SetRunBoundary(boundary) => {
+            campaign.set_run_boundary(boundary)?;
+            Ok(Value::Null)
+        }
         Op::Pause(paused) => {
             campaign.set_paused(paused)?;
             Ok(Value::Null)

@@ -41,3 +41,9 @@ CREATE TABLE IF NOT EXISTS perspective_transcripts (
 );
 CREATE TABLE IF NOT EXISTS notebooks (seat TEXT NOT NULL, key TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY(seat, key));
 CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, side TEXT NOT NULL, seat TEXT NOT NULL, message TEXT NOT NULL);
+
+-- Independent operator controls survive restart, outside the deterministic game log.
+CREATE TABLE IF NOT EXISTS run_control (
+    id INTEGER PRIMARY KEY CHECK(id = 1), boundary TEXT NOT NULL
+);
+INSERT OR IGNORE INTO run_control VALUES (1, 'null');

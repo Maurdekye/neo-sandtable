@@ -210,8 +210,11 @@ impl<R: Ruleset> Campaign<R> {
         }
         let pending = self.pending();
         if pending.is_empty() {
-            self.advance()?;
-            return Ok(Step::Advanced);
+            return match self.advance() {
+                Ok(_) => Ok(Step::Advanced),
+                Err(Error::RunBoundaryReached) => Ok(Step::Idle),
+                Err(error) => Err(error),
+            };
         }
         for request in pending {
             let binding = self.binding(request.seat);
