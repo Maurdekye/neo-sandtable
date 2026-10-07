@@ -435,3 +435,26 @@ The first strip, `road-spine-0001`, completes existing clear-terrain cells
 and all eight side kinds are individually checked absent. Pipeline remains
 unsurveyed. No completeness is claimed for adjoining edges, the rest of the
 coast-road spine, or unit action legality.
+
+
+`sollum-control-0001` adds two surveyed crossings **C3921/C3922**
+and **C3921/C4021**: clear land cells, no crossing road/track/rail features,
+and escarpments with **C3921 high**, C3922 and C4021 low. It also verifies
+C4020/C4121 as an escarpment with **C4020 high** and a crossing track;
+that edge has other line kinds still unknown. This is not a complete
+connection from the
+first road strip: the intervening observed playback edge **C3921/C4020**
+has a confirmed track but unresolved railroad/unfinished-railroad and
+border kinds. Its absent road/unfinished-road and readable side kinds
+are separately masked. Pipeline remains unknown.
+
+The same review supplies explicit all-sea/major-river/minor-river negatives
+on the ten previously unsurveyed edges incident to C3921 or C4020, plus
+readable escarpment observations. All three immediate control-blocker
+kinds resolve on the six sides of C3921, but a complete control query can
+also need entry prices from neighboring enemy stacks. Those other layers,
+C4020/C4021's contour ambiguity and the branch endpoints' remaining halo
+remain unknown.
+`control_halo_complete` remains false. Consult individual masks; neither
+halo water checks nor a complete branch crossing complete the playback leg.
+Public side-feature marks are new regular-hex bars labeled from data.

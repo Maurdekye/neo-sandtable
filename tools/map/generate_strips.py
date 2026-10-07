@@ -90,6 +90,19 @@ def render_strip(layers, strip, path):
         x1,y1 = centers[a]
         x2,y2 = centers[b]
         out.append(f'<line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}" stroke="{color}" stroke-width="2.5" stroke-dasharray="{dash}"><title>{kind}</title></line>')
+    for a,b in zip(route, route[1:]):
+        x1,y1 = centers[a]
+        x2,y2 = centers[b]
+        mx,my = (x1+x2)/2,(y1+y2)/2
+        length = math.hypot(x2-x1,y2-y1)
+        tx,ty = -(y2-y1)/length,(x2-x1)/length
+        for kind in sorted(SIDE_KINDS):
+            feature = layers.feature("side",kind,a,b)
+            if feature is None:
+                continue
+            label = kind + ("; high " + feature["high_side"] if feature["high_side"] else "")
+            out.append(f'<line x1="{mx-tx*radius/2:.2f}" y1="{my-ty*radius/2:.2f}" x2="{mx+tx*radius/2:.2f}" y2="{my+ty*radius/2:.2f}" stroke="#b63831" stroke-width="3"><title>{escape(label)}</title></line>')
+            out.append(f'<text x="{mx:.2f}" y="{my-20:.2f}" text-anchor="middle" font-family="sans-serif" font-size="5" fill="#9d2521">{escape(label)}</text>')
     for name,(x,y) in centers.items():
         out.append(f'<text x="{x:.2f}" y="{y+15:.2f}" text-anchor="middle" font-family="sans-serif" font-size="8">{escape(name)}</text>')
     path.write_text("\n".join(out)+"\n</svg>\n", encoding="utf-8", newline="\n")

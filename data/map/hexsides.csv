@@ -1,1 +1,4 @@
 hex_id,direction,neighbour_id,feature,high_side,src,review_batch
+C3921,E,C3922,escarpment,C3921,land:8.35;land:8.37;land:8.42,sollum-control-0001
+C3921,NE,C4021,escarpment,C3921,land:8.35;land:8.37;land:8.42,sollum-control-0001
+C4020,NE,C4121,escarpment,C4020,land:8.35;land:8.37;land:8.42,sollum-control-0001

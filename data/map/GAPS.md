@@ -121,10 +121,23 @@ population accuracy remain unverified.
 
 
 First map-complete route segment: C4220-C4120-C4020 only (road-spine-0001).
-No directional escarpment positives have yet been published. The adjacent
-control halo and pipeline layer remain unknown, as do the next coast-road
-edges. Do not infer full-spine completeness or legal unit moves from this
-two-edge strip. Printed blue interrupted/tied lines match the unfinished
-railroad family in TEC.png; they do not establish country membership.
+The subsequent sollum-control-0001 branch publishes three directional
+escarpments: C3921/C3922 and C3921/C4021 with C3921 high, plus
+C4020/C4121 with C4020 high. The wider control halo and
+pipeline layer remain partial/unknown, as do the next coast-road edges. Do not infer full-spine completeness or legal unit moves from this
+two-edge strip. Some blue interrupted/tied lines resemble unfinished railroad
+family in TEC.png; this does not identify every boundary-coincident block
+or establish country membership. See the exact-side abstentions below.
 Paired dashed Via Balbia strokes east of Sollum match unfinished road.
 Specific crossing IDs and their other layers still require review.
+
+
+Observed playback side C3921/C4020: a thin dashed track is verified, but
+railroad, unfinished_railroad and border remain unknown. The gray tied
+stroke and blue side overlay need additional source identification; do
+not infer one from the other or from the board's dev-profile assumption.
+C4020/C4021 contour identity/orientation remains unresolved. The confirmed
+C4020/C4121 contour/track has other line kinds still unknown.
+Three immediate blocker kinds are resolved around C3921, but other
+neighbor-to-cell entry layers can still be unknown. No complete control
+halo, full-profile move or national frontier is asserted.

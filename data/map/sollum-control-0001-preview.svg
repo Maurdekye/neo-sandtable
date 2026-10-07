@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4183.28 930.00 120.50 114.00">
+<title>Source-reviewed map strip: map-layer completeness only</title>
+<desc>Original regular hexagons and center links generated from canonical map data. No source artwork. Unit move legality and the neighboring control halo are unverified.</desc>
+<polygon points="4292.02,1022.00 4267.77,1036.00 4243.52,1022.00 4243.52,994.00 4267.77,980.00 4292.02,994.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4243.52,1022.00 4219.28,1036.00 4195.03,1022.00 4195.03,994.00 4219.28,980.00 4243.52,994.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4267.77,980.00 4243.52,994.00 4219.28,980.00 4219.28,952.00 4243.52,938.00 4267.77,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<line x1="4267.77" y1="1008.00" x2="4219.28" y2="1008.00" stroke="#8f98a0" stroke-width="2.5" stroke-dasharray="1 4"><title>plain</title></line>
+<line x1="4219.28" y1="1008.00" x2="4243.52" y2="966.00" stroke="#8f98a0" stroke-width="2.5" stroke-dasharray="1 4"><title>plain</title></line>
+<line x1="4243.52" y1="1022.00" x2="4243.52" y2="994.00" stroke="#b63831" stroke-width="3"><title>escarpment; high C3921</title></line>
+<text x="4243.52" y="988.00" text-anchor="middle" font-family="sans-serif" font-size="5" fill="#9d2521">escarpment; high C3921</text>
+<line x1="4219.28" y1="980.00" x2="4243.52" y2="994.00" stroke="#b63831" stroke-width="3"><title>escarpment; high C3921</title></line>
+<text x="4231.40" y="967.00" text-anchor="middle" font-family="sans-serif" font-size="5" fill="#9d2521">escarpment; high C3921</text>
+<text x="4267.77" y="1023.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3922</text>
+<text x="4219.28" y="1023.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3921</text>
+<text x="4243.52" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4021</text>
+</svg>

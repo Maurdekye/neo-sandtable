@@ -120,7 +120,7 @@ class EdgeReviewTests(unittest.TestCase):
         meta = tomllib.loads((MAP / "edge-reviews/road-spine-0001.toml").read_text())["batch"]
         lines, sides, masks = load_edge_reviews(MAP/"edge-reviews", self.grid,
                          meta["source_image_sha256"], meta["build_file_sha256"], meta["terrain_key_sha256"])
-        self.assertEqual((len(lines),len(sides),len(masks)), (2,0,26))
+        self.assertEqual(tuple(sum(r['review_batch']=='road-spine-0001' for r in values) for values in (lines,sides,masks)), (2,0,26))
         data = Layers(MAP)
         for a,b in [("C4220","C4120"), ("C4120","C4020")]:
             self.assertIsNotNone(data.feature("line", "road", a,b))
@@ -167,6 +167,39 @@ class EdgeReviewTests(unittest.TestCase):
         self.assertTrue(strip["route_map_layers_complete"])
         self.assertFalse(strip["control_halo_complete"])
         self.assertFalse(strip["pipeline_complete"])
+        self.assertFalse(strip["unit_action_legality_verified"])
+
+    def test_sollum_positive_has_source_high_side_and_ambiguous_playback_stays_unknown(self):
+        data = Layers(MAP)
+        side = data.feature("side", "escarpment", "C3922", "C3921")
+        self.assertEqual(side["direction"], "E")
+        self.assertEqual(side["high_side"], "C3921")
+        self.assertIsNotNone(data.feature("line", "track", "C4020", "C3921"))
+        for a,b in [("C3921","C4021"),("C4020","C4121")]:
+            side = data.feature("side","escarpment",b,a)
+            self.assertEqual(side["direction"], "NE")
+            self.assertEqual(side["high_side"], a)
+        self.assertIsNotNone(data.feature("line","track","C4020","C4121"))
+        for family, kind in [("line", "railroad"), ("line", "unfinished_railroad"), ("side", "border")]:
+            with self.subTest(family=family, kind=kind):
+                with self.assertRaises(UnknownCoverage):
+                    data.feature(family,kind,"C4020","C3921")
+        with self.assertRaises(UnknownCoverage):
+            data.feature("side","escarpment","C4020","C4021")
+
+    def test_control_blockers_at_c3921_resolve_without_claiming_every_approach_complete(self):
+        from geometry import DIRECTIONS
+        data = Layers(MAP)
+        for direction in DIRECTIONS:
+            neighbor = data.grid.neighbour("C3921", direction)
+            for kind in ("all_sea", "major_river", "escarpment"):
+                data.feature("side",kind,"C3921",neighbor)
+        with self.assertRaises(UnknownCoverage):
+            data.feature("line","road","C3921","C3820")
+        import tomllib
+        strip = next(s for s in tomllib.loads((MAP/"strips.toml").read_text(encoding="utf-8"))["strips"] if s["id"]=="sollum-control-0001")
+        self.assertEqual(strip["route_hex_ids"], ["C3922", "C3921", "C4021"])
+        self.assertFalse(strip["control_halo_complete"])
         self.assertFalse(strip["unit_action_legality_verified"])
 
 if __name__ == "__main__":

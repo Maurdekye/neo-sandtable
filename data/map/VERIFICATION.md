@@ -370,3 +370,49 @@ missing citations, preservation of old masks/features and old negatives,
 and refusal to emit completeness with any route kind unknown. The public
 SVG is new regular-hex art generated from canonical IDs and endpoints,
 never a source-image tracing or recoloring.
+
+
+## Sollum control review (2026-10-07)
+
+The board's actual dev-profile movement C4020 to C3921 identified the next
+review location; it was not used as evidence of map features. Eleven full
+shared-side/surrounding-cell native crops around C4020 and C3921 were
+viewed at 3x beside TEC.png. `edge-reviews/sollum-control-0001.toml` records
+71 explicit kind-edge observations: 64 resolved (two tracks, three
+escarpments, 59 negatives) and seven unresolved. Existing published masks
+are not rewritten.
+The 64 new masks comprise fourteen line-kind and fifty side-kind
+observations. Total edge coverage becomes 145 masks, with 13 lines and
+three positive side features. Terrain remains 297 classified cells.
+
+The complete vertical C3921/C3922 shared side has the key's gray escarpment
+band; its downslope splashes face C3922, making C3921 the high endpoint.
+The coast road and dashed track inside C3922 do not cross this vertical
+side. The neighboring blue line meets a different side at the vertex;
+a vertex alone does not establish a crossing. Exact projected endpoint
+locators and unmarked 4x crops also
+resolve C3921/C4021 (C3921 high) and C4020/C4121 (C4020 high). A preliminary
+negative on the former and abstention on the latter were corrected in the
+unpublished draft; the blue symbol is on the adjoining side. The first two
+contours form the fully surveyed branch C3922-C3921-C4021; all thirteen
+movement kinds resolve on both sides. Canonical directions are E and NE;
+reversing a query retains each source high endpoint. C4020/C4121 also has
+a directly verified crossing track, but other line kinds remain unknown.
+The branch SVG shows labeled regular-hex side bars, not copied contours.
+
+C3921/C4020 has a separate thin dashed track crossing. The adjacent heavy
+gray tied stroke and blue boundary-coincident blocks are not identified
+confidently enough to accept railroad state or border presence/absence.
+Both rail kinds and border remain unknown. Pipeline is unsurveyed on the
+three surveyed route pairs;
+C4020/C4021 escarpment identity/orientation remains unresolved. Earlier
+informal rail-family descriptions
+are not accepted classification of these exact sides.
+
+Every published observation is directly reviewed, with no accepted
+classifier output or second-observer claim. Post-review population error
+and original1979equivalence remain unmeasured. Immediate water/river and
+escarpment blocker queries around C3921 resolve, but other approach costs
+and the larger control halo remain partial. Tests pin the real escarpment
+high side, preserve the observed leg's unknown kinds, and do not convert
+blocker-only halo coverage into full movement coverage.

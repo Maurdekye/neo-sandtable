@@ -1,0 +1,650 @@
+[batch]
+id = "sollum-control-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+route_hex_ids = ["C3922", "C3921", "C4021"]
+review_basis = "Native full shared-side/surrounding-cell atlas of 11 adjacent crossings around C4020 and C3921, inspected at 3x against TEC.png. Partial masks remain per-kind; blue boundary-coincident and gray tied-stroke identities are unresolved where ambiguous. Contour splashes on C3922 identify the low side. No classifier labels or original1979/independent observer check. Exact projected shared-side endpoint locators and unmarked 4x source crops resolve C3921/C4021 and C4020/C4121 as additional escarpments; draft side identity corrected before publication."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline not surveyed; no absence coverage."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline not surveyed; no absence coverage."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline not surveyed; no absence coverage."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "No railroad crosses the full vertical shared side. The coast road and thin gray track lie east inside C3922, the heavy tied stroke stays inside C3921, and the blue line follows the adjoining northwestern side. A neighboring vertex alone is not a crossing."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "line:railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.37"]
+note = "Heavy gray tied stroke crosses near the blue ticked side overlay. Its completed/unfinished rail or other symbol identity is not unambiguous from this key; neither railroad layer is covered."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "No railroad crosses the full diagonal escarpment side. Paired coast road stays east inside C4021; thin and heavy gray lines stay southwest, and blue blocks reach only the western vertex on the adjoining side."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "No road crosses the full vertical shared side. The coast road and thin gray track lie east inside C3922, the heavy tied stroke stays inside C3921, and the blue line follows the adjoining northwestern side. A neighboring vertex alone is not a crossing."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "No paired continuous or paired dashed road strokes cross the full shared side. The thin single dashed track and tied line are distinct from either road key."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "No road crosses the full diagonal escarpment side. Paired coast road stays east inside C4021; thin and heavy gray lines stay southwest, and blue blocks reach only the western vertex on the adjoining side."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "No track crosses the full vertical shared side. The coast road and thin gray track lie east inside C3922, the heavy tied stroke stays inside C3921, and the blue line follows the adjoining northwestern side. A neighboring vertex alone is not a crossing."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "line:track"
+observed = "present"
+high_side = ""
+src = ["land:8.37"]
+note = "A single thin gray dashed route crosses the diagonal shared side east of the heavy tied stroke; the dashes continue into both C4020 and C3921. It matches the track key independently of the unresolved tied line."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "No track crosses the full diagonal escarpment side. Paired coast road stays east inside C4021; thin and heavy gray lines stay southwest, and blue blocks reach only the western vertex on the adjoining side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "line:track"
+observed = "present"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Single thin gray dashed track crosses the diagonal gray escarpment between the located side endpoints and continues into C4020 and C4121. Paired road near the western vertex is not inferred as a crossing here; other line kinds remain unsurveyed."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "No unfinished_railroad crosses the full vertical shared side. The coast road and thin gray track lie east inside C3922, the heavy tied stroke stays inside C3921, and the blue line follows the adjoining northwestern side. A neighboring vertex alone is not a crossing."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "line:unfinished_railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Heavy gray tied stroke crosses near the blue ticked side overlay. Its completed/unfinished rail or other symbol identity is not unambiguous from this key; neither railroad layer is covered."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "No unfinished_railroad crosses the full diagonal escarpment side. Paired coast road stays east inside C4021; thin and heavy gray lines stay southwest, and blue blocks reach only the western vertex on the adjoining side."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "No unfinished_road crosses the full vertical shared side. The coast road and thin gray track lie east inside C3922, the heavy tied stroke stays inside C3921, and the blue line follows the adjoining northwestern side. A neighboring vertex alone is not a crossing."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "No paired continuous or paired dashed road strokes cross the full shared side. The thin single dashed track and tied line are distinct from either road key."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "No unfinished_road crosses the full diagonal escarpment side. Paired coast road stays east inside C4021; thin and heavy gray lines stay southwest, and blue blocks reach only the western vertex on the adjoining side."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Full drawn shared side inspected: land throughout, no shoreline or all-water side. This is side inspection, not endpoint inference."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full vertical shared side checked against the key: gray escarpment is present, with no additional border symbol. The nearby blue ticked line terminates at the northwestern vertex rather than following this vertical side."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "side:border"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.37"]
+note = "Blue ticked blocks follow this diagonal shared side and do not match the plain border key unambiguously. No border presence or absence is accepted."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full diagonal contour side inspected against TEC.png: gray escarpment is present, without a separate border symbol. Blue blocks and brown slope at the adjoining vertex follow other sides."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Entire drawn shared side lacks a gray band with downslope splashes. Nearby tied strokes/blue blocks do not have the escarpment key shape, and any gray contour at a neighboring vertex is on a different side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Entire drawn shared side lacks a gray band with downslope splashes. Nearby tied strokes/blue blocks do not have the escarpment key shape, and any gray contour at a neighboring vertex is on a different side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Entire drawn shared side lacks a gray band with downslope splashes. Nearby tied strokes/blue blocks do not have the escarpment key shape, and any gray contour at a neighboring vertex is on a different side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Entire drawn shared side lacks a gray band with downslope splashes. Nearby tied strokes/blue blocks do not have the escarpment key shape, and any gray contour at a neighboring vertex is on a different side."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "side:escarpment"
+observed = "present"
+high_side = "C3921"
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Gray escarpment band follows the complete vertical shared side. Its downslope splashes lie inside C3922; C3921 is the high endpoint. Compared directly with the gray escarpment key."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Full diagonal shared side is clear land with a blue ticked overlay and transverse thin/tied lines, but no escarpment contour/wadi symbol. The gray escarpment lies on other sides farther east."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "side:escarpment"
+observed = "present"
+high_side = "C3921"
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Exact shared-side endpoints were located on the native black grid and the unmarked 4x crop inspected. Gray escarpment follows this diagonal side, with downslope splashes inside C4021; C3921 is high. Nearby blue overlay is on the adjoining side, not this contour."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Entire drawn shared side lacks a gray band with downslope splashes. Nearby tied strokes/blue blocks do not have the escarpment key shape, and any gray contour at a neighboring vertex is on a different side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "side:escarpment"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Gray contour and brown interruptions near shared-side junctions need additional full-side orientation/extent review. No escarpment absence or directional positive is accepted in this batch."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "side:escarpment"
+observed = "present"
+high_side = "C4020"
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Exact shared-side endpoints were located on the native black grid and the unmarked 4x crop inspected. Gray escarpment follows this diagonal side, with downslope splashes inside C4121; C4020 is high. Nearby blue overlay is on the adjoining side, not this contour."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full drawn shared side has no wavy river-band symbol. The blue ticked line on some sides is not a river symbol; its other identity remains unresolved."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full vertical shared side checked against the key: gray escarpment is present, with no additional ridge symbol. The nearby blue ticked line terminates at the northwestern vertex rather than following this vertical side."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full diagonal shared side is clear land with a blue ticked overlay and transverse thin/tied lines, but no ridge contour/wadi symbol. The gray escarpment lies on other sides farther east."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full diagonal contour side inspected against TEC.png: gray escarpment is present, without a separate ridge symbol. Blue blocks and brown slope at the adjoining vertex follow other sides."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Full vertical shared side checked against the key: gray escarpment is present, with no additional slope symbol. The nearby blue ticked line terminates at the northwestern vertex rather than following this vertical side."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37", "land:8.42"]
+note = "Full diagonal shared side is clear land with a blue ticked overlay and transverse thin/tied lines, but no slope contour/wadi symbol. The gray escarpment lies on other sides farther east."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full diagonal contour side inspected against TEC.png: gray escarpment is present, without a separate slope symbol. Blue blocks and brown slope at the adjoining vertex follow other sides."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C3922"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full vertical shared side checked against the key: gray escarpment is present, with no additional wadi symbol. The nearby blue ticked line terminates at the northwestern vertex rather than following this vertical side."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4020"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full diagonal shared side is clear land with a blue ticked overlay and transverse thin/tied lines, but no wadi contour/wadi symbol. The gray escarpment lies on other sides farther east."
+
+[[survey]]
+from_hex = "C3921"
+to_hex = "C4021"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full diagonal contour side inspected against TEC.png: gray escarpment is present, without a separate wadi symbol. Blue blocks and brown slope at the adjoining vertex follow other sides."
