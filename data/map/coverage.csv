@@ -603,6 +603,8 @@ coastal,E1829,,land:8.37;land:17.32;scen:60.43,cairo-0001
 coastal,E1830,,land:8.37;land:17.32;scen:60.43,cairo-0001
 coastal,E1930,,land:8.37;land:17.32;scen:60.43,cairo-0001
 coastal,E1931,,land:8.37;land:17.32;scen:60.43,cairo-0001
+coastal,E3613,,land:8.37;interp:map-0002;scen:60.41;scen:60.5,alexandria-positive-0001
+coastal,E3714,,land:8.37;interp:map-0002;scen:60.41;scen:60.5,alexandria-positive-0001
 line:railroad,C3722,C3822,land:8.7;land:8.37,map-lines-0003
 line:railroad,C3723,C3822,land:8.7;land:8.37,map-lines-0003
 line:railroad,C3723,C3823,land:8.7;land:8.37,map-lines-0003
@@ -2719,3 +2721,5 @@ terrain,E1829,,land:8.37;land:17.32;scen:60.43,cairo-0001
 terrain,E1830,,land:8.37;land:17.32;scen:60.43,cairo-0001
 terrain,E1930,,land:8.37;land:17.32;scen:60.43,cairo-0001
 terrain,E1931,,land:8.37;land:17.32;scen:60.43,cairo-0001
+terrain,E3613,,land:8.37;interp:map-0002;scen:60.41;scen:60.5,alexandria-positive-0001
+terrain,E3714,,land:8.37;interp:map-0002;scen:60.41;scen:60.5,alexandria-positive-0001

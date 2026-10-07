@@ -1,0 +1,50 @@
+[batch]
+id = "alexandria-positive-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "Two source-located Alexandria city-building groups and the E3613 circled port anchor"
+notes = "Native complete cells at6x and unmarked regional context inspected against TEC.png, with separate center locators. Scen60.41 and60.5 corroborate the printed ids. Positive records only; E3713 drawing spillover remains unresolved. No closed city extent, place_group, capacity, efficiency or training inference."
+
+[[hex]]
+hex_id = "E3613"
+status = "accepted"
+terrain = "major_city"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "scen:60.41", "scen:60.5"]
+note = "Recognizable full city-building group occupies the coastal peninsula in this printed cell. Cream graphic background is not a separately identified clear substrate. Training figures and transport ink stay separate; source locators do not establish a closed extent."
+
+[[hex]]
+hex_id = "E3714"
+status = "accepted"
+terrain = "major_city"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "scen:60.41", "scen:60.5"]
+note = "Recognizable second city-building group occupies the coastal land strip within this printed cell. Training silhouettes over water do not create land; transport ink stays separate. No separate minor substrate is confidently identified within the city graphic. E3713 spillover remains unresolved."
+
+[[place]]
+id = "city-alexandria-e3613"
+name = "Alexandria"
+hex_id = "E3613"
+type = "major_city"
+src = ["land:8.37", "scen:60.41", "scen:60.5"]
+note = "Verified positive city hex only. No place_group or complete-city membership is asserted; E3713 drawing spillover remains unresolved."
+
+[[place]]
+id = "city-alexandria-e3714"
+name = "Alexandria"
+hex_id = "E3714"
+type = "major_city"
+src = ["land:8.37", "scen:60.41", "scen:60.5"]
+note = "Verified positive city hex only. No closed extent, capacity, training or group membership is inferred."
+
+[[place]]
+id = "port-alexandria-e3613"
+name = "Alexandria"
+hex_id = "E3613"
+type = "port"
+src = ["land:8.37", "airlog:55.3"]
+note = "White circled anchor lies wholly inside coastal E3613. Named port is corroborated by55.3. This locates the port only; capacity, efficiency and any other facility remain separate."

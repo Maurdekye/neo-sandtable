@@ -470,3 +470,7 @@ accepted port points: Benghazi A4827 and Mersa Matruh D3814. Tobruk
 shared-side overlap is withheld. No new terrain or edge review, city
 extent or numeric port attribute supplied. Single-observer2021source;
 population error and original1979 equivalence remain unmeasured.
+
+## Alexandria positive city and port review
+
+Batch alexandria-positive-0001 directly inspects E3613/E3714 as coastal major-city positives and the port wholly within E3613. Whole-cell6x/regional2.5x views, TEC.png, scenario60.41/60.5 and chart55.3 support these identities. E3713 spillover remains unresolved; no closed extent or place_group is published. Source views stay outside the repo; one observer, no independent error estimate or1979comparison. Every other terrain, edge and place remains unchanged.

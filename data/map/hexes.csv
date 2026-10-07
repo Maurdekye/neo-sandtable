@@ -6876,7 +6876,7 @@ E3533,E,35,33,151,28,unclassified,,land:4.1
 E3534,E,35,34,152,28,unclassified,,land:4.1
 E3611,E,36,11,130,27,unclassified,,land:4.1
 E3612,E,36,12,131,27,unclassified,,land:4.1
-E3613,E,36,13,132,27,unclassified,,land:4.1
+E3613,E,36,13,132,27,major_city,land|coastal|major_city|port,land:4.1;land:8.37;interp:map-0002;scen:60.41;scen:60.5;airlog:55.3
 E3614,E,36,14,133,27,unclassified,,land:4.1
 E3615,E,36,15,134,27,unclassified,,land:4.1
 E3616,E,36,16,135,27,unclassified,,land:4.1
@@ -6898,7 +6898,7 @@ E3631,E,36,31,150,27,unclassified,,land:4.1
 E3632,E,36,32,151,27,unclassified,,land:4.1
 E3633,E,36,33,152,27,unclassified,,land:4.1
 E3713,E,37,13,132,26,unclassified,,land:4.1
-E3714,E,37,14,133,26,unclassified,,land:4.1
+E3714,E,37,14,133,26,major_city,land|coastal|major_city,land:4.1;land:8.37;interp:map-0002;scen:60.41;scen:60.5
 E3715,E,37,15,134,26,unclassified,,land:4.1
 E3716,E,37,16,135,26,unclassified,,land:4.1
 E3717,E,37,17,136,26,unclassified,,land:4.1

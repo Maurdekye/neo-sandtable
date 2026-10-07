@@ -170,3 +170,7 @@ its circled anchor overlaps the C4807/C4908 shared side in the2021 image.
 The55.3 port chart has no map locator, and scenario C4807 is a garrison
 anchor rather than proof of the port hex. Capacity/efficiency, training
 and city extent are separate evidence; absent place records remain unknown.
+
+## Alexandria drawing spillover
+
+E3613/E3714 have verified city symbols; E3613 has the circled port. E3713 contains neighboring city-drawing spillover of unresolved terrain significance. Positive records do not establish a closed extent. No Alexandria place_group, capacity or training inventory is inferred; the existing scenario-specific area is unchanged.

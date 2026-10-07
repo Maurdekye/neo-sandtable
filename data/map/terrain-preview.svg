@@ -6878,7 +6878,7 @@
 <polygon points="2883.86,425.00 2875.20,430.00 2866.54,425.00 2866.54,415.00 2875.20,410.00 2883.86,415.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3534: unclassified</title></polygon>
 <polygon points="2494.15,410.00 2485.49,415.00 2476.83,410.00 2476.83,400.00 2485.49,395.00 2494.15,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3611: unclassified</title></polygon>
 <polygon points="2511.47,410.00 2502.81,415.00 2494.15,410.00 2494.15,400.00 2502.81,395.00 2511.47,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3612: unclassified</title></polygon>
-<polygon points="2528.79,410.00 2520.13,415.00 2511.47,410.00 2511.47,400.00 2520.13,395.00 2528.79,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3613: unclassified</title></polygon>
+<polygon points="2528.79,410.00 2520.13,415.00 2511.47,410.00 2511.47,400.00 2520.13,395.00 2528.79,400.00" fill="#7b759b" stroke="#657281" stroke-width="0.35"><title>E3613: major_city</title></polygon>
 <polygon points="2546.11,410.00 2537.45,415.00 2528.79,410.00 2528.79,400.00 2537.45,395.00 2546.11,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3614: unclassified</title></polygon>
 <polygon points="2563.44,410.00 2554.77,415.00 2546.11,410.00 2546.11,400.00 2554.77,395.00 2563.44,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3615: unclassified</title></polygon>
 <polygon points="2580.76,410.00 2572.10,415.00 2563.44,410.00 2563.44,400.00 2572.10,395.00 2580.76,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3616: unclassified</title></polygon>
@@ -6900,7 +6900,7 @@
 <polygon points="2857.88,410.00 2849.22,415.00 2840.56,410.00 2840.56,400.00 2849.22,395.00 2857.88,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3632: unclassified</title></polygon>
 <polygon points="2875.20,410.00 2866.54,415.00 2857.88,410.00 2857.88,400.00 2866.54,395.00 2875.20,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3633: unclassified</title></polygon>
 <polygon points="2520.13,395.00 2511.47,400.00 2502.81,395.00 2502.81,385.00 2511.47,380.00 2520.13,385.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3713: unclassified</title></polygon>
-<polygon points="2537.45,395.00 2528.79,400.00 2520.13,395.00 2520.13,385.00 2528.79,380.00 2537.45,385.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3714: unclassified</title></polygon>
+<polygon points="2537.45,395.00 2528.79,400.00 2520.13,395.00 2520.13,385.00 2528.79,380.00 2537.45,385.00" fill="#7b759b" stroke="#657281" stroke-width="0.35"><title>E3714: major_city</title></polygon>
 <polygon points="2554.77,395.00 2546.11,400.00 2537.45,395.00 2537.45,385.00 2546.11,380.00 2554.77,385.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3715: unclassified</title></polygon>
 <polygon points="2572.10,395.00 2563.44,400.00 2554.77,395.00 2554.77,385.00 2563.44,380.00 2572.10,385.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3716: unclassified</title></polygon>
 <polygon points="2589.42,395.00 2580.76,400.00 2572.10,395.00 2572.10,385.00 2580.76,380.00 2589.42,385.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3717: unclassified</title></polygon>
@@ -7024,6 +7024,8 @@
 <polygon points="2771.28,290.00 2762.62,295.00 2753.96,290.00 2753.96,280.00 2762.62,275.00 2771.28,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4427: unclassified</title></polygon>
 <polygon points="2788.60,290.00 2779.94,295.00 2771.28,290.00 2771.28,280.00 2779.94,275.00 2788.60,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4428: unclassified</title></polygon>
 <polygon points="2805.92,290.00 2797.26,295.00 2788.60,290.00 2788.60,280.00 2797.26,275.00 2805.92,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4429: unclassified</title></polygon>
+<circle cx="2520.13" cy="405.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: major_city</title></circle>
+<circle cx="2528.79" cy="390.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: major_city</title></circle>
 <circle cx="1506.88" cy="300.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Bardia: major_city</title></circle>
 <circle cx="476.31" cy="225.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Benghazi: major_city</title></circle>
 <circle cx="2805.92" cy="690.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
@@ -7031,6 +7033,7 @@
 <circle cx="2814.58" cy="675.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
 <circle cx="2805.92" cy="660.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
 <circle cx="2823.24" cy="660.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
+<circle cx="2520.13" cy="405.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: port</title></circle>
 <circle cx="1506.88" cy="300.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Bardia: port</title></circle>
 <circle cx="476.31" cy="225.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Benghazi: port</title></circle>
 <circle cx="1965.88" cy="375.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Mersa Matruh: port</title></circle>

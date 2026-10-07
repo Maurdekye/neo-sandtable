@@ -4,6 +4,24 @@ complete = false
 verification = "visual_single_pass"
 
 [[places]]
+id = "city-alexandria-e3613"
+name = "Alexandria"
+hex_id = "E3613"
+type = "major_city"
+src = ["land:8.37", "scen:60.41", "scen:60.5"]
+note = "Verified positive city hex only. No place_group or complete-city membership is asserted; E3713 drawing spillover remains unresolved."
+review_batch = "alexandria-positive-0001"
+
+[[places]]
+id = "city-alexandria-e3714"
+name = "Alexandria"
+hex_id = "E3714"
+type = "major_city"
+src = ["land:8.37", "scen:60.41", "scen:60.5"]
+note = "Verified positive city hex only. No closed extent, capacity, training or group membership is inferred."
+review_batch = "alexandria-positive-0001"
+
+[[places]]
 id = "city-bardia-c4321"
 name = "Bardia"
 hex_id = "C4321"
@@ -72,6 +90,15 @@ place_group = "cairo"
 src = ["land:8.37", "land:17.32", "scen:60.43"]
 note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
 review_batch = "cairo-0001"
+
+[[places]]
+id = "port-alexandria-e3613"
+name = "Alexandria"
+hex_id = "E3613"
+type = "port"
+src = ["land:8.37", "airlog:55.3"]
+note = "White circled anchor lies wholly inside coastal E3613. Named port is corroborated by55.3. This locates the port only; capacity, efficiency and any other facility remain separate."
+review_batch = "alexandria-positive-0001"
 
 [[places]]
 id = "port-bardia-c4321"
