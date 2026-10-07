@@ -123,7 +123,7 @@ impl CnaContent {
             initiative_ratings,
             sources: Vec::new(),
         };
-        crate::logistics::port_initialization::preflight_port_overrides(&content)
+        crate::logistics::port_initialization::preflight_port_starting(&content)
             .map_err(|error| format!("initial port source validation: {error}"))?;
         Ok((content, table_files))
     }
