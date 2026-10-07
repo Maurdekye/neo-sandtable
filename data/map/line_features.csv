@@ -17,6 +17,7 @@ C4032,C4033,road,land:8.33;land:8.37,map-lines-0002
 C4032,C4132,road,land:8.33;land:8.37,map-lines-0002
 C4033,D4001,road,land:8.33;land:8.37,map-lines-0002
 C4120,C4220,road,land:8.33;land:8.37,road-spine-0001
+C4121,C4122,track,land:8.33;land:8.37,map-lines-0003
 C4130,C4131,road,land:8.33;land:8.37,map-lines-0002
 C4131,C4132,road,land:8.33;land:8.37,map-lines-0002
 C4220,C4320,road,land:8.37;land:8.47,bardia-road-0002
