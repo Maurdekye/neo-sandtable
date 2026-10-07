@@ -4,7 +4,7 @@
 - **Status:** adopted
 - **Profile version:** cna-2021-dev and cna-2021-full
 - **Decided by:** neo-sandtable, 2026-10-07
-- **Owner review:** pending (consequential; batch 2)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 

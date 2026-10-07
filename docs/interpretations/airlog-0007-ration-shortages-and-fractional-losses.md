@@ -1,10 +1,10 @@
 # airlog-0007 ? Ration shortages and fractional storage losses
 
 - **Cases:** airlog:49.3, airlog:51.12, airlog:51.21, airlog:51.22, airlog:51.23, land:28.15
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full / cna-2021-dev
 - **Decided by:** rules-airlog, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 The shortage rules do not spell out partial rations, fractional prisoner groups, or the treatment of a fractional fuel balance during storage losses.

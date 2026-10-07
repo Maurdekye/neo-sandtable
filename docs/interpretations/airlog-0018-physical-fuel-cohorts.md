@@ -1,10 +1,10 @@
 # airlog-0018 - Physical movement cohorts and retained fuel accounts
 
 - **Cases:** airlog:49.12, airlog:49.13, airlog:49.16, land:8.56, land:21.25, land:21.29
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full
 - **Decided by:** rules-airlog, 2026-10-07
-- **Owner review:** pending batch 2; consequential
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 A detachment, breakdown or casualty can change a moving unit's composition after fuel was charged. Recomputing earlier movement using the new composition can refund lost vehicles, erase previous CP, or charge a transferred truck's first chart bucket twice. Splitting a group can also duplicate its rounded source credit.

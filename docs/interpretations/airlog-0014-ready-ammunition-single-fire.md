@@ -1,10 +1,10 @@
 # airlog-0014: Ready ammunition for one supported firing
 
 - **Cases:** airlog:50.13, airlog:50.14, airlog:50.17, airlog:50.2
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full / cna-2021-dev
 - **Decided by:** neo-sandtable and rules-airlog, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 How much ammunition can a unit hold itself when several combat functions have different consumption rates?

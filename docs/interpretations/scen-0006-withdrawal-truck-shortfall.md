@@ -1,10 +1,10 @@
 # Withdrawal deadlines and missing transport
 
 - **Cases:** land:4.43a, land:20.82, land:20.83, land:20.84, land:20.85
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev / cna-2021-full
 - **Decided by:** neo-sandtable, interim implementation instruction, 2026-10-07
-- **Owner review:** pending (batch review 2)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 Does failing a scheduled truck-value minimum eliminate a withdrawing formation, or should the formation leave with available trucks? The rules state a consequence for missing location or TOE, but do not give a consequence for the schedule's separate transport minimum.

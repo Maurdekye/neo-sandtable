@@ -1,10 +1,10 @@
 # land-0021 - Fractional cohesion and the morale row
 
 - **Cases:** land:17.4, land:17.22, land:17.24
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 Quarter-point fatigue under land-0020 can leave a nonintegral cohesion value, while the morale

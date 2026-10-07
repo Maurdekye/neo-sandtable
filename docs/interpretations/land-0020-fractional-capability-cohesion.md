@@ -1,10 +1,10 @@
 # land-0020 ? Fractional CP and cohesion
 
 - **Cases:** land:6.21, land:6.22, land:6.26, land:8.37
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-land, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 The TEC permits half-point costs, and tracks can halve those again. Case 6.21 assigns one

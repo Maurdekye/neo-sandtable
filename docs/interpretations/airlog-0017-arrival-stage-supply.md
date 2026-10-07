@@ -1,10 +1,10 @@
 # airlog-0017: Supplies for newly arrived land units
 
 - **Cases:** land:20.12, airlog:49.14, airlog:49.16, airlog:51.11, airlog:52.11, airlog:52.13, airlog:52.41, airlog:56.28
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full / cna-2021-dev
 - **Decided by:** neo-sandtable, rules-airlog and oob, 2026-10-07
-- **Owner review:** pending; consequential
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 How can reinforcements obtain the supplies needed for their permitted movement in the arrival OpStage, when the ordinary organization supply windows have already closed?

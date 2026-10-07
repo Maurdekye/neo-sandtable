@@ -1,10 +1,10 @@
 # airlog-0011: Coastal loading and unloading share the 50 CP ceiling
 
 - **Cases:** airlog:56.31, airlog:56.34, airlog:56.35
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full / cna-2021-dev
 - **Decided by:** rules-airlog, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 Does the coastal ship's 50 CP allowance exclude the loading and unloading costs?

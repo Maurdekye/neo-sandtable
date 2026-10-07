@@ -1,10 +1,10 @@
 # airlog-0015 ? Forced CPA and retained activity-water credit
 
 - **Cases:** land:6.13, land:8.56, airlog:52.42, airlog:52.43, airlog:52.51
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full
 - **Decided by:** rules-airlog, with neo-sandtable approval, 2026-10-07
-- **Owner review:** pending batch 2
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 Involuntary CP can require activity water when the receiving unit lacks enough. Rejecting the action would prevent incoming fire. Later casualties and truck detachments can also change the unit's current composition after its first activity, so recomputing the original obligation could erase shortages or charge transferred trucks twice.

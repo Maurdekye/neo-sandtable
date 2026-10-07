@@ -1,10 +1,10 @@
 # land-0026 - Replan movement after reaction
 
 - **Cases:** land:8.13, land:8.51, land:9.31, land:9.32
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-full-v1 / cna-dev-v1
 - **Decided by:** neo-sandtable, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 An ordered path supplies movement choices ahead of time. What happens when a defender reacts during that path, especially in an overfull transit hex?

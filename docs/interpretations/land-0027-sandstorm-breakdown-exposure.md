@@ -1,10 +1,10 @@
 # land-0027: Sandstorm exposure in breakdown checks
 
 - **Cases:** land:21.37, land:21.38, land:29.51
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-full-v1 / cna-dev-v1
 - **Decided by:** neo-sandtable, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 

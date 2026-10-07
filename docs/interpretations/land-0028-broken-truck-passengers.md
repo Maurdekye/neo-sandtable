@@ -1,10 +1,10 @@
 # land-0028 - Passengers carried by broken trucks at the movement origin
 
 - **Cases:** land:21.41, land:21.43, land:21.45
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-full-v1 / cna-dev-v1
 - **Decided by:** neo-sandtable, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 How are transported infantry accounted for when the broken truck carrying them is placed at the movement origin, while the working part of their unit has reached its destination?

@@ -1,10 +1,10 @@
 # airlog-0010: Shared port supply budget per OpStage
 
 - **Cases:** airlog:55.14, airlog:55.16, airlog:55.3, land:30.57
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full / cna-2021-dev
 - **Decided by:** rules-airlog, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 The general capacity paragraph refers to a Game-Turn, while the chart, worked example and personnel adjustment use an OpStage. Is inbound and outbound supply capacity separate?

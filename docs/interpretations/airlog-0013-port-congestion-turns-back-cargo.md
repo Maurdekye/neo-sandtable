@@ -1,10 +1,10 @@
 # airlog-0013: Turn back supply cargo beyond port capacity
 
 - **Cases:** airlog:55.14, airlog:56.27, airlog:56.28
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full / cna-2021-dev
 - **Decided by:** rules-airlog with neo-sandtable ruling, 2026-10-07
-- **Owner review:** pending (consequential)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 What happens when a fixed convoy reaches a port whose remaining stage capacity is smaller than the shipment?

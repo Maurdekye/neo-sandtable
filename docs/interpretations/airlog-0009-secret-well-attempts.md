@@ -1,10 +1,10 @@
 # airlog-0009: Secret well attempts and repeated poisoning
 
 - **Cases:** airlog:52.13, airlog:52.14, airlog:52.16, airlog:52.17, land:3.6
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full / cna-2021-dev
 - **Decided by:** rules-airlog, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 The poisoning retry restriction does not explain how it interacts with the opponent's secret attempt in the same Operations Stage. Well draws also need an immediate allocation before any uncarried result can become a stock.

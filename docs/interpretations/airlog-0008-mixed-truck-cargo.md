@@ -1,10 +1,10 @@
 # airlog-0008: Mixed cargo shares truck capacity
 
 - **Cases:** airlog:53.11, airlog:54.2
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full / cna-2021-dev
 - **Decided by:** rules-airlog, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 The truck chart gives separate carrying limits for each supply, but does not define the arithmetic for a mixed load on the same truck points.

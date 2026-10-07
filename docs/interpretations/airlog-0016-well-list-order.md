@@ -1,10 +1,10 @@
 # airlog-0016 ? Ordering closed well-operation lists
 
 - **Cases:** land:7.11, airlog:48.0, airlog:52.13, airlog:52.16, airlog:52.17
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full
 - **Decided by:** rules-airlog, with neo-sandtable approval, 2026-10-07
-- **Owner review:** pending batch 2
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 Both sides can submit private well operations during organization. Operations at the same source can interact: an earlier poisoning or depletion changes a later draw. The source does not specify ordering for simultaneous submitted lists.

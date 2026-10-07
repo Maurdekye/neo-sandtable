@@ -1,10 +1,10 @@
 # land-0029 - Light truck track breakdown example arithmetic
 
 - **Cases:** land:8.37, airlog:54.2
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-full-v1 / cna-dev-v1
 - **Decided by:** neo-sandtable, 2026-10-07
-- **Owner review:** pending (minor confirmation)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2)
 
 ## Question
 The light-truck footnote on 54.2 gives 18 BP for a track crossing a wadi into rough terrain, although its stated factors and the corrected Terrain Effects Chart give 10. Which value applies?
