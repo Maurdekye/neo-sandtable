@@ -448,3 +448,69 @@ fn moved_flags_stay_live_and_decision_ids_count_per_seat() {
         "several seats received decisions"
     );
 }
+
+/// Change hidden facts of one on-map unit of `side`: strength, fatigue, spent CP and supply.
+fn perturb_hidden(state: &mut State, side: Side) {
+    let id = state
+        .land
+        .units
+        .values()
+        .find(|u| u.side == side && u.location.hex().is_some())
+        .map(|u| u.id.clone())
+        .expect("an on-map unit");
+    let unit = state.land.units.get_mut(&id).unwrap();
+    unit.toe = Some(cna_content::units::Toe::Under { under: 1 });
+    unit.cohesion_quarters -= 20;
+    unit.cp_spent_quarters += 12;
+    let supply = state.logistics.unit_supply.entry(id).or_default();
+    supply.activity_water = cna_core::quantity::WaterPoints::new(supply.activity_water.get() + 7);
+}
+
+/// The enemy learns nothing from a unit's strength, fatigue, spent CP or supply, before and
+/// after set-up opens (land:3.6). Uses the shared indistinguishability harness.
+/// Cases: land:3.61, land:3.62
+#[test]
+fn hidden_unit_facts_are_indistinguishable_to_the_enemy() {
+    let ruleset = Cna::dev();
+    let content = content();
+    let mut game = new_game(5);
+    for _ in 0..2 {
+        for (hidden, observer) in [
+            (Side::Commonwealth, Side::Axis),
+            (Side::Axis, Side::Commonwealth),
+        ] {
+            let mut other = game.state.clone();
+            perturb_hidden(&mut other, hidden);
+            crate::testkit::assert_indistinguishable(
+                &ruleset,
+                content,
+                &game.state,
+                &other,
+                observer,
+            );
+        }
+        game = evaluate(&ruleset, content, &game, &Command::Advance)
+            .unwrap()
+            .game;
+    }
+}
+
+/// The harness itself: a fact the enemy may see (a stack appearing in a new hex) is caught.
+#[test]
+#[should_panic(expected = "can tell the states apart")]
+fn indistinguishability_harness_catches_visible_differences() {
+    let ruleset = Cna::dev();
+    let content = content();
+    let game = new_game(5);
+    let mut other = game.state.clone();
+    let unit = other
+        .land
+        .units
+        .values_mut()
+        .find(|u| u.side == Side::Commonwealth && u.location.hex().is_some())
+        .unwrap();
+    unit.location = Location::Hex {
+        hex: cna_core::ids::HexId::new("C4119"),
+    };
+    crate::testkit::assert_indistinguishable(&ruleset, content, &game.state, &other, Side::Axis);
+}

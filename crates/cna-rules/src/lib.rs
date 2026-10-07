@@ -23,6 +23,8 @@ mod steps;
 mod view;
 
 #[cfg(test)]
+pub(crate) mod testkit;
+#[cfg(test)]
 mod tests;
 
 use cna_core::decision::{DecisionRequest, DecisionResponse};
