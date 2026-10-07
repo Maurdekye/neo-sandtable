@@ -17,6 +17,12 @@ CREATE TABLE IF NOT EXISTS perspective_events (
     perspective TEXT NOT NULL, seq INTEGER NOT NULL, event_id INTEGER NOT NULL REFERENCES events(event_id),
     message TEXT NOT NULL, PRIMARY KEY(perspective, seq)
 );
+-- Per-perspective decision identities map directly to their committed stream position.
+CREATE TABLE IF NOT EXISTS decision_opened (
+    perspective TEXT NOT NULL, decision_id TEXT NOT NULL, seq INTEGER NOT NULL CHECK(seq > 0),
+    PRIMARY KEY(perspective, decision_id),
+    FOREIGN KEY(perspective, seq) REFERENCES perspective_events(perspective, seq)
+);
 CREATE TABLE IF NOT EXISTS checkpoints (
     revision INTEGER PRIMARY KEY, game TEXT NOT NULL, state_hash TEXT NOT NULL
 );

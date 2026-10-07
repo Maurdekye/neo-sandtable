@@ -196,7 +196,13 @@ writer. Legal-random averaged37.0ms of durable writer work and70.1ms of projecti
 per accepted command (3407 total). Engine evaluation was20.336s, writer126.057s,
 projections238.672s and controller selection12.562s over397.550s wall time.
 The pass campaign measured12.064/61.042/117.679/1.141s in those categories;
-HTTP legal-random measured21.569/133.191/255.733/13.347s. Reusing unchanged
-perspective and seat projections remains the leading performance follow-up, subject
-to privacy and invalidation tests. This is deferred; durability and per-command
+HTTP legal-random measured21.569/133.191/255.733/13.347s.
+
+The writer now projects all perspectives through `Ruleset::views`, so CNA builds one
+shared board per update. Each visible DecisionOpened also records its local sequence in
+`decision_opened` in the accepted-command transaction; snapshot lookups use that primary
+key instead of scanning accumulated events. Existing databases backfill the index atomically
+from their authorized stream rows. Checkpoint/tail recovery preserves the same sequences.
+The next campaign measurements report views, observations, opening lookups and event-page
+costs separately. Timings are trusted-process diagnostics; durability and per-command
 acknowledgment stay unchanged.

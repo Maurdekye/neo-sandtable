@@ -53,13 +53,17 @@ fn report_campaign(handle: &CampaignHandle, path: &Path, label: &str, wall: Dura
     // where libtest normally captures successful eprintln output.
     let _ = writeln!(
         std::io::stderr(),
-        "CNA_PROFILE {label} wall_s={:.3} commands={commands} measured_commands={} engine_s={:.3} durable_writer_s={:.3} projections_s={:.3} controllers_s={:.3} decision_kinds={counts:?}",
+        "CNA_PROFILE {label} wall_s={:.3} commands={commands} measured_commands={} engine_s={:.3} durable_writer_s={:.3} projections_s={:.3} controllers_s={:.3} views_s={:.3} observe_s={:.3} opened_seq_s={:.3} events_after_s={:.3} decision_kinds={counts:?}",
         wall.as_secs_f64(),
         metrics.committed_commands,
         metrics.engine.as_secs_f64(),
         metrics.durable_writer.as_secs_f64(),
         metrics.projections.as_secs_f64(),
-        metrics.controllers.as_secs_f64()
+        metrics.controllers.as_secs_f64(),
+        metrics.projection_views.as_secs_f64(),
+        metrics.projection_observe.as_secs_f64(),
+        metrics.projection_opened_seq.as_secs_f64(),
+        metrics.projection_events_after.as_secs_f64()
     );
     if handle.status() != CampaignStatus::Running {
         assert_eq!(metrics.committed_commands, commands);

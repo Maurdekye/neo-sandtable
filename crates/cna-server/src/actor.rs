@@ -99,19 +99,31 @@ fn seat_state<R: Ruleset>(campaign: &Campaign<R>, seat: SeatId) -> SeatState {
         binding: campaign.binding(seat).clone(),
     }
 }
-fn projection<R: Ruleset>(campaign: &Campaign<R>, p: Perspective) -> Result<Projection, Error> {
-    Ok(Projection {
-        meta: campaign.metadata(p),
-        seq: campaign.current_seq(p)?,
-        view: campaign.view(p)?,
-    })
+fn build_projections<R: Ruleset>(
+    campaign: &Campaign<R>,
+) -> Result<Vec<(Perspective, Projection)>, Error> {
+    let perspectives: Vec<_> = Perspective::all().collect();
+    let views = campaign.views(&perspectives)?;
+    perspectives
+        .into_iter()
+        .zip(views)
+        .map(|(p, view)| {
+            Ok((
+                p,
+                Projection {
+                    meta: campaign.metadata(p),
+                    seq: campaign.current_seq(p)?,
+                    view,
+                },
+            ))
+        })
+        .collect()
 }
 impl Publisher {
     fn update<R: Ruleset>(&mut self, campaign: &Campaign<R>) -> Result<(), Error> {
         let start = Instant::now();
-        for p in Perspective::all() {
+        for (p, next) in build_projections(campaign)? {
             let previous_seq = self.projections[&p].borrow().seq;
-            let next = projection(campaign, p)?;
             let end = next.seq;
             self.projections[&p].send_if_modified(|current| {
                 if *current == next {
@@ -237,8 +249,8 @@ impl CampaignHandle {
         let mut streams = BTreeMap::new();
         let mut seats = BTreeMap::new();
         let mut seat_senders = BTreeMap::new();
-        for p in Perspective::all() {
-            let (send, recv) = watch::channel(projection(&campaign, p)?);
+        for (p, projection) in build_projections(&campaign)? {
+            let (send, recv) = watch::channel(projection);
             projections.insert(p, recv);
             projection_senders.insert(p, send);
             streams.insert(p, broadcast::channel(VIEWER_BUFFER).0);

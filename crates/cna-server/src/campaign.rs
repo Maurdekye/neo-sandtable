@@ -97,6 +97,11 @@ pub struct RuntimeMetrics {
     pub durable_writer: Duration,
     /// All perspective snapshots, seat observations and committed stream publication.
     pub projections: Duration,
+    /// Ruleset board construction/projection, excluding local sequence lookups.
+    pub projection_views: Duration,
+    pub projection_observe: Duration,
+    pub projection_opened_seq: Duration,
+    pub projection_events_after: Duration,
     /// Scripted selection/validation outside the separately measured engine and writer.
     pub controllers: Duration,
 }
@@ -124,11 +129,27 @@ fn hash<T: Serialize + ?Sized>(value: &T) -> Result<String, Error> {
     Ok(format!("{:x}", Sha256::digest(json(value)?.as_bytes())))
 }
 fn connection(path: &Path) -> Result<Connection, Error> {
-    let db = Connection::open(path)?;
+    let mut db = Connection::open(path)?;
     db.busy_timeout(std::time::Duration::from_secs(5))?;
     db.pragma_update(None, "journal_mode", "WAL")?;
     db.pragma_update(None, "synchronous", "FULL")?;
-    db.execute_batch(include_str!("schema.sql"))?;
+    db.pragma_update(None, "foreign_keys", "ON")?;
+    // Schema creation and a legacy cache backfill form one transaction. A failed migration
+    // cannot leave an empty table that would be mistaken for a completed backfill.
+    let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    let had_opened: bool = tx.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='decision_opened')",
+        [],
+        |r| r.get(0),
+    )?;
+    tx.execute_batch(include_str!("schema.sql"))?;
+    if !had_opened {
+        tx.execute(
+            "INSERT INTO decision_opened(perspective, decision_id, seq) SELECT perspective, json_extract(message, '$.event.decision.id'), MAX(seq) FROM perspective_events WHERE json_extract(message, '$.event.kind')='decision_opened' GROUP BY perspective, json_extract(message, '$.event.decision.id')",
+            [],
+        )?;
+    }
+    tx.commit()?;
     Ok(db)
 }
 fn seq(db: &Connection, perspective: Perspective) -> Result<u64, Error> {
@@ -354,8 +375,15 @@ impl<R: Ruleset> Campaign<R> {
         &self.bindings[&seat]
     }
     pub fn observe(&self, seat: SeatId) -> serde_json::Value {
-        self.ruleset
-            .observe(&self.content, &self.game.state, Perspective::Seat(seat))
+        let start = Instant::now();
+        let observation =
+            self.ruleset
+                .observe(&self.content, &self.game.state, Perspective::Seat(seat));
+        self.metrics
+            .lock()
+            .expect("runtime metrics lock")
+            .projection_observe += start.elapsed();
+        observation
     }
     pub fn actions(&self, seat: SeatId, id: &str) -> Result<DecisionRequest, Error> {
         self.pending()
@@ -657,6 +685,16 @@ impl<R: Ruleset> Campaign<R> {
                     "INSERT INTO perspective_events VALUES (?, ?, ?, ?)",
                     params![perspective.to_string(), next_seq, event_id, json(&message)?],
                 )?;
+                if let ServerMessage::Event {
+                    event: GameEvent::DecisionOpened { decision },
+                    ..
+                } = &message
+                {
+                    tx.execute(
+                        "INSERT INTO decision_opened(perspective, decision_id, seq) VALUES (?, ?, ?) ON CONFLICT(perspective, decision_id) DO UPDATE SET seq=excluded.seq",
+                        params![perspective.to_string(), decision.id, next_seq],
+                    )?;
+                }
             }
         }
         tx.execute(
@@ -711,20 +749,57 @@ impl<R: Ruleset> Campaign<R> {
         seq(&self.db, perspective)
     }
     pub fn view(&self, perspective: Perspective) -> Result<ViewState, Error> {
+        let start = Instant::now();
         let mut view = self
             .ruleset
             .view(&self.content, &self.game.state, perspective);
+        self.metrics
+            .lock()
+            .expect("runtime metrics lock")
+            .projection_views += start.elapsed();
         for decision in &mut view.pending {
             decision.opened_seq = self.opened_seq(perspective, &decision.id)?;
         }
         Ok(view)
     }
+    /// Project a batch from one ruleset board, preserving perspective order and local sequences.
+    pub fn views(&self, perspectives: &[Perspective]) -> Result<Vec<ViewState>, Error> {
+        let start = Instant::now();
+        let mut views = self
+            .ruleset
+            .views(&self.content, &self.game.state, perspectives);
+        self.metrics
+            .lock()
+            .expect("runtime metrics lock")
+            .projection_views += start.elapsed();
+        if views.len() != perspectives.len() {
+            return Err(Error::Invalid(
+                "ruleset returned the wrong number of perspective views".into(),
+            ));
+        }
+        for (perspective, view) in perspectives.iter().zip(&mut views) {
+            for decision in &mut view.pending {
+                decision.opened_seq = self.opened_seq(*perspective, &decision.id)?;
+            }
+        }
+        Ok(views)
+    }
     fn opened_seq(&self, perspective: Perspective, id: &str) -> Result<u64, Error> {
-        // Never forward a ruleset's global event counter in a perspective projection.
-        Ok(self.db.query_row(
-            "SELECT COALESCE(MAX(seq), 0) FROM perspective_events WHERE perspective=? AND json_extract(message, '$.event.kind')='decision_opened' AND json_extract(message, '$.event.decision.id')=?",
-            params![perspective.to_string(), id], |r| r.get(0),
-        )?)
+        // Never forward a ruleset's global event counter. Lookup cost does not grow with history.
+        let start = Instant::now();
+        let seq = self
+            .db
+            .prepare_cached(
+                "SELECT seq FROM decision_opened WHERE perspective=? AND decision_id=?",
+            )?
+            .query_row(params![perspective.to_string(), id], |r| r.get(0))
+            .optional()?
+            .unwrap_or(0);
+        self.metrics
+            .lock()
+            .expect("runtime metrics lock")
+            .projection_opened_seq += start.elapsed();
+        Ok(seq)
     }
     pub fn metadata(&self, perspective: Perspective) -> CampaignMeta {
         let mut meta = self.meta.clone();
@@ -755,6 +830,7 @@ impl<R: Ruleset> Campaign<R> {
         from: u64,
         limit: u32,
     ) -> Result<Vec<ServerMessage>, Error> {
+        let start = Instant::now();
         if from > seq(&self.db, perspective)? {
             return Err(Error::Invalid("event cursor is ahead of stream".into()));
         }
@@ -767,6 +843,10 @@ impl<R: Ruleset> Campaign<R> {
         for row in rows {
             messages.push(decode(&row?)?);
         }
+        self.metrics
+            .lock()
+            .expect("runtime metrics lock")
+            .projection_events_after += start.elapsed();
         Ok(messages)
     }
     /// The single writer assigns transcript counters and all 13 alignment projections atomically.

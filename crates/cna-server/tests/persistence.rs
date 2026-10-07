@@ -913,3 +913,246 @@ fn unavailable_scripted_domain_passes_or_durably_pauses_without_retrying() {
         }
     }
 }
+
+#[test]
+fn indexed_opening_sequences_match_streams_across_checkpoint_recovery_and_legacy_migration() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("opened.sqlite");
+    let mut game = campaign(&path, rules());
+    scripted(&mut game);
+    for _ in 0..40 {
+        assert!(!matches!(
+            game.step(&NoCandidates).unwrap(),
+            Step::Idle | Step::SeatPaused { .. }
+        ));
+    }
+    assert!(!game.pending().is_empty());
+    let perspectives: Vec<_> = Perspective::all().collect();
+    let expected = game.views(&perspectives).unwrap();
+    let db = rusqlite::Connection::open(&path).unwrap();
+    let checkpoint: u64 = db
+        .query_row("SELECT MAX(revision) FROM checkpoints", [], |r| r.get(0))
+        .unwrap();
+    let revision: u64 = db
+        .query_row("SELECT revision FROM campaign", [], |r| r.get(0))
+        .unwrap();
+    assert!(checkpoint >= 32 && revision > checkpoint);
+    for (p, view) in perspectives.iter().zip(&expected) {
+        assert_eq!(*view, game.view(*p).unwrap());
+        for decision in &view.pending {
+            let seq: u64 = db.query_row(
+                "SELECT MAX(seq) FROM perspective_events WHERE perspective=? AND json_extract(message,'$.event.kind')='decision_opened' AND json_extract(message,'$.event.decision.id')=?",
+                rusqlite::params![p.to_string(), decision.id], |r| r.get(0)).unwrap();
+            assert_eq!(decision.opened_seq, seq);
+        }
+    }
+    let read_cache = || {
+        db.prepare("SELECT perspective, decision_id, seq FROM decision_opened ORDER BY perspective, decision_id").unwrap()
+            .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, u64>(2)?))).unwrap()
+            .collect::<Result<Vec<_>, _>>().unwrap()
+    };
+    let cache = read_cache();
+    for (perspective, id, _) in &cache {
+        let p: Perspective = perspective.parse().unwrap();
+        let seat: SeatId = id
+            .strip_prefix("d-")
+            .unwrap()
+            .split_once('-')
+            .unwrap()
+            .1
+            .parse()
+            .unwrap();
+        assert!(p.can_see(&Audience::Seat(seat)));
+    }
+    let plan: String = db.query_row(
+        "EXPLAIN QUERY PLAN SELECT seq FROM decision_opened WHERE perspective=? AND decision_id=?",
+        ["operator", "missing"], |r| r.get(3)).unwrap();
+    assert!(
+        plan.contains("SEARCH decision_opened") && !plan.contains("SCAN"),
+        "{plan}"
+    );
+    let hash = game.state_hash().unwrap();
+    drop(game);
+    let restored = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+    assert_eq!(hash, restored.state_hash().unwrap());
+    assert_eq!(expected, restored.views(&perspectives).unwrap());
+    assert_eq!(cache, read_cache());
+    drop(restored);
+    // An existing pre-index database is migrated once from its authorized stream rows.
+    db.execute_batch("DROP TABLE decision_opened").unwrap();
+    let migrated = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+    assert_eq!(hash, migrated.state_hash().unwrap());
+    assert_eq!(expected, migrated.views(&perspectives).unwrap());
+    assert_eq!(cache, read_cache());
+}
+
+#[test]
+fn opening_index_failure_rolls_back_the_entire_accepted_transition() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("opened-failure.sqlite");
+    let mut game = campaign(&path, rules());
+    let before = game.state_hash().unwrap();
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch("CREATE TRIGGER fail_opened BEFORE INSERT ON decision_opened BEGIN SELECT RAISE(ABORT,'injected opening index failure'); END;").unwrap();
+    assert!(matches!(game.advance(), Err(Error::Storage(_))));
+    assert_eq!(before, game.state_hash().unwrap());
+    assert!(game.pending().is_empty());
+    for table in [
+        "commands",
+        "events",
+        "perspective_events",
+        "decision_opened",
+        "decisions",
+    ] {
+        let count: u64 = db
+            .query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(count, 0, "{table} must roll back");
+    }
+    db.execute_batch("DROP TRIGGER fail_opened").unwrap();
+    drop(game);
+    let mut restored = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+    assert_eq!(before, restored.state_hash().unwrap());
+    restored.advance().unwrap();
+    assert_eq!(restored.pending().len(), 10);
+    assert!(
+        restored
+            .view(Perspective::Operator)
+            .unwrap()
+            .pending
+            .iter()
+            .all(|d| d.opened_seq > 0)
+    );
+}
+
+#[test]
+fn failed_legacy_backfill_does_not_leave_a_partially_initialized_index() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("migration.sqlite");
+    let mut game = campaign(&path, rules());
+    game.advance().unwrap();
+    let expected = game.view(Perspective::Operator).unwrap();
+    drop(game);
+    let db = rusqlite::Connection::open(&path).unwrap();
+    let message: String = db
+        .query_row(
+            "SELECT message FROM perspective_events WHERE perspective='operator' AND seq=1",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    db.execute_batch("DROP TABLE decision_opened; UPDATE perspective_events SET message='bad-json' WHERE perspective='operator' AND seq=1;").unwrap();
+    assert!(matches!(
+        Campaign::recover(&path, rules(), (), &pins()),
+        Err(Error::Storage(_))
+    ));
+    let exists: bool = db
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name='decision_opened')",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert!(
+        !exists,
+        "failed backfill must roll schema creation back as well"
+    );
+    db.execute(
+        "UPDATE perspective_events SET message=? WHERE perspective='operator' AND seq=1",
+        [message],
+    )
+    .unwrap();
+    let restored = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+    assert_eq!(expected, restored.view(Perspective::Operator).unwrap());
+}
+
+struct BatchOnly {
+    calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    single_calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+}
+impl Ruleset for BatchOnly {
+    type State = State;
+    type Content = ();
+    fn profile_id(&self) -> &str {
+        "tiny-v1"
+    }
+    fn advance(&self, c: &(), s: &mut State, cx: &mut Cx<'_>) -> Result<Progress, EngineError> {
+        rules().advance(c, s, cx)
+    }
+    fn respond(
+        &self,
+        c: &(),
+        s: &mut State,
+        r: &DecisionResponse,
+        cx: &mut Cx<'_>,
+    ) -> Result<(), Rejection> {
+        rules().respond(c, s, r, cx)
+    }
+    fn pending(&self, c: &(), s: &State) -> Vec<DecisionRequest> {
+        rules().pending(c, s)
+    }
+    fn observe(&self, c: &(), s: &State, p: Perspective) -> Value {
+        rules().observe(c, s, p)
+    }
+    fn view(&self, c: &(), s: &State, p: Perspective) -> ViewState {
+        self.single_calls
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        rules().view(c, s, p)
+    }
+    fn views(&self, c: &(), s: &State, ps: &[Perspective]) -> Vec<ViewState> {
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(ps, Perspective::all().collect::<Vec<_>>());
+        ps.iter().map(|p| rules().view(c, s, *p)).collect()
+    }
+}
+
+#[tokio::test]
+async fn real_publisher_uses_one_batch_override_for_initial_and_updated_projections() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("batch.sqlite");
+    let calls = Arc::new(AtomicUsize::new(0));
+    let single_calls = Arc::new(AtomicUsize::new(0));
+    let mut game = Campaign::create(
+        &path,
+        BatchOnly {
+            calls: calls.clone(),
+            single_calls: single_calls.clone(),
+        },
+        (),
+        Game {
+            state: State::default(),
+            rng: CampaignRng::from_seed([7; 32]).state(),
+        },
+        CampaignMeta {
+            id: "batch".into(),
+            scenario_id: "tiny".into(),
+            rules_profile: "tiny-v1".into(),
+            title: "Batch".into(),
+            seats: vec![],
+        },
+        pins(),
+    )
+    .unwrap();
+    game.advance().unwrap();
+    game.set_paused(true).unwrap();
+    let expected = game.views(&Perspective::all().collect::<Vec<_>>()).unwrap();
+    calls.store(0, Ordering::SeqCst);
+    let before_single = single_calls.load(Ordering::SeqCst);
+    let handle = cna_server::actor::CampaignHandle::spawn(game, &path, None).unwrap();
+    handle.pause(true).await.unwrap();
+    // Join the real writer before inspecting counters: no timing or scheduling assumptions.
+    handle.shutdown().await.unwrap();
+    assert!(calls.load(Ordering::SeqCst) >= 2);
+    assert_eq!(
+        single_calls.load(Ordering::SeqCst),
+        before_single,
+        "publisher must use the batch override"
+    );
+    for (p, view) in Perspective::all().zip(expected) {
+        assert_eq!(handle.projection(p).view, view);
+    }
+}
