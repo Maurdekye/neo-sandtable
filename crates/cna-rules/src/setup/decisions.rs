@@ -135,16 +135,6 @@ fn enemy_fixed_at(state: &State, side: Side, destination: &Location) -> bool {
         .units_of(side.opponent())
         .any(|u| same_hex(&u.location, destination))
 }
-fn enemy_buffered_at(state: &State, side: Side, destination: &Location) -> bool {
-    state.setup.unit_locations.iter().any(|(id, l)| {
-        state
-            .land
-            .units
-            .get(id)
-            .is_some_and(|u| u.side == side.opponent())
-            && same_hex(l, destination)
-    })
-}
 fn facility_hexes(content: &CnaContent) -> BTreeSet<cna_core::ids::HexId> {
     content
         .scenario
@@ -436,10 +426,6 @@ pub(crate) fn enter(
     }
     pools::start(content, state, strict, cx)?;
     preload::start(content, state, cx)?;
-    close_if_ready(state, cx)?;
-    if state.setup.closed {
-        crate::logistics::convoys::initialize(content, state, strict, cx)?;
-    }
     Ok(())
 }
 
@@ -548,9 +534,7 @@ pub(crate) fn answer(
                 let domain =
                     placement::choices(content, &p, owner, &case).map_err(Rejection::Engine)?;
                 let destination = resolved_destination(&domain, action)?;
-                if enemy_fixed_at(state, owner, &destination)
-                    || enemy_buffered_at(state, owner, &destination)
-                {
+                if enemy_fixed_at(state, owner, &destination) {
                     return Err(illegal("not a legal setup destination"));
                 }
                 stacking::check(content, state, &unit, &destination, strict, cx)?;
@@ -559,6 +543,14 @@ pub(crate) fn answer(
                     .setup
                     .unit_locations
                     .insert(unit.clone(), destination.clone());
+                state.setup.placement_serial =
+                    state.setup.placement_serial.checked_add(1).ok_or_else(|| {
+                        Rejection::Engine(invariant("setup placement order exhausted"))
+                    })?;
+                state
+                    .setup
+                    .placement_order
+                    .insert(unit.clone(), state.setup.placement_serial);
                 refresh_stacking(content, state, owner, &destination, strict, cx)
                     .map_err(Rejection::Engine)?;
                 // One domain per group at a time; every unit retains its own unrestricted choice.
@@ -570,6 +562,11 @@ pub(crate) fn answer(
                         u.setup_group == group
                             && matches!(u.location, Location::AwaitingSetup { .. })
                             && !state.setup.unit_locations.contains_key(&u.id)
+                            && !state
+                                .setup
+                                .tasks
+                                .values()
+                                .any(|t| matches!(t,SetupTask::Unit{unit,..} if unit==&u.id))
                     })
                     .map(|u| u.id.clone());
                 if let Some(id) = next {
@@ -680,18 +677,18 @@ pub(crate) fn answer(
     state.setup.tasks.remove(&pending.id);
     pools::start(content, state, strict, cx).map_err(Rejection::Engine)?;
     preload::start(content, state, cx).map_err(Rejection::Engine)?;
-    close_if_ready(state, cx).map_err(Rejection::Engine)?;
-    if state.setup.closed {
-        crate::logistics::convoys::initialize(content, state, strict, cx)
-            .map_err(Rejection::Engine)?;
-    }
     Ok("Setup choice accepted privately.".into())
 }
 
 /// Publish only stack presence once all available setup decisions in the shared window close.
 /// Cases: land:3.62, scen:59.2
 /// Interpretations: interp:scen-0005
-fn close_if_ready(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
+pub(crate) fn finish(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut Cx<'_>,
+    strict: bool,
+) -> Result<(), EngineError> {
     if state.setup.closed
         || !state.setup.tasks.is_empty()
         || state
@@ -701,6 +698,47 @@ fn close_if_ready(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError>
             .any(|p| p.kind.starts_with("cna.setup."))
     {
         return Ok(());
+    }
+    // Hidden opposing buffers are read only by the adjudication callback, never a response.
+    let mut claims = BTreeMap::<cna_core::ids::HexId, BTreeMap<Side, u64>>::new();
+    for (unit, location) in &state.setup.unit_locations {
+        if let Some(hex) = location.hex() {
+            let side = state.land.units[unit].side;
+            let order = state.setup.placement_order.get(unit).copied().unwrap_or(0);
+            claims
+                .entry(hex.clone())
+                .or_default()
+                .entry(side)
+                .and_modify(|n| *n = (*n).max(order))
+                .or_insert(order);
+        }
+    }
+    let losing: BTreeMap<_, _> = claims
+        .into_iter()
+        .filter(|(_, s)| s.len() > 1)
+        .map(|(hex, s)| {
+            let side = s
+                .into_iter()
+                .max_by_key(|(side, order)| (*order, *side))
+                .expect("opposing claims")
+                .0;
+            (hex, side)
+        })
+        .collect();
+    let retry: Vec<_> = state
+        .setup
+        .unit_locations
+        .iter()
+        .filter(|(unit, location)| {
+            location
+                .hex()
+                .is_some_and(|hex| losing.get(hex) == Some(&state.land.units[*unit].side))
+        })
+        .map(|(unit, _)| unit.clone())
+        .collect();
+    for unit in &retry {
+        state.setup.unit_locations.remove(unit);
+        state.setup.placement_order.remove(unit);
     }
     for (id, location) in std::mem::take(&mut state.setup.unit_locations) {
         state
@@ -722,19 +760,20 @@ fn close_if_ready(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError>
             _ => return Err(invariant("invalid buffered dump destination")),
         };
     }
-    for (id, location) in std::mem::take(&mut state.setup.pool_locations) {
-        state
-            .logistics
-            .truck_pools
-            .iter_mut()
-            .find(|p| p.id == id)
-            .ok_or_else(|| invariant("buffered truck pool disappeared"))?
-            .location = Some(location);
+    pools::finish(content, state, strict, cx)?;
+    for unit in retry {
+        let (_, case) = group_placement(content, state, &unit)?;
+        open_unit(content, state, cx, &unit, &case, strict)?;
+    }
+    if !state.setup.tasks.is_empty() {
+        cx.emit(EngineEvent::public(GameEvent::Note{text:"The blind placement window was adjudicated; affected placement choices are reopened.".into()}));
+        return Ok(());
     }
     state.setup.closed = true;
     cx.emit(EngineEvent::public(GameEvent::Note {
         text: "The simultaneous setup placement window is closed.".into(),
     }));
+    crate::logistics::convoys::initialize(content, state, strict, cx)?;
     Ok(())
 }
 
