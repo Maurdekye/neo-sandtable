@@ -363,7 +363,7 @@ fn fixed_empty_windows_accept_pass_and_exclude_pinned_or_exhausted_units() {
 /// Cases: land:3.6,land:13.23,land:13.24
 /// Interpretations: interp:land-0030
 #[test]
-fn hidden_adjacent_class_does_not_change_allowance_or_acceptance() {
+fn hidden_combat_members_do_not_grant_their_hq_a_combat_retreat_allowance() {
     let (c, mut a, _o) = fixture();
     // The same printed HQ face in both worlds; only the combat unit attached to it differs.
     place(&mut a.state, "it.1_libyan_div.viii_libyan_bn", "C4019");
@@ -389,8 +389,8 @@ fn hidden_adjacent_class_does_not_change_allowance_or_acceptance() {
         .location = Location::Eliminated;
     let a = open_game(&c, &a);
     let b = open_game(&c, &b);
-    assert!(a.state.land.combat.retreat.units[&LEG.into()].adjacent);
-    assert!(b.state.land.combat.retreat.units[&LEG.into()].adjacent);
+    assert!(!a.state.land.combat.retreat.units[&LEG.into()].adjacent);
+    assert!(!b.state.land.combat.retreat.units[&LEG.into()].adjacent);
     crate::testkit::assert_indistinguishable(
         &Cna::dev(),
         &c,
@@ -406,24 +406,164 @@ fn hidden_adjacent_class_does_not_change_allowance_or_acceptance() {
         &command(&c, &a, seat(), plan(&["C4021", "C4022", "C4023"])),
         Side::Commonwealth,
     );
-    let mut moved = a.clone();
-    moved
-        .state
-        .land
-        .units
-        .get_mut(&"it.1_libyan_div.viii_libyan_bn".into())
-        .unwrap()
-        .location = Location::Eliminated;
-    assert!(
-        evaluate(
+    let a_paths = reachable(&c, &a.state, &LEG.into(), false);
+    let b_paths = reachable(&c, &b.state, &LEG.into(), false);
+    assert_eq!(
+        serde_json::to_value(a_paths).unwrap(),
+        serde_json::to_value(b_paths).unwrap()
+    );
+    for game in [a, b] {
+        let before = serde_json::to_value(&game).unwrap();
+        assert!(matches!(
+            evaluate(
+                &Cna::dev(),
+                &c,
+                &game,
+                &command(&c, &game, seat(), plan(&["C4021", "C4022", "C4023"]))
+            ),
+            Err(Rejection::Illegal { .. })
+        ));
+        assert_eq!(serde_json::to_value(&game).unwrap(), before);
+        let mut done = close(&c, answer(&c, &game, seat(), plan(&["C4021", "C4022"])));
+        finish(&c, &mut done);
+        assert_eq!(
+            done.state.land.units[&LEG.into()].location.hex(),
+            Some(&"C4022".into())
+        );
+        assert_eq!(done.state.land.units[&LEG.into()].cp_spent_quarters, 16);
+    }
+}
+/// Cases: land:3.62,land:13.23,land:13.24
+/// Interpretations: interp:land-0030
+#[test]
+fn visible_printed_combat_counter_grants_more_than_four_cp_but_hq_does_not() {
+    for (enemy, combat) in [
+        (TANK, true),
+        ("it.1_libyan_div.1st_libyan_infantry_hq", false),
+    ] {
+        let (c, mut game, _o) = fixture();
+        place(&mut game.state, enemy, "C4019");
+        assert!(view::is_map_counter(
+            &c,
+            &game.state,
+            &game.state.land.units[&enemy.into()]
+        ));
+        assert_eq!(view::printed_combat_face(&c, &enemy.into()), combat);
+        let game = open_game(&c, &game);
+        assert_eq!(
+            game.state.land.combat.retreat.units[&LEG.into()].adjacent,
+            combat
+        );
+        let before = serde_json::to_value(&game).unwrap();
+        let paths = reachable(&c, &game.state, &LEG.into(), false);
+        assert_eq!(
+            paths
+                .iter()
+                .any(|p| p.hex == HexId::new("C4023") && p.path.len() == 3),
+            combat
+        );
+        let result = evaluate(
             &Cna::dev(),
             &c,
-            &moved,
-            &command(&c, &moved, seat(), plan(&["C4021", "C4022", "C4023"]))
-        )
-        .is_ok()
-    );
+            &game,
+            &command(&c, &game, seat(), plan(&["C4021", "C4022", "C4023"])),
+        );
+        assert_eq!(serde_json::to_value(&game).unwrap(), before);
+        if combat {
+            let accepted = result.unwrap().game;
+            assert_eq!(accepted.rng, game.rng);
+            assert_eq!(
+                serde_json::to_value(&accepted.state.logistics).unwrap(),
+                serde_json::to_value(&game.state.logistics).unwrap()
+            );
+            assert_eq!(
+                accepted.state.land.units[&LEG.into()].location.hex(),
+                Some(&"C4020".into())
+            );
+            let mut done = close(&c, accepted);
+            finish(&c, &mut done);
+            assert_eq!(
+                done.state.land.units[&LEG.into()].location.hex(),
+                Some(&"C4023".into())
+            );
+            assert!(done.state.land.units[&LEG.into()].cp_spent_quarters > 16);
+        } else {
+            assert!(matches!(result, Err(Rejection::Illegal { .. })));
+        }
+    }
 }
+
+/// Cases: land:3.62,land:13.23,land:13.24
+/// Interpretations: interp:land-0030
+#[test]
+fn printed_combat_adjacency_snapshot_survives_enemy_change_and_recovery() {
+    for initially_combat in [true, false] {
+        let (c, mut game, _o) = fixture();
+        if initially_combat {
+            place(&mut game.state, TANK, "C4019");
+        } else {
+            place(
+                &mut game.state,
+                "it.1_libyan_div.1st_libyan_infantry_hq",
+                "C4019",
+            );
+        }
+        let mut game = open_game(&c, &game);
+        // Changes after the window opens cannot change its recorded opening adjacency.
+        if initially_combat {
+            game.state
+                .land
+                .units
+                .get_mut(&TANK.into())
+                .unwrap()
+                .location = Location::Eliminated;
+        } else {
+            place(&mut game.state, TANK, "C4019");
+        }
+        let recovered: Game<Cna> =
+            serde_json::from_value(serde_json::to_value(&game).unwrap()).unwrap();
+        assert_eq!(
+            recovered.state.land.combat.retreat.units[&LEG.into()].adjacent,
+            initially_combat
+        );
+        let action = plan(&["C4021", "C4022", "C4023"]);
+        let result = evaluate(
+            &Cna::dev(),
+            &c,
+            &recovered,
+            &command(&c, &recovered, seat(), action.clone()),
+        );
+        if initially_combat {
+            let direct = answer(&c, &game, seat(), action);
+            let replayed = result.unwrap().game;
+            assert_eq!(
+                serde_json::to_value(&direct).unwrap(),
+                serde_json::to_value(&replayed).unwrap()
+            );
+            let mut direct = close(&c, direct);
+            let mut replayed = close(&c, replayed);
+            assert_eq!(
+                serde_json::to_value(finish(&c, &mut direct)).unwrap(),
+                serde_json::to_value(finish(&c, &mut replayed)).unwrap()
+            );
+            assert_eq!(
+                serde_json::to_value(&direct).unwrap(),
+                serde_json::to_value(&replayed).unwrap()
+            );
+            assert_eq!(
+                direct.state.land.units[&LEG.into()].location.hex(),
+                Some(&"C4023".into())
+            );
+        } else {
+            assert!(matches!(result, Err(Rejection::Illegal { .. })));
+            assert_eq!(
+                serde_json::to_value(&recovered).unwrap(),
+                serde_json::to_value(&game).unwrap()
+            );
+        }
+    }
+}
+
 /// Cases: land:3.6,land:13.21,land:13.28
 #[test]
 fn plans_and_retreat_markers_are_owner_operator_only() {

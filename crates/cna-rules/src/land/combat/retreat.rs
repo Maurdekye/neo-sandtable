@@ -8,6 +8,7 @@ use crate::{
     CnaContent, State, ownership,
     state::Pending,
     steps::{illegal, open},
+    view,
 };
 use cna_core::{
     decision::{ActionSchema, ActionSpace, DecisionRequest, FieldSchema, Secrecy, Trigger},
@@ -85,11 +86,13 @@ pub fn enter(
         return Ok(());
     };
     let side = phasing.opponent();
+    // Only the disclosed counter's own printed type decides adjacency. A formation's
+    // hidden combat members do not turn its noncombat counter into a combat face.
+    // Cases: land:3.62, land:13.23, land:13.24
     let enemy_hexes: BTreeSet<_> = s
-        .stacks()
-        .keys()
-        .filter(|(_, who)| *who == phasing)
-        .map(|(hex, _)| hex.clone())
+        .units_of(phasing)
+        .filter(|u| view::is_map_counter(c, s, u) && view::printed_combat_face(c, &u.id))
+        .filter_map(|u| u.location.hex().cloned())
         .collect();
     let units = s
         .units_of(side)
@@ -386,7 +389,7 @@ pub fn finish(
     s.land.combat.retreat.resolved = true;
     Ok(())
 }
-/// Own-only legal path catalog, including contact costs and the snapshot's public-presence cap.
+/// Own-only legal path catalog, including contact costs and the snapshot's printed-combat-counter adjacency cap.
 /// Cases: land:13.21, land:13.22, land:13.23, land:13.24, land:13.26
 pub fn reachable(c: &CnaContent, s: &State, id: &UnitId, strict: bool) -> Vec<Reachable> {
     let Some(unit) = s.land.units.get(id) else {
