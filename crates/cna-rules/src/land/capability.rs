@@ -77,6 +77,9 @@ pub fn charge(
 /// Cases: land:6.16, land:6.23, land:6.24, land:8.73
 pub fn finish_opstage(state: &mut State) {
     state.land.assault_intentions.clear();
+    state.land.breakdown.accumulated_quarters.clear();
+    state.land.breakdown.checked.clear();
+    state.land.breakdown.moving.clear();
     for unit in state.land.units.values_mut() {
         let in_play = matches!(
             unit.location,

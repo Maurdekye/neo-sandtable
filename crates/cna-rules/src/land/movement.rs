@@ -626,7 +626,19 @@ fn run(
         let before_to = state
             .units_of(seat.side)
             .any(|u| u.location.hex() == Some(&to));
-        for id in &moving {
+        for (id, cost) in moving.iter().zip(&costs) {
+            if truth {
+                super::breakdown::begin_motion(content, state, id, &from, strict);
+                super::breakdown::record_edge(
+                    state,
+                    id,
+                    &from,
+                    cost.breakdown_quarters,
+                    cp,
+                    local_weather,
+                )
+                .map_err(Rejection::Engine)?;
+            }
             state.land.units.get_mut(id).unwrap().location = Location::Hex { hex: to.clone() };
             if costs.iter().all(|c| c.on_network) {
                 state.land.movement.off_road.remove(id);
@@ -751,6 +763,12 @@ fn run(
         && (state.land.movement.mode != WindowMode::Segment || state.land.reaction.window.is_none())
     {
         end?;
+    }
+    if truth
+        && !path.is_empty()
+        && (state.land.movement.mode != WindowMode::Segment || state.land.reaction.window.is_none())
+    {
+        super::breakdown::stop(state, &moving, &from);
     }
     state.land.movement.moved.extend(moving.iter().cloned());
     if truth {
@@ -1153,6 +1171,8 @@ pub(super) fn finish_continuation(
     cx: &mut Cx<'_>,
 ) -> Result<(), Rejection> {
     let k = s.land.reaction.continuation.take().unwrap();
+    let hex = s.land.units[&k.unit].location.hex().unwrap().clone();
+    super::breakdown::stop(s, &k.members, &hex);
     s.land.reaction.window = None;
     s.decisions
         .pending

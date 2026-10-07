@@ -2120,6 +2120,33 @@ fn occupied_to_occupied_counter_traffic_and_private_pass_emit_no_enemy_events() 
     place(&mut s, "it.libyan_tank_command.lxiii_l_tank_bn", "C4021");
     let g = start(&c, s, true);
     let own = seat(&g);
+    let p = g
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.seat == own)
+        .unwrap();
+    let command = |action| {
+        Command::Respond(DecisionResponse {
+            decision_id: p.id.clone(),
+            decision_revision: p.revision,
+            seat: own,
+            action,
+            controller_epoch: 1,
+            idempotency_key: "counter-traffic-pair".into(),
+            public_explanation: None,
+        })
+    };
+    let pass_command = command(Value::Null);
+    let move_command = command(json!([{"unit":TANK,"path":["C4021"]}]));
+    crate::testkit::assert_actions_indistinguishable(
+        &Cna::full(),
+        &c,
+        (&g, &pass_command),
+        (&g, &move_command),
+        Side::Commonwealth,
+    );
     let enemy = Perspective::Side(Side::Commonwealth);
     let pass = respond(&c, &g, own, Value::Null, true).unwrap();
     let moved = respond(&c, &g, own, json!([{"unit":TANK,"path":["C4021"]}]), true).unwrap();
