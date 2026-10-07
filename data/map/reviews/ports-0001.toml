@@ -1,0 +1,28 @@
+hex = []
+
+[batch]
+id = "ports-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "Benghazi and Mersa Matruh circled port anchors; three source regional views and complete-cell details, Tobruk abstained"
+notes = "Native3x regional and6x whole-cell detail reviewed against TEC.png and55.3 chart. Port identities and hexes only; terrain, city extent, capacity, efficiency, training and other facilities remain separate. Tobruk anchor crosses C4807/C4908 shared side and is not accepted from its garrison anchor."
+
+[[place]]
+id = "port-benghazi-a4827"
+name = "Benghazi"
+hex_id = "A4827"
+type = "port"
+src = ["land:8.37", "airlog:55.3"]
+note = "Circled anchor is wholly inside A4827, distinct from training silhouettes and city buildings. Named port corroborated by55.3; no city extent, capacity or efficiency inferred."
+
+[[place]]
+id = "port-mersa-matruh-d3814"
+name = "Mersa Matruh"
+hex_id = "D3814"
+type = "port"
+src = ["land:8.37", "airlog:55.3"]
+note = "Circled anchor lies inside coastal D3814. The town dot and rail terminus are in D3714 and remain separate. Named port corroborated by55.3; no city extent, capacity or efficiency inferred."

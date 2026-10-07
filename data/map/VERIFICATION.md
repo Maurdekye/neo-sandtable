@@ -460,3 +460,13 @@ rough/clear cells retain rough with minor clear recorded. Color-area
 diagnostics guided this direct audit and never supplied accepted labels.
 This is a bounded audit of non-clear classes, not a fresh independent
 review of every earlier clear cell or a measured population error rate.
+
+
+## Two verified port anchors (ports-0001,2026-10-07)
+
+Three regional3x and full-cell6x native source views, their separate
+registered locator twins, TEC.png and55.3 directly inspected. Two
+accepted port points: Benghazi A4827 and Mersa Matruh D3814. Tobruk
+shared-side overlap is withheld. No new terrain or edge review, city
+extent or numeric port attribute supplied. Single-observer2021source;
+population error and original1979 equivalence remain unmeasured.

@@ -162,3 +162,11 @@ C4026 retains its independent unreadable coastal fragment. Owner batch3
 may overturn predominance; old decisions and minor substrates are retained
 in source-bound review amendments. Earlier clear-cell minor-substrate
 audit remains incomplete; no fullmap reinterpretation audit is claimed.
+
+
+Port-anchor audit ports-0001: Benghazi A4827 and Mersa Matruh D3814
+are verified point records. Tobruk port remains unregistered because
+its circled anchor overlaps the C4807/C4908 shared side in the2021 image.
+The55.3 port chart has no map locator, and scenario C4807 is a garrison
+anchor rather than proof of the port hex. Capacity/efficiency, training
+and city extent are separate evidence; absent place records remain unknown.

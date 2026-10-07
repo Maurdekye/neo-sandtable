@@ -963,7 +963,7 @@ A4731,A,47,31,23,16,unclassified,,land:4.1
 A4732,A,47,32,24,16,unclassified,,land:4.1
 A4733,A,47,33,25,16,unclassified,,land:4.1
 A4826,A,48,26,19,15,unclassified,,land:4.1
-A4827,A,48,27,20,15,major_city,land|coastal|major_city,land:4.1;land:8.37;scen:60.34;interp:scen-0001
+A4827,A,48,27,20,15,major_city,land|coastal|major_city|port,land:4.1;land:8.37;scen:60.34;interp:scen-0001;airlog:55.3
 A4828,A,48,28,21,15,unclassified,,land:4.1
 A4829,A,48,29,22,15,unclassified,,land:4.1
 A4830,A,48,30,23,15,unclassified,,land:4.1
@@ -5690,7 +5690,7 @@ D3810,D,38,10,97,25,rough,land,land:4.1;land:8.37;interp:map-0002
 D3811,D,38,11,98,25,rough,land|coastal,land:4.1;land:8.37;interp:map-0002;interp:map-0003
 D3812,D,38,12,99,25,rough,land|coastal,land:4.1;land:8.37;interp:map-0002;interp:map-0003
 D3813,D,38,13,100,25,clear,land|coastal,land:4.1;land:8.37;interp:map-0002
-D3814,D,38,14,101,25,clear,land|coastal,land:4.1;land:8.37;interp:map-0002
+D3814,D,38,14,101,25,clear,land|coastal|port,land:4.1;land:8.37;interp:map-0002;airlog:55.3
 D3815,D,38,15,102,25,clear,land|coastal,land:4.1;land:8.37;interp:map-0002
 D3816,D,38,16,103,25,sea,sea,land:4.1;land:8.37;interp:map-0002
 D3901,D,39,1,88,24,clear,land,land:4.1;land:8.37;interp:map-0002

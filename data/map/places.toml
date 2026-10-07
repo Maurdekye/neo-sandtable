@@ -83,6 +83,24 @@ note = "White circled anchor lies inside C4321; port capacity and training attri
 review_batch = "bardia-north-0001"
 
 [[places]]
+id = "port-benghazi-a4827"
+name = "Benghazi"
+hex_id = "A4827"
+type = "port"
+src = ["land:8.37", "airlog:55.3"]
+note = "Circled anchor is wholly inside A4827, distinct from training silhouettes and city buildings. Named port corroborated by55.3; no city extent, capacity or efficiency inferred."
+review_batch = "ports-0001"
+
+[[places]]
+id = "port-mersa-matruh-d3814"
+name = "Mersa Matruh"
+hex_id = "D3814"
+type = "port"
+src = ["land:8.37", "airlog:55.3"]
+note = "Circled anchor lies inside coastal D3814. The town dot and rail terminus are in D3714 and remain separate. Named port corroborated by55.3; no city extent, capacity or efficiency inferred."
+review_batch = "ports-0001"
+
+[[places]]
 id = "port-sollum"
 name = "Sollum"
 hex_id = "C4022"
