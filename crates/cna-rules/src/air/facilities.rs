@@ -190,19 +190,12 @@ impl FacilityState {
         Ok(())
     }
 
-    /// Intrinsic AA is relevant only to strafing and dive-bombing missions.
-    /// Cases: airlog:36.18, airlog:36.3
+    /// Intrinsic AA applies only to strafing/dive bombing. An upgrade suspends
+    /// this defense along with the facility's other operations.
+    /// Cases: airlog:36.18, airlog:36.2, airlog:36.3, airlog:36.4, land:24.79
+    /// Interpretations: interp:air-0007
     pub fn intrinsic_aa(&self, strafing_or_dive_bombing: bool) -> Result<i32, EngineError> {
-        if !strafing_or_dive_bombing || self.current_capacity == FacilityCapacity::Levels(0) {
-            return Ok(0);
-        }
-        if self.project_unavailable {
-            return Err(EngineError::Unsupported {
-                case: "airlog:36.18".into(),
-                detail: "Intrinsic AA during a facility upgrade awaits interp:air-0007".into(),
-            });
-        }
-        Ok(1)
+        Ok(i32::from(self.operational() && strafing_or_dive_bombing))
     }
 }
 
@@ -308,10 +301,7 @@ mod tests {
         let before = field.clone();
         assert!(field.repair_one(&properties).is_err());
         assert_eq!(field, before);
-        assert!(matches!(
-            field.intrinsic_aa(true),
-            Err(EngineError::Unsupported { .. })
-        ));
+        assert_eq!(field.intrinsic_aa(true).unwrap(), 0);
         assert_eq!(field.intrinsic_aa(false).unwrap(), 0);
         assert_eq!(
             FacilityKind::LandingStrip.upgrade_to(),
@@ -322,6 +312,49 @@ mod tests {
             Some(FacilityKind::FlyingBoatBasin)
         );
         assert_eq!(FacilityKind::Airfield.upgrade_to(), None);
+    }
+
+    /// Both upgradeable facilities retain their capacity record during work;
+    /// AA follows upgrade availability independently of mission type or capacity.
+    /// This tests the source-helper lifecycle; engineering completion is separate.
+    /// Cases: airlog:36.18, airlog:36.2, airlog:36.3, airlog:36.4, land:24.79
+    /// Interpretations: interp:air-0007
+    #[test]
+    fn upgrade_start_and_completion_suspend_and_restore_intrinsic_aa() {
+        for kind in [
+            FacilityKind::LandingStrip,
+            FacilityKind::FlyingBoatAlightingArea,
+        ] {
+            for active in [false, true] {
+                let (mut facility, properties) = fixture(kind, FacilityTheatre::Africa);
+                if !active {
+                    facility.current_capacity = FacilityCapacity::Levels(0);
+                }
+                let before = facility.clone();
+                assert_eq!(facility.intrinsic_aa(true).unwrap(), i32::from(active));
+                assert_eq!(facility.intrinsic_aa(false).unwrap(), 0);
+                assert_eq!(facility.operational(), active);
+
+                // The canonical flag is set when the engineering project starts.
+                facility.project_unavailable = true;
+                assert_eq!(facility.intrinsic_aa(true).unwrap(), 0);
+                assert_eq!(facility.intrinsic_aa(false).unwrap(), 0);
+                assert!(!facility.operational());
+                let checkpoint = serde_json::to_value(&facility).unwrap();
+                let restored: FacilityState = serde_json::from_value(checkpoint).unwrap();
+                assert_eq!(restored, facility);
+                assert_eq!(restored.intrinsic_aa(true).unwrap(), 0);
+
+                // Completion clears unavailability; an absent structure still
+                // has no AA. Capacity/kind completion has its own engineering API.
+                facility.project_unavailable = false;
+                assert_eq!(facility.intrinsic_aa(true).unwrap(), i32::from(active));
+                assert_eq!(facility.intrinsic_aa(false).unwrap(), 0);
+                assert_eq!(facility.operational(), active);
+                assert_eq!(facility, before);
+                facility.check(&properties).unwrap();
+            }
+        }
     }
 }
 

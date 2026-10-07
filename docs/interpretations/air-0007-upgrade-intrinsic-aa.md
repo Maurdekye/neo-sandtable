@@ -1,10 +1,10 @@
 # air-0007 — Intrinsic AA while upgrading an air facility
 
-- **Cases:** airlog:36.18, airlog:36.2, airlog:36.3, land:24.79
+- **Cases:** airlog:36.18, airlog:36.2, airlog:36.3, airlog:36.4, land:24.79
 - **Status:** proposed
-- **Profile version:** cna-2021-full (proposed; live AA integration pending)
-- **Decided by:** rules-air-bases, 2026-10-07
-- **Owner review:** pending
+- **Profile version:** cna-2021-full (provisional reading; live AA integration pending)
+- **Decided by:** neo-sandtable (lead), 2026-10-07; relayed through rules-mgr
+- **Owner review:** pending, batch 3
 
 ## Question
 
@@ -12,20 +12,22 @@ Does upgrading a landing strip or alighting area suspend its intrinsic anti-airc
 
 ## Evidence
 
-The baseline in 24.79 makes a facility unavailable during an upgrade. It does not enumerate which functions are suspended. Case 36.18 assigns intrinsic AA against strafing and dive bombing; 36.2 gives strips the airfield functions, and 36.3 gives basins intrinsic AA. Neither section states that engineering work removes that defense.
-
-Reading unavailability broadly would suspend every facility use, including intrinsic AA. Reading it as air operations would suspend takeoff, landing and maintenance while leaving the existing defensive strength intact.
+The baseline in 24.79 makes a facility unavailable during an upgrade. It does not enumerate exceptions for particular functions. Case 36.18 assigns intrinsic AA against strafing and dive bombing; 36.2 gives strips the airfield functions, and 36.3/36.4 give water facilities their corresponding functions.
 
 ## Ruling
 
-Proposed: an otherwise surviving facility retains its intrinsic AA during an upgrade. Upgrade unavailability continues to block flight and maintenance. The intrinsic strength still applies only to strafing and dive bombing; this proposal grants no AA against other mission types.
+Provisional lead ruling, 2026-10-07T08:36:56: upgrade unavailability suspends intrinsic AA. The helper returns zero intrinsic strength while the project makes the facility unavailable. Flight and maintenance remain unavailable as well. Once the upgrade finishes, the normal AA rule resumes for a surviving active facility: one intrinsic point against strafing or dive bombing, zero against other mission types. Zero-capacity facilities still provide no intrinsic AA.
 
-The code currently returns Unsupported for a relevant intrinsic-AA query during an upgrade. It does not implement the proposed outcome pending a ruling.
+The source helper implements this reading. The former Unsupported hold for this particular interaction is removed. This does not add a live engineering project, runtime facility import or flak integration by itself.
 
 ## Rationale
 
-The existing installation has not been destroyed when engineering work begins, and 36.18 supplies a specific defensive capability. Separating that defense from air operations avoids treating a construction restriction as physical removal without an explicit statement. The broader reading of 24.79 remains plausible, so this requires a recorded ruling.
+The lead applies the availability restriction in 24.79 to all facility uses, including its intrinsic defense. Section 36 supplies no exception for AA during engineering work. The separate limits on qualifying attack types continue to apply.
+
+## Alternative considered
+
+The original proposal would retain intrinsic AA during an upgrade because the installation survives while engineering works on it. That reading would distinguish the existing defensive structure from its unavailable air operations. The lead instead ruled that the unqualified availability restriction includes intrinsic AA; the surviving-structure argument remains an alternative rather than implemented behavior.
 
 ## Affected behaviour and tests
 
-The source helper in air::facilities holds this interaction as Unsupported. A regression asserts that a project-unavailable facility does not silently produce zero AA for a relevant mission, while unrelated mission types still receive zero intrinsic AA. After a ruling, tests must separately cover upgrading a strip and an alighting area, active and zero-capacity sites, and qualifying versus other attacks before live AA integration.
+The helper air::facilities::FacilityState::intrinsic_aa follows operational availability. The regression upgrade_start_and_completion_suspend_and_restore_intrinsic_aa covers both a landing strip and an alighting area, active and zero capacity, qualifying and other attacks, the unavailable interval and its end, and checkpoint preservation of the unavailable flag. Existing capacity, damage, repair, compatibility and canonical catalog assertions remain unchanged. These are source-helper tests; live engineering and AA window integration remain separate work.
