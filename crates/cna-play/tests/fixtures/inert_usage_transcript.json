@@ -1,0 +1,98 @@
+{
+  "entries": [
+    {
+      "at": "2026-10-07T07:07:34.437Z",
+      "entry": {
+        "attempts": 1,
+        "cache_creation_tokens": null,
+        "cache_read_tokens": null,
+        "completed": 1,
+        "controller_epoch": 2,
+        "incomplete_turns": 0,
+        "input_tokens": 10,
+        "kind": "usage_snapshot",
+        "model": "haiku",
+        "output_tokens": 5,
+        "provider": "claude-code",
+        "reasoning_tokens": null,
+        "reported_cost_usd": 0.01,
+        "revision": 1
+      },
+      "game_seq": 64,
+      "seat": "axis.commander",
+      "tseq": 1,
+      "type": "transcript"
+    },
+    {
+      "at": "2026-10-07T07:07:35.215Z",
+      "entry": {
+        "attempts": 2,
+        "cache_creation_tokens": null,
+        "cache_read_tokens": null,
+        "completed": 2,
+        "controller_epoch": 2,
+        "incomplete_turns": 0,
+        "input_tokens": 20,
+        "kind": "usage_snapshot",
+        "model": "haiku",
+        "output_tokens": 10,
+        "provider": "claude-code",
+        "reasoning_tokens": null,
+        "reported_cost_usd": 0.02,
+        "revision": 2
+      },
+      "game_seq": 73,
+      "seat": "axis.commander",
+      "tseq": 3,
+      "type": "transcript"
+    },
+    {
+      "at": "2026-10-07T07:07:35.772Z",
+      "entry": {
+        "attempts": 3,
+        "cache_creation_tokens": null,
+        "cache_read_tokens": null,
+        "completed": 3,
+        "controller_epoch": 2,
+        "incomplete_turns": 0,
+        "input_tokens": 30,
+        "kind": "usage_snapshot",
+        "model": "haiku",
+        "output_tokens": 15,
+        "provider": "claude-code",
+        "reasoning_tokens": null,
+        "reported_cost_usd": 0.03,
+        "revision": 3
+      },
+      "game_seq": 81,
+      "seat": "axis.commander",
+      "tseq": 5,
+      "type": "transcript"
+    },
+    {
+      "at": "2026-10-07T07:07:35.939Z",
+      "entry": {
+        "attempts": 4,
+        "cache_creation_tokens": null,
+        "cache_read_tokens": null,
+        "completed": 3,
+        "controller_epoch": 2,
+        "incomplete_turns": 1,
+        "input_tokens": 30,
+        "kind": "usage_snapshot",
+        "model": "haiku",
+        "output_tokens": 15,
+        "provider": "claude-code",
+        "reasoning_tokens": null,
+        "reported_cost_usd": 0.03,
+        "revision": 4
+      },
+      "game_seq": 89,
+      "seat": "axis.commander",
+      "tseq": 8,
+      "type": "transcript"
+    }
+  ],
+  "paid_calls": 0,
+  "source": "inert driver through real Graziani/dev server; synthetic usage, not provider measurements"
+}

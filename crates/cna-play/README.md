@@ -212,3 +212,20 @@ MCP endpoint or session counters. Setup choices and preparation commands have co
 limits, with generous hang guards. Transcript fixtures await delivery confirmation.
 The complete commander setup bridge remains in slow CI. These fixture guards do
 not change paid CLI limits or the production five-second final transcript drain.
+
+Durable Claude seats publish `usage_snapshot` transcript entries after each model
+turn, including interruptions. They contain cumulative binding-epoch totals and an
+increasing revision. Consumers replace older revisions; replayed delivery is never
+added to the totals. Input, output, cache reads, cache creation and reasoning stay
+separate. Claude's raw input count excludes cache channels; output may already
+include reasoning. Absent measurements remain null. `incomplete_turns` identifies
+partial totals after missing reports, process death or older journals whose token
+channels were not retained. Scripted seats emit no usage snapshots; Codex usage
+remains gated until its durable totals are verified.
+
+The trusted journal commits each snapshot before transcript delivery and keeps it
+in an outbox until a delivery marker is confirmed. Recovery retries the same epoch
+and revision, including a possible duplicate when delivery committed just before a
+crash. Old journals retain their existing lifetime cost deltas, but token channels
+that were discarded cannot be reconstructed. Graceful cancellation records the
+incomplete turn immediately and preserves its full reservation.

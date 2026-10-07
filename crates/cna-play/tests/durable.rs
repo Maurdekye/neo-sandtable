@@ -255,7 +255,92 @@ async fn cna_resume(full: bool) {
         .unwrap();
     let before = demo.journal.as_ref().unwrap().snapshot().unwrap().seats[&demo.seat].clone();
     assert_eq!(before.turns, 4);
-    assert!(before.inflight.is_some());
+    // Graceful cancellation now commits the incomplete usage snapshot immediately,
+    // rather than leaving it for the next launcher recovery to discover.
+    assert!(before.inflight.is_none());
+    assert_eq!(before.incomplete_turns, 1);
+    let usage = before.usage.as_ref().unwrap();
+    assert_eq!(usage.revision, 4);
+    assert_eq!(
+        (usage.input_tokens, usage.output_tokens),
+        (Some(30), Some(15))
+    );
+    let snapshots: Vec<_> = demo
+        .transcript()
+        .into_iter()
+        .filter_map(|message| match message {
+            cna_protocol::ServerMessage::Transcript {
+                entry: cna_protocol::TranscriptEntry::UsageSnapshot(snapshot),
+                ..
+            } => Some(snapshot),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(snapshots.len(), 4);
+    assert_eq!(
+        snapshots.iter().map(|s| s.revision).collect::<Vec<_>>(),
+        vec![1, 2, 3, 4]
+    );
+    let last = snapshots.last().unwrap();
+    assert_eq!(
+        (last.attempts, last.completed, last.incomplete_turns),
+        (4, 3, 1)
+    );
+    assert_eq!(
+        (
+            last.input_tokens,
+            last.output_tokens,
+            last.cache_read_tokens,
+            last.cache_creation_tokens,
+            last.reasoning_tokens
+        ),
+        (Some(30), Some(15), None, None, None)
+    );
+    if !full && let Some(path) = std::env::var_os("CNA_INERT_USAGE_FIXTURE") {
+        let entries: Vec<_> = demo
+            .transcript()
+            .into_iter()
+            .filter(|message| {
+                matches!(
+                    message,
+                    cna_protocol::ServerMessage::Transcript {
+                        entry: cna_protocol::TranscriptEntry::UsageSnapshot(_),
+                        ..
+                    }
+                )
+            })
+            .collect();
+        let fixture = json!({"source":"inert driver through real Graziani/dev server; synthetic usage, not provider measurements","paid_calls":0,"entries":entries});
+        std::fs::write(path, serde_json::to_string_pretty(&fixture).unwrap()).unwrap();
+    }
+    assert!(before.usage.as_ref().unwrap().outbox.is_empty());
+    assert_eq!(before.usage.as_ref().unwrap().acknowledged_revision, 4);
+    let replay = demo.handle.replay();
+    let own = cna_core::visibility::Perspective::Side(demo.seat.side);
+    let side_snapshots: Vec<_> = replay
+        .transcripts(own, demo.seat, 0)
+        .unwrap()
+        .into_iter()
+        .filter_map(|message| match message {
+            cna_protocol::ServerMessage::Transcript {
+                entry: cna_protocol::TranscriptEntry::UsageSnapshot(snapshot),
+                ..
+            } => Some(snapshot),
+            _ => None,
+        })
+        .collect();
+    // Game alignment sequences belong to each audience, so compare payloads.
+    assert_eq!(side_snapshots, snapshots);
+    let enemy = match demo.seat.side {
+        cna_core::ids::Side::Axis => cna_core::ids::Side::Commonwealth,
+        cna_core::ids::Side::Commonwealth => cna_core::ids::Side::Axis,
+    };
+    assert!(
+        replay
+            .transcripts(cna_core::visibility::Perspective::Side(enemy), demo.seat, 0)
+            .unwrap()
+            .is_empty()
+    );
     demo.shutdown().await.unwrap();
     let demo = Demo::resume(&path, &repo.join("data"), &repo.join("web/dist"))
         .await
@@ -266,6 +351,7 @@ async fn cna_resume(full: bool) {
         (recovered.turns, recovered.calls),
         (before.turns, before.calls)
     );
+    assert_eq!(recovered.incomplete_turns, before.incomplete_turns);
     let mut fake = driver(&demo, trace.clone());
     let (stop, rx) = watch::channel(false);
     if !full {
@@ -323,7 +409,9 @@ async fn death_after_committed_order_resumes_without_repeating_old_revision() {
         .unwrap();
     let s = &demo.journal.as_ref().unwrap().snapshot().unwrap().seats[&demo.seat];
     assert_eq!(s.recoveries, 1);
-    assert_eq!(s.incomplete_turns, 1);
+    // One interrupted CLI result plus the intentionally cancelled final turn.
+    assert_eq!(s.incomplete_turns, 2);
+    assert!(s.inflight.is_none());
     assert!(s.turns >= 3, "{:?}", s.stages);
     assert_eq!(trace.lock().unwrap().starts.len(), 2);
     demo.shutdown().await.unwrap();
@@ -398,7 +486,9 @@ async fn unavailable_resume_reseeds_from_notebook_without_resetting_attempts() {
         .unwrap();
     let s = &demo.journal.as_ref().unwrap().snapshot().unwrap().seats[&demo.seat];
     assert_eq!(s.recoveries, 1);
-    assert_eq!(s.incomplete_turns, 1);
+    // One interrupted CLI result plus the intentionally cancelled final turn.
+    assert_eq!(s.incomplete_turns, 2);
+    assert!(s.inflight.is_none());
     assert_ne!(s.session.as_ref().unwrap().session_id, old);
     {
         let trace = trace.lock().unwrap();

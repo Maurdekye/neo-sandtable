@@ -2,6 +2,7 @@
 //! SQLite commits precede model work. In-flight reservations survive a hard crash.
 use crate::config::LaunchConfig;
 use cna_core::ids::SeatId;
+use cna_protocol::UsageSnapshot;
 use cna_seats::{
     driver::{SessionInfo, SessionTelemetry, TurnOutcome},
     mcp::ToolBudget,
@@ -25,6 +26,84 @@ pub struct StageUsage {
     pub reported_cost_usd: f64,
     pub input_tokens: u64,
     pub output_tokens: u64,
+    #[serde(default)]
+    pub cache_read_tokens: Option<u64>,
+    #[serde(default)]
+    pub cache_creation_tokens: Option<u64>,
+    #[serde(default)]
+    pub reasoning_tokens: Option<u64>,
+}
+/// Known provider totals, with a transactionally committed transcript outbox.
+/// Missing optional channels stay null until measured; partial totals are marked
+/// by incomplete_turns when input, output or cost reports are unavailable.
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub struct UsageJournal {
+    pub revision: u64,
+    pub acknowledged_revision: u64,
+    pub input_tokens: Option<u64>,
+    pub output_tokens: Option<u64>,
+    pub cache_read_tokens: Option<u64>,
+    pub cache_creation_tokens: Option<u64>,
+    pub reasoning_tokens: Option<u64>,
+    pub reported_cost_usd: Option<f64>,
+    pub outbox: Vec<UsageSnapshot>,
+}
+fn add_channel(total: &mut Option<u64>, measured: Option<u64>) -> Result<(), String> {
+    if let Some(value) = measured {
+        let value = total
+            .unwrap_or(0)
+            .checked_add(value)
+            .ok_or("usage token total overflow")?;
+        if value > 9_007_199_254_740_991 {
+            return Err("usage token total exceeds wire integer precision".into());
+        }
+        *total = Some(value);
+    }
+    Ok(())
+}
+fn migrate_usage(s: &mut SeatJournal) -> bool {
+    if s.usage.is_some() {
+        return false;
+    }
+    // Old journals discarded auxiliary channels and used zero for absent input
+    // reports. Do not reconstruct measured zeros or complete totals from them.
+    let interrupted = u64::from(s.inflight.as_ref().is_some_and(|r| r.kind == "turn"));
+    s.incomplete_turns = s.incomplete_turns.max(s.turns.saturating_sub(interrupted));
+    s.usage = Some(UsageJournal {
+        reported_cost_usd: (s.reported_cost_usd > 0.).then_some(s.reported_cost_usd),
+        ..UsageJournal::default()
+    });
+    true
+}
+fn queue_usage(s: &mut SeatJournal) -> Result<(), String> {
+    let completed = s
+        .stages
+        .values()
+        .try_fold(0u64, |sum, stage| sum.checked_add(stage.completed))
+        .ok_or("usage completion total overflow")?;
+    let model = s
+        .session
+        .as_ref()
+        .and_then(|i| i.model.clone())
+        .unwrap_or_else(|| s.model.clone());
+    let u = s.usage.as_mut().ok_or("missing usage journal")?;
+    u.revision = u.revision.checked_add(1).ok_or("usage revision overflow")?;
+    u.outbox.push(UsageSnapshot {
+        controller_epoch: s.epoch,
+        revision: u.revision,
+        provider: Some("claude-code".into()),
+        model: Some(model),
+        attempts: s.turns,
+        completed,
+        input_tokens: u.input_tokens,
+        output_tokens: u.output_tokens,
+        cache_read_tokens: u.cache_read_tokens,
+        cache_creation_tokens: u.cache_creation_tokens,
+        reasoning_tokens: u.reasoning_tokens,
+        reported_cost_usd: u.reported_cost_usd,
+        incomplete_turns: s.incomplete_turns,
+    });
+    Ok(())
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Reservation {
@@ -49,6 +128,8 @@ pub struct SeatJournal {
     pub telemetry: SessionTelemetry,
     pub stages: BTreeMap<String, StageUsage>,
     pub inflight: Option<Reservation>,
+    #[serde(default)]
+    pub usage: Option<UsageJournal>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct JournalState {
@@ -148,6 +229,7 @@ impl SessionJournal {
                         telemetry: SessionTelemetry::default(),
                         stages: BTreeMap::new(),
                         inflight: None,
+                        usage: Some(UsageJournal::default()),
                     },
                 )
             })
@@ -198,15 +280,85 @@ impl SessionJournal {
         // Keep the full interrupted reservation charged. Result-less turns have unknown spend.
         journal.update(|state| {
             for s in state.seats.values_mut() {
-                if let Some(r) = s.inflight.take()
-                    && r.kind == "turn"
-                {
+                let migrated = migrate_usage(s);
+                let interrupted = s.inflight.take().is_some_and(|r| r.kind == "turn");
+                if interrupted {
                     s.incomplete_turns += 1;
+                }
+                if interrupted || (migrated && s.turns > 0) {
+                    queue_usage(s)?;
                 }
             }
             Ok(())
         })?;
         Ok(journal)
+    }
+    /// Settle a cancelled operation without claiming result-less model spend is known.
+    /// Its full pre-action reservation remains charged, as on hard-crash recovery.
+    pub fn interrupt(&self, seat: SeatId) -> Result<(), String> {
+        self.update(|state| {
+            let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
+            migrate_usage(s);
+            if s.inflight.take().is_some_and(|r| r.kind == "turn") {
+                s.incomplete_turns += 1;
+                queue_usage(s)?;
+            }
+            Ok(())
+        })
+    }
+    pub fn usage_outbox(&self, seat: SeatId) -> Result<Vec<UsageSnapshot>, String> {
+        let state = self.snapshot()?;
+        Ok(state
+            .seats
+            .get(&seat)
+            .ok_or("unknown seat")?
+            .usage
+            .as_ref()
+            .map(|u| u.outbox.clone())
+            .unwrap_or_default())
+    }
+    /// Only acknowledge the exact committed prefix whose delivery marker was confirmed.
+    pub fn acknowledge_usage(&self, seat: SeatId, epoch: u64, revision: u64) -> Result<(), String> {
+        self.update(|state| {
+            let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
+            if s.epoch != epoch {
+                return Err("usage acknowledgement epoch mismatch".into());
+            }
+            let u = s.usage.as_mut().ok_or("missing usage journal")?;
+            if revision <= u.acknowledged_revision {
+                return Ok(());
+            }
+            if !u.outbox.iter().any(|entry| entry.revision == revision) {
+                return Err("usage acknowledgement was not committed".into());
+            }
+            u.outbox.retain(|entry| entry.revision > revision);
+            u.acknowledged_revision = revision;
+            Ok(())
+        })
+    }
+    /// Deliver a committed prefix. A crash after server commit but before this
+    /// acknowledgement replays the same epoch/revision, never a new cost increment.
+    pub async fn deliver_usage(
+        &self,
+        seat: SeatId,
+        sink: &cna_seats::transcript::TranscriptSink,
+    ) -> Result<(), String> {
+        let committed = self.usage_outbox(seat)?;
+        let Some(last) = committed.last() else {
+            return Ok(());
+        };
+        for snapshot in &committed {
+            sink.emit(
+                seat,
+                cna_protocol::TranscriptEntry::UsageSnapshot(Box::new(snapshot.clone())),
+            );
+        }
+        tokio::time::timeout(std::time::Duration::from_secs(5), sink.flush_confirmed())
+            .await
+            .map_err(|_| {
+                "usage transcript confirmation timed out; committed outbox retained".to_string()
+            })??;
+        self.acknowledge_usage(seat, last.controller_epoch, last.revision)
     }
     pub fn file(&self) -> &Path {
         &self.path
@@ -385,31 +537,61 @@ impl SessionJournal {
                 }
             }
             if r.kind == "turn" {
+                migrate_usage(s);
+                let mut incomplete = false;
                 let stage = s.stages.entry(r.stage).or_default();
                 if let Some(o) = outcome {
                     stage.completed += u64::from(o.ok);
-                    stage.input_tokens += o.usage.input_tokens.unwrap_or(0);
-                    stage.output_tokens += o.usage.output_tokens.unwrap_or(0);
+                    stage.input_tokens = stage
+                        .input_tokens
+                        .checked_add(o.usage.input_tokens.unwrap_or(0))
+                        .ok_or("stage input overflow")?;
+                    stage.output_tokens = stage
+                        .output_tokens
+                        .checked_add(o.usage.output_tokens.unwrap_or(0))
+                        .ok_or("stage output overflow")?;
+                    add_channel(&mut stage.cache_read_tokens, o.usage.cached_input_tokens)?;
+                    add_channel(
+                        &mut stage.cache_creation_tokens,
+                        o.usage.cache_creation_tokens,
+                    )?;
+                    add_channel(&mut stage.reasoning_tokens, o.usage.reasoning_tokens)?;
+                    let usage = s.usage.as_mut().ok_or("missing usage journal")?;
+                    add_channel(&mut usage.input_tokens, o.usage.input_tokens)?;
+                    add_channel(&mut usage.output_tokens, o.usage.output_tokens)?;
+                    add_channel(&mut usage.cache_read_tokens, o.usage.cached_input_tokens)?;
+                    add_channel(
+                        &mut usage.cache_creation_tokens,
+                        o.usage.cache_creation_tokens,
+                    )?;
+                    add_channel(&mut usage.reasoning_tokens, o.usage.reasoning_tokens)?;
+                    incomplete |= o.usage.input_tokens.is_none() || o.usage.output_tokens.is_none();
                     if let Some(raw) = o.usage.cost_usd {
                         if !raw.is_finite() || raw < 0. {
                             return Err("invalid reported cost".into());
                         }
-                        // Normal resumes restore totals. A CLI reset is visible and conservatively counted.
+                        // Preserve the existing per-session delta rules across resume/reseed.
                         let delta = if raw >= s.last_session_cost {
                             raw - s.last_session_cost
                         } else {
-                            s.incomplete_turns += 1;
+                            incomplete = true;
                             raw
                         };
                         s.last_session_cost = raw;
                         s.reported_cost_usd += delta;
                         stage.reported_cost_usd += delta;
+                        if !s.reported_cost_usd.is_finite() {
+                            return Err("reported cost overflow".into());
+                        }
+                        usage.reported_cost_usd = Some(s.reported_cost_usd);
                     } else {
-                        s.incomplete_turns += 1;
+                        incomplete = true;
                     }
                 } else {
-                    s.incomplete_turns += 1;
+                    incomplete = true;
                 }
+                s.incomplete_turns += u64::from(incomplete);
+                queue_usage(s)?;
             }
             Ok(())
         })
@@ -489,10 +671,306 @@ mod tests {
             text: None,
             usage: Usage {
                 cost_usd: Some(cost),
+                input_tokens: Some(10),
+                output_tokens: Some(5),
                 ..Usage::default()
             },
             quota: vec![],
         }
+    }
+    #[test]
+    fn usage_outbox_survives_restart_and_acknowledges_only_confirmed_revisions() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let journal =
+            SessionJournal::create(root.path(), &id, config(), &BTreeMap::from([(seat(), 7)]))
+                .unwrap();
+        let sid = uuid::Uuid::new_v4().to_string();
+        let info = SessionInfo {
+            session_id: sid,
+            model: Some("haiku".into()),
+            cli_version: None,
+            resumed: false,
+        };
+        journal.session(seat(), info.clone()).unwrap();
+        let mut report = outcome(0.01);
+        report.usage.cached_input_tokens = Some(100);
+        report.usage.cache_creation_tokens = Some(30);
+        report.usage.reasoning_tokens = Some(2);
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        journal
+            .complete(seat(), 10, Some(&report), &SessionTelemetry::default())
+            .unwrap();
+        let first = journal.usage_outbox(seat()).unwrap();
+        assert_eq!(first.len(), 1);
+        assert_eq!(
+            (
+                first[0].controller_epoch,
+                first[0].revision,
+                first[0].attempts,
+                first[0].completed
+            ),
+            (7, 1, 1, 1)
+        );
+        assert_eq!(
+            (
+                first[0].input_tokens,
+                first[0].cache_read_tokens,
+                first[0].cache_creation_tokens,
+                first[0].reasoning_tokens
+            ),
+            (Some(10), Some(100), Some(30), Some(2))
+        );
+        drop(journal); // crash after journal commit or transcript delivery, before acknowledgement
+        let journal = SessionJournal::recover(root.path(), &id).unwrap();
+        assert_eq!(journal.usage_outbox(seat()).unwrap(), first);
+        journal
+            .session(
+                seat(),
+                SessionInfo {
+                    resumed: true,
+                    ..info
+                },
+            )
+            .unwrap();
+        report.usage.cost_usd = Some(0.025);
+        journal
+            .reserve_decision(seat(), "GT1:OpStage2", 1000, "d2", 1)
+            .unwrap();
+        journal
+            .complete(seat(), 10, Some(&report), &SessionTelemetry::default())
+            .unwrap();
+        let second = journal.usage_outbox(seat()).unwrap();
+        assert_eq!(second.len(), 2);
+        assert_eq!(
+            (
+                second[1].revision,
+                second[1].input_tokens,
+                second[1].cache_read_tokens,
+                second[1].cache_creation_tokens,
+                second[1].reasoning_tokens
+            ),
+            (2, Some(20), Some(200), Some(60), Some(4))
+        );
+        assert_eq!(second[1].reported_cost_usd, Some(0.025));
+        assert!(journal.acknowledge_usage(seat(), 8, 2).is_err());
+        assert!(journal.acknowledge_usage(seat(), 7, 3).is_err());
+        assert_eq!(journal.usage_outbox(seat()).unwrap(), second);
+        journal.acknowledge_usage(seat(), 7, 1).unwrap();
+        assert_eq!(journal.usage_outbox(seat()).unwrap(), second[1..]);
+        journal.acknowledge_usage(seat(), 7, 2).unwrap();
+        journal.acknowledge_usage(seat(), 7, 2).unwrap();
+        assert!(journal.usage_outbox(seat()).unwrap().is_empty());
+        journal.recover_process(seat(), true).unwrap();
+        report.usage.cost_usd = Some(0.005);
+        journal
+            .reserve_decision(seat(), "GT2:OpStage1", 1000, "d3", 1)
+            .unwrap();
+        journal
+            .complete(seat(), 10, Some(&report), &SessionTelemetry::default())
+            .unwrap();
+        let third = journal.usage_outbox(seat()).unwrap();
+        assert_eq!(third[0].revision, 3);
+        assert!((third[0].reported_cost_usd.unwrap() - 0.03).abs() < 1e-10);
+        assert_eq!(third[0].input_tokens, Some(30));
+    }
+    #[test]
+    fn unusable_provider_counts_roll_back_and_become_an_unknown_turn() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let journal =
+            SessionJournal::create(root.path(), &id, config(), &BTreeMap::from([(seat(), 7)]))
+                .unwrap();
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        let mut report = outcome(0.01);
+        report.usage.input_tokens = Some(u64::MAX);
+        assert!(
+            journal
+                .complete(seat(), 10, Some(&report), &SessionTelemetry::default())
+                .is_err()
+        );
+        assert!(journal.usage_outbox(seat()).unwrap().is_empty());
+        assert!(
+            journal.snapshot().unwrap().seats[&seat()]
+                .inflight
+                .is_some()
+        );
+        journal.interrupt(seat()).unwrap();
+        let snapshot = journal.usage_outbox(seat()).unwrap()[0].clone();
+        assert_eq!(
+            (
+                snapshot.attempts,
+                snapshot.completed,
+                snapshot.incomplete_turns
+            ),
+            (1, 0, 1)
+        );
+        assert_eq!(
+            (snapshot.input_tokens, snapshot.reported_cost_usd),
+            (None, None)
+        );
+    }
+    #[test]
+    fn interrupted_usage_is_durable_null_and_never_counted_twice() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let journal =
+            SessionJournal::create(root.path(), &id, config(), &BTreeMap::from([(seat(), 7)]))
+                .unwrap();
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        drop(journal);
+        let journal = SessionJournal::recover(root.path(), &id).unwrap();
+        let snapshot = journal.usage_outbox(seat()).unwrap()[0].clone();
+        assert_eq!(
+            (
+                snapshot.attempts,
+                snapshot.completed,
+                snapshot.incomplete_turns
+            ),
+            (1, 0, 1)
+        );
+        assert_eq!(
+            (
+                snapshot.input_tokens,
+                snapshot.output_tokens,
+                snapshot.reported_cost_usd
+            ),
+            (None, None, None)
+        );
+        journal.interrupt(seat()).unwrap();
+        assert_eq!(
+            journal.usage_outbox(seat()).unwrap(),
+            vec![snapshot.clone()]
+        );
+        journal
+            .reserve_decision(seat(), "GT1:OpStage2", 1000, "d2", 1)
+            .unwrap();
+        journal.interrupt(seat()).unwrap();
+        drop(journal);
+        let journal = SessionJournal::recover(root.path(), &id).unwrap();
+        let entries = journal.usage_outbox(seat()).unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(
+            (
+                entries[1].revision,
+                entries[1].attempts,
+                entries[1].incomplete_turns
+            ),
+            (2, 2, 2)
+        );
+        assert_eq!(journal.snapshot().unwrap().seats[&seat()].wall_millis, 2000);
+    }
+    #[tokio::test]
+    async fn usage_delivery_confirms_before_ack_and_replays_after_a_dead_sink() {
+        use cna_seats::transcript::{LocalTranscript, TranscriptSink};
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let journal =
+            SessionJournal::create(root.path(), &id, config(), &BTreeMap::from([(seat(), 7)]))
+                .unwrap();
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        journal
+            .complete(
+                seat(),
+                10,
+                Some(&outcome(0.01)),
+                &SessionTelemetry::default(),
+            )
+            .unwrap();
+        let store = LocalTranscript::detached();
+        let sink = TranscriptSink::new(store.clone());
+        journal.deliver_usage(seat(), &sink).await.unwrap();
+        assert!(journal.usage_outbox(seat()).unwrap().is_empty());
+        assert_eq!(store.seat_log(seat()).len(), 1);
+        assert!(sink.stop_delivery().await.is_empty());
+        journal
+            .reserve_decision(seat(), "GT1:OpStage2", 1000, "d2", 1)
+            .unwrap();
+        journal
+            .complete(
+                seat(),
+                10,
+                Some(&outcome(0.025)),
+                &SessionTelemetry::default(),
+            )
+            .unwrap();
+        let committed = journal.usage_outbox(seat()).unwrap();
+        assert!(journal.deliver_usage(seat(), &sink).await.is_err());
+        assert_eq!(journal.usage_outbox(seat()).unwrap(), committed);
+        drop(journal);
+        let journal = SessionJournal::recover(root.path(), &id).unwrap();
+        let recovered = TranscriptSink::new(store.clone());
+        journal.deliver_usage(seat(), &recovered).await.unwrap();
+        assert!(journal.usage_outbox(seat()).unwrap().is_empty());
+        let rows = store.seat_log(seat());
+        assert_eq!(rows.len(), 2);
+        let cna_protocol::TranscriptEntry::UsageSnapshot(snapshot) = &rows[1].entry else {
+            panic!("missing typed usage")
+        };
+        assert_eq!(snapshot.as_ref(), &committed[0]);
+        assert!(recovered.stop_delivery().await.is_empty());
+    }
+    #[test]
+    fn old_journals_do_not_invent_auxiliary_or_missing_token_totals() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let journal =
+            SessionJournal::create(root.path(), &id, config(), &BTreeMap::from([(seat(), 7)]))
+                .unwrap();
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        journal
+            .complete(
+                seat(),
+                10,
+                Some(&outcome(0.01)),
+                &SessionTelemetry::default(),
+            )
+            .unwrap();
+        let path = journal.file().to_owned();
+        drop(journal);
+        let db = Connection::open(&path).unwrap();
+        let mut old: serde_json::Value = serde_json::from_str(
+            &db.query_row::<String, _, _>("SELECT state FROM journal WHERE id=1", [], |r| r.get(0))
+                .unwrap(),
+        )
+        .unwrap();
+        old["seats"][seat().to_string()]
+            .as_object_mut()
+            .unwrap()
+            .remove("usage");
+        db.execute("UPDATE journal SET state=?1 WHERE id=1", [old.to_string()])
+            .unwrap();
+        drop(db);
+        let journal = SessionJournal::recover(root.path(), &id).unwrap();
+        let snapshot = journal.usage_outbox(seat()).unwrap()[0].clone();
+        assert_eq!(
+            (
+                snapshot.attempts,
+                snapshot.completed,
+                snapshot.incomplete_turns
+            ),
+            (1, 1, 1)
+        );
+        assert_eq!(
+            (
+                snapshot.input_tokens,
+                snapshot.cache_read_tokens,
+                snapshot.cache_creation_tokens,
+                snapshot.reasoning_tokens
+            ),
+            (None, None, None, None)
+        );
+        assert_eq!(snapshot.reported_cost_usd, Some(0.01));
     }
     #[test]
     fn automatic_answers_preserve_model_caps_cost_and_crash_reservations() {

@@ -51,6 +51,8 @@ pub struct Usage {
     pub input_tokens: Option<u64>,
     pub output_tokens: Option<u64>,
     pub cached_input_tokens: Option<u64>,
+    #[serde(default)]
+    pub cache_creation_tokens: Option<u64>,
     pub reasoning_tokens: Option<u64>,
     /// CLI estimate; Claude streaming reports cumulative session cost.
     pub cost_usd: Option<f64>,

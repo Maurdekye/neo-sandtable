@@ -319,6 +319,7 @@ impl StreamParser for ClaudeParser {
                         input_tokens: u64_at(usage, "input_tokens"),
                         output_tokens: u64_at(usage, "output_tokens"),
                         cached_input_tokens: u64_at(usage, "cache_read_input_tokens"),
+                        cache_creation_tokens: u64_at(usage, "cache_creation_input_tokens"),
                         reasoning_tokens: usage["output_tokens_details"]["thinking_tokens"]
                             .as_u64(),
                         cost_usd: v["total_cost_usd"].as_f64(),
@@ -718,6 +719,29 @@ mod tests {
         assert!(quotas >= 2);
     }
 
+    #[test]
+    fn raw_input_and_each_optional_cache_channel_are_preserved() {
+        let mut parser = ClaudeParser::default();
+        let events=parser.feed(r#"{"type":"result","subtype":"success","usage":{"input_tokens":11,"output_tokens":12,"cache_read_input_tokens":101,"cache_creation_input_tokens":102,"output_tokens_details":{"thinking_tokens":3}},"total_cost_usd":0.01}"#);
+        let StreamEvent::TurnDone(turn) = &events[0] else {
+            panic!("no turn outcome")
+        };
+        assert_eq!(
+            (
+                turn.usage.input_tokens,
+                turn.usage.output_tokens,
+                turn.usage.cached_input_tokens,
+                turn.usage.cache_creation_tokens,
+                turn.usage.reasoning_tokens
+            ),
+            (Some(11), Some(12), Some(101), Some(102), Some(3))
+        );
+        let missing = parser.feed(r#"{"type":"result","subtype":"success","usage":{}}"#);
+        let StreamEvent::TurnDone(turn) = &missing[0] else {
+            panic!("no turn outcome")
+        };
+        assert_eq!(turn.usage, Usage::default());
+    }
     #[test]
     fn denied_tools_and_error_results_are_surfaced() {
         let mut p = ClaudeParser::default();

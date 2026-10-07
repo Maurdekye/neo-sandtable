@@ -59,7 +59,13 @@ impl Demo {
         if drivers.is_empty() {
             return self.play_sessions(drivers, self.config.max_turns).await;
         }
-        let mut result = self.handle.pause(false).await.map_err(|e| e.to_string());
+        let mut result = Ok(());
+        for seat in &expected {
+            result = combine_results(result, self.publish_usage(*seat).await);
+        }
+        if result.is_ok() {
+            result = self.handle.pause(false).await.map_err(|e| e.to_string());
+        }
         if result.is_ok() {
             let (cancel, peer) = watch::channel(false);
             let mut tasks = FuturesUnordered::new();
@@ -84,6 +90,14 @@ impl Demo {
             }
         }
         self.finish_run(result).await
+    }
+    async fn publish_usage(&self, seat: SeatId) -> Result<(), String> {
+        // Board decoder/revision replacement landed in 87ffa001 before producer enable.
+        self.journal
+            .as_ref()
+            .ok_or("missing journal")?
+            .deliver_usage(seat, &self.sink)
+            .await
     }
     async fn durable_seat(
         &self,
@@ -134,6 +148,14 @@ impl Demo {
             .await
             .map_err(|_| "CLI stop exceeded five seconds".to_string());
         result = combine_results(result, stopped);
+        result = combine_results(
+            result,
+            self.journal
+                .as_ref()
+                .ok_or("missing journal")?
+                .interrupt(seat),
+        );
+        result = combine_results(result, self.publish_usage(seat).await);
         if let Err(reason) = &result
             && !matches!(
                 self.handle.status(),
@@ -281,6 +303,7 @@ impl Demo {
                 outcome.as_ref().ok(),
                 &driver.telemetry(),
             )?;
+            self.publish_usage(seat).await?;
             if let Some(id) = driver.session_id()
                 && journal.snapshot()?.seats[&seat]
                     .session
