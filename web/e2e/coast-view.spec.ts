@@ -147,22 +147,18 @@ test('presents authorized coast movement, locators, combat citations and private
               reason: 'Synthetic retreat elimination',
             },
           })
-          send(
-            JSON.parse(
-              JSON.stringify({
-                type: 'event',
-                seq: 5,
-                clock,
-                event: {
-                  kind: 'decision_resolved',
-                  seat: 'axis.front_line',
-                  decision_id: 'opaque',
-                  summary: 'Synthetic accepted decision',
-                  explanation,
-                },
-              }),
-            ) as ServerMessage,
-          )
+          send({
+            type: 'event',
+            seq: 5,
+            clock,
+            event: {
+              kind: 'decision_resolved',
+              seat: 'axis.front_line',
+              decision_id: 'opaque',
+              summary: 'Synthetic accepted decision',
+              explanation,
+            },
+          })
           send({
             type: 'transcript',
             seat: 'axis.front_line',

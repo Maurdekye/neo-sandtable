@@ -27,15 +27,13 @@ const frame: Frame = {
     pending: [],
   },
 }
-const event = JSON.parse(
-  JSON.stringify({
-    kind: 'decision_resolved',
-    seat: 'axis.front_line',
-    decision_id: 'opaque',
-    summary: 'Accepted',
-    explanation: text,
-  }),
-) as GameEvent
+const event: GameEvent = {
+  kind: 'decision_resolved',
+  seat: 'axis.front_line',
+  decision_id: 'opaque',
+  summary: 'Accepted',
+  explanation: text,
+}
 const message: TranscriptMessage = {
   type: 'transcript',
   seat: 'axis.front_line',
