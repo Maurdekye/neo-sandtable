@@ -303,9 +303,17 @@ fn opposing_hidden_buffers_do_not_change_answer_validation_and_collision_retries
     );
     assert!(!accepted.game.state.setup.closed);
     assert!(accepted.game.state.decisions.pending.is_empty());
-    let retry = evaluate(&Cna::dev(), &c, &accepted.game, &Command::Advance)
-        .unwrap()
-        .game;
+    let retry_transition = evaluate(&Cna::dev(), &c, &accepted.game, &Command::Advance).unwrap();
+    assert!(retry_transition.events.iter().any(|e| Perspective::Side(Side::Axis).can_see(&e.audience)
+        && matches!(&e.event, GameEvent::UnitUpdated {unit} if unit.id == axis.as_str() && unit.hex.as_deref() == Some("A0101"))));
+    assert!(
+        !retry_transition
+            .events
+            .iter()
+            .any(|e| matches!(&e.event, GameEvent::UnitUpdated {unit}
+        if unit.id == cw.as_str() && unit.hex.as_deref() == Some("A0101")))
+    );
+    let retry = retry_transition.game;
     assert!(!retry.state.setup.closed);
     assert_eq!(
         retry.state.land.units[axis]
@@ -331,10 +339,10 @@ fn opposing_hidden_buffers_do_not_change_answer_validation_and_collision_retries
     assert!(submit(&c, &retry, &p, json!("A0101")).is_err());
     let accepted = submit(&c, &retry, &p, json!("A0102")).unwrap();
     assert!(!accepted.state.setup.closed);
-    let completed = evaluate(&Cna::dev(), &c, &accepted, &Command::Advance)
-        .unwrap()
-        .game;
-    assert!(completed.state.setup.closed);
+    let completed = evaluate(&Cna::dev(), &c, &accepted, &Command::Advance).unwrap();
+    assert!(completed.game.state.setup.closed);
+    assert!(completed.events.iter().any(|e| Perspective::Side(Side::Commonwealth).can_see(&e.audience)
+        && matches!(&e.event, GameEvent::UnitUpdated {unit} if unit.id == cw.as_str() && unit.hex.as_deref() == Some("A0102"))));
 }
 
 /// Cases: scen:59.42
@@ -1024,4 +1032,190 @@ fn optional_cargo_and_motorization_operations_can_be_cancelled_without_changes()
         assert_eq!(game.state.land.units[&unit], before);
         assert_eq!(game.state.logistics.unit_supply.get(&unit).cloned(), supply);
     }
+}
+
+/// Cases: scen:59.2, land:3.62
+/// Interpretations: interp:scen-0005
+#[test]
+fn every_placement_at_real_setup_closure_has_an_owner_unit_update() {
+    let c = content();
+    let mut game = opened(&c);
+    for _ in 0..500 {
+        if game.state.decisions.pending.is_empty() {
+            break;
+        }
+        let p = game.state.decisions.pending[0].clone();
+        game = submit(&c, &game, &p, first(&p.space.schema)).unwrap();
+    }
+    assert!(game.state.decisions.pending.is_empty());
+    assert!(!game.state.setup.closed);
+    let placed = game.state.setup.unit_locations.clone();
+    assert!(!placed.is_empty());
+    let t = evaluate(&Cna::dev(), &c, &game, &Command::Advance).unwrap();
+    assert!(t.game.state.setup.closed);
+    for (id, location) in placed {
+        let side = t.game.state.land.units[&id].side;
+        let expected = Cna::dev()
+            .view(&c, &t.game.state, Perspective::Side(side))
+            .units[&id.to_string()]
+            .clone();
+        assert_eq!(t.game.state.land.units[&id].location, location);
+        let own: Vec<_> = t
+            .events
+            .iter()
+            .filter(|e| Perspective::Side(side).can_see(&e.audience))
+            .filter_map(|e| match &e.event {
+                GameEvent::UnitUpdated { unit } if unit.id == id.as_str() => Some(unit),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            own,
+            vec![&expected],
+            "missing or duplicate closure update for {id}"
+        );
+        let operator: Vec<_> = t
+            .events
+            .iter()
+            .filter(|e| Perspective::Operator.can_see(&e.audience))
+            .filter_map(|e| match &e.event {
+                GameEvent::UnitUpdated { unit } if unit.id == id.as_str() => Some(unit),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            operator,
+            vec![&expected],
+            "missing or duplicate operator closure update for {id}"
+        );
+        assert!(
+            !t.events
+                .iter()
+                .any(|e| Perspective::Side(side.opponent()).can_see(&e.audience)
+                    && matches!(&e.event, GameEvent::UnitUpdated {unit} if unit.id == id.as_str()))
+        );
+    }
+}
+
+/// Cases: scen:59.2, land:3.6, land:3.62, airlog:54.11
+/// Interpretations: interp:scen-0005
+#[test]
+fn closure_events_disclose_presence_only_and_sort_dump_markers_by_public_id() {
+    let c = content();
+    let mut state = State::new(&c).unwrap();
+    state.setup.started = true;
+    state.cursor.entered = true;
+    state.logistics.convoys_initialized = true;
+    state.land.undistributed_trucks.clear();
+    state.logistics.dumps.clear();
+    state.logistics.truck_pools.clear();
+    state.air.forces.clear();
+    let ids: Vec<_> = state
+        .units_of(Side::Axis)
+        .take(2)
+        .map(|u| u.id.clone())
+        .collect();
+    for u in state.land.units.values_mut() {
+        u.location = Location::NotArrived;
+    }
+    for id in &ids {
+        state.land.units.get_mut(id).unwrap().location = Location::AwaitingSetup {
+            group: "event-test".into(),
+        };
+    }
+    state.setup.unit_locations.insert(
+        ids[0].clone(),
+        Location::Hex {
+            hex: "A0101".into(),
+        },
+    );
+    state.setup.placement_order.insert(ids[0].clone(), 1);
+    for (id, marker) in [("private-first", "dump-9"), ("private-second", "dump-2")] {
+        state.logistics.dumps.insert(
+            id.into(),
+            crate::state::Dump {
+                id: id.into(),
+                marker: marker.into(),
+                side: Side::Axis,
+                location: DumpLocation::AwaitingSetup {
+                    placement: cna_content::scenario::Placement::Hex {
+                        hex: "A0102".into(),
+                    },
+                },
+                supplies: cna_content::scenario::Supplies::default(),
+                active: true,
+                dummy: false,
+            },
+        );
+        state.setup.dump_locations.insert(
+            id.into(),
+            Location::Hex {
+                hex: "A0102".into(),
+            },
+        );
+    }
+    let a = Game::<Cna> {
+        state,
+        rng: CampaignRng::from_seed([5; 32]).state(),
+    };
+    let mut b = a.clone();
+    b.state.setup.unit_locations.insert(
+        ids[1].clone(),
+        Location::Hex {
+            hex: "A0101".into(),
+        },
+    );
+    b.state.setup.placement_order.insert(ids[1].clone(), 2);
+    b.state.land.units.get_mut(&ids[0]).unwrap().toe =
+        Some(cna_content::units::Toe::Under { under: 1 });
+    for dump in b.state.logistics.dumps.values_mut() {
+        dump.dummy = true;
+        dump.supplies.fuel = 99;
+    }
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::dev(),
+        &c,
+        &a,
+        &b,
+        &Command::Advance,
+        Side::Commonwealth,
+    );
+    let t = evaluate(&Cna::dev(), &c, &b, &Command::Advance).unwrap();
+    let seen: Vec<_> = t
+        .events
+        .iter()
+        .filter(|e| Perspective::Side(Side::Commonwealth).can_see(&e.audience))
+        .collect();
+    let stacks: Vec<_> = seen
+        .iter()
+        .filter_map(|e| match &e.event {
+            GameEvent::StackUpdated { stack } if stack.side == Side::Axis => Some(stack),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(stacks.len(), 1);
+    assert_eq!(stacks[0].hex, "A0101");
+    assert_eq!(stacks[0].visible_count, None);
+    assert!(stacks[0].unit_ids.is_empty());
+    assert!(
+        !seen
+            .iter()
+            .any(|e| matches!(&e.event, GameEvent::UnitUpdated {unit} if unit.side == Side::Axis))
+    );
+    let markers: Vec<_> = seen
+        .iter()
+        .filter_map(|e| match &e.event {
+            GameEvent::MarkerPlaced { marker } => Some(marker),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        markers.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
+        vec!["dump-2", "dump-9"]
+    );
+    assert!(
+        markers
+            .iter()
+            .all(|m| m.label.as_deref() == Some(m.id.as_str()))
+    );
 }
