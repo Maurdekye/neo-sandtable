@@ -414,7 +414,6 @@ misses 60 FPS with these overlays enabled. Raw measurements live in the scratch
 artifact `navigation-benchmark-coast.json`. Reproduce with
 `CNA_BENCHMARK_COVERAGE=1 npm run smoke -- benchmark.spec.ts`.
 
-
 ## Watching longer campaigns
 
 The collapsed Stage overview groups only received events by game turn and OpStage.
@@ -453,7 +452,6 @@ events; the real baseline proof verifies movement summaries without invented
 commentary. Optional nullable schema fields do not change required movement unit
 enum extraction.
 
-
 Actual baseline proof on 2026-10-07 (viewer f1b56e4 over map/engine699a3ea):
 a fresh zero-seed Graziani campaign reached scripted setup within the first
 three-minute bound. Resuming that same saved campaign and binary completed the
@@ -469,7 +467,6 @@ proof are board-graziani-stage-timeline.png and
 stage-timeline-browser-verification.json in board scratch. Canonical commentary
 has separate hostile-literal fixture coverage; this baseline proof does not claim
 an AI supplied an explanation or cover a whole multi-hour game.
-
 
 ## Operator seat monitoring
 
@@ -498,7 +495,6 @@ Graziani campaign and ten synthetic seats with waiting, errors, paused status, o
 handover and escaped hostile commentary. Screenshots and a JSON proof are written to
 the board agent's scratch folder; this is a short observation, not a paid ten-model run.
 
-
 Typed `usage_snapshot` reports replace totals by increasing revision within a controller
 epoch; later epochs replace earlier ones and replay never adds totals. A snapshot rebuild
 recovers the highest report from retained authorized transcripts. The operator card hides
@@ -509,3 +505,38 @@ channels remain `not reported`, including missing USD; known zero remains zero. 
 with incomplete turns carry an explicit incomplete label. A transcript usage filter exposes
 all reported fields, provider/model, epoch/revision and attempt/completion counts to each
 authorized perspective. Fixture reports are synthetic and make no paid-call claim.
+
+## Human seat console
+
+`/console.html?campaign=<id>&seat=<seat>#cap=<seat-capability>` is a separate seat-driver
+entry. Use the launcher's seat link. The capability stays in memory, is immediately removed
+from the fragment, and is never loaded from or written to browser storage. Reloading needs a
+fresh link. The console uses its serving origin and accepts only a matching campaign-bound
+seat session, never operator or side access. Each tab represents exactly one seat.
+
+Forms consume the decision's advertised schema: labelled choices, bounded numbers and text,
+records, optional fields with Omit, and ordered lists with add/remove/reorder. Pass and Done
+choices are visible. An optional, default-off checkbox can answer a structurally pass-only
+decision; acceptance is logged. Rule references use the existing hover cards. Unit inspection
+shows the own seat's engine-provided details, including CP/fuel where available.
+
+Map highlights contain finite advertised enum targets only. Non-enumerated hex/path picks
+are candidates whose legality still requires engine preflight. Preflight evaluates the draft
+without applying it; submit then rechecks the decision revision and controller epoch. Draft
+fields that remain valid survive a revision change; removed enum values become unselected.
+Retries of the same intent reuse the idempotency key. Commentary is optional plain text,
+limited to 2000 characters, and travels with the accepted decision to its authorized audience.
+
+The console pins the human controller epoch observed at attach. A subsequent handover stops
+submissions and shows lost control. A preflight still in flight is cancelled before submit if
+control, the decision or the selected form changes. Server epoch/revision enforcement remains
+authoritative. The console calls only session and its own seat observe/actions/inspect/validate/
+submit routes and subscribes to its seat stream. The trusted integration harness creates and
+binds the campaign outside the browser pages; operator credentials never enter those pages.
+
+Console checks: `npm run smoke -- e2e/console.spec.ts` covers schema forms, revision retention,
+preflight/handover races, literal commentary, memory-only access and route isolation.
+`e2e/console-real.spec.ts` requires a fresh authenticated own smoke server and proves two
+separate human tabs: commander setup and frontline coast movement, with cross-seat denials.
+`tools/sample_console_schemas.mjs` is an authoring tool outside the console bundle; it samples
+advertised action spaces from an all-scripted real Graziani stream, with no paid calls.
