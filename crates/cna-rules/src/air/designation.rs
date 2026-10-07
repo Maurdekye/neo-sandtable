@@ -178,12 +178,20 @@ pub fn own_report(state: &State, side: Side) -> Value {
     if window.game_turn != Some(state.cursor.game_turn) || !window.finished {
         return json!({"game_turn":state.cursor.game_turn,"assignments":{}});
     }
-    let assignments: BTreeMap<_, _> = window
-        .assignments
-        .iter()
-        .filter(|(id, _)| state.air.squadrons.get(*id).is_some_and(|s| s.side == side))
+    // The owning observer already has the squadron list. Omit its default
+    // families, but retain explicit nulls outside the committed snapshot.
+    let overrides: BTreeMap<_, _> = state
+        .air
+        .squadrons
+        .values()
+        .filter(|squadron| squadron.side == side)
+        .filter_map(|squadron| {
+            let family = window.assignments.get(&squadron.id).copied();
+            (family != Some(Family::LandSupport)).then_some((&squadron.id, family))
+        })
         .collect();
-    json!({"game_turn":state.cursor.game_turn,"assignments":assignments})
+    json!({"game_turn":state.cursor.game_turn,
+        "default_family":Family::LandSupport,"overrides":overrides})
 }
 
 /// No implicit family is invented for a newly arrived or unplaced squadron.
