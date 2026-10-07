@@ -84,6 +84,7 @@ function gameEvent(value: unknown) {
     case 'decision_resolved':
       return (
         typeof value.decision_id === 'string' &&
+        typeof value.seat === 'string' &&
         (value.explanation === undefined ||
           typeof value.explanation === 'string') &&
         typeof value.summary === 'string'
@@ -162,9 +163,17 @@ export function decodeMessage(data: unknown): ServerMessage | null {
           (s) =>
             object(s) &&
             typeof s.id === 'string' &&
-            typeof s.side === 'string' &&
+            ['axis', 'commonwealth'].includes(String(s.side)) &&
+            typeof s.role === 'string' &&
+            ['idle', 'deciding', 'paused', 'failed'].includes(
+              String(s.status),
+            ) &&
             (s.controller === null ||
-              (object(s.controller) && typeof s.controller.label === 'string')),
+              (object(s.controller) &&
+                typeof s.controller.label === 'string' &&
+                ['scripted', 'llm-cli', 'system1', 'human'].includes(
+                  String(s.controller.kind),
+                ))),
         )
       break
     case 'snapshot':

@@ -31,7 +31,9 @@ export function startMonitor(
   return {
     ...emptyMonitor(),
     started: now,
-    pendingSince: Object.fromEntries(pending.map((d) => [d.id, now])),
+    pendingSince: Object.fromEntries(
+      pending.slice(-512).map((d) => [d.id, now]),
+    ),
   }
 }
 // Called only after stream sequencing/deduplication succeeds. Keep aggregate counts beyond frame eviction.
@@ -118,4 +120,3 @@ export function decodeObservation(value: unknown): SeatObservation {
     throw new Error('Invalid seat status')
   return { paused: v.paused, failure: v.failure, epoch: v.controller_epoch }
 }
-

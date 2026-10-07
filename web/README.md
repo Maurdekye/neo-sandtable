@@ -469,3 +469,31 @@ proof are board-graziani-stage-timeline.png and
 stage-timeline-browser-verification.json in board scratch. Canonical commentary
 has separate hostile-literal fixture coverage; this baseline proof does not claim
 an AI supplied an explanation or cover a whole multi-hour game.
+
+
+## Operator seat monitoring
+
+The live operator strip shows all seats, their literal controller labels, pending work,
+and the latest received acceptance and canonical explanation. Commentary remains plain
+text. Failed tool results are labelled separately from a paused controller. Existing
+operator seat/observe endpoints refresh pause reasons and controller epochs every ten
+seconds after a serial polling pass. A changed epoch means an observed handover; no
+past handover is inferred on attachment. Poll failures are visible, and polling stops
+outside the live operator perspective.
+
+Waiting time starts when this viewer first receives a pending decision. It does not
+claim the decision's actual opening time. Answer counts persist beyond the 600-frame
+ring and start at the current snapshot. The recent rate measures received acceptances
+over at most sixty seconds, including replay; it is unavailable for the first ten
+seconds. Resync and perspective changes clear these observations. Binding monitoring
+is hidden during playback because binding polls do not describe historical frames.
+
+Scripted controllers display `scripted, no usage`. Other controllers show missing
+tokens and dollars as `not reported`; human-readable lifecycle or usage prose is never
+parsed into accounting. Provider and model remain literal controller labels until a
+typed report supplies them. No token price is inferred.
+
+The no-paid-call browser proof in `e2e/monitoring.spec.ts` covers a fresh scripted
+Graziani campaign and ten synthetic seats with waiting, errors, paused status, observed
+handover and escaped hostile commentary. Screenshots and a JSON proof are written to
+the board agent's scratch folder; this is a short observation, not a paid ten-model run.
