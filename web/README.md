@@ -32,7 +32,7 @@ Step, the history slider and Play history navigate retained frames; speed affect
 only replay. Return to live follows the newest frame. The HISTORY badge identifies
 a past view. Pause campaign is a separate, clearly labelled **mock** operator
 control. Live operator controls use the HTTP pause/resume API and show acknowledgements or errors separately from playback. Controls are disabled in history and other perspectives.
-Overlays are disabled with a pending-data label until their data exists.
+Map layer controls show published routes and boundaries, with explicit survey coverage.
 
 Perspective changes clear previous authorized state and subscribe again. Filtering
 happens in the server before delivery (or the development mock transport). The renderer never invents details for
@@ -232,9 +232,10 @@ terrain, roads or another feature never implies coverage of a different layer.
 The selected hex inspector lists neighbours and their present / surveyed-none /
 unknown status, with source citations. Missing neighbours at the map boundary
 are identified separately. Feature checkboxes affect drawing, not coverage.
-The current published edge files are empty; they therefore show unknown until
-survey rows land. `?layers=fixture` enables clearly labeled generated feature
-data in development only, without altering the published map records.
+The first audited pilot (`aea0974`) publishes nine road/track edges and explicit
+per-kind coverage around C43-C47. Hexside feature records are still empty; their
+uncovered boundaries remain unknown. `?layers=fixture` enables clearly labeled
+generated feature data in development only, without altering published records.
 
 Citation buttons open registry titles and paraphrased summaries on hover or
 keyboard focus; Escape dismisses the card. `tools/export_viewer.mjs` selects
@@ -262,7 +263,8 @@ tracks are retained, with at most 4,096 entered hexes per route.
 
 ### Layer navigation measurement
 
-Measured 2026-10-06 with all feature switches on, road coverage hatch on,
+Measured 2026-10-07 against viewer `2cf4532` and the audited pilot from
+`aea0974`, with all feature switches on, road coverage hatch on,
 movement animation enabled, three transcript tabs and the mock stream active.
 Chromium 153.0.8010.12, Windows, ANGLE Vulkan SwiftShader software WebGL,
 1800 x 1050 viewport, DPR 1. Each case warms for 1.5 seconds, then uses real
@@ -271,14 +273,16 @@ terrain's culled 10-by-10-hex texture caches.
 
 | Fixture | Hexes | Positive features | FPS | Median / p95 frame ms |
 | --- | ---: | ---: | ---: | ---: |
-| Published grid, current survey | 7,023 | 0 | 60.0 | 16.7 / 16.7 |
-| Synthetic terrain and generated layers | 10,000 | 2,961 | 59.8 | 16.7 / 16.7 |
-| Dense synthetic roster, real geometry and generated layers | 7,023 | 2,061 | 52.5 | 16.7 / 16.8 |
+| Published grid, audited road/track pilot | 7,023 | 9 | 60.0 | 16.7 / 16.8 |
+| Synthetic terrain and generated layers | 10,000 | 2,961 | 60.0 | 16.7 / 16.7 |
+| Dense synthetic roster, real geometry and generated layers | 7,023 | 2,061 | 53.3 | 16.7 / 16.8 |
 
 These measure warm navigation, not full-campaign event throughput or a hardware
 GPU. The dense fixture has 290 mapped units in 40 stacks, plus six off-map or
 unplaced units. Positive-feature stress data is generated and explicitly
-labeled; the published survey currently supplies no positive edges.
+labeled. A separate browser check selected C4419 on the actual pilot and verified
+positive roads, surveyed road absence, unknown roads and their source citations
+in the same inspector; it saved a screenshot with no browser errors.
 `npm run smoke -- layers.spec.ts benchmark.spec.ts` exercises coverage controls
 and writes the measurements to the owning scratch folder.
 
