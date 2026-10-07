@@ -331,27 +331,28 @@ impl ChildProc {
     }
 }
 
-/// Environment variable name prefixes that never reach a seat's CLI: the operator's own agent
-/// identity, other providers' credentials and any parent CLI session markers. What a seat needs
-/// (its account's config dir) is set explicitly afterwards.
-const SCRUBBED_PREFIXES: [&str; 14] = [
-    "CNA_",
-    "ORGTREE_",
-    "DISABLE_AUTO_COMPACT",
-    "CLAUDE",
-    "ANTHROPIC_",
-    "OPENAI_",
-    "CODEX_",
-    "GEMINI_",
-    "GOOGLE_",
-    "AI_AGENT",
-    "MCP_",
-    "AGY_",
-    "ANTIGRAVITY_",
-    "OPENROUTER_",
+/// Only OS/runtime variables may be inherited by a seat process. Credential names are
+/// not predictable, so a prefix deny-list cannot prove absence of ambient authority.
+/// Provider/profile/compaction settings are supplied explicitly by the trusted driver.
+const SEAT_RUNTIME_ENV: &[&str] = &[
+    "PATH",
+    "PATHEXT",
+    "SYSTEMROOT",
+    "WINDIR",
+    "SYSTEMDRIVE",
+    "COMSPEC",
+    "TEMP",
+    "TMP",
+    "HOME",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
 ];
 
-/// The parent environment minus everything a seat must not inherit, plus `set`.
+/// The runtime allowlist plus explicit trusted-driver settings, with no ambient credentials.
 pub fn seat_env(
     parent: impl IntoIterator<Item = (OsString, OsString)>,
     set: &[(&str, OsString)],
@@ -360,7 +361,7 @@ pub fn seat_env(
         .into_iter()
         .filter(|(k, _)| {
             let k = k.to_string_lossy().to_ascii_uppercase();
-            !SCRUBBED_PREFIXES.iter().any(|p| k.starts_with(p))
+            SEAT_RUNTIME_ENV.contains(&k.as_str())
         })
         .collect();
     for (k, v) in set {
@@ -542,6 +543,10 @@ mod tests {
             (os("PATH"), os("/bin")),
             (os("SystemRoot"), os("C:/Windows")),
             (os("CNA_OPERATOR_TOKEN"), os("operator-secret")),
+            (os("UNRELATED_SECRET_NAME"), os("operator-secret")),
+            (os("CAPABILITY"), os("operator-secret")),
+            (os("AWS_SESSION_TOKEN"), os("unrelated-provider")),
+            (os("HTTPS_PROXY"), os("credential-bearing-proxy")),
             (
                 os("CNA_CAPABILITY_FILE"),
                 os("/server/operator-capabilities.json"),
@@ -568,6 +573,70 @@ mod tests {
         assert_eq!(dir.1, os("/seat"));
     }
 
+    #[tokio::test]
+    async fn runtime_allowlist_is_applied_to_spawn_and_resume() {
+        if let Ok(phase) = std::env::var("SEAT_ENV_PROBE") {
+            assert!(["spawn", "resume"].contains(&phase.as_str()));
+            for name in [
+                "UNRELATED_SECRET_NAME",
+                "CNA_OPERATOR_TOKEN",
+                "AWS_SESSION_TOKEN",
+                "HTTPS_PROXY",
+            ] {
+                assert!(
+                    std::env::var_os(name).is_none(),
+                    "ambient credential name survived"
+                );
+            }
+            assert_eq!(
+                std::env::var("CLAUDE_CONFIG_DIR").unwrap(),
+                "fixture-own-profile"
+            );
+            assert_eq!(
+                std::env::var("CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK").unwrap(),
+                "1"
+            );
+            assert!(std::env::vars_os().all(|(name, _)| {
+                let upper = name.to_string_lossy().to_ascii_uppercase();
+                SEAT_RUNTIME_ENV.contains(&upper.as_str())
+                    || [
+                        "SEAT_ENV_PROBE",
+                        "CLAUDE_CONFIG_DIR",
+                        "CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK",
+                    ]
+                    .contains(&upper.as_str())
+            }));
+            return;
+        }
+        for phase in ["spawn", "resume"] {
+            let mut cmd = tokio::process::Command::new(std::env::current_exe().unwrap());
+            cmd.args([
+                "--exact",
+                "driver::tests::runtime_allowlist_is_applied_to_spawn_and_resume",
+                "--nocapture",
+            ]);
+            cmd.env("UNRELATED_SECRET_NAME", "synthetic-operator-canary");
+            apply_seat_env(
+                &mut cmd,
+                &[
+                    ("SEAT_ENV_PROBE", os(phase)),
+                    ("CLAUDE_CONFIG_DIR", os("fixture-own-profile")),
+                    ("CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK", os("1")),
+                ],
+            );
+            #[cfg(windows)]
+            cmd.creation_flags(0x08000000);
+            let output = tokio::time::timeout(Duration::from_secs(10), cmd.output())
+                .await
+                .unwrap()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "inert child environment assertion failed: {}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+        }
+    }
     #[test]
     fn tool_results_get_summary_and_detail() {
         let e = tool_result_entry("c1".into(), true, "{\n  \"a\": 1\n}");
