@@ -19,6 +19,7 @@ export function EventFeed({
           <article
             className="event-row"
             key={f.seq}
+            data-seq={f.seq}
             data-kind={e.kind}
             data-hex={hex ?? ''}
           >

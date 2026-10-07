@@ -271,11 +271,11 @@ Chromium 153.0.8010.12, Windows, ANGLE Vulkan SwiftShader software WebGL,
 pointer-down pan and wheel input for eight seconds. The map layers share the
 terrain's culled 10-by-10-hex texture caches.
 
-| Fixture | Hexes | Positive features | FPS | Median / p95 frame ms |
-| --- | ---: | ---: | ---: | ---: |
-| Published grid, audited road/track pilot | 7,023 | 9 | 60.0 | 16.7 / 16.8 |
-| Synthetic terrain and generated layers | 10,000 | 2,961 | 60.0 | 16.7 / 16.7 |
-| Dense synthetic roster, real geometry and generated layers | 7,023 | 2,061 | 53.3 | 16.7 / 16.8 |
+| Fixture                                                    |  Hexes | Positive features |  FPS | Median / p95 frame ms |
+| ---------------------------------------------------------- | -----: | ----------------: | ---: | --------------------: |
+| Published grid, audited road/track pilot                   |  7,023 |                 9 | 60.0 |           16.7 / 16.8 |
+| Synthetic terrain and generated layers                     | 10,000 |             2,961 | 60.0 |           16.7 / 16.7 |
+| Dense synthetic roster, real geometry and generated layers |  7,023 |             2,061 | 53.3 |           16.7 / 16.8 |
 
 These measure warm navigation, not full-campaign event throughput or a hardware
 GPU. The dense fixture has 290 mapped units in 40 stacks, plus six off-map or
@@ -312,7 +312,6 @@ movement cycles separated by combat cannot inherit an older cycle's events.
 Movement metadata remains attached to each retained frame even after its
 establishing event is evicted. Playback before the 600-frame retention boundary
 is unavailable; fresh snapshots remain the reconnect baseline.
-
 
 ## Blind set-up placement
 
@@ -355,3 +354,62 @@ masking a missing closure publication. Initial air allocation, which has no boar
 projection, used bounded fixture answers from its exact published enum. The run
 took 196.7 seconds on the busy shared machine and reported no browser errors.
 This is a correctness check, not a navigation FPS measurement.
+
+## Coast movement and combat
+
+The feed retains authorized event-envelope locations through playback. Located
+notes, dice and removals have a Locate control; an absent location remains
+unlocated. The viewer does not turn prose or a former unit position into a
+locator. Dice show the published reading and a registry citation card. Combat
+results retain their summary and optional structured detail, and removals show
+their reason. Movement and notes can be filtered together so private development
+stops remain visible alongside the adjudicated route.
+
+Movement follows each disclosed route leg, with the event's CP cost beside the
+animated counter. Own counters and inspectors show only supplied status: engaged,
+pinned, reserve, gun position, moved this segment and broken vehicles. Quarter CP
+values are converted to points for display; raw detail remains inspectable.
+Opponent stacks disclose presence without these private badges.
+
+The optional terrain classification lens uses mint fill for classified cells,
+hatching for unclassified cells and a blue outline for corridor membership. The
+corridor is a digitization priority, not a movement rule or coverage guarantee.
+Reviewed strip buttons use data/map/strips.toml, including explicit unresolved
+pipeline and control halo limits. Build-time export consumes that manifest and
+the corridor membership without rewriting game data.
+
+`npm run smoke -- coast-view.spec.ts` tests this presentation with a clearly
+synthetic transport, including scope clearing. `coast.spec.ts` is the separate
+real server check: legal_random seats and an actual classified route crossing a
+published road-spine pair, no paid driver. It can also resume its own paused
+smoke campaign without changing the engine binary. It reports
+observed event counts and missing locations; rendering a synthetic combat event
+is not evidence that the baseline fought a combat in the real run.
+
+The checked coast run on engine `9fad9fa` used a fresh Graziani campaign. Its
+first bounded three-minute attempt reached logistics; a second attempt resumed
+that same paused campaign and verified reviewed-strip movement in 58.4 seconds.
+Cirene I/158 Infantry Bn crossed a road-spine pair from its disclosed prior
+position, then continued through C4020 to classified C3921, beyond that strip.
+The published movement event cost was 3 CP. The separate current unit inspector
+reported cumulative CP. Scope switching removed its private identity and active
+motions. No browser errors or CombatResolved events were observed. Among 540
+actual events, 111 Notes and one die event had no authorized location; the viewer
+kept them unlocated rather than deriving positions from their prose.
+
+With terrain classification and corridor enabled, an eight-second navigation
+sample in Chromium 153.0.8010.12, Windows, SwiftShader software WebGL, 1800 by
+1050 and DPR 1 measured:
+
+| Scene                                                      |  FPS | p95 frame interval |
+| ---------------------------------------------------------- | ---: | -----------------: |
+| Real 7,023 hexes, 11 surveyed features, mock stream        | 60.0 |            16.8 ms |
+| Synthetic 10,000 hexes, 2,961 generated features           | 41.8 |            50.0 ms |
+| Real grid, 2,061 generated features, 290 units / 40 stacks | 41.5 |            49.9 ms |
+
+All feature kinds, road coverage hatch, classification lens and transcripts were
+on. These are short navigation samples on a shared machine, not a hardware-GPU
+claim or full-campaign throughput measurement. The dense synthetic scene
+misses 60 FPS with these overlays enabled. Raw measurements live in the scratch
+artifact `navigation-benchmark-coast.json`. Reproduce with
+`CNA_BENCHMARK_COVERAGE=1 npm run smoke -- benchmark.spec.ts`.

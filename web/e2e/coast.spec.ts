@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync, writeFileSync } from 'node:fs'
+import { eventHex } from '../src/events'
+import type { Frame } from '../src/stream/model'
 import type { ServerMessage, ViewState } from '../src/protocol'
 const server = process.env.CNA_SMOKE_SERVER,
   capability = process.env.CNA_SMOKE_CAPABILITY
@@ -28,6 +30,13 @@ test('watches actual baseline Graziani movement and reports authorized locator c
       ] as const
     }),
   )
+  const stripPairs = new Set([
+    'C4120/C4220',
+    'C4220/C4120',
+    'C4020/C4120',
+    'C4120/C4020',
+  ])
+  let matchedOrigin: string | null = null
   let resolveMove: (m: Extract<ServerMessage, { type: 'event' }>) => void
   const firstMove = new Promise<Extract<ServerMessage, { type: 'event' }>>(
     (resolve) => {
@@ -48,27 +57,39 @@ test('watches actual baseline Graziani movement and reports authorized locator c
         m.event.path.every(
           (id) => terrain.has(id) && terrain.get(id) !== 'unclassified',
         ) &&
+        (process.env.CNA_SMOKE_CLASSIFIED_AREA === '1' ||
+          [origins.get(m.event.unit_id), ...m.event.path].some(
+            (id, i, a) => i > 0 && stripPairs.has(`${a[i - 1]}/${id}`),
+          )) &&
         origins.get(m.event.unit_id) &&
         terrain.get(origins.get(m.event.unit_id)!) !== 'unclassified'
-      )
-        resolveMove(m)
+      ) {
+        if (!matchedOrigin) {
+          matchedOrigin = origins.get(m.event.unit_id)!
+          resolveMove(m)
+        }
+      }
       if (m.event.kind === 'unit_updated')
         origins.set(m.event.unit.id, m.event.unit.hex)
     }),
   )
-  const created = await request.post(`${server}/api/campaigns`, {
-    headers,
-    data: {
-      kind: 'cna',
-      rules_profile: 'cna-2021-dev',
-      seed: Array(32).fill(0),
-      title: 'Graziani coast - scripted movement',
-      paused: true,
-      controller: 'legal_random',
-    },
-  })
+  const resumedId = process.env.CNA_SMOKE_RESUME_CAMPAIGN
+  const created = resumedId
+    ? await request.get(`${server}/api/campaigns/${resumedId}`, { headers })
+    : await request.post(`${server}/api/campaigns`, {
+        headers,
+        data: {
+          kind: 'cna',
+          rules_profile: 'cna-2021-dev',
+          seed: Array(32).fill(0),
+          title: 'Graziani coast - scripted movement',
+          paused: true,
+          controller: 'legal_random',
+        },
+      })
   expect(created.ok()).toBeTruthy()
-  const meta = await created.json(),
+  const createdData = await created.json()
+  const meta = resumedId ? createdData.campaign : createdData,
     base = `${server}/api/campaigns/${meta.id}`
   try {
     await page.addInitScript(
@@ -85,7 +106,7 @@ test('watches actual baseline Graziani movement and reports authorized locator c
     ).toBeTruthy()
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(
-        () => reject(new Error('No actual classified-area move within180s')),
+        () => reject(new Error('No actual reviewed-strip move within180s')),
         180000,
       ),
     )
@@ -97,7 +118,7 @@ test('watches actual baseline Graziani movement and reports authorized locator c
       destination = message.event.path.at(-1)!
     await page.getByLabel('Event filter').selectOption('unit_moved')
     const row = page
-      .locator('.event-row[data-kind="unit_moved"]')
+      .locator(`.event-row[data-kind="unit_moved"][data-seq="${message.seq}"]`)
       .filter({ hasText: id })
       .first()
     await expect(row).toBeVisible()
@@ -117,10 +138,13 @@ test('watches actual baseline Graziani movement and reports authorized locator c
       await (await request.get(base, { headers })).json()
     ).snapshot.view
     expect(view.units[id]).toBeTruthy()
-    const unlocated: Record<string, number> = {},
+    const unlocatable: Record<string, number> = {},
+      unlocated: Record<string, number> = {},
       totals: Record<string, number> = {}
     packets.forEach((m) => {
       totals[m.event.kind] = (totals[m.event.kind] ?? 0) + 1
+      if (!eventHex({ event: m.event, hex: m.hex } as Frame))
+        unlocatable[m.event.kind] = (unlocatable[m.event.kind] ?? 0) + 1
       if (!m.hex) unlocated[m.event.kind] = (unlocated[m.event.kind] ?? 0) + 1
     })
     writeFileSync(
@@ -130,14 +154,22 @@ test('watches actual baseline Graziani movement and reports authorized locator c
           commit: process.env.CNA_SMOKE_COMMIT,
           elapsed_ms: Date.now() - started,
           controller: 'legal_random',
+          resumed_saved_campaign: Boolean(resumedId),
           unit: id,
+          origin: matchedOrigin,
+          route: [matchedOrigin, ...message.event.path],
           path: message.event.path,
           cp_spent: message.event.cp_spent,
           destination,
           classified_path: true,
+          reviewed_strip:
+            process.env.CNA_SMOKE_CLASSIFIED_AREA === '1'
+              ? null
+              : 'road-spine-0001',
           total_events: packets.length,
           event_kinds: totals,
           missing_envelope_hex: unlocated,
+          unlocated_event_kinds: unlocatable,
           combat_seen: packets.some((m) => m.event.kind === 'combat_resolved'),
           errors,
         },

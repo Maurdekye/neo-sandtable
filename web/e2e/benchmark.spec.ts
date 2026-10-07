@@ -12,6 +12,8 @@ test('records real and synthetic navigation timing', async ({
   ]) {
     await page.goto(url)
     await expect(page.locator('.board canvas')).toBeVisible()
+    if (process.env.CNA_BENCHMARK_COVERAGE === '1')
+      await page.getByLabel('Terrain classification & corridor').check()
     await expect(page.getByTestId('fps')).not.toHaveText('0 FPS · WebGL')
     // Warm caches before measuring. Each rAF drives the same DOM input handlers as a spectator.
     const bounds = (await page.locator('.board canvas').boundingBox())!
@@ -94,6 +96,12 @@ test('records real and synthetic navigation timing', async ({
         userAgent: navigator.userAgent,
         viewport: [innerWidth, innerHeight],
         dpr: devicePixelRatio,
+        terrain_classification_overlay:
+          (
+            document.querySelector(
+              '.terrain-coverage input',
+            ) as HTMLInputElement
+          )?.checked ?? false,
         active_overlays: location.search.includes('dense')
           ? 'all generated feature kinds; road unknown hatch; 290 mapped units in 40 stacks plus six off-map/unplaced, mock active, three seat tabs'
           : 'all feature kinds; road unknown hatch; 18 generated counters, mock stream active, three seat tabs',
@@ -104,7 +112,9 @@ test('records real and synthetic navigation timing', async ({
     results.push(result)
   }
   writeFileSync(
-    '../../navigation-benchmark.json',
+    process.env.CNA_BENCHMARK_COVERAGE === '1'
+      ? '../../navigation-benchmark-coast.json'
+      : '../../navigation-benchmark.json',
     JSON.stringify({ browser_version: browser.version(), results }, null, 2),
   )
 })

@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js'
 import { HEXES, center, vertices, HEX_SIZE } from './fixture'
 import { terrainCoverage } from './terrainCoverage'
-/** Classification and corridor are independent dimensions. Cached chunks cull with the map. */
+/** Classification and corridor are independent dimensions. Static chunks cull with the map. */
 export function createTerrainOverlay(parent: Container) {
   const chunks = new Map<
     string,

@@ -1,3 +1,4 @@
+import data from '../data/rules.json'
 import {
   CORRIDOR_COUNTS,
   TERRAIN_COUNTS,
@@ -13,6 +14,7 @@ export function TerrainCoverageControls({
   onChange: (v: boolean) => void
   onHex: (id: string) => void
 }) {
+  const strips = data.map_strips.strips ?? []
   return (
     <section className="terrain-coverage">
       <label>
@@ -34,7 +36,22 @@ export function TerrainCoverageControls({
           movement.
         </p>
       )}
-      <button onClick={() => onHex('C4120')}>Locate Bardia coast</button>
+      {strips.map((strip) => (
+        <div className="reviewed-strip" key={strip.id}>
+          <button onClick={() => onHex(strip.route_hex_ids[0])}>
+            Locate {strip.id}
+          </button>
+          <small>
+            Reviewed route: {strip.route_hex_ids.join(' / ')}.{' '}
+            {strip.complete_line_kinds.length} line and{' '}
+            {strip.complete_side_kinds.length} side kinds complete on these
+            pairs only; control halo{' '}
+            {strip.control_halo_complete ? 'surveyed' : 'unknown'}, pipeline{' '}
+            {strip.pipeline_complete ? 'surveyed' : 'unknown'}. Action legality
+            depends on the unit.
+          </small>
+        </div>
+      ))}
     </section>
   )
 }
