@@ -4,7 +4,8 @@
 //! Unknown sea entries and port anchors are never replaced by land-road or straight-line routes.
 use super::{
     SupplyError, ports,
-    stores::{engine, field, option},
+    ports::PortOperationError,
+    stores::{field, option},
     water::WaterStage,
 };
 use crate::{
@@ -24,6 +25,9 @@ use cna_protocol::{GameEvent, Role, Side};
 use cna_tables::airlog::supply::SupplyType;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+fn engine(error: impl Into<PortOperationError>) -> EngineError {
+    error.into().into_engine()
+}
 pub const AXIS: &str = "cna.logistics.coastal.axis";
 pub const CW: &str = "cna.logistics.coastal.commonwealth";
 const TYPES: [SupplyType; 4] = [
@@ -43,7 +47,7 @@ pub struct CoastalShipState {
     pub stage: Option<WaterStage>,
 }
 /// Cases: scen:59.54, scen:60.35
-pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), SupplyError> {
+pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), PortOperationError> {
     let Some(setup) = &content.scenario.fleet_logistics.axis_coastal_shipping else {
         return Ok(());
     };
@@ -51,7 +55,7 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), SupplyE
         crate::setup::placement::choices(content, &setup.location, Side::Axis, "scen:59.54");
     let at = match choices {
         Ok(v) if v.len() == 1 => v[0].clone(),
-        _ => return Err(SupplyError::Unsupported { case: "scen:59.54" }),
+        _ => return Err(SupplyError::Unsupported { case: "scen:59.54" }.into()),
     };
     for id in content
         .units
@@ -76,7 +80,7 @@ fn active(state: &State) -> bool {
     state.cursor.anchor() == "opstage.truck_convoy_movement"
         && state.cursor.phasing(state.turn.player_a) == Some(Side::Axis)
 }
-fn refresh(state: &mut State, id: &str) -> Result<(), SupplyError> {
+fn refresh(state: &mut State, id: &str) -> Result<(), PortOperationError> {
     let stage = WaterStage::current(state);
     let ship = state
         .logistics
@@ -88,11 +92,11 @@ fn refresh(state: &mut State, id: &str) -> Result<(), SupplyError> {
         ship.cp_quarters = 0;
     }
     if ship.cp_quarters < 0 || ship.cp_quarters > 200 {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     Ok(())
 }
-fn cp(state: &mut State, id: &str, quarters: i32) -> Result<(), SupplyError> {
+fn cp(state: &mut State, id: &str, quarters: i32) -> Result<(), PortOperationError> {
     refresh(state, id)?;
     let s = state.logistics.coastal_ships.get_mut(id).unwrap();
     let total = s
@@ -100,12 +104,12 @@ fn cp(state: &mut State, id: &str, quarters: i32) -> Result<(), SupplyError> {
         .checked_add(quarters)
         .ok_or(SupplyError::Invalid)?;
     if total > 200 {
-        return Err(SupplyError::Insufficient);
+        return Err(SupplyError::Insufficient.into());
     }
     s.cp_quarters = total;
     Ok(())
 }
-fn dump_at(state: &State, side: Side, id: &str) -> Result<Location, SupplyError> {
+fn dump_at(state: &State, side: Side, id: &str) -> Result<Location, PortOperationError> {
     let d = state
         .logistics
         .dumps
@@ -115,7 +119,7 @@ fn dump_at(state: &State, side: Side, id: &str) -> Result<Location, SupplyError>
     match &d.location {
         DumpLocation::Hex { hex } => Ok(Location::Hex { hex: hex.clone() }),
         DumpLocation::OffMap { id } => Ok(Location::OffMap { id: id.clone() }),
-        _ => Err(SupplyError::Invalid),
+        _ => Err(SupplyError::Invalid.into()),
     }
 }
 
@@ -125,28 +129,23 @@ fn receiving_dump(
     side: Side,
     key: &str,
     at: &Location,
-) -> Result<String, SupplyError> {
+) -> Result<String, PortOperationError> {
     if let Some(port_id) = key.strip_prefix("new:") {
         let port = ports::at(content, at)?;
-        if port.id != port_id
-            || !state
-                .logistics
-                .ports
-                .get(&port.id)
-                .is_some_and(|p| p.owner == side && p.efficiency > 0)
-        {
-            return Err(SupplyError::Invalid);
+        let ps = ports::state(content, state, &port)?;
+        if port.id != port_id || ps.owner != side || ps.efficiency <= 0 {
+            return Err(SupplyError::Invalid.into());
         }
         let id = format!("{}.coastal.port.{}", crate::state::side_key(side), port.id);
         if let Some(d) = state.logistics.dumps.get(&id) {
             if d.side != side || !d.active || d.dummy || dump_at(state, side, &id)? != *at {
-                return Err(SupplyError::Invalid);
+                return Err(SupplyError::Invalid.into());
             }
         } else {
             let location = match at {
                 Location::Hex { hex } => DumpLocation::Hex { hex: hex.clone() },
                 Location::OffMap { id } => DumpLocation::OffMap { id: id.clone() },
-                _ => return Err(SupplyError::Invalid),
+                _ => return Err(SupplyError::Invalid.into()),
             };
             let marker = super::dump_markers::next_marker(&mut state.logistics)?;
             state.logistics.dumps.insert(
@@ -166,10 +165,10 @@ fn receiving_dump(
     } else if dump_at(state, side, key)? == *at {
         Ok(key.into())
     } else {
-        Err(SupplyError::Invalid)
+        Err(SupplyError::Invalid.into())
     }
 }
-fn unlimited_location(content: &CnaContent, hex: &HexId) -> Result<Location, SupplyError> {
+fn unlimited_location(content: &CnaContent, hex: &HexId) -> Result<Location, PortOperationError> {
     let at = content
         .map
         .canonical(hex)
@@ -189,22 +188,30 @@ fn unlimited_location(content: &CnaContent, hex: &HexId) -> Result<Location, Sup
             .get(id)
             .ok_or(SupplyError::Unsupported { case: "scen:60.44" })?;
         if area.membership_status != "resolved" {
-            return Err(SupplyError::Unsupported { case: "scen:60.44" });
+            return Err(SupplyError::Unsupported { case: "scen:60.44" }.into());
         }
         if area.hex_ids.contains(&at) {
             return Ok(Location::Hex { hex: at });
         }
     }
-    Err(SupplyError::Invalid)
+    Err(SupplyError::Invalid.into())
 }
-fn cw_origin(content: &CnaContent, state: &State, key: &str) -> Result<Location, SupplyError> {
+fn cw_origin(
+    content: &CnaContent,
+    state: &State,
+    key: &str,
+) -> Result<Location, PortOperationError> {
     if let Some(hex) = key.strip_prefix("base:") {
         unlimited_location(content, &HexId::new(hex))
     } else {
         dump_at(state, Side::Commonwealth, key)
     }
 }
-fn cw_target(content: &CnaContent, state: &State, key: &str) -> Result<Location, SupplyError> {
+fn cw_target(
+    content: &CnaContent,
+    state: &State,
+    key: &str,
+) -> Result<Location, PortOperationError> {
     if let Some(hex) = key.strip_prefix("new:") {
         let at = Location::Hex {
             hex: content
@@ -214,25 +221,21 @@ fn cw_target(content: &CnaContent, state: &State, key: &str) -> Result<Location,
                 .clone(),
         };
         let port = ports::at(content, &at)?;
-        if !state
-            .logistics
-            .ports
-            .get(&port.id)
-            .is_some_and(|p| p.owner == Side::Commonwealth && p.efficiency > 0)
-        {
-            return Err(SupplyError::Invalid);
+        let ps = ports::state(content, state, &port)?;
+        if ps.owner != Side::Commonwealth || ps.efficiency <= 0 {
+            return Err(SupplyError::Invalid.into());
         }
         Ok(at)
     } else {
         dump_at(state, Side::Commonwealth, key)
     }
 }
-fn add(a: &Supplies, b: &Supplies, subtract: bool) -> Result<Supplies, SupplyError> {
+fn add(a: &Supplies, b: &Supplies, subtract: bool) -> Result<Supplies, PortOperationError> {
     let mut result = *a;
     for t in TYPES {
         let n = super::capacity::points(b, t);
         if n < 0 {
-            return Err(SupplyError::Invalid);
+            return Err(SupplyError::Invalid.into());
         }
         let new = if subtract {
             super::capacity::points(a, t).checked_sub(n)
@@ -241,7 +244,7 @@ fn add(a: &Supplies, b: &Supplies, subtract: bool) -> Result<Supplies, SupplyErr
         }
         .ok_or(SupplyError::Invalid)?;
         if new < 0 {
-            return Err(SupplyError::Insufficient);
+            return Err(SupplyError::Insufficient.into());
         }
         super::capacity::set_points(&mut result, t, new);
     }
@@ -264,14 +267,14 @@ pub fn load(
     id: &str,
     dump: &str,
     cargo: Supplies,
-) -> Result<(), SupplyError> {
+) -> Result<(), PortOperationError> {
     if !active(state)
         || !one_type(&cargo)
         || TYPES
             .into_iter()
             .any(|t| super::capacity::points(&cargo, t) < 0)
     {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let mut draft = state.clone();
     refresh(&mut draft, id)?;
@@ -279,15 +282,15 @@ pub fn load(
     if ship.cp_quarters != 0
         || draft.logistics.coastal_loading_closed_stage == Some(WaterStage::current(&draft))
     {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let at = dump_at(&draft, Side::Axis, dump)?;
     if at != ship.location {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let total = add(&ship.cargo, &cargo, false)?;
     if !one_type(&total) {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let capacity = content
         .units
@@ -298,7 +301,7 @@ pub fn load(
             case: "airlog:56.31",
         })?;
     if ports::weight24(content, &total)? > i64::from(capacity) * 24 {
-        return Err(SupplyError::Insufficient);
+        return Err(SupplyError::Insufficient.into());
     }
     let remaining = add(&draft.logistics.dumps[dump].supplies, &cargo, true)?;
     let port = ports::at(content, &at)?;
@@ -325,9 +328,9 @@ pub fn unload(
     id: &str,
     dump: &str,
     cargo: Supplies,
-) -> Result<(), SupplyError> {
+) -> Result<(), PortOperationError> {
     if !active(state) || !one_type(&cargo) {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let mut draft = state.clone();
     refresh(&mut draft, id)?;
@@ -368,9 +371,9 @@ pub fn sail(
     state: &mut State,
     id: &str,
     path: &[HexId],
-) -> Result<(), SupplyError> {
+) -> Result<(), PortOperationError> {
     if !active(state) || path.is_empty() {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let mut draft = state.clone();
     refresh(&mut draft, id)?;
@@ -384,7 +387,7 @@ pub fn sail(
     for hex in path {
         let to = content.map.canonical(hex).ok_or(SupplyError::Invalid)?;
         if !content.map.neighbors(&from).iter().any(|r| &r.id == to) {
-            return Err(SupplyError::Invalid);
+            return Err(SupplyError::Invalid.into());
         }
         let loc = Location::Hex { hex: to.clone() };
         if let Ok(port) = ports::at(content, &loc) {
@@ -394,15 +397,9 @@ pub fn sail(
                 .units
                 .values()
                 .any(|u| u.side != Side::Axis && u.location.hex() == Some(to));
-            let ps = draft
-                .logistics
-                .ports
-                .get(&port.id)
-                .ok_or(SupplyError::Unsupported {
-                    case: "airlog:55.11",
-                })?;
+            let ps = ports::state(content, &draft, &port)?;
             if occupied || ps.owner != Side::Axis || ps.efficiency == 0 {
-                return Err(SupplyError::Insufficient);
+                return Err(SupplyError::Insufficient.into());
             }
         } else if !matches!(
             content.map.terrain_survey(to),
@@ -410,7 +407,8 @@ pub fn sail(
         ) {
             return Err(SupplyError::Unsupported {
                 case: "airlog:56.31",
-            });
+            }
+            .into());
         }
         cp(&mut draft, id, 4)?;
         from = to.clone();
@@ -431,12 +429,12 @@ pub fn commonwealth_transfer(
     from: &str,
     to: &str,
     cargo: Supplies,
-) -> Result<(), SupplyError> {
+) -> Result<(), PortOperationError> {
     if state.cursor.anchor() != "opstage.organization.tactical_shipping"
         || from == to
         || ports::weight24(content, &cargo)? == 0
     {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let mut draft = state.clone();
     let origin = cw_origin(content, &draft, from)?;
@@ -446,7 +444,7 @@ pub fn commonwealth_transfer(
         || !matches!(origin, Location::Hex { .. })
         || !matches!(target, Location::Hex { .. })
     {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let source = if from.starts_with("base:") {
         if cargo.water != 0
@@ -454,7 +452,7 @@ pub fn commonwealth_transfer(
                 .into_iter()
                 .any(|t| super::capacity::points(&cargo, t) < 0)
         {
-            return Err(SupplyError::Invalid);
+            return Err(SupplyError::Invalid.into());
         }
         None
     } else {
@@ -786,7 +784,7 @@ fn apply_orders(
                 "sail" if o.dump.is_empty() && o.cargo == Supplies::default() => {
                     sail(content, &mut draft, &o.ship, &o.path)
                 }
-                _ => Err(SupplyError::Invalid),
+                _ => Err(SupplyError::Invalid.into()),
             }
         } else {
             let o: CwOrder = serde_json::from_value(entry.clone())
@@ -794,7 +792,10 @@ fn apply_orders(
             commonwealth_transfer(content, &mut draft, &o.from, &o.to, o.cargo)
         };
         result.map_err(|e| match e {
-            SupplyError::Unsupported { .. } => Rejection::Engine(engine(e)),
+            PortOperationError::Policy(_)
+            | PortOperationError::Supply(SupplyError::Unsupported { .. }) => {
+                Rejection::Engine(engine(e))
+            }
             _ => illegal("coastal list violates cargo, ownership, phase, CPA or port limits"),
         })?;
     }

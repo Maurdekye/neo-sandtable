@@ -189,6 +189,18 @@ impl From<super::port_initialization::PortInitializationError> for PortOperation
     }
 }
 impl PortOperationError {
+    /// Only an unassessed source policy or a saved Unknown ownership record.
+    /// Missing ports and malformed source facts retain their separate errors.
+    pub fn is_unknown(&self) -> bool {
+        matches!(self, Self::Policy(error)
+            if error.kind == super::port_initialization::PortInitializationErrorKind::UnsupportedPolicy)
+            || matches!(
+                self,
+                Self::Supply(SupplyError::Unsupported {
+                    case: "airlog:55.18"
+                })
+            )
+    }
     pub fn into_engine(self) -> cna_core::engine::EngineError {
         match self {
             Self::Policy(error) => error.into_engine(),
@@ -237,12 +249,12 @@ pub fn state<'a>(
 /// Canonical capacity query, preserving source errors before looking at any
 /// numeric efficiency. Runtime consumers migrate to this identity-aware path.
 /// Cases: airlog:55.14, airlog:55.18, airlog:55.3
-pub fn capacity_at(
+pub fn capacity_tons(
     content: &CnaContent,
     state_: &State,
     port: &Port,
 ) -> Result<i64, PortOperationError> {
-    capacity_tons(content, state(content, state_, port)?, port.name).map_err(Into::into)
+    capacity_for_known(content, state(content, state_, port)?, port.name).map_err(Into::into)
 }
 
 fn ordinal(stage: WaterStage) -> i32 {
@@ -251,7 +263,12 @@ fn ordinal(stage: WaterStage) -> i32 {
 /// Quiet stages recover bombing damage, not blocking or unswept mines. Repeated calls
 /// in one stage neither recover a second level nor reset the shared shipment budget.
 /// Cases: airlog:55.18, airlog:55.26, airlog:55.27
-pub fn advance(content: &CnaContent, state: &mut State, port: &Port) -> Result<(), SupplyError> {
+pub fn advance(
+    content: &CnaContent,
+    state: &mut State,
+    port: &Port,
+) -> Result<(), PortOperationError> {
+    self::state(content, state, port)?;
     let stage = WaterStage::current(state);
     let row = content.tables.airlog.port_capacity.port(port.name);
     let p = state
@@ -262,7 +279,7 @@ pub fn advance(content: &CnaContent, state: &mut State, port: &Port) -> Result<(
             case: "airlog:55.11",
         })?;
     if p.efficiency < 0 || p.blocked_levels < 0 || p.mined_levels < 0 || p.used_tons24 < 0 {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     if p.budget_stage != Some(stage) {
         let quiet = p.budget_stage.map_or(0, |prior| {
@@ -302,7 +319,7 @@ pub fn weight24(content: &CnaContent, cargo: &Supplies) -> Result<i64, SupplyErr
 }
 /// Largest supply tonnage at current efficiency, rounded upward as printed.
 /// Cases: airlog:55.14, airlog:55.3
-pub fn capacity_tons(
+fn capacity_for_known(
     content: &CnaContent,
     p: &PortState,
     name: PortName,
@@ -329,26 +346,28 @@ pub fn charge(
     port: &Port,
     weight24: i64,
     level_g_tripoli: bool,
-) -> Result<(), SupplyError> {
+) -> Result<(), PortOperationError> {
+    self::state(content, state, port)?;
     if weight24 < 0 {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let mut draft = state.clone();
     advance(content, &mut draft, port)?;
     if port.name == PortName::Bizerta && !draft.logistics.bizerta_open {
-        return Err(SupplyError::Insufficient);
+        return Err(SupplyError::Insufficient.into());
     }
+    let capacity = capacity_tons(content, &draft, port)?;
     let p = draft.logistics.ports.get_mut(&port.id).unwrap();
     if p.owner != side || p.efficiency == 0 {
-        return Err(SupplyError::Insufficient);
+        return Err(SupplyError::Insufficient.into());
     }
     let total = p
         .used_tons24
         .checked_add(weight24)
         .ok_or(SupplyError::Invalid)?;
     let overflow = level_g_tripoli && port.name == PortName::Tripoli;
-    if !overflow && total > capacity_tons(content, p, port.name)? * 24 {
-        return Err(SupplyError::Insufficient);
+    if !overflow && total > capacity * 24 {
+        return Err(SupplyError::Insufficient.into());
     }
     p.used_tons24 = total;
     state.logistics = draft.logistics;
@@ -383,7 +402,7 @@ mod tests {
         let before = serde_json::to_value(&s).unwrap();
         assert_eq!(
             charge(&c, &mut s, Side::Axis, &p, 1, false),
-            Err(SupplyError::Insufficient)
+            Err(SupplyError::Insufficient.into())
         );
         assert_eq!(serde_json::to_value(&s).unwrap(), before);
         s.cursor.op_stage = Some(2);
@@ -416,10 +435,15 @@ mod tests {
             budget_stage: None,
             used_tons24: 0,
         };
-        assert_eq!(
-            capacity_tons(&c, &example, PortName::Benghazi).unwrap(),
-            834
-        );
+        let benghazi = at(
+            &c,
+            &Location::Hex {
+                hex: "A4827".into(),
+            },
+        )
+        .unwrap();
+        s.logistics.ports.insert(benghazi.id.clone(), example);
+        assert_eq!(capacity_tons(&c, &s, &benghazi).unwrap(), 834);
         let ps = s.logistics.ports.get_mut(&p.id).unwrap();
         ps.efficiency = 5;
         ps.blocked_levels = 2;

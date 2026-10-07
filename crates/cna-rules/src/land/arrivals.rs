@@ -1232,7 +1232,7 @@ pub(crate) fn finish(
         return Ok(());
     }
     if state.land.arrivals.supply_finished.insert(stage(state)) {
-        crate::logistics::convoys::arrive(content, state, cx)?;
+        crate::logistics::convoys::arrive(content, state, strict, cx)?;
     }
     Ok(())
 }

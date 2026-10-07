@@ -4,7 +4,7 @@
 //! Reconnaissance/bombing procedures may reveal and reduce individual convoy cargo later.
 use super::{
     SupplyError, ports,
-    stores::{engine, field, option},
+    stores::{field, option},
 };
 use crate::{
     CnaContent,
@@ -24,6 +24,9 @@ use cna_tables::{airlog::convoys::ConvoyLevel, calendar::Month};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
+fn engine(error: impl Into<ports::PortOperationError>) -> EngineError {
+    error.into().into_engine()
+}
 pub const PREFIX: &str = "cna.logistics.convoy.plan:";
 
 /// Cargo remains private until Air rules reveal it; arriving supply stock is also private.
@@ -43,6 +46,8 @@ pub enum ConvoyStatus {
     Planned,
     Cancelled,
     Arrived,
+    /// Terminal dev diagnostic: cargo never entered play and cannot retry.
+    Unassessed,
 }
 /// Capacity dice are rolled once for this arrival turn. Production will fill replacement_tons
 /// before the supply choice; zero is deliberate until that subsystem exists.
@@ -482,7 +487,13 @@ pub fn answer(
 /// is invented. Cargo beyond the remaining stage capacity is turned back, never carried over.
 /// Cases: airlog:55.14, airlog:55.15, airlog:56.15, airlog:56.24, airlog:56.27, airlog:56.28
 /// Interpretations: interp:airlog-0010, interp:airlog-0013
-pub fn arrive(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
+pub fn arrive(
+    content: &CnaContent,
+    state: &mut State,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    ports::preflight(content, strict)?;
     let gt = state.cursor.game_turn;
     let op = state.cursor.op_stage.unwrap_or(1);
     let Some(turn) = state.logistics.convoy_turns.get(&gt).cloned() else {
@@ -494,12 +505,41 @@ pub fn arrive(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
         .filter(|s| s.status == ConvoyStatus::Planned && s.arrival_opstage == op)
     {
         let port = ports::lane_destination(content, ship.lane).map_err(engine)?;
-        if state
-            .logistics
-            .ports
-            .get(&port.id)
-            .is_some_and(|p| p.owner != Side::Axis)
-        {
+        let owner = match ports::state(content, state, &port) {
+            Ok(port_state) => port_state.owner,
+            Err(error) if !strict && error.is_unknown() => {
+                let convoy = state
+                    .logistics
+                    .convoy_turns
+                    .get_mut(&gt)
+                    .unwrap()
+                    .convoys
+                    .get_mut(&ship.lane)
+                    .unwrap();
+                convoy.status = ConvoyStatus::Unassessed;
+                convoy.delivered = None;
+                let mut event = EngineEvent::new(
+                    Audience::Side(Side::Axis),
+                    GameEvent::Note {
+                        text: format!(
+                            "GT{gt} lane{} did not enter play: port efficiency unassessed; no retry or carry-over. {}",
+                            ship.lane,
+                            match error {
+                                ports::PortOperationError::Policy(source) => source.to_string(),
+                                ports::PortOperationError::Supply(source) => format!("{source:?}"),
+                            }
+                        ),
+                    },
+                );
+                if let Some(hex) = port.location.hex() {
+                    event = event.at(hex.clone());
+                }
+                cx.emit(event);
+                continue;
+            }
+            Err(error) => return Err(engine(error)),
+        };
+        if owner != Side::Axis {
             state
                 .logistics
                 .convoy_turns
@@ -523,13 +563,13 @@ pub fn arrive(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
         let mut draft = state.clone();
         ports::advance(content, &mut draft, &port).map_err(engine)?;
         let weight = ports::weight24(content, &ship.cargo).map_err(engine)?;
-        let ps = &draft.logistics.ports[&port.id];
+        let ps = ports::state(content, &draft, &port).map_err(engine)?;
         let g = turn.level == ConvoyLevel::G
             && port.name == cna_tables::airlog::trucks::PortName::Tripoli;
         let remaining = if g && ps.efficiency > 0 {
             weight
         } else {
-            (ports::capacity_tons(content, ps, port.name).map_err(engine)? * 24 - ps.used_tons24)
+            (ports::capacity_tons(content, &draft, &port).map_err(engine)? * 24 - ps.used_tons24)
                 .max(0)
         };
         let allowed = remaining.min(weight);

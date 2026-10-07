@@ -114,7 +114,8 @@ fn real_four_ships_start_empty_at_tripoli_and_unknown_join_stays_unsupported() {
         sail(content(), &mut s, "axis.coastal.a", &["C4023".into()]),
         Err(SupplyError::Unsupported {
             case: "airlog:56.31"
-        })
+        }
+        .into())
     );
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
 }
@@ -138,7 +139,7 @@ fn fifty_cp_includes_handling_and_checkpointed_unload() {
     let before = serde_json::to_value(&s).unwrap();
     assert_eq!(
         unload(c, &mut s, "axis.coastal.a", "fixture", stores(10)),
-        Err(SupplyError::Insufficient)
+        Err(SupplyError::Insufficient.into())
     );
     assert_eq!(serde_json::to_value(s).unwrap(), before);
 }
@@ -152,14 +153,14 @@ fn loading_gate_is_phase_wide_and_resets_next_stage() {
     sail(c, &mut s, "axis.coastal.a", &path(2)).unwrap();
     assert_eq!(
         load(c, &mut s, "axis.coastal.c", "fixture", stores(10)),
-        Err(SupplyError::Invalid)
+        Err(SupplyError::Invalid.into())
     );
     s.cursor.op_stage = Some(2);
     load(c, &mut s, "axis.coastal.c", "fixture", stores(10)).unwrap();
     s.cursor.half = Some(Half::B);
     assert_eq!(
         load(c, &mut s, "axis.coastal.d", "fixture", stores(10)),
-        Err(SupplyError::Invalid)
+        Err(SupplyError::Invalid.into())
     );
 }
 /// Cases: airlog:55.14, airlog:56.31, airlog:56.33, airlog:56.34
@@ -207,7 +208,7 @@ fn cargo_capacity_type_negative_and_port_rejections_are_atomic() {
     };
     assert_eq!(
         sail(c, &mut s, "axis.coastal.a", &["C4022".into()]),
-        Err(SupplyError::Insufficient)
+        Err(SupplyError::Insufficient.into())
     );
 }
 /// Cases: airlog:56.34, land:3.6, land:3.62

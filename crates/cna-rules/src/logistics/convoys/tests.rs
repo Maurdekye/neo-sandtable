@@ -129,6 +129,7 @@ fn real_gt1_capacity_plan_arrival_and_enemy_secrecy_survive_checkpoint() {
         arrive(
             &c,
             state,
+            false,
             &mut Cx {
                 rng: &mut rng,
                 events: &mut events,
@@ -143,6 +144,7 @@ fn real_gt1_capacity_plan_arrival_and_enemy_secrecy_survive_checkpoint() {
         arrive(
             &c,
             state,
+            false,
             &mut Cx {
                 rng: &mut rng,
                 events: &mut events,
@@ -167,6 +169,7 @@ fn real_gt1_capacity_plan_arrival_and_enemy_secrecy_survive_checkpoint() {
         arrive(
             &c,
             state,
+            false,
             &mut Cx {
                 rng: &mut rng,
                 events: &mut events,
@@ -307,6 +310,7 @@ fn captured_port_cancels_and_congestion_turns_back_excess_cargo() {
         let result = arrive(
             &c,
             &mut s,
+            false,
             &mut Cx {
                 rng: &mut rng,
                 events: &mut events,
@@ -367,4 +371,257 @@ fn bounded_calendar_and_strict_replacement_gap_do_not_silently_replan_in_play() 
     assert!(
         matches!(schedule(&c,&mut s,false,&mut Cx{rng:&mut rng,events:&mut events}),Err(EngineError::Unsupported{case,..})if case=="scen:60.37")
     );
+}
+
+fn unknown_port_arrivals_fixture() -> (CnaContent, State, ports::Port) {
+    let mut c = content();
+    let affected = ports::lane_destination(&c, 3).unwrap();
+    assert_eq!(affected.id, "A4827");
+    let mut record = c.scenario.construction.port_overrides[0].clone();
+    record.hex = "A4827".into();
+    record.port = "Benghazi".into();
+    record.efficiency_level = 1;
+    // Synthetic valid future policy exercises diagnostics, not source transcription.
+    record.src = vec!["scen:61.1".into()];
+    c.scenario.construction.port_overrides = vec![record];
+    let mut s = State::new(&c).unwrap();
+    s.cursor.block = Block::OpStage;
+    s.cursor.op_stage = Some(1);
+    s.cursor.index = OPSTAGE
+        .iter()
+        .position(|s| s.anchor == "opstage.convoy_arrival")
+        .unwrap();
+    for lane in [2, 3] {
+        let port = ports::lane_destination(&c, lane).unwrap();
+        s.logistics.ports.insert(
+            port.id,
+            ports::PortState {
+                owner: Side::Axis,
+                efficiency: c
+                    .tables
+                    .airlog
+                    .port_capacity
+                    .port(port.name)
+                    .max_efficiency_level,
+                blocked_levels: 0,
+                mined_levels: 0,
+                bombed_stage: None,
+                budget_stage: None,
+                used_tons24: 0,
+            },
+        );
+    }
+    let cargo = Supplies {
+        stores: 10,
+        ..Supplies::default()
+    };
+    s.logistics.convoy_turns.insert(
+        s.cursor.game_turn,
+        ConvoyTurn {
+            level: ConvoyLevel::B,
+            capacity_tons: 1000,
+            replacement_tons: 0,
+            planning_complete: true,
+            convoys: [2, 3]
+                .into_iter()
+                .map(|lane| {
+                    (
+                        lane,
+                        NavalConvoy {
+                            lane,
+                            arrival_opstage: 1,
+                            cargo,
+                            status: ConvoyStatus::Planned,
+                            delivered: None,
+                        },
+                    )
+                })
+                .collect(),
+        },
+    );
+    (c, s, affected)
+}
+
+/// Cases: airlog:55.14, airlog:55.18, airlog:56.28, land:3.6
+#[test]
+fn unknown_arrival_is_terminal_without_zero_delivery_while_healthy_port_unloads() {
+    let (c, _, port) = unknown_port_arrivals_fixture();
+    let maximum = c
+        .tables
+        .airlog
+        .port_capacity
+        .port(port.name)
+        .max_efficiency_level;
+    for efficiency in [0, maximum] {
+        let (c, mut s, affected) = unknown_port_arrivals_fixture();
+        let old = s.logistics.ports.get_mut(&affected.id).unwrap();
+        assert!(efficiency <= old.efficiency);
+        old.efficiency = efficiency;
+        old.blocked_levels = 1;
+        old.used_tons24 = 127;
+        let retained = old.clone();
+        let before: i32 = s.logistics.dumps.values().map(|d| d.supplies.stores).sum();
+        let gt = s.cursor.game_turn;
+        let mut rng = CampaignRng::from_seed([19; 32]);
+        let rng_before = rng.state();
+        let mut events = vec![];
+        arrive(
+            &c,
+            &mut s,
+            false,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        )
+        .unwrap();
+        let turn = &s.logistics.convoy_turns[&gt];
+        assert_eq!(turn.convoys[&3].status, ConvoyStatus::Unassessed);
+        assert_eq!(turn.convoys[&3].delivered, None);
+        assert_eq!(turn.convoys[&3].cargo.stores, 10);
+        assert_eq!(s.logistics.ports[&affected.id], retained);
+        assert_eq!(turn.convoys[&2].status, ConvoyStatus::Arrived);
+        assert_eq!(turn.convoys[&2].delivered.unwrap().stores, 10);
+        assert_eq!(
+            s.logistics
+                .dumps
+                .values()
+                .map(|d| d.supplies.stores)
+                .sum::<i32>()
+                - before,
+            10
+        );
+        assert_eq!(
+            s.logistics.ports["box_tripoli"].used_tons24,
+            ports::weight24(&c, &turn.convoys[&2].cargo).unwrap()
+        );
+        assert_eq!(rng.state(), rng_before);
+        assert!(
+            events
+                .iter()
+                .all(|e| !Perspective::Side(Side::Commonwealth).can_see(&e.audience))
+        );
+        let text = serde_json::to_value(&events).unwrap().to_string();
+        assert!(text.contains("scen:61.1") && text.contains("A4827") && text.contains("raw=1"));
+        let saved = serde_json::to_value(&s).unwrap();
+        let mut restored: State = serde_json::from_value(saved.clone()).unwrap();
+        let mut replay_events = vec![];
+        arrive(
+            &c,
+            &mut restored,
+            false,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut replay_events,
+            },
+        )
+        .unwrap();
+        assert_eq!(serde_json::to_value(&restored).unwrap(), saved);
+        restored.cursor.op_stage = Some(2);
+        s.cursor.op_stage = Some(2);
+        arrive(
+            &c,
+            &mut restored,
+            false,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut replay_events,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_value(&restored).unwrap(),
+            serde_json::to_value(&s).unwrap()
+        );
+        assert!(replay_events.is_empty());
+        assert_eq!(rng.state(), rng_before);
+    }
+    for status in ["planned", "cancelled", "arrived", "unassessed"] {
+        let parsed: ConvoyStatus = serde_json::from_value(json!(status)).unwrap();
+        assert_eq!(serde_json::to_value(parsed).unwrap(), json!(status));
+    }
+}
+
+/// Cases: airlog:55.18, airlog:56.28, land:3.6
+#[test]
+fn unknown_arrival_cargo_and_private_diagnostic_are_indistinguishable_to_enemy() {
+    let (c, mut a, _) = unknown_port_arrivals_fixture();
+    let mut b = a.clone();
+    b.logistics
+        .convoy_turns
+        .get_mut(&b.cursor.game_turn)
+        .unwrap()
+        .convoys
+        .get_mut(&3)
+        .unwrap()
+        .cargo
+        .stores = 99;
+    crate::testkit::assert_indistinguishable(&crate::Cna::dev(), &c, &a, &b, Side::Commonwealth);
+    let mut rng_a = CampaignRng::from_seed([20; 32]);
+    let mut rng_b = rng_a.clone();
+    let mut events_a = vec![];
+    let mut events_b = vec![];
+    arrive(
+        &c,
+        &mut a,
+        false,
+        &mut Cx {
+            rng: &mut rng_a,
+            events: &mut events_a,
+        },
+    )
+    .unwrap();
+    arrive(
+        &c,
+        &mut b,
+        false,
+        &mut Cx {
+            rng: &mut rng_b,
+            events: &mut events_b,
+        },
+    )
+    .unwrap();
+    crate::testkit::assert_indistinguishable(&crate::Cna::dev(), &c, &a, &b, Side::Commonwealth);
+    let visible = |events: &[EngineEvent]| {
+        events
+            .iter()
+            .filter(|e| Perspective::Side(Side::Commonwealth).can_see(&e.audience))
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(visible(&events_a), visible(&events_b));
+    assert_eq!(rng_a.state(), rng_b.state());
+}
+
+/// Cases: airlog:55.18, airlog:56.28, scen:60.7
+#[test]
+fn strict_arrival_preflight_precedes_absent_turn_and_legacy_port_state() {
+    let (c, a, _) = unknown_port_arrivals_fixture();
+    let mut b = a.clone();
+    b.logistics.convoy_turns.clear();
+    b.logistics.ports.clear();
+    let mut errors = vec![];
+    for mut s in [a, b] {
+        let saved = serde_json::to_value(&s).unwrap();
+        let mut rng = CampaignRng::from_seed([21; 32]);
+        let rng_before = rng.state();
+        let mut events = vec![];
+        let error = arrive(
+            &c,
+            &mut s,
+            true,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(&error, EngineError::Unsupported { case, detail }
+            if case == "scen:61.1" && detail.contains("A4827") && detail.contains("raw=1")));
+        errors.push(format!("{error:?}"));
+        assert_eq!(serde_json::to_value(&s).unwrap(), saved);
+        assert_eq!(rng.state(), rng_before);
+        assert!(events.is_empty());
+    }
+    assert_eq!(errors[0], errors[1]);
 }

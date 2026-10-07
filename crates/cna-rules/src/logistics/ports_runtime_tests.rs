@@ -69,7 +69,7 @@ fn policy_gate_precedes_every_legacy_numeric_efficiency_including_zero() {
             Err(PortOperationError::Policy(expected.clone()))
         );
         assert_eq!(
-            capacity_at(&c, &s, &p),
+            capacity_tons(&c, &s, &p),
             Err(PortOperationError::Policy(expected.clone()))
         );
         s.logistics.unknown_ports.insert(p.id.clone(), Side::Axis);
@@ -78,6 +78,18 @@ fn policy_gate_precedes_every_legacy_numeric_efficiency_including_zero() {
             Err(PortOperationError::Policy(expected.clone()))
         );
         s.logistics.unknown_ports.remove(&p.id);
+        assert_eq!(
+            advance(&c, &mut s, &p),
+            Err(PortOperationError::Policy(expected.clone()))
+        );
+        assert_eq!(
+            charge(&c, &mut s, Side::Axis, &p, 127, false),
+            Err(PortOperationError::Policy(expected.clone()))
+        );
+        assert_eq!(
+            charge(&c, &mut s, Side::Axis, &p, -1, true),
+            Err(PortOperationError::Policy(expected.clone()))
+        );
         assert_eq!(serde_json::to_value(&s).unwrap(), before);
         assert!(
             matches!(expected.clone().into_engine(), EngineError::Unsupported { case, detail }
@@ -107,11 +119,11 @@ fn unknown_owner_map_is_not_a_numeric_fallback_and_other_ports_remain_usable() {
         .insert(healthy.id.clone(), known(&c, &healthy));
     let before = serde_json::to_value(&s).unwrap();
     assert!(matches!(
-        capacity_at(&c, &s, &affected),
+        capacity_tons(&c, &s, &affected),
         Err(PortOperationError::Policy(_))
     ));
     assert_eq!(
-        capacity_at(&c, &s, &healthy).unwrap(),
+        capacity_tons(&c, &s, &healthy).unwrap(),
         i64::from(c.tables.airlog.port_capacity.port(healthy.name).max_tonnage)
     );
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
@@ -121,7 +133,7 @@ fn unknown_owner_map_is_not_a_numeric_fallback_and_other_ports_remain_usable() {
         .ports
         .insert(affected.id.clone(), known(&c, &affected));
     assert_eq!(
-        capacity_at(&c, &s, &affected),
+        capacity_tons(&c, &s, &affected),
         Err(PortOperationError::Supply(SupplyError::Unsupported {
             case: "airlog:55.18"
         }))
@@ -191,7 +203,7 @@ fn unknown_ownership_and_retained_numeric_damage_stay_private_and_checkpointed()
     let saved = serde_json::to_value(&b).unwrap();
     let restored: State = serde_json::from_value(saved.clone()).unwrap();
     assert_eq!(serde_json::to_value(&restored).unwrap(), saved);
-    assert_eq!(capacity_at(&c, &restored, &p), capacity_at(&c, &b, &p));
+    assert_eq!(capacity_tons(&c, &restored, &p), capacity_tons(&c, &b, &p));
     let mut legacy = saved;
     legacy["logistics"]
         .as_object_mut()
@@ -201,7 +213,7 @@ fn unknown_ownership_and_retained_numeric_damage_stay_private_and_checkpointed()
     assert!(legacy.logistics.unknown_ports.is_empty());
     // The immutable policy still denies old numeric state after legacy defaulting.
     assert!(matches!(
-        capacity_at(&c, &legacy, &p),
+        capacity_tons(&c, &legacy, &p),
         Err(PortOperationError::Policy(_))
     ));
 }
