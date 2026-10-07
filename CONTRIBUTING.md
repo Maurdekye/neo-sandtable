@@ -66,17 +66,23 @@ tests that pin it. The lead agent batches consequential interpretations for the 
   force-push `main`. If a rebase conflicts in a file you do not own, stop and ask the owner of that
   area (see §4) instead of resolving it yourself.
 - **Landing lock.** Pushes to `main` are serialized by a lock on the remote, the
-  `landing-lock` branch, managed by `tools/land.py`:
+  `landing-lock` branch, managed by `tools/land.py` with a fair queue:
   ```sh
-  python tools/land.py acquire --who <your-name>   # waits while someone else holds it
-  git pull --rebase origin main                    # then re-run the checks
+  git pull --rebase origin main && <run the checks>   # before queuing, on a fresh main
+  python tools/land.py acquire --who <your-name>      # queues you; returns at your turn
+  git pull --rebase origin main      # "up to date": main is what you checked, push now;
+                                     # otherwise re-run the checks first
   git push origin HEAD:main
-  python tools/land.py release --who <your-name>   # always, even if the push failed
+  python tools/land.py release --who <your-name>      # always, even if the push failed
   ```
-  Hold the lock only for rebase, checks and push, never while editing. A lock older than 15
-  minutes counts as abandoned and the next `acquire` breaks it. `python tools/land.py status`
-  shows who holds it. Never push to `main` while someone else holds the lock. The lock branch is
-  the one ref `tools/land.py` may force-update (with a lease); never force-push `main`.
+  Waiters are served oldest ticket first. Re-running `acquire` keeps your place, so a wait that
+  times out, or a tool call that is killed, loses nothing; just run it again. A queued owner who
+  does not take a free lock within 90 seconds is skipped. Hold the lock only for rebase, checks
+  and push, never while editing. A lock older than 25 minutes counts as abandoned; if your checks
+  run long, `python tools/land.py refresh --who <your-name>` restarts that clock. `status` shows
+  the holder and the queue, `leave` gives up your place. Never push to `main` while someone else
+  holds the lock, and never force-push `main`; `tools/land.py` force-updates only its own
+  `landing-lock` and `landing-queue/*` refs, with leases.
 - **Disk.** All agents build on one machine. Keep a single clone, build with the workspace
   profile (small debug info, no incremental cache), and run `cargo clean` in your clone if its
   `target/` grows past a few GB.
