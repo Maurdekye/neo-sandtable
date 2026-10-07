@@ -16,6 +16,27 @@ const center = (h: { q: number; r: number }) => ({
   x: 26 * Math.sqrt(3) * (h.q + h.r / 2),
   y: 39 * h.r,
 })
+async function sampleFps(page: Page) {
+  return page.evaluate(
+    () =>
+      new Promise<number[]>((resolve) => {
+        const samples: number[] = []
+        const timer = setInterval(() => {
+          samples.push(
+            Number(
+              document
+                .querySelector('[data-testid="fps"]')
+                ?.textContent?.match(/^\d+/)?.[0] ?? 0,
+            ),
+          )
+          if (samples.length === 5) {
+            clearInterval(timer)
+            resolve(samples)
+          }
+        }, 1000)
+      }),
+  )
+}
 function assertFace(unit: UnitView) {
   expect(unit.hex !== null).toBe(true)
   expect(unit.parent).toBeNull()
@@ -191,7 +212,7 @@ test('production board and isolated console receive and inspect real printed ene
       board.locator('.unit-detail').getByTestId('unit-status'),
     ).toHaveCount(0)
     await expect(board.getByTestId('fps')).toContainText(/^[1-9]\d* FPS/)
-    const boardFps = await board.getByTestId('fps').innerText()
+    const boardFps = await sampleFps(board)
     await board.screenshot({
       path: '../../board-enemy-printed-faces.png',
       fullPage: true,
@@ -240,7 +261,7 @@ test('production board and isolated console receive and inspect real printed ene
     )
     assertFace(inspected.unit)
     expect(inspected.unit.detail).toEqual(target.detail)
-    const consoleFps = await consolePage.getByTestId('fps').innerText()
+    const consoleFps = await sampleFps(consolePage)
     await consolePage.screenshot({
       path: '../../console-enemy-printed-faces.png',
       fullPage: true,
