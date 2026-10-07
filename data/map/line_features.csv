@@ -157,6 +157,11 @@ D3015,D3016,track,land:8.33;land:8.37,map-terrain-edges-0003
 D3015,D3115,track,land:8.33;land:8.37,map-terrain-edges-0008
 D3016,D3117,track,land:8.33;land:8.37,map-terrain-edges-0008
 D3024,D3025,track,land:8.33;land:8.37,map-terrain-edges-0002
+D3024,D3124,track,land:8.33;land:8.37,map-terrain-edges-0009
+D3024,D3125,track,land:8.33;land:8.37,map-terrain-edges-0009
+D3026,D3027,track,land:8.33;land:8.37,map-terrain-edges-0009
+D3027,D3128,track,land:8.33;land:8.37,map-terrain-edges-0009
+D3031,D3132,track,land:8.33;land:8.37,map-terrain-edges-0009
 D3103,D3203,track,land:8.33;land:8.37,map-lines-0012
 D3110,D3210,unfinished_road,land:8.47;land:8.37,map-lines-0011
 D3115,D3215,track,land:8.33;land:8.37,map-lines-2-0009
