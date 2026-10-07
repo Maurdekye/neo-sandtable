@@ -55,6 +55,8 @@ struct Fake {
     id: Option<String>,
     moves: Vec<Value>,
     batch: usize,
+    choose_moves: bool,
+    destinations: BTreeMap<String, String>,
 }
 impl Fake {
     async fn call(&self, tool: &str, args: Value) -> Result<Value, DriverError> {
@@ -62,6 +64,99 @@ impl Fake {
             .call(self.seat, self.epoch, tool, &args)
             .await
             .map_err(DriverError::Cli)
+    }
+    // Select from this seat's current legal unit domain. Reachability and
+    // restrictions come from inspect; never infer supply from a unit's name.
+    async fn select_moves(
+        &mut self,
+        request: &DecisionRequest,
+        observation: &Value,
+    ) -> Result<(), DriverError> {
+        let ActionSchema::List { item, max, .. } = &request.space.schema else {
+            return Err(DriverError::Cli("movement did not offer a list".into()));
+        };
+        let ActionSchema::Record { fields } = item.as_ref() else {
+            return Err(DriverError::Cli("movement items are not records".into()));
+        };
+        let Some(ActionSchema::Unit { among }) =
+            fields.iter().find(|f| f.name == "unit").map(|f| &f.schema)
+        else {
+            return Err(DriverError::Cli(
+                "movement has no disclosed unit domain".into(),
+            ));
+        };
+        assert!(*max >= 2, "batch proof needs two offered units");
+        let mut represented = std::collections::BTreeSet::new();
+        // Inspect supplied candidates first to keep the inert planning bounded.
+        // This is only a ranking: inspect and validate decide actual legality.
+        let mut candidates: Vec<_> = among.iter().collect();
+        candidates.sort_by_key(|unit| {
+            let supply = &observation["logistics"]["unit_supply"][unit.as_str()];
+            (
+                std::cmp::Reverse(supply["tank_fuel"].as_i64().unwrap_or(0) > 0),
+                std::cmp::Reverse(supply["activity_water"].as_i64().unwrap_or(0) > 0),
+                unit.as_str(),
+            )
+        });
+        for unit in candidates {
+            let inspected = self.call("inspect", json!({"target":unit})).await?;
+            let restrictions = inspected["movement_restrictions"]
+                .as_array()
+                .ok_or_else(|| DriverError::Cli("inspect omitted movement restrictions".into()))?;
+            if restrictions.is_empty()
+                || restrictions.iter().any(|r| {
+                    r["restrictions"]["may_move"] != true
+                        || r["unit"].as_str().is_none_or(|id| represented.contains(id))
+                })
+            {
+                continue;
+            }
+            let origin = inspected["unit"]["hex"].as_str();
+            let Some(path) = inspected["reachable"].as_array().and_then(|paths| {
+                paths
+                    .iter()
+                    .filter(|p| {
+                        p["path"].as_array().is_some_and(|p| p.len() == 1)
+                            && p["hex"].as_str() != origin
+                    })
+                    .min_by_key(|p| {
+                        (
+                            p["cp_quarters"].as_i64().unwrap_or(i64::MAX),
+                            p["hex"].as_str().unwrap_or(""),
+                        )
+                    })
+            }) else {
+                continue;
+            };
+            let order = json!({"unit":unit,"path":path["path"]});
+            let mut planned = self.moves.clone();
+            planned.push(order.clone());
+            // Validate the ordered combined plan before committing any move.
+            if self
+                .call(
+                    "validate",
+                    json!({"decision_id":request.id,"action":planned}),
+                )
+                .await
+                .is_err()
+            {
+                continue;
+            }
+            for restriction in restrictions {
+                let id = restriction["unit"].as_str().unwrap().to_owned();
+                represented.insert(id.clone());
+                self.destinations
+                    .insert(id, path["hex"].as_str().unwrap().to_owned());
+            }
+            self.moves.push(order);
+            if self.moves.len() == 2 {
+                return Ok(());
+            }
+        }
+        Err(DriverError::Cli(format!(
+            "only {} independent disclosed legal moves found",
+            self.moves.len()
+        )))
     }
 }
 #[async_trait]
@@ -108,6 +203,12 @@ impl SeatDriver for Fake {
                 window["list_answer"],
                 json!({"min_items":min,"max_items":max})
             );
+        }
+        if self.choose_moves {
+            assert_eq!(request.kind, "cna.movement.orders");
+            self.select_moves(&request, &observation["observation"])
+                .await?;
+            self.choose_moves = false;
         }
         let action = if !self.moves.is_empty() {
             assert_eq!(request.kind, "cna.movement.orders");
@@ -212,6 +313,8 @@ async fn first_opstage_model_visible_windows_before_and_after_forced_answers() {
             id: None,
             moves: vec![],
             batch: 1,
+            choose_moves: false,
+            destinations: BTreeMap::new(),
         })
         .collect();
     let mut counts: BTreeMap<String, [u64; 3]> =
@@ -303,7 +406,7 @@ async fn first_opstage_model_visible_windows_before_and_after_forced_answers() {
     println!("{}", serde_json::to_string_pretty(&report).unwrap());
 }
 
-async fn move_batch(batch: usize) -> (u64, Vec<u64>) {
+async fn move_batch(batch: usize) -> (u64, Vec<u64>, BTreeMap<String, Value>) {
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
     let mut config = LaunchConfig::resolve(
@@ -328,17 +431,25 @@ async fn move_batch(batch: usize) -> (u64, Vec<u64>) {
     .unwrap();
     let mut fake = Fake {
         handle: demo.handle.clone(),
-        router: demo.router.clone(),
+        // Inert planner may inspect the entire disclosed unit domain; this
+        // fixture is counting answered windows, not using the paid CLI cap.
+        router: Arc::new(
+            ToolRouter::new(
+                Arc::new(demo.handle.clone()),
+                Arc::new(demo.handle.clone()),
+                &[demo.seat],
+            )
+            .with_call_cap(Some(512)),
+        ),
         seat: demo.seat,
         epoch: demo.epoch,
         turns: 0,
         answer_sizes: vec![],
         id: None,
         batch,
-        moves: vec![
-            json!({"unit":"it.gruppo_maletti.5th_libyan_regt_hq","path":["C3518"]}),
-            json!({"unit":"it.gruppo_maletti.i_libyan_mtr_bn","path":["C3518"]}),
-        ],
+        moves: vec![],
+        choose_moves: true,
+        destinations: BTreeMap::new(),
     };
     let result = demo.play(&mut fake, if batch == 1 { 2 } else { 1 }).await;
     let sizes = fake.answer_sizes.clone();
@@ -350,20 +461,32 @@ async fn move_batch(batch: usize) -> (u64, Vec<u64>) {
     let turns = fake.turns;
     let cleanup = demo.shutdown().await;
     cna_play::combine_results(result, cleanup).unwrap();
-    for id in [
-        "it.gruppo_maletti.5th_libyan_regt_hq",
-        "it.gruppo_maletti.i_libyan_mtr_bn",
-    ] {
-        assert_eq!(view.view.units[id].hex.as_deref(), Some("C3518"));
+    let mut final_units = BTreeMap::new();
+    for (id, destination) in &fake.destinations {
+        let unit = &view.view.units[id];
+        assert_eq!(unit.hex.as_deref(), Some(destination.as_str()));
+        final_units.insert(id.clone(), serde_json::to_value(unit).unwrap());
     }
+    assert!(!final_units.is_empty());
     assert!(fake.moves.is_empty());
-    (turns, sizes)
+    (turns, sizes, final_units)
 }
 #[tokio::test]
 async fn one_list_answer_moves_two_real_units() {
-    assert_eq!(move_batch(2).await, (1, vec![2]));
+    let (turns, sizes, _) = move_batch(2).await;
+    assert_eq!((turns, sizes), (1, vec![2]));
 }
 #[tokio::test]
 async fn two_single_item_answers_move_the_same_real_units() {
-    assert_eq!(move_batch(1).await, (2, vec![1, 1]));
+    let (turns, sizes, _) = move_batch(1).await;
+    assert_eq!((turns, sizes), (2, vec![1, 1]));
+}
+#[tokio::test]
+#[ignore = "slow: compare two complete setup preparations and identical mover state"]
+async fn batched_and_single_answers_have_identical_real_unit_state() {
+    let batch = move_batch(2).await;
+    let singles = move_batch(1).await;
+    assert_eq!(batch.2, singles.2);
+    assert_eq!((batch.0, batch.1), (1, vec![2]));
+    assert_eq!((singles.0, singles.1), (2, vec![1, 1]));
 }
