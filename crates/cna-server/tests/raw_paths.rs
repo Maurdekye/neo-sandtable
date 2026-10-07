@@ -125,6 +125,14 @@ fn fixture(retreat: bool) -> (CnaContent, Game<Cna>, Option<Game<Cna>>) {
         )
         .unwrap();
         content.map = MapContent::load(dir.path()).unwrap();
+        // The default synthetic fixture contains only these three hexes.
+        state
+            .logistics
+            .dumps
+            .retain(|_, dump| match &dump.location {
+                cna_rules::state::DumpLocation::Hex { hex } => content.map.canonical(hex).is_some(),
+                _ => true,
+            });
         for unit in state.land.units.values_mut() {
             unit.location = Location::Eliminated;
         }
