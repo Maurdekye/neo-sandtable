@@ -200,13 +200,17 @@ pub(super) fn start(
     }
     state.setup.pools_started = true;
     let originals: Vec<_> = state
-        .logistics
-        .truck_pools
+        .setup
+        .pool_sources
         .iter()
-        .take(content.scenario.supply.second_third_line_trucks.len())
-        .enumerate()
-        .filter(|(_, p)| p.location.is_none() && p.trucks.total() > 0)
-        .map(|(source, p)| (source, p.id.clone()))
+        .filter_map(|(id, source)| {
+            state
+                .logistics
+                .truck_pools
+                .iter()
+                .find(|p| &p.id == id && p.location.is_none() && p.trucks.total() > 0)
+                .map(|_| (*source, id.clone()))
+        })
         .collect();
     for (source, id) in originals {
         open(content, state, &id, source, strict, cx)?;

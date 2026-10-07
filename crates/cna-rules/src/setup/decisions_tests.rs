@@ -490,3 +490,128 @@ fn a_friendly_setup_choice_revises_other_groups_and_rejects_the_stale_answer() {
     assert_eq!(serde_json::to_value(&game).unwrap(), before);
     submit(&c, &game, &revised, json!("E1830")).unwrap();
 }
+
+/// Cases: scen:59.43, scen:59.44, land:3.62
+#[test]
+fn starting_pool_splits_keep_identity_counts_and_private_locations_across_recovery() {
+    let c = content();
+    let mut initial = State::new(&c).unwrap();
+    for u in initial.land.units.values_mut() {
+        u.location = Location::NotArrived;
+    }
+    initial.land.undistributed_trucks.clear();
+    initial.logistics.dumps.clear();
+    initial.air.forces.clear();
+    let original = initial
+        .logistics
+        .truck_pools
+        .iter()
+        .find(|p| matches!(&p.placement,Placement::City{city} if city=="cairo"))
+        .unwrap()
+        .clone();
+    initial
+        .logistics
+        .truck_pools
+        .retain(|p| p.id == original.id);
+    let game = Game {
+        state: initial,
+        rng: CampaignRng::from_seed([5; 32]).state(),
+    };
+    let game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+        .unwrap()
+        .game;
+    let p = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == crate::setup::KIND_POOL)
+        .unwrap()
+        .clone();
+    assert_eq!(p.seat.role, Role::Logistics);
+    let before = serde_json::to_value(&game).unwrap();
+    assert!(
+        submit(
+            &c,
+            &game,
+            &p,
+            json!({"destination":"E1730","light":2147483647,"medium":2147483647,"heavy":2147483647})
+        )
+        .is_err()
+    );
+    assert!(
+        submit(
+            &c,
+            &game,
+            &p,
+            json!({"destination":"A0101","light":0,"medium":1,"heavy":0})
+        )
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&game).unwrap(), before);
+    let partial = submit(
+        &c,
+        &game,
+        &p,
+        json!({"destination":"E1730","light":0,"medium":1,"heavy":0}),
+    )
+    .unwrap();
+    assert!(!partial.state.setup.closed);
+    assert_eq!(partial.state.logistics.truck_pools.len(), 2);
+    assert!(
+        partial
+            .state
+            .logistics
+            .truck_pools
+            .iter()
+            .all(|p| p.location.is_none())
+    );
+    assert_eq!(
+        partial
+            .state
+            .logistics
+            .truck_pools
+            .iter()
+            .find(|p| p.id == original.id)
+            .unwrap()
+            .trucks
+            .medium,
+        original.trucks.medium - 1
+    );
+    let fresh = partial
+        .state
+        .logistics
+        .truck_pools
+        .iter()
+        .find(|p| p.id != original.id)
+        .unwrap()
+        .id
+        .clone();
+    assert!(partial.state.logistics.truck_pool_ids.contains(&fresh));
+    let restored = serde_json::from_value(serde_json::to_value(&partial).unwrap()).unwrap();
+    let complete = finish(&c, partial);
+    let resumed = finish(&c, restored);
+    assert_eq!(
+        serde_json::to_value(&complete).unwrap(),
+        serde_json::to_value(&resumed).unwrap()
+    );
+    assert_eq!(
+        complete
+            .state
+            .logistics
+            .truck_pools
+            .iter()
+            .map(|p| p.trucks.medium)
+            .sum::<i32>(),
+        original.trucks.medium
+    );
+    assert!(
+        complete
+            .state
+            .logistics
+            .truck_pools
+            .iter()
+            .all(|p| p.location.is_some())
+    );
+    assert!(complete.state.setup.pool_locations.is_empty());
+}

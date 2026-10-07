@@ -1,5 +1,5 @@
 //! Placement and first-line distribution in the shared blind setup window.
-use super::{SetupTask, placement, pools, stacking};
+use super::{SetupTask, placement, pools, preload, stacking};
 use crate::state::{DumpLocation, Location, Pending};
 use crate::steps::{illegal, open};
 use crate::{CnaContent, State};
@@ -416,6 +416,7 @@ pub(crate) fn enter(
         ));
     }
     pools::start(content, state, strict, cx)?;
+    preload::start(content, state, cx)?;
     close_if_ready(state, cx)?;
     if state.setup.closed {
         crate::logistics::convoys::initialize(content, state, strict, cx)?;
@@ -583,6 +584,9 @@ pub(crate) fn answer(
             }
             state.setup.dump_locations.insert(dump, destination);
         }
+        SetupTask::Preload { asset, operation } => {
+            preload::answer(content, state, pending, asset, &operation, action, cx)?
+        }
         SetupTask::Pool { pool, source } => {
             pools::answer(content, state, pending, &pool, source, action, strict, cx)?
         }
@@ -656,6 +660,7 @@ pub(crate) fn answer(
     }
     state.setup.tasks.remove(&pending.id);
     pools::start(content, state, strict, cx).map_err(Rejection::Engine)?;
+    preload::start(content, state, cx).map_err(Rejection::Engine)?;
     close_if_ready(state, cx).map_err(Rejection::Engine)?;
     if state.setup.closed {
         crate::logistics::convoys::initialize(content, state, strict, cx)
