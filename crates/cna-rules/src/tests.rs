@@ -685,6 +685,15 @@ fn shared_views_equal_each_perspectives_own_view() {
         !game.state.decisions.pending.is_empty() && game.state.land.units.len() > 100,
         "the last check saw pending decisions and a populated board"
     );
+    // An AI seat reads `observe` before most decisions, so its size is paid in model tokens on
+    // every one. Per-unit bookkeeping belongs in `inspect`: listing every unit's ration record
+    // once made an Axis seat's observation 85 KB, 68 KB of it ration history.
+    for p in all.iter().filter(|p| matches!(p, Perspective::Seat(_))) {
+        let bytes = serde_json::to_string(&ruleset.observe(content, &game.state, *p))
+            .expect("observations serialize")
+            .len();
+        assert!(bytes < 30_000, "{p} observation grew to {bytes} bytes");
+    }
 }
 
 /// Every visible change in Game-Turn 1 is announced by an event its viewer receives (both

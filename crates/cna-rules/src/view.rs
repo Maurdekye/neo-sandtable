@@ -12,7 +12,7 @@ use cna_core::engine::{Cx, Rejection};
 use cna_core::event::EngineEvent;
 use cna_core::ids::{HexId, UnitId};
 use cna_core::visibility::{Audience, Perspective};
-use cna_protocol::{self as wire, Side};
+use cna_protocol::{self as wire, Role, Side};
 use serde_json::{Value, json};
 
 use crate::content::CnaContent;
@@ -708,7 +708,13 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
         "your_forces": forces,
         "air": {
             "forces": state.air.forces.iter().filter(|(force,_)|sees_side(perspective,if force.as_str()=="axis"{Side::Axis}else{Side::Commonwealth})).collect::<BTreeMap<_,_>>(),
-            "squadrons": state.air.squadrons.iter().filter(|(_,s)|sees_side(perspective,s.side)).collect::<BTreeMap<_,_>>(),
+            // Squadron detail is for the seats that fly them (and the side and operator views);
+            // the ground seats' observations stay small. Any seat may still inspect a squadron.
+            "squadrons": if flies_air(perspective) {
+                json!(state.air.squadrons.iter().filter(|(_,s)|sees_side(perspective,s.side)).collect::<BTreeMap<_,_>>())
+            } else {
+                json!(format!("{} own squadrons; the air and commander seats see their detail", state.air.squadrons.values().filter(|s| sees_side(perspective, s.side)).count()))
+            },
         },
         "logistics": {
             "cargo_history": crate::logistics::cargo_history::disclosed(state,perspective),
@@ -719,9 +725,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
                 (!condition.as_object().expect("condition object").is_empty()).then_some((hex,condition))
             }).collect::<BTreeMap<_,_>>(),
             "drawn_water": state.logistics.drawn_water.iter().filter(|(id,_)|state.land.units.get(*id).is_some_and(|u|sees_side(perspective,u.side))).collect::<BTreeMap<_,_>>(),
-            "rations": state.logistics.rations.iter().filter(|(id, _)| {
-                state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
-            }).collect::<BTreeMap<_, _>>(),
+            "rations": ration_problems(state, perspective),
             "food_losses": state.logistics.food_losses.iter().filter(|l| sees_side(perspective, l.owner)).collect::<Vec<_>>(),
             "prisoners": state.logistics.prisoners.iter().filter(|(_, p)| sees_side(perspective, p.owner)).collect::<BTreeMap<_, _>>(),
             "unit_box_handling": state.land.units.iter().filter(|(_,u)|sees_side(perspective,u.side)).filter_map(|(id,u)|u.box_handling.as_ref().map(|h|(id,h))).collect::<BTreeMap<_,_>>(),
@@ -747,6 +751,61 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
         "pending_decisions": pending_for(state, perspective),
         "result": state.result,
     })
+}
+
+/// Whether `perspective` gets full squadron detail in `observe`: the side and operator views and
+/// the air and commander seats.
+fn flies_air(perspective: Perspective) -> bool {
+    match perspective {
+        Perspective::Seat(seat) => matches!(seat.role, Role::Air | Role::Commander),
+        Perspective::Side(_) | Perspective::Operator => true,
+    }
+}
+
+/// Own units with a current ration or water problem, grouped by problem as lists of unit ids:
+/// on half rations, by consecutive short weeks, by consecutive short water stages. Each unit's
+/// full record is in `inspect`; listing every unit's bookkeeping here was three quarters of a
+/// seat's observation, paid in model tokens on every decision. Empty when nothing is wrong.
+fn ration_problems(state: &State, perspective: Perspective) -> serde_json::Map<String, Value> {
+    let mut half = Vec::new();
+    let mut weeks: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut water: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for (id, r) in &state.logistics.rations {
+        if !state
+            .land
+            .units
+            .get(id)
+            .is_some_and(|u| sees_side(perspective, u.side))
+        {
+            continue;
+        }
+        if r.half {
+            half.push(id.to_string());
+        }
+        if r.consecutive_short_gt > 0 {
+            weeks
+                .entry(r.consecutive_short_gt.to_string())
+                .or_default()
+                .push(id.to_string());
+        }
+        if r.consecutive_short_water_stages > 0 {
+            water
+                .entry(r.consecutive_short_water_stages.to_string())
+                .or_default()
+                .push(id.to_string());
+        }
+    }
+    let mut out = serde_json::Map::new();
+    if !half.is_empty() {
+        out.insert("half_rations".into(), json!(half));
+    }
+    if !weeks.is_empty() {
+        out.insert("short_of_stores_by_consecutive_weeks".into(), json!(weeks));
+    }
+    if !water.is_empty() {
+        out.insert("short_of_water_by_consecutive_stages".into(), json!(water));
+    }
+    out
 }
 
 /// Authorized detail about a unit (by id) or a hex (by printed id).
