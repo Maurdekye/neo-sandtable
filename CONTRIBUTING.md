@@ -91,6 +91,8 @@ tests that pin it. The lead agent batches consequential interpretations for the 
   `cargo test -p <crate> -- --ignored` when you change what they cover, and keep a bounded
   version (one game-turn, a fixed number of decisions) in the default set, so the same paths
   are still exercised before each push. Never just raise a timeout to make a slow test fit.
+  A slow test's own limit is set to about twice its measured duration on the CI runner, with
+  that measurement in a comment beside the limit, so it still catches hangs and regressions.
 - **Disk.** All agents build on one machine. Keep a single clone, build with the workspace
   profile (small debug info, no incremental cache), and run `cargo clean` in your clone if its
   `target/` grows past a few GB.
