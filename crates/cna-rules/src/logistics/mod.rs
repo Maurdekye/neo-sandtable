@@ -27,6 +27,7 @@
 
 pub mod attrition;
 pub mod capacity;
+pub mod convoys;
 pub mod distribution;
 pub mod pools;
 pub mod ports;

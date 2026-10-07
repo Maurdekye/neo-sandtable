@@ -193,6 +193,14 @@ pub struct LogisticsState {
     pub ports: BTreeMap<String, crate::logistics::ports::PortState>,
     #[serde(default)]
     pub bizerta_open: bool,
+    #[serde(default)]
+    pub bizerta_roll_gt: Option<u16>,
+    #[serde(default)]
+    pub convoys_initialized: bool,
+    #[serde(default)]
+    pub convoy_turns: BTreeMap<u16, crate::logistics::convoys::ConvoyTurn>,
+    #[serde(default)]
+    pub convoy_planning_queue: Vec<u16>,
     /// Supplies freely distributable among a side's airfields (`scen:60.34`, `scen:60.44`).
     pub air_supply_pool: BTreeMap<Side, Supplies>,
     /// Second- and third-line truck pools at set-up, by side, with their placement.

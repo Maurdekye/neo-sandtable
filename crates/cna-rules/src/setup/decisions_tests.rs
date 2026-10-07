@@ -339,3 +339,69 @@ fn dummy_dump_domain_excludes_facilities_and_forged_choice_is_atomic() {
     let game = submit(&c, &game, &p, json!("A0102")).unwrap();
     assert_eq!(game.state.setup.dump_locations.len(), 1);
 }
+
+/// Cases: scen:60.37, land:3.6
+#[test]
+fn convoy_planning_barrier_stays_in_setup_after_both_close_paths() {
+    let c = content();
+    let game = finish(&c, opened(&c));
+    assert!(game.state.setup.closed);
+    assert!(game.state.logistics.convoys_initialized);
+    assert_eq!(game.state.cursor.block, crate::seq::Block::Setup);
+    assert!(
+        game.state
+            .decisions
+            .pending
+            .iter()
+            .any(|p| p.kind == "cna.logistics.convoy.plan:1" && p.secrecy == Secrecy::Secret)
+    );
+    assert!(
+        Cna::dev()
+            .view(&c, &game.state, Perspective::Side(Side::Commonwealth))
+            .pending
+            .iter()
+            .all(|p| !p.kind.starts_with(crate::logistics::convoys::PREFIX))
+    );
+    let mut no_choices = State::new(&c).unwrap();
+
+    for u in no_choices.land.units.values_mut() {
+        if matches!(u.location, Location::AwaitingSetup { .. }) {
+            u.location = Location::Hex {
+                hex: if u.side == Side::Axis {
+                    "C4020".into()
+                } else {
+                    "C4021".into()
+                },
+            };
+        }
+    }
+    no_choices.land.undistributed_trucks.clear();
+    for d in no_choices.logistics.dumps.values_mut() {
+        if matches!(d.location, DumpLocation::AwaitingSetup { .. }) {
+            d.location = DumpLocation::Hex {
+                hex: "C4020".into(),
+            };
+        }
+    }
+
+    let mut rng = CampaignRng::from_seed([4; 32]);
+    let mut events = vec![];
+    enter(
+        &c,
+        &mut no_choices,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+        false,
+    )
+    .unwrap();
+    assert!(no_choices.logistics.convoys_initialized);
+    assert!(
+        no_choices
+            .decisions
+            .pending
+            .iter()
+            .any(|p| p.kind == "cna.logistics.convoy.plan:1")
+    );
+}

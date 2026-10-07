@@ -44,6 +44,10 @@ impl Cna {
             "opstage.movement_and_combat.movement" => {
                 crate::land::movement::enter(content, state, self.strict, cx)
             }
+            "naval_convoy.schedule" => {
+                crate::logistics::convoys::schedule(content, state, self.strict, cx)
+            }
+            "opstage.convoy_arrival" => crate::logistics::convoys::arrive(content, state, cx),
             "logistics.stores_expenditure" => crate::logistics::stores::enter(content, state, cx),
             "opstage.organization.water_distribution" => {
                 crate::logistics::water::enter(content, state, cx, self.strict)
@@ -75,7 +79,7 @@ impl Cna {
                 crate::land::movement::answer(content, state, pending, action, self.strict, cx)
             }
             crate::setup::KIND_UNIT | crate::setup::KIND_DUMP | crate::setup::KIND_TRUCKS => {
-                crate::setup::answer(content, state, pending, action, cx)
+                crate::setup::answer(content, state, pending, action, cx, self.strict)
             }
             KIND_INITIATIVE_DECLARATION => {
                 answer_initiative_declaration(state, pending, action, cx)
@@ -100,6 +104,9 @@ impl Cna {
                 || kind.starts_with(crate::logistics::distribution::PREFIX) =>
             {
                 crate::logistics::distribution::answer(content, state, pending, action, cx)
+            }
+            kind if kind.starts_with(crate::logistics::convoys::PREFIX) => {
+                crate::logistics::convoys::answer(content, state, pending, action, cx)
             }
             crate::logistics::attrition::KIND => {
                 crate::logistics::attrition::answer(content, state, pending, action, cx)

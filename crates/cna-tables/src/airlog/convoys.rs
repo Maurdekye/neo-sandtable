@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use cna_core::dice::Die;
 use cna_core::quantity::Tons;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::calendar::Month;
 use crate::{Bound, RawTable, TableError};
@@ -14,7 +14,7 @@ use crate::{Bound, RawTable, TableError};
 // ---------------------------------------------------------------------------------------------
 
 /// An Axis convoy level, A-G (`airlog:56.4`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub enum ConvoyLevel {
     A,
     B,

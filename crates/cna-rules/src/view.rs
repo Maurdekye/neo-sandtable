@@ -470,6 +470,8 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "unit_supply": state.logistics.unit_supply.iter().filter(|(id, _)| {
                 state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
             }).collect::<BTreeMap<_, _>>(),
+            "convoy_turns": if sees_side(perspective,Side::Axis){serde_json::to_value(&state.logistics.convoy_turns).unwrap()}else{json!({})},
+            "ports":state.logistics.ports.iter().filter(|(_,p)|sees_side(perspective,p.owner)).collect::<BTreeMap<_,_>>(),
             "dumps": state.logistics.dumps.iter().filter(|(_, d)| sees_side(perspective, d.side)).collect::<BTreeMap<_, _>>(),
         },
         "enemy_stack_hexes": enemy_stacks,

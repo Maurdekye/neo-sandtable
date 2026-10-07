@@ -314,6 +314,9 @@ pub(crate) fn enter(
         ));
     }
     close_if_ready(state, cx)?;
+    if state.setup.closed {
+        crate::logistics::convoys::initialize(content, state, strict, cx)?;
+    }
     Ok(())
 }
 
@@ -394,6 +397,7 @@ pub(crate) fn answer(
     pending: &Pending,
     action: &Value,
     cx: &mut Cx<'_>,
+    strict: bool,
 ) -> Result<String, Rejection> {
     let task = state
         .setup
@@ -548,6 +552,10 @@ pub(crate) fn answer(
     }
     state.setup.tasks.remove(&pending.id);
     close_if_ready(state, cx).map_err(Rejection::Engine)?;
+    if state.setup.closed {
+        crate::logistics::convoys::initialize(content, state, strict, cx)
+            .map_err(Rejection::Engine)?;
+    }
     Ok("Setup choice accepted privately.".into())
 }
 
