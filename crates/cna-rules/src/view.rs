@@ -333,6 +333,9 @@ pub(crate) fn view(
             }
         }
     }
+    // Marker order is public too: never preserve private dump-map key ordering.
+    // Cases: land:3.6, land:3.62
+    markers.sort_by(|a, b| a.id.cmp(&b.id));
     let pending = state
         .decisions
         .pending

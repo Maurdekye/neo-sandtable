@@ -135,3 +135,41 @@ fn undiscovered_well_conditions_pass_every_enemy_seat_surface() {
     );
     indistinguishable(&a, &b);
 }
+
+/// Cases: land:3.6, land:3.62, airlog:54.11
+#[test]
+fn swapping_dummy_marker_associations_preserves_raw_enemy_array_order() {
+    let mut a = state();
+    let real = a
+        .logistics
+        .dumps
+        .values()
+        .find(|d| d.side == Side::Axis && !d.dummy)
+        .unwrap()
+        .id
+        .clone();
+    let dummy = a
+        .logistics
+        .dumps
+        .values()
+        .find(|d| d.side == Side::Axis && d.dummy)
+        .unwrap()
+        .id
+        .clone();
+    a.logistics.dumps.get_mut(&real).unwrap().location = crate::state::DumpLocation::Hex {
+        hex: "C4022".into(),
+    };
+    a.logistics.dumps.get_mut(&dummy).unwrap().location = crate::state::DumpLocation::Hex {
+        hex: "C4023".into(),
+    };
+    a.logistics.dumps.get_mut(&real).unwrap().active = true;
+    a.logistics.dumps.get_mut(&dummy).unwrap().active = true;
+    let mut b = a.clone();
+    let r = a.logistics.dumps[&real].clone();
+    let d = a.logistics.dumps[&dummy].clone();
+    b.logistics.dumps.get_mut(&real).unwrap().marker = d.marker.clone();
+    b.logistics.dumps.get_mut(&real).unwrap().location = d.location.clone();
+    b.logistics.dumps.get_mut(&dummy).unwrap().marker = r.marker.clone();
+    b.logistics.dumps.get_mut(&dummy).unwrap().location = r.location.clone();
+    indistinguishable(&a, &b);
+}
