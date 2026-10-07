@@ -15,6 +15,7 @@ Breakdown Adjustment Rating (BAR) and for weather (right is worse), then roll tw
 points, trucks counting as TOE points) that breaks down. Hot weather shifts one column right; Sandstorms shift
 one column right if at least 50% of the accumulated Breakdown Points were acquired in map sections with
 sandstorms. BAR and weather shifts are cumulative. The 71+ column is the last; adjustments cannot go higher.
+The printed sandstorm measure above disagrees with the CP measure in land:21.37(d); see interp:land-0027.
 Motorcycles and artillery with inherent transport never break down. In every column the cells cover all 36
 dice readings exactly once (checked in two passes). A column absent from a row is a printed dash.
 """
