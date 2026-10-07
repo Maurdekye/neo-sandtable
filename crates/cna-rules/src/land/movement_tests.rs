@@ -3458,3 +3458,227 @@ fn profiling_chooser_allocates_mandatory_attrition_through_the_real_baseline() {
     );
     assert_eq!(serde_json::to_value(&g).unwrap(), original);
 }
+
+const REJOINING_CHILD: &str = "cw.2_nz_div.21st_nz_bn";
+const REJOINING_PARENT: &str = "cw.2_nz_div.5th_new_zealand_bde_hq";
+const REJOINING_RIDER: &str = "cw.2_nz_div.22nd_nz_bn";
+
+fn rejoining_counter_fixture() -> (CnaContent, State, Overlay) {
+    let (c, mut s, overlay) = setup(REJOINING_CHILD, Some("road"), false, None);
+    assert_eq!(
+        c.units.units[&REJOINING_CHILD.into()].parent.as_ref(),
+        Some(&REJOINING_PARENT.into())
+    );
+    s.land
+        .units
+        .get_mut(&REJOINING_CHILD.into())
+        .unwrap()
+        .detached = false;
+    place(&mut s, REJOINING_PARENT, "C4022");
+    place(&mut s, REJOINING_RIDER, "C4020");
+    let rider = s.land.units.get_mut(&REJOINING_RIDER.into()).unwrap();
+    rider.detached = false;
+    rider.attached_to = Some(REJOINING_CHILD.into());
+    assert!(view::is_map_counter(
+        &c,
+        &s,
+        &s.land.units[&REJOINING_CHILD.into()]
+    ));
+    assert!(!view::is_map_counter(
+        &c,
+        &s,
+        &s.land.units[&REJOINING_RIDER.into()]
+    ));
+    (c, s, overlay)
+}
+
+fn assert_rejoining_paths(events: &[EngineEvent], path: &[&str], cp: i32) {
+    for perspective in Perspective::all() {
+        let enemy = perspective.side() == Some(Side::Axis);
+        let mut actual = events
+            .iter()
+            .filter(|e| perspective.can_see(&e.audience))
+            .filter_map(|e| match &e.event {
+                GameEvent::UnitMoved {
+                    unit_id,
+                    path,
+                    cp_spent,
+                } => {
+                    if enemy {
+                        assert_eq!(e.hex.as_deref(), Some("C4022"));
+                        assert_eq!(e.unit_id.as_deref(), Some(REJOINING_CHILD));
+                    }
+                    Some((unit_id.as_str(), path.clone(), *cp_spent))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        actual.sort();
+        let mut expected = if enemy {
+            vec![REJOINING_CHILD]
+        } else {
+            vec![REJOINING_CHILD, REJOINING_RIDER]
+        }
+        .into_iter()
+        .map(|id| {
+            (
+                id,
+                path.iter().map(|h| h.to_string()).collect::<Vec<_>>(),
+                if enemy { None } else { Some(cp) },
+            )
+        })
+        .collect::<Vec<_>>();
+        expected.sort();
+        assert_eq!(
+            actual, expected,
+            "{perspective}: visible start survives rejoining; hidden rider stays private"
+        );
+    }
+}
+
+/// Cases: land:3.62, land:8.13, land:8.65, land:19.12
+#[test]
+fn visible_child_rejoining_parent_retains_path_in_ordinary_and_nonphasing_moves() {
+    let (c, s, _overlay) = rejoining_counter_fixture();
+    let parent_before = serde_json::to_value(&s.land.units[&REJOINING_PARENT.into()]).unwrap();
+    let g = start(&c, s, false);
+    let action = json!([{"unit":REJOINING_CHILD,"with_stack":true,"path":["C4021","C4022"]}]);
+    let primary = respond(&c, &g, seat(&g), action, false).unwrap();
+    let mut nonphasing = g.state.clone();
+    let mut rng = CampaignRng::from_state(&g.rng);
+    let mut events = vec![];
+    execute_nonphasing(
+        &c,
+        &mut nonphasing,
+        &Order {
+            unit: REJOINING_CHILD.into(),
+            path: vec!["C4021".into(), "C4022".into()],
+            with_stack: true,
+            close_assault: vec![],
+        },
+        seat(&g),
+        false,
+        NonPhasingMove::Retreat,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
+    for (events, state) in [
+        (&primary.events, &primary.game.state),
+        (&events, &nonphasing),
+    ] {
+        assert_eq!(
+            serde_json::to_value(&state.land.units[&REJOINING_PARENT.into()]).unwrap(),
+            parent_before
+        );
+        for id in [REJOINING_CHILD, REJOINING_RIDER] {
+            assert_eq!(
+                state.land.units[&id.into()].location.hex(),
+                Some(&"C4022".into())
+            );
+            assert!(!view::is_map_counter(
+                &c,
+                state,
+                &state.land.units[&id.into()]
+            ));
+        }
+        assert!(!state.land.units[&REJOINING_CHILD.into()].detached);
+        assert_rejoining_paths(events, &["C4021", "C4022"], 2);
+    }
+}
+
+/// Cases: land:3.62, land:8.13, land:8.51, land:8.52
+#[test]
+fn reaction_continuation_retains_visible_start_path_when_child_rejoins_parent() {
+    let (c, mut s, _overlay) = rejoining_counter_fixture();
+    // A disclosed but incapable enemy still opens the fixed reaction roles.
+    // All choices are declared forced passes; eligibility does not govern scheduling.
+    place(&mut s, TANK, "C4122");
+    s.land
+        .units
+        .get_mut(&TANK.into())
+        .unwrap()
+        .cohesion_quarters = -104;
+    let parent_before = serde_json::to_value(&s.land.units[&REJOINING_PARENT.into()]).unwrap();
+    let g = start(&c, s, false);
+    let mover = seat(&g);
+    let interrupted = respond(
+        &c,
+        &g,
+        mover,
+        json!([{"unit":REJOINING_CHILD,"with_stack":true,"path":["C4021","C4022"]}]),
+        false,
+    )
+    .unwrap();
+    assert_eq!(
+        interrupted.game.state.land.units[&REJOINING_CHILD.into()]
+            .location
+            .hex(),
+        Some(&"C4021".into())
+    );
+    assert_eq!(interrupted.game.state.decisions.pending.len(), 3);
+    assert!(
+        interrupted
+            .game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .all(|p| p.kind == super::super::reaction::KIND
+                && p.space.context.as_ref().unwrap()["forced_pass"] == true)
+    );
+    let continued = decline_empty_reactions(&c, interrupted, false);
+    assert_eq!(
+        continued.game.state.decisions.pending[0].kind,
+        super::super::reaction::CONTINUE
+    );
+    // Resume through the real dispatcher from a serialized interruption boundary.
+    let recovered: Game<Cna> =
+        serde_json::from_value(serde_json::to_value(&continued.game).unwrap()).unwrap();
+    assert!(view::is_map_counter(
+        &c,
+        &recovered.state,
+        &recovered.state.land.units[&REJOINING_CHILD.into()]
+    ));
+    let resumed = respond(
+        &c,
+        &recovered,
+        mover,
+        json!([{"unit":REJOINING_CHILD,"with_stack":true,"path":["C4022"]}]),
+        false,
+    )
+    .unwrap();
+    assert_rejoining_paths(&resumed.events, &["C4022"], 1);
+    assert_eq!(
+        serde_json::to_value(&resumed.game.state.land.units[&REJOINING_PARENT.into()]).unwrap(),
+        parent_before
+    );
+    assert!(!view::is_map_counter(
+        &c,
+        &resumed.game.state,
+        &resumed.game.state.land.units[&REJOINING_CHILD.into()]
+    ));
+    assert!(!view::is_map_counter(
+        &c,
+        &resumed.game.state,
+        &resumed.game.state.land.units[&REJOINING_RIDER.into()]
+    ));
+    assert_eq!(
+        resumed.game.state.land.units[&REJOINING_CHILD.into()].cp_spent_quarters,
+        8
+    );
+    let done = decline_empty_reactions(&c, resumed, false);
+    assert_eq!(
+        done.game.state.decisions.pending[0].kind,
+        super::super::reaction::CONTINUE
+    );
+    let done = respond(&c, &done.game, mover, Value::Null, false).unwrap();
+    assert!(done.game.state.land.reaction.continuation.is_none());
+    assert!(
+        done.events
+            .iter()
+            .all(|e| !matches!(e.event, GameEvent::UnitMoved { .. }))
+    );
+}

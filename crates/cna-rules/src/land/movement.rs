@@ -438,6 +438,17 @@ fn run(
         Some(group) => group.members.to_vec(),
         None => unit_stack(content, state, order, seat, strict)?,
     };
+    // Explicit detachment has already happened. A disclosed counter's executed path
+    // remains visible even if its destination rejoins a stationary parent.
+    let public_counters: BTreeSet<_> = if truth {
+        moving
+            .iter()
+            .filter(|id| view::is_map_counter(content, state, &state.land.units[*id]))
+            .cloned()
+            .collect()
+    } else {
+        BTreeSet::new()
+    };
     for id in &moving {
         if let Some(reason) = logistics::box_handling::blocks_movement(
             state,
@@ -827,7 +838,9 @@ fn run(
         for id in &moving {
             // Printed map counters are visible under RAW fog; attached contents are not.
             // A side-only copy avoids duplicating the owner's full event for the operator.
-            if view::is_map_counter(content, state, &state.land.units[id]) {
+            if public_counters.contains(id)
+                || view::is_map_counter(content, state, &state.land.units[id])
+            {
                 events.push(
                     EngineEvent::new(
                         Audience::SideOnly(seat.side.opponent()),
