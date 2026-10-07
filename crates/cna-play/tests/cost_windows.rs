@@ -310,6 +310,8 @@ async fn move_batch(batch: usize) -> (u64, Vec<u64>) {
         GameKind::Cna,
         &[
             "axis.front_line=claude:haiku".into(),
+            // Feed and water the actual movers before asking the inert driver to move.
+            "axis.logistics=scripted:legal_random".into(),
             "*=scripted:pass_when_possible".into(),
         ],
     )
