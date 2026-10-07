@@ -38,6 +38,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.sirte_div.i_69_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 61st Sirte Division.png", "vassal:IT I-69 - 61 Srt.svg"], verification = "double" }
 name = "I/69 Infantry Bn"
 counter = "I/69"
 class = "it.u"
@@ -47,10 +49,12 @@ arrives = { gt = 10, opstage = 3 }
 arrives_raw = "3/10"
 parent = "it.sirte_div.69th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sirte_div.ii_69_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 61st Sirte Division.png", "vassal:IT II-69 - 61 Srt.svg"], verification = "double" }
 name = "II/69 Infantry Bn"
 counter = "II/69"
 class = "it.u"
@@ -60,10 +64,12 @@ arrives = { gt = 10, opstage = 3 }
 arrives_raw = "3/10"
 parent = "it.sirte_div.69th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sirte_div.iii_69_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 61st Sirte Division.png", "vassal:IT III-69 - 61 Srt.svg"], verification = "double" }
 name = "III/69 Infantry Bn"
 counter = "III/69"
 class = "it.u"
@@ -73,7 +79,7 @@ arrives = { gt = 10, opstage = 3 }
 arrives_raw = "3/10"
 parent = "it.sirte_div.69th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sirte_div.70th_infantry_regt_hq"
@@ -90,6 +96,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.sirte_div.i_70_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 61st Sirte Division.png", "vassal:IT I-70 - 61 Srt.svg"], verification = "double" }
 name = "I/70 Infantry Bn"
 counter = "I/70"
 class = "it.u"
@@ -99,10 +107,12 @@ arrives = { gt = 10, opstage = 3 }
 arrives_raw = "3/10"
 parent = "it.sirte_div.70th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sirte_div.ii_70_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 61st Sirte Division.png", "vassal:IT II-70 - 61 Srt.svg"], verification = "double" }
 name = "II/70 Infantry Bn"
 counter = "II/70"
 class = "it.u"
@@ -112,10 +122,12 @@ arrives = { gt = 10, opstage = 3 }
 arrives_raw = "3/10"
 parent = "it.sirte_div.70th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sirte_div.iii_70_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 61st Sirte Division.png", "vassal:IT III-70 - 61 Srt.svg"], verification = "double" }
 name = "III/70 Infantry Bn"
 counter = "III/70"
 class = "it.u"
@@ -125,10 +137,12 @@ arrives = { gt = 10, opstage = 3 }
 arrives_raw = "3/10"
 parent = "it.sirte_div.70th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sirte_div.61st_machinegun_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 61st Sirte Division.png", "vassal:IT 61 - 61 Srt (MG).svg"], verification = "double" }
 name = "61st Machinegun Bn"
 counter = "61"
 class = "it.bb"
@@ -138,7 +152,7 @@ arrives = { gt = 10, opstage = 3 }
 arrives_raw = "3/10"
 parent = "it.sirte_div.61st_sirte_div_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sirte_div.61st_anti_tank_coy"

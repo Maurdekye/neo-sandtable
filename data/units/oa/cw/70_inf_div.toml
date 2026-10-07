@@ -103,6 +103,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.70_inf_div.2nd_queens_royal_regt"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR 70th Infantry Division.png", "vassal:BR 2 Qns - 16-70.svg"], verification = "double" }
 name = "2nd Queens Royal Regt"
 counter = "2 Qns"
 class = "cw.m"
@@ -111,10 +113,12 @@ toe = "N"
 arrives = "D"
 parent = "cw.70_inf_div.16th_infantry_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.70_inf_div.2nd_leicesters"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR 70th Infantry Division.png", "vassal:BR 2Leicst - 16-70.svg"], verification = "double" }
 name = "2nd Leicesters"
 counter = "2 Leicst"
 class = "cw.m"
@@ -123,10 +127,12 @@ toe = "N"
 arrives = "D"
 parent = "cw.70_inf_div.16th_infantry_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.70_inf_div.1st_argyll_and_sutherland"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR 70th Infantry Division.png", "vassal:BR 1 A&S - 16-70.svg"], verification = "double" }
 name = "1st Argyll & Sutherland"
 counter = "1 A&S"
 class = "cw.m"
@@ -136,7 +142,7 @@ arrives = "D"
 parent = "cw.70_inf_div.16th_infantry_bde_hq"
 note = "The counter reads \"7 A&S\" (parent 16/70) while the sheet gives \"1 A&S\"; see GAPS U-015."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.70_inf_div.16th_bde_anti_tank_coy"
@@ -167,6 +173,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.70_inf_div.1st_essex"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR 70th Infantry Division.png", "vassal:BR 1 Essex - 23-70.svg"], verification = "double" }
 name = "1st Essex"
 counter = "1 Essex"
 class = "cw.m"
@@ -176,10 +184,12 @@ arrives = "D"
 parent = "cw.70_inf_div.23rd_infantry_bde_hq"
 note = "Not assigned to the 23rd until June 1941 (3/38); went to and returned from Syria with the brigade HQ; detached January 1942."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.70_inf_div.1st_durham_light_inf"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR 70th Infantry Division.png", "vassal:BR 1 DurLt - 23-70.svg"], verification = "double" }
 name = "1st Durham Light Inf"
 counter = "1 Dur Lt"
 class = "cw.m"
@@ -189,7 +199,7 @@ arrives = "D"
 parent = "cw.70_inf_div.23rd_infantry_bde_hq"
 note = "Not assigned to the 23rd until June 1941 (3/38); went to and returned from Syria with the brigade HQ; detached January 1942. Class code printed as capital M."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.70_inf_div.4th_borderers"

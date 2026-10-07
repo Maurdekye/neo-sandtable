@@ -38,6 +38,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.sabratha_div.i_85_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 60th Sabratha Division.png", "vassal:IT I-85 - 60 Sab.svg"], verification = "double" }
 name = "I/85 Infantry Bn"
 counter = "I/85"
 class = "it.u"
@@ -47,10 +49,12 @@ arrives = { gt = 12, opstage = 1 }
 arrives_raw = "1/12"
 parent = "it.sabratha_div.85th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sabratha_div.ii_85_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 60th Sabratha Division.png", "vassal:IT II-85 - 60 Sab.svg"], verification = "double" }
 name = "II/85 Infantry Bn"
 counter = "II/85"
 class = "it.u"
@@ -60,10 +64,12 @@ arrives = { gt = 12, opstage = 1 }
 arrives_raw = "1/12"
 parent = "it.sabratha_div.85th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sabratha_div.iii_85_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 60th Sabratha Division.png", "vassal:IT III-85 - 60 Sab.svg"], verification = "double" }
 name = "III/85 Infantry Bn"
 counter = "III/85"
 class = "it.u"
@@ -73,7 +79,7 @@ arrives = { gt = 12, opstage = 1 }
 arrives_raw = "1/12"
 parent = "it.sabratha_div.85th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sabratha_div.86th_infantry_regt_hq"
@@ -90,6 +96,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.sabratha_div.i_86_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 60th Sabratha Division.png", "vassal:IT I-86 - 60 Sab.svg"], verification = "double" }
 name = "I/86 Infantry Bn"
 counter = "I/86"
 class = "it.u"
@@ -99,10 +107,12 @@ arrives = { gt = 12, opstage = 1 }
 arrives_raw = "1/12"
 parent = "it.sabratha_div.86th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sabratha_div.ii_86_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 60th Sabratha Division.png", "vassal:IT II-86 - 60 Sab.svg"], verification = "double" }
 name = "II/86 Infantry Bn"
 counter = "II/86"
 class = "it.u"
@@ -112,10 +122,12 @@ arrives = { gt = 12, opstage = 1 }
 arrives_raw = "1/12"
 parent = "it.sabratha_div.86th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sabratha_div.iii_86_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 60th Sabratha Division.png", "vassal:IT III-86 - 60 Sab.svg"], verification = "double" }
 name = "III/86 Infantry Bn"
 counter = "III/86"
 class = "it.u"
@@ -125,10 +137,12 @@ arrives = { gt = 12, opstage = 1 }
 arrives_raw = "1/12"
 parent = "it.sabratha_div.86th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sabratha_div.60th_machinegun_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 60th Sabratha Division.png", "vassal:IT 60 - 60 Sab (MG).png"], verification = "double" }
 name = "60th Machinegun Bn"
 counter = "60"
 class = "it.bb"
@@ -138,7 +152,7 @@ arrives = { gt = 12, opstage = 1 }
 arrives_raw = "1/12"
 parent = "it.sabratha_div.60th_sabratha_div_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sabratha_div.60th_anti_tank_coy"

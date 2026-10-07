@@ -10,6 +10,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.without_parent.xviii_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Units without a Parent Formation.png", "vassal:IT XVIIILIb - star.png"], verification = "double" }
 name = "XVIII Libyan Bn"
 counter = "XVIII Lib"
 class = "it.x"
@@ -20,10 +22,12 @@ basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.without_parent.xxxii_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Units without a Parent Formation.png", "vassal:IT XXXIILIb - star.png"], verification = "double" }
 name = "XXXII Libyan Bn"
 counter = "XXXII Lib"
 class = "it.x"
@@ -34,10 +38,12 @@ basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.without_parent.xxxiii_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Units without a Parent Formation.png", "vassal:IT XXXIIILIb - star.png"], verification = "double" }
 name = "XXXIII Libyan Bn"
 counter = "XXXIII Lib"
 class = "it.x"
@@ -49,10 +55,12 @@ basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.without_parent.xxxiv_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Units without a Parent Formation.png", "vassal:IT XXXIVLIb - star.png"], verification = "double" }
 name = "XXXIV Libyan Bn"
 counter = "XXXIV Lib"
 class = "it.x"
@@ -64,10 +72,12 @@ basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.without_parent.xxxv_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Units without a Parent Formation.png", "vassal:IT XXXVLIb - star.png"], verification = "double" }
 name = "XXXV Libyan Bn"
 counter = "XXXV Lib"
 class = "it.x"
@@ -79,7 +89,7 @@ basic_morale = -2
 never_arrived_parent = true
 note = "Meant for a 4th Libyan Division that never formed."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.without_parent.2_87_fanterie_bn"

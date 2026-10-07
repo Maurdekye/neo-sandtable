@@ -58,7 +58,7 @@ MISSION_VALUES = {"day", "night", "night_only", "strafe_only"}
 UNIT_ALLOWED = {"id", "name", "counter", "class", "echelon", "toe", "arrives", "arrives_raw", "parent", "nationality",
                 "note", "src", "reassign", "training", "morale_untrained", "shell", "garrison_of", "immobile",
                 "toe_note", "arrives_note", "kind", "group", "engineer_hq", "never_arrived_parent", "stacking_points",
-                "echelon_symbol", "engineer", "garrison", "basic_morale", "begins_attached_to_sheet", "immobile", "cpa", "vehicle", "commander"}
+                "echelon_symbol", "engineer", "garrison", "basic_morale", "begins_attached_to_sheet", "immobile", "cpa", "vehicle", "commander", "infantry_kind", "infantry_kind_evidence"}
 SHEET_ALLOWED = {"id", "nation", "side", "nationality", "name", "basic_morale", "basic_morale_untrained", "src", "note"}
 MENTION_ALLOWED = {"unit", "begins_attached_to", "note", "src"}
 
@@ -109,6 +109,18 @@ for p in sorted((units / "oa").glob("*/*.toml")) if (units / "oa").exists() else
         err(p, f"sheet {sheet.get('id')}: side must be axis|commonwealth")
     for u in d.get("unit", []):
         check_fields(p, u, ["id", "name", "arrives"], UNIT_ALLOWED, "unit")
+        kind, evidence = u.get("infantry_kind"), u.get("infantry_kind_evidence")
+        if kind is not None or evidence is not None:
+            if kind not in {"ordinary", "machine_gun", "heavy_weapons"}:
+                err(p, f"unit {u.get('id')}: unknown infantry_kind")
+            if not isinstance(evidence, dict):
+                err(p, f"unit {u.get('id')}: infantry kind requires OA/counter evidence")
+            else:
+                check_fields(p, evidence, ["transcribed_from", "verification"],
+                             {"transcribed_from", "verification"}, "infantry_kind_evidence")
+                files = evidence.get("transcribed_from", [])
+                if evidence.get("verification") != "double" or not isinstance(files, list) or len(files) < 2 or not all(isinstance(f, str) and f for f in files):
+                    err(p, f"unit {u.get('id')}: infantry classification needs two source filenames and double verification")
         uid = u.get("id")
         if uid in unit_ids:
             err(p, f"duplicate unit id {uid} (also in {unit_ids[uid]})")

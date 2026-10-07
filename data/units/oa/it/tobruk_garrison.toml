@@ -22,6 +22,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.tobruk_garrison.i_31_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT I - 31 GaF.png"], verification = "double" }
 name = "I/31 Gaf S di C Bn"
 counter = "I"
 class = "it.x"
@@ -30,10 +32,12 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.ii_31_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT II - 31 GaF.png"], verification = "double" }
 name = "II/31 Gaf S di C Bn"
 counter = "II"
 class = "it.x"
@@ -42,10 +46,12 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.iii_31_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT III - 31 GaF.png"], verification = "double" }
 name = "III/31 Gaf S di C Bn"
 counter = "III"
 class = "it.x"
@@ -54,7 +60,7 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.31st_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
@@ -70,6 +76,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.tobruk_garrison.i_32_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT I - 32 GaF.png"], verification = "double" }
 name = "I/32 Gaf S di C Bn"
 counter = "I"
 class = "it.v"
@@ -78,10 +86,12 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.ii_32_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT II - 32 GaF.png"], verification = "double" }
 name = "II/32 Gaf S di C Bn"
 counter = "II"
 class = "it.v"
@@ -90,10 +100,12 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.iii_32_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT III - 32 GaF.png"], verification = "double" }
 name = "III/32 Gaf S di C Bn"
 counter = "III"
 class = "it.v"
@@ -102,7 +114,7 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.32nd_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.marine_regimental_hq"
@@ -117,6 +129,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.tobruk_garrison.1st_marine_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT 1 - Marines.png"], verification = "double" }
 name = "1st Marine Bn"
 counter = "1"
 class = "it.x"
@@ -125,10 +139,12 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.marine_regimental_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.2nd_marine_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT 2 - Marines.png"], verification = "double" }
 name = "2nd Marine Bn"
 counter = "2"
 class = "it.x"
@@ -137,10 +153,12 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.marine_regimental_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.3rd_marine_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT 3 - Marines.png"], verification = "double" }
 name = "3rd Marine Bn"
 counter = "3"
 class = "it.x"
@@ -149,10 +167,12 @@ toe = "N"
 arrives = "D"
 parent = "it.tobruk_garrison.marine_regimental_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.xxxi_libyan_coast_def_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Tobruk Garrison.png", "vassal:IT XXXILib - Tobruk.png"], verification = "double" }
 name = "XXXI Libyan Coast Def Bn"
 counter = "XXXILib"
 class = "it.x"
@@ -160,7 +180,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.tobruk_garrison.5th_artiglieri_regt"

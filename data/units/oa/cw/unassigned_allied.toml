@@ -10,6 +10,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.unassigned_allied.1st_company_fr_mtr_marine"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AL Unasisgned Allied Units.png", "vassal:AL 1FMtMr - none.svg"], verification = "double" }
 name = "1st Company, Fr Mtr Marine"
 counter = "\"1\""
 class = "cw.v"
@@ -19,10 +21,12 @@ arrives = "D"
 note = "A company of the 1st Free French Motor Marine Battalion. Arrival code corrected to D by land:4.44b item 3."
 nationality = "free_french"
 stacking_points = 0
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_allied.11th_czech_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AL Unasisgned Allied Units.png", "vassal:AL 11 Czch - none.svg"], verification = "double" }
 name = "11th Czech Bn"
 counter = "11 Czech"
 class = "cw.s"
@@ -33,4 +37,4 @@ arrives_raw = "3/8"
 nationality = "czechoslovak"
 note = "Served as fortress troops at Tobruk with the 70th Infantry Division."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]

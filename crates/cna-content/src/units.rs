@@ -238,6 +238,24 @@ impl Arrival {
     }
 }
 
+/// Counter-type distinction used by ammunition procedures. Missing remains unknown;
+/// no class-code or numeric-rating default is applied.
+/// Cases: land:4.45, orig79:land:4.22, airlog:50.17, airlog:50.2
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum InfantryKind {
+    Ordinary,
+    MachineGun,
+    HeavyWeapons,
+}
+
+/// Local source filenames document the two visual reads without shipping source art.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct InfantryKindEvidence {
+    pub transcribed_from: Vec<String>,
+    pub verification: String,
+}
+
 /// One unit row of an OA sheet, with the sheet's side, nationality and morale resolved.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OaUnit {
@@ -249,6 +267,8 @@ pub struct OaUnit {
     /// Printed counter text. Not unique; never an id.
     pub counter: String,
     pub class: Option<String>,
+    pub infantry_kind: Option<InfantryKind>,
+    pub infantry_kind_evidence: Option<InfantryKindEvidence>,
     pub echelon: Option<String>,
     pub toe: Option<Toe>,
     pub arrives: Arrival,
@@ -437,6 +457,8 @@ struct UnitRow {
     name: String,
     counter: String,
     class: Option<String>,
+    infantry_kind: Option<InfantryKind>,
+    infantry_kind_evidence: Option<InfantryKindEvidence>,
     echelon: Option<String>,
     toe: Option<Toe>,
     arrives: Arrival,
@@ -511,6 +533,8 @@ impl UnitsContent {
                     name: row.name,
                     counter: row.counter,
                     class: row.class,
+                    infantry_kind: row.infantry_kind,
+                    infantry_kind_evidence: row.infantry_kind_evidence,
                     echelon: row.echelon,
                     toe: row.toe,
                     arrives: row.arrives,
@@ -547,6 +571,20 @@ impl UnitsContent {
             message,
         };
         for unit in self.units.values() {
+            match (unit.infantry_kind, &unit.infantry_kind_evidence) {
+                (None, None) => {}
+                (Some(_), Some(evidence))
+                    if evidence.verification == "double"
+                        && evidence.transcribed_from.len() >= 2
+                        && evidence.transcribed_from.iter().all(|s| !s.is_empty()) => {}
+                _ => {
+                    return Err(invalid(format!(
+                        "{}: infantry kind requires paired double-read OA/counter evidence",
+                        unit.id
+                    )));
+                }
+            }
+
             if let Some(class) = &unit.class
                 && !self.classes.contains_key(class)
             {
@@ -746,5 +784,29 @@ mod schedule_tests {
         assert_eq!(rommel.cpa, Some(60));
         assert!(rommel.vehicle.is_some());
         assert_eq!(units.aircraft["ge.bf110"].modes[0].maneuver_night, Some(32));
+    }
+
+    /// Cases: land:4.45, orig79:land:4.22, airlog:50.17, airlog:50.2
+    #[test]
+    fn infantry_identity_is_explicit_and_requires_double_read_evidence() {
+        let root = crate::repo_data_dir().join("units");
+        let mut units = UnitsContent::load(&root).unwrap();
+        let mg = UnitId::new("it.1ccnn_div.201st_machinegun_bn");
+        let engineer = UnitId::new("it.benghazi_garrison.viii_ii_engineer_bn");
+        assert_eq!(units.units[&mg].class, units.units[&engineer].class);
+        assert_eq!(
+            units.units[&mg].infantry_kind,
+            Some(InfantryKind::MachineGun)
+        );
+        assert_eq!(units.units[&engineer].infantry_kind, None);
+        let heavy = UnitId::new("it.minor_garrisons.mechili_garrison_bn");
+        assert_eq!(
+            units.units[&heavy].infantry_kind,
+            Some(InfantryKind::HeavyWeapons)
+        );
+        units.units.get_mut(&mg).unwrap().infantry_kind_evidence = None;
+        assert!(units.check(&root).is_err());
+        let bad = "id = 'test.bad'\nname = 'bad'\ncounter = 'bad'\narrives = 'D'\ninfantry_kind = 'guessed'";
+        assert!(toml::from_str::<UnitRow>(bad).is_err());
     }
 }

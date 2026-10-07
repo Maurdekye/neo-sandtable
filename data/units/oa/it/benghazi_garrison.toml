@@ -11,6 +11,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.benghazi_garrison.ii_libyan_coastal_defense_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Benghazi Garrison.png", "vassal:IT IILibCD - Bnghzi.png"], verification = "double" }
 name = "II Libyan Coastal Defense Bn"
 counter = "IILibCD"
 class = "it.x"
@@ -18,7 +20,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.benghazi_garrison.vii_coastal_defense_arty_aa_group"

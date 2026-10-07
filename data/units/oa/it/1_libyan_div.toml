@@ -34,6 +34,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.1_libyan_div.viii_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 1st Libyan Infantry Division (Sibille).png", "vassal:IT VIII-1L - 1 Libyan.svg"], verification = "double" }
 name = "VIII Libyan Bn"
 counter = "VIII/1L"
 class = "it.x"
@@ -42,10 +44,12 @@ toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.1_libyan_div.ix_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 1st Libyan Infantry Division (Sibille).png", "vassal:IT IX-1L - 1 Libyan.svg"], verification = "double" }
 name = "IX Libyan Bn"
 counter = "IX/1L"
 class = "it.x"
@@ -54,10 +58,12 @@ toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.1_libyan_div.x_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 1st Libyan Infantry Division (Sibille).png", "vassal:IT X-1L - 1 Libyan.svg"], verification = "double" }
 name = "X Libyan Bn"
 counter = "X/1L"
 class = "it.x"
@@ -66,7 +72,7 @@ toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.1st_libyan_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.1_libyan_div.2nd_libyan_regt_hq"
@@ -82,6 +88,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.1_libyan_div.xi_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 1st Libyan Infantry Division (Sibille).png", "vassal:IT XI-2L - 1 Libyan.svg"], verification = "double" }
 name = "XI Libyan Bn"
 counter = "XI/2L"
 class = "it.x"
@@ -90,10 +98,12 @@ toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.2nd_libyan_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.1_libyan_div.xii_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 1st Libyan Infantry Division (Sibille).png", "vassal:IT XII-2L - 1 Libyan.svg"], verification = "double" }
 name = "XII Libyan Bn"
 counter = "XII/2L"
 class = "it.x"
@@ -102,10 +112,12 @@ toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.2nd_libyan_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.1_libyan_div.xiii_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 1st Libyan Infantry Division (Sibille).png", "vassal:IT XIII-2L - 1 Libyan.svg"], verification = "double" }
 name = "XIII Libyan Bn"
 counter = "XIII/2L"
 class = "it.x"
@@ -114,7 +126,7 @@ toe = "N"
 arrives = "D"
 parent = "it.1_libyan_div.2nd_libyan_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.1_libyan_div.1st_libyan_artillery_regt"

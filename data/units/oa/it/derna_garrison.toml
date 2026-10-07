@@ -10,6 +10,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.derna_garrison.54th_territorial_inf_regt"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Derna Garrison.png", "vassal:IT 54 Ter - Derna.png"], verification = "double" }
 name = "54th Territorial Inf. Regt"
 counter = "54 Ter"
 class = "it.m"
@@ -18,7 +20,7 @@ toe = "N"
 arrives = "D"
 note = "A hodge-podge of local recruits given regimental status (no HQ plus battalions) because of poor training."
 stacking_points = 2
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.derna_garrison.iv_coastal_def_arty_group"

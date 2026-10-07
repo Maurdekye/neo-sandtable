@@ -93,6 +93,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.ariete_div.3rd_bersaglieri_mitrg_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 132nd Ariete Divisione Corazzata (Armored).png", "vassal:IT 3-8Brs - Ariete.svg"], verification = "double" }
 name = "3rd Bersaglieri Mitrg Bn"
 counter = "3/8 Brs"
 class = "it.n"
@@ -102,10 +104,12 @@ arrives = { gt = 18, opstage = 1 }
 arrives_raw = "1/18"
 parent = "it.ariete_div.8th_bersaglieri_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.ariete_div.5th_bersaglieri_mitrg_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 132nd Ariete Divisione Corazzata (Armored).png", "vassal:IT 5-8Brs - Ariete.svg"], verification = "double" }
 name = "5th Bersaglieri Mitrg Bn"
 counter = "5/8 Brs"
 class = "it.t"
@@ -115,10 +119,12 @@ arrives = { gt = 18, opstage = 1 }
 arrives_raw = "1/18"
 parent = "it.ariete_div.8th_bersaglieri_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.ariete_div.12th_bersaglieri_mitrg_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 132nd Ariete Divisione Corazzata (Armored).png", "vassal:IT 12-8Brs - Ariete.svg"], verification = "double" }
 name = "12th Bersaglieri Mitrg Bn"
 counter = "12/8 Brs"
 class = "it.t"
@@ -128,7 +134,7 @@ arrives = { gt = 18, opstage = 1 }
 arrives_raw = "1/18"
 parent = "it.ariete_div.8th_bersaglieri_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.ariete_div.2nd_anti_tank_bn"

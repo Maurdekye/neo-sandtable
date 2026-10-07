@@ -122,6 +122,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.7_armd_div.1st_krrc"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR 7th Armoured Division-01.png", "vassal:BR 1 KRRC - 7Spt-7.svg"], verification = "double" }
 name = "1st KRRC"
 counter = "1 KRRC"
 class = "cw.n"
@@ -131,10 +133,12 @@ arrives = "D"
 parent = "cw.7_armd_div.7th_motor_bde_hq"
 note = "The 1st King's Royal Rifle Corps."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.7_armd_div.2nd_rifle_brigade"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR 7th Armoured Division-01.png", "vassal:BR 2RflBde - 7Spt-7.svg"], verification = "double" }
 name = "2nd Rifle Brigade"
 counter = "2 RflBde"
 class = "cw.n"
@@ -143,7 +147,7 @@ toe = "N"
 arrives = "D"
 parent = "cw.7_armd_div.7th_motor_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.7_armd_div.3rd_ryl_horse_arty"

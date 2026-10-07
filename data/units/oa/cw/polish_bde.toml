@@ -24,6 +24,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.polish_bde.1st_polish_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AL The Polish (Carpathian) Division.png", "vassal:AL 1 Pol - Polish X.svg"], verification = "double" }
 name = "1st Polish Bn"
 counter = "1 Pol"
 class = "cw.s"
@@ -33,10 +35,12 @@ arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.polish_bde.2nd_polish_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AL The Polish (Carpathian) Division.png", "vassal:AL 2 Pol - Polish X.svg"], verification = "double" }
 name = "2nd Polish Bn"
 counter = "2 Pol"
 class = "cw.s"
@@ -46,10 +50,12 @@ arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.polish_bde.3rd_polish_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AL The Polish (Carpathian) Division.png", "vassal:AL 3 Pol - Polish X.svg"], verification = "double" }
 name = "3rd Polish Bn"
 counter = "3 Pol"
 class = "cw.s"
@@ -59,10 +65,12 @@ arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.polish_bde.kopanski_mg_coy"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AL The Polish (Carpathian) Division.png", "vassal:AL 1 Pol - Polish X (MG).svg"], verification = "double" }
 name = "Kopanski MG Coy"
 counter = "Kopnski"
 class = "cw.w"
@@ -72,7 +80,7 @@ arrives = { gt = 1, opstage = 3 }
 arrives_raw = "3/1"
 parent = "cw.polish_bde.polish_brigade_hq"
 stacking_points = 0
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.polish_bde.1st_polish_cavalry_regt"

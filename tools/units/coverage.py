@@ -10,6 +10,12 @@ from pathlib import Path
 root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]
 errors = []
 units, children, sheets, sides = {}, defaultdict(list), defaultdict(list), {}
+classes = {c["id"]: c for path in (root / "data/units/classes").glob("*.toml")
+           for c in tomllib.loads(path.read_text(encoding="utf-8")).get("class", [])}
+INFANTRY_GAPS = {
+    "it.benghazi_garrison.viii_ii_engineer_bn": "U-026: engineer counter, no infantry-kind default",
+    "it.without_parent.2_87_fanterie_bn": "U-027: counter identity not resolved",
+}
 
 def read(path):
     with path.open('rb') as stream:
@@ -145,6 +151,21 @@ for scenario_id in ('graziani', 'italian_campaign'):
         want = {uid for uid in units if sides[uid] == side and clock(units[uid]) is not None and start <= clock(units[uid]) <= end}
         got = {uid for uid in want if len(arrived[uid]) == 1}
         print(f'{scenario_id} {side}: arrivals {len(got)}/{len(want)}; mandatory withdrawals {sum(sides[u] == side for u in withdrawn)}')
+    roster = set(placed) | set(arrived)
+    infantry = {uid for uid in roster if classes.get(units[uid].get("class"), {}).get("unit_type") == "infantry"}
+    classified = {uid for uid in infantry if "infantry_kind" in units[uid]}
+    missing = infantry - classified
+    for uid in sorted(missing):
+        if uid not in INFANTRY_GAPS:
+            errors.append(f"{scenario_id}: infantry classification missing for {uid}")
+    counts = defaultdict(int)
+    for uid in classified:
+        counts[units[uid]["infantry_kind"]] += 1
+    print(f"{scenario_id}: infantry classified {len(classified)}/{len(infantry)}; kinds={dict(sorted(counts.items()))}; omitted={len(missing)}")
+    for uid in sorted(missing):
+        print(f"  {uid}: {INFANTRY_GAPS.get(uid, 'unlogged')}")
+
+
 for error in errors:
     print('ERROR', error)
 print(f'coverage errors={len(errors)}')

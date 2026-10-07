@@ -22,6 +22,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.3ccnn_div.81st_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 3rd CCNN (21 April) Division.png", "vassal:IT 81 - 250Lgn X.png"], verification = "double" }
 name = "81st Infantry Bn"
 counter = "81"
 class = "it.x"
@@ -30,10 +32,12 @@ toe = "N"
 arrives = "D"
 parent = "it.3ccnn_div.250th_legion_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.3ccnn_div.156th_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 3rd CCNN (21 April) Division.png", "vassal:IT 156 - 250Lgn X.png"], verification = "double" }
 name = "156th Infantry Bn"
 counter = "156"
 class = "it.x"
@@ -42,10 +46,12 @@ toe = "N"
 arrives = "D"
 parent = "it.3ccnn_div.250th_legion_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.3ccnn_div.158th_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 3rd CCNN (21 April) Division.png", "vassal:IT 158 - 250Lgn X.png"], verification = "double" }
 name = "158th Infantry Bn"
 counter = "158"
 class = "it.x"
@@ -54,10 +60,12 @@ toe = "N"
 arrives = "D"
 parent = "it.3ccnn_div.250th_legion_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.3ccnn_div.203rd_machinegun_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:IT 3rd CCNN (21 April) Division.png", "vassal:IT 203 - none (MG).png"], verification = "double" }
 name = "203rd Machinegun Bn"
 counter = "203"
 class = "it.bb"
@@ -65,7 +73,7 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.3ccnn_div.214th_artillery_regt"

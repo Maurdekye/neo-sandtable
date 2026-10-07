@@ -35,6 +35,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.2_nz_div.18th_nz_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC NZ 2nd New Zealand Division.png", "vassal:NZ 18 NZ - 4-2 NZ.svg"], verification = "double" }
 name = "18th NZ Bn"
 counter = "18 NZ"
 class = "cw.m"
@@ -43,10 +45,12 @@ toe = "N"
 arrives = "D"
 parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.2_nz_div.19th_nz_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC NZ 2nd New Zealand Division.png", "vassal:NZ 19 NZ - 4-2 NZ.svg"], verification = "double" }
 name = "19th NZ Bn"
 counter = "19 NZ"
 class = "cw.m"
@@ -55,10 +59,12 @@ toe = "N"
 arrives = "D"
 parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.2_nz_div.20th_nz_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC NZ 2nd New Zealand Division.png", "vassal:NZ 20 NZ - 4-2 NZ.svg"], verification = "double" }
 name = "20th NZ Bn"
 counter = "20 NZ"
 class = "cw.m"
@@ -67,7 +73,7 @@ toe = "N"
 arrives = "D"
 parent = "cw.2_nz_div.4th_new_zealand_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.2_nz_div.5th_new_zealand_bde_hq"
@@ -149,6 +155,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.2_nz_div.24th_nz_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC NZ 2nd New Zealand Division.png", "vassal:NZ 24 NZ - 6-2 NZ.svg"], verification = "double" }
 name = "24th NZ Bn"
 counter = "24 NZ"
 class = "cw.m"
@@ -158,10 +166,12 @@ arrives = { gt = 6, opstage = 3 }
 arrives_raw = "3/6"
 parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.2_nz_div.25th_nz_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC NZ 2nd New Zealand Division.png", "vassal:NZ 25 NZ - 6-2 NZ.svg"], verification = "double" }
 name = "25th NZ Bn"
 counter = "25 NZ"
 class = "cw.m"
@@ -171,10 +181,12 @@ arrives = { gt = 6, opstage = 3 }
 arrives_raw = "3/6"
 parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.2_nz_div.26th_nz_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC NZ 2nd New Zealand Division.png", "vassal:NZ 26 NZ - 6-2 NZ.svg"], verification = "double" }
 name = "26th NZ Bn"
 counter = "26 NZ"
 class = "cw.m"
@@ -184,10 +196,12 @@ arrives = { gt = 6, opstage = 3 }
 arrives_raw = "3/6"
 parent = "cw.2_nz_div.6th_new_zealand_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.2_nz_div.27th_new_zealand_mg_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC NZ 2nd New Zealand Division.png", "vassal:NZ 27 NZ - 2 NZ.svg"], verification = "double" }
 name = "27th New Zealand MG Bn"
 counter = "27 NZ"
 class = "cw.u"
@@ -196,7 +210,7 @@ toe = { under = 2 }
 arrives = "D"
 parent = "cw.2_nz_div.2nd_new_zealand_div_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.2_nz_div.2nd_new_zealand_cavalry"

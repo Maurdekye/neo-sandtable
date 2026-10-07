@@ -21,6 +21,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.sahara_det.1_saharan_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT The Sahara Detachment.png", "vassal:IT 1 Sah-L - Sahara.png"], verification = "double" }
 name = "1 Saharan/Libyan Bn"
 counter = "1Sah/L"
 class = "it.x"
@@ -29,10 +31,12 @@ toe = "N"
 arrives = "D"
 parent = "it.sahara_det.saharan_detachment_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sahara_det.2_saharan_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT The Sahara Detachment.png", "vassal:IT 2 Sah-L - Sahara.png"], verification = "double" }
 name = "2 Saharan/Libyan Bn"
 counter = "2 Sah/L"
 class = "it.x"
@@ -41,10 +45,12 @@ toe = "N"
 arrives = "D"
 parent = "it.sahara_det.saharan_detachment_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sahara_det.sahara_machinegun_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT The Sahara Detachment.png", "vassal:IT Sahara - Sahara (MG).png"], verification = "double" }
 name = "Sahara Machinegun Bn"
 counter = "Sahara"
 class = "it.z"
@@ -53,10 +59,12 @@ toe = "N"
 arrives = "D"
 parent = "it.sahara_det.saharan_detachment_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sahara_det.sahara_mtr_machinegun_coy"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT The Sahara Detachment.png", "vassal:IT SahMtr - Sahara.png"], verification = "double" }
 name = "Sahara Mtr Machinegun Coy"
 counter = "SahMtr"
 class = "it.hh"
@@ -65,7 +73,7 @@ toe = "N"
 arrives = "D"
 parent = "it.sahara_det.saharan_detachment_hq"
 stacking_points = 0
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.sahara_det.saharan_artillery_battery"

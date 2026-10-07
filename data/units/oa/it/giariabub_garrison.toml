@@ -10,6 +10,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.giariabub_garrison.giariabub_oasis_mtr_mg_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Giariabub Oasis Complex Garrison.png", "vassal:IT Grbub - Grbub (MMG).png"], verification = "double" }
 name = "Giariabub Oasis Mtr MG Bn"
 counter = "Grbub"
 class = "it.hh"
@@ -17,10 +19,12 @@ echelon = "company"
 toe = "N"
 arrives = "D"
 stacking_points = 0
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.giariabub_garrison.giariabub_oasis_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Giariabub Oasis Complex Garrison.png", "vassal:IT Grbub - Grbub.png"], verification = "double" }
 name = "Giariabub Oasis Infantry Bn"
 counter = "Grbub"
 class = "it.gg"
@@ -28,10 +32,12 @@ echelon = "company"
 toe = "N"
 arrives = "D"
 stacking_points = 0
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.giariabub_garrison.giariabub_oasis_mg_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Giariabub Oasis Complex Garrison.png", "vassal:IT Grbub - Grbub (MG).png"], verification = "double" }
 name = "Giariabub Oasis MG Bn"
 counter = "Grbub"
 class = "it.y"
@@ -39,7 +45,7 @@ echelon = "battalion"
 toe = { under = 4 }
 arrives = "D"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.giariabub_garrison.giariabub_oasis_anti_tank_coy"

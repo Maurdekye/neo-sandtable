@@ -23,6 +23,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.bardia_garrison.i_30_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Bardia Garrison.png", "vassal:IT I - 30 GaF.png"], verification = "double" }
 name = "I/30 Gaf S di C Bn"
 counter = "I"
 class = "it.u"
@@ -31,10 +33,12 @@ toe = "N"
 arrives = "D"
 parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.bardia_garrison.ii_30_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Bardia Garrison.png", "vassal:IT II - 30 GaF.png"], verification = "double" }
 name = "II/30 Gaf S di C Bn"
 counter = "II"
 class = "it.u"
@@ -43,10 +47,12 @@ toe = "N"
 arrives = "D"
 parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.bardia_garrison.iii_30_gaf_s_di_c_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Bardia Garrison.png", "vassal:IT III - 30 GaF.png"], verification = "double" }
 name = "III/30 Gaf S di C Bn"
 counter = "III"
 class = "it.u"
@@ -55,10 +61,12 @@ toe = "N"
 arrives = "D"
 parent = "it.bardia_garrison.30th_gaf_s_di_c_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.bardia_garrison.vec_machinegun_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Bardia Garrison.png", "vassal:IT VEC - Bardia.png"], verification = "double" }
 name = "VEC Machinegun Bn"
 counter = "VEC"
 class = "it.aa"
@@ -67,7 +75,7 @@ toe = "N"
 arrives = "D"
 note = "Vittorio Emanuele cavalry machinegun battalion, 4th Squadron; equipped with pre-WWI machineguns."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.bardia_garrison.30_gaf_antitank_bn"

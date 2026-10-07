@@ -33,6 +33,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.64_catanzaro_div.i_141_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 64th Catanzaro Division.png", "vassal:IT I-141 - 64 Cat.svg"], verification = "double" }
 name = "I/141 Infantry Bn"
 counter = "I/141"
 class = "it.u"
@@ -41,10 +43,12 @@ toe = "N"
 arrives = "D"
 parent = "it.64_catanzaro_div.141st_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.64_catanzaro_div.ii_141_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 64th Catanzaro Division.png", "vassal:IT II-141 - 64 Cat.svg"], verification = "double" }
 name = "II/141 Infantry Bn"
 counter = "II/141"
 class = "it.u"
@@ -53,10 +57,12 @@ toe = "N"
 arrives = "D"
 parent = "it.64_catanzaro_div.141st_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.64_catanzaro_div.iii_141_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 64th Catanzaro Division.png", "vassal:IT III-141 - 64 Cat.svg"], verification = "double" }
 name = "III/141 Infantry Bn"
 counter = "III/141"
 class = "it.u"
@@ -65,7 +71,7 @@ toe = "N"
 arrives = "D"
 parent = "it.64_catanzaro_div.141st_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.64_catanzaro_div.142nd_infantry_regt_hq"
@@ -81,6 +87,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.64_catanzaro_div.i_142_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 64th Catanzaro Division.png", "vassal:IT I-142 - 64 Cat.svg"], verification = "double" }
 name = "I/142 Infantry Bn"
 counter = "I/142"
 class = "it.u"
@@ -89,10 +97,12 @@ toe = "N"
 arrives = "D"
 parent = "it.64_catanzaro_div.142nd_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.64_catanzaro_div.ii_142_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 64th Catanzaro Division.png", "vassal:IT II-142 - 64 Cat.svg"], verification = "double" }
 name = "II/142 Infantry Bn"
 counter = "II/142"
 class = "it.u"
@@ -101,10 +111,12 @@ toe = "N"
 arrives = "D"
 parent = "it.64_catanzaro_div.142nd_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.64_catanzaro_div.iii_142_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 64th Catanzaro Division.png", "vassal:IT III-142 - 64 Cat.svg"], verification = "double" }
 name = "III/142 Infantry Bn"
 counter = "III/142"
 class = "it.u"
@@ -113,10 +125,12 @@ toe = "N"
 arrives = "D"
 parent = "it.64_catanzaro_div.142nd_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.64_catanzaro_div.64th_machinegun_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 64th Catanzaro Division.png", "vassal:IT 64 - Cat (MG).svg"], verification = "double" }
 name = "64th Machinegun Bn"
 counter = "64"
 class = "it.bb"
@@ -125,7 +139,7 @@ toe = "N"
 arrives = "D"
 parent = "it.64_catanzaro_div.64th_catanzaro_div_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.64_catanzaro_div.64th_anti_tank_coy"

@@ -423,3 +423,26 @@ counter, its printed designation, integer capacity_tons, defining src and source
 An unreadable capacity is omitted and recorded in GAPS; it is never zero. Movement allowances,
 loading costs and current cargo are procedural/state data and do not belong in this roster.
 A scenario fleet's axis_coastal_shipping.roster names the file relative to data/units.
+
+
+## Infantry ammunition identity
+
+`infantry_kind` belongs to an OA unit, with the values `ordinary`, `machine_gun`, or
+`heavy_weapons`. It describes the counter type used by `airlog:50.17` and `airlog:50.2`;
+those procedures still decide the rate and applicability. Ordinary includes foot, motorized,
+mechanized, motorcycle, marine, commando and airborne infantry counters when their symbols
+show neither the machine-gun nor heavy-weapons type. This field never comes from a rating,
+name substring or class-wide default. An engineer may share an infantry class code, so an
+absent kind must remain absent.
+
+Each classified row also carries `infantry_kind_evidence`, with the exact local OA and
+counter filenames in `transcribed_from`, and `verification = "double"`. No source art is
+included. The 2021 rules retype omits the component legend in section 4; its symbols were
+checked against the original `orig79:land:4.22` legend on pages 7–8. There is no inferred
+change to the 2021 combat rules.
+
+The combined Graziani/Italian Campaign rosters contain 181 rows whose characteristics class
+is infantry: 179 are classified (156 ordinary, 19 machine-gun, 4 heavy-weapons), and two are
+explicit gaps. See U-026 and U-027. `tools/units/coverage.py` reports the counts for each
+scenario and rejects an additional unlogged omission. Later arrivals outside GT1–20 are not
+covered by this audit.

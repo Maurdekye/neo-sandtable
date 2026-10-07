@@ -11,6 +11,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.minor_garrisons.sceferzen_oasis_garrison_bn"
+infantry_kind = "heavy_weapons"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Minor Garrison Units.png", "vassal:IT Scfzrn - Scfzrn.png"], verification = "double" }
 name = "Sceferzen Oasis Garrison Bn"
 counter = "Scfzrn"
 class = "it.dd"
@@ -18,10 +20,12 @@ echelon = "company"
 toe = "N"
 arrives = "D"
 stacking_points = 0
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.minor_garrisons.fort_maddalenna_garrison_bn"
+infantry_kind = "heavy_weapons"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Minor Garrison Units.png", "vassal:IT FtMad - FtMad.png"], verification = "double" }
 name = "Fort Maddalenna Garrison Bn"
 counter = "FtMad"
 class = "it.q"
@@ -29,10 +33,12 @@ echelon = "battalion"
 toe = { under = 2 }
 arrives = "D"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.minor_garrisons.egug_garrison_bn"
+infantry_kind = "heavy_weapons"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Minor Garrison Units.png", "vassal:IT EGUG - el Grein.png"], verification = "double" }
 name = "EGUG Garrison Bn"
 counter = "EGUG"
 class = "it.ee"
@@ -40,7 +46,7 @@ echelon = "company"
 toe = "N"
 arrives = "D"
 stacking_points = 0
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.minor_garrisons.benina_aa_battery"
@@ -55,6 +61,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.minor_garrisons.mechili_garrison_bn"
+infantry_kind = "heavy_weapons"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Minor Garrison Units.png", "vassal:IT Mechili - Mechili.png"], verification = "double" }
 name = "Mechili Garrison Bn"
 counter = "Mechili"
 class = "it.r"
@@ -62,7 +70,7 @@ echelon = "battalion"
 toe = { under = 2 }
 arrives = "D"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.minor_garrisons.soluch_garrison_at_coy"

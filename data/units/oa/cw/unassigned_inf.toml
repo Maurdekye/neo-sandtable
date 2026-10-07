@@ -10,6 +10,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.unassigned_inf.1st_buffs"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR 1 Buffs - none.svg"], verification = "double" }
 name = "1st Buffs"
 counter = "1 Buffs"
 class = "cw.p"
@@ -18,10 +20,12 @@ toe = "N"
 arrives = "D"
 note = "Replaced the 1st Royal Fusiliers in the 5th Indian Brigade October through December 1941. Starts attached to / assigned to the Matruh Garrison (see land:4.44b item 2)."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.3rd_coldstream_guards"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR 3CldGds - none.svg"], verification = "double" }
 name = "3rd Coldstream Guards"
 counter = "3 CldGds"
 class = "cw.p"
@@ -30,10 +34,12 @@ toe = "N"
 arrives = "D"
 note = "Served under the 22nd Guards Brigade."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.1st_hampshire"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR 1 Hamp - none.svg"], verification = "double" }
 name = "1st Hampshire"
 counter = "1 Hamp"
 class = "cw.p"
@@ -42,10 +48,12 @@ toe = "N"
 arrives = "D"
 note = "Sent to Malta early in February 1941. Starts attached to / assigned to the Matruh Garrison (see land:4.44b item 2)."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.2nd_kings_own_royal_regt"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR 2 KOR - none.svg"], verification = "double" }
 name = "2nd King's Own Royal Regt"
 counter = "2 KOR"
 class = "cw.m"
@@ -54,10 +62,12 @@ toe = "N"
 arrives = "D"
 note = "Sent to Syria in June 1941 (3/36) to join the 161st Indian Motor Brigade."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.1st_south_staffordshires"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR 1SoStff - none.svg"], verification = "double" }
 name = "1st South Staffordshires"
 counter = "1 SoStff"
 class = "cw.p"
@@ -65,10 +75,12 @@ echelon = "battalion"
 toe = "N"
 arrives = "D"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.2nd_scots_guards"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR 2SctGds - none.svg"], verification = "double" }
 name = "2nd Scots Guards"
 counter = "2 SctGds"
 class = "cw.p"
@@ -77,10 +89,12 @@ toe = "N"
 arrives = "D"
 note = "Served under the 22nd Guards Brigade."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.1st_cheshire_mg_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR 1 Ches - none.svg"], verification = "double" }
 name = "1st Cheshire MG Bn"
 counter = "1 Ches"
 class = "cw.u"
@@ -89,10 +103,12 @@ toe = "N"
 arrives = "D"
 note = "Sent to Malta July 1941."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.1st_rnf_mg_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR 1 RNF - none.svg"], verification = "double" }
 name = "1st RNF MG Bn"
 counter = "1 RNF"
 class = "cw.u"
@@ -101,10 +117,12 @@ toe = "N"
 arrives = "D"
 note = "The 1st Battalion, Royal Northumberland Fusiliers."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.a_bn_special_service_bde"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC BR Unassigned Infantry-Type Units.png", "vassal:BR A - SpServ.svg"], verification = "double" }
 name = "\"A\" Bn, Special Service Bde"
 counter = "\"A\""
 class = "cw.h"
@@ -114,7 +132,7 @@ arrives = { gt = 19, opstage = 2 }
 arrives_raw = "2/19"
 note = "The Layforce commando unit: an abstract composite of several small commando units used at various times."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_inf.special_air_service_bde"

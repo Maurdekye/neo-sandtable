@@ -118,6 +118,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.unassigned_blackshirt.140th_ccnn_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Blackshirt Units-01.png", "vassal:IT 140 - none.png"], verification = "double" }
 name = "140th CCNN Bn"
 counter = "140"
 class = "it.x"
@@ -126,4 +128,4 @@ toe = "N"
 arrives = { gt = 13, opstage = 3 }
 arrives_raw = "3/13"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]

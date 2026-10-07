@@ -33,6 +33,8 @@ src = ["land:4.44b"]
 
 [[unit]]
 id = "it.63_cirene_div.i_157_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 63rd Cirene Division.png", "vassal:IT I-157 - 63 Cir.svg"], verification = "double" }
 name = "I/157 Infantry Bn"
 counter = "I/157"
 class = "it.u"
@@ -41,10 +43,12 @@ toe = "N"
 arrives = "D"
 parent = "it.63_cirene_div.157th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.44b"]
+src = ["land:4.44b", "land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.63_cirene_div.ii_157_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 63rd Cirene Division.png", "vassal:IT II-157 - 63 Cir.svg"], verification = "double" }
 name = "II/157 Infantry Bn"
 counter = "II/157"
 class = "it.u"
@@ -53,10 +57,12 @@ toe = "N"
 arrives = "D"
 parent = "it.63_cirene_div.157th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.44b"]
+src = ["land:4.44b", "land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.63_cirene_div.iii_157_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 63rd Cirene Division.png", "vassal:IT III-157 - 63 Cir.svg"], verification = "double" }
 name = "III/157 Infantry Bn"
 counter = "III/157"
 class = "it.u"
@@ -65,7 +71,7 @@ toe = "N"
 arrives = "D"
 parent = "it.63_cirene_div.157th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.44b"]
+src = ["land:4.44b", "land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.63_cirene_div.158th_infantry_regt_hq"
@@ -81,6 +87,8 @@ src = ["land:4.44b"]
 
 [[unit]]
 id = "it.63_cirene_div.i_158_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 63rd Cirene Division.png", "vassal:IT I-158 - 63 Cir.svg"], verification = "double" }
 name = "I/158 Infantry Bn"
 counter = "I/158"
 class = "it.u"
@@ -89,10 +97,12 @@ toe = "N"
 arrives = "D"
 parent = "it.63_cirene_div.158th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.44b"]
+src = ["land:4.44b", "land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.63_cirene_div.ii_158_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 63rd Cirene Division.png", "vassal:IT II-158 - 63 Cir.svg"], verification = "double" }
 name = "II/158 Infantry Bn"
 counter = "II/158"
 class = "it.u"
@@ -101,10 +111,12 @@ toe = "N"
 arrives = "D"
 parent = "it.63_cirene_div.158th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.44b"]
+src = ["land:4.44b", "land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.63_cirene_div.iii_158_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 63rd Cirene Division.png", "vassal:IT III-158 - 63 Cir.svg"], verification = "double" }
 name = "III/158 Infantry Bn"
 counter = "III/158"
 class = "it.u"
@@ -113,10 +125,12 @@ toe = "N"
 arrives = "D"
 parent = "it.63_cirene_div.158th_infantry_regt_hq"
 stacking_points = 1
-src = ["land:4.44b"]
+src = ["land:4.44b", "land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.63_cirene_div.63rd_machinegun_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT 63rd Cirene Division.png", "vassal:IT 63 - 63 Cir (MG).svg"], verification = "double" }
 name = "63rd Machinegun Bn"
 counter = "63"
 class = "it.bb"
@@ -125,7 +139,7 @@ toe = "N"
 arrives = "D"
 parent = "it.63_cirene_div.63rd_cirene_div_hq"
 stacking_points = 1
-src = ["land:4.44b"]
+src = ["land:4.44b", "land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.63_cirene_div.63rd_anti_tank_coy"

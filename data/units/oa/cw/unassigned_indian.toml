@@ -10,6 +10,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.unassigned_indian.1st_welch_regt"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN Unassigned Indian Units.png", "vassal:IN 1 Wlch - none.svg"], verification = "double" }
 name = "1st Welch Regt"
 counter = "1 Wlch"
 class = "cw.m"
@@ -19,7 +21,7 @@ arrives = "D"
 nationality = "british"
 note = "A British unit placed on the Indian sheet; its counter bears the same colouring as Indian units (scenario note, scen:60.41)."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.unassigned_indian.2_5_mahratta_light_inf"

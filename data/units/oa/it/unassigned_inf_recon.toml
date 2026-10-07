@@ -23,6 +23,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.unassigned_inf_recon.16th_bersaglieri_mtr_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Infantry and Recon Units.png", "vassal:IT 16 Brs - 10 Brs.png"], verification = "double" }
 name = "16th Bersaglieri Mtr Bn"
 counter = "16 Brs"
 class = "it.t"
@@ -33,10 +35,12 @@ arrives_raw = "1/11"
 parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
 basic_morale = 1
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.unassigned_inf_recon.34th_bersaglieri_mtr_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Infantry and Recon Units.png", "vassal:IT 34 Brs - 10 Brs.png"], verification = "double" }
 name = "34th Bersaglieri Mtr Bn"
 counter = "34 Brs"
 class = "it.t"
@@ -47,10 +51,12 @@ arrives_raw = "1/11"
 parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
 basic_morale = 1
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.unassigned_inf_recon.35th_bersaglieri_mtr_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Infantry and Recon Units.png", "vassal:IT 35 Brs - 10 Brs.png"], verification = "double" }
 name = "35th Bersaglieri Mtr Bn"
 counter = "35 Brs"
 class = "it.t"
@@ -61,7 +67,7 @@ arrives_raw = "1/11"
 parent = "it.unassigned_inf_recon.10th_bersaglieri_regt_hq"
 basic_morale = 1
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.unassigned_inf_recon.22nd_bersaglieri_mitrg_coy"
@@ -120,6 +126,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.unassigned_inf_recon.1st_libyan_parachute_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Infantry and Recon Units.png", "vassal:IT 1 LibPar - Libyan.svg"], verification = "double" }
 name = "1st Libyan Parachute Bn"
 counter = "1 LibPar"
 class = "it.x"
@@ -129,10 +137,12 @@ arrives = "D"
 parent = "it.unassigned_inf_recon.libyan_parachute_regt_hq"
 basic_morale = -2
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.unassigned_inf_recon.1st_carabinieri_ccrr_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Infantry and Recon Units.png", "vassal:IT 1CCRR - Libyan.svg"], verification = "double" }
 name = "1st Carabinieri (CCRR) Bn"
 counter = "1 CCRR"
 class = "it.x"
@@ -142,10 +152,12 @@ arrives = "D"
 parent = "it.unassigned_inf_recon.libyan_parachute_regt_hq"
 basic_morale = -2
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.unassigned_inf_recon.4th_fanterie_mtr_regt"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Unassigned Infantry and Recon Units.png", "vassal:IT 4-10 army - none.png"], verification = "double" }
 name = "4th Fanterie Mtr Regt"
 counter = "4/10 Army"
 class = "it.m"
@@ -155,7 +167,7 @@ arrives = "D"
 basic_morale = -1
 note = "Apparently the HQ regiment of the (unrepresented) 10th Army headquarters; a single formation, not an HQ plus battalions."
 stacking_points = 2
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.unassigned_inf_recon.iv_genoa_machinegun_bn"

@@ -27,6 +27,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.18_aus_bde.2_9_aus_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 18th Australian Brigade.png", "vassal:AU 2-9Aus - 18Ays.svg"], verification = "double" }
 name = "2/9 Aus Infantry Bn"
 counter = "2/9 Aus"
 class = "cw.p"
@@ -36,10 +38,12 @@ arrives = { gt = 14, opstage = 3 }
 arrives_raw = "3/14"
 parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.18_aus_bde.2_10_aus_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 18th Australian Brigade.png", "vassal:AU 2-10Aus - 18Aus.svg"], verification = "double" }
 name = "2/10 Aus Infantry Bn"
 counter = "2/10 Aus"
 class = "cw.p"
@@ -49,10 +53,12 @@ arrives = { gt = 14, opstage = 3 }
 arrives_raw = "3/14"
 parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.18_aus_bde.2_12_aus_infantry_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 18th Australian Brigade.png", "vassal:AU 2-12Aus - 18Aus.svg"], verification = "double" }
 name = "2/12 Aus Infantry Bn"
 counter = "2/12 Aus"
 class = "cw.p"
@@ -62,7 +68,7 @@ arrives = { gt = 14, opstage = 3 }
 arrives_raw = "3/14"
 parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.18_aus_bde.7th_aus_div_cavalry_regt"
@@ -79,6 +85,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.18_aus_bde.2_1_aus_mg_bn"
+infantry_kind = "machine_gun"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 18th Australian Brigade.png", "vassal:AU 2-1Aus - 18Aus (MG).svg"], verification = "double" }
 name = "2/1 Aus MG Bn"
 counter = "2/1 Aus"
 class = "cw.u"
@@ -88,7 +96,7 @@ arrives = { gt = 14, opstage = 3 }
 arrives_raw = "3/14"
 parent = "cw.18_aus_bde.18th_aus_infantry_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.18_aus_bde.2_1_aus_anti_tank_regt"

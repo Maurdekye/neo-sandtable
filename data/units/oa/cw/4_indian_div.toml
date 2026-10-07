@@ -35,6 +35,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.4_indian_div.1st_royal_fusiliers"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 1 RFslr - 5-4 In.svg"], verification = "double" }
 name = "1st Royal Fusiliers"
 counter = "1 RFslr"
 class = "cw.p"
@@ -43,10 +45,12 @@ toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.5th_indian_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.3_1_punjab_regt"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 3-1 Pjb - 9-4In.svg"], verification = "double" }
 name = "3/1 Punjab Regt"
 counter = "3/1 Pjb"
 class = "cw.p"
@@ -55,10 +59,12 @@ toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.5th_indian_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.4_6_rajputana_rifles"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 4-6RajRf - 5-4 In.svg"], verification = "double" }
 name = "4/6 Rajputana Rifles"
 counter = "4/6 RajRf"
 class = "cw.p"
@@ -67,7 +73,7 @@ toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.5th_indian_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.7th_indian_bde_hq"
@@ -84,6 +90,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.4_indian_div.1st_royal_sussex"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 1RSsx - 2-4 In.svg"], verification = "double" }
 name = "1st Royal Sussex"
 counter = "1 RSsx"
 class = "cw.p"
@@ -93,10 +101,12 @@ arrives = { gt = 5, opstage = 1 }
 arrives_raw = "1/5"
 parent = "cw.4_indian_div.7th_indian_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.4_11_sikhs"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 4-11Skh - 2-4 In.svg"], verification = "double" }
 name = "4/11 Sikhs"
 counter = "4/11 Skh"
 class = "cw.p"
@@ -106,10 +116,12 @@ arrives = { gt = 5, opstage = 1 }
 arrives_raw = "1/5"
 parent = "cw.4_indian_div.7th_indian_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.4_16_punjab_regt"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 4-16-Pjb- 7-4 In.svg"], verification = "double" }
 name = "4/16 Punjab Regt"
 counter = "4/16 Pjb"
 class = "cw.p"
@@ -119,7 +131,7 @@ arrives = { gt = 5, opstage = 1 }
 arrives_raw = "1/5"
 parent = "cw.4_indian_div.7th_indian_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.11th_indian_bde_hq"
@@ -135,6 +147,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.4_indian_div.2nd_camerons"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 2 Cmm - 11-4 In.svg"], verification = "double" }
 name = "2nd Camerons"
 counter = "2 Cmrn"
 class = "cw.p"
@@ -144,10 +158,12 @@ arrives = "D"
 parent = "cw.4_indian_div.11th_indian_bde_hq"
 note = "Full name: 2nd Battalion Queens Own Cameron Highlanders."
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.1_6_rajputana_rifles"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 1-6RajRf - 11-4 In.svg"], verification = "double" }
 name = "1/6 Rajputana Rifles"
 counter = "1/6 RajRf"
 class = "cw.p"
@@ -156,10 +172,12 @@ toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.11th_indian_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.4_7_rajput_regt"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IN 4th Indian Division.png", "vassal:IN 4-7Rajpt - 11-4 In.svg"], verification = "double" }
 name = "4/7 Rajput Regt"
 counter = "4/7 Rajpt"
 class = "cw.p"
@@ -168,7 +186,7 @@ toe = "N"
 arrives = "D"
 parent = "cw.4_indian_div.11th_indian_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.4_indian_div.central_india_horse"

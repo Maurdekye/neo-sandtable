@@ -40,6 +40,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.9_aus_div.2_13_aus_inf_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 9th Australian Division.png", "vassal:AU 2-13Aus - 20-9Aus.svg"], verification = "double" }
 name = "2/13 Aus Inf Bn"
 counter = "2/13 Aus"
 class = "cw.p"
@@ -50,10 +52,12 @@ arrives_raw = "1/13"
 parent = "cw.9_aus_div.20th_australian_inf_bde_hq"
 morale_untrained = 0
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.9_aus_div.2_15_aus_inf_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 9th Australian Division.png", "vassal:AU 2-15Aus - 20-9Aus.svg"], verification = "double" }
 name = "2/15 Aus Inf Bn"
 counter = "2/15 Aus"
 class = "cw.p"
@@ -64,10 +68,12 @@ arrives_raw = "1/13"
 parent = "cw.9_aus_div.20th_australian_inf_bde_hq"
 morale_untrained = 0
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.9_aus_div.2_17_aus_inf_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 9th Australian Division.png", "vassal:AU 2-17Aus - 20-9Aus.svg"], verification = "double" }
 name = "2/17 Aus Inf Bn"
 counter = "2/17 Aus"
 class = "cw.p"
@@ -78,7 +84,7 @@ arrives_raw = "1/13"
 parent = "cw.9_aus_div.20th_australian_inf_bde_hq"
 morale_untrained = 0
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.9_aus_div.24th_australian_inf_bde_hq"
@@ -147,6 +153,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.9_aus_div.2_23_aus_inf_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 9th Australian Division.png", "vassal:AU 2-23Aus - 26-9Aus.svg"], verification = "double" }
 name = "2/23 Aus Inf Bn"
 counter = "2/23 Aus"
 class = "cw.p"
@@ -156,10 +164,12 @@ arrives = { gt = 20, opstage = 3 }
 arrives_raw = "3/20"
 parent = "cw.9_aus_div.26th_australian_inf_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.9_aus_div.2_24_aus_inf_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 9th Australian Division.png", "vassal:AU 2-24Aus - 26-9Aus.svg"], verification = "double" }
 name = "2/24 Aus Inf Bn"
 counter = "2/24 Aus"
 class = "cw.p"
@@ -169,10 +179,12 @@ arrives = { gt = 20, opstage = 3 }
 arrives_raw = "3/20"
 parent = "cw.9_aus_div.26th_australian_inf_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.9_aus_div.2_48_aus_inf_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC AU 9th Australian Division.png", "vassal:AU 2-48 - 26-9Aus.svg"], verification = "double" }
 name = "2/48 Aus Inf Bn"
 counter = "2/48 Aus"
 class = "cw.p"
@@ -182,7 +194,7 @@ arrives = { gt = 20, opstage = 3 }
 arrives_raw = "3/20"
 parent = "cw.9_aus_div.26th_australian_inf_bde_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "cw.9_aus_div.9th_aus_div_cavalry_regt"

@@ -34,6 +34,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.gruppo_maletti.i_libyan_mtr_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Gruppo Maletti.png", "vassal:IT I-1LbM - Maletti.png"], verification = "double" }
 name = "I Libyan Mtr Bn"
 counter = "I/1LbM"
 class = "it.w"
@@ -42,10 +44,12 @@ toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.gruppo_maletti.iii_libyan_mtr_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Gruppo Maletti.png", "vassal:IT III-1LbM - Maletti.png"], verification = "double" }
 name = "III Libyan Mtr Bn"
 counter = "III/1LbM"
 class = "it.w"
@@ -54,10 +58,12 @@ toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.gruppo_maletti.v_libyan_mtr_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Gruppo Maletti.png", "vassal:IT V-1LbM - Maletti.png"], verification = "double" }
 name = "V Libyan Mtr Bn"
 counter = "V/1LbM"
 class = "it.w"
@@ -66,7 +72,7 @@ toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.i_libyan_mtr_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.gruppo_maletti.5th_libyan_regt_hq"
@@ -82,6 +88,8 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.gruppo_maletti.xvii_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Gruppo Maletti.png", "vassal:IT XVII-5L - Maletti.png"], verification = "double" }
 name = "XVII Libyan Bn"
 counter = "XVII/5L"
 class = "it.x"
@@ -90,10 +98,12 @@ toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.5th_libyan_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.gruppo_maletti.xix_libyan_bn"
+infantry_kind = "ordinary"
+infantry_kind_evidence = { transcribed_from = ["vassal:OC IT Gruppo Maletti.png", "vassal:IT XIX-5L - Maletti.png"], verification = "double" }
 name = "XIX Libyan Bn"
 counter = "XIX/5L"
 class = "it.x"
@@ -102,7 +112,7 @@ toe = "N"
 arrives = "D"
 parent = "it.gruppo_maletti.5th_libyan_regt_hq"
 stacking_points = 1
-src = ["land:4.45"]
+src = ["land:4.45", "orig79:land:4.22"]
 
 [[unit]]
 id = "it.gruppo_maletti.sahariano_camel_regt_hq"
