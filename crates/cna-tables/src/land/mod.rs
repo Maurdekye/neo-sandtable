@@ -10,6 +10,7 @@ pub mod combat;
 pub mod engineering;
 mod grid;
 pub mod morale;
+pub mod patrol;
 pub mod raids;
 pub mod repair;
 pub mod replacements;
@@ -30,6 +31,9 @@ crate::tables_group! {
         anti_armor: anti_armor::AntiArmorTable,
         close_assault: assault::CloseAssaultTable,
         morale: morale::MoraleTable,
+        patrol_survival: patrol::PatrolSurvival,
+        patrol_reconnaissance: patrol::PatrolReconnaissance,
+        objective_loss: patrol::ObjectiveLoss,
         training: training::TrainingChart,
         replacement_conversion: replacements::ReplacementConversion,
         breakdown: breakdown::BreakdownTable,
