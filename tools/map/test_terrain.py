@@ -83,6 +83,24 @@ class TerrainTests(unittest.TestCase):
         self.assertIn(("port-sollum", "C4022"), ports)
         self.assertTrue(all("coastal" in next(r["flags"].split("|") for r in rows if r["hex_id"]==h) or h=="C4022" for _,h in ports))
 
+    def test_combined_marker_does_not_infer_terrain_coast_or_extent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            text = 'hex = []\n[batch]\nid = "synthetic-marker"\n[[place]]\nid = "marker"\nname = "Synthetic"\nhex_id = "C3419"\ntype = "village_bir"\nsrc = ["land:8.37"]\nnote = "Synthetic combined marker only"\n'
+            path = folder / "sample.toml"
+            path.write_text(text, encoding="utf-8")
+            rows = [dict(hex_id="C3419", terrain="unclassified", flags="")]
+            places = load_places(folder, rows)
+            self.assertEqual(places[0]["type"], "village_bir")
+            self.assertNotIn("place_group", places[0])
+            self.assertEqual(rows, [dict(hex_id="C3419", terrain="unclassified", flags="")])
+            path.write_text(text + 'place_group = "invented-extent"\n', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "does not establish place extent"):
+                load_places(folder, rows)
+            path.write_text(text.replace('land:8.37', 'scen:60.31'), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "TEC citation"):
+                load_places(folder, rows)
+
     def test_marsh_and_city_corrections_are_reviewed(self):
         decisions=self.load(MAP/"reviews")
         self.assertEqual(decisions["D3315"]["proposed_terrain"],"clear")

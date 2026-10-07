@@ -474,3 +474,13 @@ population error and original1979 equivalence remain unmeasured.
 ## Alexandria positive city and port review
 
 Batch alexandria-positive-0001 directly inspects E3613/E3714 as coastal major-city positives and the port wholly within E3613. Whole-cell6x/regional2.5x views, TEC.png, scenario60.41/60.5 and chart55.3 support these identities. E3713 spillover remains unresolved; no closed extent or place_group is published. Source views stay outside the repo; one observer, no independent error estimate or1979comparison. Every other terrain, edge and place remains unchanged.
+
+
+Named-anchors-0001: six point markers were inspected on full native regional
+views and separate registered locator twins, then compared directly to TEC.png
+and scen:60.31. All six dots lie inside the cited canonical hexes. Only the
+shared Village/Bir symbol family was established; no separate water subtype,
+closed extent, fortified area or garrison permission is asserted. No source
+terrain or coastal classification was added by these place records. Single
+observer on the 2021 re-render; independent error rate and 1979 equivalence are
+unmeasured. Source pixels remain local outside the repository.

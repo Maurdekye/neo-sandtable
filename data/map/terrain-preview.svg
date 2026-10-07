@@ -7024,6 +7024,7 @@
 <polygon points="2771.28,290.00 2762.62,295.00 2753.96,290.00 2753.96,280.00 2762.62,275.00 2771.28,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4427: unclassified</title></polygon>
 <polygon points="2788.60,290.00 2779.94,295.00 2771.28,290.00 2771.28,280.00 2779.94,275.00 2788.60,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4428: unclassified</title></polygon>
 <polygon points="2805.92,290.00 2797.26,295.00 2788.60,290.00 2788.60,280.00 2797.26,275.00 2805.92,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4429: unclassified</title></polygon>
+<circle cx="1480.90" cy="435.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Bir Sceferzen: village_bir</title></circle>
 <circle cx="2520.13" cy="405.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: major_city</title></circle>
 <circle cx="2528.79" cy="390.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: major_city</title></circle>
 <circle cx="1506.88" cy="300.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Bardia: major_city</title></circle>
@@ -7033,6 +7034,11 @@
 <circle cx="2814.58" cy="675.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
 <circle cx="2805.92" cy="660.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
 <circle cx="2823.24" cy="660.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Cairo: major_city</title></circle>
+<circle cx="1004.59" cy="60.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Derna: village_bir</title></circle>
+<circle cx="1402.96" cy="690.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>el Grein: village_bir</title></circle>
+<circle cx="1480.90" cy="495.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Fort Maddalena: village_bir</title></circle>
+<circle cx="1394.30" cy="795.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Giarabub: village_bir</title></circle>
+<circle cx="935.31" cy="210.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Mechili: village_bir</title></circle>
 <circle cx="2520.13" cy="405.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: port</title></circle>
 <circle cx="1506.88" cy="300.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Bardia: port</title></circle>
 <circle cx="476.31" cy="225.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Benghazi: port</title></circle>

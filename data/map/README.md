@@ -458,3 +458,18 @@ remain unknown.
 `control_halo_complete` remains false. Consult individual masks; neither
 halo water checks nor a complete branch crossing complete the playback leg.
 Public side-feature marks are new regular-hex bars labeled from data.
+
+
+### Combined Village/Bir point records
+
+The place kind `village_bir` records the TEC's shared dot symbol (land:8.37).
+It asserts a named point in one canonical hex, without deciding whether the
+place is a village or a bir. It has no place_group or complete extent. The
+marker does not classify its land substrate or coastal status. Neither water
+amounts, a fortification level, nor garrison permission follow from this kind;
+consumers needing a specific subtype must return Unsupported until separately
+verified evidence is available. Source-point records for Bir Sceferzen C3419,
+Fort Maddalena C3019, el Grein C1715, Mechili B4921, Derna B5925 and Giarabub
+C1014 cite land:8.37 and scen:60.31. Their stable ids are respectively
+`bir-sceferzen`, `fort-maddalena`, `el-grein`, `mechili`, `derna`, `giarabub`.
+The names alone do not expand their extent or infer a facility type.

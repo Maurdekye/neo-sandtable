@@ -1,0 +1,61 @@
+hex = []
+
+[batch]
+id = "named-anchors-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "Benghazi and Mersa Matruh circled port anchors; three source regional views and complete-cell details, Tobruk abstained"
+notes = "Native3x regional and6x whole-cell detail reviewed against TEC.png and55.3 chart. Port identities and hexes only; terrain, city extent, capacity, efficiency, training and other facilities remain separate. Tobruk anchor crosses C4807/C4908 shared side and is not accepted from its garrison anchor."
+review_basis = "Native unmarked regional source and registered locator twins; six printed anchors independently matched to TEC combined Village/Bir dot. Exact subtype and extent are not asserted."
+
+[[place]]
+id = "bir-sceferzen"
+name = "Bir Sceferzen"
+hex_id = "C3419"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred."
+
+[[place]]
+id = "fort-maddalena"
+name = "Fort Maddalena"
+hex_id = "C3019"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred. Name spelling varies in sources; the name does not prove a fortified feature."
+
+[[place]]
+id = "el-grein"
+name = "el Grein"
+hex_id = "C1715"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred."
+
+[[place]]
+id = "mechili"
+name = "Mechili"
+hex_id = "B4921"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred."
+
+[[place]]
+id = "derna"
+name = "Derna"
+hex_id = "B5925"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred."
+
+[[place]]
+id = "giarabub"
+name = "Giarabub"
+hex_id = "C1014"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred. A scenario oasis-complex reference does not enumerate its extent."

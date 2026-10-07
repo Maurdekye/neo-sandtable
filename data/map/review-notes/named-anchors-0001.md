@@ -1,0 +1,7 @@
+# Named point anchors: source-reviewed point records
+
+Six full native regional source crops with independent locator twins were inspected against TEC.png and scen:60.31: Bir Sceferzen C3419, Fort Maddalena C3019, el Grein C1715, Mechili B4921, Derna B5925, Giarabub C1014. Every named dot lies in the indicated cell. The key binds the blue dot only to the combined Village/Bir family. The name Fort is not evidence of a fortification level; oasis-complex wording does not enumerate membership. No major_city terrain, area/group extent, port capacity, well amount or action legality is inferred.
+
+Stable ids: bir-sceferzen, fort-maddalena, el-grein, mechili, derna, giarabub. Source family type village_bir; consumer water classification stays unsupported until separately resolved. Existing typed PlacesContent retains kind strings without a closed enum, but owned source replay supports this combined family separately from port/major_city. Lead approved the six records and additive accepted kind on 2026-10-07. Replay accepts the combined marker without inferring terrain or coastal-domain coverage. Alexandria source decisions are unchanged; lake schema remains a separate pending candidate.
+
+Derna also has a visible port anchor in B5925, but it is not included: current cell coastal domain/terrain evidence needs an explicit independent review before port acceptance. Only six dot anchors are in this proposal. Single observer/native2021, no independent agreement or original1979-equivalence claim; source pixels remain outside repo.

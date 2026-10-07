@@ -4,6 +4,15 @@ complete = false
 verification = "visual_single_pass"
 
 [[places]]
+id = "bir-sceferzen"
+name = "Bir Sceferzen"
+hex_id = "C3419"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred."
+review_batch = "named-anchors-0001"
+
+[[places]]
 id = "city-alexandria-e3613"
 name = "Alexandria"
 hex_id = "E3613"
@@ -90,6 +99,51 @@ place_group = "cairo"
 src = ["land:8.37", "land:17.32", "scen:60.43"]
 note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
 review_batch = "cairo-0001"
+
+[[places]]
+id = "derna"
+name = "Derna"
+hex_id = "B5925"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred."
+review_batch = "named-anchors-0001"
+
+[[places]]
+id = "el-grein"
+name = "el Grein"
+hex_id = "C1715"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred."
+review_batch = "named-anchors-0001"
+
+[[places]]
+id = "fort-maddalena"
+name = "Fort Maddalena"
+hex_id = "C3019"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred. Name spelling varies in sources; the name does not prove a fortified feature."
+review_batch = "named-anchors-0001"
+
+[[places]]
+id = "giarabub"
+name = "Giarabub"
+hex_id = "C1014"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred. A scenario oasis-complex reference does not enumerate its extent."
+review_batch = "named-anchors-0001"
+
+[[places]]
+id = "mechili"
+name = "Mechili"
+hex_id = "B4921"
+type = "village_bir"
+src = ["land:8.37", "scen:60.31"]
+note = "Source-verified point anchor and combined Village/Bir symbol only; no complete place extent, garrison permission, separate village/bir classification, water amount or fortification level inferred."
+review_batch = "named-anchors-0001"
 
 [[places]]
 id = "port-alexandria-e3613"

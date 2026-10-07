@@ -174,3 +174,11 @@ and city extent are separate evidence; absent place records remain unknown.
 ## Alexandria drawing spillover
 
 E3613/E3714 have verified city symbols; E3613 has the circled port. E3713 contains neighboring city-drawing spillover of unresolved terrain significance. Positive records do not establish a closed extent. No Alexandria place_group, capacity or training inventory is inferred; the existing scenario-specific area is unchanged.
+
+
+Combined Village/Bir dot anchors are recorded for six cited scen:60.31 places.
+The symbol does not resolve the separate village/bir water subtype or a place
+extent. Giarabub's named oasis complex is not enumerated from its single dot;
+Fort Maddalena's name does not establish fortification geometry or level.
+Derna's visible port anchor remains withheld pending explicit coastal-cell
+review. These records do not establish garrison placement or movement bounds.
