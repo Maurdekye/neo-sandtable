@@ -18,7 +18,7 @@ use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
     path::Path,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, OnceLock},
     time::Instant,
 };
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
@@ -31,6 +31,33 @@ pub struct Projection {
     pub meta: CampaignMeta,
     pub seq: u64,
     pub view: ViewState,
+}
+/// Eager metadata without materializing a board snapshot.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ProjectionHeader {
+    pub meta: CampaignMeta,
+    pub seq: u64,
+}
+/// One captured committed root, retained across snapshot or WebSocket awaits.
+#[derive(Clone)]
+pub struct PerspectiveSnapshot {
+    published: Arc<Published>,
+    perspective: Perspective,
+}
+impl PerspectiveSnapshot {
+    pub fn header(&self) -> ProjectionHeader {
+        self.published.headers[&self.perspective].clone()
+    }
+    pub fn projection(&self) -> Projection {
+        let header = self.header();
+        let view = self.published.views[&self.perspective]
+            .get_or_init(|| (self.published.projector)(self.perspective));
+        Projection {
+            meta: header.meta,
+            seq: header.seq,
+            view: view.clone(),
+        }
+    }
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct SeatState {
@@ -90,8 +117,11 @@ struct Publisher {
     transcript_cursors: BTreeMap<(Perspective, SeatId), u64>,
 }
 pub(crate) type Observer = Arc<dyn Fn(SeatId) -> Value + Send + Sync>;
+pub(crate) type Projector = Arc<dyn Fn(Perspective) -> ViewState + Send + Sync>;
 struct Published {
-    projections: BTreeMap<Perspective, Projection>,
+    headers: BTreeMap<Perspective, ProjectionHeader>,
+    views: BTreeMap<Perspective, OnceLock<ViewState>>,
+    projector: Projector,
     seats: BTreeMap<SeatId, SeatState>,
     observer: Observer,
 }
@@ -101,45 +131,38 @@ where
     R::State: Send + Sync,
     R::Content: Send + Sync,
 {
-    let projections: BTreeMap<_, _> = build_projections(campaign)?.into_iter().collect();
     let pending = campaign.pending();
+    let headers: BTreeMap<_, _> = Perspective::all()
+        .map(|p| {
+            Ok((
+                p,
+                ProjectionHeader {
+                    meta: campaign.metadata(p),
+                    seq: campaign.current_seq(p)?,
+                },
+            ))
+        })
+        .collect::<Result<_, Error>>()?;
+    let projector = campaign.projector(&pending)?;
     let seats = SeatId::all()
         .map(|seat| {
             (
                 seat,
                 SeatState {
                     pending: pending.iter().filter(|d| d.seat == seat).cloned().collect(),
-                    seq: projections[&Perspective::Seat(seat)].seq,
+                    seq: headers[&Perspective::Seat(seat)].seq,
                     binding: campaign.binding(seat).clone(),
                 },
             )
         })
         .collect();
     Ok(Arc::new(Published {
-        projections,
+        headers,
+        views: Perspective::all().map(|p| (p, OnceLock::new())).collect(),
+        projector,
         seats,
         observer: campaign.observer(),
     }))
-}
-fn build_projections<R: Ruleset>(
-    campaign: &Campaign<R>,
-) -> Result<Vec<(Perspective, Projection)>, Error> {
-    let perspectives: Vec<_> = Perspective::all().collect();
-    let views = campaign.views(&perspectives)?;
-    perspectives
-        .into_iter()
-        .zip(views)
-        .map(|(p, view)| {
-            Ok((
-                p,
-                Projection {
-                    meta: campaign.metadata(p),
-                    seq: campaign.current_seq(p)?,
-                    view,
-                },
-            ))
-        })
-        .collect()
 }
 impl Publisher {
     fn update<R>(&mut self, campaign: &Campaign<R>) -> Result<(), Error>
@@ -150,11 +173,11 @@ impl Publisher {
     {
         let start = Instant::now();
         let next = published(campaign)?;
-        // One atomic root binds projections, pending, bindings and observation to one commit.
+        // One atomic root binds headers, pending, bindings and snapshot readers to one commit.
         let previous = self.published.send_replace(Arc::clone(&next));
-        for (&p, projection) in &next.projections {
-            let previous_seq = previous.projections[&p].seq;
-            let end = projection.seq;
+        for (&p, header) in &next.headers {
+            let previous_seq = previous.headers[&p].seq;
+            let end = header.seq;
             let mut from = previous_seq;
             while from < end {
                 let events = campaign.events_after(p, from, 512)?;
@@ -383,8 +406,18 @@ impl CampaignHandle {
     pub fn runtime_metrics(&self) -> RuntimeMetrics {
         *self.inner.metrics.lock().expect("runtime metrics lock")
     }
+    pub fn header(&self, p: Perspective) -> ProjectionHeader {
+        self.inner.published.borrow().headers[&p].clone()
+    }
+    pub fn snapshot(&self, p: Perspective) -> PerspectiveSnapshot {
+        let published = Arc::clone(&self.inner.published.borrow());
+        PerspectiveSnapshot {
+            published,
+            perspective: p,
+        }
+    }
     pub fn projection(&self, p: Perspective) -> Projection {
-        self.inner.published.borrow().projections[&p].clone()
+        self.snapshot(p).projection()
     }
     pub fn seat(&self, seat: SeatId) -> SeatState {
         self.inner.published.borrow().seats[&seat].clone()

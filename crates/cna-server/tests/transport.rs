@@ -1470,3 +1470,52 @@ async fn trusted_credential_export_refreshes_atomically_and_restart_rotates_toke
     server.stop().await;
     second.stop().await;
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn metadata_discovery_and_retained_websocket_resume_build_no_views() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", true)).unwrap();
+    let id = handle.header(Perspective::Operator).meta.id;
+    let server = Server::new(dir.path(), Some(handle.clone())).await;
+    let listed: Vec<Value> = server
+        .client()
+        .get(format!("{}/api/campaigns", server.url))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0]["id"], id);
+    assert_eq!(handle.runtime_metrics().projection_views, Duration::ZERO);
+    let address = format!(
+        "{}/api/campaigns/{id}/stream?cap={}",
+        server.url.replace("http:", "ws:"),
+        server.app.operator_token()
+    );
+    let (mut socket, _) = tokio_tungstenite::connect_async(&address).await.unwrap();
+    subscribe(&mut socket, "side:axis", Some(0)).await;
+    assert!(matches!(
+        read(&mut socket).await,
+        ServerMessage::Hello { .. }
+    ));
+    assert_eq!(
+        handle.runtime_metrics().projection_views,
+        Duration::ZERO,
+        "retained-state resume must not compute an unused snapshot"
+    );
+    subscribe(&mut socket, "side:axis", None).await;
+    assert!(matches!(
+        read(&mut socket).await,
+        ServerMessage::Hello { .. }
+    ));
+    let ServerMessage::Snapshot { seq, view } = read(&mut socket).await else {
+        panic!("fresh snapshot")
+    };
+    assert_eq!(seq, 0);
+    assert_eq!(view, handle.projection(Perspective::Side(Side::Axis)).view);
+    assert!(handle.runtime_metrics().projection_views > Duration::ZERO);
+    socket.close(None).await.unwrap();
+    server.stop().await;
+}

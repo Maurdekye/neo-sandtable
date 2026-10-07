@@ -113,7 +113,7 @@ impl Demo {
                 epochs.insert(*seat, binding.controller_epoch);
             }
         }
-        let id = handle.projection(Perspective::Operator).meta.id;
+        let id = handle.header(Perspective::Operator).meta.id;
         let journal = if config.session.is_some() {
             Some(Arc::new(journal::SessionJournal::create(
                 directory,
@@ -138,7 +138,7 @@ impl Demo {
         let saved = journal.snapshot()?;
         let handle = campaigns::recover(path, data).map_err(|e| e.to_string())?;
         let checked = async {
-            if handle.projection(Perspective::Operator).meta.id != id {return Err("campaign identity differs from journal".to_string());}
+            if handle.header(Perspective::Operator).meta.id != id {return Err("campaign identity differs from journal".to_string());}
             if matches!(handle.status(), CampaignStatus::Running) {handle.pause(true).await.map_err(|e|e.to_string())?;}
             for (seat, record) in &saved.seats {
                 let binding=handle.seat(*seat).binding;
@@ -220,7 +220,7 @@ impl Demo {
         let http = tokio::spawn(async move {
             axum::serve(listener, routes).await.unwrap();
         });
-        let campaign_id = handle.projection(Perspective::Operator).meta.id;
+        let campaign_id = handle.header(Perspective::Operator).meta.id;
         Ok(Self {
             handle,
             config,
@@ -239,7 +239,7 @@ impl Demo {
         })
     }
     pub fn campaign_id(&self) -> String {
-        self.handle.projection(Perspective::Operator).meta.id
+        self.handle.header(Perspective::Operator).meta.id
     }
 
     /// Trusted spectator URL. Never pass it to a seat driver or its environment.
@@ -544,7 +544,7 @@ pub async fn replay_board(path: &Path, data: &Path, dist: &Path) {
         port,
         Arc::new(move |r, dir| campaigns::create(dir, &data, r)),
     );
-    let id = handle.projection(Perspective::Operator).meta.id;
+    let id = handle.header(Perspective::Operator).meta.id;
     app.register(handle);
     let routes = app.router(dist);
     let task = tokio::spawn(async move {

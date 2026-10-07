@@ -185,7 +185,7 @@ Ignored whole-campaign tests emit `CNA_PROFILE` on CI with wall time, accepted c
 resolved decision counts by kind, and runtime engine, durable writer, projection and controller
 costs. The durable writer includes serialization, state/event hashing, pending and stream rows,
 and the SQLite `synchronous=FULL` transaction commit; it excludes engine evaluation. Projection
-time includes all 13 snapshots and committed stream fanout. Observation time is measured
+time includes eager metadata and opening sequences plus committed stream fanout. Observation time is measured
 separately on demand outside the writer. Controller
 time includes scripted selection and pure validation outside those measured commit costs.
 These cumulative diagnostics reset on recovery and are available only through the trusted
@@ -199,8 +199,8 @@ projections238.672s and controller selection12.562s over397.550s wall time.
 The pass campaign measured12.064/61.042/117.679/1.141s in those categories;
 HTTP legal-random measured21.569/133.191/255.733/13.347s.
 
-The writer now projects all perspectives through `Ruleset::views`, so CNA builds one
-shared board per update. Each visible DecisionOpened also records its local sequence in
+Direct batched `Campaign::views` uses the shared ruleset board. The actor instead
+captures immutable state and computes only the snapshots that clients request. Each visible DecisionOpened also records its local sequence in
 `decision_opened` in the accepted-command transaction; snapshot lookups use that primary
 key instead of scanning accumulated events. Existing databases backfill the index atomically
 from their authorized stream rows. Checkpoint/tail recovery preserves the same sequences.
@@ -209,10 +209,22 @@ costs separately. Timings are trusted-process diagnostics; durability and per-co
 acknowledgment stay unchanged.
 
 Seat observations run on demand against an immutable committed game. The published root swaps
-all perspective projections, seat pending/binding metadata and its snapshot observer together.
+all perspective headers, seat pending/binding metadata and its snapshot readers together.
 HTTP returns observation and epoch metadata from that same root. Readers retain their snapshot
 while newer commands commit; observation computation never holds the writer, watch or database
 lock. Seat notifications use only their own contiguous stream sequence, pending and binding.
 The snapshot remains readable after shutdown, and recovery produces identical observations.
 Server spawn requires immutable rules/content/state to be Send + Sync; scripted controllers
 remain owned by the writer. This does not change command durability or acknowledgment.
+
+
+Perspective snapshots also run on demand from the immutable committed root. Publication keeps
+metadata, stream sequences, visible decision-opening sequences and seat notifications eager;
+it builds no board views. `CampaignHandle::header` reads only metadata and sequence. A captured
+`CampaignHandle::snapshot` retains that commit across awaits and caches its perspective view on
+first access, outside writer and watch locks. A later decision revision cannot rewrite the captured
+opening sequences. HTTP snapshots and fresh WebSocket subscriptions use this reader; retained
+state reconnects replay events without building a snapshot. Existing `projection` callers remain
+supported and materialize a snapshot only when called. View timings now measure demanded reads,
+separately from eager publisher time. Recovery tests compare all thirteen views with direct
+ruleset projections, including a delayed read after a decision reissue.

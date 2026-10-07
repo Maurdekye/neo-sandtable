@@ -95,9 +95,9 @@ pub struct RuntimeMetrics {
     pub engine: Duration,
     /// Serialization, state hashing, pending/stream rows and SQLite FULL transaction commit.
     pub durable_writer: Duration,
-    /// All perspective snapshots and committed stream publication.
+    /// Eager metadata, opening-sequence capture and committed stream publication.
     pub projections: Duration,
-    /// Ruleset board construction/projection, excluding local sequence lookups.
+    /// On-demand snapshot construction/projection, outside publisher and writer time.
     pub projection_views: Duration,
     /// On-demand observation reads, outside publisher and writer time.
     pub projection_observe: Duration,
@@ -406,6 +406,49 @@ impl<R: Ruleset> Campaign<R> {
                 .projection_observe += start.elapsed();
             result
         })
+    }
+    /// Capture visible opening sequences now: a revision may reissue the same id later.
+    /// Snapshot reads never consult the mutable index or the writer connection.
+    pub(crate) fn projector(
+        &self,
+        pending: &[DecisionRequest],
+    ) -> Result<crate::actor::Projector, Error>
+    where
+        R: Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
+    {
+        let mut openings = BTreeMap::new();
+        for perspective in Perspective::all() {
+            for request in pending
+                .iter()
+                .filter(|d| perspective.can_see(&Audience::Seat(d.seat)))
+            {
+                openings.insert(
+                    (perspective, request.id.to_string()),
+                    self.opened_seq(perspective, request.id.as_str())?,
+                );
+            }
+        }
+        let ruleset = Arc::clone(&self.ruleset);
+        let content = Arc::clone(&self.content);
+        let game = Arc::clone(&self.game);
+        let metrics = Arc::clone(&self.metrics);
+        Ok(Arc::new(move |perspective| {
+            let start = Instant::now();
+            let mut view = ruleset.view(&content, &game.state, perspective);
+            for decision in &mut view.pending {
+                decision.opened_seq = openings
+                    .get(&(perspective, decision.id.clone()))
+                    .copied()
+                    .unwrap_or(0);
+            }
+            metrics
+                .lock()
+                .expect("runtime metrics lock")
+                .projection_views += start.elapsed();
+            view
+        }))
     }
     pub fn actions(&self, seat: SeatId, id: &str) -> Result<DecisionRequest, Error> {
         self.pending()

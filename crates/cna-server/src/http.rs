@@ -78,7 +78,7 @@ impl App {
         }
     }
     pub fn register(&self, campaign: CampaignHandle) {
-        let id = campaign.projection(Perspective::Operator).meta.id;
+        let id = campaign.header(Perspective::Operator).meta.id;
         self.capabilities.register(&id);
         self.campaigns
             .write()
@@ -337,8 +337,8 @@ async fn list(
             )
         })?
         .values()
-        .filter(|h| grant.campaign(&h.projection(p).meta.id))
-        .map(|h| h.projection(p).meta)
+        .filter(|h| grant.campaign(&h.header(p).meta.id))
+        .map(|h| h.header(p).meta)
         .collect();
     Ok(Json(json!(campaigns)))
 }
@@ -358,7 +358,7 @@ async fn create(
                 "creation unavailable".into(),
             )
         })??;
-    let meta = handle.projection(Perspective::Operator).meta;
+    let meta = handle.header(Perspective::Operator).meta;
     app.register(handle);
     Ok((StatusCode::CREATED, Json(json!(meta))))
 }
@@ -377,9 +377,10 @@ async fn inspect_campaign(
         }
         other => json!(other),
     };
-    Ok(Json(
-        json!({"campaign":handle.projection(p).meta,"status":status,"snapshot":handle.projection(p)}),
-    ))
+    Ok(Json({
+        let projection = handle.projection(p);
+        json!({"campaign":projection.meta,"status":status,"snapshot":projection})
+    }))
 }
 async fn pause(
     State(app): State<App>,
@@ -601,13 +602,14 @@ async fn stream(mut socket: WebSocket, handle: CampaignHandle, grant: Grant) {
         }
         // Register first, then read one immutable seq+view projection: no snapshot/live race.
         let mut live = handle.subscribe(p);
-        let projection = handle.projection(p);
-        let target = projection.seq;
+        let snapshot = handle.snapshot(p);
+        let header = snapshot.header();
+        let target = header.seq;
         if send(
             &mut socket,
             &ServerMessage::Hello {
                 protocol: PROTOCOL_VERSION,
-                campaign: projection.meta,
+                campaign: header.meta,
                 perspective: p.to_string(),
             },
         )
@@ -628,7 +630,7 @@ async fn stream(mut socket: WebSocket, handle: CampaignHandle, grant: Grant) {
                 &mut socket,
                 &ServerMessage::Snapshot {
                     seq: target,
-                    view: projection.view,
+                    view: snapshot.projection().view,
                 },
             )
             .await
@@ -664,6 +666,8 @@ async fn stream(mut socket: WebSocket, handle: CampaignHandle, grant: Grant) {
                 }
             }
         }
+        // The viewer now follows rows; do not retain an old game for its entire connection.
+        drop(snapshot);
         let mut transcript_cursors: BTreeMap<String, u64> = BTreeMap::new();
         // Histories are paged off the campaign writer. Replay duplicates on reconnect are
         // identified by (seat,tseq), not a global capture counter.

@@ -1068,6 +1068,7 @@ fn failed_legacy_backfill_does_not_leave_a_partially_initialized_index() {
 }
 
 struct BatchOnly {
+    gate: ReaderGate,
     calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     single_calls: std::sync::Arc<std::sync::atomic::AtomicUsize>,
 }
@@ -1087,7 +1088,18 @@ impl Ruleset for BatchOnly {
         r: &DecisionResponse,
         cx: &mut Cx<'_>,
     ) -> Result<(), Rejection> {
-        rules().respond(c, s, r, cx)
+        rules().respond(c, s, r, cx)?;
+        let owner: SeatId = "axis.commander".parse().unwrap();
+        if r.seat != owner {
+            // This fixture revises an unresolved decision without changing its identity.
+            for decision in rules().view(c, s, Perspective::Seat(owner)).pending {
+                cx.emit(EngineEvent::new(
+                    Audience::Seat(owner),
+                    GameEvent::DecisionOpened { decision },
+                ));
+            }
+        }
+        Ok(())
     }
     fn pending(&self, c: &(), s: &State) -> Vec<DecisionRequest> {
         rules().pending(c, s)
@@ -1098,6 +1110,13 @@ impl Ruleset for BatchOnly {
     fn view(&self, c: &(), s: &State, p: Perspective) -> ViewState {
         self.single_calls
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let gate = self.gate.lock().unwrap().take();
+        if let Some((started, release)) = gate {
+            started.send(()).unwrap();
+            release
+                .recv_timeout(std::time::Duration::from_secs(10))
+                .unwrap();
+        }
         rules().view(c, s, p)
     }
     fn views(&self, c: &(), s: &State, ps: &[Perspective]) -> Vec<ViewState> {
@@ -1108,7 +1127,7 @@ impl Ruleset for BatchOnly {
 }
 
 #[tokio::test]
-async fn real_publisher_uses_one_batch_override_for_initial_and_updated_projections() {
+async fn real_publisher_builds_no_views_until_snapshot_reads_and_caches_each_root() {
     use std::sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -1120,6 +1139,7 @@ async fn real_publisher_uses_one_batch_override_for_initial_and_updated_projecti
     let mut game = Campaign::create(
         &path,
         BatchOnly {
+            gate: std::sync::Arc::new(std::sync::Mutex::new(None)),
             calls: calls.clone(),
             single_calls: single_calls.clone(),
         },
@@ -1147,15 +1167,29 @@ async fn real_publisher_uses_one_batch_override_for_initial_and_updated_projecti
     handle.pause(true).await.unwrap();
     // Join the real writer before inspecting counters: no timing or scheduling assumptions.
     handle.shutdown().await.unwrap();
-    assert!(calls.load(Ordering::SeqCst) >= 2);
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
     assert_eq!(
         single_calls.load(Ordering::SeqCst),
         before_single,
-        "publisher must use the batch override"
+        "publisher must not build any views"
     );
     for (p, view) in Perspective::all().zip(expected) {
+        let header = handle.header(p);
+        assert_eq!(
+            single_calls.load(Ordering::SeqCst),
+            before_single + p_index(p)
+        );
+        let snapshot = handle.snapshot(p);
+        assert_eq!(snapshot.header(), header);
+        assert_eq!(snapshot.projection().view, view);
         assert_eq!(handle.projection(p).view, view);
     }
+    assert_eq!(single_calls.load(Ordering::SeqCst), before_single + 13);
+}
+fn p_index(p: Perspective) -> usize {
+    Perspective::all()
+        .position(|candidate| candidate == p)
+        .unwrap()
 }
 
 // A real actor observer with a controllable reader stall. The rules still use Tiny's exact
@@ -1326,4 +1360,146 @@ async fn lazy_committed_observation_does_not_block_writer_or_wake_enemy_seat() {
         assert_eq!(observation, recovered_handle.observation(seat));
     }
     recovered_handle.shutdown().await.unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn lazy_snapshot_retains_reissued_openings_and_never_blocks_writer() {
+    use cna_server::actor::CampaignHandle;
+    use std::sync::{Arc, Mutex, atomic::AtomicUsize, mpsc};
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("lazy-view.sqlite");
+    let gate: ReaderGate = Arc::new(Mutex::new(None));
+    let mut game = Campaign::create(
+        &path,
+        BatchOnly {
+            calls: Arc::new(AtomicUsize::new(0)),
+            single_calls: Arc::new(AtomicUsize::new(0)),
+            gate: gate.clone(),
+        },
+        (),
+        Game {
+            state: State::default(),
+            rng: CampaignRng::from_seed([7; 32]).state(),
+        },
+        CampaignMeta {
+            id: "lazy-view".into(),
+            scenario_id: "tiny".into(),
+            rules_profile: "tiny-v1".into(),
+            title: "Lazy view".into(),
+            seats: vec![],
+        },
+        pins(),
+    )
+    .unwrap();
+    game.advance().unwrap();
+    game.set_paused(true).unwrap();
+    let own: SeatId = "axis.commander".parse().unwrap();
+    let p = Perspective::Seat(own);
+    let expected_old = game.view(p).unwrap();
+    let handle = CampaignHandle::spawn(game, &path, None).unwrap();
+    let mut live = handle.subscribe(p);
+    let delayed = handle.snapshot(p);
+    let old_header = delayed.header();
+    handle.handover(own, None, Value::Null).await.unwrap();
+    handle.pause(false).await.unwrap();
+    let enemy: SeatId = "commonwealth.commander".parse().unwrap();
+    let other = handle.seat(enemy).pending[0].clone();
+    handle
+        .submit(DecisionResponse {
+            decision_id: other.id,
+            seat: enemy,
+            controller_epoch: 0,
+            decision_revision: other.revision,
+            idempotency_key: "reissue-opening".into(),
+            action: json!(1),
+            public_explanation: None,
+        })
+        .await
+        .unwrap();
+    // Materialize only AFTER a committed answer reopens the same decision id.
+    let old = delayed.projection();
+    let reissued = handle.projection(p);
+    assert_eq!(old.view, expected_old);
+    assert_eq!(old.seq, old_header.seq);
+    assert_eq!(old.view.pending[0].id, reissued.view.pending[0].id);
+    assert!(reissued.view.pending[0].opened_seq > old.view.pending[0].opened_seq);
+    assert!(reissued.seq > old.seq);
+    // Replay and the live channel start at the captured root's contiguous sequence.
+    let reader = handle.replay();
+    let rows = reader.events(p, old.seq, reissued.seq).unwrap();
+    for (offset, row) in rows.iter().enumerate() {
+        let ServerMessage::Event { seq, .. } = row else {
+            panic!("event row")
+        };
+        assert_eq!(*seq, old.seq + offset as u64 + 1);
+        assert_eq!(&live.try_recv().unwrap(), row);
+    }
+    handle.pause(false).await.unwrap();
+    let request = handle.seat(own).pending[0].clone();
+    let blocked = handle.snapshot(Perspective::Operator);
+    let (started_send, started_recv) = mpsc::sync_channel(1);
+    let (release_send, release_recv) = mpsc::sync_channel(1);
+    *gate.lock().unwrap() = Some((started_send, release_recv));
+    let thread = std::thread::spawn(move || blocked.projection());
+    started_recv
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .unwrap();
+    let accepted = tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        handle.submit(DecisionResponse {
+            decision_id: request.id,
+            seat: own,
+            controller_epoch: 1,
+            decision_revision: request.revision,
+            idempotency_key: "lazy-view-own".into(),
+            action: json!(2),
+            public_explanation: None,
+        }),
+    )
+    .await;
+    let handover = tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        handle.handover(own, None, Value::Null),
+    )
+    .await;
+    release_send.send(()).unwrap();
+    let old_operator = thread.join().unwrap();
+    accepted.expect("snapshot cannot block submit").unwrap();
+    handover.expect("snapshot cannot block handover").unwrap();
+    assert!(
+        old_operator
+            .view
+            .pending
+            .iter()
+            .any(|d| d.seat == own.to_string())
+    );
+    assert!(
+        !handle
+            .projection(Perspective::Operator)
+            .view
+            .pending
+            .iter()
+            .any(|d| d.seat == own.to_string())
+    );
+    handle.shutdown().await.unwrap();
+    let recovered = Campaign::recover(
+        &path,
+        BatchOnly {
+            calls: Arc::new(AtomicUsize::new(0)),
+            single_calls: Arc::new(AtomicUsize::new(0)),
+            gate: Arc::new(Mutex::new(None)),
+        },
+        (),
+        &pins(),
+    )
+    .unwrap();
+    for p in Perspective::all() {
+        assert_eq!(handle.projection(p).view, recovered.view(p).unwrap());
+        assert_eq!(handle.header(p).seq, recovered.current_seq(p).unwrap());
+    }
+    let restored = CampaignHandle::spawn(recovered, &path, None).unwrap();
+    for p in Perspective::all() {
+        assert_eq!(restored.projection(p), handle.projection(p));
+    }
+    restored.shutdown().await.unwrap();
 }
