@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4425.76 888.00 847.96 240.00">
+<title>Source-reviewed map strip: map-layer completeness only</title>
+<desc>Original regular hexagons and center links generated from canonical map data. No source artwork. Unit move legality and the neighboring control halo are unverified.</desc>
+<polygon points="4486.01,1022.00 4461.76,1036.00 4437.51,1022.00 4437.51,994.00 4461.76,980.00 4486.01,994.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4534.51,1022.00 4510.26,1036.00 4486.01,1022.00 4486.01,994.00 4510.26,980.00 4534.51,994.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4558.76,980.00 4534.51,994.00 4510.26,980.00 4510.26,952.00 4534.51,938.00 4558.76,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4607.26,980.00 4583.01,994.00 4558.76,980.00 4558.76,952.00 4583.01,938.00 4607.26,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4655.75,980.00 4631.50,994.00 4607.26,980.00 4607.26,952.00 4631.50,938.00 4655.75,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4680.00,938.00 4655.75,952.00 4631.50,938.00 4631.50,910.00 4655.75,896.00 4680.00,910.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4728.50,938.00 4704.25,952.00 4680.00,938.00 4680.00,910.00 4704.25,896.00 4728.50,910.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4777.00,938.00 4752.75,952.00 4728.50,938.00 4728.50,910.00 4752.75,896.00 4777.00,910.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4801.24,980.00 4777.00,994.00 4752.75,980.00 4752.75,952.00 4777.00,938.00 4801.24,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4849.74,980.00 4825.49,994.00 4801.24,980.00 4801.24,952.00 4825.49,938.00 4849.74,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4898.24,980.00 4873.99,994.00 4849.74,980.00 4849.74,952.00 4873.99,938.00 4898.24,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4946.74,980.00 4922.49,994.00 4898.24,980.00 4898.24,952.00 4922.49,938.00 4946.74,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4970.99,1022.00 4946.74,1036.00 4922.49,1022.00 4922.49,994.00 4946.74,980.00 4970.99,994.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="5019.48,1022.00 4995.23,1036.00 4970.99,1022.00 4970.99,994.00 4995.23,980.00 5019.48,994.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="5043.73,1064.00 5019.48,1078.00 4995.23,1064.00 4995.23,1036.00 5019.48,1022.00 5043.73,1036.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="5092.23,1064.00 5067.98,1078.00 5043.73,1064.00 5043.73,1036.00 5067.98,1022.00 5092.23,1036.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="5140.73,1064.00 5116.48,1078.00 5092.23,1064.00 5092.23,1036.00 5116.48,1022.00 5140.73,1036.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="5164.98,1106.00 5140.73,1120.00 5116.48,1106.00 5116.48,1078.00 5140.73,1064.00 5164.98,1078.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="5213.47,1106.00 5189.22,1120.00 5164.98,1106.00 5164.98,1078.00 5189.22,1064.00 5213.47,1078.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="5261.97,1106.00 5237.72,1120.00 5213.47,1106.00 5213.47,1078.00 5237.72,1064.00 5261.97,1078.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<line x1="4461.76" y1="1008.00" x2="4510.26" y2="1008.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<line x1="4510.26" y1="1008.00" x2="4534.51" y2="966.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<line x1="4534.51" y1="966.00" x2="4583.01" y2="966.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<line x1="4583.01" y1="966.00" x2="4631.50" y2="966.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<line x1="4631.50" y1="966.00" x2="4655.75" y2="924.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<line x1="4655.75" y1="924.00" x2="4704.25" y2="924.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4704.25" y1="924.00" x2="4752.75" y2="924.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4752.75" y1="924.00" x2="4777.00" y2="966.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4777.00" y1="966.00" x2="4825.49" y2="966.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4825.49" y1="966.00" x2="4873.99" y2="966.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4873.99" y1="966.00" x2="4922.49" y2="966.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4922.49" y1="966.00" x2="4946.74" y2="1008.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4946.74" y1="1008.00" x2="4995.23" y2="1008.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4995.23" y1="1008.00" x2="5019.48" y2="1050.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="5019.48" y1="1050.00" x2="5067.98" y2="1050.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="5067.98" y1="1050.00" x2="5116.48" y2="1050.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="5116.48" y1="1050.00" x2="5140.73" y2="1092.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="5140.73" y1="1092.00" x2="5189.22" y2="1092.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="5189.22" y1="1092.00" x2="5237.72" y2="1092.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<text x="4461.76" y="1023.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3926</text>
+<text x="4510.26" y="1023.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3927</text>
+<text x="4534.51" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4027</text>
+<text x="4583.01" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4028</text>
+<text x="4631.50" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4029</text>
+<text x="4655.75" y="939.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4130</text>
+<text x="4704.25" y="939.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4131</text>
+<text x="4752.75" y="939.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4132</text>
+<text x="4777.00" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4032</text>
+<text x="4825.49" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4033</text>
+<text x="4873.99" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">D4001</text>
+<text x="4922.49" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">D4002</text>
+<text x="4946.74" y="1023.00" text-anchor="middle" font-family="sans-serif" font-size="8">D3903</text>
+<text x="4995.23" y="1023.00" text-anchor="middle" font-family="sans-serif" font-size="8">D3904</text>
+<text x="5019.48" y="1065.00" text-anchor="middle" font-family="sans-serif" font-size="8">D3804</text>
+<text x="5067.98" y="1065.00" text-anchor="middle" font-family="sans-serif" font-size="8">D3805</text>
+<text x="5116.48" y="1065.00" text-anchor="middle" font-family="sans-serif" font-size="8">D3806</text>
+<text x="5140.73" y="1107.00" text-anchor="middle" font-family="sans-serif" font-size="8">D3707</text>
+<text x="5189.22" y="1107.00" text-anchor="middle" font-family="sans-serif" font-size="8">D3708</text>
+<text x="5237.72" y="1107.00" text-anchor="middle" font-family="sans-serif" font-size="8">D3709</text>
+</svg>
