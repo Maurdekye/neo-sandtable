@@ -105,6 +105,8 @@ pub struct LandUnit {
     pub toe: Option<Toe>,
     /// Capability expenditure this OpStage, in quarter CP (`land:6`).
     pub cp_spent_quarters: i32,
+    #[serde(default)]
+    pub reserve: crate::land::reserve::ReserveState,
     /// Voluntary CP in the owning half, separate from reaction/retreat, in quarters.
     #[serde(default)]
     pub voluntary_cp_quarters: i32,
@@ -356,6 +358,7 @@ impl State {
                             attached_to,
                             toe: oa.toe.clone(),
                             cp_spent_quarters: 0,
+                            reserve: crate::land::reserve::ReserveState::default(),
                             voluntary_cp_quarters: 0,
                             cohesion_quarters: 0,
                             no_idle_recovery: false,
@@ -389,6 +392,7 @@ impl State {
                 attached_to: None,
                 toe: oa.toe.clone(),
                 cp_spent_quarters: 0,
+                reserve: crate::land::reserve::ReserveState::default(),
                 voluntary_cp_quarters: 0,
                 cohesion_quarters: 0,
                 no_idle_recovery: false,

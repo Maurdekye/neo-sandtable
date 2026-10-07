@@ -21,6 +21,7 @@ pub fn validate_move(
     if quarters <= 0 || allowance.cpa <= 0 || unit.cohesion_quarters <= -26 * 4 {
         return Err(illegal("unit cannot move"));
     }
+    super::reserve::validate_cp(unit, allowance, quarters, true)?;
     if !allowance.motorized {
         let ceiling = i64::from(allowance.cpa) * 6;
         if i64::from(unit.voluntary_cp_quarters) + i64::from(quarters) > ceiling {
@@ -43,6 +44,7 @@ pub fn charge(
     if quarters < 0 || allowance.cpa < 0 {
         return Err(illegal("invalid CP expenditure"));
     }
+    super::reserve::validate_cp(unit, allowance, quarters, voluntary)?;
     let total = unit
         .cp_spent_quarters
         .checked_add(quarters)
@@ -86,6 +88,7 @@ pub fn finish_opstage(state: &mut State) {
         {
             unit.cohesion_quarters = (unit.cohesion_quarters + 5 * 4).min(0);
         }
+        unit.reserve = super::reserve::ReserveState::default();
         unit.cp_spent_quarters = 0;
         unit.voluntary_cp_quarters = 0;
         unit.no_idle_recovery = false;

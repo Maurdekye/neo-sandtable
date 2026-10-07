@@ -27,7 +27,7 @@ each step the engine:
 3. Moves to the next step when the step has been entered and nothing is pending. Steps belonging
    to a system the scenario doesn't use (Air, Logistics) are skipped.
 
-Player A runs phases G–M, then Player B (`seq::PLAYER_HALF`). Player A may repeat the
+Player A runs phases G–M, then Player B (`seq::PLAYER_HALF`). The phasing player may repeat the
 Movement-and-Combat segments (`land:8.2`): call `state.cursor.repeat_movement_and_combat()` from
 the reserve-release handler when the player asks for another cycle.
 

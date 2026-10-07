@@ -29,6 +29,11 @@ pub struct MovementState {
     #[serde(default)]
     pub strict: bool,
     pub moved: BTreeSet<UnitId>,
+    /// Units that finished a prior segment too far from enemy combat units (8.23).
+    #[serde(default)]
+    pub cycle_blocked: BTreeSet<UnitId>,
+    #[serde(default)]
+    pub ended: bool,
     /// Truthful answers already disclosed to the phasing side in this segment.
     pub controls: BTreeMap<HexId, bool>,
     /// Units explicitly off the network; retained between segments until they use it again.
@@ -138,6 +143,8 @@ fn eligible_base(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId)
         && u.location.hex().is_some()
         && ownership::seat_for_unit(content, state, id) == seat.role
         && !state.land.movement.moved.contains(id)
+        && super::cycles::movement_allowed(state, id)
+        && super::reserve::validate_path(u, 1).is_ok()
         && !matches!(
             content.units.units[id].kind.as_deref(),
             Some("convoy" | "second_line_truck" | "third_line_truck")
@@ -200,6 +207,21 @@ pub fn enter(
     let Some(side) = state.cursor.phasing(state.turn.player_a) else {
         return Ok(());
     };
+    if state.cursor.cycle == 1 {
+        state.land.movement.cycle_blocked.clear();
+    } else {
+        let released: Vec<_> = state
+            .land
+            .units
+            .values()
+            .filter(|u| u.reserve.released_for_cycle == Some(state.cursor.cycle))
+            .map(|u| u.id.clone())
+            .collect();
+        for id in released {
+            state.land.movement.cycle_blocked.remove(&id);
+        }
+    }
+    state.land.movement.ended = false;
     state.land.movement.strict = strict;
     state.land.movement.moved.clear();
     state.land.movement.controls.clear();
@@ -214,6 +236,7 @@ pub fn enter(
     for role in [Role::FrontLine, Role::RearArea, Role::Logistics] {
         open_seat(content, state, SeatId::new(side, role), cx);
     }
+    super::cycles::finish_movement(content, state);
     Ok(())
 }
 fn effective_control(
@@ -264,6 +287,17 @@ fn unit_stack(
             return Err(illegal("stack contains a unit unavailable to this seat"));
         }
         members.extend(formation::members(content, state, root));
+    }
+    if members
+        .iter()
+        .any(|id| !super::cycles::movement_allowed(state, id))
+    {
+        return Err(illegal(
+            "a represented unit cannot repeat movement this phase (land:8.23)",
+        ));
+    }
+    for id in &members {
+        super::reserve::validate_path(&state.land.units[id], order.path.len())?;
     }
     // Validate all moving fuel rates before querying water, including unknown-rate HQs.
     for id in &members {
@@ -463,6 +497,9 @@ fn run(
         let cannot_enter = controlled
             && (start_contact && path.is_empty()
                 || limits.iter().any(|limit| !limit.may_enter_enemy_zoc)
+                || moving.iter().any(|id| {
+                    state.land.units[id].reserve.status == super::reserve::Status::First
+                })
                 || !moving.iter().any(|id| {
                     formation::combat_unit(content, id)
                         && formation::strength(content, state, id) > 0
@@ -691,11 +728,13 @@ pub fn answer(
     cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
     if action.is_null() {
+        super::cycles::finish_movement(content, state);
         return Ok("Movement complete for this seat.".into());
     }
     let orders: Vec<Order> = serde_json::from_value(action.clone())
         .map_err(|_| illegal("expected an ordered list of unit/path/with_stack moves"))?;
     if orders.is_empty() {
+        super::cycles::finish_movement(content, state);
         return Ok("Movement complete for this seat.".into());
     }
     if orders.len() > available(content, state, pending.seat).len() {
@@ -753,6 +792,7 @@ pub fn answer(
     *state = draft;
     cx.events.extend(events);
     open_seat(content, state, pending.seat, cx);
+    super::cycles::finish_movement(content, state);
     Ok(format!(
         "Executed {} complete movement orders.",
         orders.len()
@@ -937,6 +977,14 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
             .any(|(member, limit)| {
                 validate_supplied_cp(&draft.land.units[member], group.allowance, 1, *limit).is_err()
             })
+        {
+            continue;
+        }
+        if hex != origin
+            && group
+                .members
+                .iter()
+                .any(|id| draft.land.units[id].reserve.status == super::reserve::Status::First)
         {
             continue;
         }

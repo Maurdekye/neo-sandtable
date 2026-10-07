@@ -212,10 +212,13 @@ pub fn individual_allowance(content: &CnaContent, state: &State, id: &UnitId) ->
             cpa = truck_cpa;
         }
     }
-    Some(Allowance {
-        cpa,
-        motorized: cpa > 10,
-    })
+    Some(super::reserve::adjust_allowance(
+        unit,
+        Allowance {
+            cpa,
+            motorized: cpa > 10,
+        },
+    ))
 }
 /// A parent moves at the lowest CPA of its represented components.
 /// Cases: land:6.15, land:6.17, land:8.91, land:8.92

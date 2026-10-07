@@ -54,6 +54,12 @@ impl Cna {
             "opstage.movement_and_combat.combat.position" => {
                 crate::land::combat::enter_positions(content, state, cx)
             }
+            "opstage.movement_and_combat.reserve_release" => {
+                crate::land::reserve::enter_release(content, state, cx)
+            }
+            "opstage.reserve_designation" => {
+                crate::land::reserve::enter_designation(content, state, cx)
+            }
             "logistics.stores_expenditure" => crate::logistics::stores::enter(content, state, cx),
             "opstage.organization.water_distribution" => {
                 crate::logistics::water::enter(content, state, cx, self.strict)
@@ -104,6 +110,10 @@ impl Cna {
             crate::setup::KIND_UNIT | crate::setup::KIND_DUMP | crate::setup::KIND_TRUCKS => {
                 crate::setup::answer(content, state, pending, action, cx, self.strict)
             }
+            crate::land::reserve::DESIGNATE | crate::land::reserve::RELEASE => {
+                crate::land::reserve::answer(content, state, pending, action, cx)
+            }
+            crate::land::cycles::KIND => crate::land::cycles::answer(state, pending, action),
             KIND_INITIATIVE_DECLARATION => {
                 answer_initiative_declaration(state, pending, action, cx)
             }

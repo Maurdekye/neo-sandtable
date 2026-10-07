@@ -11,7 +11,7 @@
 //! ```
 //!
 //! Phases G–M (the player half) run once for Player A, then again for Player B
-//! (`airlog:33.0` IV; `land:5.2` III). Player A may repeat the four Movement-and-Combat segments
+//! (`airlog:33.0` IV; `land:5.2` III). The phasing player may repeat the four Movement-and-Combat segments
 //! (`land:8.2`); see [`Cursor::repeat_movement_and_combat`]. The scenario ends at the close of
 //! its last OpStage (`scen:60.22`), so the end-of-turn stages of the final game-turn are skipped.
 

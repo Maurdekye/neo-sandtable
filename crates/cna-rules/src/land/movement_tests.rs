@@ -1199,6 +1199,7 @@ fn half_rations_forbid_disclosed_zoc_and_stop_before_new_control() {
 #[test]
 fn activity_water_covers_all_attached_trucks_once_per_stage_even_after_recovery() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
+    place(&mut s, LEG, "C4019");
     s.land.units.get_mut(&TANK.into()).unwrap().trucks = cna_content::units::Trucks {
         light: 2,
         medium: 1,
@@ -1297,4 +1298,217 @@ fn supplied_baseline_remains_legal_with_half_rations_and_a_dry_candidate() {
                 .is_err()
         );
     }
+}
+
+/// Cases: land:8.21, land:8.22, land:8.23
+/// Interpretations: interp:land-0023
+#[test]
+fn either_phasing_side_repeats_without_resetting_cp_or_stage_water() {
+    for own in [TANK, LEG] {
+        let (c, mut s, _o) = setup(own, Some("road"), false, None);
+        let enemy = if own == TANK { LEG } else { TANK };
+        place(&mut s, enemy, "C4023");
+        let g = start(&c, s, false);
+        let t = respond(
+            &c,
+            &g,
+            seat(&g),
+            json!([{"unit":own,"path":["C4021"]}]),
+            false,
+        )
+        .unwrap();
+        let mut g = t.game;
+        assert!(g.state.land.movement.ended);
+        assert!(!g.state.land.movement.cycle_blocked.contains(&own.into()));
+        let before = g.state.land.units[&own.into()].clone();
+        let water = g.state.logistics.rations[&own.into()].clone();
+        g.state.cursor.index = crate::seq::PLAYER_HALF
+            .iter()
+            .position(|p| p.anchor == "opstage.movement_and_combat.reserve_release")
+            .unwrap();
+        g.state.cursor.entered = false;
+        let g = evaluate(&Cna::dev(), &c, &g, &Command::Advance)
+            .unwrap()
+            .game;
+        assert_eq!(
+            g.state.decisions.pending[0].kind,
+            super::super::cycles::KIND
+        );
+        let t = respond(&c, &g, seat(&g), json!(true), false).unwrap();
+        let g = t.game;
+        assert_eq!(g.state.cursor.cycle, 2);
+        assert_eq!(g.state.land.units[&own.into()], before);
+        assert_eq!(g.state.logistics.rations[&own.into()], water);
+        let recovered: Game<Cna> =
+            serde_json::from_value(serde_json::to_value(&g).unwrap()).unwrap();
+        let g = evaluate(&Cna::dev(), &c, &recovered, &Command::Advance)
+            .unwrap()
+            .game;
+        assert_eq!(g.state.decisions.pending[0].kind, KIND);
+        let t = respond(
+            &c,
+            &g,
+            seat(&g),
+            json!([{"unit":own,"path":["C4022"]}]),
+            false,
+        )
+        .unwrap();
+        assert!(t.game.state.land.units[&own.into()].cp_spent_quarters > before.cp_spent_quarters);
+        assert_eq!(
+            t.game.state.logistics.fuel_segments[&own.into()]
+                .origin
+                .as_str(),
+            "C4021"
+        );
+        assert_eq!(
+            t.game.state.logistics.fuel_segments[&own.into()]
+                .segment
+                .cycle,
+            2
+        );
+    }
+}
+/// Cases: land:8.23
+/// Interpretations: interp:land-0023
+#[test]
+fn cycle_proximity_counts_combat_and_is_captured_before_combat_changes_positions() {
+    let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
+    place(&mut s, LEG, "C4023");
+    s.decisions.pending.clear();
+    super::super::cycles::finish_movement(&c, &mut s);
+    assert!(s.land.movement.cycle_blocked.contains(&TANK.into())); // three hexes
+    place(&mut s, LEG, "C4022");
+    super::super::cycles::finish_movement(&c, &mut s); // snapshot cannot be refreshed by retreat
+    assert!(s.land.movement.cycle_blocked.contains(&TANK.into()));
+    let recovered: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    assert_eq!(
+        recovered.land.movement.cycle_blocked,
+        s.land.movement.cycle_blocked
+    );
+    s.land.movement.cycle_blocked.clear();
+    s.land.movement.ended = false;
+    super::super::cycles::finish_movement(&c, &mut s);
+    assert!(!s.land.movement.cycle_blocked.contains(&TANK.into())); // distance two
+    let other = c
+        .units
+        .units
+        .values()
+        .find(|u| {
+            u.side == Side::Commonwealth
+                && u.class
+                    .as_ref()
+                    .and_then(|id| c.units.classes.get(id))
+                    .is_some_and(|c| c.unit_type == "headquarters")
+        })
+        .unwrap()
+        .id
+        .clone();
+    s.land.units.get_mut(&LEG.into()).unwrap().location = Location::Eliminated;
+    place(&mut s, other.as_str(), "C4021");
+    s.land.movement.cycle_blocked.clear();
+    s.land.movement.ended = false;
+    super::super::cycles::finish_movement(&c, &mut s);
+    assert!(s.land.movement.cycle_blocked.contains(&TANK.into())); // a nearby HQ alone does not qualify
+    s.cursor.cycle = 2;
+    assert!(reachable(&c, &s, &TANK.into(), false).is_empty());
+}
+
+/// Cases: land:18.11, land:18.12, land:18.13, land:18.14, land:18.22, land:18.23, land:18.24, land:18.25, land:18.26
+#[test]
+fn reserve_designation_movement_and_release_survive_recovery() {
+    use super::super::reserve::{self, Status};
+    let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
+    s.cursor.index = 0;
+    let g = start(&c, s, false);
+    assert_eq!(g.state.decisions.pending[0].kind, reserve::DESIGNATE);
+    assert_eq!(seat(&g).role, Role::RearArea);
+    let before = g.clone();
+    assert!(respond(&c, &g, seat(&g), json!([TANK, TANK]), false).is_err());
+    assert_eq!(
+        serde_json::to_value(&g).unwrap(),
+        serde_json::to_value(&before).unwrap()
+    );
+    let t = respond(&c, &g, seat(&g), json!([TANK]), false).unwrap();
+    assert_eq!(
+        t.game.state.land.units[&TANK.into()].reserve.status,
+        Status::First
+    );
+    assert_eq!(t.game.state.land.units[&TANK.into()].cp_spent_quarters, 0);
+    let encoded = serde_json::to_value(&t.game).unwrap();
+    let recovered: Game<Cna> = serde_json::from_value(encoded).unwrap();
+    let g = evaluate(&Cna::dev(), &c, &recovered, &Command::Advance)
+        .unwrap()
+        .game;
+    let reach = reachable(&c, &g.state, &TANK.into(), false);
+    assert!(reach.iter().all(|r| r.path.len() == 1));
+    assert!(
+        respond(
+            &c,
+            &g,
+            seat(&g),
+            json!([{"unit":TANK,"path":["C4021","C4022"]}]),
+            false
+        )
+        .is_err()
+    );
+    let moved = respond(
+        &c,
+        &g,
+        seat(&g),
+        json!([{"unit":TANK,"path":["C4021"]}]),
+        false,
+    )
+    .unwrap()
+    .game;
+    assert_eq!(moved.state.land.units[&TANK.into()].cp_spent_quarters, 2);
+    let mut release = moved;
+    release.state.cursor.index = 9;
+    release.state.cursor.entered = false;
+    release.state.decisions.pending.clear();
+    let release = evaluate(&Cna::dev(), &c, &release, &Command::Advance)
+        .unwrap()
+        .game;
+    assert_eq!(release.state.decisions.pending[0].kind, reserve::RELEASE);
+    let kept = respond(&c, &release, seat(&release), Value::Null, false)
+        .unwrap()
+        .game;
+    assert_eq!(
+        kept.state.land.units[&TANK.into()].reserve.status,
+        Status::Second
+    );
+    assert_eq!(kept.state.land.units[&TANK.into()].cp_spent_quarters, 2);
+    let repeated = respond(&c, &kept, seat(&kept), json!(true), false)
+        .unwrap()
+        .game;
+    let g = evaluate(&Cna::dev(), &c, &repeated, &Command::Advance)
+        .unwrap()
+        .game;
+    assert!(g.state.decisions.pending.iter().all(|p| p.kind != KIND));
+    assert!(reachable(&c, &g.state, &TANK.into(), false).is_empty());
+    let mut release = g;
+    release.state.cursor.index = 9;
+    release.state.cursor.entered = false;
+    let release = evaluate(&Cna::dev(), &c, &release, &Command::Advance)
+        .unwrap()
+        .game;
+    let active = respond(&c, &release, seat(&release), json!([TANK]), false)
+        .unwrap()
+        .game;
+    let u = &active.state.land.units[&TANK.into()];
+    assert_eq!(u.reserve.status, Status::ReleasedSecond);
+    assert_eq!(u.reserve.released_for_cycle, Some(3));
+    assert_eq!(
+        formation::allowance(&c, &active.state, &TANK.into())
+            .unwrap()
+            .cpa,
+        12
+    );
+    let active = respond(&c, &active, seat(&active), json!(true), false)
+        .unwrap()
+        .game;
+    let g = evaluate(&Cna::dev(), &c, &active, &Command::Advance)
+        .unwrap()
+        .game;
+    assert_eq!(g.state.cursor.cycle, 3);
+    assert!(!reachable(&c, &g.state, &TANK.into(), false).is_empty());
 }
