@@ -560,7 +560,7 @@ fn nonadjacent_cap_uses_each_attached_or_stacked_members_preview_delta() {
     const CHILD: &str = "it.1_libyan_div.viii_libyan_bn";
     for with_stack in [false, true] {
         let (c, mut g, _overlay) = fixture();
-        g.state.land.units.get_mut(&LEG.into()).unwrap().location = Location::Eliminated;
+        place(&mut g.state, LEG, "C4030");
         g.state.turn.player_a = Some(Side::Commonwealth);
         place(&mut g.state, ROOT, "C4020");
         place(&mut g.state, CHILD, "C4020");
@@ -574,11 +574,11 @@ fn nonadjacent_cap_uses_each_attached_or_stacked_members_preview_delta() {
                 .tank_fuel = fuel;
         }
         let child = g.state.land.units.get_mut(&CHILD.into()).unwrap();
-        child.engaged = true;
         if !with_stack {
             child.detached = false;
             child.attached_to = Some(ROOT.into());
         }
+        crate::land::engagement::engage(&mut g.state, &[CHILD.into()], &[LEG.into()]).unwrap();
         let g = open_game(&c, &g);
         let owner = SeatId::new(
             Side::Axis,
