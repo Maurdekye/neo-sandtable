@@ -519,6 +519,12 @@ impl State {
             }
         }
 
+        let logistics_pool_sources = logistics
+            .truck_pools
+            .iter()
+            .enumerate()
+            .map(|(source, p)| (p.id.clone(), source))
+            .collect();
         Ok(State {
             cursor: Cursor::start(&content.bounds),
             turn: TurnState::default(),
@@ -526,7 +532,10 @@ impl State {
             logistics,
             air,
             decisions: Decisions::default(),
-            setup: crate::setup::SetupState::default(),
+            setup: crate::setup::SetupState {
+                pool_sources: logistics_pool_sources,
+                ..crate::setup::SetupState::default()
+            },
             result: None,
         })
     }
