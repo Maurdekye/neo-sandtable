@@ -12,10 +12,10 @@ use cna_core::{
     decision::{ActionSchema, ActionSpace, ChoiceOption, FieldSchema as Field, Secrecy, Trigger},
     engine::{Cx, EngineError, Rejection},
     event::EngineEvent,
-    ids::{DecisionId, HexId, SeatId, UnitId},
+    ids::{DecisionId, SeatId, UnitId},
     visibility::Audience,
 };
-use cna_protocol::{GameEvent, Role, Side, Stack};
+use cna_protocol::{GameEvent, Role, Side};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -221,49 +221,6 @@ fn valid_destination(
         Err(e) => Err(e),
     }
 }
-/// Publish only presence to the enemy; units and counts remain with their owner.
-/// Cases: land:3.61, land:3.62
-fn stacks(state: &State, side: Side, hex: &HexId, cx: &mut Cx<'_>) {
-    let ids: Vec<_> = state
-        .units_of(side)
-        .filter(|u| u.location.hex() == Some(hex))
-        .map(|u| u.id.to_string())
-        .collect();
-    if ids.is_empty() {
-        for audience in [Audience::Side(side), Audience::SideOnly(side.opponent())] {
-            cx.emit(EngineEvent::new(
-                audience,
-                GameEvent::StackRemoved {
-                    hex: hex.to_string(),
-                    side,
-                },
-            ));
-        }
-    } else {
-        cx.emit(EngineEvent::new(
-            Audience::Side(side),
-            GameEvent::StackUpdated {
-                stack: Stack {
-                    hex: hex.to_string(),
-                    side,
-                    visible_count: Some(ids.len() as u32),
-                    unit_ids: ids,
-                },
-            },
-        ));
-        cx.emit(EngineEvent::new(
-            Audience::SideOnly(side.opponent()),
-            GameEvent::StackUpdated {
-                stack: Stack {
-                    hex: hex.to_string(),
-                    side,
-                    visible_count: None,
-                    unit_ids: vec![],
-                },
-            },
-        ));
-    }
-}
 /// Cases: land:20.11, land:20.12, land:20.14, land:20.15
 pub(crate) fn enter(
     content: &CnaContent,
@@ -448,7 +405,6 @@ fn place(state: &mut State, id: &UnitId, destination: Location, cx: &mut Cx<'_>)
     unit.cp_spent_quarters = 0;
     unit.voluntary_cp_quarters = 0;
     let side = unit.side;
-    let hex = unit.location.hex().cloned();
     state.land.arrivals.withdrawn_units.remove(id);
     let arrival_stage = stage(state);
     state
@@ -463,9 +419,6 @@ fn place(state: &mut State, id: &UnitId, destination: Location, cx: &mut Cx<'_>)
         side,
         format!("{id} has arrived without debarkation CP expenditure (land:20.12)."),
     );
-    if let Some(hex) = hex {
-        stacks(state, side, &hex, cx)
-    }
 }
 fn truck_fields(trucks: Trucks) -> Vec<Field> {
     [
@@ -781,12 +734,8 @@ fn prepare_withdrawals(
                     .ok_or_else(|| invariant("withdrawal schedule lacks truck-value weights"))?;
                 let mut accompanying = 0i64;
                 let w = state.land.arrivals.withdrawals[&id].clone();
-                let mut changed = BTreeSet::new();
                 for unit in &w.selected {
                     accompanying += weights.value(state.land.units[unit].trucks);
-                    if let Some(hex) = state.land.units[unit].location.hex() {
-                        changed.insert(hex.clone());
-                    }
                     let trucks = state.land.units[unit].trucks;
                     retire_truck_history(content, state, unit, trucks)
                         .map_err(|r| invariant(format!("{r:?}")))?;
@@ -804,9 +753,6 @@ fn prepare_withdrawals(
                     );
                 }
                 for unit in &w.eliminated {
-                    if let Some(hex) = state.land.units[unit].location.hex() {
-                        changed.insert(hex.clone());
-                    }
                     let trucks = state.land.units[unit].trucks;
                     retire_truck_history(content, state, unit, trucks)
                         .map_err(|r| invariant(format!("{r:?}")))?;
@@ -824,9 +770,6 @@ fn prepare_withdrawals(
                             "{unit} is permanently eliminated after missing the required withdrawal location or TOE (land:20.83)."
                         ),
                     );
-                }
-                for hex in changed {
-                    stacks(state, schedule.file.side, &hex, cx)
                 }
                 let minimum = i64::from(row.transport.map_or(0, |t| t.truck_value_points)) * 2;
                 let w = state.land.arrivals.withdrawals.get_mut(&id).unwrap();
@@ -1461,6 +1404,12 @@ mod tests {
         s.setup.closed = true;
         s.setup.started = true;
         s.logistics.convoys_initialized = true;
+        crate::logistics::ports::initialize(&c, &mut s);
+        s.turn.player_a = Some(Side::Axis);
+        s.turn.weather = Some(crate::state::WeatherState {
+            kind: cna_tables::land::weather::WeatherKind::Normal,
+            storm_sections: vec![],
+        });
         s.logistics.dumps.clear();
         s.logistics.truck_pools.clear();
         s.land.undistributed_trucks.clear();
@@ -1570,6 +1519,57 @@ mod tests {
         }
         panic!("schedule decisions did not finish")
     }
+    fn finish_supply(c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
+        let mut controller = CampaignRng::from_seed([91; 32]);
+        let mut completed = false;
+        for _ in 0..16 {
+            if let Some(p) = game.state.decisions.pending.first().cloned() {
+                assert_eq!(p.kind, crate::logistics::arrivals::KIND);
+                let request = Cna::dev()
+                    .pending(c, &game.state)
+                    .into_iter()
+                    .find(|r| r.id == p.id)
+                    .unwrap();
+                let action =
+                    crate::baseline::logistics_orders(c, &game.state, &request, &mut controller)
+                        .unwrap();
+                let recovered: Game<Cna> =
+                    serde_json::from_value(serde_json::to_value(&game).unwrap()).unwrap();
+                let replayed = response(c, &recovered, &p, action.clone()).unwrap();
+                game = response(c, &game, &p, action).unwrap();
+                assert_eq!(
+                    serde_json::to_value(&game).unwrap(),
+                    serde_json::to_value(replayed).unwrap()
+                );
+            } else {
+                let mut rng = CampaignRng::from_state(&game.rng);
+                Cna::dev()
+                    .finish_step(
+                        c,
+                        &mut game.state,
+                        &mut Cx {
+                            rng: &mut rng,
+                            events: &mut vec![],
+                        },
+                    )
+                    .unwrap();
+                game.rng = rng.state();
+                if game.state.decisions.pending.is_empty()
+                    && game.state.logistics.arrival_supply.done.len() == 2
+                    && game.state.logistics.arrival_supply.waiting.is_empty()
+                {
+                    completed = true;
+                    break;
+                }
+            }
+        }
+        assert!(
+            completed,
+            "the actual-stock arrival supply window did not finish"
+        );
+        game
+    }
+
     /// Cases: land:4.43, land:20.11
     #[test]
     fn subtree_exact_stage_and_hq_only_are_distinct_and_less_removes_full_trees() {
@@ -2390,5 +2390,196 @@ mod tests {
         assert!(offered.contains(&equivalent));
         assert!(!offered.contains(&tank));
         assert!(!offered.contains(&unarmed));
+    }
+
+    /// Cases: land:20.12, airlog:51.11, airlog:52.13, airlog:56.28, land:3.6
+    /// Interpretations: interp:airlog-0017
+    #[test]
+    fn dispatcher_opens_actual_stock_supply_only_after_land_choices_and_preserves_old_units() {
+        let (c, mut game) = fixture();
+        let cairo = city_domain(&c, "cairo").unwrap()[0].clone();
+        let old = UnitId::new("cw.2_nz_div.18th_nz_bn");
+        game.state.land.units.get_mut(&old).unwrap().location = cairo.clone();
+        let old_unit = game.state.land.units[&old].clone();
+        let old_rations = game.state.logistics.rations.get(&old).cloned();
+        let old_supply = game.state.logistics.unit_supply.get(&old).cloned();
+        let hex = cairo.hex().unwrap().clone();
+        game.state.logistics.dumps.insert(
+            "arrival-stock".into(),
+            crate::state::Dump {
+                id: "arrival-stock".into(),
+                marker: "dump-stock".into(),
+                side: Side::Commonwealth,
+                location: crate::state::DumpLocation::Hex { hex },
+                supplies: Supplies {
+                    stores: 1000,
+                    water: 1000,
+                    fuel: 0,
+                    ..Default::default()
+                },
+                active: true,
+                dummy: false,
+            },
+        );
+        at(&mut game, 1, 3);
+        game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+            .unwrap()
+            .game;
+        assert!(game.state.decisions.pending.iter().any(|p| p.kind == PLACE));
+        assert!(game.state.logistics.arrival_supply.stage.is_none());
+        game = drain(&c, game);
+        let arrived = game.state.land.arrivals.newly_arrived["1:3"].clone();
+        let infantry = UnitId::new("cw.polish_bde.1st_polish_bn");
+        assert!(arrived.contains(&infantry));
+        assert!(!arrived.contains(&old));
+        assert_eq!(game.state.logistics.arrival_supply.units, arrived);
+        assert!(game.state.land.arrivals.supply_finished.contains("1:3"));
+        assert_eq!(game.state.cursor.anchor(), "opstage.convoy_arrival");
+        assert!(
+            game.state
+                .decisions
+                .pending
+                .iter()
+                .any(|p| p.kind == crate::logistics::arrivals::KIND)
+        );
+        assert_eq!(
+            game.state.logistics.dumps["arrival-stock"].supplies.stores,
+            1000
+        );
+        assert_eq!(
+            game.state.logistics.dumps["arrival-stock"].supplies.water,
+            1000
+        );
+        assert_eq!(game.state.land.units[&infantry].cp_spent_quarters, 0);
+        game = finish_supply(&c, game);
+        let ration = &game.state.logistics.rations[&infantry];
+        assert!(ration.stores_required > 0);
+        assert_eq!(ration.stores_received, ration.stores_required);
+        assert_eq!(
+            game.state.logistics.rations[&infantry].infantry_water_received,
+            1
+        );
+        let consumed: i32 = arrived
+            .iter()
+            .filter_map(|id| game.state.logistics.rations.get(id))
+            .map(|r| r.stores_received)
+            .sum();
+        assert!(consumed > 0);
+        assert_eq!(
+            game.state.logistics.dumps["arrival-stock"].supplies.stores,
+            1000 - consumed
+        );
+        assert_eq!(game.state.land.units[&old], old_unit);
+        assert_eq!(game.state.logistics.rations.get(&old).cloned(), old_rations);
+        assert_eq!(
+            game.state.logistics.unit_supply.get(&old).cloned(),
+            old_supply
+        );
+        let snapshot = serde_json::to_value(&game).unwrap();
+        let mut rng = CampaignRng::from_state(&game.rng);
+        Cna::dev()
+            .finish_step(
+                &c,
+                &mut game.state,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut vec![],
+                },
+            )
+            .unwrap();
+        game.rng = rng.state();
+        assert_eq!(serde_json::to_value(&game).unwrap(), snapshot);
+    }
+
+    /// Cases: land:20.12, airlog:56.28, airlog:51.11, airlog:52.13
+    /// Interpretations: interp:airlog-0017
+    #[test]
+    fn same_stage_convoy_stock_is_available_in_the_new_unit_supply_window() {
+        use crate::logistics::convoys::{ConvoyStatus, ConvoyTurn, NavalConvoy};
+        let (mut c, mut game) = fixture();
+        let id = UnitId::new("it.unassigned_blackshirt.140th_ccnn_bn");
+        for schedule in &mut c.units.schedules {
+            schedule
+                .arrivals
+                .retain(|r| r.gt == Some(13) && r.opstage == Some(3));
+            for row in &mut schedule.arrivals {
+                row.units.retain(|u| u.unit == id);
+            }
+            schedule.arrivals.retain(|r| !r.units.is_empty());
+            schedule.withdrawals.clear();
+        }
+        let cargo = Supplies {
+            stores: 200,
+            ..Default::default()
+        };
+        game.state.logistics.convoy_turns.insert(
+            13,
+            ConvoyTurn {
+                level: cna_tables::airlog::convoys::ConvoyLevel::G,
+                capacity_tons: 2000,
+                replacement_tons: 0,
+                planning_complete: true,
+                convoys: BTreeMap::from([(
+                    2,
+                    NavalConvoy {
+                        lane: 2,
+                        arrival_opstage: 3,
+                        cargo,
+                        status: ConvoyStatus::Planned,
+                        delivered: None,
+                    },
+                )]),
+            },
+        );
+        assert!(game.state.logistics.dumps.is_empty());
+        at(&mut game, 13, 3);
+        game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+            .unwrap()
+            .game;
+        game = drain(&c, game);
+        assert_eq!(
+            game.state.logistics.convoy_turns[&13].convoys[&2].status,
+            ConvoyStatus::Arrived
+        );
+        assert_eq!(
+            game.state.logistics.convoy_turns[&13].convoys[&2].delivered,
+            Some(cargo)
+        );
+        assert_eq!(
+            game.state.logistics.arrival_supply.units,
+            BTreeSet::from([id.clone()])
+        );
+        assert!(
+            game.state
+                .decisions
+                .pending
+                .iter()
+                .any(|p| p.kind == crate::logistics::arrivals::KIND)
+        );
+        let source = game
+            .state
+            .logistics
+            .dumps
+            .values()
+            .find(|d| d.side == Side::Axis && d.active && !d.dummy)
+            .unwrap()
+            .id
+            .clone();
+        assert_eq!(game.state.logistics.dumps[&source].supplies, cargo);
+        assert_eq!(game.state.land.units[&id].cp_spent_quarters, 0);
+        game = finish_supply(&c, game);
+        let ration = &game.state.logistics.rations[&id];
+        assert!(ration.stores_required > 0);
+        assert_eq!(ration.stores_received, ration.stores_required);
+        assert_eq!(ration.infantry_water_received, 1);
+        assert_eq!(
+            game.state.logistics.dumps[&source].supplies.stores,
+            cargo.stores - ration.stores_received
+        );
+        assert_eq!(game.state.logistics.dumps[&source].supplies.water, 0);
+        assert_eq!(
+            game.state.logistics.convoy_turns[&13].convoys[&2].delivered,
+            Some(cargo)
+        );
     }
 }

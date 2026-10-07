@@ -55,7 +55,28 @@ impl Cna {
             }
             "setup" => crate::setup::finish(content, state, cx, self.strict),
             "opstage.convoy_arrival" => {
-                crate::land::arrivals::finish(content, state, self.strict, cx)
+                crate::land::arrivals::finish(content, state, self.strict, cx)?;
+                if !state.decisions.pending.is_empty() || !state.land.arrivals.tasks.is_empty() {
+                    return Ok(());
+                }
+                // Cases: land:20.12, airlog:56.28
+                // Interpretations: interp:airlog-0017
+                // Land's finish delivers supply convoys after its last placement/withdrawal choice.
+                // Only the successful placements of this stage enter the supply window.
+                let key = format!(
+                    "{}:{}",
+                    state.cursor.game_turn,
+                    state.cursor.op_stage.unwrap_or(0)
+                );
+                let newly_arrived = state
+                    .land
+                    .arrivals
+                    .newly_arrived
+                    .get(&key)
+                    .cloned()
+                    .unwrap_or_default();
+                crate::logistics::arrivals::enter(content, state, self.strict, cx, &newly_arrived)?;
+                crate::logistics::arrivals::finish(content, state, self.strict, cx)
             }
             _ => Ok(()),
         }
