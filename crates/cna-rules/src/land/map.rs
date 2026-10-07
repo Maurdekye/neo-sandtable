@@ -74,6 +74,71 @@ pub fn step_cost_with_network(
     rainstorm: bool,
     use_network: bool,
 ) -> Result<StepCost, Rejection> {
+    let unit = state
+        .land
+        .units
+        .get(id)
+        .ok_or_else(|| illegal("unknown unit"))?;
+    let allowance = formation::individual_allowance(content, state, id).ok_or_else(|| {
+        unsupported(
+            "land:8.91",
+            "unit transport or movement rating is unresolved",
+        )
+    })?;
+    let c = formation::class(content, id).ok_or_else(|| illegal("unit has no movement class"))?;
+    price(
+        content,
+        unit.side,
+        &unit.trucks,
+        from,
+        to,
+        strict,
+        rainstorm,
+        use_network,
+        allowance.motorized,
+        c.unit_type == "recce",
+        c.equipment_note
+            .as_deref()
+            .is_some_and(|s| s.contains("motorcycle")),
+    )
+}
+
+/// Convoys use their actual physical trucks, without a fabricated combat-unit class.
+/// Every present type must be able to traverse the edge; mixed carriers share its price.
+/// Cases: airlog:53.12, airlog:53.21, airlog:54.2, land:8.37, land:8.44, land:8.48
+#[allow(clippy::too_many_arguments)]
+pub fn truck_step_cost(
+    content: &CnaContent,
+    side: cna_protocol::Side,
+    trucks: &cna_content::units::Trucks,
+    from: &HexId,
+    to: &HexId,
+    strict: bool,
+    rainstorm: bool,
+) -> Result<StepCost, Rejection> {
+    let counts = [trucks.light, trucks.medium, trucks.heavy];
+    if counts.iter().any(|n| *n < 0) || counts.iter().all(|n| *n == 0) {
+        return Err(illegal("convoy has no valid trucks"));
+    }
+    price(
+        content, side, trucks, from, to, strict, rainstorm, true, true, false, false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn price(
+    content: &CnaContent,
+    side: cna_protocol::Side,
+    trucks: &cna_content::units::Trucks,
+    from: &HexId,
+    to: &HexId,
+    strict: bool,
+    rainstorm: bool,
+    use_network: bool,
+    motorized: bool,
+    recce: bool,
+    motorcycle: bool,
+) -> Result<StepCost, Rejection> {
     let (a, b) = content
         .map
         .get(from)
@@ -82,12 +147,7 @@ pub fn step_cost_with_network(
     if a.axial.distance(b.axial) != 1 {
         return Err(illegal("path must follow adjacent hexes"));
     }
-    let unit = state
-        .land
-        .units
-        .get(id)
-        .ok_or_else(|| illegal("unknown unit"))?;
-    if unit.side == cna_protocol::Side::Commonwealth
+    if side == cna_protocol::Side::Commonwealth
         && content
             .map
             .get(&"A2109".into())
@@ -98,18 +158,7 @@ pub fn step_cost_with_network(
         ));
     }
     let terrain = terrain(content, to, strict)?;
-    let allowance = formation::individual_allowance(content, state, id).ok_or_else(|| {
-        unsupported(
-            "land:8.91",
-            "unit transport or movement rating is unresolved",
-        )
-    })?;
-    let c = formation::class(content, id).ok_or_else(|| illegal("unit has no movement class"))?;
-    let light = unit.trucks.light > 0;
-    let motorcycle = c
-        .equipment_note
-        .as_deref()
-        .is_some_and(|s| s.contains("motorcycle"));
+    let light = trucks.light > 0;
     let mut unknown = false;
     let mut route = Route::Plain;
     for (kind, candidate) in [
@@ -169,17 +218,14 @@ pub fn step_cost_with_network(
         {
             return Err(illegal("river crossing is prohibited during rainstorm"));
         }
-        if allowance.motorized
-            && !bridge
-            && (terrain == F::Delta || a.terrain.as_deref() == Some("delta"))
-        {
+        if motorized && !bridge && (terrain == F::Delta || a.terrain.as_deref() == Some("delta")) {
             return Err(illegal(
                 "vehicle cannot move through delta off road or rail during rainstorm",
             ));
         }
     }
     let network = matches!(route, Route::Road | Route::Track | Route::UnfinishedRoad);
-    if (unit.trucks.medium > 0 || unit.trucks.heavy > 0)
+    if (trucks.medium > 0 || trucks.heavy > 0)
         && !network
         && (terrain == F::SaltMarsh || a.terrain.as_deref() == Some("salt_marsh"))
     {
@@ -192,11 +238,11 @@ pub fn step_cost_with_network(
         route,
         hexsides: &features,
         rainstorm,
-        motorized: allowance.motorized,
-        salt_marsh_exception: light || c.unit_type == "recce" || motorcycle,
+        motorized,
+        salt_marsh_exception: light || recce || motorcycle,
         desert_prohibited: light || motorcycle,
     };
-    if allowance.motorized
+    if motorized
         && a.terrain.as_deref() == Some("salt_marsh")
         && !entry.salt_marsh_exception
         && !matches!(route, Route::Road | Route::Track | Route::UnfinishedRoad)
@@ -227,3 +273,7 @@ pub fn step_cost_with_network(
         assumed_edges: unknown,
     })
 }
+
+#[cfg(test)]
+#[path = "map_truck_tests.rs"]
+mod truck_tests;
