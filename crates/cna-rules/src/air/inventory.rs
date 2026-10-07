@@ -85,6 +85,58 @@ impl AirRuntime {
     }
 }
 
+/// Receive a calendar-authorized batch into the unassigned force inventory.
+/// The caller owns schedule/quota/type eligibility and invokes this only from
+/// its atomic finish draft. These records add total only: no facility, SGSU,
+/// refit, fuel or ammunition entitlement. Setup-era aggregates use their
+/// existing caller-owned branch until canonical inventory has been imported.
+/// Cases: airlog:34.8, airlog:34.84
+pub fn receive_unassigned(
+    content: &CnaContent,
+    air: &mut AirState,
+    owner: Side,
+    aircraft: &str,
+    count: i32,
+) -> Result<Vec<PlaneId>, EngineError> {
+    if count <= 0 || !air.runtime.initialized() {
+        return Err(invalid(
+            "arrival needs a positive count and imported inventory",
+        ));
+    }
+    if !content.units.aircraft.contains_key(aircraft) {
+        return Err(EngineError::Unsupported {
+            case: "airlog:34.84".into(),
+            detail: "Calendar-authorized aircraft content is missing".into(),
+        });
+    }
+    let force = crate::state::side_key(owner);
+    let pool = air
+        .forces
+        .get(force)
+        .ok_or_else(|| invalid("arrival force pool is absent"))?;
+    pool.planes
+        .get(aircraft)
+        .map_or(0, |p| p.total)
+        .checked_add(count)
+        .ok_or_else(|| invalid("arrival aircraft total overflow"))?;
+    let mut ids = Vec::new();
+    update(content, air, |runtime| {
+        for _ in 0..count {
+            ids.push(runtime.insert_aircraft(AircraftState {
+                aircraft: aircraft.into(),
+                force: force.into(),
+                squadron: None,
+                facility: None,
+                refitted: false,
+                fuelled: false,
+                armed: false,
+            })?);
+        }
+        Ok(())
+    })?;
+    Ok(ids)
+}
+
 fn check_count(count: PlaneCount) -> Result<(), EngineError> {
     if count.total < 0
         || count.ready < 0

@@ -351,3 +351,113 @@ fn old_checkpoint_without_runtime_defaults_to_uninitialized_inventory() {
     initialize(&content, &mut old).unwrap();
     check(&content, &old.air).unwrap();
 }
+
+/// Cases: airlog:34.8, airlog:34.84
+#[test]
+fn unassigned_arrivals_preserve_old_total_only_semantics_and_checkpoint() {
+    let content = content();
+    let mut state = closed_initial(&content);
+    initialize(&content, &mut state).unwrap();
+    let before = state.air.forces["axis"].planes["it.cr42"];
+    let pilots = state.air.runtime.pilots.clone();
+    let ids = receive_unassigned(&content, &mut state.air, Side::Axis, "it.cr42", 2).unwrap();
+    assert_eq!(ids.len(), 2);
+    assert_eq!(
+        state.air.forces["axis"].planes["it.cr42"],
+        PlaneCount {
+            total: before.total + 2,
+            ..before
+        }
+    );
+    assert_eq!(state.air.runtime.pilots, pilots);
+    for id in &ids {
+        assert_eq!(
+            state.air.runtime.aircraft[id],
+            AircraftState {
+                aircraft: "it.cr42".into(),
+                force: "axis".into(),
+                squadron: None,
+                facility: None,
+                refitted: false,
+                fuelled: false,
+                armed: false,
+            }
+        );
+    }
+    check(&content, &state.air).unwrap();
+    let bytes = serde_json::to_vec(&state).unwrap();
+    let mut restored: State = serde_json::from_slice(&bytes).unwrap();
+    initialize(&content, &mut restored).unwrap();
+    assert_eq!(bytes, serde_json::to_vec(&restored).unwrap());
+}
+
+/// Cases: airlog:34.8, airlog:34.84
+#[test]
+fn failed_arrivals_leave_records_mirrors_and_serials_unchanged() {
+    let content = content();
+    let mut state = closed_initial(&content);
+    let bytes = serde_json::to_vec(&state).unwrap();
+    assert!(receive_unassigned(&content, &mut state.air, Side::Axis, "it.cr42", 1).is_err());
+    assert_eq!(bytes, serde_json::to_vec(&state).unwrap());
+    initialize(&content, &mut state).unwrap();
+    for (aircraft, n) in [("it.cr42", 0), ("it.cr42", -1), ("it.cr42", i32::MAX)] {
+        let bytes = serde_json::to_vec(&state).unwrap();
+        assert!(receive_unassigned(&content, &mut state.air, Side::Axis, aircraft, n).is_err());
+        assert_eq!(bytes, serde_json::to_vec(&state).unwrap());
+    }
+
+    let bytes = serde_json::to_vec(&state).unwrap();
+    assert!(
+        matches!(receive_unassigned(&content, &mut state.air, Side::Axis, "unknown", 1),
+        Err(EngineError::Unsupported { case, .. }) if case == "airlog:34.84")
+    );
+    assert_eq!(bytes, serde_json::to_vec(&state).unwrap());
+    // One draft allocation succeeds before the second exhausts the serial;
+    // neither allocation is published.
+    state
+        .air
+        .runtime
+        .plane_serial
+        .insert(Side::Axis, u64::MAX - 1);
+    check(&content, &state.air).unwrap();
+    let bytes = serde_json::to_vec(&state).unwrap();
+    assert!(receive_unassigned(&content, &mut state.air, Side::Axis, "it.cr42", 2).is_err());
+    assert_eq!(bytes, serde_json::to_vec(&state).unwrap());
+    let mut missing = state.clone();
+    missing.air.forces.remove("axis");
+    let bytes = serde_json::to_vec(&missing).unwrap();
+    assert!(receive_unassigned(&content, &mut missing.air, Side::Axis, "it.cr42", 1).is_err());
+    assert_eq!(bytes, serde_json::to_vec(&missing).unwrap());
+}
+
+/// Cases: land:3.62, airlog:34.8, airlog:34.84
+#[test]
+fn private_arrivals_are_hidden_and_other_side_serials_do_not_change_ids() {
+    let content = content();
+    let mut a = closed_initial(&content);
+    initialize(&content, &mut a).unwrap();
+    let mut b = a.clone();
+    let targets: BTreeSet<_> = receive_unassigned(&content, &mut b.air, Side::Axis, "it.cr42", 2)
+        .unwrap()
+        .into_iter()
+        .map(|id| id.0)
+        .collect();
+    assert_indistinguishable(&Cna::dev(), &content, &a, &b, Side::Commonwealth);
+    assert_eq!(
+        visible_to(&Cna::dev(), &content, &a, Side::Commonwealth, &targets),
+        visible_to(&Cna::dev(), &content, &b, Side::Commonwealth, &targets)
+    );
+    let own_type = a.air.forces["commonwealth"]
+        .planes
+        .keys()
+        .next()
+        .unwrap()
+        .clone();
+    let ids_a = receive_unassigned(&content, &mut a.air, Side::Commonwealth, &own_type, 1).unwrap();
+    let ids_b = receive_unassigned(&content, &mut b.air, Side::Commonwealth, &own_type, 1).unwrap();
+    assert_eq!(ids_a, ids_b);
+    assert_eq!(
+        a.air.runtime.aircraft[&ids_a[0]],
+        b.air.runtime.aircraft[&ids_b[0]]
+    );
+}
