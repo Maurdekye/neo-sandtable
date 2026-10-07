@@ -84,6 +84,8 @@ function gameEvent(value: unknown) {
     case 'decision_resolved':
       return (
         typeof value.decision_id === 'string' &&
+        (value.explanation === undefined ||
+          typeof value.explanation === 'string') &&
         typeof value.summary === 'string'
       )
     case 'combat_resolved':
@@ -122,6 +124,8 @@ function transcript(value: unknown) {
     case 'decision_submitted':
       return (
         typeof value.decision_id === 'string' &&
+        (value.explanation === undefined ||
+          typeof value.explanation === 'string') &&
         typeof value.summary === 'string'
       )
     case 'system1_query':

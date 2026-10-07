@@ -1,3 +1,4 @@
+import { decisionCommentary, type AcceptedCommentary } from './commentary'
 import { useEffect, useRef, useState } from 'react'
 import type { SeatInfo, TranscriptMessage } from './protocol'
 import { pairTranscripts } from './stream/transcripts'
@@ -34,7 +35,9 @@ ${JSON.stringify(e.scores)}`
 function SeatTranscript({
   seat,
   messages,
+  commentaries,
 }: {
+  commentaries: AcceptedCommentary[]
   seat: SeatInfo
   messages: TranscriptMessage[]
 }) {
@@ -90,6 +93,12 @@ function SeatTranscript({
               <small>#{String(message.game_seq)}</small>
             </div>
             <p>{body(message)}</p>
+            {decisionCommentary(commentaries, message) && (
+              <blockquote className="decision-explanation">
+                <small>Seat commentary</small>
+                <p>{decisionCommentary(commentaries, message)!.text}</p>
+              </blockquote>
+            )}
             {result && (
               <div className="tool-result">
                 {body(result)}
@@ -125,7 +134,9 @@ export function Transcripts({
   seats,
   messages,
   mock = false,
+  commentaries = [],
 }: {
+  commentaries?: AcceptedCommentary[]
   mock?: boolean
   seats: SeatInfo[]
   messages: TranscriptMessage[]
@@ -154,7 +165,12 @@ export function Transcripts({
         ))}
       </div>
       {seat ? (
-        <SeatTranscript key={seat.id} seat={seat} messages={messages} />
+        <SeatTranscript
+          key={seat.id}
+          seat={seat}
+          messages={messages}
+          commentaries={commentaries}
+        />
       ) : (
         <p className="empty">Waiting for authorized seats.</p>
       )}

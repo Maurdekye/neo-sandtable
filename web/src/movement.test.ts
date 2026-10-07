@@ -186,3 +186,28 @@ it('does not carry a snapshot flag into a later segment or an earlier repeated m
     ).size,
   ).toBe(0)
 })
+
+it('optional nullable record fields do not alter the required movement unit enum', () => {
+  const d: PendingDecision = {
+    id: 'nullable',
+    seat: 'axis.front_line',
+    kind: 'cna.movement.orders',
+    summary: 'Move',
+    opened_seq: 0,
+    rules: [],
+    space: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['unit', 'path'],
+        properties: {
+          unit: { enum: ['a', 'b'] },
+          path: { type: 'array', items: { type: 'string' } },
+          detach: { anyOf: [{ type: 'boolean' }, { type: 'null' }] },
+          note: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+        },
+      },
+    },
+  }
+  expect(movementUnits(d)).toEqual(['a', 'b'])
+})

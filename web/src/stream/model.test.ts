@@ -269,9 +269,60 @@ it('retains moved metadata after event eviction and clears it at segment boundar
   expect(state.frames).toEqual([])
 })
 
-it('retains authorized event locators through replay and clears them on resync',()=>{
- const packet={type:'event' as const,seq:8,clock,hex:'C4218',unit_id:'u',event:{kind:'note' as const,text:'stop'}}
- const s=receive(connected(),packet).state
- expect(selectedFrame(seek(s,8))).toMatchObject({hex:'C4218',unit_id:'u'})
- expect(receive(s,{type:'resync'}).state.frames).toEqual([])
+it('retains authorized event locators through replay and clears them on resync', () => {
+  const packet = {
+    type: 'event' as const,
+    seq: 8,
+    clock,
+    hex: 'C4218',
+    unit_id: 'u',
+    event: { kind: 'note' as const, text: 'stop' },
+  }
+  const s = receive(connected(), packet).state
+  expect(selectedFrame(seek(s, 8))).toMatchObject({
+    hex: 'C4218',
+    unit_id: 'u',
+  })
+  expect(receive(s, { type: 'resync' }).state.frames).toEqual([])
+})
+
+it('summary checkpoints retain exact evicted movement frames and clear on scope reset', () => {
+  let s = receive(connected(), {
+    type: 'event',
+    seq: 8,
+    clock,
+    event: { kind: 'unit_moved', unit_id: 'u', path: ['C4219'], cp_spent: 1 },
+  }).state
+  for (let seq = 9; seq < MAX_FRAMES + 20; seq++)
+    s = receive(s, {
+      type: 'event',
+      seq,
+      clock,
+      event: { kind: 'note', text: 'traffic' },
+    }).state
+  expect(s.frames.some((f) => f.seq === 8)).toBe(false)
+  const replay = seek(s, 8)
+  expect(selectedFrame(replay)?.seq).toBe(8)
+  expect(selectedFrame(replay)?.view.units.u.hex).toBe('C4219')
+  expect(replay.archiveFrame?.event?.kind).toBe('unit_moved')
+  expect(advance({ ...replay, playing: true }).playing).toBe(false)
+  const arrived = receive(replay, {
+    type: 'event',
+    seq: MAX_FRAMES + 20,
+    clock,
+    event: { kind: 'note', text: 'new traffic' },
+  }).state
+  expect(selectedFrame(arrived)?.seq).toBe(8)
+  expect(seek(arrived, arrived.lastSeq!).archiveFrame).toBeNull()
+  expect(receive(replay, { type: 'resync' }).state.stages).toEqual([])
+  expect(initialState('side:commonwealth').archiveFrame).toBeNull()
+  expect(initialState('side:commonwealth').stages).toEqual([])
+  const other = receive(replay, {
+    type: 'hello',
+    protocol: 1,
+    perspective: 'operator',
+    campaign: { ...campaign, id: 'other' },
+  }).state
+  expect(other.stages).toEqual([])
+  expect(other.archiveFrame).toBeNull()
 })

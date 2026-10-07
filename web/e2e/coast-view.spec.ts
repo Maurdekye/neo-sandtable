@@ -41,6 +41,9 @@ test('presents authorized coast movement, locators, combat citations and private
       cp_spent_quarters: 5,
     },
   }
+  const explanation =
+    '<img src=x onerror=alert(1)> https://example.test **literal**'
+  let traffic: (() => void) | undefined
   let publish: (() => void) | undefined
   await page.routeWebSocket(
     '**/api/campaigns/coast-fixture/stream?cap=*',
@@ -58,7 +61,15 @@ test('presents authorized coast movement, locators, combat citations and private
             title: 'Synthetic coast presentation fixture',
             rules_profile: 'fixture',
             scenario_id: 'fixture',
-            seats: [],
+            seats: [
+              {
+                id: 'axis.front_line',
+                side: 'axis',
+                role: 'front_line',
+                controller: null,
+                status: 'idle',
+              },
+            ],
           },
         })
         send({
@@ -79,6 +90,16 @@ test('presents authorized coast movement, locators, combat citations and private
             pending: [],
           },
         })
+        traffic = () => {
+          if (!own) return
+          for (let seq = 6; seq <= 620; seq++)
+            send({
+              type: 'event',
+              seq,
+              clock,
+              event: { kind: 'note', text: 'Synthetic background traffic' },
+            })
+        }
         publish = () => {
           if (!own) return
           send({
@@ -126,6 +147,34 @@ test('presents authorized coast movement, locators, combat citations and private
               reason: 'Synthetic retreat elimination',
             },
           })
+          send(
+            JSON.parse(
+              JSON.stringify({
+                type: 'event',
+                seq: 5,
+                clock,
+                event: {
+                  kind: 'decision_resolved',
+                  seat: 'axis.front_line',
+                  decision_id: 'opaque',
+                  summary: 'Synthetic accepted decision',
+                  explanation,
+                },
+              }),
+            ) as ServerMessage,
+          )
+          send({
+            type: 'transcript',
+            seat: 'axis.front_line',
+            tseq: 1,
+            game_seq: 5,
+            at: '1940-09-15T00:00:00Z',
+            entry: {
+              kind: 'decision_submitted',
+              decision_id: 'opaque',
+              summary: 'Synthetic decision',
+            },
+          })
         }
       })
     },
@@ -168,6 +217,33 @@ test('presents authorized coast movement, locators, combat citations and private
   await page.locator('.event-row[data-kind="dice_rolled"] .citation').hover()
   await expect(page.getByRole('tooltip')).toContainText('land:12.1')
   await page.mouse.move(800, 100)
+  const commentary = page.locator('.sessions .decision-explanation')
+  await expect(commentary).toContainText(explanation)
+  await expect(commentary.locator('img,a,strong')).toHaveCount(0)
+  await page.getByTestId('stage-overview').locator(':scope > summary').click()
+  await page
+    .locator('.stage-category > summary')
+    .filter({ hasText: 'Seat decisions' })
+    .click()
+  const timelineCommentary = page.locator(
+    '.stage-overview .decision-explanation',
+  )
+  await expect(timelineCommentary).toContainText(explanation)
+  await expect(timelineCommentary.locator('img,a,strong')).toHaveCount(0)
+  traffic!()
+  await expect(page.getByTestId('playback-status')).toContainText('LIVE')
+  await expect(page.locator('.sequence')).toContainText('620')
+  await page.locator('.stage-move').first().click()
+  await expect(page.getByTestId('playback-status')).toContainText('HISTORY')
+  await expect(page.getByTestId('archive-caption')).toContainText(
+    'outside retained',
+  )
+  await expect(page.getByRole('button', { name: /^Step/ })).toBeDisabled()
+  await expect(
+    page.locator('.event-row[data-kind="unit_moved"]'),
+  ).toContainText('1.25 CP spent')
+  await page.getByRole('button', { name: 'Return to live' }).click()
+
   await page.screenshot({
     path: '../../board-coast-fixture.png',
     fullPage: true,
@@ -175,6 +251,8 @@ test('presents authorized coast movement, locators, combat citations and private
   await page
     .getByLabel('Perspective', { exact: true })
     .selectOption('side:commonwealth')
+  await expect(page.locator('.stage-move')).toHaveCount(0)
+  await expect(page.locator('.decision-explanation')).toHaveCount(0)
   await expect(page.locator('.status-badges')).toHaveCount(0)
   await expect(page.locator('.event-row')).toHaveCount(0)
   await expect(page.getByTestId('motion-count')).toContainText('0 active')

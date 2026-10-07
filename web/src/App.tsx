@@ -1,3 +1,4 @@
+import { StageTimeline } from './StageOverview'
 import { useEffect, useMemo, useState } from 'react'
 import type { Perspective } from './protocol'
 import { Board } from './map/Board'
@@ -82,8 +83,13 @@ function Viewer({ access }: { access?: Access }) {
     !matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
   const moved = useMemo(
-    () => movedUnits(view, state.frames, frame?.seq ?? null),
-    [view, state.frames, frame?.seq],
+    () =>
+      movedUnits(
+        view,
+        state.archiveFrame ? [state.archiveFrame] : state.frames,
+        frame?.seq ?? null,
+      ),
+    [view, state.frames, state.archiveFrame, frame?.seq],
   )
   const [placementId, setPlacementId] = useState<string | null>(null)
   const placementDecision =
@@ -184,7 +190,7 @@ function Viewer({ access }: { access?: Access }) {
   const transcriptMessages = state.transcripts.filter(
     (m) => state.cursor === null || m.game_seq <= (frame?.seq ?? 0),
   )
-  const events = state.frames
+  const events = (state.archiveFrame ? [state.archiveFrame] : state.frames)
     .filter(
       (f) =>
         f.event &&
@@ -416,6 +422,7 @@ function Viewer({ access }: { access?: Access }) {
           terrainCoverage={terrainCoverage}
         />
         <Transcripts
+          commentaries={state.commentaries}
           seats={state.campaign?.seats ?? []}
           messages={transcriptMessages}
           mock={mockMode}
@@ -516,10 +523,16 @@ function Viewer({ access }: { access?: Access }) {
           <button onClick={actions.pause} disabled={!frame}>
             Pause playback
           </button>
-          <button onClick={actions.step} disabled={!frame}>
+          <button
+            onClick={actions.step}
+            disabled={!frame || !!state.archiveFrame}
+          >
             Step →
           </button>
-          <button onClick={actions.play} disabled={!frame}>
+          <button
+            onClick={actions.play}
+            disabled={!frame || !!state.archiveFrame}
+          >
             {state.playing ? 'Stop replay' : 'Play history'}
           </button>
           <select
@@ -534,6 +547,7 @@ function Viewer({ access }: { access?: Access }) {
             ))}
           </select>
           <input
+            disabled={!!state.archiveFrame}
             type="range"
             aria-label="History"
             min="0"
@@ -551,6 +565,23 @@ function Viewer({ access }: { access?: Access }) {
             Return to live
           </button>
         </div>
+        {state.archiveFrame && (
+          <p className="archive-caption" data-testid="archive-caption">
+            Summary checkpoint: intermediate frames are outside retained
+            history.{' '}
+            <button onClick={() => actions.seek(state.frames[0].seq)}>
+              Resume retained history
+            </button>
+          </p>
+        )}
+        <StageTimeline
+          stages={state.stages}
+          onJump={(entry) => {
+            actions.seek(entry.frame.seq)
+            setEventFilter('all')
+            if (entry.hex && HEX_BY_ID.has(entry.hex)) locate(entry.hex)
+          }}
+        />
         <div className="feed-header">
           <span className="eyebrow">EVENT FEED</span>
           <select

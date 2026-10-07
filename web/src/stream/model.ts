@@ -1,3 +1,5 @@
+import { recordCommentary, type AcceptedCommentary } from '../commentary'
+import { recordStage, summaryFrame, type StageSummary } from '../stageTimeline'
 import type {
   CampaignMeta,
   Clock,
@@ -52,6 +54,9 @@ export interface ViewerState {
   campaign: CampaignMeta | null
   perspective: Perspective
   frames: Frame[]
+  stages: StageSummary[]
+  archiveFrame: Frame | null
+  commentaries: AcceptedCommentary[]
   transcripts: TranscriptMessage[]
   cursor: number | null
   playing: boolean
@@ -69,6 +74,9 @@ export function initialState(
     campaign: null,
     perspective,
     frames: [],
+    stages: [],
+    archiveFrame: null,
+    commentaries: [],
     transcripts: [],
     cursor: null,
     playing: false,
@@ -198,6 +206,9 @@ export function receive(
     state: {
       ...state,
       frames: [],
+      stages: [],
+      archiveFrame: null,
+      commentaries: [],
       transcripts: [],
       cursor: null,
       playing: false,
@@ -214,33 +225,40 @@ export function receive(
   if (message.type === 'hello') {
     if (message.perspective !== state.perspective || message.protocol !== 1)
       return resync()
+    const base =
+      state.campaign && state.campaign.id !== message.campaign.id
+        ? initialState(state.perspective)
+        : state
     return {
       state: {
-        ...state,
+        ...base,
         campaign: message.campaign,
-        connection: state.frames.length ? 'live' : state.connection,
+        connection: base.frames.length ? 'live' : base.connection,
       },
     }
   }
   if (message.type === 'snapshot' && !state.campaign) return { state }
-  if (message.type === 'snapshot')
+  if (message.type === 'snapshot') {
+    const snapshot: Frame = {
+      seq: message.seq,
+      view: message.view,
+      event: null,
+      moved: movementState(message.view),
+    }
     return {
       state: {
         ...state,
-        frames: [
-          {
-            seq: message.seq,
-            view: message.view,
-            event: null,
-            moved: movementState(message.view),
-          },
-        ],
+        frames: [snapshot],
+        stages: recordStage([], snapshot),
+        commentaries: [],
+        archiveFrame: null,
         lastSeq: message.seq,
         connection: 'live',
         cursor: null,
         playing: false,
       },
     }
+  }
   if (message.type === 'event') {
     if (
       state.connection !== 'live' ||
@@ -267,10 +285,12 @@ export function receive(
       state: {
         ...state,
         frames,
+        stages: recordStage(state.stages, frame, last),
+        commentaries: recordCommentary(state.commentaries, frame),
         lastSeq: message.seq,
         cursor:
-          state.cursor === null
-            ? null
+          state.cursor === null || state.archiveFrame
+            ? state.cursor
             : state.cursor < frames[0].seq
               ? frames[0].seq
               : state.cursor,
@@ -291,11 +311,22 @@ export function receive(
 export function selectedFrame(state: ViewerState): Frame | undefined {
   return state.cursor === null
     ? state.frames.at(-1)
-    : (state.frames.find((f) => f.seq === state.cursor) ?? state.frames[0])
+    : (state.frames.find((f) => f.seq === state.cursor) ??
+        (state.archiveFrame?.seq === state.cursor
+          ? state.archiveFrame
+          : undefined) ??
+        state.frames[0])
 }
 export function seek(state: ViewerState, seq: number): ViewerState {
+  const archived = !state.frames.some((f) => f.seq === seq)
+    ? (summaryFrame(state.stages, seq) ??
+      state.commentaries.find((c) => c.frame.seq === seq)?.frame)
+    : undefined
+  if (archived)
+    return { ...state, playing: false, cursor: seq, archiveFrame: archived }
   return {
     ...state,
+    archiveFrame: null,
     playing: false,
     cursor:
       seq < (state.frames[0]?.seq ?? seq)
@@ -307,6 +338,7 @@ export function seek(state: ViewerState, seq: number): ViewerState {
 }
 export function advance(state: ViewerState): ViewerState {
   if (state.cursor === null) return state
+  if (state.archiveFrame) return { ...state, playing: false }
   const next = state.frames.find((f) => f.seq > state.cursor!)
   return next ? { ...state, cursor: next.seq } : { ...state, playing: false }
 }

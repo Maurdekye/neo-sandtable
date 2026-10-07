@@ -45,7 +45,7 @@ export const actions = {
     publish({ ...state, cursor: state.cursor ?? state.lastSeq, playing: false })
   },
   live() {
-    publish({ ...state, cursor: null, playing: false })
+    publish({ ...state, cursor: null, archiveFrame: null, playing: false })
   },
   seek(seq: number) {
     publish(seek(state, seq))
@@ -60,6 +60,7 @@ export const actions = {
     )
   },
   play() {
+    if (state.archiveFrame) return
     if (state.cursor === null)
       publish({ ...state, cursor: state.frames[0]?.seq ?? null, playing: true })
     else publish({ ...state, playing: !state.playing })
