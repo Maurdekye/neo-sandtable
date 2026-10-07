@@ -85,7 +85,7 @@ fn learned_from(result: &Result<Transition<Cna>, Rejection>, side: Side) -> Valu
                         .events
                         .iter()
                         .filter(|e| p.can_see(&e.audience))
-                        .map(|e| serde_json::to_value(&e.event).expect("events serialize"))
+                        .map(|e| json!({ "event": e.event, "hex": e.hex, "unit_id": e.unit_id }))
                         .collect();
                     (name, Value::Array(seen))
                 })

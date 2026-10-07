@@ -525,6 +525,7 @@ pub(crate) fn unit_view(content: &CnaContent, unit: &LandUnit) -> wire::UnitView
         detail.insert("strength".to_owned(), json!(points));
     }
     detail.insert("engaged".to_owned(), json!(unit.engaged));
+    detail.insert("reserve".to_owned(), json!(unit.reserve));
     detail.insert(
         "cp_spent_quarters".to_owned(),
         json!(unit.cp_spent_quarters),

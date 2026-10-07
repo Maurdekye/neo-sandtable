@@ -8,7 +8,7 @@ import type { ViewState } from "./ViewState";
 /**
  * Messages the server sends over the WebSocket.
  */
-export type ServerMessage = { "type": "hello", protocol: number, campaign: CampaignMeta, perspective: string, } | { "type": "snapshot", seq: number, view: ViewState, } | { "type": "event", seq: number, clock: Clock, event: GameEvent, } | { "type": "transcript", seat: string, 
+export type ServerMessage = { "type": "hello", protocol: number, campaign: CampaignMeta, perspective: string, } | { "type": "snapshot", seq: number, view: ViewState, } | { "type": "event", seq: number, clock: Clock, event: GameEvent, hex?: string, unit_id?: string, } | { "type": "transcript", seat: string, 
 /**
  * Per-seat transcript sequence, strictly increasing.
  */

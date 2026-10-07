@@ -163,12 +163,20 @@ pub enum ServerMessage {
         seq: u64,
         view: ViewState,
     },
-    /// One game event; `seq` increases by exactly one each time.
+    /// One game event; `seq` increases by exactly one each time. `hex` and `unit_id`, when
+    /// present, locate an event that carries no hex of its own (dice, notes); they are only ever
+    /// set to what this perspective may know.
     Event {
         #[ts(type = "number")]
         seq: u64,
         clock: Clock,
         event: GameEvent,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        hex: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        unit_id: Option<String>,
     },
     /// A live entry from an AI seat's session. Never affects adjudication.
     Transcript {

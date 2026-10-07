@@ -16,11 +16,35 @@ pub use cna_protocol::GameEvent;
 pub struct EngineEvent {
     pub audience: Audience,
     pub event: GameEvent,
+    /// The printed hex the event is about, so viewers can locate dice, notes and other events
+    /// that carry no hex of their own. Set it only when the audience may know that hex.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hex: Option<String>,
+    /// The unit the event is about, under the same rule: only one the audience may identify.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unit_id: Option<String>,
 }
 
 impl EngineEvent {
     pub fn new(audience: Audience, event: GameEvent) -> Self {
-        Self { audience, event }
+        Self {
+            audience,
+            event,
+            hex: None,
+            unit_id: None,
+        }
+    }
+
+    /// Locate the event at `hex` (see [`EngineEvent::hex`]).
+    pub fn at(mut self, hex: impl ToString) -> Self {
+        self.hex = Some(hex.to_string());
+        self
+    }
+
+    /// Name the unit the event is about (see [`EngineEvent::unit_id`]).
+    pub fn about(mut self, unit_id: impl ToString) -> Self {
+        self.unit_id = Some(unit_id.to_string());
+        self
     }
 
     pub fn public(event: GameEvent) -> Self {

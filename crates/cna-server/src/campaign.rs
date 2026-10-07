@@ -650,6 +650,8 @@ impl<R: Ruleset> Campaign<R> {
                     seq: next_seq,
                     clock: clock.clone(),
                     event: payload,
+                    hex: event.hex.clone(),
+                    unit_id: event.unit_id.clone(),
                 };
                 tx.execute(
                     "INSERT INTO perspective_events VALUES (?, ?, ?, ?)",
