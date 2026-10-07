@@ -1,5 +1,4 @@
 //! Continual movement preserves stage costs and each preceding segment's movement restriction.
-use super::formation;
 use crate::{
     CnaContent, State,
     state::Pending,
@@ -16,7 +15,7 @@ use serde_json::Value;
 pub const KIND: &str = "cna.movement.repeat";
 
 /// Record the end of movement before breakdown or combat can change positions.
-/// A unit that has finished away from combat cannot regain movement by a later enemy retreat.
+/// A unit that has finished away from enemy presence cannot regain movement by a later enemy retreat.
 /// Cases: land:8.21, land:8.22, land:8.23
 /// Interpretations: interp:land-0023
 pub fn finish_movement(content: &CnaContent, state: &mut State) {
@@ -34,7 +33,6 @@ pub fn finish_movement(content: &CnaContent, state: &mut State) {
     };
     let enemy: Vec<_> = state
         .units_of(side.opponent())
-        .filter(|u| formation::combat_unit(content, &u.id))
         .filter_map(|u| {
             u.location
                 .hex()

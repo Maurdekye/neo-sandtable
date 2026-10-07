@@ -49,7 +49,7 @@ pub struct MovementState {
     #[serde(default)]
     pub strict: bool,
     pub moved: BTreeSet<UnitId>,
-    /// Units that finished a prior segment too far from enemy combat units (8.23).
+    /// Units that finished a prior segment too far from enemy units (8.23).
     #[serde(default)]
     pub cycle_blocked: BTreeSet<UnitId>,
     #[serde(default)]
@@ -620,6 +620,12 @@ fn run(
                 own_half,
             )?;
         }
+        let before_from = state
+            .units_of(seat.side)
+            .any(|u| u.location.hex() == Some(&from));
+        let before_to = state
+            .units_of(seat.side)
+            .any(|u| u.location.hex() == Some(&to));
         for id in &moving {
             state.land.units.get_mut(id).unwrap().location = Location::Hex { hex: to.clone() };
             if costs.iter().all(|c| c.on_network) {
@@ -689,8 +695,28 @@ fn run(
                 seat.side,
                 &Location::Hex { hex: to.clone() },
             );
-            emit_stacks(content, state, seat.side, &from, events);
-            emit_stacks(content, state, seat.side, &to, events);
+            emit_stacks(
+                content,
+                state,
+                seat.side,
+                &from,
+                before_from
+                    != state
+                        .units_of(seat.side)
+                        .any(|u| u.location.hex() == Some(&from)),
+                events,
+            );
+            emit_stacks(
+                content,
+                state,
+                seat.side,
+                &to,
+                before_to
+                    != state
+                        .units_of(seat.side)
+                        .any(|u| u.location.hex() == Some(&to)),
+                events,
+            );
             if stacking::validate_end(content, state, &to, seat.side, strict).is_ok() {
                 last_legal = Some((
                     state.clone(),
@@ -761,6 +787,7 @@ fn emit_stacks(
     state: &State,
     side: Side,
     hex: &HexId,
+    enemy_presence_changed: bool,
     events: &mut Vec<EngineEvent>,
 ) {
     let ids: Vec<_> = state
@@ -769,7 +796,9 @@ fn emit_stacks(
         .map(|u| u.id.to_string())
         .collect();
     if ids.is_empty() {
-        for audience in [Audience::Side(side), Audience::SideOnly(side.opponent())] {
+        for audience in std::iter::once(Audience::Side(side))
+            .chain(enemy_presence_changed.then_some(Audience::SideOnly(side.opponent())))
+        {
             events.push(EngineEvent::new(
                 audience,
                 GameEvent::StackRemoved {
@@ -790,17 +819,19 @@ fn emit_stacks(
                 },
             },
         ));
-        events.push(EngineEvent::new(
-            Audience::SideOnly(side.opponent()),
-            GameEvent::StackUpdated {
-                stack: Stack {
-                    hex: hex.to_string(),
-                    side,
-                    visible_count: None,
-                    unit_ids: vec![],
+        if enemy_presence_changed {
+            events.push(EngineEvent::new(
+                Audience::SideOnly(side.opponent()),
+                GameEvent::StackUpdated {
+                    stack: Stack {
+                        hex: hex.to_string(),
+                        side,
+                        visible_count: None,
+                        unit_ids: vec![],
+                    },
                 },
-            },
-        ));
+            ));
+        }
     }
 }
 /// Validate the entire answer against own information, then execute on a separate draft.

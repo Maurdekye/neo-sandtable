@@ -1371,7 +1371,7 @@ fn either_phasing_side_repeats_without_resetting_cp_or_stage_water() {
 /// Cases: land:8.23
 /// Interpretations: interp:land-0023
 #[test]
-fn cycle_proximity_counts_combat_and_is_captured_before_combat_changes_positions() {
+fn cycle_proximity_counts_any_unit_and_is_captured_before_combat_changes_positions() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
     place(&mut s, LEG, "C4023");
     s.decisions.pending.clear();
@@ -1408,9 +1408,9 @@ fn cycle_proximity_counts_combat_and_is_captured_before_combat_changes_positions
     s.land.movement.cycle_blocked.clear();
     s.land.movement.ended = false;
     super::super::cycles::finish_movement(&c, &mut s);
-    assert!(s.land.movement.cycle_blocked.contains(&TANK.into())); // a nearby HQ alone does not qualify
+    assert!(!s.land.movement.cycle_blocked.contains(&TANK.into())); // nearby noncombat unit qualifies
     s.cursor.cycle = 2;
-    assert!(reachable(&c, &s, &TANK.into(), false).is_empty());
+    assert!(!reachable(&c, &s, &TANK.into(), false).is_empty());
 }
 
 /// Cases: land:18.11, land:18.12, land:18.13, land:18.14, land:18.22, land:18.23, land:18.24, land:18.25, land:18.26
@@ -2011,4 +2011,168 @@ fn profile_large_mobile_unit_inspect_on_real_graziani() {
         t.elapsed() < std::time::Duration::from_secs(1),
         "mean inspect should remain below200ms"
     );
+}
+
+/// Cases: land:8.51, land:9.31, land:9.32
+/// Interpretations: interp:land-0026
+#[test]
+fn reaction_in_overfull_transit_hex_requires_a_legal_continuation() {
+    let (c, g, _o, defender) = reaction_fixture();
+    let mut s = g.state.clone();
+    let extra = s
+        .units_of(Side::Axis)
+        .filter(|u| {
+            u.id.as_str() != TANK
+                && c.units.units[&u.id].stacking_points == Some(1)
+                && formation::combat_unit(&c, &u.id)
+        })
+        .take(6)
+        .map(|u| u.id.clone())
+        .collect::<Vec<_>>();
+    for id in &extra {
+        place(&mut s, id.as_str(), "C4021");
+        s.land.units.get_mut(id).unwrap().cohesion_quarters = -104;
+    }
+    s.cursor.entered = false;
+    s.decisions.pending.clear();
+    let g = start(&c, s, true);
+    let mover = seat(&g);
+    let t = respond(
+        &c,
+        &g,
+        mover,
+        json!([{"unit":TANK,"path":["C4021","C4020"]}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(
+        t.game.state.land.units[&TANK.into()].location.hex(),
+        Some(&"C4021".into())
+    );
+    let reactor = seat(&t.game);
+    let t = respond(&c, &t.game, reactor, Value::Null, true).unwrap();
+    assert_eq!(
+        t.game.state.decisions.pending[0].kind,
+        super::super::reaction::CONTINUE
+    );
+    assert!(t.game.state.decisions.pending[0].space.pass.is_none());
+    assert!(respond(&c, &t.game, mover, Value::Null, true).is_err());
+    let request = Cna::full().pending(&c, &t.game.state)[0].clone();
+    for n in 0..24u8 {
+        let action = crate::baseline::random_orders(
+            &c,
+            &t.game.state,
+            &request,
+            &mut CampaignRng::from_seed([n; 32]),
+        );
+        assert!(respond(&c, &t.game, mover, action, true).is_ok());
+    }
+    let result = respond(
+        &c,
+        &t.game,
+        mover,
+        json!([{"unit":TANK,"path":["C4020"]}]),
+        true,
+    )
+    .unwrap();
+    assert!(result.game.state.land.reaction.continuation.is_none());
+    assert_eq!(result.game.state.land.units[&defender].cp_spent_quarters, 0);
+}
+
+/// Cases: land:3.61, land:3.62, land:8.23
+/// Interpretations: interp:land-0023
+#[test]
+fn repeated_movement_does_not_disclose_combat_contents_of_nearby_enemy_stack() {
+    let (c, mut a, _o) = setup(TANK, Some("road"), false, None);
+    place(&mut a, LEG, "C4022");
+    let hq = c
+        .units
+        .units
+        .values()
+        .find(|u| {
+            u.side == Side::Commonwealth
+                && u.class
+                    .as_ref()
+                    .and_then(|id| c.units.classes.get(id))
+                    .is_some_and(|cl| cl.unit_type == "headquarters")
+        })
+        .unwrap()
+        .id
+        .clone();
+    let mut b = a.clone();
+    b.land.units.get_mut(&LEG.into()).unwrap().location = Location::Eliminated;
+    place(&mut b, hq.as_str(), "C4022");
+    for s in [&mut a, &mut b] {
+        super::super::cycles::finish_movement(&c, s);
+        s.cursor.cycle = 2;
+    }
+    crate::testkit::assert_indistinguishable(&Cna::dev(), &c, &a, &b, Side::Axis);
+    assert!(!a.land.movement.cycle_blocked.contains(&TANK.into()));
+    assert!(!b.land.movement.cycle_blocked.contains(&TANK.into()));
+}
+/// Cases: land:3.61, land:3.62, land:8.13
+#[test]
+fn occupied_to_occupied_counter_traffic_and_private_pass_emit_no_enemy_events() {
+    let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
+    place(&mut s, "it.libyan_tank_command.lxii_l_tank_bn", "C4020");
+    place(&mut s, "it.libyan_tank_command.lxiii_l_tank_bn", "C4021");
+    let g = start(&c, s, true);
+    let own = seat(&g);
+    let enemy = Perspective::Side(Side::Commonwealth);
+    let pass = respond(&c, &g, own, Value::Null, true).unwrap();
+    let moved = respond(&c, &g, own, json!([{"unit":TANK,"path":["C4021"]}]), true).unwrap();
+    for t in [&pass, &moved] {
+        assert_eq!(
+            t.events
+                .iter()
+                .filter(|e| enemy.can_see(&e.audience))
+                .count(),
+            0
+        );
+    }
+    assert!(
+        moved
+            .events
+            .iter()
+            .any(|e| matches!(e.event, GameEvent::UnitMoved { .. }))
+    );
+    crate::testkit::assert_indistinguishable(
+        &Cna::full(),
+        &c,
+        &pass.game.state,
+        &moved.game.state,
+        Side::Commonwealth,
+    );
+}
+/// Cases: land:8.51, land:8.53, land:3.62
+#[test]
+fn organized_and_disorganized_adjacent_tanks_do_not_change_preflight_acceptance() {
+    let (c, g, _o, defender) = reaction_fixture();
+    let mut disorganized = g.clone();
+    disorganized
+        .state
+        .land
+        .units
+        .get_mut(&defender)
+        .unwrap()
+        .cohesion_quarters = -104;
+    crate::testkit::assert_indistinguishable(
+        &Cna::full(),
+        &c,
+        &g.state,
+        &disorganized.state,
+        Side::Axis,
+    );
+    for initial in [&g, &disorganized] {
+        assert!(
+            respond(
+                &c,
+                initial,
+                seat(initial),
+                json!([{"unit":TANK,"path":["C4021"]}]),
+                true
+            )
+            .is_ok()
+        );
+    }
 }
