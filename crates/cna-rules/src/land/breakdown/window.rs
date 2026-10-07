@@ -40,6 +40,17 @@ pub struct Window {
 /// Hide other windows until the completed move's checks have been adjudicated.
 /// Cases: land:21.24, land:21.28, land:21.29
 pub(crate) fn park(s: &mut State, resume: Option<Resume>) -> bool {
+    // Below/equal to three BP no vehicle may roll, irrespective of hidden origin conditions.
+    // Discard these completed motions while retaining all cumulative stage exposure.
+    let base = &s.land.breakdown.accumulated_quarters;
+    let extra = &s.land.breakdown.light_extra_quarters;
+    s.land.breakdown.stopped.retain(|m| {
+        m.members.iter().any(|id| {
+            i64::from(base.get(id).copied().unwrap_or(0))
+                + i64::from(extra.get(id).copied().unwrap_or(0))
+                > 12
+        })
+    });
     if s.land.breakdown.stopped.is_empty() {
         return false;
     }
@@ -252,5 +263,143 @@ pub(crate) fn finish(
         {
             return Ok(());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        Cna,
+        seq::{Block, Half},
+        state::Location,
+    };
+    use cna_core::{
+        decision::DecisionResponse,
+        dice::CampaignRng,
+        engine::{Command, Game, evaluate},
+        ids::UnitId,
+        quantity::FuelTenths,
+        visibility::Perspective,
+    };
+    use cna_protocol::Side;
+    /// Cases: land:21.24, land:21.31, land:21.35, land:21.43, land:3.62
+    #[test]
+    fn rolls_and_physical_losses_wait_for_adjudication_and_recover_exactly() {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut s = State::new(&c).unwrap();
+        for u in s.land.units.values_mut() {
+            u.location = Location::Eliminated;
+        }
+        let id: UnitId = "cw.unassigned_inf.1st_rnf_mg_bn".into();
+        let u = s.land.units.get_mut(&id).unwrap();
+        u.location = Location::Hex {
+            hex: "C4021".into(),
+        };
+        u.detached = true;
+        u.attached_to = None;
+        u.trucks.medium = 10;
+        u.transport_trucks = Default::default();
+        s.cursor.block = Block::PlayerHalf;
+        s.cursor.half = Some(Half::A);
+        s.cursor.op_stage = Some(1);
+        s.cursor.index = 1;
+        s.cursor.entered = true;
+        s.turn.player_a = Some(Side::Commonwealth);
+        let stock = s.logistics.unit_supply.entry(id.clone()).or_default();
+        stock.carried.ammo = 20;
+        stock.tank_fuel = FuelTenths::new(50);
+        let mut rng = CampaignRng::from_seed([7; 32]);
+        let mut events = vec![];
+        open(
+            &mut s,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+            SeatId::new(Side::Commonwealth, cna_protocol::Role::FrontLine),
+            super::super::super::movement::KIND,
+            "remaining movement".into(),
+            &["land:8.11"],
+            Trigger::Scheduled,
+            Secrecy::Open,
+            ActionSpace::new(ActionSchema::Bool).with_pass("done"),
+        );
+        super::super::record_edge(
+            &mut s,
+            &id,
+            &"C4020".into(),
+            280,
+            8,
+            cna_tables::land::weather::WeatherKind::Normal,
+        )
+        .unwrap();
+        super::super::stop(&mut s, std::slice::from_ref(&id), &"C4021".into());
+        assert!(park(&mut s, None));
+        let before_rng = serde_json::to_value(rng.state()).unwrap();
+        let game = Game {
+            state: s,
+            rng: rng.state(),
+        };
+        let batch = evaluate(&Cna::dev(), &c, &game, &Command::Advance).unwrap();
+        assert_ne!(serde_json::to_value(&batch.game.rng).unwrap(), before_rng);
+        assert_eq!(batch.game.state.decisions.pending[0].kind, KIND);
+        assert!(batch.game.state.land.breakdown.markers.is_empty());
+        assert!(
+            batch
+                .events
+                .iter()
+                .all(|e| !Perspective::Side(Side::Axis).can_see(&e.audience))
+        );
+        let p = &batch.game.state.decisions.pending[0];
+        let outcome = batch
+            .game
+            .state
+            .land
+            .breakdown
+            .window
+            .outcomes
+            .front()
+            .unwrap();
+        let action = serde_json::to_value(
+            super::super::baseline::plan(&c, &batch.game.state, outcome).unwrap(),
+        )
+        .unwrap();
+        let command = Command::Respond(DecisionResponse {
+            decision_id: p.id.clone(),
+            seat: p.seat,
+            decision_revision: p.revision,
+            controller_epoch: 1,
+            idempotency_key: "breakdown-test".into(),
+            public_explanation: None,
+            action,
+        });
+        let answered = evaluate(&Cna::dev(), &c, &batch.game, &command).unwrap();
+        assert_eq!(
+            serde_json::to_value(&answered.game.rng).unwrap(),
+            serde_json::to_value(&batch.game.rng).unwrap()
+        );
+        assert!(answered.game.state.land.breakdown.markers.is_empty());
+        let restored: State =
+            serde_json::from_value(serde_json::to_value(&answered.game.state).unwrap()).unwrap();
+        let restored = Game {
+            state: restored,
+            rng: answered.game.rng.clone(),
+        };
+        let a = evaluate(&Cna::dev(), &c, &answered.game, &Command::Advance).unwrap();
+        let b = evaluate(&Cna::dev(), &c, &restored, &Command::Advance).unwrap();
+        assert_eq!(
+            serde_json::to_value(&a.game.state).unwrap(),
+            serde_json::to_value(&b.game.state).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(&a.events).unwrap(),
+            serde_json::to_value(&b.events).unwrap()
+        );
+        assert!(!a.game.state.land.breakdown.markers.is_empty());
+        assert_eq!(
+            a.game.state.decisions.pending[0].kind,
+            super::super::super::movement::KIND
+        );
     }
 }

@@ -87,3 +87,25 @@ pub use crate::land::combat::random_positions;
 pub use crate::land::combat::barrage::random_plans as random_barrages;
 
 pub use crate::land::combat::retreat::random_orders as random_retreats;
+
+/// Provide an exact conserved own breakdown allocation after the roll has been disclosed.
+/// Cases: land:21.35, land:21.36, land:21.41, land:21.43
+pub fn random_breakdown(
+    content: &CnaContent,
+    state: &State,
+    request: &DecisionRequest,
+    _rng: &mut CampaignRng,
+) -> Value {
+    if request.kind != crate::land::breakdown::window::KIND {
+        return Value::Null;
+    }
+    state
+        .land
+        .breakdown
+        .window
+        .outcomes
+        .front()
+        .and_then(|o| crate::land::breakdown::baseline::plan(content, state, o))
+        .and_then(|p| serde_json::to_value(p).ok())
+        .unwrap_or(Value::Null)
+}

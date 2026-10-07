@@ -124,7 +124,7 @@ fn passenger_capacity(c: &CnaContent, t: Trucks) -> i64 {
         })
         .sum()
 }
-fn marker_fuel_capacity(c: &CnaContent, assets: &[Asset]) -> Result<i32, Rejection> {
+pub(super) fn marker_fuel_capacity(c: &CnaContent, assets: &[Asset]) -> Result<i32, Rejection> {
     use cna_tables::airlog::trucks::TruckType;
     let mut capacity = 0i64;
     for a in assets {
@@ -180,6 +180,55 @@ fn marker_fuel_capacity(c: &CnaContent, assets: &[Asset]) -> Result<i32, Rejecti
             .ok_or_else(|| illegal("vehicle capacity overflow"))?;
     }
     i32::try_from(capacity).map_err(|_| illegal("vehicle capacity overflow"))
+}
+/// Remove the exact rolled physical groups before changing attached counts.
+/// Cases: land:21.25, land:21.29, airlog:49.16
+fn remove_cohorts(
+    s: &mut State,
+    id: &UnitId,
+    assets: &[Asset],
+) -> Result<Vec<logistics::TruckFuelCohort>, Rejection> {
+    use logistics::{FuelCohortSelection, FuelTruckKind};
+    super::cohorts::ensure(s, id).map_err(Rejection::Engine)?;
+    let available = logistics::segment_fuel_cohorts(s, id)
+        .map_err(|_| illegal("truck histories are inconsistent"))?;
+    let mut selected: BTreeMap<String, i32> = BTreeMap::new();
+    for a in assets {
+        let kind = match a.equipment {
+            Equipment::LightTruck => FuelTruckKind::Light,
+            Equipment::MediumTruck => FuelTruckKind::Medium,
+            Equipment::HeavyTruck => FuelTruckKind::Heavy,
+            _ => continue,
+        };
+        let mut need = a.points;
+        for g in available
+            .iter()
+            .filter(|g| g.kind == kind && a.cohort.as_ref().is_none_or(|id| id == &g.id))
+        {
+            let used = selected.get(&g.id).copied().unwrap_or(0);
+            let take = need.min(g.count - used);
+            if take > 0 {
+                *selected.entry(g.id.clone()).or_default() += take;
+                need -= take;
+            }
+        }
+        if need != 0 {
+            return Err(illegal("loss exceeds its rolled physical truck cohort"));
+        }
+    }
+    if selected.is_empty() {
+        return Ok(vec![]);
+    }
+    let choices: Vec<_> = selected
+        .into_iter()
+        .map(|(id, count)| FuelCohortSelection { id, count })
+        .collect();
+    let removed = logistics::remove_selected_segment_fuel_cohorts(s, id, &choices)
+        .map_err(|_| illegal("truck histories are inconsistent"))?;
+    super::cohorts::inherit(s, &removed).map_err(Rejection::Engine)?;
+    let old = s.land.units[id].trucks;
+    s.land.units.get_mut(id).unwrap().trucks = subtract(old, trucks(assets)?)?;
+    Ok(removed)
 }
 /// Validate proportional equipment losses, source-defined origin placement and every cargo split.
 /// A rejected allocation leaves both units and numbered markers unchanged.
@@ -352,6 +401,8 @@ pub fn apply(
         {
             return Err(illegal("vehicle reserves must be conserved"));
         }
+        let origin_cohorts = remove_cohorts(&mut draft, &p.unit, origin)?;
+        let destination_cohorts = remove_cohorts(&mut draft, &p.unit, destination)?;
         let u = draft.land.units.get_mut(&p.unit).unwrap();
         u.trucks = working_trucks;
         u.transport_trucks = working_transport;
@@ -396,7 +447,7 @@ pub fn apply(
         holdings.carried = cargo;
         holdings.tank_fuel = FuelTenths::new(stock.tank_fuel.get() - fuel);
         holdings.activity_water = WaterPoints::new(stock.activity_water.get() - water);
-        for (hex, assets, transport, packing, n, tank, water) in [
+        for (hex, assets, transport, packing, n, tank, water, fuel_cohorts) in [
             (
                 &outcome.origins[&p.unit],
                 origin,
@@ -405,6 +456,7 @@ pub fn apply(
                 p.origin_passengers,
                 p.origin_tank_fuel_tenths,
                 p.origin_activity_water,
+                origin_cohorts,
             ),
             (
                 &outcome.destination,
@@ -414,6 +466,7 @@ pub fn apply(
                 p.destination_passengers,
                 p.destination_tank_fuel_tenths,
                 p.destination_activity_water,
+                destination_cohorts,
             ),
         ] {
             if assets.is_empty() {
@@ -442,6 +495,7 @@ pub fn apply(
                     cargo: packing.clone(),
                     tank_fuel: FuelTenths::new(tank),
                     activity_water: WaterPoints::new(water),
+                    fuel_cohorts,
                 },
             ));
         }
@@ -492,6 +546,7 @@ mod tests {
                     unit: id.clone(),
                     equipment: Equipment::MediumTruck,
                     points: 4,
+                    cohort: None,
                 }],
             },
             percent: 75,
@@ -580,10 +635,52 @@ mod tests {
             serde_json::to_value(&s).unwrap()
         );
     }
+    /// Cases: land:21.35, land:21.36, land:21.41, land:21.43
+    #[test]
+    fn scripted_partitions_validate_for_every_loss_count_and_origin_requirement() {
+        let (c, s, outcome, _) = fixture();
+        for broken in 1..=4 {
+            for require in [false, true] {
+                let mut o = outcome.clone();
+                o.broken = broken;
+                if !require {
+                    o.require_origin.clear();
+                }
+                let plan = super::super::baseline::plan(&c, &s, &o)
+                    .expect("valid exact baseline partition");
+                let mut draft = s.clone();
+                apply(&c, &mut draft, &o, &plan).unwrap();
+                let working =
+                    crate::land::formation::strength(&c, &draft, &plan.partitions[0].unit);
+                let embarked: i32 = draft
+                    .land
+                    .breakdown
+                    .markers
+                    .values()
+                    .flat_map(|m| m.passengers.values())
+                    .sum();
+                assert_eq!(working + embarked, 2);
+                assert_eq!(
+                    draft.logistics.unit_supply[&plan.partitions[0].unit]
+                        .carried
+                        .ammo
+                        + draft
+                            .land
+                            .breakdown
+                            .markers
+                            .values()
+                            .map(|m| m.cargo.totals().unwrap().ammo)
+                            .sum::<i32>(),
+                    8
+                );
+            }
+        }
+    }
     /// Cases: land:21.36, land:21.41, land:21.43, airlog:49.14
     #[test]
     fn invalid_partitions_are_atomic_and_cannot_destroy_cargo_or_free_passengers() {
         let (c, s, outcome, plan) = fixture();
+        assert!(super::super::baseline::plan(&c, &s, &outcome).is_some());
         let unchanged = serde_json::to_value(&s).unwrap();
         for variant in 0..5 {
             let mut p = plan.clone();

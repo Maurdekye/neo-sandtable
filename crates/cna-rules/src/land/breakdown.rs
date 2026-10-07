@@ -1,5 +1,7 @@
 //! Breakdown exposure and proportional allocation; all rolls belong to adjudication.
 mod allocation;
+pub mod baseline;
+pub mod cohorts;
 pub mod losses;
 pub mod markers;
 pub mod window;
@@ -23,7 +25,8 @@ pub struct BreakdownState {
     pub checked: BTreeMap<UnitId, BTreeMap<String, usize>>,
     pub stopped: Vec<StoppedMove>,
     pub markers: BTreeMap<String, markers::BrokenMarker>,
-    pub next_marker: u64,
+    pub next_marker: BTreeMap<cna_protocol::Side, u64>,
+    pub truck_histories: BTreeMap<String, cohorts::History>,
     pub window: window::Window,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -114,26 +117,43 @@ fn origin_requirement(
             Err(_) => Ok(false),
         }
     };
+    let mut unresolved = None;
     for enemy in enemies {
-        if start.axial.distance(c.map.get(&enemy).unwrap().axial) == 1 {
-            if passable(origin, &enemy)? {
-                return Ok(true);
+        let result = if start.axial.distance(c.map.get(&enemy).unwrap().axial) == 1 {
+            passable(origin, &enemy)
+        } else {
+            let mut found = false;
+            for mid in c.map.neighbors(origin) {
+                if mid.axial.distance(c.map.get(&enemy).unwrap().axial) != 1 {
+                    continue;
+                }
+                let route = (|| {
+                    if s.stack_presence(&mid.id, side)
+                        || zoc::controlled(c, s, side, &mid.id, strict)?
+                    {
+                        return Ok(false);
+                    }
+                    Ok(passable(origin, &mid.id)? && passable(&mid.id, &enemy)?)
+                })();
+                match route {
+                    Ok(true) => {
+                        found = true;
+                        break;
+                    }
+                    Ok(false) => {}
+                    Err(e) => unresolved = Some(e),
+                }
             }
-            continue;
+            Ok(found)
+        };
+        match result {
+            Ok(true) => return Ok(true),
+            Ok(false) => {}
+            Err(e) => unresolved = Some(e),
         }
-        for mid in c.map.neighbors(origin) {
-            if mid.axial.distance(c.map.get(&enemy).unwrap().axial) != 1 {
-                continue;
-            }
-            if s.units_of(side).any(|u| u.location.hex() == Some(&mid.id))
-                || zoc::controlled(c, s, side, &mid.id, strict)?
-            {
-                continue;
-            }
-            if passable(origin, &mid.id)? && passable(&mid.id, &enemy)? {
-                return Ok(true);
-            }
-        }
+    }
+    if let Some(e) = unresolved {
+        return Err(e);
     }
     Ok(false)
 }
@@ -152,6 +172,7 @@ pub fn record_edge(
     if bp_quarters < 0 || cp_quarters <= 0 {
         return Err(overflow());
     }
+    cohorts::add(s, id, bp_quarters, 0)?;
     let bp = s
         .land
         .breakdown
@@ -247,6 +268,7 @@ pub fn record_light_extra(s: &mut State, id: &UnitId, quarters: i32) -> Result<(
     if quarters < 0 {
         return Err(overflow());
     }
+    cohorts::add(s, id, 0, quarters)?;
     let n = s
         .land
         .breakdown
@@ -259,7 +281,12 @@ pub fn record_light_extra(s: &mut State, id: &UnitId, quarters: i32) -> Result<(
     s.land.breakdown.light_extra_quarters.insert(id.clone(), n);
     Ok(())
 }
-fn asset_bp(s: &State, id: &UnitId, equipment: &Equipment) -> Result<i32, EngineError> {
+fn asset_bp(s: &State, asset: &Asset) -> Result<i32, EngineError> {
+    if let Some(bp) = cohorts::points(s, asset) {
+        return Ok(bp);
+    }
+    let id = &asset.unit;
+    let equipment = &asset.equipment;
     let base = s
         .land
         .breakdown
@@ -351,6 +378,8 @@ pub struct Asset {
     pub unit: UnitId,
     pub equipment: Equipment,
     pub points: i32,
+    #[serde(default)]
+    pub cohort: Option<String>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CheckGroup {
@@ -381,29 +410,27 @@ fn assets(
     let u = &s.land.units[id];
     let mut out = vec![];
     use cna_tables::airlog::trucks::TruckType;
-    for (equipment, n, kind) in [
-        (Equipment::LightTruck, u.trucks.light, TruckType::Light),
-        (Equipment::MediumTruck, u.trucks.medium, TruckType::Medium),
-        (Equipment::HeavyTruck, u.trucks.heavy, TruckType::Heavy),
-    ] {
-        if n < 0 {
-            return Err(overflow());
-        }
-        if n > 0 {
-            out.push((
-                Category::Truck,
-                -c.tables
-                    .airlog
-                    .truck_characteristics
-                    .truck(kind)
-                    .bar_shift_left,
-                Asset {
-                    unit: id.clone(),
-                    equipment,
-                    points: n,
-                },
-            ));
-        }
+    let groups = crate::logistics::segment_fuel_cohorts(s, id).map_err(|_| overflow())?;
+    for g in groups {
+        let (equipment, kind) = match g.kind {
+            crate::logistics::FuelTruckKind::Light => (Equipment::LightTruck, TruckType::Light),
+            crate::logistics::FuelTruckKind::Medium => (Equipment::MediumTruck, TruckType::Medium),
+            crate::logistics::FuelTruckKind::Heavy => (Equipment::HeavyTruck, TruckType::Heavy),
+        };
+        out.push((
+            Category::Truck,
+            -c.tables
+                .airlog
+                .truck_characteristics
+                .truck(kind)
+                .bar_shift_left,
+            Asset {
+                unit: id.clone(),
+                equipment,
+                points: g.count,
+                cohort: Some(g.id),
+            },
+        ));
     }
     if !body {
         return Ok(out);
@@ -434,6 +461,7 @@ fn assets(
                         unit: id.clone(),
                         equipment: Equipment::Weapon(p.weapon.clone()),
                         points: p.n,
+                        cohort: None,
                     },
                 ));
             } else if w.kind == "tank" {
@@ -467,12 +495,13 @@ pub fn check_groups(
 ) -> Result<Vec<CheckGroup>, EngineError> {
     check_groups_profile(c, s, stopped, true).map(|(groups, _)| groups)
 }
+type GroupsWithGaps = (Vec<CheckGroup>, Vec<(UnitId, EngineError)>);
 fn check_groups_profile(
     c: &CnaContent,
     s: &State,
     stopped: &StoppedMove,
     strict: bool,
-) -> Result<(Vec<CheckGroup>, Vec<(UnitId, EngineError)>), EngineError> {
+) -> Result<GroupsWithGaps, EngineError> {
     let mut gaps = vec![];
     let mut groups: BTreeMap<(Category, i32, usize, i32), Vec<Asset>> = BTreeMap::new();
     let hot = s
@@ -502,7 +531,7 @@ fn check_groups_profile(
             Err(e) => return Err(e),
         };
         for (category, bar, asset) in available {
-            let bp = asset_bp(s, id, &asset.equipment)?;
+            let bp = asset_bp(s, &asset)?;
             let column = c
                 .tables
                 .land
@@ -510,7 +539,16 @@ fn check_groups_profile(
                 .column_quarters(bp)
                 .ok_or_else(overflow)?;
             let key = format!("{category:?}:{bar}:{:?}", asset.equipment);
-            if needs_check_bp(c, s, id, &key, bp) {
+            let needed = if let Some(h) = asset
+                .cohort
+                .as_ref()
+                .and_then(|g| s.land.breakdown.truck_histories.get(g))
+            {
+                bp > 12 && h.checked.is_none_or(|old| column > old)
+            } else {
+                needs_check_bp(c, s, id, &key, bp)
+            };
+            if needed {
                 groups
                     .entry((category, bar, column, bar + weather))
                     .or_default()
@@ -566,6 +604,13 @@ pub fn roll_checks(
     let mut outcomes = vec![];
     for group in groups {
         for a in &group.assets {
+            if let Some(h) = a
+                .cohort
+                .as_ref()
+                .and_then(|g| s.land.breakdown.truck_histories.get_mut(g))
+            {
+                h.checked = Some(group.column);
+            }
             let key = format!("{:?}:{}:{:?}", group.category, group.bar, a.equipment);
             s.land
                 .breakdown
@@ -591,7 +636,7 @@ pub fn roll_checks(
                 rule: Some("land:21.34".into()),
             },
         ));
-        let bp = asset_bp(s, &group.assets[0].unit, &group.assets[0].equipment)?;
+        let bp = asset_bp(s, &group.assets[0])?;
         let percent = c
             .tables
             .land
@@ -713,6 +758,9 @@ mod tests {
         s.land.units.get_mut(&hq).unwrap().toe =
             Some(Toe::Weapons(vec![WeaponPoints { weapon, n: 5 }]));
         s.land.units.get_mut(&hq).unwrap().trucks.medium = 2;
+        s.land.units.get_mut(&hq).unwrap().location = crate::state::Location::Hex {
+            hex: "C4020".into(),
+        };
         assert_eq!(
             assets(&c, &s, &hq, true)
                 .unwrap()

@@ -23,6 +23,8 @@ pub struct BrokenMarker {
     pub cargo: crate::logistics::capacity::CargoPacking,
     pub tank_fuel: FuelTenths,
     pub activity_water: WaterPoints,
+    #[serde(default)]
+    pub fuel_cohorts: Vec<crate::logistics::TruckFuelCohort>,
 }
 impl BrokenMarker {
     pub fn trucks(&self) -> Trucks {
@@ -44,8 +46,9 @@ impl BrokenMarker {
 /// Interpretations: interp:land-0028
 pub fn add(s: &mut State, mut marker: BrokenMarker) -> Vec<EngineEvent> {
     let was = s.stack_presence(&marker.hex, marker.side);
-    s.land.breakdown.next_marker += 1;
-    marker.id = format!("broken-{}-{}", marker.side, s.land.breakdown.next_marker);
+    let n = s.land.breakdown.next_marker.entry(marker.side).or_default();
+    *n = n.checked_add(1).expect("physical marker sequence fits u64");
+    marker.id = format!("broken-{}-{n}", marker.side);
     let side = marker.side;
     let hex = marker.hex.clone();
     let mut events = vec![EngineEvent::new(
@@ -140,6 +143,7 @@ mod tests {
                 unit: "source".into(),
                 equipment: Equipment::MediumTruck,
                 points: 3,
+                cohort: None,
             }],
             passengers: BTreeMap::from([("source".into(), 1)]),
             transport: Trucks {
@@ -150,7 +154,28 @@ mod tests {
             cargo: Default::default(),
             tank_fuel: FuelTenths::new(12),
             activity_water: WaterPoints::new(2),
+            fuel_cohorts: vec![],
         }
+    }
+    /// Cases: land:21.42, land:3.62
+    #[test]
+    fn hidden_opponent_marker_count_cannot_change_own_counter_identity() {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut a = State::new(&c).unwrap();
+        let mut b = a.clone();
+        let mut enemy = marker("C4020");
+        enemy.side = Side::Commonwealth;
+        add(&mut b, enemy.clone());
+        add(&mut b, enemy);
+        let ea = add(&mut a, marker("C4021"));
+        let eb = add(&mut b, marker("C4021"));
+        let own = Perspective::Side(Side::Axis);
+        let ea: Vec<_> = ea.iter().filter(|e| own.can_see(&e.audience)).collect();
+        let eb: Vec<_> = eb.iter().filter(|e| own.can_see(&e.audience)).collect();
+        assert_eq!(
+            serde_json::to_value(ea).unwrap(),
+            serde_json::to_value(eb).unwrap()
+        );
     }
     /// Cases: land:21.42, land:21.43, land:3.62
     /// Interpretations: interp:land-0028

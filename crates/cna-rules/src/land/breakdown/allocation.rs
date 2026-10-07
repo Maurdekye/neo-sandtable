@@ -206,21 +206,25 @@ mod tests {
                                 unit: "a".into(),
                                 equipment: Equipment::LightTruck,
                                 points: a,
+                                cohort: None,
                             },
                             Asset {
                                 unit: "a".into(),
                                 equipment: Equipment::HeavyTruck,
                                 points: b,
+                                cohort: None,
                             },
                             Asset {
                                 unit: "b".into(),
                                 equipment: Equipment::LightTruck,
                                 points: c,
+                                cohort: None,
                             },
                             Asset {
                                 unit: "b".into(),
                                 equipment: Equipment::HeavyTruck,
                                 points: d,
+                                cohort: None,
                             },
                         ];
                         for n in 0..=a + b + c + d {
@@ -240,6 +244,7 @@ mod tests {
                 unit: if i < 3 { "a" } else { "b" }.into(),
                 equipment: Equipment::Weapon(format!("weapon{}", i % 3)),
                 points: 1,
+                cohort: None,
             })
             .collect();
         assert!(valid_allocation(&[1; 6], 3, &[1, 1, 1, 0, 0, 0]));
