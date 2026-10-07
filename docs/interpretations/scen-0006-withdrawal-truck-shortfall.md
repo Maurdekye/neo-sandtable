@@ -30,3 +30,5 @@ The second reading separates a source-defined unit penalty from an unspecified t
 
 ## Affected behaviour and tests
 Only the Italian Campaign currently reaches these withdrawals: 17 named counters in three scheduled groups. Graziani ends before the first withdrawal. Tests cover all 17 named counters at their three deadlines, subtree exclusions, substitute thresholds, permanent elimination and owner-only shortage notes.
+
+Headquarters substitutes use the same printed class id, because the broad headquarters type also covers unarmed shells, tank HQs and artillery HQs. A different class requires an explicit equivalent-role record in content; ratings do not supply that equivalence. Infantry substitutes retain the source-bound infantry_kind constraint. A regression excludes tank and unarmed HQs from the candidates for a weak artillery HQ.

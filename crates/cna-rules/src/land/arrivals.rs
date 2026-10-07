@@ -628,8 +628,10 @@ fn substitutes(content: &CnaContent, state: &State, named: &UnitId, row: &str) -
                 && (class.unit_type != "infantry"
                     || (oa.infantry_kind.is_some()
                         && content.units.units[&u.id].infantry_kind == oa.infantry_kind))
-                && crate::land::formation::class(content, &u.id)
-                    .is_some_and(|c| c.unit_type == class.unit_type)
+                && crate::land::formation::class(content, &u.id).is_some_and(|c| {
+                    c.unit_type == class.unit_type
+                        && (class.unit_type != "headquarters" || c.id == class.id)
+                })
         })
         .map(|u| u.id.clone())
         .collect()
@@ -2345,5 +2347,48 @@ mod tests {
         crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 4).unwrap();
         assert_eq!(game.state.logistics.dumps["funding"].supplies, stock);
         crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 8).unwrap();
+    }
+    /// Cases: land:20.85, land:3.33, land:3.34
+    /// Interpretations: interp:scen-0006
+    #[test]
+    fn artillery_hq_substitutes_never_include_tank_or_unarmed_hq_classes() {
+        use cna_content::units::{NormalToe, Toe};
+        let (mut c, mut game) = fixture();
+        let by_class = |class: &str| -> Vec<UnitId> {
+            c.units
+                .units
+                .values()
+                .filter(|u| u.class.as_deref() == Some(class))
+                .map(|u| u.id.clone())
+                .collect()
+        };
+        let artillery = by_class("cw.c");
+        assert!(artillery.len() >= 2);
+        let named = artillery[0].clone();
+        let equivalent = artillery[1].clone();
+        let tank = by_class("cw.b")[0].clone();
+        let unarmed = by_class("cw.a")[0].clone();
+        // Keep the printed classes, while equalizing echelon to isolate the class constraint.
+        let echelon = c.units.units[&named].echelon.clone();
+        let cairo = city_domain(&c, "cairo").unwrap()[0].clone();
+        for id in [&named, &equivalent, &tank, &unarmed] {
+            c.units.units.get_mut(id).unwrap().echelon = echelon.clone();
+            let u = game.state.land.units.get_mut(id).unwrap();
+            u.location = cairo.clone();
+            u.toe = Some(Toe::Normal(NormalToe::N));
+        }
+        game.state.land.units.get_mut(&named).unwrap().toe = Some(Toe::Under { under: 2 });
+        assert!(!ready_for_withdrawal(&c, &game.state, &named));
+        assert!(ready_for_withdrawal(&c, &game.state, &tank));
+        assert!(ready_for_withdrawal(&c, &game.state, &unarmed));
+        game.state
+            .land
+            .arrivals
+            .withdrawals
+            .insert("test-row".into(), Withdrawal::default());
+        let offered = substitutes(&c, &game.state, &named, "test-row");
+        assert!(offered.contains(&equivalent));
+        assert!(!offered.contains(&tank));
+        assert!(!offered.contains(&unarmed));
     }
 }
