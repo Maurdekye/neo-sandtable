@@ -252,6 +252,37 @@ impl Demo {
         )
     }
 
+    /// Own-seat console links for current human bindings. Keep these in trusted output;
+    /// each page receives only its seat capability, held in its URL fragment and memory.
+    pub fn human_console_urls(&self) -> Vec<(SeatId, String)> {
+        let campaign_id = self.campaign_id();
+        self.config
+            .seats
+            .keys()
+            .filter_map(|seat| {
+                if self
+                    .handle
+                    .seat(*seat)
+                    .binding
+                    .controller
+                    .as_ref()
+                    .is_none_or(|controller| controller.kind != ControllerKind::Human)
+                {
+                    return None;
+                }
+                self.app.seat_token(&campaign_id, *seat).map(|token| {
+                    (
+                        *seat,
+                        format!(
+                            "{}/console.html?campaign={campaign_id}&seat={seat}#cap={token}",
+                            self.base_url
+                        ),
+                    )
+                })
+            })
+            .collect()
+    }
+
     /// Compatibility helper for the original single-seat probe.
     pub async fn play(&self, driver: &mut dyn SeatDriver, turns: usize) -> Result<(), String> {
         if self.epochs.len() != 1 {

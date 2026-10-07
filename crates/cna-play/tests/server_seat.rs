@@ -399,6 +399,120 @@ async fn websocket_transcript_fixture(force_resync: bool) {
 }
 
 #[tokio::test]
+async fn human_console_links_authenticate_only_their_current_seat() {
+    use cna_play::config::{GameKind, LaunchConfig};
+    let root = tempfile::tempdir().unwrap();
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let config = LaunchConfig::resolve(
+        GameKind::Sandbox,
+        &[
+            "axis.commander=human".into(),
+            "commonwealth.commander=human".into(),
+            "*=scripted:aggressive".into(),
+        ],
+    )
+    .unwrap();
+    let demo = Demo::with_config(
+        root.path(),
+        &repo.join("data"),
+        &repo.join("web/dist"),
+        config,
+    )
+    .await
+    .unwrap();
+    assert!(
+        demo.epochs.is_empty(),
+        "human bindings start no CLI sessions"
+    );
+    let links = demo.human_console_urls();
+    assert_eq!(links.len(), 2);
+    let client = reqwest::Client::new();
+    let operator_cap = demo.board_url().split_once("#cap=").unwrap().1.to_owned();
+    for (seat, link) in &links {
+        let url = reqwest::Url::parse(link).unwrap();
+        assert_eq!(
+            url.origin(),
+            reqwest::Url::parse(&demo.base_url).unwrap().origin()
+        );
+        assert_eq!(url.path(), "/console.html");
+        let query: std::collections::BTreeMap<_, _> = url.query_pairs().into_owned().collect();
+        assert_eq!(query.get("campaign"), Some(&demo.campaign_id()));
+        assert_eq!(query.get("seat"), Some(&seat.to_string()));
+        assert!(!query.contains_key("cap"));
+        let cap = url.fragment().unwrap().strip_prefix("cap=").unwrap();
+        assert!(
+            cap != operator_cap,
+            "console must not contain operator authority"
+        );
+        let session: Value = client
+            .get(format!("{}/api/session", demo.base_url))
+            .bearer_auth(cap)
+            .send()
+            .await
+            .unwrap()
+            .error_for_status()
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(session["operator"], false);
+        assert_eq!(session["campaign_id"], demo.campaign_id());
+        assert_eq!(session["perspective"], format!("seat:{seat}"));
+        let snapshot = format!("{}/api/campaigns/{}", demo.base_url, demo.campaign_id());
+        assert_eq!(
+            client
+                .get(&snapshot)
+                .query(&[("perspective", format!("seat:{seat}"))])
+                .bearer_auth(cap)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            reqwest::StatusCode::OK
+        );
+        for denied in [
+            "operator".to_owned(),
+            format!(
+                "seat:{}",
+                links.iter().find(|(other, _)| other != seat).unwrap().0
+            ),
+        ] {
+            assert_eq!(
+                client
+                    .get(&snapshot)
+                    .query(&[("perspective", denied)])
+                    .bearer_auth(cap)
+                    .send()
+                    .await
+                    .unwrap()
+                    .status(),
+                reqwest::StatusCode::FORBIDDEN
+            );
+        }
+    }
+    let changed = links[0].0;
+    demo.handle
+        .handover(
+            changed,
+            Some(cna_protocol::ControllerInfo {
+                kind: cna_protocol::ControllerKind::Scripted,
+                label: "scripted".into(),
+            }),
+            json!({"mode":"aggressive"}),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        demo.human_console_urls()
+            .iter()
+            .map(|(seat, _)| *seat)
+            .collect::<Vec<_>>(),
+        vec![links[1].0]
+    );
+    demo.shutdown().await.unwrap();
+}
+
+#[tokio::test]
 async fn timeout_pauses_without_substituting_an_order() {
     let (_root, demo) = setup().await;
     let mut driver = FakeCli {

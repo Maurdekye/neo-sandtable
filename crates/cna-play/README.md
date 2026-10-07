@@ -9,6 +9,9 @@ profile skips unfinished procedures and is not a complete CNA rules simulation.
 # Scripted CNA; no CLI or paid opt-in needed.
 cargo run -p cna-play -- --kind cna --seat '*=scripted:legal_random'
 
+# Human commander with scripted peers; no CLI or paid opt-in needed.
+cargo run -p cna-play -- --kind cna --seat axis.commander=human --seat '*=scripted:legal_random'
+
 # One Claude seat on the owner's claude-5 account.
 $env:CNA_LIVE_CLI_TESTS = '1'
 # Set CNA_CLAUDE_CONFIG_DIR to claude-5 and CNA_CLAUDE_EMAIL to its expected login.
@@ -23,6 +26,15 @@ MCP URLs, with built-in file, shell and network tools disabled and empty per-sea
 working directories outside the repository. Inherited `CNA_*` capability paths,
 source paths and parent provider/agent credentials are scrubbed. The driver checks
 the expected Claude login before model work; it never copies credentials.
+
+For each current human binding, the launcher also prints
+`/console.html?campaign=id&seat=SEAT#cap=SEAT_TOKEN` at its serving origin.
+Give a player that seat's console link. The fragment contains only its campaign-bound
+seat authority; the console holds it in memory, and it cannot obtain operator or
+another seat's perspective. Fresh launch and durable resume print fresh console credentials.
+Human/scripted-only runs start no CLI and keep serving while the unpaid bounded
+campaign run waits for answers. The printed spectator board link remains operator
+access; it is separate from a player's console link.
 
 Bindings accept `claude:MODEL`, `scripted:legal_random`,
 `scripted:pass_when_possible`, `human`, and (sandbox only) `scripted:aggressive`.

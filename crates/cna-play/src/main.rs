@@ -74,6 +74,9 @@ async fn main() {
     }
     .expect("create or recover campaign");
     println!("Board: {}", demo.board_url());
+    for (seat, url) in demo.human_console_urls() {
+        println!("Human console ({seat}): {url}");
+    }
     println!("Campaign directory: {}", root.join("campaigns").display());
     println!(
         "Profile: {}; budget: {} Claude seats, {} turns and {} tools each. Account: claude-5.",
