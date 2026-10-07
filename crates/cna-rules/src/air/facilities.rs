@@ -3,6 +3,8 @@
 //! These helpers do not open windows, consume supplies, or imply permission to
 //! construct. Engineering owns construction eligibility, duration and payment.
 
+pub mod work;
+
 use cna_core::engine::EngineError;
 use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
