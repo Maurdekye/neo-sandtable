@@ -561,7 +561,7 @@ fn run(
             state.land.movement.controls.insert(to.clone(), control);
         }
         let cannot_enter = controlled
-            && (state.land.movement.mode != WindowMode::Segment
+            && (state.land.movement.mode == WindowMode::Reaction
                 || start_contact && path.is_empty()
                 || limits.iter().any(|limit| !limit.may_enter_enemy_zoc)
                 || moving.iter().any(|id| {
@@ -980,7 +980,7 @@ fn execute_orders(
             &mut vec![],
             None,
         ) {
-            if !skip_invalid {
+            if !skip_invalid && index == 0 {
                 return Err(e);
             }
             cx.emit(EngineEvent::new(
@@ -1140,7 +1140,7 @@ fn nonphasing_draft(s: &State, kind: NonPhasingMove) -> State {
 }
 /// Shared own-information path search for nonphasing reaction and retreat windows.
 /// The caller retains source eligibility and retreat distance limits.
-/// Cases: land:8.17, land:8.55, land:15.24
+/// Cases: land:8.17, land:8.55, land:13.21, land:13.22, land:13.26
 pub fn nonphasing_reachable(
     c: &CnaContent,
     s: &State,
@@ -1152,7 +1152,7 @@ pub fn nonphasing_reachable(
 }
 /// Execute a prevalidated nonphasing complete path, preserving the ordinary movement window.
 /// Hidden control stops the accepted move and a hidden technical gap stops adjudication.
-/// Cases: land:8.55, land:8.56, land:15.24
+/// Cases: land:8.55, land:8.56, land:13.21, land:13.22, land:13.26
 pub fn execute_nonphasing(
     c: &CnaContent,
     s: &mut State,

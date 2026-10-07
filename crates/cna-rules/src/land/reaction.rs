@@ -274,6 +274,9 @@ pub fn answer(
             .unwrap()
             .reacted
             .extend(members);
+        if s.land.reaction.adjudication_stop.is_some() {
+            return Ok("Reaction choice complete.".into());
+        }
         open_role(c, s, p.seat, cx);
     } else {
         s.land
