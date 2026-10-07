@@ -312,3 +312,35 @@ movement cycles separated by combat cannot inherit an older cycle's events.
 Movement metadata remains attached to each retained frame even after its
 establishing event is evicted. Playback before the 600-frame retention boundary
 is unavailable; fresh snapshots remain the reconnect baseline.
+
+
+## Blind set-up placement
+
+The pending panel lists the projected units awaiting set-up. A highlighted unit
+button identifies the current placement request through the server's
+`space["x-context"].unit` and `.group` metadata. Older projections without context
+show an explicit association-unavailable message; the viewer never derives ids
+from the request's prose or its opaque id. Units without a disclosed open request
+remain inspectable and say that no placement window was supplied.
+
+Each unit or dump placement uses the published string-enum legal destination
+choices. The selected request highlights its mapped hexes in blue. Show legal area
+fits the map to that domain; searchable destination lists focus individual hexes.
+Off-map destinations stay labelled and cannot move the map to invented geometry.
+Missing action schemas do not become an empty legal domain. The highlight uses
+culled chunks and includes at most the authorized published choices.
+
+Set-up choices are blind: the board does not preview accepted private choices or
+infer them from transcripts. Unit positions remain at awaiting-set-up until the
+server publishes them at shared-window closure. Disclosed awaiting-to-map unit
+updates and placed markers pulse into view; anonymous opponent stacks gain only
+the published presence glyph. Perspective changes and history navigation use only
+the selected authorized projection. Reduced-motion controls also apply to these
+placement effects.
+
+`npm run smoke -- setup.spec.ts` exercises the real Graziani set-up with an
+operator and an isolated opposing-side capability. It requires the set-up context
+metadata and a fresh server database, as for the other actual integration checks.
+It holds a human placement window, validates/submits one legal choice, lets
+scripted seats finish set-up and verifies the final public presence separately
+from private unit identities. It starts no paid model driver.

@@ -1035,3 +1035,8 @@ dd {
   border-color: #7ac9ee;
   color: #a4dcf5;
 }
+
+.all-awaiting {
+  border-bottom: 1px solid #35505a;
+  padding-bottom: 8px;
+}

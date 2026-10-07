@@ -1,5 +1,5 @@
 import { PlacementDecision } from './PlacementDecision'
-import { isPlacement } from './setup'
+import { isPlacement, placementContext } from './setup'
 import { movementUnits } from './movement'
 import type { UnitView } from './protocol'
 import { Citation } from './Rules'
@@ -20,9 +20,50 @@ export function PendingDecisions({
   onPlacement: (id: string) => void
   onHex: (id: string) => void
 }) {
+  const awaiting = Object.values(units).filter((unit) => {
+    const location = unit.detail?.location
+    return (
+      location &&
+      typeof location === 'object' &&
+      !Array.isArray(location) &&
+      location.at === 'awaiting_setup'
+    )
+  })
   return (
     <section className="pending-decisions">
       <h3>Pending decisions ({pending.length})</h3>
+      {awaiting.length > 0 && (
+        <details className="setup-awaiting all-awaiting">
+          <summary>{awaiting.length} units awaiting set-up</summary>
+          {awaiting.map((unit) => {
+            const request = pending.find(
+              (d) =>
+                d.kind === 'cna.setup.unit' &&
+                placementContext(d).unit === unit.id,
+            )
+            return (
+              <div key={unit.id}>
+                <button
+                  data-unit-id={unit.id}
+                  className={request ? 'current-placement' : ''}
+                  onClick={() => onUnit(unit.id)}
+                >
+                  {unit.name}
+                </button>
+                {request ? (
+                  <button onClick={() => onPlacement(request.id)}>
+                    Show placement options
+                  </button>
+                ) : (
+                  <small>
+                    No open placement window supplied for this unit.
+                  </small>
+                )}
+              </div>
+            )
+          })}
+        </details>
+      )}
       {pending.map((d) => (
         <article
           className={

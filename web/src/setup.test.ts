@@ -169,5 +169,6 @@ it('links a disclosed awaiting unit by x-context while older projections show an
     createElement(PendingDecisions, { ...props, pending: [request] }),
   )
   expect(absent).toContain('Unit association not supplied')
-  expect(absent).not.toContain('data-unit-id="a"')
+  expect(absent).not.toContain('class="setup-unit"')
+  expect(absent).toContain('No open placement window supplied')
 })
