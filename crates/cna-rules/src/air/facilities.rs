@@ -103,6 +103,100 @@ pub struct FacilityState {
     pub project_unavailable: bool,
 }
 
+/// Engineering work refers to a canonical site or typed on-map hex. No caller
+/// supplies capacity, an upgraded kind, costs or a new facility identity.
+/// Cases: land:24.71, land:24.76, land:24.79
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "work", rename_all = "snake_case")]
+pub enum FacilityWork {
+    Create {
+        kind: FacilityKind,
+        hex: cna_core::ids::HexId,
+    },
+    RepairOne {
+        id: FacilityId,
+    },
+    Upgrade {
+        id: FacilityId,
+    },
+}
+
+impl FacilityWork {
+    /// A necessary source check for engineering's disposable finish draft.
+    /// This pure helper neither starts/completes a project nor grants permission.
+    /// Engineering still verifies workers, terrain/coast, control, class limits,
+    /// time, payment and its actual project identity. New-site identities and
+    /// interruption/cancellation remain separate reviewed contracts.
+    /// Cases: land:24.71, land:24.76, land:24.79, airlog:36.12, airlog:36.2,
+    /// airlog:36.3, airlog:36.4
+    pub fn source_properties(
+        &self,
+        content: &CnaContent,
+        air: &crate::state::AirState,
+        side: Side,
+    ) -> Result<FacilityProperties, EngineError> {
+        super::inventory::check(content, air)?;
+        match self {
+            Self::Create { kind, hex } => {
+                if content.map.canonical(hex) != Some(hex) {
+                    return Err(invalid("new facility needs a canonical on-map hex"));
+                }
+                Ok(FacilityProperties {
+                    kind: *kind,
+                    location: Location::Hex { hex: hex.clone() },
+                    printed_capacity: FacilityCapacity::Levels(kind.standard_levels()),
+                    theatre: FacilityTheatre::Africa,
+                })
+            }
+            Self::RepairOne { id } | Self::Upgrade { id } => {
+                if catalog(content)?
+                    .facilities
+                    .iter()
+                    .any(|site| site.id == id.0 && site.force == "malta")
+                {
+                    return Err(EngineError::Unsupported {
+                        case: "airlog:44.14".into(),
+                        detail: "Malta grouping cannot be an engineering facility target".into(),
+                    });
+                }
+                let site = air
+                    .runtime
+                    .facilities
+                    .get(id)
+                    .ok_or_else(|| invalid("work target is not a canonical facility"))?;
+                let properties = site.properties(content, id)?;
+                if !matches!(properties.location, Location::Hex { .. }) {
+                    return Err(EngineError::Unsupported {
+                        case: "airlog:36.5".into(),
+                        detail: "Off-map reconstruction has a separate source procedure".into(),
+                    });
+                }
+                if site.owner != side || site.project_unavailable {
+                    return Err(invalid("work target is not an available owned facility"));
+                }
+                match self {
+                    Self::RepairOne { .. } => {
+                        let (FacilityCapacity::Levels(levels), FacilityCapacity::Levels(max)) =
+                            (site.current_capacity, properties.printed_capacity)
+                        else {
+                            return Err(invalid("repair needs finite capacity"));
+                        };
+                        if properties.kind != FacilityKind::Airfield || levels >= max {
+                            return Err(invalid("target cannot receive a one-level repair"));
+                        }
+                    }
+                    Self::Upgrade { .. } => {
+                        if properties.kind.upgrade_to().is_none() || site.removed(&properties) {
+                            return Err(invalid("target cannot start an upgrade"));
+                        }
+                    }
+                    Self::Create { .. } => unreachable!(),
+                }
+                Ok(properties)
+            }
+        }
+    }
+}
 fn invalid(detail: &str) -> EngineError {
     EngineError::Invariant {
         detail: format!("air facility: {detail}"),
@@ -637,5 +731,230 @@ mod catalog_tests {
         let expected: serde_json::Value =
             serde_json::from_str(include_str!("fixtures/facility-catalog-graziani.json")).unwrap();
         assert_eq!(actual, expected);
+    }
+}
+
+#[cfg(test)]
+mod work_source_tests {
+    use super::*;
+    use crate::{Cna, State, air::inventory, testkit::assert_indistinguishable};
+
+    fn fixture() -> (CnaContent, State) {
+        let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut state = State::new(&content).unwrap();
+        state.setup.closed = true;
+        inventory::initialize(&content, &mut state).unwrap();
+        (content, state)
+    }
+
+    fn strip(kind: FacilityKind) -> FacilityState {
+        FacilityState {
+            origin: FacilityOrigin::Constructed {
+                kind,
+                location: Location::Hex {
+                    hex: "A4829".into(),
+                },
+            },
+            owner: Side::Axis,
+            current_capacity: FacilityCapacity::Levels(1),
+            upgraded_kind: None,
+            project_unavailable: false,
+        }
+    }
+
+    /// Cases: land:24.71, airlog:36.12, airlog:36.2, airlog:36.3, airlog:36.4
+    #[test]
+    fn typed_create_source_derives_ceiling_and_never_mutates_state() {
+        let (content, state) = fixture();
+        let before = serde_json::to_vec(&state).unwrap();
+        for (kind, levels) in [
+            (FacilityKind::Airfield, 6),
+            (FacilityKind::LandingStrip, 1),
+            (FacilityKind::FlyingBoatBasin, 3),
+            (FacilityKind::FlyingBoatAlightingArea, 1),
+        ] {
+            let work = FacilityWork::Create {
+                kind,
+                hex: "A4829".into(),
+            };
+            assert_eq!(
+                work.source_properties(&content, &state.air, Side::Axis)
+                    .unwrap(),
+                FacilityProperties {
+                    kind,
+                    location: Location::Hex {
+                        hex: "A4829".into()
+                    },
+                    printed_capacity: FacilityCapacity::Levels(levels),
+                    theatre: FacilityTheatre::Africa,
+                }
+            );
+            let json = serde_json::to_string(&work).unwrap();
+            assert_eq!(serde_json::from_str::<FacilityWork>(&json).unwrap(), work);
+        }
+        assert!(
+            FacilityWork::Create {
+                kind: FacilityKind::Airfield,
+                hex: "unknown".into(),
+            }
+            .source_properties(&content, &state.air, Side::Axis)
+            .is_err()
+        );
+        assert_eq!(before, serde_json::to_vec(&state).unwrap());
+    }
+
+    /// Cases: land:24.76, airlog:36.14, airlog:36.5, airlog:44.14
+    #[test]
+    fn repair_source_requires_exact_finite_damaged_onmap_airfield() {
+        let (content, mut state) = fixture();
+        let id = FacilityId("airfield_benina".into());
+        let work = FacilityWork::RepairOne { id: id.clone() };
+        assert!(
+            work.source_properties(&content, &state.air, Side::Axis)
+                .is_err()
+        );
+        inventory::update(&content, &mut state.air, |runtime| {
+            runtime.facilities.get_mut(&id).unwrap().current_capacity = FacilityCapacity::Levels(2);
+            Ok(())
+        })
+        .unwrap();
+        let before = serde_json::to_vec(&state).unwrap();
+        let properties = work
+            .source_properties(&content, &state.air, Side::Axis)
+            .unwrap();
+        assert_eq!(properties.kind, FacilityKind::Airfield);
+        assert_eq!(properties.printed_capacity, FacilityCapacity::Levels(6));
+        assert!(
+            work.source_properties(&content, &state.air, Side::Commonwealth)
+                .is_err()
+        );
+        assert!(
+            FacilityWork::RepairOne {
+                id: FacilityId("unknown.site".into())
+            }
+            .source_properties(&content, &state.air, Side::Axis)
+            .is_err()
+        );
+        assert!(
+            matches!(FacilityWork::RepairOne { id: FacilityId("malta.initial".into()) }
+            .source_properties(&content, &state.air, Side::Commonwealth),
+            Err(EngineError::Unsupported { case, .. }) if case == "airlog:44.14")
+        );
+        let (offmap_id, offmap_side) = state
+            .air
+            .runtime
+            .facilities
+            .iter()
+            .find_map(|(id, site)| {
+                let properties = site.properties(&content, id).unwrap();
+                matches!(properties.location, Location::OffMap { .. })
+                    .then_some((id.clone(), site.owner))
+            })
+            .unwrap();
+        assert!(matches!(FacilityWork::RepairOne { id: offmap_id }
+            .source_properties(&content, &state.air, offmap_side),
+            Err(EngineError::Unsupported { case, .. }) if case == "airlog:36.5"));
+        assert_eq!(before, serde_json::to_vec(&state).unwrap());
+    }
+
+    /// Cases: land:24.79, airlog:36.2, airlog:36.4, airlog:36.18
+    /// Interpretations: interp:air-0007
+    #[test]
+    fn upgrade_source_distinguishes_surviving_available_original_kinds() {
+        let (content, mut state) = fixture();
+        for (kind, target) in [
+            (FacilityKind::LandingStrip, FacilityKind::Airfield),
+            (
+                FacilityKind::FlyingBoatAlightingArea,
+                FacilityKind::FlyingBoatBasin,
+            ),
+        ] {
+            // Explicit source-valid fixtures, not constructed identity generation.
+            let id = FacilityId(format!("test.work.{kind:?}"));
+            inventory::update(&content, &mut state.air, |runtime| {
+                runtime.facilities.insert(id.clone(), strip(kind));
+                Ok(())
+            })
+            .unwrap();
+            let work = FacilityWork::Upgrade { id: id.clone() };
+            let before = serde_json::to_vec(&state).unwrap();
+            let properties = work
+                .source_properties(&content, &state.air, Side::Axis)
+                .unwrap();
+            assert_eq!(properties.kind.upgrade_to(), Some(target));
+            assert_eq!(before, serde_json::to_vec(&state).unwrap());
+            inventory::update(&content, &mut state.air, |runtime| {
+                runtime.facilities.get_mut(&id).unwrap().project_unavailable = true;
+                Ok(())
+            })
+            .unwrap();
+            let before = serde_json::to_vec(&state).unwrap();
+            assert_eq!(
+                state.air.runtime.facilities[&id]
+                    .intrinsic_aa(true)
+                    .unwrap(),
+                0
+            );
+            assert!(
+                work.source_properties(&content, &state.air, Side::Axis)
+                    .is_err()
+            );
+            assert_eq!(before, serde_json::to_vec(&state).unwrap());
+            inventory::update(&content, &mut state.air, |runtime| {
+                let site = runtime.facilities.get_mut(&id).unwrap();
+                site.project_unavailable = false;
+                site.current_capacity = FacilityCapacity::Levels(0);
+                Ok(())
+            })
+            .unwrap();
+            assert!(
+                work.source_properties(&content, &state.air, Side::Axis)
+                    .is_err()
+            );
+        }
+        assert!(
+            FacilityWork::Upgrade {
+                id: FacilityId("airfield_benina".into())
+            }
+            .source_properties(&content, &state.air, Side::Axis)
+            .is_err()
+        );
+    }
+
+    /// Cases: land:3.62, land:24.76, land:24.79, airlog:36.14
+    #[test]
+    fn independent_facility_work_source_facts_stay_hidden_from_enemy() {
+        let (content, a) = fixture();
+        for fact in 0..3 {
+            let mut b = a.clone();
+            inventory::update(&content, &mut b.air, |runtime| {
+                match fact {
+                    0 => {
+                        runtime.facilities.insert(
+                            FacilityId("test.work.private".into()),
+                            strip(FacilityKind::LandingStrip),
+                        );
+                    }
+                    1 => {
+                        runtime
+                            .facilities
+                            .get_mut(&FacilityId("airfield_benina".into()))
+                            .unwrap()
+                            .current_capacity = FacilityCapacity::Levels(2);
+                    }
+                    2 => {
+                        runtime
+                            .facilities
+                            .get_mut(&FacilityId("airfield_benina".into()))
+                            .unwrap()
+                            .project_unavailable = true;
+                    }
+                    _ => unreachable!(),
+                }
+                Ok(())
+            })
+            .unwrap();
+            assert_indistinguishable(&Cna::dev(), &content, &a, &b, Side::Commonwealth);
+        }
     }
 }
