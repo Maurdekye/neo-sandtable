@@ -376,6 +376,7 @@ fn convoy_planning_barrier_stays_in_setup_after_both_close_paths() {
         }
     }
     no_choices.land.undistributed_trucks.clear();
+    no_choices.logistics.truck_pools.clear();
     for d in no_choices.logistics.dumps.values_mut() {
         if matches!(d.location, DumpLocation::AwaitingSetup { .. }) {
             d.location = DumpLocation::Hex {
