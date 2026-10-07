@@ -78,8 +78,8 @@ class LayerTests(unittest.TestCase):
                          {h for h,r in data.grid.hexes.items() if r["terrain"]!="unclassified"})
         self.assertEqual({a for layer,a,b in data.coverage if layer=="coastal"},
                          {h for h,r in data.grid.hexes.items() if {"land","sea","coastal"}.intersection(r["flags"].split("|"))})
-        with self.assertRaises(UnknownCoverage): data.feature("side","escarpment","C4026","C4025")
-        with self.assertRaises(UnknownCoverage): data.feature("line","road","C4026","C4025")
+        with self.assertRaises(UnknownCoverage): Layers(self.folder).feature("side","escarpment","C4026","C4025")
+        with self.assertRaises(UnknownCoverage): Layers(self.folder).feature("line","road","C4026","C4025")
 
     def test_work_window_is_approved_not_a_scenario_restriction(self):
         window=tomllib.loads((MAP/"graziani-window.toml").read_text())
