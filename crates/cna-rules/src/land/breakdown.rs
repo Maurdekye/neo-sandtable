@@ -2,9 +2,11 @@
 mod allocation;
 pub mod baseline;
 pub mod cohorts;
+pub mod core;
 pub mod losses;
 pub mod markers;
 mod packing;
+pub mod pools;
 pub mod window;
 use crate::{CnaContent, State};
 pub use allocation::{balanced_allocation, valid_group_allocation};
@@ -19,6 +21,8 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct BreakdownState {
+    /// Actual convoy identities have separate additive bookkeeping.
+    pub pools: BTreeMap<String, pools::PoolBreakdown>,
     pub accumulated_quarters: BTreeMap<UnitId, i32>,
     pub light_extra_quarters: BTreeMap<UnitId, i32>,
     pub moving: BTreeMap<UnitId, Motion>,
@@ -94,9 +98,26 @@ fn origin_requirement(
     origin: &HexId,
     strict: bool,
 ) -> Result<bool, EngineError> {
-    use super::{formation, map, zoc};
+    use super::map;
     use cna_core::engine::Rejection;
-    let side = s.land.units[id].side;
+    origin_condition(c, s, s.land.units[id].side, origin, strict, |from, to| {
+        let rain = crate::logistics::weather::at_hex(c, s, to)? == WeatherKind::Rainstorm;
+        match map::step_cost(c, s, id, from, to, strict, rain) {
+            Ok(_) => Ok(true),
+            Err(Rejection::Engine(e)) => Err(e),
+            Err(_) => Ok(false),
+        }
+    })
+}
+fn origin_condition(
+    c: &CnaContent,
+    s: &State,
+    side: cna_protocol::Side,
+    origin: &HexId,
+    strict: bool,
+    passable: impl Fn(&HexId, &HexId) -> Result<bool, EngineError>,
+) -> Result<bool, EngineError> {
+    use super::{formation, zoc};
     let Some(start) = c.map.get(origin) else {
         return Err(gap("land:21.41", "movement origin is unresolved"));
     };
@@ -124,14 +145,6 @@ fn origin_requirement(
             enemies.push(h.id.clone());
         }
     }
-    let passable = |from: &HexId, to: &HexId| -> Result<bool, EngineError> {
-        let rain = crate::logistics::weather::at_hex(c, s, to)? == WeatherKind::Rainstorm;
-        match map::step_cost(c, s, id, from, to, strict, rain) {
-            Ok(_) => Ok(true),
-            Err(Rejection::Engine(e)) => Err(e),
-            Err(_) => Ok(false),
-        }
-    };
     let mut unresolved = None;
     for enemy in enemies {
         let result = if start.axial.distance(c.map.get(&enemy).unwrap().axial) == 1 {
@@ -204,16 +217,20 @@ pub fn record_edge(
         origin_required: false,
         origin_gap: None,
     });
-    motion.travel_cp_quarters = motion
-        .travel_cp_quarters
-        .checked_add(cp_quarters)
-        .ok_or_else(overflow)?;
-    if weather == WeatherKind::Sandstorm {
-        motion.sandstorm_cp_quarters = motion
-            .sandstorm_cp_quarters
-            .checked_add(cp_quarters)
-            .ok_or_else(overflow)?;
-    }
+    let next = core::accrue_step(
+        core::Exposure {
+            accumulated_quarters: bp.checked_sub(bp_quarters).ok_or_else(overflow)?,
+            light_extra_quarters: 0,
+            travel_cp_quarters: motion.travel_cp_quarters,
+            sandstorm_cp_quarters: motion.sandstorm_cp_quarters,
+        },
+        bp_quarters,
+        0,
+        cp_quarters,
+        weather,
+    )?;
+    motion.travel_cp_quarters = next.travel_cp_quarters;
+    motion.sandstorm_cp_quarters = next.sandstorm_cp_quarters;
     s.land.breakdown.accumulated_quarters.insert(id.clone(), bp);
     s.land.breakdown.moving.insert(id.clone(), motion);
     Ok(())
@@ -237,12 +254,7 @@ pub fn stop(s: &mut State, members: &[UnitId], destination: &HexId) {
 /// Cases: land:21.32, land:21.37, land:29.33, land:29.45
 /// Interpretations: interp:land-0027
 pub fn weather_shift(motion: &Motion, hot: bool) -> i32 {
-    i32::from(hot)
-        + i32::from(
-            motion.travel_cp_quarters > 0
-                && i64::from(motion.sandstorm_cp_quarters) * 2
-                    >= i64::from(motion.travel_cp_quarters),
-        )
+    core::weather_shift(motion.travel_cp_quarters, motion.sandstorm_cp_quarters, hot)
 }
 /// A new roll requires exposure above three BP and a strictly higher unadjusted band.
 /// Negative BAR shifts may remove a roll without erasing the accumulated points.
@@ -518,7 +530,7 @@ fn check_groups_profile(
     strict: bool,
 ) -> Result<GroupsWithGaps, EngineError> {
     let mut gaps = vec![];
-    let mut groups: BTreeMap<(Category, i32, usize, i32), Vec<Asset>> = BTreeMap::new();
+    let mut inputs = vec![];
     let hot = s
         .turn
         .weather
@@ -547,39 +559,43 @@ fn check_groups_profile(
         };
         for (category, bar, asset) in available {
             let bp = asset_bp(s, &asset)?;
-            let column = c
-                .tables
-                .land
-                .breakdown
-                .column_quarters(bp)
-                .ok_or_else(overflow)?;
             let key = format!("{category:?}:{bar}:{:?}", asset.equipment);
-            let needed = if let Some(h) = asset
+            let checked_column = asset
                 .cohort
                 .as_ref()
                 .and_then(|g| s.land.breakdown.truck_histories.get(g))
-            {
-                bp > 12 && h.checked.is_none_or(|old| column > old)
-            } else {
-                needs_check_bp(c, s, id, &key, bp)
-            };
-            if needed {
-                groups
-                    .entry((category, bar, column, bar + weather))
-                    .or_default()
-                    .push(asset);
-            }
+                .map_or_else(
+                    || {
+                        s.land
+                            .breakdown
+                            .checked
+                            .get(id)
+                            .and_then(|k| k.get(&key))
+                            .copied()
+                    },
+                    |h| h.checked,
+                );
+            inputs.push(core::VehicleInput {
+                side: s.land.units[id].side,
+                category,
+                bar,
+                points: asset.points,
+                bp_quarters: bp,
+                checked_column,
+                weather_shift: weather,
+                identity: asset,
+            });
         }
     }
     Ok((
-        groups
+        core::check_groups(&c.tables.land.breakdown, inputs)?
             .into_iter()
-            .map(|((category, bar, column, shift), assets)| CheckGroup {
-                category,
-                bar,
-                column,
-                shift,
-                assets,
+            .map(|g| CheckGroup {
+                category: g.category,
+                bar: g.bar,
+                column: g.column,
+                shift: g.shift,
+                assets: g.assets.into_iter().map(|a| a.identity).collect(),
             })
             .collect(),
         gaps,
@@ -609,12 +625,16 @@ pub fn roll_checks(
     use cna_protocol::GameEvent;
     let (groups, gaps) = check_groups_profile(c, s, stopped, strict)?;
     for (id, gap) in gaps {
-        cx.emit(EngineEvent::new(
-            Audience::Side(s.land.units[&id].side),
-            GameEvent::Note {
-                text: format!("Own vehicle breakdown unassessed for {id}: {gap:?}"),
-            },
-        ));
+        cx.emit(
+            EngineEvent::new(
+                Audience::Side(s.land.units[&id].side),
+                GameEvent::Note {
+                    text: format!("Own vehicle breakdown unassessed for {id}: {gap:?}"),
+                },
+            )
+            .at(stopped.destination.clone())
+            .about(id),
+        );
     }
     let mut outcomes = vec![];
     for group in groups {
@@ -639,39 +659,26 @@ pub fn roll_checks(
         }
         let d = cx.rng.two_dice_reading();
         let side = s.land.units[&group.assets[0].unit].side;
-        cx.emit(EngineEvent::new(
-            Audience::Side(side),
-            GameEvent::DiceRolled {
-                purpose: format!(
-                    "Own {:?} breakdown, BP band {}, shift {}",
-                    group.category, group.column, group.shift
-                ),
-                dice: vec![d.tens.value(), d.units.value()],
-                reading: Some(d.value()),
-                rule: Some("land:21.34".into()),
-            },
-        ));
+        cx.emit(
+            EngineEvent::new(
+                Audience::Side(side),
+                GameEvent::DiceRolled {
+                    purpose: format!(
+                        "Own {:?} breakdown, BP band {}, shift {}",
+                        group.category, group.column, group.shift
+                    ),
+                    dice: vec![d.tens.value(), d.units.value()],
+                    reading: Some(d.value()),
+                    rule: Some("land:21.34".into()),
+                },
+            )
+            .at(stopped.destination.clone())
+            .about(group.assets[0].unit.clone()),
+        );
         let bp = asset_bp(s, &group.assets[0])?;
-        let percent = c
-            .tables
-            .land
-            .breakdown
-            .percent_quarters(bp, group.shift, d)
-            .ok_or_else(overflow)?;
-        let points = i32::try_from(
-            group
-                .assets
-                .iter()
-                .map(|a| i64::from(a.points))
-                .sum::<i64>(),
-        )
-        .map_err(|_| overflow())?;
-        let broken = c
-            .tables
-            .land
-            .breakdown
-            .broken_points(points, percent)
-            .ok_or_else(overflow)?;
+        let points: Vec<_> = group.assets.iter().map(|a| a.points).collect();
+        let (percent, broken) =
+            core::losses(&c.tables.land.breakdown, bp, group.shift, &points, d)?;
         if broken == 0 {
             continue;
         }
@@ -687,7 +694,7 @@ pub fn roll_checks(
                 if strict {
                     return Err(e.clone());
                 }
-                cx.emit(EngineEvent::new(Audience::Side(side),GameEvent::Note{text:"Breakdown origin-placement constraint is unassessed because its map data is incomplete (land:21.41).".into()}));
+                cx.emit(EngineEvent::new(Audience::Side(side),GameEvent::Note{text:"Breakdown origin-placement constraint is unassessed because its map data is incomplete (land:21.41).".into()}).at(m.origin.clone()).about(a.unit.clone()));
             }
         }
         outcomes.push(RolledCheck {

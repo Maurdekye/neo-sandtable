@@ -3,6 +3,52 @@ use super::{Asset, Equipment, valid_allocation};
 use cna_core::ids::UnitId;
 use std::collections::{BTreeMap, VecDeque};
 
+/// A physical cell's carrier identity is independent of the Land unit map.
+/// Cases: land:21.36
+#[derive(Debug, Clone)]
+pub struct CarrierAsset {
+    pub carrier: String,
+    pub equipment: Equipment,
+    pub points: i32,
+}
+fn neutral(assets: &[Asset]) -> Vec<CarrierAsset> {
+    assets
+        .iter()
+        .map(|a| CarrierAsset {
+            carrier: a.unit.to_string(),
+            equipment: a.equipment.clone(),
+            points: a.points,
+        })
+        .collect()
+}
+/// Existing unit API, unchanged; its carrier-neutral implementation also accepts real pool ids.
+/// Cases: land:21.36
+pub fn valid_group_allocation(assets: &[Asset], broken: i32, allocation: &[i32]) -> bool {
+    valid_carrier_allocation(&neutral(assets), broken, allocation)
+}
+/// Existing unit baseline API, unchanged.
+/// Cases: land:21.36
+pub fn balanced_allocation(assets: &[Asset], broken: i32) -> Option<Vec<i32>> {
+    balanced_carrier_allocation(&neutral(assets), broken)
+}
+pub(super) fn grouped(assets: &[Asset]) -> Option<(Vec<Asset>, Vec<Vec<usize>>)> {
+    let (cells, indices) = grouped_carrier(&neutral(assets))?;
+    Some((
+        cells
+            .into_iter()
+            .map(|a| Asset {
+                unit: UnitId::new(a.carrier),
+                equipment: a.equipment,
+                points: a.points,
+                cohort: None,
+            })
+            .collect(),
+        indices,
+    ))
+}
+pub(super) fn expand(assets: &[Asset], indices: &[Vec<usize>], chosen: &[i32]) -> Option<Vec<i32>> {
+    expand_carrier(&neutral(assets), indices, chosen)
+}
 #[derive(Clone)]
 struct Edge {
     to: usize,
@@ -79,32 +125,37 @@ fn maxflow(g: &mut [Vec<Edge>], start: usize, end: usize) -> i64 {
 }
 /// Cohort identifiers distinguish physical history, not another vehicle type.
 /// Cases: land:21.36
-pub(super) fn grouped(assets: &[Asset]) -> Option<(Vec<Asset>, Vec<Vec<usize>>)> {
-    let mut cells: BTreeMap<(UnitId, Equipment), (i32, Vec<usize>)> = BTreeMap::new();
+pub(super) fn grouped_carrier(
+    assets: &[CarrierAsset],
+) -> Option<(Vec<CarrierAsset>, Vec<Vec<usize>>)> {
+    let mut cells: BTreeMap<(String, Equipment), (i32, Vec<usize>)> = BTreeMap::new();
     for (i, a) in assets.iter().enumerate() {
         if a.points < 0 {
             return None;
         }
         let e = cells
-            .entry((a.unit.clone(), a.equipment.clone()))
+            .entry((a.carrier.clone(), a.equipment.clone()))
             .or_default();
         e.0 = e.0.checked_add(a.points)?;
         e.1.push(i);
     }
     let mut out = vec![];
     let mut indices = vec![];
-    for ((unit, equipment), (points, ii)) in cells {
-        out.push(Asset {
-            unit,
+    for ((carrier, equipment), (points, ii)) in cells {
+        out.push(CarrierAsset {
+            carrier,
             equipment,
             points,
-            cohort: None,
         });
         indices.push(ii);
     }
     Some((out, indices))
 }
-pub(super) fn expand(assets: &[Asset], indices: &[Vec<usize>], chosen: &[i32]) -> Option<Vec<i32>> {
+pub(super) fn expand_carrier(
+    assets: &[CarrierAsset],
+    indices: &[Vec<usize>],
+    chosen: &[i32],
+) -> Option<Vec<i32>> {
     let mut out = vec![0; assets.len()];
     for (ii, n) in indices.iter().zip(chosen) {
         let mut left = *n;
@@ -121,7 +172,7 @@ pub(super) fn expand(assets: &[Asset], indices: &[Vec<usize>], chosen: &[i32]) -
 /// Both unit totals and vehicle-type totals lie in their proportional floor/ceiling quotas.
 /// Different owner tie choices remain legal; all rolled losses must be assigned.
 /// Cases: land:21.36
-pub fn valid_group_allocation(assets: &[Asset], broken: i32, allocation: &[i32]) -> bool {
+pub fn valid_carrier_allocation(assets: &[CarrierAsset], broken: i32, allocation: &[i32]) -> bool {
     if allocation.len() != assets.len()
         || assets
             .iter()
@@ -130,7 +181,7 @@ pub fn valid_group_allocation(assets: &[Asset], broken: i32, allocation: &[i32])
     {
         return false;
     }
-    let Some((cells, indices)) = grouped(assets) else {
+    let Some((cells, indices)) = grouped_carrier(assets) else {
         return false;
     };
     let Some(chosen) = indices
@@ -145,16 +196,16 @@ pub fn valid_group_allocation(assets: &[Asset], broken: i32, allocation: &[i32])
     };
     valid_cells(&cells, broken, &chosen)
 }
-fn valid_cells(assets: &[Asset], broken: i32, allocation: &[i32]) -> bool {
+fn valid_cells(assets: &[CarrierAsset], broken: i32, allocation: &[i32]) -> bool {
     let points: Vec<_> = assets.iter().map(|a| a.points).collect();
     if !valid_allocation(&points, broken, allocation) {
         return false;
     }
-    let mut units: BTreeMap<UnitId, (i32, i32)> = BTreeMap::new();
+    let mut units: BTreeMap<String, (i32, i32)> = BTreeMap::new();
     let mut kinds: BTreeMap<Equipment, (i32, i32)> = BTreeMap::new();
     for (a, n) in assets.iter().zip(allocation) {
         for totals in [
-            units.entry(a.unit.clone()).or_default(),
+            units.entry(a.carrier.clone()).or_default(),
             kinds.entry(a.equipment.clone()).or_default(),
         ] {
             let Some(p) = totals.0.checked_add(a.points) else {
@@ -180,12 +231,12 @@ fn valid_cells(assets: &[Asset], broken: i32, allocation: &[i32]) -> bool {
 /// A bounded integral flow chooses a legal joint rounding without enumerating every tie.
 /// This is controller assistance: the owning player can submit another valid allocation.
 /// Cases: land:21.36
-pub fn balanced_allocation(assets: &[Asset], broken: i32) -> Option<Vec<i32>> {
-    let (cells, indices) = grouped(assets)?;
+pub fn balanced_carrier_allocation(assets: &[CarrierAsset], broken: i32) -> Option<Vec<i32>> {
+    let (cells, indices) = grouped_carrier(assets)?;
     let chosen = balanced_cells(&cells, broken)?;
-    expand(assets, &indices, &chosen)
+    expand_carrier(assets, &indices, &chosen)
 }
-fn balanced_cells(assets: &[Asset], broken: i32) -> Option<Vec<i32>> {
+fn balanced_cells(assets: &[CarrierAsset], broken: i32) -> Option<Vec<i32>> {
     if broken < 0 || assets.iter().any(|a| a.points < 0) {
         return None;
     }
@@ -196,7 +247,7 @@ fn balanced_cells(assets: &[Asset], broken: i32) -> Option<Vec<i32>> {
     if total == 0 {
         return Some(vec![0; assets.len()]);
     }
-    let units: BTreeMap<_, _> = assets.iter().map(|a| (a.unit.clone(), ())).collect();
+    let units: BTreeMap<_, _> = assets.iter().map(|a| (a.carrier.clone(), ())).collect();
     let kinds: BTreeMap<_, _> = assets.iter().map(|a| (a.equipment.clone(), ())).collect();
     let units: BTreeMap<_, _> = units.into_keys().enumerate().map(|(i, k)| (k, i)).collect();
     let kinds: BTreeMap<_, _> = kinds.into_keys().enumerate().map(|(i, k)| (k, i)).collect();
@@ -218,7 +269,7 @@ fn balanced_cells(assets: &[Asset], broken: i32) -> Option<Vec<i32>> {
     let mut col_floor = vec![0i64; cols];
     let mut edges = vec![None; assets.len()];
     for (i, a) in assets.iter().enumerate() {
-        let r = units[&a.unit];
+        let r = units[&a.carrier];
         let c = kinds[&a.equipment];
         row_points[r] += i64::from(a.points);
         col_points[c] += i64::from(a.points);
@@ -259,7 +310,7 @@ fn balanced_cells(assets: &[Asset], broken: i32) -> Option<Vec<i32>> {
             result[i] += (g[r][j].initial - g[r][j].capacity) as i32;
         }
     }
-    valid_group_allocation(assets, broken, &result).then_some(result)
+    valid_carrier_allocation(assets, broken, &result).then_some(result)
 }
 #[cfg(test)]
 mod tests {

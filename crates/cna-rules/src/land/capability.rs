@@ -78,6 +78,7 @@ pub fn charge(
 pub fn finish_opstage(state: &mut State) {
     super::engagement::clear(state);
     state.land.assault_intentions.clear();
+    state.land.breakdown.pools.clear();
     state.land.breakdown.accumulated_quarters.clear();
     state.land.breakdown.light_extra_quarters.clear();
     state.land.breakdown.truck_histories.clear();
