@@ -201,6 +201,11 @@ pub struct LogisticsState {
     /// Original moving groups retain a single source rounding account after truck splits.
     #[serde(default)]
     pub fuel_accounts: BTreeMap<UnitId, crate::logistics::FuelFundingAccount>,
+    /// Separate carrier accounts: pool identities never masquerade as land units.
+    #[serde(default)]
+    pub pool_fuel_segments: BTreeMap<String, crate::logistics::FuelSegmentLedger<String>>,
+    #[serde(default)]
+    pub pool_fuel_accounts: BTreeMap<String, crate::logistics::FuelFundingAccount>,
     #[serde(default)]
     pub wells: BTreeMap<HexId, WellState>,
     /// Pipeline connectivity and destroyed status; construction procedures own updates.
@@ -280,6 +285,11 @@ pub struct TruckPool {
     /// Cargo stays with this identity through placement, movement and removal.
     #[serde(default)]
     pub cargo: Supplies,
+    /// Vehicle tanks and activity reserve are independent of cargo.
+    #[serde(default)]
+    pub tank_fuel: FuelTenths,
+    #[serde(default)]
+    pub activity_water: WaterPoints,
     #[serde(default)]
     pub box_handling: Option<crate::logistics::box_handling::BoxHandling>,
 }

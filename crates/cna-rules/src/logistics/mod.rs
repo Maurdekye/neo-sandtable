@@ -34,6 +34,12 @@
 //! cargo must be unloaded before it enters this interface. Emergency siphoning,
 //! refuelling into tanks, captured stocks and unit carrying capacities are separate
 //! procedures; this API spends existing holdings and cannot bypass those decisions.
+//! Truck convoys use pool_fuel::plan_pool_segment_fuel/spend_pool_segment_fuel.
+//! Pool truck cohorts and funding accounts have separate stable-pool-ID maps;
+//! existing UnitId maps contain only land units. Own convoy fuel cargo follows its
+//! carrier (49.18), while other pools still unload before supplying it. Tank fuel
+//! stays exact in tenths; shared pure pricing preserves cumulative source credit.
+//! Breakdown retires/restores explicit pool cohorts before changing truck counts.
 //!
 //! Answer acceptance uses only the answering side's units, stocks and known conditions,
 //! plus public facts. Hidden opposing state belongs to adjudication after closed windows;
@@ -58,6 +64,7 @@ pub mod coastal;
 pub mod convoys;
 pub mod distribution;
 pub mod dump_markers;
+pub mod pool_fuel;
 pub mod pools;
 pub mod ports;
 pub use capacity::{CargoPacking, cargo_bound, fuel_capacity, validate_packing};

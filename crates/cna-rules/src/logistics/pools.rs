@@ -72,6 +72,8 @@ pub fn add_truck_pool(
         location,
         trucks,
         cargo,
+        tank_fuel: Default::default(),
+        activity_water: Default::default(),
         box_handling: None,
     });
     Ok(id)

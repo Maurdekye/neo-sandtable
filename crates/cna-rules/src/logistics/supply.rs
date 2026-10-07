@@ -37,6 +37,10 @@ pub enum SupplySource {
     UnitStock(UnitId),
     /// An active, real, friendly dump in the same hex.
     Dump(String),
+    /// One specific pool's vehicle tanks.
+    PoolTank(String),
+    /// Own second-/third-line fuel cargo; other pools must unload before use.
+    PoolStock(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -283,7 +287,7 @@ fn truck_count(unit: &LandUnit) -> Result<i32, SupplyError> {
         .ok_or(SupplyError::Invalid)
 }
 
-fn stock_demand(stock: Supplies) -> Result<SupplyDemand, SupplyError> {
+pub(super) fn stock_demand(stock: Supplies) -> Result<SupplyDemand, SupplyError> {
     let d = SupplyDemand {
         fuel: FuelTenths::new(stock.fuel.checked_mul(10).ok_or(SupplyError::Invalid)?),
         ammo: AmmoPoints::new(stock.ammo),
@@ -352,11 +356,22 @@ pub fn available_sources_at_location(
             },
         });
     }
+    sources.extend(local_stocks(state, unit.side, location)?);
+    Ok(sources)
+}
+
+/// Shared location stocks. Second-/third-line cargo is deliberately excluded.
+pub(super) fn local_stocks(
+    state: &State,
+    side: cna_protocol::Side,
+    location: &Location,
+) -> Result<Vec<SupplyDraw>, SupplyError> {
+    let mut sources = Vec::new();
     for (id, holdings) in &state.logistics.unit_supply {
         let Some(carrier) = state.land.units.get(id) else {
             continue;
         };
-        if carrier.side == unit.side && &carrier.location == location && truck_count(carrier)? > 0 {
+        if carrier.side == side && &carrier.location == location && truck_count(carrier)? > 0 {
             sources.push(SupplyDraw {
                 source: SupplySource::UnitStock(id.clone()),
                 amount: stock_demand(holdings.carried)?,
@@ -364,7 +379,7 @@ pub fn available_sources_at_location(
         }
     }
     for (id, dump) in &state.logistics.dumps {
-        if dump.side == unit.side
+        if dump.side == side
             && dump.active
             && !dump.dummy
             && match (&dump.location, location) {
@@ -419,6 +434,18 @@ pub(super) fn apply_draws_from_logistics(
     sources: &BTreeMap<SupplySource, SupplyDemand>,
     prior: &BTreeMap<SupplySource, FuelTenths>,
 ) -> Result<LogisticsState, SupplyError> {
+    withdraw_draws(logistics, Some(unit_id), demand, draws, sources, prior)
+}
+
+/// Carrier-neutral exact withdrawal. Implicit unit tanks require a real unit id.
+pub(super) fn withdraw_draws(
+    logistics: &LogisticsState,
+    unit_id: Option<&UnitId>,
+    demand: SupplyDemand,
+    draws: &[SupplyDraw],
+    sources: &BTreeMap<SupplySource, SupplyDemand>,
+    prior: &BTreeMap<SupplySource, FuelTenths>,
+) -> Result<LogisticsState, SupplyError> {
     if !demand.valid() {
         return Err(SupplyError::Invalid);
     }
@@ -451,13 +478,30 @@ pub(super) fn apply_draws_from_logistics(
             SupplySource::Unlimited => {}
             SupplySource::Tank => {
                 next.unit_supply
-                    .get_mut(unit_id)
+                    .get_mut(unit_id.ok_or(SupplyError::Invalid)?)
                     .ok_or(SupplyError::Invalid)?
                     .tank_fuel -= amount.fuel
             }
+            SupplySource::PoolTank(id) => {
+                if !amount.ammo.is_zero() || !amount.stores.is_zero() || !amount.water.is_zero() {
+                    return Err(SupplyError::Invalid);
+                }
+                let pool = next
+                    .truck_pools
+                    .iter_mut()
+                    .find(|p| p.id == id)
+                    .ok_or(SupplyError::Invalid)?;
+                pool.tank_fuel = FuelTenths::new(
+                    pool.tank_fuel
+                        .get()
+                        .checked_sub(amount.fuel.get())
+                        .filter(|n| *n >= 0)
+                        .ok_or(SupplyError::Insufficient)?,
+                );
+            }
             SupplySource::ReadyAmmo => {
                 next.unit_supply
-                    .get_mut(unit_id)
+                    .get_mut(unit_id.ok_or(SupplyError::Invalid)?)
                     .ok_or(SupplyError::Invalid)?
                     .ready_ammo -= amount.ammo
             }
@@ -487,6 +531,14 @@ pub(super) fn apply_draws_from_logistics(
                             .ok_or(SupplyError::Invalid)?
                             .carried
                     }
+                    SupplySource::PoolStock(id) => {
+                        &mut next
+                            .truck_pools
+                            .iter_mut()
+                            .find(|p| p.id == id)
+                            .ok_or(SupplyError::Invalid)?
+                            .cargo
+                    }
                     SupplySource::Dump(id) => {
                         &mut next
                             .dumps
@@ -494,7 +546,7 @@ pub(super) fn apply_draws_from_logistics(
                             .ok_or(SupplyError::Invalid)?
                             .supplies
                     }
-                    _ => unreachable!(),
+                    _ => return Err(SupplyError::Invalid),
                 };
                 deduct_stock(stock, amount, withdrawal)?;
             }
@@ -571,8 +623,23 @@ pub fn available_sources_at_with_content(
         return Ok(sources);
     }
     let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
+    add_unlimited_source(content, unit.side, location, &mut sources)?;
+    Ok(sources)
+}
+
+/// Resolved scenario supply rights, shared by genuine units and truck pools.
+/// Cases: scen:60.44, airlog:57.0
+pub(super) fn add_unlimited_source(
+    content: &CnaContent,
+    side: cna_protocol::Side,
+    location: &Location,
+    sources: &mut Vec<SupplyDraw>,
+) -> Result<(), SupplyError> {
+    if matches!(location, Location::OffMap { id } if !content.areas.locations.contains_key(id)) {
+        return Ok(());
+    }
     if let Some(unlimited) = &content.scenario.supply.unlimited_supply
-        && unlimited.side == unit.side
+        && unlimited.side == side
     {
         for place in &unlimited.locations {
             let area = content
@@ -602,7 +669,7 @@ pub fn available_sources_at_with_content(
             }
         }
     }
-    Ok(sources)
+    Ok(())
 }
 /// Spend explicit content-authorized sources; the state-only helper remains limited
 /// to actual holdings. No enemy side gains access to the scenario's supply source.
