@@ -480,6 +480,7 @@ fn convoy_planning_barrier_stays_in_setup_after_both_close_paths() {
     }
     no_choices.land.undistributed_trucks.clear();
     no_choices.logistics.truck_pools.clear();
+    no_choices.air.forces.clear();
     for d in no_choices.logistics.dumps.values_mut() {
         if matches!(d.location, DumpLocation::AwaitingSetup { .. }) {
             d.location = DumpLocation::Hex {
@@ -883,6 +884,7 @@ fn setup_context_identifies_each_owner_asset_and_survives_checkpointing() {
         let context = p.space.to_json_schema()["x-context"].clone();
         assert!(context.is_object(), "missing context for {}", p.kind);
         match &game.state.setup.tasks[&p.id] {
+            SetupTask::Air { force, .. } => assert_eq!(context["force"], json!(force)),
             SetupTask::Unit { unit, .. } => {
                 assert_eq!(context["unit"], json!(unit));
                 assert_eq!(
