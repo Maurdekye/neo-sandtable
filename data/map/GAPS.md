@@ -251,3 +251,8 @@ The three immutable inputs retain 431 unresolved observations without masks: pip
 ### Sixth assembled edge-cycle abstentions, 2026-10-07
 
 The three inputs retain 320 unresolved observations without masks: pipeline on all 260 pairs, 22 slope and 22 ridge decisions, eleven escarpment decisions, two rail-kind identities and three marine endpoints. Exact unresolved identities and reasons remain in each immutable raw review. C3226/C3227 rail-family uncertainty and the authoritative C3124 terrain deferral on C3124/C3223 and C3124/C3224 remain explicit. No missing lake evidence becomes an absence mask, and source-reviewed edges do not resolve any of the 33 corridor terrain gaps or certify routes, halos or actions.
+
+
+### Seventh assembled edge-cycle abstentions, 2026-10-07
+
+The three raw inputs retain 379 unresolved observations without masks: pipeline on all 260 pairs, 53 slope and 53 ridge decisions, two escarpment decisions, two railroad and two unfinished-railroad identities, two border identities, three road-family decisions and two marine endpoints. Exact identities and reasons remain in the immutable raw reviews. C3019/C3120 and C3028/C3129 tied or coincident line/border symbols stay unresolved. C3024/C3124 and outside-corridor D2705–D2710 surface gaps remain authoritative. Eastern whole-share observation completion still leaves 1,260 kind abstentions, including every pipeline. The new seven-edge track strip covers the current thirteen movement kinds only; missing lake evidence, adjacent halo and action legality remain unknown. No edge review resolves the 33 corridor terrain gaps.
