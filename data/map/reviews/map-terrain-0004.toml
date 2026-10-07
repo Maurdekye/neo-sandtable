@@ -1,0 +1,410 @@
+[batch]
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+id = "map-terrain-0004"
+observer = "map-terrain"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "D2517,D2518,D2519,D2520,D2521,D2522,D2523,D2524,D2617,D2618,D2619,D2620,D2621,D2622,D2623,D2624,D2717,D2718,D2719,D2720,D2721,D2722,D2723,D2724,D3218,D3219,D3220,D3221,D3222,D3223,D3224,D3225,D3318,D3319,D3320,D3321,D3322,D3323,D3324,D3325,D3418,D3419,D3420,D3421,D3422,D3423,D3424,D3425,D3518,D3519"
+notes = "Every complete cell directly inspected against native2021source and TEC.png; 50 inspected, 47 accepted, 3 deferred. Land predominance and explicit minor substrates follow map-0003; coastal domain follows map-0002. Contour ink is separate from substrate. Source crops remain outside repo. Single-observer acceptance; parent second looks cover only explicitly bounded family checks in individual notes, no population error or1979equivalence. No classifier, new place, city selector, edge or facility acceptance."
+
+[[hex]]
+hex_id = "D2517"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2518"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2519"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2520"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2521"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2522"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2523"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Full-cell enlargement shows substantial beige rough patch and cream clear interior of comparable extent; neither clearly predominates. No water inside the boundary. Defer under map-0003 rather than guess."
+
+[[hex]]
+hex_id = "D2524"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream substrate throughout the full hex. Neighboring beige rough fragments at left and lower margins lie outside its boundary; no minor rough inside is accepted."
+
+[[hex]]
+hex_id = "D2617"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2618"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2619"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2620"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2621"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2622"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2623"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2624"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2717"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2718"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2719"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2720"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2721"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2722"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2723"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2724"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3218"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3219"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3220"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3221"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3222"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3223"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3224"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3225"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3318"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3319"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Full-cell enlargement shows a broad central beige rough patch and broad cream land beside it; contour splashes obscure part of the remaining interior. No confidently predominant land substrate. Known land, no water; defer under map-0003."
+
+[[hex]]
+hex_id = "D3320"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3321"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3322"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3323"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3324"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3325"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Ochre contour bands, where present, remain separate from substrate. No water inside the full boundary. Line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3418"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates throughout the upper and central interior. Pale splash fringes at the lower contour band are graphic decoration; no separate minor substrate confidently observed. Place symbol/label and transport layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3419"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates; minor: clear in the cream lower-right interior wedge. Broad pocket is distinct from narrow printed road margins and label gaps. Transport layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3420"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates; minor: clear in the cream lower interior wedge. Broad pocket is distinct from narrow printed road margins. Transport layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3421"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Full-cell enlargement shows broad beige rough and cream clear interior regions of comparable extent, crossed by transport graphics. No confidently predominant substrate. Known land, no water; defer under map-0003."
+
+[[hex]]
+hex_id = "D3422"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0002"]
+note = "Cream land substrate clearly predominates within the visible land fragment; neighboring beige rough patch is outside the left boundary. Ochre contour splashes remain separate. Source coastline passes through the cell; majority sea does not select land terrain."
+
+[[hex]]
+hex_id = "D3423"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0002"]
+note = "Small cream land fragment lies inside the lower vertex below the source coastline. Entire visible fragment is clear; pale shoreline fringe alone is not terrain evidence. Coastal under map-0002; place and transport layers unreviewed."
+
+[[hex]]
+hex_id = "D3424"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0002"]
+note = "Cream land fragment lies inside the lower-right part of the full hex below the source coastline. Visible fragment is clear; coastal under map-0002. Neighboring labels/layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3425"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0002"]
+note = "Cream land fragment lies inside the lower part of the full hex below the source coastline. Visible fragment is clear; coastal under map-0002. Neighboring labels/layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3518"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0002"]
+note = "Beige rough substrate predominates throughout the visible land fragment; pale narrow shoreline fringe is graphic decoration, no separate minor substrate confidently observed. Source coastline passes through the upper half. Transport layers remain unreviewed."
+
+[[hex]]
+hex_id = "D3519"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0002"]
+note = "Beige rough substrate predominates throughout the visible land fragment; pale narrow shoreline fringe is graphic decoration, no separate minor substrate confidently observed. Source coastline passes through the cell. Transport layers remain unreviewed."

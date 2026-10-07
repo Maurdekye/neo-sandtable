@@ -1,0 +1,410 @@
+[batch]
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+id = "map-terrain-0005"
+observer = "map-terrain"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "D2017,D2018,D2019,D2020,D2021,D2022,D2023,D2024,D2117,D2118,D2119,D2120,D2121,D2122,D2123,D2124,D2217,D2218,D2219,D2220,D2221,D2222,D2223,D2224,D2317,D2318,D2319,D2320,D2321,D2322,D2323,D2324,D2417,D2418,D2419,D2420,D2421,D2422,D2423,D2424,D2525,D2526,D2527,D2528,D2529,D2530,D2531,D2532,D2533,D2625"
+notes = "Every complete cell directly inspected against native2021source and TEC.png; 50 inspected, 46 accepted, 4 deferred. Land predominance and explicit minor substrates follow map-0003; coastal domain follows map-0002. Contour ink is separate from substrate. Source crops remain outside repo. Single-observer acceptance; parent second looks cover only explicitly bounded family checks in individual notes, no population error or1979equivalence. No classifier, new place, city selector, edge or facility acceptance."
+
+[[hex]]
+hex_id = "D2017"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2018"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2019"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2020"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2021"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2022"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2023"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2024"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Salt marsh clearly predominates over the full land hex with broad yellow angular strokes. Minor: clear in the broad cream lower-right interior pocket, distinct from narrow printed margins. Contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2117"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2118"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2119"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2120"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell enlargement shows substantial bounded olive mountain fill, surrounding beige rough fill and broad cream clear interior. No clearly predominant substrate established among these three; all land, defer under map-0003. Gray boundary escarpment graphics remain separate. Later direct TEC/native re-view distinguishes the bounded central olive island from ragged marginal contour bands: it has a flat interior and rounded boundary within the beige patch, rather than following a shared side. This does not establish a confident predominant class; the deferral is retained."
+
+[[hex]]
+hex_id = "D2121"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2122"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2123"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2124"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2217"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2218"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2219"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2220"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2221"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2222"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2223"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell enlargement shows bounded olive mountain fill, beige rough fill and broad cream clear land, with contour graphics obscuring parts of the margins. No confidently predominant substrate established among these three; all land, defer under map-0003. Later direct TEC/native re-view distinguishes the bounded central olive island from ragged marginal contour bands: it has a flat interior and rounded boundary within the beige patch, rather than following a shared side. This does not establish a confident predominant class; the deferral is retained."
+
+[[hex]]
+hex_id = "D2224"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige land with yellow angular salt-marsh strokes clearly predominates, directly compared against TEC.png. Pale narrow fringes next to gray contour graphics are not automatically a separate minor clear substrate; no distinct minor substrate confidently observed. Full hex is land; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2317"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2318"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2319"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough patch and broad cream clear land occupy comparable visible parts of the full cell; no confident predominance established. All land, defer under map-0003."
+
+[[hex]]
+hex_id = "D2320"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2321"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2322"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2323"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2324"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2417"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2418"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2419"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear land clearly predominates over the full hex. Minor: rough in the bounded central beige patch. No water; contour kinds and other layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2420"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2421"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2422"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2423"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2424"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2525"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2526"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2527"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2528"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear land throughout the full hex; neighboring beige rough patch at the left margin is outside the drawn side on direct enlargement. No minor rough accepted inside. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2529"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
+
+[[hex]]
+hex_id = "D2530"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough land in the lower/right interior and broad cream clear land in the upper/left interior are comparable; contour graphics obscure part of the remaining substrate. No confidently predominant class. All land, defer under map-0003."
+
+[[hex]]
+hex_id = "D2531"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2532"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2533"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough land clearly predominates. Minor: clear in the smaller broad cream interior region, distinct from contour or transport margins. No water inside the full hex; line, hexside and facility layers remain unreviewed."
+
+[[hex]]
+hex_id = "D2625"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review: cream land substrate clearly predominates. Neighboring patches and ochre contour splashes remain separate; no water inside the full boundary. Other layers and facilities remain unreviewed."
