@@ -116,8 +116,10 @@ impl Combatant {
         })
     }
 
-    /// Opposing fire uses normal ratings even when this plane has no gun ammo.
+    /// Proposed local reading: opposing fire uses normal ratings without gun ammo.
+    /// Gameplay callers await the ruling on the maintenance/combat conflict.
     /// Cases: airlog:45.0, airlog:45.17, airlog:45.4
+    /// Interpretations: interp:air-0016
     pub fn differential(&self, content: &CnaContent, opponent: &Self) -> Result<i32, EngineError> {
         let gap = self
             .maneuver
