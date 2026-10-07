@@ -179,7 +179,9 @@ impl PromptBuilder for DefaultPrompts {
              One answer can carry a list: plan the current segment/window, inspect key disclosed targets, \
              and group compatible actions in one ordered list when the schema allows it. Respect bounds \
              and validate the complete list. Follow the described pass meaning; never use pass as fallback \
-             after a rejected draft.",
+             after a rejected draft. The submit explanation is optional: brief commentary for your own \
+             side and the operator only; the enemy cannot read it. It is never executable or an order. \
+             Keep the rationale short to save output tokens.",
             self.game_description
         )
     }

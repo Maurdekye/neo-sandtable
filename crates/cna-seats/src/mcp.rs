@@ -158,7 +158,7 @@ impl ToolRouter {
               "inputSchema": obj(json!({ "decision_id": { "type": "string" },
                                          "action": action,
                                          "revision": { "type": "integer", "description": "Decision revision you saw; omit to use the current one." },
-                                         "explanation": { "type": "string", "description": "Optional short public explanation of your choice." } }),
+                                         "explanation": { "type": "string", "description": "Optional brief rationale for your own side and the operator only. Commentary, never executable; keep it short to save output tokens." } }),
                                  &["decision_id", "action"]) },
             { "name": "message_team",
               "description": "Send a short message to the other seats on your own side. Nobody on the other side can read it.",
