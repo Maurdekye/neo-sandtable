@@ -39,7 +39,7 @@ interface Props {
   moving: boolean
   allowBatch: boolean
   moved: Set<string>
-  placement: { label: string; hexes: string[] } | null
+  placement: { label: string; hexes: string[]; targetLabel?: string } | null
   terrainCoverage: boolean
 }
 interface Scene {
@@ -590,7 +590,8 @@ export function Board({
       </output>
       {placement && (
         <output className="placement-caption" data-testid="placement-highlight">
-          {placement.hexes.length} legal set-up hexes - {placement.label}
+          {placement.hexes.length}{' '}
+          {placement.targetLabel ?? 'legal set-up hexes'} - {placement.label}
         </output>
       )}
       <output className="motion-caption" data-testid="motion-count">

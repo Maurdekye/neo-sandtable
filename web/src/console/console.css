@@ -1,0 +1,107 @@
+.human-console {
+  padding: 14px;
+}
+.console-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 18px;
+  background: #122b34;
+}
+.console-header small {
+  display: block;
+  margin-top: 6px;
+}
+.console-workspace {
+  display: grid;
+  grid-template-columns: minmax(500px, 1fr) 480px;
+  gap: 16px;
+}
+.console-map {
+  position: sticky;
+  top: 8px;
+  align-self: start;
+}
+.console-map .board {
+  height: 70vh;
+  min-height: 550px;
+}
+.console-orders {
+  padding: 14px;
+  background: #122b34;
+  max-height: calc(100vh - 130px);
+  overflow: auto;
+}
+.console-orders nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.console-decision fieldset {
+  border: 1px solid #425964;
+  margin: 12px 0;
+  padding: 12px;
+  min-width: 0;
+}
+.console-decision legend {
+  color: #e5c575;
+}
+.console-decision label,
+.console-field small,
+.console-header small {
+  display: block;
+}
+.console-field {
+  padding: 8px 0;
+}
+.console-field input,
+.console-field select,
+.console-decision textarea {
+  width: 100%;
+  margin: 5px 0;
+}
+.console-decision textarea {
+  min-height: 80px;
+}
+.console-decision small {
+  color: #b3c7cb;
+  overflow-wrap: anywhere;
+}
+.console-list-item {
+  border-bottom: 1px solid #425964;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+}
+.console-submit,
+.console-picking {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+.console-error {
+  color: #ffc6b0;
+  white-space: pre-wrap;
+}
+.console-units {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px;
+}
+.console-units section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.human-console pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 250px;
+  overflow: auto;
+}
+.console-orders .sessions {
+  min-height: 300px;
+}

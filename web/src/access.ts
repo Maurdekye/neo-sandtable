@@ -1,3 +1,4 @@
+import { validToken } from './credentialFormat'
 import type { Perspective } from './protocol'
 export interface Session {
   perspective: Perspective
@@ -24,9 +25,7 @@ export function serverOrigin(server: string): string {
 }
 export const credentialKey = (server: string) =>
   `cna:cap:${serverOrigin(server)}`
-export function validToken(token: string): boolean {
-  return /^[a-f0-9]{64}$/.test(token)
-}
+export { validToken } from './credentialFormat'
 export function captureCredential(
   server: string,
   url: URL,

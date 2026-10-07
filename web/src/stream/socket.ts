@@ -1,6 +1,6 @@
 import type { ServerMessage, Subscribe } from '../protocol'
 import { decodeMessage } from './wire'
-import { validToken } from '../access'
+import { validToken } from '../credentialFormat'
 export type Socket = Pick<
   WebSocket,
   | 'readyState'
