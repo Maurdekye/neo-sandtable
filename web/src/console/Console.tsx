@@ -1,3 +1,5 @@
+import { PrintedFace } from '../PrintedFace'
+import { isOpponent } from '../face'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Board } from '../map/Board'
 import { DEFAULT_LAYERS } from '../map/layers'
@@ -315,7 +317,8 @@ export function Console({ boot }: { boot: Boot }) {
               .map((s) => (
                 <section key={`${s.side}:${s.hex}`}>
                   <strong>
-                    {s.side}: {s.visible_count ?? 'presence only'}
+                    {s.side}: {s.visible_count ?? 'count not reported'}{' '}
+                    disclosed counters / units
                   </strong>
                   {s.unit_ids.map(
                     (id) =>
@@ -329,7 +332,15 @@ export function Console({ boot }: { boot: Boot }) {
                           }
                         >
                           {view.units[id].name}
-                          <StatusBadges unit={view.units[id]} />
+                          {identity &&
+                          isOpponent(
+                            view.units[id].side,
+                            identity.perspective,
+                          ) ? (
+                            <PrintedFace unit={view.units[id]} />
+                          ) : (
+                            <StatusBadges unit={view.units[id]} />
+                          )}
                         </button>
                       ),
                   )}
@@ -337,7 +348,7 @@ export function Console({ boot }: { boot: Boot }) {
               ))}
           </div>
           <details>
-            <summary>Own seat inspection and previews</summary>
+            <summary>Seat inspection and previews</summary>
             <pre>{JSON.stringify(inspection, null, 2)}</pre>
           </details>
         </section>

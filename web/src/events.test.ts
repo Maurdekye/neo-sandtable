@@ -55,3 +55,12 @@ it('preserves actual CP and dice reading without inventing missing values', () =
     eventMatches({ kind: 'note', text: 'private stop' }, 'unit_moved'),
   ).toBe(true)
 })
+
+it('describes empty-reason sync removal as visibility, not a loss', () => {
+  expect(eventText({ kind: 'unit_removed', unit_id: 'face', reason: '' })).toBe(
+    'face counter no longer visible',
+  )
+  expect(
+    eventText({ kind: 'unit_removed', unit_id: 'face', reason: 'combat loss' }),
+  ).toContain('combat loss')
+})

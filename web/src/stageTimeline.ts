@@ -12,7 +12,7 @@ export type SummaryCategory =
   | 'breakdown'
   | 'supply'
   | 'arrivals'
-  | 'presence'
+  | 'counters'
   | 'notes'
   | 'decisions'
 export interface SummaryEntry {
@@ -70,7 +70,11 @@ function notable(frame: Frame, previous?: Frame): SummaryEntry | null {
       category = 'combat'
       break
     case 'unit_removed':
-      category = /withdraw/i.test(e.reason) ? 'arrivals' : 'removals'
+      category = !e.reason
+        ? 'counters'
+        : /withdraw/i.test(e.reason)
+          ? 'arrivals'
+          : 'removals'
       break
     case 'dice_rolled':
       category = /breakdown/i.test(e.purpose)
@@ -87,12 +91,10 @@ function notable(frame: Frame, previous?: Frame): SummaryEntry | null {
       label = `${e.seat}: ${e.summary}`
       break
     case 'stack_updated':
-      category = 'presence'
-      label = `${e.stack.side}: presence published at ${e.stack.hex}`
+      category = 'counters'
       break
     case 'stack_removed':
-      category = 'presence'
-      label = `${e.side}: presence removed at ${e.hex}`
+      category = 'counters'
       break
     case 'unit_updated': {
       const old = previous?.view.units[e.unit.id]
@@ -105,6 +107,12 @@ function notable(frame: Frame, previous?: Frame): SummaryEntry | null {
       } else if (old?.hex && !e.unit.hex) {
         category = 'arrivals'
         label = `${e.unit.name}: moved off map (${unitLocation(e.unit)})`
+      } else if (
+        (!old && e.unit.hex) ||
+        (old?.hex && e.unit.hex && old.hex !== e.unit.hex)
+      ) {
+        category = 'counters'
+        label = `${e.unit.name}: counter visible at ${e.unit.hex}`
       } else return null
       break
     }

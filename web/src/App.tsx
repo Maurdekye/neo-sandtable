@@ -1,3 +1,5 @@
+import { PrintedFace } from './PrintedFace'
+import { isOpponent } from './face'
 import { SeatMonitor } from './SeatMonitor'
 import { StageTimeline } from './StageOverview'
 import { useEffect, useMemo, useState } from 'react'
@@ -463,6 +465,7 @@ function Viewer({ access }: { access?: Access }) {
             <StackList
               key={`${selected}:${stack.side}`}
               stack={stack}
+              faceOnly={isOpponent(stack.side, state.perspective)}
               units={view!.units}
               selected={unitId}
               moved={moved}
@@ -483,9 +486,17 @@ function Viewer({ access }: { access?: Access }) {
           {unit && (
             <section className="unit-detail">
               <h3>{unit.name}</h3>
-              <StatusBadges unit={unit} />
+              {isOpponent(unit.side, state.perspective) ? (
+                <PrintedFace unit={unit} />
+              ) : (
+                <StatusBadges unit={unit} />
+              )}
               {moved.has(unit.id) && (
-                <p className="moved-label">Moved this segment</p>
+                <p className="moved-label">
+                  {isOpponent(unit.side, state.perspective)
+                    ? 'Counter movement observed this segment'
+                    : 'Moved this segment'}
+                </p>
               )}
               <dl>
                 <dt>ID</dt>

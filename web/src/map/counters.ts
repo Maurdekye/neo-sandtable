@@ -1,3 +1,4 @@
+import { printedFace } from '../face'
 import type { UnitView } from '../protocol'
 export const SYMBOLS: Record<string, string> = {
   broken_vehicle: '<path d="M20 16L40 28M40 16L20 28"/><path d="M20 32H40"/>',
@@ -29,6 +30,16 @@ function escape(value: string) {
   )
 }
 export function counterSvg(unit: UnitView): string {
+  const face = printedFace(unit)
+  const designation = face.counter === null ? '' : face.counter.slice(0, 14)
+  const points =
+    face.stackingPoints === null
+      ? unit.kind === 'broken_vehicle'
+        ? 'BD'
+        : face.counter === null
+          ? String(unit.detail?.strength ?? '?')
+          : 'SP ?'
+      : `SP ${face.stackingPoints}`
   const bg = unit.side === 'axis' ? '#dbc8a0' : '#8ebbbb'
   const echelon =
     (
@@ -39,12 +50,12 @@ export function counterSvg(unit: UnitView): string {
         brigade: 'X',
         division: 'XX',
       } as Record<string, string>
-    )[unit.size] ?? '?'
+    )[unit.size] ?? (unit.kind === 'broken_vehicle' ? '' : '?')
   const accent =
     unit.nationality === 'italian'
       ? '#567553'
       : unit.nationality === 'british'
         ? '#a25144'
         : '#426b8c'
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="60" height="48" viewBox="0 0 60 48"><rect x="1" y="1" width="58" height="46" rx="3" fill="${bg}" stroke="#142a30" stroke-width="2"/><rect x="3" y="3" width="5" height="42" fill="${accent}"/><g color="#142a30" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="18" y="15" width="24" height="14"/>${SYMBOLS[unit.kind] ?? '<text x="30" y="25" text-anchor="middle">?</text>'}</g><g fill="#142a30" font-family="sans-serif" text-anchor="middle"><text x="30" y="12" font-size="9">${echelon}</text><text x="32" y="42" font-size="10">${escape(String(unit.detail?.strength ?? '?'))}</text></g></svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="60" height="48" viewBox="0 0 60 48"><rect x="1" y="1" width="58" height="46" rx="3" fill="${bg}" stroke="#142a30" stroke-width="2"/><rect x="3" y="3" width="5" height="42" fill="${accent}"/><g color="#142a30" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="18" y="15" width="24" height="14"/>${SYMBOLS[unit.kind] ?? '<text x="30" y="25" text-anchor="middle">?</text>'}</g><g fill="#142a30" font-family="sans-serif" text-anchor="middle"><text x="30" y="12" font-size="9">${echelon}</text><text x="32" y="36" font-size="6">${escape(designation)}</text><text x="32" y="44" font-size="8">${escape(points)}</text></g></svg>`
 }

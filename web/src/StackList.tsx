@@ -1,3 +1,4 @@
+import { PrintedFace } from './PrintedFace'
 import { useState } from 'react'
 import { StatusBadges } from './StatusBadges'
 import type { UnitView } from './protocol'
@@ -9,11 +10,13 @@ export function StackList({
   selected,
   onSelect,
   moved,
+  faceOnly = false,
 }: {
   stack: Stack
   units: Record<string, UnitView>
   selected: string | null
   onSelect: (id: string) => void
+  faceOnly?: boolean
   moved: Set<string>
 }) {
   const [query, setQuery] = useState(''),
@@ -29,10 +32,11 @@ export function StackList({
   return (
     <section>
       <h3>
-        {stack.side} · {stack.visible_count ?? 'unknown'} units
+        {stack.side} · {stack.visible_count ?? 'unknown'}{' '}
+        {faceOnly ? 'disclosed counters' : 'units'}
       </h3>
       {!stack.unit_ids.length && (
-        <p className="muted">Presence disclosed; composition unavailable.</p>
+        <p className="muted">No counter faces received for this stack.</p>
       )}
       {disclosed.length > 8 && (
         <label className="stack-search">
@@ -63,7 +67,7 @@ export function StackList({
                 {u.size} · {u.kind}
                 {moved.has(u.id) ? ' - moved' : ''}
               </small>
-              <StatusBadges unit={u} />
+              {faceOnly ? <PrintedFace unit={u} /> : <StatusBadges unit={u} />}
             </span>
           </button>
         ))}

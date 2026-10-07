@@ -13,7 +13,7 @@ const labels: Record<SummaryCategory, string> = {
   breakdown: 'Breakdown dice / counters / notes',
   supply: 'Supply / shortage notes',
   arrivals: 'Arrivals / off-map changes / withdrawals',
-  presence: 'Presence changes',
+  counters: 'Counter and stack changes',
   notes: 'Other notes',
   decisions: 'Seat decisions',
 }
@@ -54,7 +54,7 @@ export function StageTimeline({
             )}
             <div className="stage-columns">
               <section>
-                <h3>Movement by declared formation</h3>
+                <h3>Movement by received formation or counter</h3>
                 {!stage.formations.length && (
                   <p className="muted">No movement events received.</p>
                 )}
