@@ -141,10 +141,10 @@ fn movement_policy() -> ActionPolicy<Cna> {
         if request.kind == "cna.arrivals.batch" {
             // Fixed arrival windows need the source-conserving policy, never the generic sampler.
             // A missing mandatory policy pauses at the actor's Null/no-pass guard.
-            return Some(
+            return Ok(Some(
                 cna_rules::baseline::arrival_orders(content, state, request)
                     .unwrap_or(serde_json::Value::Null),
-            );
+            ));
         }
         if !matches!(
             request.kind.as_str(),

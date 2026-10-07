@@ -3519,7 +3519,7 @@ mod tests {
                         Audience::SideOnly(Side::Axis),
                         GameEvent::UnitRemoved {
                             unit_id: departed.to_string(),
-                            reason: "no longer in view".into(),
+                            reason: String::new(),
                         },
                     ),
                     EngineEvent::new(
