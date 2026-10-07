@@ -407,7 +407,8 @@ fn moved_flags_stay_live_and_decision_ids_count_per_seat() {
         } else {
             match &request.space.schema {
                 ActionSchema::Choice { options } => json!(options[0].id),
-                _ => Value::Null,
+                _ if request.space.pass.is_some() => Value::Null,
+                _ => first_answer(&request.space.schema),
             }
         };
         let moving = action
