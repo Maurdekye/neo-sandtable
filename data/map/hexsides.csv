@@ -1,13 +1,19 @@
 hex_id,direction,neighbour_id,feature,high_side,src,review_batch
 C3425,NE,C3526,escarpment,C3425,land:8.35;land:8.37,map-lines-0008
 C3426,NW,C3526,escarpment,C3426,land:8.35;land:8.37,map-lines-0008
+C3427,NE,C3528,escarpment,C3427,land:8.35;land:8.37,map-lines-0010
+C3428,NW,C3528,escarpment,C3428,land:8.35;land:8.37,map-lines-0010
 C3524,NE,C3624,escarpment,C3524,land:8.35;land:8.37,map-lines-0007
 C3525,E,C3526,escarpment,C3525,land:8.35;land:8.37,map-lines-0009
 C3525,NW,C3624,escarpment,C3525,land:8.35;land:8.37,map-lines-0007
 C3525,NE,C3625,escarpment,C3525,land:8.35;land:8.37,map-lines-0007
 C3526,E,C3527,escarpment,C3527,land:8.35;land:8.37,map-lines-0009
+C3528,E,C3529,escarpment,C3529,land:8.35;land:8.37,map-lines-0010
 C3528,NE,C3628,escarpment,C3528,land:8.35;land:8.37,map-lines-0009
 C3529,NW,C3628,escarpment,C3529,land:8.35;land:8.37,map-lines-0009
+C3532,NE,C3632,slope,C3532,land:8.35;land:8.37,map-lines-0010
+C3533,NW,C3632,slope,C3533,land:8.35;land:8.37,map-lines-0010
+C3533,NE,C3633,slope,C3533,land:8.35;land:8.37,map-lines-0010
 C3623,E,C3624,escarpment,C3623,land:8.35;land:8.37,map-lines-0007
 C3623,NE,C3724,escarpment,C3623,land:8.35;land:8.37,map-lines-0005
 C3628,E,C3629,escarpment,C3629,land:8.35;land:8.37,map-lines-0009
@@ -16,6 +22,7 @@ C3629,NE,C3730,slope,C3629,land:8.35;land:8.37,map-lines-0009
 C3632,NW,C3732,slope,C3632,land:8.35;land:8.37,map-lines-0009
 C3632,NE,C3733,slope,C3632,land:8.35;land:8.37,map-lines-0009
 C3633,NW,C3733,slope,C3633,land:8.35;land:8.37,map-lines-0009
+C3633,SE,D3501,slope,D3501,land:8.35;land:8.37,map-lines-0010
 C3722,NE,C3822,escarpment,C3722,land:8.35;land:8.37,map-lines-0003
 C3723,E,C3724,escarpment,C3723,land:8.35;land:8.37,map-lines-0005
 C3723,NW,C3822,escarpment,C3723,land:8.35;land:8.37,map-lines-0003
