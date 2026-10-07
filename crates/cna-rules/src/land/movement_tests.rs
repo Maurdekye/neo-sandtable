@@ -214,6 +214,49 @@ fn respond(
         }),
     )
 }
+// Fixed empty reaction roles are real private passes; these older movement assertions
+// inspect the subsequent window, after the engine's local forced-pass controller acts.
+fn decline_empty_reactions(
+    c: &CnaContent,
+    mut t: cna_core::engine::Transition<Cna>,
+    strict: bool,
+) -> cna_core::engine::Transition<Cna> {
+    while let Some(p) = t
+        .game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| {
+            p.kind == super::super::reaction::KIND
+                && p.space
+                    .context
+                    .as_ref()
+                    .is_some_and(|v| v["forced_pass"] == true)
+        })
+        .cloned()
+    {
+        let next = evaluate(
+            &Cna { strict },
+            c,
+            &t.game,
+            &Command::Respond(DecisionResponse {
+                decision_id: p.id,
+                seat: p.seat,
+                controller_epoch: 1,
+                decision_revision: p.revision,
+                idempotency_key: "forced-reaction-test".into(),
+                action: Value::Null,
+                public_explanation: None,
+            }),
+        )
+        .unwrap();
+        t.events.extend(next.events);
+        t.game = next.game;
+        t.progress = next.progress;
+    }
+    t
+}
 fn seat(g: &Game<Cna>) -> SeatId {
     g.state.decisions.pending[0].seat
 }
@@ -927,6 +970,13 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
             let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng);
             moves += action.as_array().unwrap().len();
             action
+        } else if request.kind == super::super::breakdown::window::KIND {
+            let action = crate::baseline::random_breakdown(&c, &g.state, &request, &mut rng);
+            assert!(
+                !action.is_null(),
+                "mandatory breakdown baseline must preserve every holding"
+            );
+            action
         } else if matches!(request.space.schema, ActionSchema::Choice { .. })
             || request.space.pass.is_none()
         {
@@ -1581,6 +1631,7 @@ fn reaction_interrupt_replans_and_survives_checkpoint_without_breaking_off_cost(
         true,
     )
     .unwrap();
+    let t = decline_empty_reactions(&c, t, true);
     assert_eq!(t.game.state.land.units[&defender].cp_spent_quarters, 2);
     assert_eq!(t.game.state.land.units[&defender].voluntary_cp_quarters, 0);
     assert_eq!(
@@ -2057,6 +2108,7 @@ fn reaction_in_overfull_transit_hex_requires_a_legal_continuation() {
     );
     let reactor = seat(&t.game);
     let t = respond(&c, &t.game, reactor, Value::Null, true).unwrap();
+    let t = decline_empty_reactions(&c, t, true);
     assert_eq!(
         t.game.state.decisions.pending[0].kind,
         super::super::reaction::CONTINUE
@@ -2288,4 +2340,120 @@ fn later_order_waits_for_the_first_units_breakdown_allocation() {
     );
     assert!(!g.state.land.breakdown.markers.is_empty());
     assert!(g.state.land.breakdown.window.resume.is_none());
+}
+
+/// Cases: land:8.51, land:3.62
+#[test]
+fn public_reaction_windows_hide_readiness_and_private_passes_converge_after_restore() {
+    let (c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+    let second = "cw.2_nz_div.21st_nz_bn";
+    place(&mut s, second, "C4025");
+    place(&mut s, TANK, "C4022");
+    s.land.units.get_mut(&TANK.into()).unwrap().toe =
+        Some(cna_content::units::Toe::Under { under: 1 });
+    let a = start(&c, s, true);
+    let mut b = a.clone();
+    b.state
+        .land
+        .units
+        .get_mut(&TANK.into())
+        .unwrap()
+        .cohesion_quarters = -104;
+    let p = &a.state.decisions.pending[0];
+    let command = Command::Respond(DecisionResponse {
+        decision_id: p.id.clone(),
+        seat: p.seat,
+        controller_epoch: 1,
+        decision_revision: p.revision,
+        idempotency_key: "public-reaction-pair".into(),
+        action: json!([{"unit":LEG,"path":["C4021"]}]),
+        public_explanation: None,
+    });
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::full(),
+        &c,
+        &a,
+        &b,
+        &command,
+        Side::Commonwealth,
+    );
+    let mut a = evaluate(&Cna::full(), &c, &a, &command).unwrap().game;
+    let mut b = evaluate(&Cna::full(), &c, &b, &command).unwrap().game;
+    assert_eq!(a.state.decisions.pending.len(), 3);
+    assert_eq!(b.state.decisions.pending.len(), 3);
+    assert!(
+        a.state
+            .decisions
+            .pending
+            .iter()
+            .all(|p| p.seat.side == Side::Axis)
+    );
+    assert!(
+        b.state
+            .decisions
+            .pending
+            .iter()
+            .all(|p| p.space.context.as_ref().unwrap()["forced_pass"] == true)
+    );
+    for role in [Role::FrontLine, Role::RearArea, Role::Logistics] {
+        // Simulate a checkpoint at every interrupt boundary, retaining the exact ids.
+        a = serde_json::from_value(serde_json::to_value(&a).unwrap()).unwrap();
+        b = serde_json::from_value(serde_json::to_value(&b).unwrap()).unwrap();
+        let p = a
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat.role == role)
+            .unwrap();
+        let command = Command::Respond(DecisionResponse {
+            decision_id: p.id.clone(),
+            seat: p.seat,
+            controller_epoch: 1,
+            decision_revision: p.revision,
+            idempotency_key: format!("pass-{role}"),
+            action: Value::Null,
+            public_explanation: None,
+        });
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::full(),
+            &c,
+            &a,
+            &b,
+            &command,
+            Side::Commonwealth,
+        );
+        a = evaluate(&Cna::full(), &c, &a, &command).unwrap().game;
+        b = evaluate(&Cna::full(), &c, &b, &command).unwrap().game;
+    }
+    assert_eq!(
+        a.state.decisions.pending[0].kind,
+        super::super::reaction::CONTINUE
+    );
+    let p = &a.state.decisions.pending[0];
+    let command = Command::Respond(DecisionResponse {
+        decision_id: p.id.clone(),
+        seat: p.seat,
+        controller_epoch: 1,
+        decision_revision: p.revision,
+        idempotency_key: "stop-after-private-passes".into(),
+        action: Value::Null,
+        public_explanation: None,
+    });
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::full(),
+        &c,
+        &a,
+        &b,
+        &command,
+        Side::Commonwealth,
+    );
+    let a = evaluate(&Cna::full(), &c, &a, &command).unwrap().game;
+    assert_eq!(a.state.decisions.pending[0].kind, KIND);
+    assert!(eligible(
+        &c,
+        &a.state,
+        &second.into(),
+        a.state.decisions.pending[0].seat
+    ));
 }

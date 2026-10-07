@@ -207,11 +207,12 @@ fn continuation_space(id: UnitId, pass: bool) -> ActionSpace {
     }
     a
 }
-fn open_role(c: &CnaContent, s: &mut State, seat: SeatId, cx: &mut Cx<'_>) {
+fn open_role(c: &CnaContent, s: &mut State, seat: SeatId, cx: &mut Cx<'_>, force: bool) {
     let ids = eligible(s, seat, c);
-    if ids.is_empty() {
+    if ids.is_empty() && !force {
         return;
     }
+    let forced_pass = ids.is_empty();
     let hex = s.land.reaction.window.as_ref().unwrap().trigger_hex.clone();
     open(
         s,
@@ -230,9 +231,12 @@ fn open_role(c: &CnaContent, s: &mut State, seat: SeatId, cx: &mut Cx<'_>) {
         ],
         Trigger::Triggered,
         Secrecy::Open,
-        space(ids, true).with_context(serde_json::json!({"trigger_hex":hex})),
+        space(ids, true)
+            .with_context(serde_json::json!({"trigger_hex":hex,"forced_pass":forced_pass})),
     );
 }
+/// Public adjacent stack presence opens the same defender-role windows on every entry.
+/// Empty eligibility is a private forced pass, never a scheduling signal to the mover.
 /// Park all ordinary movement decisions while the nonphasing side resolves this entry.
 /// Only the defending seats receive their own eligible units and costs.
 /// Cases: land:8.51, land:8.52
@@ -245,7 +249,7 @@ pub(super) fn open_interrupt(c: &CnaContent, s: &mut State, cx: &mut Cx<'_>) {
         .side
         .opponent();
     for role in [Role::FrontLine, Role::RearArea, Role::Logistics] {
-        open_role(c, s, SeatId::new(side, role), cx)
+        open_role(c, s, SeatId::new(side, role), cx, true)
     }
 }
 /// One trigger may move several defenders; each selected unit completes its reaction once.
@@ -302,7 +306,7 @@ pub fn answer(
         ) {
             return Ok("Reaction choice complete.".into());
         }
-        open_role(c, s, p.seat, cx);
+        open_role(c, s, p.seat, cx, false);
     } else {
         s.land
             .reaction
@@ -330,7 +334,7 @@ pub(super) fn resume_after_breakdown(
     strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), Rejection> {
-    open_role(c, s, seat, cx);
+    open_role(c, s, seat, cx, false);
     if !s.decisions.pending.iter().any(|p| p.kind == KIND) {
         s.land.reaction.window = None;
         open_continuation(c, s, strict, cx)?;
