@@ -1,8 +1,8 @@
 //! Cohort movement fuel. Historical charges are frozen, and a funding account's
 //! whole-point source credit is shared once by every cohort split from it.
 use super::supply::{
-    SupplyDemand, SupplyDraw, SupplyError, SupplySource, apply_draws_from_logistics,
-    available_sources_at_with_content, movement_fuel_cost,
+    SupplyDemand, SupplyDraw, SupplyError, SupplySource, available_sources_at_with_content,
+    movement_fuel_cost, withdraw_into,
 };
 use crate::{CnaContent, State, seq::Half, state::Location};
 use cna_content::units::Trucks;
@@ -563,19 +563,41 @@ pub fn spend_segment_fuel(
     id: &UnitId,
     total_cp_quarters: i32,
 ) -> Result<Vec<SupplyDraw>, SupplyError> {
+    Ok(spend_segment_fuel_report(content, state, id, total_cp_quarters)?.draws)
+}
+
+/// The incremental cost and actual draws from a single validated atomic spend.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SegmentFuelSpent {
+    pub increment: FuelTenths,
+    pub draws: Vec<SupplyDraw>,
+}
+
+/// Plan once and atomically commit all cohort funding, returning its exact increment.
+/// Cases: airlog:49.13, airlog:49.15, airlog:49.16
+/// Interpretations: interp:airlog-0001, interp:airlog-0018
+pub fn spend_segment_fuel_report(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    total_cp_quarters: i32,
+) -> Result<SegmentFuelSpent, SupplyError> {
     let plan = plan_segment_fuel(content, state, id, total_cp_quarters)?;
     if plan.increment.is_zero() {
         state
             .logistics
             .fuel_segments
             .insert(id.clone(), plan.ledger);
-        return Ok(plan.draws);
+        return Ok(SegmentFuelSpent {
+            increment: plan.increment,
+            draws: plan.draws,
+        });
     }
     let mut next = state.logistics.clone();
     for funding in &plan.funding {
-        next = apply_draws_from_logistics(
-            &next,
-            id,
+        withdraw_into(
+            &mut next,
+            Some(id),
             SupplyDemand {
                 fuel: funding.increment,
                 ..SupplyDemand::default()
@@ -589,7 +611,10 @@ pub fn spend_segment_fuel(
     }
     next.fuel_segments.insert(id.clone(), plan.ledger);
     state.logistics = next;
-    Ok(plan.draws)
+    Ok(SegmentFuelSpent {
+        increment: plan.increment,
+        draws: plan.draws,
+    })
 }
 /// Snapshot just the shared accounts a movement plan can change. Capture before
 /// hypothetical execution, restore afterwards along with unit ledgers and holdings.

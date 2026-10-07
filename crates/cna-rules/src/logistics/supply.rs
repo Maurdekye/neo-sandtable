@@ -446,6 +446,20 @@ pub(super) fn withdraw_draws(
     sources: &BTreeMap<SupplySource, SupplyDemand>,
     prior: &BTreeMap<SupplySource, FuelTenths>,
 ) -> Result<LogisticsState, SupplyError> {
+    let mut next = logistics.clone();
+    withdraw_into(&mut next, unit_id, demand, draws, sources, prior)?;
+    Ok(next)
+}
+
+/// Mutate a disposable draft only. Callers must discard it if any withdrawal fails.
+pub(super) fn withdraw_into(
+    next: &mut LogisticsState,
+    unit_id: Option<&UnitId>,
+    demand: SupplyDemand,
+    draws: &[SupplyDraw],
+    sources: &BTreeMap<SupplySource, SupplyDemand>,
+    prior: &BTreeMap<SupplySource, FuelTenths>,
+) -> Result<(), SupplyError> {
     if !demand.valid() {
         return Err(SupplyError::Invalid);
     }
@@ -472,7 +486,6 @@ pub(super) fn withdraw_draws(
             return Err(SupplyError::Insufficient);
         }
     }
-    let mut next = logistics.clone();
     for (source, amount) in allocations {
         match source {
             SupplySource::Unlimited => {}
@@ -534,7 +547,7 @@ pub(super) fn withdraw_draws(
                     _ => return Err(SupplyError::Invalid),
                 };
                 super::cargo_history::retire_debit(
-                    &mut next,
+                    next,
                     &site,
                     Supplies {
                         fuel: withdrawal.get(),
@@ -572,7 +585,7 @@ pub(super) fn withdraw_draws(
             }
         }
     }
-    Ok(next)
+    Ok(())
 }
 
 fn deduct_stock(

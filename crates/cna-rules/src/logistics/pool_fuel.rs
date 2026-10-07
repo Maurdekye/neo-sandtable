@@ -145,8 +145,8 @@ pub fn spend_pool_segment_fuel(
     let plan = plan_pool_segment_fuel(content, state, id, total_cp_quarters)?;
     let mut next = state.logistics.clone();
     for funding in &plan.funding {
-        next = supply::withdraw_draws(
-            &next,
+        supply::withdraw_into(
+            &mut next,
             None,
             SupplyDemand {
                 fuel: funding.increment,

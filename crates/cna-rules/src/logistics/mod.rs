@@ -82,9 +82,10 @@ pub mod stores;
 mod supply;
 pub use segment::{
     FuelAccountSnapshot, FuelCohortSelection, FuelDraw, FuelFundingAccount, FuelSegmentLedger,
-    FuelTruckKind, SegmentFuelPlan, SegmentKey, TruckFuelCohort, plan_segment_fuel,
-    remove_segment_fuel_cohorts, remove_selected_segment_fuel_cohorts, restore_fuel_accounts,
-    restore_segment_fuel_cohorts, segment_fuel_cohorts, snapshot_fuel_accounts, spend_segment_fuel,
+    FuelTruckKind, SegmentFuelPlan, SegmentFuelSpent, SegmentKey, TruckFuelCohort,
+    plan_segment_fuel, remove_segment_fuel_cohorts, remove_selected_segment_fuel_cohorts,
+    restore_fuel_accounts, restore_segment_fuel_cohorts, segment_fuel_cohorts,
+    snapshot_fuel_accounts, spend_segment_fuel, spend_segment_fuel_report,
     transfer_segment_fuel_cohorts, transfer_selected_segment_fuel_cohorts,
 };
 pub mod water;

@@ -734,3 +734,62 @@ fn hex_string_account_checkpoint_retains_rounded_credit_and_rejects_invalid_orig
         serde_json::json!({"at":"eliminated"});
     assert!(serde_json::from_value::<State>(encoded).is_err());
 }
+
+/// Cases: airlog:49.13, airlog:49.15, airlog:49.16, land:8.56
+#[test]
+fn atomic_spend_reports_mixed_account_increment_across_checkpoint_and_reset() {
+    let (mut s, a, b) = truck_game();
+    s.logistics.dumps.get_mut("origin").unwrap().supplies.fuel = 10;
+    spend_segment_fuel(content(), &mut s, &a, 16).unwrap();
+    move_truck(&mut s, &a, &b, 1);
+    s.land.units.get_mut(&b).unwrap().toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: "it.cv33".into(),
+        n: 1,
+    }]));
+    let mut reported_total = 0;
+    for cp in [2, 4, 8, 12] {
+        let preview = plan_segment_fuel(content(), &s, &b, cp).unwrap();
+        let previous = s.logistics.fuel_segments[&b].paid_cost.get();
+        let report = spend_segment_fuel_report(content(), &mut s, &b, cp).unwrap();
+        assert_eq!(report.increment, preview.increment);
+        assert_eq!(report.draws, preview.draws);
+        assert_eq!(s.logistics.fuel_segments[&b], preview.ledger);
+        assert_eq!(
+            s.logistics.fuel_segments[&b].paid_cost.get() - previous,
+            report.increment.get()
+        );
+        reported_total += report.increment.get();
+        s = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    }
+    assert_eq!(
+        reported_total,
+        s.logistics.fuel_segments[&b].paid_cost.get()
+    );
+    // The transferred truck retains its donor's prior CP and shared funding.
+    assert_eq!(s.logistics.fuel_segments[&b].cohorts[0].cp_quarters, 28);
+    assert!(s.logistics.fuel_accounts[&a].paid_cost.get() >= 8);
+    s.cursor.cycle += 1;
+    let preview = plan_segment_fuel(content(), &s, &b, 2).unwrap();
+    let report = spend_segment_fuel_report(content(), &mut s, &b, 2).unwrap();
+    assert_eq!(report.increment, preview.increment);
+    assert_eq!(s.logistics.fuel_segments[&b].paid_cost, report.increment);
+}
+
+/// Cases: airlog:49.15, airlog:49.16
+#[test]
+fn reported_spend_preserves_atomic_rejection_and_zero_bucket_credit() {
+    let (mut s, id) = game();
+    s.logistics.dumps.get_mut("origin").unwrap().supplies.fuel = 1;
+    let first = spend_segment_fuel_report(content(), &mut s, &id, 2).unwrap();
+    assert!(first.increment.get() > 0);
+    let zero = spend_segment_fuel_report(content(), &mut s, &id, 4).unwrap();
+    assert_eq!(zero.increment, FuelTenths::ZERO);
+    assert!(zero.draws.is_empty());
+    assert_eq!(s.logistics.dumps["origin"].supplies.fuel, 0);
+    let before = serde_json::to_value(&s).unwrap();
+    assert_eq!(
+        spend_segment_fuel_report(content(), &mut s, &id, 24),
+        Err(SupplyError::Insufficient)
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+}
