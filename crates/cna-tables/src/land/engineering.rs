@@ -232,7 +232,7 @@ impl Bound for ConstructionChart {
                     "exactly one positive stage or CP duration required",
                 ));
             }
-            if row.supplies.is_some() == !row.supplies_by_port.is_empty() {
+            if row.supplies.is_some() != row.supplies_by_port.is_empty() {
                 return Err(raw.err(
                     format!("{field}.supplies"),
                     "one fixed or per-port supply specification required",
