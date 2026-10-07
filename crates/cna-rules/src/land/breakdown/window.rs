@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::VecDeque;
 
+pub use super::pool_window::{PoolFinish, finish_pool};
 pub const KIND: &str = "cna.movement.breakdown.losses";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Resume {
@@ -31,6 +32,8 @@ pub enum Resume {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Window {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pool: Option<super::pool_window::PoolWindow>,
     pub held: Vec<Pending>,
     pub outcomes: VecDeque<RolledCheck>,
     pub submitted: Option<LossPlan>,
@@ -186,6 +189,9 @@ pub fn answer(
     p: &Pending,
     action: &Value,
 ) -> Result<String, Rejection> {
+    if s.land.breakdown.window.pool.is_some() {
+        return super::pool_window::answer(c, s, p, action);
+    }
     let outcome = s
         .land
         .breakdown

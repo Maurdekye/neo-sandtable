@@ -108,6 +108,18 @@ pub fn random_breakdown(
     if request.kind != crate::land::breakdown::window::KIND {
         return Value::Null;
     }
+    if let Some(w) = &state.land.breakdown.window.pool {
+        return w
+            .outcomes
+            .front()
+            .filter(|o| {
+                o.group.side == request.seat.side
+                    && request.seat.role == cna_protocol::Role::Logistics
+            })
+            .and_then(|o| crate::land::breakdown::pool_losses::plan(content, state, o))
+            .and_then(|p| serde_json::to_value(p).ok())
+            .unwrap_or(Value::Null);
+    }
     state
         .land
         .breakdown

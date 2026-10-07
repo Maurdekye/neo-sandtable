@@ -574,6 +574,9 @@ pub fn apply(
             events.extend(markers::add(
                 &mut draft,
                 BrokenMarker {
+                    source_pool: None,
+                    pool_assets: vec![],
+                    pool_fuel_cohorts: vec![],
                     id: String::new(),
                     side: old.side,
                     hex: hex.clone(),

@@ -45,7 +45,7 @@ fn capacity(c: &CnaContent, t: Trucks) -> i32 {
         .sum();
     (halves / 2).try_into().unwrap_or(i32::MAX)
 }
-fn pack_two(
+pub(super) fn pack_two(
     c: &CnaContent,
     a: Trucks,
     at: Trucks,

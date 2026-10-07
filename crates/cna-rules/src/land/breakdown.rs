@@ -6,6 +6,8 @@ pub mod core;
 pub mod losses;
 pub mod markers;
 mod packing;
+pub mod pool_losses;
+mod pool_window;
 pub mod pools;
 pub mod window;
 use crate::{CnaContent, State};

@@ -40,7 +40,10 @@ pub struct PoolCheckGroup {
     pub shift: i32,
     pub assets: Vec<PoolAsset>,
 }
-fn carrier<'a>(s: &'a State, id: &str) -> Result<&'a crate::state::TruckPool, EngineError> {
+pub(super) fn carrier<'a>(
+    s: &'a State,
+    id: &str,
+) -> Result<&'a crate::state::TruckPool, EngineError> {
     let mut matches = s.logistics.truck_pools.iter().filter(|p| p.id == id);
     let p = matches.next().ok_or_else(overflow)?;
     if id.is_empty() || matches.next().is_some() {
@@ -48,7 +51,7 @@ fn carrier<'a>(s: &'a State, id: &str) -> Result<&'a crate::state::TruckPool, En
     }
     Ok(p)
 }
-fn histories(
+pub(super) fn histories(
     s: &State,
     id: &str,
 ) -> Result<(PoolBreakdown, Vec<TruckFuelCohort<String>>), EngineError> {

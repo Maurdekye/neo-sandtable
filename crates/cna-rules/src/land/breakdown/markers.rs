@@ -17,6 +17,12 @@ pub struct BrokenMarker {
     pub side: Side,
     pub hex: HexId,
     pub assets: Vec<Asset>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_pool: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pool_assets: Vec<super::pools::PoolAsset>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pool_fuel_cohorts: Vec<crate::logistics::TruckFuelCohort<String>>,
     /// Men remain physically with these vehicles, separate from the source unit's working body.
     pub passengers: BTreeMap<UnitId, i32>,
     pub transport: Trucks,
@@ -33,11 +39,16 @@ pub struct BrokenMarker {
 impl BrokenMarker {
     pub fn trucks(&self) -> Trucks {
         let mut t = Trucks::default();
-        for a in &self.assets {
-            match a.equipment {
-                Equipment::LightTruck => t.light += a.points,
-                Equipment::MediumTruck => t.medium += a.points,
-                Equipment::HeavyTruck => t.heavy += a.points,
+        for (equipment, points) in self
+            .assets
+            .iter()
+            .map(|a| (&a.equipment, a.points))
+            .chain(self.pool_assets.iter().map(|a| (&a.equipment, a.points)))
+        {
+            match equipment {
+                Equipment::LightTruck => t.light += points,
+                Equipment::MediumTruck => t.medium += points,
+                Equipment::HeavyTruck => t.heavy += points,
                 _ => {}
             }
         }
@@ -143,6 +154,9 @@ mod tests {
             id: String::new(),
             side: Side::Axis,
             hex: hex.into(),
+            source_pool: None,
+            pool_assets: vec![],
+            pool_fuel_cohorts: vec![],
             assets: vec![Asset {
                 unit: "source".into(),
                 equipment: Equipment::MediumTruck,
@@ -233,6 +247,41 @@ mod tests {
         assert_eq!(
             recovered.land.breakdown.markers[&id].passengers[&UnitId::new("source")],
             1
+        );
+    }
+    /// Cases: land:3.62, land:21.42, land:21.43
+    #[test]
+    fn pool_marker_histories_are_additive_and_enemy_sees_presence_only() {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut a = State::new(&c).unwrap();
+        let mut m = marker("C4020");
+        m.assets.clear();
+        m.passengers.clear();
+        m.transport = Default::default();
+        m.source_pool = Some("source-convoy".into());
+        m.pool_assets = vec![super::super::pools::PoolAsset {
+            pool: "source-convoy".into(),
+            equipment: Equipment::MediumTruck,
+            points: 3,
+            cohort: "real-history".into(),
+        }];
+        assert_eq!(m.trucks().medium, 3);
+        add(&mut a, m);
+        let mut b = a.clone();
+        let m = b.land.breakdown.markers.values_mut().next().unwrap();
+        m.pool_assets[0].points = 8;
+        m.cargo.medium.water += 1;
+        crate::testkit::assert_indistinguishable(&Cna::dev(), &c, &a, &b, Side::Commonwealth);
+        let restored: State = serde_json::from_value(serde_json::to_value(&a).unwrap()).unwrap();
+        assert_eq!(
+            serde_json::to_value(&restored.land.breakdown.markers).unwrap(),
+            serde_json::to_value(&a.land.breakdown.markers).unwrap()
+        );
+        let old = serde_json::to_value(marker("C4020")).unwrap();
+        assert!(
+            old.get("source_pool").is_none()
+                && old.get("pool_assets").is_none()
+                && old.get("pool_fuel_cohorts").is_none()
         );
     }
 }
