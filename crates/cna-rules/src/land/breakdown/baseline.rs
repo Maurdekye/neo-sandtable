@@ -158,16 +158,29 @@ pub fn plan(c: &CnaContent, s: &State, outcome: &RolledCheck) -> Option<LossPlan
         let lost = trucks(&broken);
         let working = sub(old.trucks, lost)?;
         let transport = Trucks {
-            light: old.transport_trucks.light.min(lost.light),
-            medium: old.transport_trucks.medium.min(lost.medium),
-            heavy: old.transport_trucks.heavy.min(lost.heavy),
+            light: (lost.light - (old.trucks.light - old.transport_trucks.light)).max(0),
+            medium: (lost.medium - (old.trucks.medium - old.transport_trucks.medium)).max(0),
+            heavy: (lost.heavy - (old.trucks.heavy - old.transport_trucks.heavy)).max(0),
         };
         let working_transport = sub(old.transport_trucks, transport)?;
         let strength = super::super::formation::strength(c, s, &id);
+        let unresolved =
+            if super::super::formation::class(c, &id).is_some_and(|k| k.unit_type == "infantry") {
+                losses::unresolved_points(
+                    c,
+                    strength,
+                    old.transport_trucks,
+                    working_transport,
+                    transport,
+                    Trucks::default(),
+                )
+            } else {
+                0
+            };
         let passengers = if old.transport_trucks.total() > 0
             && super::super::formation::class(c, &id).is_some_and(|k| k.unit_type == "infantry")
         {
-            (strength - capacity(c, working_transport)).max(0)
+            (strength - unresolved - capacity(c, working_transport)).max(0)
         } else {
             0
         };
@@ -192,9 +205,9 @@ pub fn plan(c: &CnaContent, s: &State, outcome: &RolledCheck) -> Option<LossPlan
         let u = draft.land.units.get_mut(&id)?;
         u.trucks = working;
         u.transport_trucks = working_transport;
-        if passengers > 0 {
+        if passengers + unresolved > 0 {
             u.toe = Some(cna_content::units::Toe::Under {
-                under: strength - passengers,
+                under: strength - passengers - unresolved,
             });
         }
         if let Some(cna_content::units::Toe::Weapons(ws)) = &mut u.toe {

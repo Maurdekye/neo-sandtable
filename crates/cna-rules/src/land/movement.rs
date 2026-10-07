@@ -119,6 +119,17 @@ fn moving_limits(
     id: &UnitId,
     strict: bool,
 ) -> Result<logistics::MovementRestrictions, Rejection> {
+    if state
+        .land
+        .breakdown
+        .unresolved_passengers
+        .get(id)
+        .is_some_and(|v| !v.is_empty())
+    {
+        return Err(illegal(
+            "unit has unresolved embarked infantry from split truck carriage (land:21.45, interp:land-0028)",
+        ));
+    }
     logistics::movement_fuel_cost(content, state, id, 1).map_err(|e| supply_error(e, strict))?;
     logistics::movement_restrictions(content, state, id).map_err(|e| activity_error(e, strict))
 }
@@ -162,6 +173,12 @@ fn eligible_base(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId)
         return false;
     };
     u.side == seat.side
+        && state
+            .land
+            .breakdown
+            .unresolved_passengers
+            .get(id)
+            .is_none_or(Vec::is_empty)
         && u.location.hex().is_some()
         && ownership::seat_for_unit(content, state, id) == seat.role
         && (state.land.movement.mode != WindowMode::Segment
@@ -582,7 +599,14 @@ fn run(
                 },
             ));
         }
-        let reactors = if truth && own_half {
+        let public_reaction = truth
+            && own_half
+            && content
+                .map
+                .neighbors(&to)
+                .iter()
+                .any(|h| state.stack_presence(&h.id, seat.side.opponent()));
+        let reactors = if public_reaction {
             super::reaction::candidates(content, state, &moving, &to, &order.close_assault, strict)?
         } else {
             vec![]
@@ -685,7 +709,7 @@ fn run(
                         events.push(EngineEvent::public(GameEvent::Note{text:format!("Stack at {to} announces close assault against {target} (land:8.53).") }));
                     }
                 }
-                if !reactors.is_empty() {
+                if public_reaction {
                     state.land.reaction.controls.clear();
                     state.land.reaction.window = Some(super::reaction::Window {
                         trigger_hex: to.clone(),

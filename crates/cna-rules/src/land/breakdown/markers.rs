@@ -25,6 +25,10 @@ pub struct BrokenMarker {
     pub activity_water: WaterPoints,
     #[serde(default)]
     pub fuel_cohorts: Vec<crate::logistics::TruckFuelCohort>,
+    #[serde(default)]
+    pub paid_truck_water: crate::logistics::TruckWater,
+    #[serde(default)]
+    pub water_credit_stage: Option<crate::logistics::water::WaterStage>,
 }
 impl BrokenMarker {
     pub fn trucks(&self) -> Trucks {
@@ -155,6 +159,8 @@ mod tests {
             tank_fuel: FuelTenths::new(12),
             activity_water: WaterPoints::new(2),
             fuel_cohorts: vec![],
+            paid_truck_water: Default::default(),
+            water_credit_stage: None,
         }
     }
     /// Cases: land:21.42, land:3.62

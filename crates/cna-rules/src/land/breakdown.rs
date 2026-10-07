@@ -25,9 +25,23 @@ pub struct BreakdownState {
     pub checked: BTreeMap<UnitId, BTreeMap<String, usize>>,
     pub stopped: Vec<StoppedMove>,
     pub markers: BTreeMap<String, markers::BrokenMarker>,
+    /// Whole infantry points whose split carriage cannot yet be represented.
+    pub unresolved_passengers: BTreeMap<UnitId, Vec<UnresolvedPassengers>>,
     pub next_marker: BTreeMap<cna_protocol::Side, u64>,
     pub truck_histories: BTreeMap<String, cohorts::History>,
     pub window: window::Window,
+}
+/// Owner-private physical accounting; these men are absent from the working body.
+/// Cases: land:21.43, land:21.45
+/// Interpretations: interp:land-0028
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UnresolvedPassengers {
+    pub points: i32,
+    pub origin: HexId,
+    pub destination: HexId,
+    pub working_transport: cna_content::units::Trucks,
+    pub origin_transport: cna_content::units::Trucks,
+    pub destination_transport: cna_content::units::Trucks,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Motion {

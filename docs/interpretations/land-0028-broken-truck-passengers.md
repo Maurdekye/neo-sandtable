@@ -20,3 +20,6 @@ The accounting preserves both the origin-placement requirement and the passenger
 
 ## Affected behaviour and tests
 Origin and destination records conserve infantry. Checkpoint recovery retains the source-unit reference and embarked count. The opponent sees only any resulting change in stack presence. Dismounting into an existing same-hex unit pays one CP; a required separate counter follows the profile policy above.
+
+## Sub-case: split half-point carriage
+Two light trucks can carry one whole infantry TOE point. A breakdown that separates their carriage between working and broken partitions can leave neither partition capable of representing that whole point. The engine does not introduce fractional TOE strengths. Full reports Unsupported land:21.45 at adjudication, after accepting the owner's valid loss selection. Dev removes the affected whole point from the active body's strength and retains it as owner-private unresolved embarked accounting, referencing its source unit, carriage partitions and both locations. Movement and collection of that portion remain blocked until it can be represented. No men travel to the destination for free or disappear. Checkpoint tests conserve the active, embarked and unresolved total.

@@ -105,6 +105,12 @@ pub fn random_breakdown(
         .window
         .outcomes
         .front()
+        .filter(|o| {
+            o.group.assets.first().is_some_and(|a| {
+                state.land.units[&a.unit].side == request.seat.side
+                    && crate::ownership::seat_for_unit(content, state, &a.unit) == request.seat.role
+            })
+        })
         .and_then(|o| crate::land::breakdown::baseline::plan(content, state, o))
         .and_then(|p| serde_json::to_value(p).ok())
         .unwrap_or(Value::Null)

@@ -49,6 +49,17 @@ pub(crate) fn park(s: &mut State, resume: Option<Resume>) -> bool {
             i64::from(base.get(id).copied().unwrap_or(0))
                 + i64::from(extra.get(id).copied().unwrap_or(0))
                 > 12
+                || s.logistics.fuel_segments.get(id).is_some_and(|l| {
+                    l.cohorts.iter().any(|g| {
+                        s.land
+                            .breakdown
+                            .truck_histories
+                            .get(&g.id)
+                            .is_some_and(|h| {
+                                i64::from(h.base_quarters) + i64::from(h.light_extra_quarters) > 12
+                            })
+                    })
+                })
         })
     });
     if s.land.breakdown.stopped.is_empty() {
@@ -228,8 +239,19 @@ pub(crate) fn finish(
                 .ok_or_else(|| EngineError::Invariant {
                     detail: "breakdown answer lacks a rolled check".into(),
                 })?;
-            cx.events
-                .extend(losses::apply(c, s, &outcome, &plan).map_err(engine_error)?);
+            let mut draft = s.clone();
+            let events = losses::apply(c, &mut draft, &outcome, &plan).map_err(engine_error)?;
+            if strict
+                && draft.land.breakdown.unresolved_passengers
+                    != s.land.breakdown.unresolved_passengers
+            {
+                return Err(EngineError::Unsupported {
+                    case: "land:21.45".into(),
+                    detail: "breakdown splits a whole infantry point's carriage across truck partitions (interp:land-0028)".into(),
+                });
+            }
+            *s = draft;
+            cx.events.extend(events);
         }
         loop {
             if !s.land.breakdown.window.outcomes.is_empty() {
@@ -288,6 +310,10 @@ mod tests {
     fn rolls_and_physical_losses_wait_for_adjudication_and_recover_exactly() {
         let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
         let mut s = State::new(&c).unwrap();
+        s.turn.weather = Some(crate::state::WeatherState {
+            kind: cna_tables::land::weather::WeatherKind::Normal,
+            storm_sections: vec![],
+        });
         for u in s.land.units.values_mut() {
             u.location = Location::Eliminated;
         }

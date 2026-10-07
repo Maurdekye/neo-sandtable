@@ -124,6 +124,27 @@ fn passenger_capacity(c: &CnaContent, t: Trucks) -> i64 {
         })
         .sum()
 }
+/// Whole-point capacity lost only by separating previously sufficient half-point carriage.
+/// The affected men remain unresolved; no partition receives a fabricated half TOE point.
+/// Cases: land:21.43, land:21.45
+/// Interpretations: interp:land-0028
+pub(super) fn unresolved_points(
+    c: &CnaContent,
+    strength: i32,
+    old: Trucks,
+    working: Trucks,
+    origin: Trucks,
+    destination: Trucks,
+) -> i32 {
+    if strength <= 0 || passenger_capacity(c, old) < i64::from(strength) * 2 {
+        return 0;
+    }
+    let whole = [working, origin, destination]
+        .into_iter()
+        .map(|t| passenger_capacity(c, t) / 2)
+        .sum::<i64>();
+    i32::try_from((i64::from(strength) - whole).max(0)).unwrap_or(0)
+}
 pub(super) fn marker_fuel_capacity(c: &CnaContent, assets: &[Asset]) -> Result<i32, Rejection> {
     use cna_tables::airlog::trucks::TruckType;
     let mut capacity = 0i64;
@@ -184,10 +205,11 @@ pub(super) fn marker_fuel_capacity(c: &CnaContent, assets: &[Asset]) -> Result<i
 /// Remove the exact rolled physical groups before changing attached counts.
 /// Cases: land:21.25, land:21.29, airlog:49.16
 fn remove_cohorts(
+    c: &CnaContent,
     s: &mut State,
     id: &UnitId,
     assets: &[Asset],
-) -> Result<Vec<logistics::TruckFuelCohort>, Rejection> {
+) -> Result<(Vec<logistics::TruckFuelCohort>, logistics::TruckWater), Rejection> {
     use logistics::{FuelCohortSelection, FuelTruckKind};
     super::cohorts::ensure(s, id).map_err(Rejection::Engine)?;
     let available = logistics::segment_fuel_cohorts(s, id)
@@ -217,18 +239,48 @@ fn remove_cohorts(
         }
     }
     if selected.is_empty() {
-        return Ok(vec![]);
+        return Ok((vec![], logistics::TruckWater::default()));
     }
     let choices: Vec<_> = selected
         .into_iter()
         .map(|(id, count)| FuelCohortSelection { id, count })
         .collect();
+    let paid = logistics::remove_activity_water_credit(c, s, id, trucks(assets)?)
+        .map_err(|_| illegal("truck water histories are inconsistent"))?;
     let removed = logistics::remove_selected_segment_fuel_cohorts(s, id, &choices)
         .map_err(|_| illegal("truck histories are inconsistent"))?;
     super::cohorts::inherit(s, &removed).map_err(Rejection::Engine)?;
     let old = s.land.units[id].trucks;
     s.land.units.get_mut(id).unwrap().trucks = subtract(old, trucks(assets)?)?;
-    Ok(removed)
+    Ok((removed, paid))
+}
+fn physical_assets(assets: &[Asset], groups: &[logistics::TruckFuelCohort]) -> Vec<Asset> {
+    let mut result: Vec<_> = assets
+        .iter()
+        .filter(|a| {
+            !matches!(
+                a.equipment,
+                Equipment::LightTruck | Equipment::MediumTruck | Equipment::HeavyTruck
+            )
+        })
+        .cloned()
+        .collect();
+    if let Some(unit) = assets.first().map(|a| &a.unit) {
+        for g in groups {
+            let equipment = match g.kind {
+                logistics::FuelTruckKind::Light => Equipment::LightTruck,
+                logistics::FuelTruckKind::Medium => Equipment::MediumTruck,
+                logistics::FuelTruckKind::Heavy => Equipment::HeavyTruck,
+            };
+            result.push(Asset {
+                unit: unit.clone(),
+                equipment,
+                points: g.count,
+                cohort: Some(g.id.clone()),
+            });
+        }
+    }
+    result
 }
 /// Validate proportional equipment losses, source-defined origin placement and every cargo split.
 /// A rejected allocation leaves both units and numbered markers unchanged.
@@ -355,9 +407,23 @@ pub fn apply(
             .checked_add(p.destination_passengers)
             .ok_or_else(|| illegal("passenger count overflow"))?;
         let strength = super::super::formation::strength(c, &draft, &p.unit);
+        let infantry =
+            super::super::formation::class(c, &p.unit).is_some_and(|k| k.unit_type == "infantry");
+        let unresolved = if infantry {
+            unresolved_points(
+                c,
+                strength,
+                old.transport_trucks,
+                working_transport,
+                p.origin_transport,
+                p.destination_transport,
+            )
+        } else {
+            0
+        };
         if p.origin_passengers < 0
             || p.destination_passengers < 0
-            || passengers > strength
+            || passengers > strength - unresolved
             || i64::from(p.origin_passengers) * 2 > passenger_capacity(c, p.origin_transport)
             || i64::from(p.destination_passengers) * 2
                 > passenger_capacity(c, p.destination_transport)
@@ -374,7 +440,8 @@ pub fn apply(
         }
         if old.transport_trucks.total() > 0
             && super::super::formation::class(c, &p.unit).is_some_and(|k| k.unit_type == "infantry")
-            && i64::from(strength - passengers) * 2 > passenger_capacity(c, working_transport)
+            && i64::from(strength - passengers - unresolved) * 2
+                > passenger_capacity(c, working_transport)
         {
             return Err(illegal(
                 "men must remain accounted for in their working or broken transport",
@@ -401,8 +468,9 @@ pub fn apply(
         {
             return Err(illegal("vehicle reserves must be conserved"));
         }
-        let origin_cohorts = remove_cohorts(&mut draft, &p.unit, origin)?;
-        let destination_cohorts = remove_cohorts(&mut draft, &p.unit, destination)?;
+        let (origin_cohorts, origin_paid_water) = remove_cohorts(c, &mut draft, &p.unit, origin)?;
+        let (destination_cohorts, destination_paid_water) =
+            remove_cohorts(c, &mut draft, &p.unit, destination)?;
         let u = draft.land.units.get_mut(&p.unit).unwrap();
         u.trucks = working_trucks;
         u.transport_trucks = working_transport;
@@ -422,10 +490,30 @@ pub fn apply(
                     .ok_or_else(|| illegal("weapon losses exceed holdings"))?;
             }
         }
-        if passengers > 0 {
+        if passengers + unresolved > 0 {
             u.toe = Some(Toe::Under {
-                under: strength - passengers,
+                under: strength - passengers - unresolved,
             });
+        }
+        if unresolved > 0 {
+            draft
+                .land
+                .breakdown
+                .unresolved_passengers
+                .entry(p.unit.clone())
+                .or_default()
+                .push(super::UnresolvedPassengers {
+                    points: unresolved,
+                    origin: outcome.origins[&p.unit].clone(),
+                    destination: outcome.destination.clone(),
+                    working_transport,
+                    origin_transport: p.origin_transport,
+                    destination_transport: p.destination_transport,
+                });
+            events.push(EngineEvent::new(cna_core::visibility::Audience::Side(old.side),
+                cna_protocol::GameEvent::Note { text: format!(
+                    "{}: {} infantry TOE point(s) remain in unresolved embarked accounting across split truck carriage; movement and collection are blocked (land:21.45, interp:land-0028).", p.unit, unresolved)
+                }));
         }
         if p.origin_tank_fuel_tenths > marker_fuel_capacity(c, origin)?
             || p.destination_tank_fuel_tenths > marker_fuel_capacity(c, destination)?
@@ -447,7 +535,7 @@ pub fn apply(
         holdings.carried = cargo;
         holdings.tank_fuel = FuelTenths::new(stock.tank_fuel.get() - fuel);
         holdings.activity_water = WaterPoints::new(stock.activity_water.get() - water);
-        for (hex, assets, transport, packing, n, tank, water, fuel_cohorts) in [
+        for (hex, assets, transport, packing, n, tank, water, fuel_cohorts, paid_truck_water) in [
             (
                 &outcome.origins[&p.unit],
                 origin,
@@ -457,6 +545,7 @@ pub fn apply(
                 p.origin_tank_fuel_tenths,
                 p.origin_activity_water,
                 origin_cohorts,
+                origin_paid_water,
             ),
             (
                 &outcome.destination,
@@ -467,6 +556,7 @@ pub fn apply(
                 p.destination_tank_fuel_tenths,
                 p.destination_activity_water,
                 destination_cohorts,
+                destination_paid_water,
             ),
         ] {
             if assets.is_empty() {
@@ -479,13 +569,15 @@ pub fn apply(
                 }
                 continue;
             }
+            let water_credit_stage =
+                (!fuel_cohorts.is_empty()).then(|| logistics::water::WaterStage::current(&draft));
             events.extend(markers::add(
                 &mut draft,
                 BrokenMarker {
                     id: String::new(),
                     side: old.side,
                     hex: hex.clone(),
-                    assets: assets.clone(),
+                    assets: physical_assets(assets, &fuel_cohorts),
                     passengers: if n > 0 {
                         BTreeMap::from([(p.unit.clone(), n)])
                     } else {
@@ -495,7 +587,9 @@ pub fn apply(
                     cargo: packing.clone(),
                     tank_fuel: FuelTenths::new(tank),
                     activity_water: WaterPoints::new(water),
+                    water_credit_stage,
                     fuel_cohorts,
+                    paid_truck_water,
                 },
             ));
         }
@@ -518,6 +612,10 @@ mod tests {
     fn fixture() -> (CnaContent, State, RolledCheck, LossPlan) {
         let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
         let mut s = State::new(&c).unwrap();
+        s.turn.weather = Some(crate::state::WeatherState {
+            kind: cna_tables::land::weather::WeatherKind::Normal,
+            storm_sections: vec![],
+        });
         let id: UnitId = "cw.unassigned_inf.1st_rnf_mg_bn".into();
         let u = s.land.units.get_mut(&id).unwrap();
         u.location = crate::state::Location::Hex {
@@ -676,6 +774,44 @@ mod tests {
             }
         }
     }
+    /// Cases: land:21.25, land:21.43, airlog:52.42, airlog:52.43
+    #[test]
+    fn broken_trucks_retain_paid_water_credit_without_recharging_the_body() {
+        let (c, mut s, outcome, mut plan) = fixture();
+        let id = plan.partitions[0].unit.clone();
+        logistics::spend_activity_water(&c, &mut s, &id).unwrap();
+        assert_eq!(s.logistics.unit_supply[&id].activity_water.get(), 2);
+        plan.partitions[0].origin_activity_water = 0;
+        plan.partitions[0].destination_activity_water = 0;
+        apply(&c, &mut s, &outcome, &plan).unwrap();
+        assert_eq!(logistics::activity_water_due(&c, &s, &id).unwrap(), 0);
+        assert_eq!(
+            s.land
+                .breakdown
+                .markers
+                .values()
+                .map(|m| m.paid_truck_water.medium)
+                .sum::<i32>(),
+            3
+        );
+        assert!(
+            s.land
+                .breakdown
+                .markers
+                .values()
+                .all(|m| m.water_credit_stage == Some(logistics::water::WaterStage::current(&s)))
+        );
+        assert!(
+            s.land
+                .breakdown
+                .markers
+                .values()
+                .all(|m| m.assets.iter().all(|a| m
+                    .fuel_cohorts
+                    .iter()
+                    .any(|g| Some(&g.id) == a.cohort.as_ref())))
+        );
+    }
     /// Cases: land:21.36, land:21.41, land:21.43, airlog:49.14
     #[test]
     fn invalid_partitions_are_atomic_and_cannot_destroy_cargo_or_free_passengers() {
@@ -699,6 +835,170 @@ mod tests {
                 "variant {variant}"
             );
             assert_eq!(serde_json::to_value(&draft).unwrap(), unchanged);
+        }
+    }
+    /// Cases: land:21.43, land:21.45
+    /// Interpretations: interp:land-0028
+    #[test]
+    fn split_light_carriage_preserves_whole_men_and_stops_only_at_adjudication() {
+        use crate::{
+            Cna,
+            seq::{Block, Half},
+        };
+        use cna_core::{
+            decision::{ActionSchema, ActionSpace, DecisionResponse, Secrecy, Trigger},
+            dice::CampaignRng,
+            engine::{Command, Cx, EngineError, Game, evaluate},
+            ids::SeatId,
+        };
+        use cna_protocol::{Role, Side};
+        let (c, mut s, mut outcome, _) = fixture();
+        let id = outcome.group.assets[0].unit.clone();
+        let u = s.land.units.get_mut(&id).unwrap();
+        u.toe = Some(Toe::Under { under: 1 });
+        u.trucks = Trucks {
+            light: 2,
+            ..Trucks::default()
+        };
+        u.transport_trucks = u.trucks;
+        u.detached = true;
+        u.attached_to = None;
+        s.logistics
+            .unit_supply
+            .insert(id.clone(), Default::default());
+        outcome.group.assets[0].equipment = Equipment::LightTruck;
+        outcome.group.assets[0].points = 2;
+        outcome.broken = 1;
+        outcome.percent = 50;
+        let plan =
+            super::super::baseline::plan(&c, &s, &outcome).expect("unresolved whole-point plan");
+        assert_eq!(plan.partitions[0].origin_passengers, 0);
+        let mut draft = s.clone();
+        let events = apply(&c, &mut draft, &outcome, &plan).unwrap();
+        assert_eq!(crate::land::formation::strength(&c, &draft, &id), 0);
+        assert_eq!(draft.land.breakdown.unresolved_passengers[&id][0].points, 1);
+        assert_eq!(draft.land.units[&id].trucks.light, 1);
+        assert_eq!(
+            draft
+                .land
+                .breakdown
+                .markers
+                .values()
+                .map(|m| m.trucks().light)
+                .sum::<i32>(),
+            1
+        );
+        assert!(events.iter().any(|e|matches!(&e.event,cna_protocol::GameEvent::Note{text} if text.contains("unresolved embarked"))));
+        let restored: State =
+            serde_json::from_value(serde_json::to_value(&draft).unwrap()).unwrap();
+        assert_eq!(
+            restored.land.breakdown.unresolved_passengers,
+            draft.land.breakdown.unresolved_passengers
+        );
+        let mut hidden_variant = draft.clone();
+        hidden_variant.land.breakdown.unresolved_passengers.clear();
+        crate::testkit::assert_indistinguishable(
+            &Cna::dev(),
+            &c,
+            &draft,
+            &hidden_variant,
+            Side::Axis,
+        );
+        s.cursor.block = Block::PlayerHalf;
+        s.cursor.half = Some(Half::A);
+        s.cursor.op_stage = Some(1);
+        s.cursor.index = 1;
+        s.cursor.entered = true;
+        s.turn.player_a = Some(Side::Commonwealth);
+        let mut rng = CampaignRng::from_seed([19; 32]);
+        let mut opened = vec![];
+        let seat = SeatId::new(Side::Commonwealth, Role::FrontLine);
+        crate::steps::open(
+            &mut s,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut opened,
+            },
+            seat,
+            super::super::window::KIND,
+            "own losses".into(),
+            &["land:21.45"],
+            Trigger::Triggered,
+            Secrecy::Secret,
+            ActionSpace::new(ActionSchema::Bool),
+        );
+        s.land.breakdown.window.parked = true;
+        s.land.breakdown.window.outcomes.push_back(outcome);
+        let pending = s.decisions.pending[0].clone();
+        let game = Game {
+            state: s,
+            rng: rng.state(),
+        };
+        let command = Command::Respond(DecisionResponse {
+            decision_id: pending.id,
+            seat,
+            decision_revision: pending.revision,
+            controller_epoch: 1,
+            idempotency_key: "half-carriage".into(),
+            public_explanation: None,
+            action: serde_json::to_value(&plan).unwrap(),
+        });
+        // Both profiles accept the disclosed choice. The answer itself neither rolls nor moves men.
+        for ruleset in [Cna::dev(), Cna::full()] {
+            let accepted = evaluate(&ruleset, &c, &game, &command).unwrap();
+            assert_eq!(
+                serde_json::to_value(&accepted.game.rng).unwrap(),
+                serde_json::to_value(&game.rng).unwrap()
+            );
+            assert!(
+                accepted
+                    .game
+                    .state
+                    .land
+                    .breakdown
+                    .unresolved_passengers
+                    .is_empty()
+            );
+            if ruleset.strict {
+                assert!(
+                    matches!(evaluate(&ruleset,&c,&accepted.game,&Command::Advance),
+                    Err(Rejection::Engine(EngineError::Unsupported {case,..})) if case=="land:21.45")
+                );
+            } else {
+                let mut actual = accepted.game.state.clone();
+                // Hold another own window so this isolated finish cannot advance unrelated steps.
+                let mut events = vec![];
+                crate::steps::open(
+                    &mut actual,
+                    &mut Cx {
+                        rng: &mut rng,
+                        events: &mut events,
+                    },
+                    seat,
+                    "test.held",
+                    "held".into(),
+                    &["land:21.45"],
+                    Trigger::Triggered,
+                    Secrecy::Secret,
+                    ActionSpace::new(ActionSchema::Bool),
+                );
+                actual.land.breakdown.window.held = std::mem::take(&mut actual.decisions.pending);
+                super::super::window::finish(
+                    &c,
+                    &mut actual,
+                    false,
+                    &mut Cx {
+                        rng: &mut rng,
+                        events: &mut events,
+                    },
+                )
+                .unwrap();
+                assert_eq!(
+                    actual.land.breakdown.unresolved_passengers[&id][0].points,
+                    1
+                );
+                assert!(crate::land::movement::reachable(&c, &actual, &id, false).is_empty());
+            }
         }
     }
 }
