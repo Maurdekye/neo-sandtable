@@ -280,12 +280,35 @@ pub struct AirForce {
 pub struct PlaneCount {
     pub total: i32,
     pub ready: i32,
+    #[serde(default)]
+    pub fuelled: i32,
+    #[serde(default)]
+    pub armed: i32,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AirState {
     /// Keyed by `axis`, `commonwealth`, or `malta`.
     pub forces: BTreeMap<String, AirForce>,
+    #[serde(default)]
+    pub squadrons: BTreeMap<String, AirSquadron>,
+    #[serde(default)]
+    pub squadron_serial: BTreeMap<String, u64>,
+}
+
+/// A placed SGSU with its stable squadron composition and pilot roster.
+/// Cases: airlog:35.1, airlog:35.2, scen:59.3
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AirSquadron {
+    pub id: String,
+    pub force: String,
+    pub side: Side,
+    pub nationality: String,
+    pub facility: String,
+    /// Scenario-prescribed type, when the initial SGSU row fixes its composition.
+    pub initial_aircraft: Option<String>,
+    pub planes: BTreeMap<String, PlaneCount>,
+    pub pilots: BTreeMap<u8, i32>,
 }
 
 /// A decision waiting for its seat.
@@ -577,6 +600,8 @@ fn air_force(
         let entry = force.planes.entry(plane.aircraft.clone()).or_default();
         entry.total += plane.total;
         entry.ready += plane.ready.unwrap_or(0);
+        entry.fuelled += plane.total;
+        entry.armed += plane.total;
     }
     force
 }

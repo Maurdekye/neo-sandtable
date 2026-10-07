@@ -159,7 +159,8 @@ impl Cna {
             | crate::setup::KIND_DUMP
             | crate::setup::KIND_TRUCKS
             | crate::setup::KIND_POOL
-            | crate::setup::KIND_PRELOAD => {
+            | crate::setup::KIND_PRELOAD
+            | crate::setup::KIND_AIR => {
                 crate::setup::answer(content, state, pending, action, cx, self.strict)
             }
             crate::land::reserve::DESIGNATE | crate::land::reserve::RELEASE => {
