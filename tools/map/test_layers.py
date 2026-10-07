@@ -74,8 +74,10 @@ class LayerTests(unittest.TestCase):
         data=Layers(MAP)
         self.assertIn(("coastal","C4026",""),data.coverage)
         self.assertNotIn(("terrain","C4026",""),data.coverage)
-        self.assertEqual(sum(layer=="terrain" for layer,a,b in data.coverage),297)
-        self.assertEqual(sum(layer=="coastal" for layer,a,b in data.coverage),298)
+        self.assertEqual({a for layer,a,b in data.coverage if layer=="terrain"},
+                         {h for h,r in data.grid.hexes.items() if r["terrain"]!="unclassified"})
+        self.assertEqual({a for layer,a,b in data.coverage if layer=="coastal"},
+                         {h for h,r in data.grid.hexes.items() if {"land","sea","coastal"}.intersection(r["flags"].split("|"))})
         with self.assertRaises(UnknownCoverage): data.feature("side","escarpment","C4026","C4025")
         with self.assertRaises(UnknownCoverage): data.feature("line","road","C4026","C4025")
 

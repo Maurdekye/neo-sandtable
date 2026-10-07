@@ -1,0 +1,107 @@
+[batch]
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+id = "bardia-north-0001"
+selection = "Ten source-contained cells C4319..22,C4419..21,C4519..21"
+notes = "Each complete cell boundary inspected at native 2x and 6x detail against TEC.png. Brown edge-aligned contour bands remain separate from clear substrate. Three entirely water cells confirmed; Bardia city buildings and port symbol confined to C4321. Single observer; no original1979 or population accuracy claim."
+
+[[hex]]
+hex_id = "C4319"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "White base terrain; edge-aligned brown contour bands and crossing track remain separate features."
+
+[[hex]]
+hex_id = "C4320"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "White interior; brown bands follow hexsides rather than rough interior patches. Contour identity and orientation are unresolved separately."
+
+[[hex]]
+hex_id = "C4321"
+status = "accepted"
+terrain = "major_city"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Bardia building group inside the full cell; water and land both present. Training silhouettes and contour bands do not extend city membership to adjacent cells."
+
+[[hex]]
+hex_id = "C4322"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Full hex boundary contains water only; Bardia lettering and training art from the adjacent cell are not land."
+
+[[hex]]
+hex_id = "C4419"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "White base terrain; village point, road, track and marginal contour bands remain separate features."
+
+[[hex]]
+hex_id = "C4420"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "White land fragment retained; brown band lies along western shared side. No Bardia buildings occur inside this cell."
+
+[[hex]]
+hex_id = "C4421"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Full hex boundary contains only water. Neighboring southwest Bardia land and port symbol remain outside its shared side."
+
+[[hex]]
+hex_id = "C4519"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Entire interior is white base terrain; beige rough patches are outside the upper shared sides."
+
+[[hex]]
+hex_id = "C4520"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige interior rough patch matches the TEC rough class, with land and water present; independent of the track."
+
+[[hex]]
+hex_id = "C4521"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Whole cell is water; coastal fragment west of its shared side does not enter the cell."
+
+[[place]]
+id = "city-bardia-c4321"
+name = "Bardia"
+hex_id = "C4321"
+type = "major_city"
+place_group = "bardia"
+src = ["land:8.37", "scen:60.31"]
+note = "Native building-symbol audit confirms this cell; surrounding C4320,C4322,C4420,C4421 inspected. No garrison marker or printed anchor used as extent evidence."
+
+[[place]]
+id = "port-bardia-c4321"
+name = "Bardia"
+hex_id = "C4321"
+type = "port"
+src = ["land:8.37", "land:30.1"]
+note = "White circled anchor lies inside C4321; port capacity and training attributes are not inferred."

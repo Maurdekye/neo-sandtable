@@ -1,0 +1,262 @@
+[batch]
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+id = "bardia-road-0002"
+review_basis = "Unmarked native 4x source beside projected cell centres and shared-side endpoints; TEC.png and enlarged contour key inspected. Both full shared sides checked per kind. Brown contour identification/orientation abstains; no complete-route manifest. No classifier, second observer or original1979 verification."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "line:road"
+observed = "present"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Paired continuous strokes cross the shared side away from its vertices. The single dashed track remains on other sides."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Full side and approaching strokes inspected against the key: no paired dashed road, single dashed track, or blue tied rail stroke crosses this side. Nearby dashed track and road junction lie inside C4320 or on other sides."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Full side and approaching strokes inspected against the key: no paired dashed road, single dashed track, or blue tied rail stroke crosses this side. Nearby dashed track and road junction lie inside C4320 or on other sides."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Full side and approaching strokes inspected against the key: no paired dashed road, single dashed track, or blue tied rail stroke crosses this side. Nearby dashed track and road junction lie inside C4320 or on other sides."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Full side and approaching strokes inspected against the key: no paired dashed road, single dashed track, or blue tied rail stroke crosses this side. Nearby dashed track and road junction lie inside C4320 or on other sides."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline not surveyed; no mask."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side inspected: no gray escarpment band, wadi stroke or major/minor river stroke. Brown contour identity remains separately unresolved."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "side:slope"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Brown contour bands approach or coincide with this side. Type and high endpoint are not confidently separable from neighboring contours and overprinted road/city symbols; both kinds remain unknown."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "side:ridge"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Brown contour bands approach or coincide with this side. Type and high endpoint are not confidently separable from neighboring contours and overprinted road/city symbols; both kinds remain unknown."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side inspected: no gray escarpment band, wadi stroke or major/minor river stroke. Brown contour identity remains separately unresolved."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side inspected: no gray escarpment band, wadi stroke or major/minor river stroke. Brown contour identity remains separately unresolved."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side inspected: no gray escarpment band, wadi stroke or major/minor river stroke. Brown contour identity remains separately unresolved."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "No additional boundary stroke or blocks on this shared side; ordinary thin grid alone does not establish border presence."
+
+[[survey]]
+from_hex = "C4220"
+to_hex = "C4320"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side is on land, including the Bardia-side road entry; no all-water shared side."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "line:road"
+observed = "present"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Paired continuous strokes cross the shared side away from its vertices. The single dashed track remains on other sides."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Full side and approaching strokes inspected against the key: no paired dashed road, single dashed track, or blue tied rail stroke crosses this side. Nearby dashed track and road junction lie inside C4320 or on other sides."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Full side and approaching strokes inspected against the key: no paired dashed road, single dashed track, or blue tied rail stroke crosses this side. Nearby dashed track and road junction lie inside C4320 or on other sides."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Full side and approaching strokes inspected against the key: no paired dashed road, single dashed track, or blue tied rail stroke crosses this side. Nearby dashed track and road junction lie inside C4320 or on other sides."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.37", "land:8.47"]
+note = "Full side and approaching strokes inspected against the key: no paired dashed road, single dashed track, or blue tied rail stroke crosses this side. Nearby dashed track and road junction lie inside C4320 or on other sides."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline not surveyed; no mask."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side inspected: no gray escarpment band, wadi stroke or major/minor river stroke. Brown contour identity remains separately unresolved."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "side:slope"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Brown contour bands approach or coincide with this side. Type and high endpoint are not confidently separable from neighboring contours and overprinted road/city symbols; both kinds remain unknown."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "side:ridge"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Brown contour bands approach or coincide with this side. Type and high endpoint are not confidently separable from neighboring contours and overprinted road/city symbols; both kinds remain unknown."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side inspected: no gray escarpment band, wadi stroke or major/minor river stroke. Brown contour identity remains separately unresolved."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side inspected: no gray escarpment band, wadi stroke or major/minor river stroke. Brown contour identity remains separately unresolved."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side inspected: no gray escarpment band, wadi stroke or major/minor river stroke. Brown contour identity remains separately unresolved."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "No additional boundary stroke or blocks on this shared side; ordinary thin grid alone does not establish border presence."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4321"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Entire shared side is on land, including the Bardia-side road entry; no all-water shared side."

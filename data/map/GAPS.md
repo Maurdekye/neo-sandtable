@@ -141,3 +141,16 @@ C4020/C4121 contour/track has other line kinds still unknown.
 Three immediate blocker kinds are resolved around C3921, but other
 neighbor-to-cell entry layers can still be unknown. No complete control
 halo, full-profile move or national frontier is asserted.
+
+
+Bardia road C4220/C4320 and C4320/C4321: finished road is confirmed, but
+brown contour type and orientation are unresolved (slope and ridge both
+unknown). Pipeline unsurveyed. These partial masks do not extend the
+complete C4220-C4120-C4020 strip. Training-area symbols at Bardia and the
+village point in C4419 remain outside the currently supported facility
+review kinds; their identities/capacities are not invented.
+
+The lead's second opinion on Sollum blue blocks and gray tied strokes
+suggests possible border/rail families, but does not verify either exact
+kind. C3921/C4020 rail kinds and border remain unknown. Pricing relevance
+is a rules procedure question and does not alter map masks.

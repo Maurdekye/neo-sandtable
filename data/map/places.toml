@@ -4,6 +4,16 @@ complete = false
 verification = "visual_single_pass"
 
 [[places]]
+id = "city-bardia-c4321"
+name = "Bardia"
+hex_id = "C4321"
+type = "major_city"
+place_group = "bardia"
+src = ["land:8.37", "scen:60.31"]
+note = "Native building-symbol audit confirms this cell; surrounding C4320,C4322,C4420,C4421 inspected. No garrison marker or printed anchor used as extent evidence."
+review_batch = "bardia-north-0001"
+
+[[places]]
 id = "city-benghazi-a4827"
 name = "Benghazi"
 hex_id = "A4827"
@@ -62,6 +72,15 @@ place_group = "cairo"
 src = ["land:8.37", "land:17.32", "scen:60.43"]
 note = "One hex of the five-hex Cairo city grouping, locally inspected. Training markers and river geometry remain separate layers."
 review_batch = "cairo-0001"
+
+[[places]]
+id = "port-bardia-c4321"
+name = "Bardia"
+hex_id = "C4321"
+type = "port"
+src = ["land:8.37", "land:30.1"]
+note = "White circled anchor lies inside C4321; port capacity and training attributes are not inferred."
+review_batch = "bardia-north-0001"
 
 [[places]]
 id = "port-sollum"

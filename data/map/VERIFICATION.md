@@ -416,3 +416,24 @@ escarpment blocker queries around C3921 resolve, but other approach costs
 and the larger control halo remain partial. Tests pin the real escarpment
 high side, preserve the observed leg's unknown kinds, and do not convert
 blocker-only halo coverage into full movement coverage.
+
+
+## Bardia northern road review (2026-10-07)
+
+Ten full-cell reviews in bardia-north-0001 add five clear, one rough, one
+major_city and three sea classifications. Bardia buildings and the circled
+port anchor are observed inside C4321; adjacent cells were checked for
+buildings and shoreline fragments. C4420 is coastal clear and C4520 coastal
+rough. C4421 and C4521 are entirely water, despite land in adjacent cells.
+Brown edge bands are separated from the white substrate in C4320.
+
+Exact endpoint locators beside unmarked native 4x source establish two
+finished-road crossings: C4220/C4320 and C4320/C4321. The batch
+bardia-road-0002 records 28 observations, 22 resolved and six abstentions.
+Both slope and ridge remain unknown on each crossing: brown contour bands
+and neighboring vertex joins need a firmer type and orientation reading.
+Pipeline is unsurveyed. Other four movement line kinds and six side kinds
+are reviewed absent on both crossings. No new complete strip is emitted.
+All observations were directly reviewed by one observer; post-review
+error rate, independent agreement and original1979 equivalence remain
+unmeasured. Source images and locator crops stay outside the repository.
