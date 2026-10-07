@@ -152,6 +152,7 @@ pub(crate) fn toe_points(content: &CnaContent, unit: &LandUnit) -> Option<i32> {
 
 /// Stamp `moved_this_segment` (own detail only) from the movement state.
 fn stamp_moved(state: &State, id: &UnitId, view: &mut wire::UnitView) {
+    crate::land::combat::stamp_view(state, id, view);
     if let Some(detail) = view.detail.as_mut() {
         detail.insert(
             "moved_this_segment".to_owned(),
@@ -464,6 +465,13 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "ports":state.logistics.ports.iter().filter(|(_,p)|sees_side(perspective,p.owner)).collect::<BTreeMap<_,_>>(),
             "dumps": state.logistics.dumps.iter().filter(|(_, d)| sees_side(perspective, d.side)).collect::<BTreeMap<_, _>>(),
         },
+        "combat": {
+            "barrage_targets": crate::land::combat::barrage::disclosed(state,perspective),
+            "barrage_plans": state.land.combat.barrage.plans.iter().filter(|(seat,_)|sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),
+            "pinned": state.land.combat.pinned.iter().filter(|id|state.land.units.get(*id).is_some_and(|u|sees_side(perspective,u.side))).collect::<Vec<_>>(),
+            "positions": state.land.combat.positions.iter().filter(|(id,_)| state.land.units.get(*id).is_some_and(|u| sees_side(perspective,u.side))).collect::<BTreeMap<_,_>>(),
+            "position_orders": state.land.combat.position_orders.iter().filter(|(seat,_)| sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),
+        },
         "enemy_stack_hexes": enemy_stacks,
         "pending_decisions": view(content, state, perspective).pending,
         "result": state.result,
@@ -489,6 +497,7 @@ pub(crate) fn inspect(
             "reachable": crate::land::movement::reachable(content,state,&unit.id,strict),
             "movement_allowance": crate::land::formation::allowance(content,state,&unit.id).map(|a| json!({"cpa":a.cpa,"motorized":a.motorized})),
             "command_role": crate::ownership::seat_for_unit(content,state,&unit.id),
+            "gun_position": state.land.combat.positions.get(&unit.id),
             "moved_this_segment": state.land.movement.moved.contains(&unit.id),
             "movement_restrictions": crate::land::formation::members(content,state,&unit.id).into_iter().map(|id| {
                 let assessment=crate::logistics::movement_restrictions(content,state,&id).map(|r|json!({

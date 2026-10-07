@@ -138,18 +138,30 @@ pub fn recover(path: &Path, data: &Path, profile: &str) -> Result<CampaignHandle
 
 fn movement_policy() -> ActionPolicy<Cna> {
     Box::new(|content, state, request, epoch| {
-        if request.kind != cna_rules::land::movement::KIND {
+        if request.kind != cna_rules::land::movement::KIND
+            && request.kind != cna_rules::land::combat::POSITION_KIND
+            && !request.kind.starts_with("cna.combat.barrage")
+        {
             return None;
         }
         // Derive a fresh controller-local stream from the versioned request/epoch.
         // Never read, advance or replace the campaign's adjudication dice.
         let mut hash = Sha256::new();
-        hash.update(b"cna-scripted-movement-v1");
+        hash.update(if request.kind == cna_rules::land::movement::KIND {
+            b"cna-scripted-movement-v1".as_slice()
+        } else {
+            b"cna-scripted-combat-v1".as_slice()
+        });
         hash.update(
             serde_json::to_vec(&(request, epoch)).expect("decision request is serializable"),
         );
         let seed = hash.finalize().into();
         let mut rng = CampaignRng::from_seed(seed);
+        if request.kind.starts_with("cna.combat.barrage") {
+            return Some(cna_rules::baseline::random_barrages(
+                content, state, request, &mut rng,
+            ));
+        }
         // Preserve legal-random's declared-pass choice before generating an order.
         // Reject face six to keep the existing one-in-five probability unbiased.
         if request.space.pass.is_some() {
@@ -162,6 +174,9 @@ fn movement_policy() -> ActionPolicy<Cna> {
             if choice == 1 {
                 return Some(serde_json::Value::Null);
             }
+        }
+        if request.kind == cna_rules::land::combat::POSITION_KIND {
+            return Some(cna_rules::baseline::random_positions(request, &mut rng));
         }
         Some(cna_rules::baseline::random_orders(
             content, state, request, &mut rng,

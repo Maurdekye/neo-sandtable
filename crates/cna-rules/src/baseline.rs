@@ -88,3 +88,7 @@ pub fn random_orders(
     }
     json!([])
 }
+
+pub use crate::land::combat::random_positions;
+
+pub use crate::land::combat::barrage::random_plans as random_barrages;

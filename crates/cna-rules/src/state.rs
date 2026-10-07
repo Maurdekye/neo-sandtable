@@ -128,6 +128,8 @@ pub struct LandUnit {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LandState {
+    #[serde(default)]
+    pub combat: crate::land::combat::CombatState,
     pub units: BTreeMap<UnitId, LandUnit>,
     /// Only facts disclosed in the current Movement Segment, not enemy strength.
     #[serde(default)]

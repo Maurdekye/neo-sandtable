@@ -1,5 +1,6 @@
 //! Land procedures and exact movement arithmetic.
 pub mod capability;
+pub mod combat;
 pub mod formation;
 pub mod map;
 pub mod movement;

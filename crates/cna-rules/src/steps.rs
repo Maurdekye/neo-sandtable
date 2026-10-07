@@ -48,6 +48,12 @@ impl Cna {
                 crate::logistics::convoys::schedule(content, state, self.strict, cx)
             }
             "opstage.convoy_arrival" => crate::logistics::convoys::arrive(content, state, cx),
+            "opstage.movement_and_combat.combat.barrage" => {
+                crate::land::combat::barrage::enter(content, state, cx, self.strict)
+            }
+            "opstage.movement_and_combat.combat.position" => {
+                crate::land::combat::enter_positions(content, state, cx)
+            }
             "logistics.stores_expenditure" => crate::logistics::stores::enter(content, state, cx),
             "opstage.organization.water_distribution" => {
                 crate::logistics::water::enter(content, state, cx, self.strict)
@@ -59,6 +65,11 @@ impl Cna {
                 crate::logistics::attrition::enter(content, state, cx)
             }
             "opstage.weather" => crate::logistics::weather::determine(content, state, cx),
+            "opstage.movement_and_combat.combat.close_assault" => {
+                self.unimplemented(content, anchor)?;
+                crate::land::combat::finish_pins(content, state, cx);
+                Ok(())
+            }
             "end_of_game" => self.end_of_game(content, state, cx),
             _ => self.unimplemented(content, anchor),
         }
@@ -75,6 +86,18 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<String, Rejection> {
         match pending.kind.as_str() {
+            crate::land::combat::barrage::DECLARE => {
+                crate::land::combat::barrage::declare(content, state, pending, action, cx)
+            }
+            crate::land::combat::barrage::PLOT => {
+                crate::land::combat::barrage::answer(content, state, pending, action, cx)
+            }
+            crate::land::combat::barrage::LOSSES => {
+                crate::land::combat::barrage::losses(content, state, pending, action, cx)
+            }
+            crate::land::combat::POSITION_KIND => {
+                crate::land::combat::answer_positions(content, state, pending, action, cx)
+            }
             crate::land::movement::KIND => {
                 crate::land::movement::answer(content, state, pending, action, self.strict, cx)
             }
