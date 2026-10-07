@@ -1,5 +1,11 @@
 from_hex,to_hex,kind,src,review_batch
+C3822,C3823,unfinished_road,land:8.47;land:8.37,map-lines-0001
+C3822,C3922,unfinished_road,land:8.47;land:8.37,map-lines-0001
+C3823,C3824,unfinished_road,land:8.47;land:8.37,map-lines-0001
+C3824,C3825,unfinished_road,land:8.47;land:8.37,map-lines-0001
+C3825,C3926,unfinished_road,land:8.47;land:8.37,map-lines-0001
 C3921,C4020,track,land:8.37,sollum-control-0001
+C3922,C4021,unfinished_road,land:8.47;land:8.37,map-lines-0001
 C4020,C4120,road,land:8.33;land:8.37,road-spine-0001
 C4020,C4121,track,land:8.33;land:8.37,sollum-control-0001
 C4120,C4220,road,land:8.33;land:8.37,road-spine-0001

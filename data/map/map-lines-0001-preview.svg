@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4256.02 972.00 241.74 114.00">
+<title>Source-reviewed map strip: map-layer completeness only</title>
+<desc>Original regular hexagons and center links generated from canonical map data. No source artwork. Unit move legality and the neighboring control halo are unverified.</desc>
+<polygon points="4316.27,1064.00 4292.02,1078.00 4267.77,1064.00 4267.77,1036.00 4292.02,1022.00 4316.27,1036.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4364.77,1064.00 4340.52,1078.00 4316.27,1064.00 4316.27,1036.00 4340.52,1022.00 4364.77,1036.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4413.27,1064.00 4389.02,1078.00 4364.77,1064.00 4364.77,1036.00 4389.02,1022.00 4413.27,1036.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4461.76,1064.00 4437.51,1078.00 4413.27,1064.00 4413.27,1036.00 4437.51,1022.00 4461.76,1036.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4486.01,1022.00 4461.76,1036.00 4437.51,1022.00 4437.51,994.00 4461.76,980.00 4486.01,994.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<line x1="4292.02" y1="1050.00" x2="4340.52" y2="1050.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<line x1="4340.52" y1="1050.00" x2="4389.02" y2="1050.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<line x1="4389.02" y1="1050.00" x2="4437.51" y2="1050.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<line x1="4437.51" y1="1050.00" x2="4461.76" y2="1008.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray="4 3"><title>unfinished_road</title></line>
+<text x="4292.02" y="1065.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3822</text>
+<text x="4340.52" y="1065.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3823</text>
+<text x="4389.02" y="1065.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3824</text>
+<text x="4437.51" y="1065.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3825</text>
+<text x="4461.76" y="1023.00" text-anchor="middle" font-family="sans-serif" font-size="8">C3926</text>
+</svg>

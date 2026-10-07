@@ -161,7 +161,7 @@ class EdgeReviewTests(unittest.TestCase):
 
     def test_published_completeness_note_keeps_control_and_pipeline_unknown(self):
         import tomllib
-        strip = tomllib.loads((MAP / "strips.toml").read_text())["strips"][0]
+        strip = next(s for s in tomllib.loads((MAP / "strips.toml").read_text())["strips"] if s["id"] == "road-spine-0001")
         self.assertEqual(strip["route_hex_ids"], ["C4220", "C4120", "C4020"])
         self.assertEqual(strip["surveyed_route_edges"], [["C4120", "C4220"], ["C4020", "C4120"]])
         self.assertTrue(strip["route_map_layers_complete"])

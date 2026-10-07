@@ -1,0 +1,767 @@
+[batch]
+id = "map-lines-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+route_hex_ids = ["C3822", "C3823", "C3824", "C3825", "C3926"]
+review_basis = "Six exact shared sides inspected on unmarked native 2021 crops enlarged 4x, beside registered center locators and TEC.png. Every five movement line and eight side kind inspected per side; pipeline unsurveyed. Four eastern sides complete; first two retain contour abstentions. Single observer, 2021 render only; no independent agreement, population accuracy or 1979 equivalence measured."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "No pipeline identification performed; the TEC key supplies no pipeline symbol. No mask is created."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full shared side checked; no continuous blue tied railroad crosses it. Nearby blue blocks lie on the western neighboring sides, not this shared side."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side and crossings checked: road strokes crossing this side are paired and interrupted, with no separate continuous paired crossing."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full shared side checked; no separate single dashed gray track crosses it. A dashed track inside a neighboring cell terminates or crosses other sides, not this side."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full shared side checked; no interrupted blue tied railroad crosses it. Nearby blue blocks lie on the western neighboring sides, not this shared side."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "line:unfinished_road"
+observed = "present"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Paired interrupted olive strokes cross the shared side away from its vertices; both ink strokes and intervening gaps were checked against the TEC unfinished-road symbol."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual shared boundary inspected: a land segment is visible, so the boundary is not wholly water. This decision uses the side itself."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full shared side checked against the border key; only ordinary thin hex-grid ink follows the side, without a distinct border stroke. Nearby blue blocks lie on the western neighboring sides, not this shared side."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "side:escarpment"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Gray escarpment beside the southwest vertex has splash ink near the shared side. Its precise termination and assignment to this side are unclear; neither presence nor absence nor high side is certified."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no broad blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no brown ridge band follows it."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no ochre slope band follows it."
+
+[[survey]]
+from_hex = "C3922"
+to_hex = "C4021"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow green-gray wadi follows it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "No pipeline identification performed; the TEC key supplies no pipeline symbol. No mask is created."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full shared side checked; no continuous blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side and crossings checked: road strokes crossing this side are paired and interrupted, with no separate continuous paired crossing."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full shared side checked; no separate single dashed gray track crosses it. A dashed track inside a neighboring cell terminates or crosses other sides, not this side."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full shared side checked; no interrupted blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "line:unfinished_road"
+observed = "present"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Paired interrupted olive strokes cross the shared side away from its vertices; both ink strokes and intervening gaps were checked against the TEC unfinished-road symbol."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual shared boundary inspected: a land segment is visible, so the boundary is not wholly water. This decision uses the side itself."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full shared side checked against the border key; only ordinary thin hex-grid ink follows the side, without a distinct border stroke."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no gray escarpment band follows it. The gray bands are on neighboring western and southern sides, with splash ink near the southwest vertex."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no broad blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "side:ridge"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Brown contour occupies the southwest part of this shared side near Halfaya lettering. Ridge versus slope and any high endpoint are not confidently readable; no mask is created."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "side:slope"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Brown contour occupies the southwest part of this shared side near Halfaya lettering. Ridge versus slope and any high endpoint are not confidently readable; no mask is created."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3922"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow green-gray wadi follows it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "No pipeline identification performed; the TEC key supplies no pipeline symbol. No mask is created."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full shared side checked; no continuous blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side and crossings checked: road strokes crossing this side are paired and interrupted, with no separate continuous paired crossing."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full shared side checked; no separate single dashed gray track crosses it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full shared side checked; no interrupted blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "line:unfinished_road"
+observed = "present"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Paired interrupted olive strokes cross the shared side away from its vertices; both ink strokes and intervening gaps were checked against the TEC unfinished-road symbol."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual shared boundary inspected: a land segment is visible, so the boundary is not wholly water. This decision uses the side itself."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full shared side checked against the border key; only ordinary thin hex-grid ink follows the side, without a distinct border stroke."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no gray escarpment band follows it. Gray bands on both southern neighboring sides join at the lower vertex; their splash ink does not form a band along this vertical boundary."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no broad blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no brown ridge band follows it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no ochre slope band follows it."
+
+[[survey]]
+from_hex = "C3822"
+to_hex = "C3823"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow green-gray wadi follows it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "No pipeline identification performed; the TEC key supplies no pipeline symbol. No mask is created."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full shared side checked; no continuous blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side and crossings checked: road strokes crossing this side are paired and interrupted, with no separate continuous paired crossing."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full shared side checked; no separate single dashed gray track crosses it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full shared side checked; no interrupted blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "line:unfinished_road"
+observed = "present"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Paired interrupted olive strokes cross the shared side away from its vertices; both ink strokes and intervening gaps were checked against the TEC unfinished-road symbol."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual shared boundary inspected: a land segment is visible, so the boundary is not wholly water. This decision uses the side itself."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full shared side checked against the border key; only ordinary thin hex-grid ink follows the side, without a distinct border stroke."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no gray escarpment band follows it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no broad blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no brown ridge band follows it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no ochre slope band follows it."
+
+[[survey]]
+from_hex = "C3823"
+to_hex = "C3824"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow green-gray wadi follows it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "No pipeline identification performed; the TEC key supplies no pipeline symbol. No mask is created."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full shared side checked; no continuous blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side and crossings checked: road strokes crossing this side are paired and interrupted, with no separate continuous paired crossing."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full shared side checked; no separate single dashed gray track crosses it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full shared side checked; no interrupted blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "line:unfinished_road"
+observed = "present"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Paired interrupted olive strokes cross the shared side away from its vertices; both ink strokes and intervening gaps were checked against the TEC unfinished-road symbol."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual shared boundary inspected: a land segment is visible, so the boundary is not wholly water. This decision uses the side itself."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full shared side checked against the border key; only ordinary thin hex-grid ink follows the side, without a distinct border stroke."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no gray escarpment band follows it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no broad blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no brown ridge band follows it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no ochre slope band follows it."
+
+[[survey]]
+from_hex = "C3824"
+to_hex = "C3825"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow green-gray wadi follows it."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "No pipeline identification performed; the TEC key supplies no pipeline symbol. No mask is created."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full shared side checked; no continuous blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side and crossings checked: road strokes crossing this side are paired and interrupted, with no separate continuous paired crossing."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full shared side checked; no separate single dashed gray track crosses it. A dashed track inside a neighboring cell terminates or crosses other sides, not this side."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full shared side checked; no interrupted blue tied railroad crosses it."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "line:unfinished_road"
+observed = "present"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Paired interrupted olive strokes cross the shared side away from its vertices; both ink strokes and intervening gaps were checked against the TEC unfinished-road symbol."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual shared boundary inspected: a land segment is visible, so the boundary is not wholly water. This decision uses the side itself."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full shared side checked against the border key; only ordinary thin hex-grid ink follows the side, without a distinct border stroke."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no gray escarpment band follows it."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no broad blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow blue river stroke follows it."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no brown ridge band follows it."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full shared side checked; no ochre slope band follows it."
+
+[[survey]]
+from_hex = "C3825"
+to_hex = "C3926"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full shared side checked; no narrow green-gray wadi follows it."

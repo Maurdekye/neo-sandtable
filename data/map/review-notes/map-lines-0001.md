@@ -1,0 +1,7 @@
+# Halfaya east edge review, 2026-10-07
+
+Six actual paired-dashed unfinished-road crossings were followed from Sollum toward Buq Buq: C3922/C4021, C3822/C3922, C3822/C3823, C3823/C3824, C3824/C3825, C3825/C3926. All fourteen edge kinds have explicit records, 84 observations: six unfinished-road positives, 69 negatives, nine unresolved. Resolved coverage gains 75 kind-edge masks. Pipeline is unsurveyed on all six. C3922/C4021 escarpment termination is unresolved; C3822/C3922 ridge/slope identity and high side are unresolved. These abstentions publish no mask.
+
+The connected four-edge strip C3822-C3823-C3824-C3825-C3926 resolves all thirteen movement kinds. Its terrain and coastal coverage predate this batch. Gray bands at C3822/C3823 meet the lower vertex on neighboring sides; the vertical boundary was inspected separately. This strip does not complete the approach from Sollum, the control halo, pipeline, or any unit action.
+
+One observer inspected unmarked native source crops at 4x against TEC.png, using registered center locators separately. The source is the 2021 VASSAL render. No independent review, population error estimate or 1979 equivalence is claimed. Crops stay in map-lines scratch, outside the repository. Exact hashes in the batch bind image, key and source grid. Raw direct reviews and pilot audit abstentions were checked for duplicate identities before publication. Shared GAPS/VERIFICATION updates belong to cartographer.
