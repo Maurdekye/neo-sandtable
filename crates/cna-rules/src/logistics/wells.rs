@@ -198,7 +198,7 @@ pub(super) fn candidates(content: &CnaContent, state: &State, side: Side) -> Vec
         .map(|u| u.id.clone())
         .collect()
 }
-fn operation_options(
+pub(super) fn operation_options(
     content: &CnaContent,
     state: &State,
     id: &UnitId,
@@ -345,6 +345,19 @@ pub fn draw(
     packing: &CargoPacking,
     cx: &mut Cx<'_>,
 ) -> Result<i32, Rejection> {
+    let mut draft = state.clone();
+    prepare_draw(content, &mut draft, id, requested, packing)?;
+    let actual = resolve_draw(content, &mut draft, id, requested, cx).map_err(Rejection::Engine)?;
+    *state = draft;
+    Ok(actual)
+}
+pub(super) fn prepare_draw(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    requested: i32,
+    packing: &CargoPacking,
+) -> Result<(), Rejection> {
     if requested <= 0 || state.logistics.drawn_water.contains_key(id) {
         return Err(illegal(
             "draw quantity must be positive and the previous draw must be allocated",
@@ -357,7 +370,7 @@ pub fn draw(
         .ok_or_else(|| illegal("unknown unit"))?;
     let side = unit.side;
     let location = unit.location.clone();
-    let source =
+    let _source =
         source_at(content, state, side, &location).map_err(|e| Rejection::Engine(engine(e)))?;
     let charged = charge_plan(content, state, id, 4, false)?;
     let mut expected = state
@@ -381,6 +394,27 @@ pub fn draw(
     next.land.units.insert(id.clone(), charged);
     super::consume_activity_water_forced(content, &mut next, id)
         .map_err(|e| Rejection::Engine(engine(e)))?;
+    *state = next;
+    Ok(())
+}
+/// Resolve an accepted draw after the secret window closes; CP was already reserved.
+/// Cases: airlog:52.13, airlog:52.14, airlog:52.16
+pub(super) fn resolve_draw(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    requested: i32,
+    cx: &mut Cx<'_>,
+) -> Result<i32, EngineError> {
+    let unit = state
+        .land
+        .units
+        .get(id)
+        .ok_or_else(|| engine(super::SupplyError::Invalid))?;
+    let side = unit.side;
+    let location = unit.location.clone();
+    let source = source_at(content, state, side, &location).map_err(engine)?;
+    let mut next = state.clone();
     let mut actual = requested;
     if source.finite() {
         let hex = location.hex().expect("finite well").clone();
@@ -558,6 +592,18 @@ pub fn attempt(
     sweeten: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), Rejection> {
+    let mut draft = state.clone();
+    prepare_attempt(content, &mut draft, id, sweeten)?;
+    resolve_attempt(content, &mut draft, id, sweeten, cx).map_err(Rejection::Engine)?;
+    *state = draft;
+    Ok(())
+}
+pub(super) fn prepare_attempt(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    sweeten: bool,
+) -> Result<(), Rejection> {
     let unit = state
         .land
         .units
@@ -597,6 +643,31 @@ pub fn attempt(
     next.land.units.insert(id.clone(), charged);
     super::consume_activity_water_forced(content, &mut next, id)
         .map_err(|e| Rejection::Engine(engine(e)))?;
+    *state = next;
+    Ok(())
+}
+/// Resolve accepted poisoning/sweetening without rechecking a changed opposing condition.
+/// Cases: airlog:52.16, airlog:52.17, airlog:52.8
+pub(super) fn resolve_attempt(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    sweeten: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    let unit = state
+        .land
+        .units
+        .get(id)
+        .ok_or_else(|| engine(super::SupplyError::Invalid))?;
+    let side = unit.side;
+    let hex = unit
+        .location
+        .hex()
+        .ok_or_else(|| engine(super::SupplyError::Invalid))?
+        .clone();
+    let stage = water::WaterStage::current(state);
+    let mut next = state.clone();
     let die = private_die(
         cx,
         side,

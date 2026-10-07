@@ -73,7 +73,7 @@ pub fn requirements(
         pasta,
     })
 }
-fn candidates(
+pub(super) fn candidates(
     content: &CnaContent,
     state: &State,
     side: Side,
@@ -124,6 +124,20 @@ pub fn enter(
     cx: &mut Cx<'_>,
     strict: bool,
 ) -> Result<(), EngineError> {
+    prepare(content, state, cx, strict)?;
+    for side in [Side::Axis, Side::Commonwealth] {
+        open_menu(content, state, side, cx, strict)?;
+    }
+    Ok(())
+}
+/// Validate composition and feed prisoners before opening private allocation lists.
+/// Cases: airlog:52.41, airlog:52.42, airlog:51.17, land:3.6
+pub(super) fn prepare(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut Cx<'_>,
+    strict: bool,
+) -> Result<(), EngineError> {
     // Validate both sides before any consumption or events.
     for side in [Side::Axis, Side::Commonwealth] {
         candidates(content, state, side, strict)?;
@@ -146,9 +160,6 @@ pub fn enter(
                 }));
             }
         }
-    }
-    for side in [Side::Axis, Side::Commonwealth] {
-        open_menu(content, state, side, cx, strict)?;
     }
     Ok(())
 }

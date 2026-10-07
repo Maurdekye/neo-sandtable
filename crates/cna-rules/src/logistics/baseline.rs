@@ -196,6 +196,196 @@ fn well_request(content: &CnaContent, state: &State, id: &UnitId) -> Option<(i32
     Some((requested, best))
 }
 
+fn batch_units(request: &DecisionRequest, field_name: Option<&str>) -> Vec<UnitId> {
+    let schema = if let Some(name) = field_name {
+        let ActionSchema::Record { fields } = &request.space.schema else {
+            return vec![];
+        };
+        let Some(f) = fields.iter().find(|f| f.name == name) else {
+            return vec![];
+        };
+        &f.schema
+    } else {
+        &request.space.schema
+    };
+    let ActionSchema::List { item, .. } = schema else {
+        return vec![];
+    };
+    let ActionSchema::Record { fields } = item.as_ref() else {
+        return vec![];
+    };
+    let Some(f) = fields.iter().find(|f| f.name == "unit") else {
+        return vec![];
+    };
+    let ActionSchema::Choice { options } = &f.schema else {
+        return vec![];
+    };
+    options.iter().map(|o| UnitId::new(&o.id)).collect()
+}
+fn batch_orders(
+    content: &CnaContent,
+    state: &State,
+    request: &DecisionRequest,
+    rng: &mut CampaignRng,
+) -> Option<Value> {
+    use super::batches;
+    let kind = request.kind.as_str();
+    if kind == batches::DISTRIBUTION {
+        return Some(Value::Null);
+    }
+    if ![batches::STORES, batches::WATER, batches::WELL_ALLOCATION].contains(&kind) {
+        return None;
+    }
+    let mut draft = state.clone();
+    let mut units = batch_units(
+        request,
+        if kind == batches::WATER {
+            Some("allocations")
+        } else {
+            None
+        },
+    );
+    let mut ranked: Vec<_> = units
+        .drain(..)
+        .map(|id| {
+            let need = if kind == batches::STORES {
+                rations::stores_required(content, &draft, &id).unwrap_or(0)
+            } else {
+                water_need(content, &draft, &id).unwrap_or(0)
+            };
+            (priority(content, &draft, &id), need, rng.d6().value(), id)
+        })
+        .collect();
+    ranked.sort();
+    let mut out = vec![];
+    for (_, _, _, id) in ranked {
+        if !draft
+            .land
+            .units
+            .get(&id)
+            .is_some_and(|u| u.side == request.seat.side)
+        {
+            continue;
+        }
+        let mut synthetic = request.clone();
+        synthetic.kind = if kind == batches::STORES {
+            format!("{}{id}", stores::ISSUE_PREFIX)
+        } else if kind == batches::WATER {
+            format!("{}{id}", water::ISSUE_PREFIX)
+        } else {
+            format!("{}{id}", wells::ALLOCATE_PREFIX)
+        };
+        synthetic.space.schema = ActionSchema::Record {
+            fields: vec![stores::field(
+                "stores",
+                "Requirement",
+                ActionSchema::Integer {
+                    min: 0,
+                    max: i64::from(rations::stores_required(content, &draft, &id).unwrap_or(0)),
+                },
+            )],
+        };
+        let Some(mut value) = logistics_orders(content, &draft, &synthetic, rng) else {
+            continue;
+        };
+        if value.is_null() {
+            continue;
+        }
+        let read = |name: &str| {
+            value[name]
+                .as_i64()
+                .and_then(|n| i32::try_from(n).ok())
+                .unwrap_or(0)
+        };
+        let pasta = value["pasta"] == true;
+        let applied = if kind == batches::STORES {
+            if read("stores") == 0 {
+                continue;
+            }
+            let ds: Vec<stores::RationDraw> =
+                serde_json::from_value(value["draws"].clone()).ok()?;
+            stores::issue_unit(
+                content,
+                &mut draft,
+                &id,
+                read("stores"),
+                value["half"] == true,
+                pasta,
+                &stores::draws(ds).ok()?,
+            )
+        } else if kind == batches::WATER {
+            if read("infantry") + read("activity") + i32::from(pasta) == 0 {
+                continue;
+            }
+            let ds: Vec<stores::RationDraw> =
+                serde_json::from_value(value["draws"].clone()).ok()?;
+            water::issue_unit(
+                content,
+                &mut draft,
+                &id,
+                read("infantry"),
+                read("activity"),
+                pasta,
+                &stores::draws(ds).ok()?,
+            )
+        } else {
+            let allocation: wells::Allocation = serde_json::from_value(value.clone()).ok()?;
+            wells::allocate(content, &mut draft, &id, &allocation)
+        };
+        if applied.is_err() {
+            continue;
+        }
+        value.as_object_mut()?.insert("unit".into(), json!(id));
+        out.push(value);
+    }
+    if kind != batches::WATER {
+        return Some(json!(out));
+    }
+    let mut ops = vec![];
+    let ActionSchema::Record { fields } = &request.space.schema else {
+        return Some(Value::Null);
+    };
+    let Some(f) = fields.iter().find(|f| f.name == "wells") else {
+        return Some(Value::Null);
+    };
+    let ActionSchema::List { item, .. } = &f.schema else {
+        return Some(Value::Null);
+    };
+    let ActionSchema::Record { fields } = item.as_ref() else {
+        return Some(Value::Null);
+    };
+    let Some(f) = fields.iter().find(|f| f.name == "operation") else {
+        return Some(Value::Null);
+    };
+    let ActionSchema::Choice { options } = &f.schema else {
+        return Some(Value::Null);
+    };
+    for o in options {
+        let Some(raw) = o.id.strip_prefix("draw|") else {
+            continue;
+        };
+        let id = UnitId::new(raw);
+        if !draft
+            .land
+            .units
+            .get(&id)
+            .is_some_and(|u| u.side == request.seat.side)
+            || known_bad(&draft, &id, request.seat.side)
+            || draft.logistics.water_window.completed_wells.contains(&id)
+        {
+            continue;
+        }
+        let Some((requested, packing)) = well_request(content, &draft, &id) else {
+            continue;
+        };
+        if wells::prepare_draw(content, &mut draft, &id, requested, &packing).is_err() {
+            continue;
+        }
+        ops.push(json!({"operation":o.id,"requested":requested,"packing":packing}));
+    }
+    Some(json!({"allocations":out,"wells":ops}))
+}
+
 /// Feed and water the owning side from enumerated legal sources. Prefer units whose
 /// restrictions can be relieved, then affordable smaller needs, with RNG tie-breaking.
 /// Reserve water after immediate consumption; finite wells are never probed using enemy
@@ -209,6 +399,9 @@ pub fn logistics_orders(
     request: &DecisionRequest,
     rng: &mut CampaignRng,
 ) -> Option<Value> {
+    if let Some(answer) = batch_orders(content, state, request, rng) {
+        return Some(answer);
+    }
     let kind = request.kind.as_str();
     if kind == stores::KIND || kind == water::KIND {
         let ActionSchema::Choice { options } = &request.space.schema else {

@@ -28,17 +28,20 @@ pub(crate) fn illegal(message: impl Into<String>) -> Rejection {
 impl Cna {
     /// Run the entry procedure of the cursor's current step.
     /// Let the current step resolve what its answers closed, once nothing is pending (see
-    /// docs/engine.md §3 rule 7: answering is not adjudicating). Dispatches on the anchor like
+    /// docs/engine.md Ã‚Â§3 rule 7: answering is not adjudicating). Dispatches on the anchor like
     /// `enter_step`; a procedure may open further decisions here, and is called again each time
     /// its step has nothing pending, so it must track what it has already resolved. No step
     /// resolves here yet.
     pub(crate) fn finish_step(
         &self,
-        _content: &CnaContent,
+        content: &CnaContent,
         state: &mut State,
-        _cx: &mut Cx<'_>,
+        cx: &mut Cx<'_>,
     ) -> Result<(), EngineError> {
         match state.cursor.anchor() {
+            "opstage.organization.water_distribution" => {
+                crate::logistics::batches::finish_water(content, state, cx, self.strict)
+            }
             "opstage.movement_and_combat.movement"
             | "opstage.movement_and_combat.combat.retreat_before_assault" => {
                 crate::land::reaction::finish_adjudication(state)
@@ -83,12 +86,14 @@ impl Cna {
             "opstage.reserve_designation" => {
                 crate::land::reserve::enter_designation(content, state, cx)
             }
-            "logistics.stores_expenditure" => crate::logistics::stores::enter(content, state, cx),
+            "logistics.stores_expenditure" => {
+                crate::logistics::batches::enter_stores(content, state, cx)
+            }
             "opstage.organization.water_distribution" => {
-                crate::logistics::water::enter(content, state, cx, self.strict)
+                crate::logistics::batches::enter_water(content, state, cx, self.strict)
             }
             "opstage.organization.supply_distribution" => {
-                crate::logistics::distribution::enter(content, state, cx)
+                crate::logistics::batches::enter_distribution(content, state, cx)
             }
             "opstage.organization.attrition" => {
                 crate::logistics::attrition::enter(content, state, cx)
@@ -115,6 +120,13 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<String, Rejection> {
         match pending.kind.as_str() {
+            crate::logistics::batches::STORES
+            | crate::logistics::batches::WATER
+            | crate::logistics::batches::WELL_ALLOCATION
+            | crate::logistics::batches::DISTRIBUTION => {
+                crate::logistics::batches::answer(content, state, pending, action, cx, self.strict)
+            }
+
             crate::land::combat::barrage::DECLARE => {
                 crate::land::combat::barrage::declare(content, state, pending, action, cx)
             }

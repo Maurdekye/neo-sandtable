@@ -197,6 +197,8 @@ pub struct LogisticsState {
     pub operating_rail_water: BTreeSet<HexId>,
     /// Draw results await immediate owner allocation; never available to movement sources.
     #[serde(default)]
+    pub water_window: crate::logistics::batches::WaterWindow,
+    #[serde(default)]
     pub drawn_water: BTreeMap<UnitId, crate::logistics::wells::DrawnWater>,
     /// Unit tanks, ready ammunition and first-line cargo (airlog:49-53).
     /// Absent entries mean empty holdings; ratings remain in content.

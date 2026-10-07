@@ -97,7 +97,7 @@ pub fn location(state: &State, side: Side, end: &Endpoint) -> Result<Location, S
             .ok_or(SupplyError::Invalid),
     }
 }
-fn stock(state: &State, end: &Endpoint) -> Result<Supplies, SupplyError> {
+pub(super) fn stock(state: &State, end: &Endpoint) -> Result<Supplies, SupplyError> {
     Ok(match end {
         Endpoint::Dump(id) => {
             state
@@ -189,7 +189,7 @@ pub(super) fn endpoints(state: &State, side: Side) -> Vec<Endpoint> {
         .filter(|e| location(state, side, e).is_ok())
         .collect()
 }
-fn sources(state: &State, side: Side, to: &Endpoint) -> Vec<Endpoint> {
+pub(super) fn sources(state: &State, side: Side, to: &Endpoint) -> Vec<Endpoint> {
     let Ok(at) = location(state, side, to) else {
         return vec![];
     };
@@ -477,7 +477,7 @@ fn menu(
     );
     Ok(())
 }
-fn packing_schema(content: &CnaContent, state: &State, to: &Endpoint) -> ActionSchema {
+pub(super) fn packing_schema(content: &CnaContent, state: &State, to: &Endpoint) -> ActionSchema {
     let attached = match to {
         Endpoint::Cargo(id) => state.land.units[id].trucks,
         Endpoint::Pool(id) => {

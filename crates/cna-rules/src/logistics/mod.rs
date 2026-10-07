@@ -38,6 +38,7 @@ pub use activity::{
 };
 pub mod attrition;
 pub mod baseline;
+pub mod batches;
 pub mod capacity;
 pub mod convoys;
 pub mod distribution;
