@@ -1025,6 +1025,9 @@ fn profiling_answer(
     ) {
         // A mandatory continuation needs a legal remaining path, not a schema placeholder.
         crate::baseline::random_orders(c, state, request, rng)
+    } else if request.kind == logistics::attrition::KIND {
+        crate::baseline::logistics_orders(c, state, request, rng)
+            .expect("mandatory attrition baseline must allocate every casualty group")
     } else if request.kind == super::super::breakdown::window::KIND {
         let action = crate::baseline::random_breakdown(c, state, request, rng);
         assert!(
@@ -3401,4 +3404,57 @@ fn raw_counter_paths_are_exact_for_all_perspectives_and_attached_contents_stay_p
             }
         }
     }
+}
+
+/// Cases: airlog:51.22, land:3.62
+#[test]
+fn profiling_chooser_allocates_mandatory_attrition_through_the_real_baseline() {
+    let (c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+    let r = s.logistics.rations.get_mut(&LEG.into()).unwrap();
+    r.finalized_gt = Some(s.cursor.game_turn);
+    r.last_short_gt = Some(s.cursor.game_turn);
+    r.consecutive_short_gt = 100;
+    let mut game_rng = CampaignRng::from_seed([16; 32]);
+    let mut events = vec![];
+    logistics::attrition::enter(
+        &c,
+        &mut s,
+        &mut Cx {
+            rng: &mut game_rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
+    let pending = s
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == logistics::attrition::KIND && p.seat.side == Side::Commonwealth)
+        .unwrap()
+        .clone();
+    let request = Cna::dev()
+        .pending(&c, &s)
+        .into_iter()
+        .find(|r| r.id == pending.id)
+        .unwrap();
+    assert!(request.space.pass.is_none());
+    let before = serde_json::to_value(&s.land.units).unwrap();
+    let mut controller = CampaignRng::from_seed([42; 32]);
+    let action = profiling_answer(&c, &s, &request, &mut controller);
+    assert!(action.as_array().is_some_and(|items| !items.is_empty()));
+    let g = Game {
+        state: s,
+        rng: game_rng.state(),
+    };
+    let original = serde_json::to_value(&g).unwrap();
+    let accepted = respond(&c, &g, request.seat, action.clone(), false).unwrap();
+    assert_eq!(
+        accepted.game.state.logistics.attrition_window.submitted[&Side::Commonwealth],
+        action
+    );
+    assert_eq!(
+        serde_json::to_value(&accepted.game.state.land.units).unwrap(),
+        before
+    );
+    assert_eq!(serde_json::to_value(&g).unwrap(), original);
 }
