@@ -737,6 +737,14 @@ fn prepare_withdrawals(
                 for unit in &w.selected {
                     accompanying += weights.value(state.land.units[unit].trucks);
                     let trucks = state.land.units[unit].trucks;
+                    if trucks.total() > 0 {
+                        crate::logistics::box_handling::prepare_division(
+                            state,
+                            &crate::logistics::box_handling::Carrier::Unit(unit.clone()),
+                            strict,
+                            cx,
+                        )?;
+                    }
                     retire_truck_history(content, state, unit, trucks)
                         .map_err(|r| invariant(format!("{r:?}")))?;
                     state.logistics.rations.remove(unit);
@@ -754,6 +762,14 @@ fn prepare_withdrawals(
                 }
                 for unit in &w.eliminated {
                     let trucks = state.land.units[unit].trucks;
+                    if trucks.total() > 0 {
+                        crate::logistics::box_handling::prepare_division(
+                            state,
+                            &crate::logistics::box_handling::Carrier::Unit(unit.clone()),
+                            strict,
+                            cx,
+                        )?;
+                    }
                     retire_truck_history(content, state, unit, trucks)
                         .map_err(|r| invariant(format!("{r:?}")))?;
                     state.logistics.rations.remove(unit);
@@ -857,7 +873,7 @@ fn open_withdrawal_transport(
             return Err(EngineError::Unsupported{case:"land:20.83".into(),detail:"printed withdrawal truck minimum cannot be satisfied; no penalty is specified in land:4.43a".into()});
         }
         for (asset, trucks) in assets {
-            remove_empty_trucks(content, state, &asset, trucks)
+            remove_empty_trucks(content, state, &asset, trucks, strict, cx)
                 .map_err(|r| invariant(format!("{r:?}")))?;
         }
         state
@@ -929,8 +945,17 @@ fn remove_empty_trucks(
     state: &mut State,
     asset: &str,
     amount: Trucks,
+    strict: bool,
+    cx: &mut Cx<'_>,
 ) -> Result<(), Rejection> {
     if let Some(id) = asset.strip_prefix("unit:") {
+        crate::logistics::box_handling::prepare_division(
+            state,
+            &crate::logistics::box_handling::Carrier::Unit(UnitId::new(id)),
+            strict,
+            cx,
+        )
+        .map_err(Rejection::Engine)?;
         retire_truck_history(content, state, &UnitId::new(id), amount)?;
         let unit = state
             .land
@@ -939,6 +964,13 @@ fn remove_empty_trucks(
             .ok_or_else(|| illegal("unknown empty truck holding"))?;
         subtract(&mut unit.trucks, amount);
     } else if let Some(id) = asset.strip_prefix("pool:") {
+        crate::logistics::box_handling::prepare_division(
+            state,
+            &crate::logistics::box_handling::Carrier::Pool(id.into()),
+            strict,
+            cx,
+        )
+        .map_err(Rejection::Engine)?;
         let pool = state
             .logistics
             .truck_pools
@@ -1273,7 +1305,7 @@ pub(crate) fn answer(
                     .get(&source)
                     .ok_or_else(|| illegal("empty truck source is no longer eligible"))?;
                 let amount = parse_trucks(action, available)?;
-                remove_empty_trucks(content, state, &source, amount)?;
+                remove_empty_trucks(content, state, &source, amount, strict, cx)?;
                 let value = weights(content).map_err(Rejection::Engine)?.value(amount);
                 let w = state.land.arrivals.withdrawals.get_mut(&row).unwrap();
                 w.needed_halves = (w.needed_halves - value).max(0);
@@ -2320,6 +2352,11 @@ mod tests {
                 light: 1,
                 ..Trucks::default()
             },
+            false,
+            &mut Cx {
+                rng: &mut CampaignRng::from_state(&game.rng),
+                events: &mut vec![],
+            },
         )
         .unwrap();
         let stock = game.state.logistics.dumps["funding"].supplies;
@@ -2347,6 +2384,82 @@ mod tests {
         crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 4).unwrap();
         assert_eq!(game.state.logistics.dumps["funding"].supplies, stock);
         crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 8).unwrap();
+    }
+    /// Cases: land:8.88, land:20.83, land:3.6
+    /// Interpretations: interp:airlog-0019
+    #[test]
+    fn stamped_withdrawal_trucks_stop_in_full_and_keep_private_history_in_dev() {
+        use crate::logistics::box_handling::BoxHandling;
+        let (c, mut game) = fixture();
+        at(&mut game, 13, 3);
+        let stamp = BoxHandling {
+            stage: crate::logistics::water::WaterStage::current(&game.state),
+            loaded: Supplies {
+                stores: 1,
+                ..Default::default()
+            },
+            unloaded: Supplies::default(),
+        };
+        let cairo = city_domain(&c, "cairo").unwrap()[0].clone();
+        let pool = crate::logistics::pools::add_truck_pool(
+            &mut game.state.logistics,
+            None,
+            Side::Commonwealth,
+            Placement::City {
+                city: "cairo".into(),
+            },
+            Some(cairo),
+            Trucks {
+                medium: 3,
+                ..Default::default()
+            },
+            Supplies::default(),
+        )
+        .unwrap();
+        game.state.logistics.truck_pools[0].box_handling = Some(stamp.clone());
+        let before = serde_json::to_value(&game.state).unwrap();
+        let mut rng = CampaignRng::from_state(&game.rng);
+        let mut events = vec![];
+        let amount = Trucks {
+            medium: 1,
+            ..Default::default()
+        };
+        let result = remove_empty_trucks(
+            &c,
+            &mut game.state,
+            &format!("pool:{pool}"),
+            amount,
+            true,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        );
+        assert!(
+            matches!(result, Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "land:8.88")
+        );
+        assert_eq!(serde_json::to_value(&game.state).unwrap(), before);
+        assert!(events.is_empty());
+        remove_empty_trucks(
+            &c,
+            &mut game.state,
+            &format!("pool:{pool}"),
+            amount,
+            false,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        )
+        .unwrap();
+        assert_eq!(game.state.logistics.truck_pools[0].trucks.medium, 2);
+        assert_eq!(
+            game.state.logistics.truck_pools[0].box_handling,
+            Some(stamp)
+        );
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].audience, Audience::Side(Side::Commonwealth));
+        assert!(matches!(events[0].event, GameEvent::Note { .. }));
     }
     /// Cases: land:20.85, land:3.33, land:3.34
     /// Interpretations: interp:scen-0006
