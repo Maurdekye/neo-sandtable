@@ -85,10 +85,15 @@ C4231,E,C4232,all_sea,,land:10.21;interp:map-0002,map-lines-0007
 C4232,E,C4233,all_sea,,land:10.21;interp:map-0002,map-lines-0007
 C4233,SE,D4101,all_sea,,land:10.21;interp:map-0002,map-lines-0007
 C4233,E,D4201,all_sea,,land:10.21;interp:map-0002,map-lines-0008
+C4320,NW,C4419,slope,C4419,land:8.35;land:8.37,map-lines-0015
+C4320,NE,C4420,slope,C4420,land:8.35;land:8.37,map-lines-0015
 C4321,E,C4322,all_sea,,land:10.21;interp:map-0002,map-lines-0005
 C4321,NE,C4421,all_sea,,land:10.21;interp:map-0002,map-lines-0005
+C4322,NW,C4421,all_sea,,land:10.21;interp:map-0002,map-lines-0015
 C4419,E,C4420,slope,C4419,land:8.35;land:8.37,map-lines-0007
+C4420,E,C4421,all_sea,,land:10.21;interp:map-0002,map-lines-0015
 C4420,NW,C4520,slope,C4520,land:8.35;land:8.37,map-lines-0007
+C4420,NE,C4521,all_sea,,land:10.21;interp:map-0002,map-lines-0015
 C4421,NW,C4521,all_sea,,land:10.21;interp:map-0002,map-lines-0007
 D1917,NE,D2017,escarpment,D2017,land:8.35;land:8.37,map-terrain-edges-0004
 D1918,NW,D2017,escarpment,D2017,land:8.35;land:8.37,map-terrain-edges-0004

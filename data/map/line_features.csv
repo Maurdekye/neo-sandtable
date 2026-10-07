@@ -70,6 +70,7 @@ C3722,C3723,track,land:8.33;land:8.37,map-lines-0005
 C3722,C3821,track,land:8.33;land:8.37,map-lines-0005
 C3727,C3826,track,land:8.33;land:8.37,map-lines-0006
 C3731,C3831,track,land:8.33;land:8.37,map-lines-0008
+C3821,C3921,track,land:8.33;land:8.37,map-lines-0015
 C3822,C3823,unfinished_road,land:8.47;land:8.37,map-lines-0001
 C3822,C3922,unfinished_road,land:8.47;land:8.37,map-lines-0001
 C3823,C3824,unfinished_road,land:8.47;land:8.37,map-lines-0001
@@ -78,11 +79,13 @@ C3825,C3926,unfinished_road,land:8.47;land:8.37,map-lines-0001
 C3826,C3926,track,land:8.33;land:8.37,map-lines-0004
 C3831,C3931,track,land:8.33;land:8.37,map-lines-0008
 C3919,C3920,track,land:8.33;land:8.37,map-lines-0006
+C3920,C4020,track,land:8.33;land:8.37,map-lines-0015
 C3921,C4020,track,land:8.37,sollum-control-0001
 C3922,C4021,unfinished_road,land:8.47;land:8.37,map-lines-0001
 C3926,C3927,unfinished_road,land:8.47;land:8.37,map-lines-0002
 C3927,C4027,unfinished_road,land:8.47;land:8.37,map-lines-0002
 C3931,C4031,track,land:8.33;land:8.37,map-lines-0006
+C4020,C4021,road,land:8.33;land:8.37,map-lines-0015
 C4020,C4120,road,land:8.33;land:8.37,road-spine-0001
 C4020,C4121,track,land:8.33;land:8.37,sollum-control-0001
 C4027,C4028,unfinished_road,land:8.47;land:8.37,map-lines-0002

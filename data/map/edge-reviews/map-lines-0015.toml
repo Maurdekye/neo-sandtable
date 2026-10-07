@@ -1,0 +1,1297 @@
+[batch]
+id = "map-lines-0015"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+review_basis = "Exact authorized142 missing supported-kind identities and one prior pilot track abstention on thirteen historical western pairs, independently reconstructed from public62ca87a. Each emitted partial-kind observation directly inspected on native2021 unmarked4x individual side crops and TEC.png. Separate calculated locators orient actual boundaries only. No other old identity reviewed or superseded. Gray tied and blue square exact-kind uncertainty, mixed contour ambiguity and pipeline without a verified key remain unresolved. Two one-sided slopes have source low splashes and verified opposite high endpoints; marine sides physically inspected in full independent of endpoint flags. Single observer; no lake or original1979 equivalence claim."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full side inspected; no continuous blue tied railroad crosses this actual shared boundary. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate continuous paired road crosses this actual shared boundary. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate single dashed gray track crosses this actual boundary. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3820"
+to_hex = "C3921"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Selected southeast diagonal is clear of line and contour ink. Nearby gray tied and dashed strokes cross neighbouring sides; blue blocks touch a vertex or another side, not this side interior."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "line:railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate continuous paired road crosses this actual shared boundary. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "line:track"
+observed = "present"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Single gray dashed track crosses actual shared side inside its endpoints. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "line:unfinished_railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3821"
+to_hex = "C3921"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Single gray dashed track crosses the selected northeast diagonal inside its endpoints. A separate gray tied stroke also crosses it, but its railroad versus unfinished railroad identity is not verified by the blue TEC rail symbols. Contour ink lies on a neighbouring side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "line:railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate continuous paired road crosses this actual shared boundary. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate single dashed gray track crosses this actual boundary. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "line:unfinished_railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "side:border"
+observed = "unresolved"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C3921"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Blue square blocks coincide with the selected vertical side. Their exact railroad, unfinished railroad or border identity is unreadable against this TEC key; no such kind is certified. Nearby gray dash and tied strokes cross another side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full side inspected; no continuous blue tied railroad crosses this actual shared boundary. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate continuous paired road crosses this actual shared boundary. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "line:track"
+observed = "present"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Single gray dashed track crosses actual shared side inside its endpoints. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C3920"
+to_hex = "C4020"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Single gray dashed track crosses the selected southeast diagonal inside the endpoints. Gray tied strokes and blue blocks lie on adjacent sides or contact a vertex only; they do not cross this selected side."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "line:railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate continuous paired road crosses this actual shared boundary. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate single dashed gray track crosses this actual boundary. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "line:unfinished_railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4019"
+to_hex = "C4020"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Gray tied stroke crosses the selected vertical side, but its exact continuous versus unfinished rail identity remains unverified against the blue TEC symbols. Nearby paired road and single dashed track cross other sides."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "line:railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "line:road"
+observed = "present"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Paired continuous road crosses actual shared side inside its endpoints. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate single dashed gray track crosses this actual boundary. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "line:unfinished_railroad"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "side:border"
+observed = "unresolved"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "side:ridge"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "side:slope"
+observed = "unresolved"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Exact source symbol kind or contour assignment remains unreadable against TEC; no mask or high endpoint is certified. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4021"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Paired continuous road crosses the selected vertical side inside its endpoints. Blue blocks coincide with that side; exact rail and border identities remain unverified. Gold and gray contour ink meet at the side and its vertices, leaving separate slope/ridge assignment unreadable. Nearby single dashed track crosses another side."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full side inspected; no continuous blue tied railroad crosses this actual shared boundary. Selected southeast diagonal follows the already published dark gray escarpment and track crossing; neither covered identity is emitted here. No additional gold slope or ridge band follows this side interior; gold and blue blocks continue on adjacent sides at its eastern vertex. Paired road and tied-family stroke cross other sides."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate continuous paired road crosses this actual shared boundary. Selected southeast diagonal follows the already published dark gray escarpment and track crossing; neither covered identity is emitted here. No additional gold slope or ridge band follows this side interior; gold and blue blocks continue on adjacent sides at its eastern vertex. Paired road and tied-family stroke cross other sides."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Selected southeast diagonal follows the already published dark gray escarpment and track crossing; neither covered identity is emitted here. No additional gold slope or ridge band follows this side interior; gold and blue blocks continue on adjacent sides at its eastern vertex. Paired road and tied-family stroke cross other sides."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Selected southeast diagonal follows the already published dark gray escarpment and track crossing; neither covered identity is emitted here. No additional gold slope or ridge band follows this side interior; gold and blue blocks continue on adjacent sides at its eastern vertex. Paired road and tied-family stroke cross other sides."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Selected southeast diagonal follows the already published dark gray escarpment and track crossing; neither covered identity is emitted here. No additional gold slope or ridge band follows this side interior; gold and blue blocks continue on adjacent sides at its eastern vertex. Paired road and tied-family stroke cross other sides."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Selected southeast diagonal follows the already published dark gray escarpment and track crossing; neither covered identity is emitted here. No additional gold slope or ridge band follows this side interior; gold and blue blocks continue on adjacent sides at its eastern vertex. Paired road and tied-family stroke cross other sides."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Selected southeast diagonal follows the already published dark gray escarpment and track crossing; neither covered identity is emitted here. No additional gold slope or ridge band follows this side interior; gold and blue blocks continue on adjacent sides at its eastern vertex. Paired road and tied-family stroke cross other sides."
+
+[[survey]]
+from_hex = "C4020"
+to_hex = "C4121"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Selected southeast diagonal follows the already published dark gray escarpment and track crossing; neither covered identity is emitted here. No additional gold slope or ridge band follows this side interior; gold and blue blocks continue on adjacent sides at its eastern vertex. Paired road and tied-family stroke cross other sides."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full side inspected; no continuous blue tied railroad crosses this actual shared boundary. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate single dashed gray track crosses this actual boundary. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Actual drawn shared side inspected in full: visible land on part of the boundary establishes that it is not wholly water. No endpoint-based inference was used. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no gray escarpment band follows this actual boundary. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no broad blue river follows this actual boundary. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow blue river follows this actual boundary. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "side:slope"
+observed = "present"
+high_side = "C4419"
+src = ["land:8.35", "land:8.37"]
+note = "One-sided ochre contour follows actual side; source splashes identify the low cell and opposite high endpoint. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4419"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Paired road crosses the selected northeast diagonal and is already covered. The single dashed track runs below this diagonal inside C4320 and crosses a different western side; its road junction is below the selected side, so this fresh track observation is absent while the old pilot abstention is preserved. One-sided ochre slope splashes occupy C4320, making C4419 high."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full side inspected; no continuous blue tied railroad crosses this actual shared boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate single dashed gray track crosses this actual boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Actual drawn shared side inspected in full: visible land on part of the boundary establishes that it is not wholly water. No endpoint-based inference was used. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no gray escarpment band follows this actual boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no broad blue river follows this actual boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow blue river follows this actual boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "side:slope"
+observed = "present"
+high_side = "C4420"
+src = ["land:8.35", "land:8.37"]
+note = "One-sided ochre contour follows actual side; source splashes identify the low cell and opposite high endpoint. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4320"
+to_hex = "C4420"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Selected southeast diagonal has a one-sided ochre slope band and downslope splashes in C4320; C4420 is high. Gold ink on the neighbouring vertical side is distinct. Nearby road and track lie below or on other sides and do not supply new line crossings here."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full side inspected; no continuous blue tied railroad crosses this actual shared boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "side:all_sea"
+observed = "absent"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Actual drawn shared side inspected in full: visible land on part of the boundary establishes that it is not wholly water. No endpoint-based inference was used. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no gray escarpment band follows this actual boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no broad blue river follows this actual boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow blue river follows this actual boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4321"
+to_hex = "C4420"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Selected northeast diagonal contains visible land followed by marine water, so all_sea is absent. Ochre contour ink follows the neighbouring vertical or southwest diagonal, not this selected side. City, port and training markers below the boundary do not certify line or contour features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full side inspected; no continuous blue tied railroad crosses this actual shared boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate continuous paired road crosses this actual shared boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "side:all_sea"
+observed = "present"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual side and both vertices are directly inspected marine water. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no gray escarpment band follows this actual boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no broad blue river follows this actual boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow blue river follows this actual boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4322"
+to_hex = "C4421"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Whole selected northeast diagonal, including both vertices, is marine blue water. No eligible line, contour, river, wadi or border ink occurs on the selected side; nearby Bardia lettering and facilities are not boundary features."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "line:road"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate continuous paired road crosses this actual shared boundary. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "side:all_sea"
+observed = "present"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual side and both vertices are directly inspected marine water. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no gray escarpment band follows this actual boundary. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no broad blue river follows this actual boundary. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow blue river follows this actual boundary. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4421"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Whole selected vertical side, including both vertices, is marine blue water, directly inspected independently of endpoint flags. No eligible line or side feature other than all_sea occurs there."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "line:pipeline"
+observed = "unresolved"
+high_side = ""
+src = ["airlog:52.2"]
+note = "Pipeline identification was not performed: this TEC key supplies no pipeline symbol. No pipeline mask is created."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "line:railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.7", "land:8.37"]
+note = "Full side inspected; no continuous blue tied railroad crosses this actual shared boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "line:track"
+observed = "absent"
+high_side = ""
+src = ["land:8.33", "land:8.37"]
+note = "Full side inspected; no separate single dashed gray track crosses this actual boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "line:unfinished_railroad"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no interrupted blue tied railroad crosses this actual shared boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "line:unfinished_road"
+observed = "absent"
+high_side = ""
+src = ["land:8.47", "land:8.37"]
+note = "Full side inspected; no paired interrupted road crosses this actual shared boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "side:all_sea"
+observed = "present"
+high_side = ""
+src = ["land:10.21", "interp:map-0002"]
+note = "Entire actual side and both vertices are directly inspected marine water. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "side:border"
+observed = "absent"
+high_side = ""
+src = ["land:4.1", "land:8.37"]
+note = "Full side inspected; ordinary thin grid ink follows the boundary without a distinct border stroke. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "side:escarpment"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no gray escarpment band follows this actual boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "side:major_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no broad blue river follows this actual boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "side:minor_river"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow blue river follows this actual boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "side:ridge"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ridge band follows this actual boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "side:slope"
+observed = "absent"
+high_side = ""
+src = ["land:8.35", "land:8.37"]
+note = "Full side inspected; no ochre slope band follows this actual boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
+
+[[survey]]
+from_hex = "C4420"
+to_hex = "C4521"
+layer = "side:wadi"
+observed = "absent"
+high_side = ""
+src = ["land:8.37"]
+note = "Full side inspected; no narrow green-gray wadi follows this actual boundary. Whole selected southeast diagonal, including both vertices, is marine blue water, directly inspected independently of endpoint flags. Land, track and ochre contour strokes are on western neighbouring sides, outside this selected boundary."
