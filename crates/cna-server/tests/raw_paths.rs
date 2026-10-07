@@ -4,7 +4,7 @@ use cna_content::map::{LineKind, MapContent, SideKind};
 use cna_core::{
     decision::{DecisionRequest, DecisionResponse},
     dice::CampaignRng,
-    engine::{Command, Game, evaluate},
+    engine::{Command, Game, Ruleset, evaluate},
     ids::{SeatId, UnitId},
     quantity::{AmmoPoints, FuelTenths, WaterPoints},
     visibility::Perspective,
@@ -26,6 +26,7 @@ use std::{collections::BTreeMap, fs, path::Path};
 const ROOT: &str = "cw.unassigned_inf.1st_rnf_mg_bn";
 const COUNTER: &str = "cw.2_nz_div.21st_nz_bn";
 const ATTACHED: &str = "cw.2_nz_div.22nd_nz_bn";
+const PARENT: &str = "cw.2_nz_div.5th_new_zealand_bde_hq";
 const RBA: &str = "opstage.movement_and_combat.combat.retreat_before_assault";
 
 fn copy_content(content: &CnaContent) -> CnaContent {
@@ -177,6 +178,51 @@ fn fixture(retreat: bool) -> (CnaContent, Game<Cna>, Option<Game<Cna>>) {
     }
     (content, game, expected)
 }
+// A real printed child can be visible while remote, then disappear into its own parent.
+// The parent is stationary: this tests disclosure across attachment, never HQ movement.
+fn joining_fixture(retreat: bool) -> (CnaContent, Game<Cna>, Option<Game<Cna>>) {
+    let (content, mut game, _) = fixture(false);
+    assert_eq!(
+        content.units.units[&COUNTER.into()].parent.as_ref(),
+        Some(&PARENT.into())
+    );
+    for id in [ROOT, ATTACHED] {
+        game.state.land.units.get_mut(&id.into()).unwrap().location = Location::NotArrived;
+    }
+    let child = game.state.land.units.get_mut(&COUNTER.into()).unwrap();
+    child.detached = false;
+    child.attached_to = None;
+    let parent = game.state.land.units.get_mut(&PARENT.into()).unwrap();
+    parent.location = Location::Hex {
+        hex: "C4022".into(),
+    };
+    parent.detached = true;
+    parent.attached_to = None;
+    game.state.decisions.pending.clear();
+    game.state.turn.player_a = Some(if retreat {
+        Side::Axis
+    } else {
+        Side::Commonwealth
+    });
+    game.state.cursor.index = if retreat {
+        PLAYER_HALF.iter().position(|s| s.anchor == RBA).unwrap()
+    } else {
+        1
+    };
+    game.state.cursor.entered = false;
+    game = evaluate(&Cna::dev(), &content, &game, &Command::Advance)
+        .unwrap()
+        .game;
+    for p in Perspective::all().filter(|p| p.side() == Some(Side::Axis)) {
+        assert!(
+            Cna::dev()
+                .view(&content, &game.state, p)
+                .units
+                .contains_key(COUNTER)
+        );
+    }
+    (content, game, None)
+}
 fn response(request: &DecisionRequest, action: Value, key: &str) -> DecisionResponse {
     DecisionResponse {
         decision_id: request.id.clone(),
@@ -201,7 +247,7 @@ fn streams(campaign: &Campaign<Cna>) -> Vec<(Perspective, Vec<ServerMessage>)> {
         })
         .collect()
 }
-fn assert_paths(campaign: &Campaign<Cna>) {
+fn assert_paths(campaign: &Campaign<Cna>, joining: bool) {
     for (p, stream) in streams(campaign) {
         for (index, message) in stream.iter().enumerate() {
             assert!(
@@ -235,7 +281,9 @@ fn assert_paths(campaign: &Campaign<Cna>) {
             })
             .collect::<Vec<_>>();
         actual.sort();
-        let mut expected = if enemy {
+        let mut expected = if joining {
+            vec![COUNTER]
+        } else if enemy {
             vec![ROOT, COUNTER]
         } else {
             vec![ROOT, COUNTER, ATTACHED]
@@ -256,6 +304,40 @@ fn assert_paths(campaign: &Campaign<Cna>) {
         );
         if enemy {
             assert!(!serde_json::to_string(&stream).unwrap().contains(ATTACHED));
+        }
+        if joining && enemy {
+            assert!(!campaign.view(p).unwrap().units.contains_key(COUNTER));
+            let removals = stream
+                .iter()
+                .filter_map(|m| match m {
+                    ServerMessage::Event {
+                        event: GameEvent::UnitRemoved { unit_id, reason },
+                        ..
+                    } if unit_id == COUNTER => Some(reason.as_str()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(removals, vec![""], "{p}: attachment removal is reasonless");
+            let moved = stream
+                .iter()
+                .position(|m| {
+                    matches!(m,
+                ServerMessage::Event { event: GameEvent::UnitMoved { unit_id, .. }, .. }
+                    if unit_id == COUNTER)
+                })
+                .unwrap();
+            let removed = stream
+                .iter()
+                .position(|m| {
+                    matches!(m,
+                ServerMessage::Event { event: GameEvent::UnitRemoved { unit_id, .. }, .. }
+                    if unit_id == COUNTER)
+                })
+                .unwrap();
+            assert!(
+                moved < removed,
+                "{p}: actual route precedes visibility removal"
+            );
         }
     }
 }
@@ -311,8 +393,26 @@ fn recover_exact(
 }
 #[test]
 fn raw_counter_paths_survive_sqlite_submit_retry_checkpoint_and_tail() {
-    for retreat in [false, true] {
-        let (content, mut reference, supplied_expected) = fixture(retreat);
+    prove_raw_paths(false, &[false, true]);
+}
+#[test]
+fn visible_child_rejoining_real_parent_keeps_path_through_sqlite() {
+    prove_raw_paths(true, &[false]);
+}
+#[test]
+fn visible_child_rejoining_real_parent_keeps_path_through_sqlite_rba() {
+    prove_raw_paths(true, &[true]);
+}
+fn prove_raw_paths(joining: bool, retreats: &[bool]) {
+    for &retreat in retreats {
+        let (content, mut reference, supplied_expected) = if joining {
+            joining_fixture(retreat)
+        } else {
+            fixture(retreat)
+        };
+        let mover = if joining { COUNTER } else { ROOT };
+        let parent_before = joining
+            .then(|| serde_json::to_value(&reference.state.land.units[&PARENT.into()]).unwrap());
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("raw-paths.sqlite");
         let pins = Pins {
@@ -356,7 +456,7 @@ fn raw_counter_paths_survive_sqlite_submit_retry_checkpoint_and_tail() {
             .unwrap();
         let move_response = response(
             &request,
-            json!([{"unit":ROOT,"with_stack":true,"path":["C4021","C4022"]}]),
+            json!([{"unit":mover,"with_stack":!joining,"path":["C4021","C4022"]}]),
             "raw-counter-path",
         );
         let before_assets = json!({"units":reference.state.land.units,"logistics":reference.state.logistics,"rng":reference.rng});
@@ -386,7 +486,7 @@ fn raw_counter_paths_survive_sqlite_submit_retry_checkpoint_and_tail() {
             );
             // Actual RBA answers only buffer; finish_step executes the shared Land path once.
             assert_eq!(
-                reference.state.land.units[&ROOT.into()].location.hex(),
+                reference.state.land.units[&mover.into()].location.hex(),
                 Some(&"C4020".into())
             );
             assert!(
@@ -417,13 +517,24 @@ fn raw_counter_paths_survive_sqlite_submit_retry_checkpoint_and_tail() {
             }
             apply(&mut campaign, &content, &mut reference, Command::Advance);
         }
-        for id in [ROOT, COUNTER, ATTACHED] {
+        for id in if joining {
+            vec![COUNTER]
+        } else {
+            vec![ROOT, COUNTER, ATTACHED]
+        } {
             assert_eq!(
                 reference.state.land.units[&id.into()].location.hex(),
                 Some(&"C4022".into())
             );
         }
-        assert_paths(&campaign);
+        if let Some(parent_before) = parent_before {
+            assert_eq!(
+                serde_json::to_value(&reference.state.land.units[&PARENT.into()]).unwrap(),
+                parent_before
+            );
+            assert!(!reference.state.land.units[&COUNTER.into()].detached);
+        }
+        assert_paths(&campaign, joining);
         // Replay movement from the initial checkpoint and retained command tail.
         campaign = recover_exact(&path, campaign, &content, &pins);
         let retry_rows = rows(&path);
@@ -463,11 +574,11 @@ fn raw_counter_paths_survive_sqlite_submit_retry_checkpoint_and_tail() {
             .unwrap();
         assert_eq!(checkpoint, 32);
         assert_eq!(revision, 33);
-        assert_paths(&campaign);
+        assert_paths(&campaign, joining);
         campaign = recover_exact(&path, campaign, &content, &pins);
         let before = rows(&path);
         assert!(campaign.submit(move_response).unwrap().duplicate);
         assert_eq!(rows(&path), before);
-        assert_paths(&campaign);
+        assert_paths(&campaign, joining);
     }
 }
