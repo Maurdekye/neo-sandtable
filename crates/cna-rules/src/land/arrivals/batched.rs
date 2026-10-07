@@ -60,16 +60,17 @@ impl Job {
     fn schema(&self) -> ActionSchema {
         match self {
             Self::Place { destinations, .. } | Self::Pool { destinations, .. } => {
-                options(
-                    destinations
-                        .iter()
-                        .map(|l| {
-                            let id = crate::setup::placement::destination_id(l).unwrap();
-                            (id.clone(), id)
-                        })
-                        .collect(),
-                )
-                .schema
+                let mut choices: Vec<_> = destinations
+                    .iter()
+                    .map(|l| {
+                        let id = crate::setup::placement::destination_id(l).unwrap();
+                        (id.clone(), id)
+                    })
+                    .collect();
+                if matches!(self, Self::Place { .. }) {
+                    choices.push(("await_capacity".into(), "Await capacity only if no destination remains legal after this owner's earlier placements".into()));
+                }
+                options(choices).schema
             }
             Self::Trucks {
                 units, available, ..
@@ -497,6 +498,20 @@ pub(super) fn answer(
             Job::Place {
                 unit, destinations, ..
             } => {
+                if a.as_str() == Some("await_capacity") {
+                    for destination in destinations {
+                        match valid_destination(content, &own, unit, destination, strict) {
+                            Ok(_) => {
+                                return Err(illegal(
+                                    "arrival delay requires every destination to lack capacity",
+                                ));
+                            }
+                            Err(Rejection::Illegal { .. }) => {}
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    continue;
+                }
                 let l = chosen(a, destinations)?;
                 valid_destination(content, &own, unit, l, strict)?;
                 own.land.units.get_mut(unit).unwrap().location = l.clone();
@@ -816,11 +831,15 @@ pub fn baseline(content: &CnaContent, state: &State, request: &DecisionRequest) 
             Job::Place {
                 unit, destinations, ..
             } => {
-                let l = destinations
+                if let Some(l) = destinations
                     .iter()
-                    .find(|l| valid_destination(content, &draft, unit, l, false).is_ok())?;
-                draft.land.units.get_mut(unit)?.location = l.clone();
-                json!(crate::setup::placement::destination_id(l)?)
+                    .find(|l| valid_destination(content, &draft, unit, l, false).is_ok())
+                {
+                    draft.land.units.get_mut(unit)?.location = l.clone();
+                    json!(crate::setup::placement::destination_id(l)?)
+                } else {
+                    json!("await_capacity")
+                }
             }
             Job::Pool { destinations, .. } => json!(crate::setup::placement::destination_id(
                 destinations.first()?

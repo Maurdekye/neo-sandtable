@@ -2299,6 +2299,119 @@ mod tests {
 
     /// Cases: land:20.12, land:20.14, land:9.12
     #[test]
+    fn simultaneous_arrivals_can_fill_the_last_space_without_stranding_the_batch() {
+        let (mut c, mut game) = fixture();
+        let arriving = [
+            UnitId::new("cw.2_nz_div.24th_nz_bn"),
+            UnitId::new("cw.2_nz_div.25th_nz_bn"),
+        ];
+        c.areas.areas.get_mut("cairo").unwrap().hex_ids = vec!["E1730".into()];
+        let blockers: Vec<_> = c
+            .units
+            .units
+            .values()
+            .filter(|u| {
+                u.side == Side::Commonwealth
+                    && u.stacking_points == Some(1)
+                    && !arriving.contains(&u.id)
+                    && crate::land::formation::class(&c, &u.id)
+                        .is_some_and(|cl| cl.unit_type == "infantry")
+            })
+            .take(7)
+            .map(|u| u.id.clone())
+            .collect();
+        assert_eq!(blockers.len(), 7);
+        for id in blockers.iter().chain(arriving.iter()) {
+            let u = game.state.land.units.get_mut(id).unwrap();
+            u.detached = true;
+            u.toe = Some(cna_content::units::Toe::Normal(
+                cna_content::units::NormalToe::N,
+            ));
+        }
+        for id in &blockers {
+            game.state.land.units.get_mut(id).unwrap().location = Location::Hex {
+                hex: "E1730".into(),
+            };
+        }
+        for schedule in &mut c.units.schedules {
+            schedule
+                .arrivals
+                .retain(|r| r.gt == Some(6) && r.opstage == Some(3));
+            schedule.withdrawals.clear();
+            for row in &mut schedule.arrivals {
+                row.units = arriving
+                    .iter()
+                    .map(|id| ScheduledUnit {
+                        unit: id.clone(),
+                        subtree: false,
+                        hq_only: false,
+                        less: vec![],
+                    })
+                    .collect();
+                row.trucks = None;
+            }
+        }
+        at(&mut game, 6, 3);
+        game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+            .unwrap()
+            .game;
+        let commander = game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat == SeatId::new(Side::Commonwealth, Role::Commander))
+            .unwrap();
+        let mut early = plan(&c, &game, commander);
+        early[format!("place:{}", arriving[0])] = json!("await_capacity");
+        assert!(
+            matches!(
+                response(&c, &game, commander, early),
+                Err(Rejection::Illegal { .. })
+            ),
+            "capacity delay is not a voluntary pass"
+        );
+        game = drain(&c, game);
+        assert_eq!(
+            game.state.land.units[&arriving[0]].location,
+            Location::Hex {
+                hex: "E1730".into()
+            }
+        );
+        assert!(
+            matches!(&game.state.land.units[&arriving[1]].location, Location::AwaitingSetup { group } if group.starts_with("arrival:"))
+        );
+        assert_eq!(
+            game.state.land.arrivals.newly_arrived["6:3"],
+            BTreeSet::from([arriving[0].clone()])
+        );
+        game.state
+            .land
+            .units
+            .get_mut(&blockers[0])
+            .unwrap()
+            .location = Location::Hex {
+            hex: "C3418".into(),
+        };
+        at(&mut game, 7, 1);
+        game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+            .unwrap()
+            .game;
+        game = drain(&c, game);
+        assert_eq!(
+            game.state.land.units[&arriving[1]].location,
+            Location::Hex {
+                hex: "E1730".into()
+            }
+        );
+        assert_eq!(
+            game.state.land.arrivals.newly_arrived["7:1"],
+            BTreeSet::from([arriving[1].clone()])
+        );
+    }
+
+    /// Cases: land:20.12, land:20.14, land:9.12
+    #[test]
     fn a_capacity_delayed_counter_remains_pending_for_a_later_receiving_window() {
         let (mut c, mut game) = fixture();
         let id = UnitId::new("cw.2_nz_div.24th_nz_bn");
@@ -3040,6 +3153,98 @@ mod tests {
         }
         (a, b)
     }
+    /// Cases: land:3.6, land:20.14, land:9.12
+    #[test]
+    fn enemy_cannot_distinguish_capacity_waiting_from_another_buffered_destination() {
+        let (mut c, mut a) = fixture();
+        let arriving = [
+            UnitId::new("cw.2_nz_div.24th_nz_bn"),
+            UnitId::new("cw.2_nz_div.25th_nz_bn"),
+        ];
+        c.areas.areas.get_mut("cairo").unwrap().hex_ids = vec!["E1730".into(), "E1830".into()];
+        let blockers: Vec<_> = c
+            .units
+            .units
+            .values()
+            .filter(|u| {
+                u.side == Side::Commonwealth
+                    && u.stacking_points == Some(1)
+                    && !arriving.contains(&u.id)
+                    && crate::land::formation::class(&c, &u.id)
+                        .is_some_and(|cl| cl.unit_type == "infantry")
+            })
+            .take(15)
+            .map(|u| u.id.clone())
+            .collect();
+        assert_eq!(blockers.len(), 15);
+        for id in blockers.iter().chain(arriving.iter()) {
+            let u = a.state.land.units.get_mut(id).unwrap();
+            u.detached = true;
+            u.toe = Some(cna_content::units::Toe::Normal(
+                cna_content::units::NormalToe::N,
+            ));
+        }
+        for (n, id) in blockers.iter().enumerate() {
+            a.state.land.units.get_mut(id).unwrap().location = Location::Hex {
+                hex: if n < 7 { "E1730" } else { "E1830" }.into(),
+            };
+        }
+        for schedule in &mut c.units.schedules {
+            schedule
+                .arrivals
+                .retain(|r| r.gt == Some(6) && r.opstage == Some(3));
+            schedule.withdrawals.clear();
+            for row in &mut schedule.arrivals {
+                row.units = arriving
+                    .iter()
+                    .map(|id| ScheduledUnit {
+                        unit: id.clone(),
+                        subtree: false,
+                        hq_only: false,
+                        less: vec![],
+                    })
+                    .collect();
+                row.trucks = None;
+            }
+        }
+        at(&mut a, 6, 3);
+        let mut b = a.clone();
+        b.state
+            .land
+            .units
+            .get_mut(blockers.last().unwrap())
+            .unwrap()
+            .location = Location::OffMap {
+            id: "box_tripoli".into(),
+        };
+        let (a, b) = open_pair(&c, &a, &b, Side::Axis);
+        let seat = SeatId::new(Side::Commonwealth, Role::Commander);
+        let ca = command_for(&c, &a, seat);
+        let cb = command_for(&c, &b, seat);
+        let Command::Respond(ra) = ca else {
+            unreachable!()
+        };
+        let Command::Respond(rb) = cb else {
+            unreachable!()
+        };
+        assert_eq!(
+            ra.action[format!("place:{}", arriving[1])],
+            json!("await_capacity")
+        );
+        assert_ne!(
+            rb.action[format!("place:{}", arriving[1])],
+            json!("await_capacity")
+        );
+        let (a, b) = prepare_pair(&c, a, b, Side::Axis);
+        for game in [&a, &b] {
+            assert!(
+                arriving
+                    .iter()
+                    .all(|id| game.state.land.units[id].location == Location::NotArrived)
+            );
+        }
+    }
+
     /// Cases: land:3.6, land:20.12, airlog:48.0
     #[test]
     fn hidden_offmap_arrival_preserves_fixed_requests_clock_streams_and_recovery() {
@@ -3255,7 +3460,7 @@ mod tests {
             Side::Axis,
         );
     }
-    /// Cases: land:20.83, land:20.85, land:4.43a
+    /// Cases: land:20.83, land:20.85, land:4.43
     #[test]
     fn withdrawal_ranking_skips_a_source_removed_by_private_substitution_and_replays_exactly() {
         let (mut c, mut g) = fixture();
