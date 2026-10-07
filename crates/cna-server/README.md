@@ -166,11 +166,15 @@ mixed sandbox/CNA recovery. No provider invocation is needed for these tests.
 Default CNA checks use bounded decision windows, including an accepted real-unit move and
 mid-run recovery of all perspective views, counters, transcripts and adjudication RNG. Whole
 Graziani campaigns are marked `slow: whole campaign`; run them with
-`cargo test -p cna-server -- --ignored`. Ignored campaigns currently use a 460-second
-measurement ceiling, about twice the completed CI launcher proxy (227.38 seconds), while the
-server campaigns were still censored at their former 120-second limit. Default bounded-test
-limits stay unchanged. Completed server CI timings will set the slow limits
-to about twice each measured campaign duration.
+`cargo test -p cna-server -- --ignored`. Completed server CI on commit78445da
+(run37558346523) measured legal-random237.185 seconds, pass-when-possible104.634
+seconds and HTTP legal-random240.639 seconds before the logistics baseline route.
+With feeding and watering policies, local legal-random completed5241 commands in
+392.027 seconds directly and384.578 seconds through HTTP. Temporary ignored-only
+ceilings use twice the expected CI duration (local time multiplied by the observed
+1.4 CI/local ratio), rounded up to1100 seconds directly and1080 through HTTP. The
+pass policy keeps210 seconds, twice its completed CI measurement. Recalibrate after
+logistics batching and the next completed CI report; default limits stay unchanged.
 The bounded mover test prints engine, writer (including engine and SQLite), and all-perspective
 projection timings; it uses real unit data with a small test map rather than a full-roster benchmark.
 
@@ -190,7 +194,9 @@ These cumulative diagnostics reset on recovery and are available only through th
 in-process handle, with no HTTP, WebSocket or MCP tool exposure. They do not alter game state,
 RNG, input pins, or the requirement to commit accepted commands before acknowledgment.
 
-The first completed local full-campaign measurement found projection and observation work
-used about 58% of wall time, compared with about 26% for the durable writer. Reusing unchanged
-perspective/seat projections is the leading performance follow-up, subject to privacy and
+The completed CI campaigns spent about57–64% of wall time in projections and
+27–29% in the durable writer. Legal-random used2936 accepted commands, with durable
+writes averaging21.6–22.6 ms per command; its739 logistics decisions preceded the
+logistics baseline and batching changes. Reusing unchanged perspective and seat
+projections is the leading performance follow-up, subject to privacy and
 invalidation tests. This is deferred; durability and per-command acknowledgment stay unchanged.

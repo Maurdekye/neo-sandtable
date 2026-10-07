@@ -28,12 +28,15 @@ fn request(profile: &str, mode: &str, paused: bool) -> CreateRequest {
         paused,
     }
 }
-// CI6ff168c/run37555623854: the scripted launcher completed in227.38s.
-// Its completion is a proxy, not a completed server measurement; parallel server
-// tests were still censored at120s. The lead approved this460s measurement ceiling,
-// about twice that completed proxy. CNA_PROFILE will calibrate each server limit
-// to2x its own completed CI campaign time. Default-test limits are unchanged.
-const SLOW_CAMPAIGN_LIMIT: Duration = Duration::from_secs(460);
+// CI78445da/run37558346523 completed pre-logistics-policy legal_random237.185s,
+// pass_when_possible104.634s and HTTP/legal_random240.639s. The new policy resolved
+// 5241 commands locally in392.027s (direct) and384.578s (HTTP). Per the lead ruling,
+// mover ceilings temporarily use2x expected CI time: local completion x observed
+// 1.4 CI/local ratio, rounded up. Recalibrate after logistics batching and the next
+// completed CI report. Pass keeps2x its own completed CI measurement. Defaults unchanged.
+const SLOW_RANDOM_LIMIT: Duration = Duration::from_secs(1100);
+const SLOW_PASS_LIMIT: Duration = Duration::from_secs(210);
+const SLOW_HTTP_LIMIT: Duration = Duration::from_secs(1080);
 // Whole-roster benchmarks calibrate one campaign at a time on small hosted runners.
 static SLOW_CAMPAIGN_SLOT: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
@@ -69,7 +72,11 @@ async fn terminal(handle: &CampaignHandle, path: Option<&Path>, label: &str) -> 
     let started = Instant::now();
     let mut status = handle.watch_status();
     let limit = if path.is_some() {
-        SLOW_CAMPAIGN_LIMIT
+        if label == "pass_when_possible" {
+            SLOW_PASS_LIMIT
+        } else {
+            SLOW_RANDOM_LIMIT
+        }
     } else {
         Duration::from_secs(120)
     };
@@ -648,7 +655,7 @@ async fn check_http_real_profile(whole: bool) {
     );
     let started = Instant::now();
     let limit = if whole {
-        SLOW_CAMPAIGN_LIMIT
+        SLOW_HTTP_LIMIT
     } else {
         Duration::from_secs(20)
     };
