@@ -389,7 +389,8 @@ fn private_activity_does_not_change_enemy_actions_views_or_checkpoint_visibility
     };
     let mut b = a.clone();
     record_cp(&mut b.state, &id, 3).unwrap();
-    b.state.engineering.activity.get_mut(&id).unwrap().pinned = true;
+    record_pin(&mut b.state, &id).unwrap();
+    record_departure(&mut b.state, &id).unwrap();
     let recovered: State = serde_json::from_value(bytes(&b.state)).unwrap();
     b.state = recovered;
     crate::testkit::assert_action_indistinguishable(
@@ -434,4 +435,205 @@ fn corrupt_current_stage_and_future_global_opening_fail_without_mutation() {
         1,
         "engineering activity has corrupt opening history",
     );
+}
+
+/// Cases: land:23.22, land:26.13
+#[test]
+fn actual_activity_notifications_preserve_gross_opening_and_unmatched_rows() {
+    let (mut state, id, other) = fixture();
+    open_stage(&mut state);
+    let opening = state.engineering.observed_opening;
+    let location = state.land.units[&id].location.clone();
+    record_cp(&mut state, &id, 3).unwrap();
+    let physical_before = serde_json::to_value(&state.land).unwrap();
+    let unmatched = state.engineering.activity[&other].clone();
+    record_pin(&mut state, &id).unwrap();
+    record_departure(&mut state, &id).unwrap();
+    let committed = bytes(&state);
+    record_pin(&mut state, &id).unwrap();
+    record_departure(&mut state, &id).unwrap();
+    assert_eq!(bytes(&state), committed);
+    let row = &state.engineering.activity[&id];
+    assert_eq!(row.gross_cp_quarters, 3);
+    assert_eq!(row.opening_location.as_ref(), Some(&location));
+    assert!(row.pinned && row.departed);
+    assert_eq!(state.engineering.observed_opening, opening);
+    assert_eq!(state.engineering.activity[&other], unmatched);
+    assert_eq!(serde_json::to_value(&state.land).unwrap(), physical_before);
+    assert!(!whole_stage_idle_at(&state, &id, &location));
+}
+
+/// Cases: land:23.22, land:26.13
+#[test]
+fn late_and_legacy_notifications_never_manufacture_observed_opening() {
+    for observed in [false, true] {
+        let (mut state, id, _) = fixture();
+        if observed {
+            open_stage(&mut state);
+        }
+        state.engineering.activity.remove(&id);
+        let global = state.engineering.observed_opening;
+        let location = state.land.units[&id].location.clone();
+        record_pin(&mut state, &id).unwrap();
+        record_departure(&mut state, &id).unwrap();
+        assert_eq!(state.engineering.observed_opening, global);
+        let row = &state.engineering.activity[&id];
+        assert_eq!(row.opening_location, None);
+        assert_eq!(row.gross_cp_quarters, 0);
+        assert!(row.pinned && row.departed);
+        assert!(!whole_stage_idle_at(&state, &id, &location));
+    }
+}
+
+/// Cases: land:23.22, land:26.13
+#[test]
+fn notification_failure_matches_cp_candidate_error_and_is_full_state_atomic() {
+    type Notify = fn(&mut State, &UnitId) -> Result<(), EngineError>;
+    for notify in [record_pin as Notify, record_departure as Notify] {
+        for corruption in 0..7 {
+            let (mut state, mut id, _) = fixture();
+            open_stage(&mut state);
+            match corruption {
+                0 => id = "missing.trusted.unit".into(),
+                1 => state.cursor.op_stage = None,
+                2 => {
+                    state
+                        .engineering
+                        .activity
+                        .get_mut(&id)
+                        .unwrap()
+                        .gross_cp_quarters = -1
+                }
+                3 => {
+                    state
+                        .engineering
+                        .activity
+                        .get_mut(&id)
+                        .unwrap()
+                        .stage
+                        .op_stage = 0
+                }
+                4 => {
+                    state
+                        .engineering
+                        .activity
+                        .get_mut(&id)
+                        .unwrap()
+                        .stage
+                        .op_stage = 2
+                }
+                5 => {
+                    state
+                        .engineering
+                        .observed_opening
+                        .as_mut()
+                        .unwrap()
+                        .op_stage = 2
+                }
+                6 => {
+                    state.cursor.game_turn = 2;
+                    state
+                        .engineering
+                        .activity
+                        .get_mut(&id)
+                        .unwrap()
+                        .gross_cp_quarters = -1;
+                }
+                _ => unreachable!(),
+            }
+            let mut cp_probe = state.clone();
+            let expected = record_cp(&mut cp_probe, &id, 1).unwrap_err();
+            let before = bytes(&state);
+            let actual = notify(&mut state, &id).unwrap_err();
+            match (actual, expected) {
+                (EngineError::Invariant { detail: a }, EngineError::Invariant { detail: b }) => {
+                    assert_eq!(a, b)
+                }
+                other => panic!("notification error changed {other:?}"),
+            }
+            assert_eq!(bytes(&state), before);
+        }
+    }
+}
+
+/// Cases: land:23.22, land:26.13
+#[test]
+fn scoped_restore_removes_unknown_notification_and_restores_current_flags() {
+    let (mut state, id, other) = fixture();
+    open_stage(&mut state);
+    state.engineering.activity.remove(&id);
+    let absent = activity_snapshot(&state, std::slice::from_ref(&id));
+    record_pin(&mut state, &id).unwrap();
+    record_departure(&mut state, &other).unwrap();
+    let unmatched = state.engineering.activity[&other].clone();
+    restore_activity(&mut state, &absent).unwrap();
+    assert!(!state.engineering.activity.contains_key(&id));
+    assert_eq!(state.engineering.activity[&other], unmatched);
+    record_pin(&mut state, &id).unwrap();
+    let pinned = activity_snapshot(&state, std::slice::from_ref(&id));
+    let before = state.engineering.activity[&id].clone();
+    record_departure(&mut state, &id).unwrap();
+    restore_activity(&mut state, &pinned).unwrap();
+    assert_eq!(state.engineering.activity[&id], before);
+}
+
+/// Cases: land:23.22, land:26.13
+#[test]
+fn notification_flags_recover_and_survive_cycle_pin_reset_until_next_public_stage() {
+    let (mut state, id, _) = fixture();
+    open_stage(&mut state);
+    record_pin(&mut state, &id).unwrap();
+    record_departure(&mut state, &id).unwrap();
+    let mut recovered: State = serde_json::from_value(bytes(&state)).unwrap();
+    recovered.land.combat.pinned.clear();
+    recovered.cursor.half = Some(Half::B);
+    recovered.cursor.cycle += 1;
+    open_stage(&mut recovered);
+    assert!(recovered.engineering.activity[&id].pinned);
+    assert!(recovered.engineering.activity[&id].departed);
+    recovered.cursor.op_stage = Some(2);
+    recovered.cursor.entered = false;
+    recovered.cursor.block = Block::OpStage;
+    recovered.cursor.index = 0;
+    open_stage(&mut recovered);
+    assert!(!recovered.engineering.activity[&id].pinned);
+    assert!(!recovered.engineering.activity[&id].departed);
+}
+
+/// Cases: land:23.22, land:26.13
+#[test]
+fn valid_stale_notifications_start_current_unknown_and_restore_exact_old_history() {
+    type Notify = fn(&mut State, &UnitId) -> Result<(), EngineError>;
+    for (notify, pinned, departed) in [
+        (record_pin as Notify, true, false),
+        (record_departure as Notify, false, true),
+    ] {
+        let (mut state, id, other) = fixture();
+        open_stage(&mut state);
+        record_cp(&mut state, &id, 5).unwrap();
+        record_pin(&mut state, &id).unwrap();
+        record_departure(&mut state, &id).unwrap();
+        let old = state.engineering.activity[&id].clone();
+        let global = state.engineering.observed_opening;
+        let unmatched = state.engineering.activity[&other].clone();
+        let location = state.land.units[&id].location.clone();
+        state.cursor.game_turn += 1;
+        state.cursor.entered = true;
+        let snapshot = activity_snapshot(&state, std::slice::from_ref(&id));
+        notify(&mut state, &id).unwrap();
+        let row = &state.engineering.activity[&id];
+        assert_eq!(Some(row.stage), ActivityStage::current(&state));
+        assert_eq!(row.opening_location, None);
+        assert_eq!(row.gross_cp_quarters, 0);
+        assert_eq!(row.pinned, pinned);
+        assert_eq!(row.departed, departed);
+        assert_eq!(state.engineering.observed_opening, global);
+        assert_eq!(state.engineering.activity[&other], unmatched);
+        assert!(!whole_stage_idle_at(&state, &id, &location));
+        restore_activity(&mut state, &snapshot).unwrap();
+        assert_eq!(state.engineering.activity[&id], old);
+        assert_eq!(state.engineering.observed_opening, global);
+        assert_eq!(state.engineering.activity[&other], unmatched);
+        assert!(!whole_stage_idle_at(&state, &id, &location));
+    }
 }

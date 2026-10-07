@@ -159,6 +159,27 @@ pub fn record_cp(state: &mut State, id: &UnitId, quarters: i32) -> Result<(), En
     Ok(())
 }
 
+/// Record actual applied pin, including another actual pin on an already pinned unit.
+/// Caller establishes immunity and actual application on its transactional draft first.
+/// Cases: land:23.22, land:26.13
+pub fn record_pin(state: &mut State, id: &UnitId) -> Result<(), EngineError> {
+    let mut next = candidate(state, id)?;
+    next.pinned = true;
+    state.engineering.activity.insert(id.clone(), next);
+    Ok(())
+}
+
+/// Record accepted physical departure immediately before changing this unit's location.
+/// Caller validates that old and new physical locations differ, on its draft.
+/// Notify every represented member, including carried members.
+/// Cases: land:23.22, land:26.13
+pub fn record_departure(state: &mut State, id: &UnitId) -> Result<(), EngineError> {
+    let mut next = candidate(state, id)?;
+    next.departed = true;
+    state.engineering.activity.insert(id.clone(), next);
+    Ok(())
+}
+
 /// Requested members only; a missing entry is part of the captured state.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActivitySnapshot {
