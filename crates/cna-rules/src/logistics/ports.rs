@@ -386,9 +386,21 @@ mod tests {
         )
         .unwrap();
         assert_eq!(port.name, PortName::Sollum);
+        // Absence is an explicit fixture premise, independent of later surveys.
+        let mut city_only = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        city_only
+            .places
+            .places
+            .retain(|_, place| place.hex_id.as_str() != "A4827" || place.kind != "port");
+        assert!(
+            city_only
+                .places
+                .at(&"A4827".into())
+                .any(|place| { place.kind == "major_city" && place.name == "Benghazi" })
+        );
         assert_eq!(
             at(
-                &c,
+                &city_only,
                 &Location::Hex {
                     hex: "A4827".into()
                 }
@@ -397,12 +409,68 @@ mod tests {
                 case: "airlog:55.11"
             })
         );
-        assert!(lane_destination(&c, 3).is_err());
+        assert_eq!(
+            lane_destination(&city_only, 3),
+            Err(SupplyError::Unsupported {
+                case: "airlog:56.11"
+            })
+        );
         let id: UnitId = "it.1_libyan_div.viii_libyan_bn".into();
         s.land.units.get_mut(&id).unwrap().location = port.location.clone();
         record_entry(&c, &mut s, Side::Axis, &port.location);
         assert_eq!(s.logistics.ports[&port.id].owner, Side::Axis);
     }
+    /// Cases: airlog:55.11, airlog:56.11
+    #[test]
+    fn explicit_benghazi_port_registration_resolves_lane_three() {
+        let (mut c, _, _) = setup();
+        // A test-only explicit port registration, separate from the city record.
+        // The resolver must use its kind; the city's name alone never suffices.
+        let city = c.places.places["city-benghazi-a4827"].clone();
+        c.places
+            .places
+            .retain(|_, place| place.hex_id.as_str() != "A4827" || place.kind != "port");
+        assert!(lane_destination(&c, 3).is_err());
+        let mut port_record = city;
+        port_record.id = "fixture-port-benghazi-a4827".into();
+        port_record.kind = "port".into();
+        port_record.review_batch = "synthetic-port-resolver-fixture".into();
+        port_record.note = Some("Synthetic test input, not a surveyed map record.".into());
+        port_record.src.clear();
+        c.places.places.insert(port_record.id.clone(), port_record);
+        let port = at(
+            &c,
+            &Location::Hex {
+                hex: "A4827".into(),
+            },
+        )
+        .unwrap();
+        assert_eq!(port.name, PortName::Benghazi);
+        assert_eq!(
+            port.location,
+            Location::Hex {
+                hex: "A4827".into()
+            }
+        );
+        assert_eq!(lane_destination(&c, 3).unwrap(), port);
+        assert!(
+            c.places
+                .at(&"A4827".into())
+                .any(|place| { place.kind == "major_city" && place.name == "Benghazi" })
+        );
+        assert_eq!(
+            at(
+                &c,
+                &Location::Hex {
+                    hex: "C4022".into()
+                }
+            )
+            .unwrap()
+            .name,
+            PortName::Sollum
+        );
+    }
+
     /// Cases: scen:60.37, airlog:56.11
     #[test]
     fn typed_fleet_flags_and_lanes_survive_reused_setup() {
