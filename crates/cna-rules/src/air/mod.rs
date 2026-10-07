@@ -11,9 +11,9 @@ pub mod maintenance;
 pub mod sgsu;
 pub mod state;
 
-pub mod designation;
 /// Trusted finish-only combat calculation; no live phase dispatch yet.
 pub mod combat;
+pub mod designation;
 
 /// Trusted target-group calculation; no live flak decision window yet.
 pub mod flak;
