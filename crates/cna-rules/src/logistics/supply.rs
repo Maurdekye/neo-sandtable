@@ -148,7 +148,7 @@ pub fn toe_strength(
 /// Quarter CP are rounded up to whole CP before looking up the chart; all vehicle
 /// costs are added exactly before a source draw is rounded. Non-movement CP must
 /// be excluded by the movement caller. Special patrols need their own procedure.
-/// Cases: airlog:49.12, airlog:49.13
+/// Cases: airlog:49.12, airlog:49.13, land:4.48
 /// Interpretations: interp:airlog-0001, interp:units-0005
 /// Unsupported: airlog:49.12 - HQ equipment without a known fuel rate (units gap U-025).
 pub fn movement_fuel_cost(
@@ -169,8 +169,7 @@ pub fn movement_fuel_cost(
     let class = oa
         .class
         .as_ref()
-        .and_then(|id| content.units.classes.get(id))
-        .ok_or(SupplyError::Unsupported { case: "land:4.46" })?;
+        .and_then(|id| content.units.classes.get(id));
     let cp = cp_quarters / 4 + i32::from(cp_quarters % 4 != 0);
     if cp == 0 {
         return Ok(FuelTenths::ZERO);
@@ -208,12 +207,15 @@ pub fn movement_fuel_cost(
                     .ok_or(SupplyError::Invalid)?;
             }
         }
-        _ if class.unit_type == "recce" => {
+        _ if class.is_some_and(|c| c.unit_type == "recce") => {
             total = cost(1, toe_strength(content, unit)?.get())?;
         }
-        _ if matches!(class.unit_type.as_str(), "infantry" | "engineer") => {}
-        _ if class.unit_type == "headquarters" && class.max_toe_paren => {}
-        _ if class.unit_type == "headquarters" => return Err(SupplyError::UnknownFuelRate),
+        _ if class.is_some_and(|c| matches!(c.unit_type.as_str(), "infantry" | "engineer")) => {}
+        _ if class.is_some_and(|c| c.unit_type == "headquarters" && c.max_toe_paren) => {}
+        _ if class.is_some_and(|c| c.unit_type == "headquarters") => {
+            return Err(SupplyError::UnknownFuelRate);
+        }
+        _ if class.is_none() => return Err(SupplyError::Unsupported { case: "land:4.46" }),
         _ => {
             return Err(SupplyError::Unsupported {
                 case: "airlog:49.12",

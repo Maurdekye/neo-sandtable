@@ -11,18 +11,17 @@ use cna_tables::airlog::supply::{AmmoAction, AmmoMode};
 /// Infantry identity comes from the double-read OA/counter classification. A class
 /// containing both engineers and MG battalions cannot supply a class-wide default.
 /// Classification provenance: orig79:land:4.22 (the original component legend).
-/// Cases: airlog:50.13, airlog:50.2
+/// Cases: airlog:50.13, airlog:50.2, land:4.48
 pub fn close_assault_ammo_action(
     content: &CnaContent,
     id: &UnitId,
 ) -> Result<AmmoAction, SupplyError> {
     let row = content.units.units.get(id).ok_or(SupplyError::Invalid)?;
-    let class = content
-        .units
-        .classes
-        .get(row.class.as_ref().ok_or(SupplyError::Invalid)?)
-        .ok_or(SupplyError::Invalid)?;
-    if matches!(class.unit_type.as_str(), "infantry" | "engineer") {
+    let class = row
+        .class
+        .as_ref()
+        .and_then(|id| content.units.classes.get(id));
+    if class.is_some_and(|c| matches!(c.unit_type.as_str(), "infantry" | "engineer")) {
         match row.infantry_kind {
             Some(InfantryKind::Ordinary) => Ok(AmmoAction::CloseAssaultInfClass),
             Some(InfantryKind::MachineGun | InfantryKind::HeavyWeapons) => {
@@ -33,8 +32,8 @@ pub fn close_assault_ammo_action(
             }),
         }
     } else if matches!(
-        class.unit_type.as_str(),
-        "tank" | "recce" | "artillery" | "anti_tank" | "anti_air"
+        class.map(|c| c.unit_type.as_str()),
+        Some("tank" | "recce" | "artillery" | "anti_tank" | "anti_air")
     ) || matches!(&row.toe, Some(Toe::Weapons(_)))
     {
         Ok(AmmoAction::CloseAssaultArmorGunMgInfHvywpnInf)
@@ -48,7 +47,7 @@ pub fn close_assault_ammo_action(
 /// Enough for one supported firing, priced by actual participating TOE. Take the
 /// largest supported single function, not the sum of consecutive combat actions.
 /// Explicit weapon components contribute only to functions they can actually fire.
-/// Cases: airlog:50.13, airlog:50.14, airlog:50.17, airlog:50.2
+/// Cases: airlog:50.13, airlog:50.14, airlog:50.17, airlog:50.2, land:4.48
 /// Interpretations: interp:airlog-0014
 pub fn ready_ammo_capacity(
     content: &CnaContent,
@@ -60,7 +59,6 @@ pub fn ready_ammo_capacity(
     if strength == 0 {
         return Ok(AmmoPoints::ZERO);
     }
-    let class = rations::class(content, id)?;
     let mut maximum = 0;
     let mut assess = |action, n| -> Result<(), SupplyError> {
         let cost =
@@ -100,6 +98,7 @@ pub fn ready_ammo_capacity(
             }
         }
     } else {
+        let class = rations::class(content, id)?;
         if class.unit_type == "headquarters" {
             return Err(SupplyError::Unsupported {
                 case: "airlog:50.17",

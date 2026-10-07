@@ -99,11 +99,27 @@ pub(super) fn class<'a>(
 pub(super) fn in_play(location: &Location) -> bool {
     matches!(location, Location::Hex { .. } | Location::OffMap { .. })
 }
+/// Verified weapon rows represent hardware even where the OA omits a class.
+/// Cases: land:4.48, airlog:52.41, airlog:52.42
 pub(super) fn infantry(content: &CnaContent, id: &UnitId) -> Result<bool, SupplyError> {
-    Ok(matches!(
-        class(content, id)?.unit_type.as_str(),
-        "infantry" | "engineer"
-    ))
+    match class(content, id) {
+        Ok(class) => Ok(matches!(class.unit_type.as_str(), "infantry" | "engineer")),
+        Err(error) => {
+            let row = content.units.units.get(id).ok_or(SupplyError::Invalid)?;
+            let Some(Toe::Weapons(weapons)) = &row.toe else {
+                return Err(error);
+            };
+            for w in weapons {
+                if w.n < 0 {
+                    return Err(SupplyError::Invalid);
+                }
+                if !content.units.weapons.contains_key(&w.weapon) {
+                    return Err(SupplyError::Unsupported { case: "land:4.48" });
+                }
+            }
+            Ok(false)
+        }
+    }
 }
 pub(super) fn pasta(content: &CnaContent, id: &UnitId) -> bool {
     content.units.units.get(id).is_some_and(|oa| {
@@ -119,7 +135,7 @@ pub(super) fn pasta(content: &CnaContent, id: &UnitId) -> bool {
 
 /// Weekly food needs use current strength, except the printed HQ/engineer flat rate.
 /// Organizational headers with no class and no TOE are not extra mouths.
-/// Cases: airlog:51.11, airlog:51.13
+/// Cases: airlog:51.11, airlog:51.13, land:4.48
 pub fn stores_required(
     content: &CnaContent,
     state: &State,
@@ -138,9 +154,13 @@ pub fn stores_required(
     {
         return Ok(0);
     }
-    let class = class(content, id)?;
-    if matches!(class.unit_type.as_str(), "headquarters" | "engineer") {
-        return Ok(1);
+    match class(content, id) {
+        Ok(class) if matches!(class.unit_type.as_str(), "headquarters" | "engineer") => {
+            return Ok(1);
+        }
+        Ok(_) => {}
+        Err(error) if !matches!(unit.toe, Some(Toe::Weapons(_))) => return Err(error),
+        Err(_) => {}
     }
     toe_strength(content, unit)?
         .get()
@@ -150,20 +170,19 @@ pub fn stores_required(
 
 /// Normal-weather activity demand; the weather multiplier is applied by the caller.
 /// Unidentified HQ vehicles cannot be replaced by a guessed composition.
-/// Cases: airlog:52.41, airlog:52.42
+/// Cases: airlog:52.41, airlog:52.42, land:4.48
 pub(super) fn activity_points(
     content: &CnaContent,
     state: &State,
     id: &UnitId,
 ) -> Result<i32, SupplyError> {
     let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
-    let class = class(content, id)?;
     let body = if infantry(content, id)? {
         0
     } else if let Some(Toe::Weapons(_)) = unit.toe {
         toe_strength(content, unit)?.get()
-    } else if class.unit_type == "headquarters" {
-        if !class.max_toe_paren && unit.toe.is_some() {
+    } else if class(content, id)?.unit_type == "headquarters" {
+        if !class(content, id)?.max_toe_paren && unit.toe.is_some() {
             return Err(SupplyError::Unsupported {
                 case: "airlog:52.42",
             });

@@ -130,7 +130,7 @@ pub fn validate_packing(
 
 /// Innate tank space follows each identified component's own CPA and fuel rate,
 /// plus the trucks' printed tank ratings. An unresolved HQ composition stays unknown.
-/// Cases: airlog:49.12, airlog:49.14, airlog:54.2
+/// Cases: airlog:49.12, airlog:49.14, airlog:54.2, land:4.48
 /// Interpretations: interp:units-0005
 pub fn fuel_capacity(
     content: &CnaContent,
@@ -138,7 +138,7 @@ pub fn fuel_capacity(
     id: &UnitId,
 ) -> Result<FuelTenths, SupplyError> {
     let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
-    let class = rations::class(content, id)?;
+    let class = rations::class(content, id).ok();
     let mut tenths = 0i64;
     let mut add = |n: i32, cpa: i32, rate: i32| -> Result<(), SupplyError> {
         if n < 0 || cpa < 0 || rate < 0 {
@@ -167,10 +167,15 @@ pub fn fuel_capacity(
                 )?;
             }
         }
-        _ if class.unit_type == "recce" => add(toe_strength(content, unit)?.get(), class.cpa, 1)?,
-        _ if matches!(class.unit_type.as_str(), "infantry" | "engineer") => {}
-        _ if class.unit_type == "headquarters" && class.max_toe_paren => {}
-        _ if class.unit_type == "headquarters" => return Err(SupplyError::UnknownFuelRate),
+        _ if class.is_some_and(|c| c.unit_type == "recce") => {
+            add(toe_strength(content, unit)?.get(), class.unwrap().cpa, 1)?
+        }
+        _ if class.is_some_and(|c| matches!(c.unit_type.as_str(), "infantry" | "engineer")) => {}
+        _ if class.is_some_and(|c| c.unit_type == "headquarters" && c.max_toe_paren) => {}
+        _ if class.is_some_and(|c| c.unit_type == "headquarters") => {
+            return Err(SupplyError::UnknownFuelRate);
+        }
+        _ if class.is_none() => return Err(SupplyError::Unsupported { case: "land:4.46" }),
         _ => {
             return Err(SupplyError::Unsupported {
                 case: "airlog:49.12",

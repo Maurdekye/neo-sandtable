@@ -564,3 +564,156 @@ fn unknown_arriving_hq_is_full_unsupported_or_dev_private_unassessed() {
             .can_see(&e.audience)
     }));
 }
+
+/// Cases: land:20.12, land:4.48, airlog:49.12, airlog:49.14, airlog:50.17, airlog:51.11, airlog:52.42
+/// Interpretations: interp:airlog-0017
+#[test]
+fn actual_classless_v_medium_tank_arrival_has_known_consumption_and_accepted_baselines() {
+    const TANK: &str = "it.unassigned_armored.v_m_tank_bn";
+    for strict in [false, true] {
+        for seed in 0..8 {
+            let (c, mut s) = fixture();
+            let row = &c.units.units[&UnitId::new(TANK)];
+            assert!(row.class.is_none());
+            assert_eq!(
+                row.arrives,
+                cna_content::units::Arrival::At { gt: 13, opstage: 3 }
+            );
+            let unit = s.land.units.get_mut(&TANK.into()).unwrap();
+            unit.location = Location::Hex {
+                hex: "C4020".into(),
+            };
+            unit.trucks = Trucks::default();
+            unit.transport_trucks = Trucks::default();
+            s.cursor.game_turn = 13;
+            s.cursor.op_stage = Some(3);
+            s.logistics.dumps.get_mut("arrival-stock").unwrap().supplies = Supplies {
+                stores: 60,
+                water: 30,
+                fuel: 100,
+                ..Default::default()
+            };
+            assert_eq!(rations::stores_required(&c, &s, &TANK.into()).unwrap(), 28);
+            let need = water::requirements(&c, &s, &TANK.into()).unwrap();
+            assert_eq!((need.infantry, need.activity), (0, 7));
+            assert_eq!(
+                super::super::fuel_capacity(&c, &s, &TANK.into())
+                    .unwrap()
+                    .get(),
+                560
+            );
+            assert_eq!(
+                super::super::movement_fuel_cost(&c, &s, &TANK.into(), 4)
+                    .unwrap()
+                    .get(),
+                28
+            );
+            assert_eq!(
+                super::super::ready_ammo_capacity(&c, &s, &TANK.into())
+                    .unwrap()
+                    .get(),
+                21
+            );
+            assert!(matches!(
+                super::super::close_assault_ammo_action(&c, &TANK.into()).unwrap(),
+                cna_tables::airlog::supply::AmmoAction::CloseAssaultArmorGunMgInfHvywpnInf
+            ));
+            let mut rng = CampaignRng::from_seed([seed; 32]);
+            let mut controller = CampaignRng::from_seed([seed + 20; 32]);
+            enter(
+                &c,
+                &mut s,
+                strict,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut vec![],
+                },
+                &[TANK.into()].into(),
+            )
+            .unwrap();
+            for _ in 0..4 {
+                if s.decisions.pending.is_empty() {
+                    break;
+                }
+                let p = s.decisions.pending.remove(0);
+                let action = baseline(&c, &s, p.seat.side, &mut controller);
+                let dice = rng.state();
+                answer(
+                    &c,
+                    &mut s,
+                    &p,
+                    &action,
+                    strict,
+                    &mut Cx {
+                        rng: &mut rng,
+                        events: &mut vec![],
+                    },
+                )
+                .unwrap_or_else(|e| panic!("strict={strict}, {action}: {e:?}"));
+                assert_eq!(rng.state(), dice);
+            }
+            assert!(s.decisions.pending.is_empty());
+            finish(
+                &c,
+                &mut s,
+                strict,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut vec![],
+                },
+            )
+            .unwrap();
+            assert_eq!(s.logistics.dumps["arrival-stock"].supplies.stores, 32);
+            assert_eq!(s.logistics.dumps["arrival-stock"].supplies.water, 22);
+            assert_eq!(s.logistics.dumps["arrival-stock"].supplies.fuel, 44);
+            assert_eq!(
+                s.logistics.unit_supply[&TANK.into()].activity_water.get(),
+                7
+            );
+            assert!(
+                super::super::movement_restrictions(&c, &s, &TANK.into())
+                    .unwrap()
+                    .may_move
+            );
+        }
+    }
+}
+
+/// Cases: land:4.48, airlog:49.12, airlog:50.17, airlog:51.11, airlog:52.42
+#[test]
+fn all_nine_real_classless_weapon_rows_price_composition_without_a_class_default() {
+    let (c, mut s) = fixture();
+    let ids: Vec<_> = c
+        .units
+        .units
+        .values()
+        .filter(|row| {
+            row.class.is_none() && matches!(row.toe, Some(cna_content::units::Toe::Weapons(_)))
+        })
+        .map(|row| row.id.clone())
+        .collect();
+    assert_eq!(ids.len(), 9);
+    for id in ids {
+        s.land.units.get_mut(&id).unwrap().location = Location::Hex {
+            hex: "C4020".into(),
+        };
+        let strength = super::super::toe_strength(&c, &s.land.units[&id])
+            .unwrap()
+            .get();
+        assert_eq!(rations::stores_required(&c, &s, &id).unwrap(), strength * 4);
+        assert_eq!(water::requirements(&c, &s, &id).unwrap().activity, strength);
+        assert!(super::super::fuel_capacity(&c, &s, &id).unwrap().get() > 0);
+        assert!(
+            super::super::movement_fuel_cost(&c, &s, &id, 4)
+                .unwrap()
+                .get()
+                > 0
+        );
+        assert!(
+            super::super::ready_ammo_capacity(&c, &s, &id)
+                .unwrap()
+                .get()
+                > 0
+        );
+    }
+}
