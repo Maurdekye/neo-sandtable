@@ -488,7 +488,12 @@ fn run(
                 cp,
                 own_half,
             )?;
-            state.land.units.get_mut(id).unwrap().engaged = false;
+            if truth {
+                events.extend(super::engagement::break_off(content, state, id));
+            } else {
+                // Own-known planning prices the mover's breakoff, never updates its opponents.
+                state.land.units.get_mut(id).unwrap().engaged = false;
+            }
         }
         total += highest;
     }

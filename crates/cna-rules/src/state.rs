@@ -132,6 +132,9 @@ pub struct LandUnit {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LandState {
+    /// Symmetric truthful links; unit.engaged is the owner-facing derived status.
+    #[serde(default)]
+    pub engagements: BTreeMap<UnitId, BTreeSet<UnitId>>,
     #[serde(default)]
     pub breakdown: crate::land::breakdown::BreakdownState,
     #[serde(default)]

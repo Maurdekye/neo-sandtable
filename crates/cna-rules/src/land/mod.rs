@@ -3,6 +3,7 @@ pub mod breakdown;
 pub mod capability;
 pub mod combat;
 pub mod cycles;
+pub mod engagement;
 pub mod formation;
 pub mod map;
 pub mod movement;

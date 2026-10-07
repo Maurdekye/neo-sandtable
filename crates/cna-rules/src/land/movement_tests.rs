@@ -2457,3 +2457,152 @@ fn public_reaction_windows_hide_readiness_and_private_passes_converge_after_rest
         a.state.decisions.pending[0].seat
     ));
 }
+
+/// Cases: land:8.63, land:8.64, land:8.66, land:8.67
+#[test]
+fn last_engaged_opponent_retreat_clears_both_tanks_and_recovers_relationships() {
+    let (c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+    let other = UnitId::new("it.libyan_tank_command.lxii_l_tank_bn");
+    place(&mut s, LEG, "C4021");
+    place(&mut s, TANK, "C4020");
+    place(&mut s, other.as_str(), "C4020");
+    let defenders = [UnitId::new(TANK), other.clone()];
+    let id = UnitId::new(LEG);
+    super::super::engagement::engage(&c, &mut s, std::slice::from_ref(&id), &defenders).unwrap();
+    let order = Order {
+        unit: id.clone(),
+        path: vec!["C4022".into(), "C4023".into()],
+        with_stack: false,
+        close_assault: vec![],
+    };
+    let seat = SeatId::new(
+        Side::Commonwealth,
+        crate::ownership::seat_for_unit(&c, &s, &id),
+    );
+    let before = serde_json::to_value(&s).unwrap();
+    let preview = validate_nonphasing(&c, &s, &order, seat, true, NonPhasingMove::Retreat).unwrap();
+    assert_eq!(preview.cp_quarters, 24); // 4 CP breakoff + two 1-CP foot-unit road entries.
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    let mut rng = CampaignRng::from_seed([72; 32]);
+    let mut events = vec![];
+    execute_nonphasing(
+        &c,
+        &mut s,
+        &order,
+        seat,
+        true,
+        NonPhasingMove::Retreat,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
+    assert_eq!(s.land.units[&id].location.hex(), Some(&"C4023".into()));
+    assert!(s.land.engagements.is_empty());
+    for unit in std::iter::once(&id).chain(&defenders) {
+        assert!(!s.land.units[unit].engaged);
+    }
+    for d in &defenders {
+        assert!(events.iter().any(|e| e.audience==Audience::Side(Side::Axis)
+            && matches!(&e.event, cna_protocol::GameEvent::UnitUpdated{unit} if unit.id==d.as_str())));
+    }
+    let restored: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    assert_eq!(
+        serde_json::to_value(&restored).unwrap(),
+        serde_json::to_value(&s).unwrap()
+    );
+    // The former opponents now owe only travel CP, not a stale engagement surcharge.
+    let tank_order = Order {
+        unit: defenders[0].clone(),
+        path: vec!["C4019".into()],
+        with_stack: false,
+        close_assault: vec![],
+    };
+    let tank_seat = SeatId::new(
+        Side::Axis,
+        crate::ownership::seat_for_unit(&c, &restored, &defenders[0]),
+    );
+    assert_eq!(
+        validate_nonphasing(
+            &c,
+            &restored,
+            &tank_order,
+            tank_seat,
+            true,
+            NonPhasingMove::Retreat
+        )
+        .unwrap()
+        .cp_quarters,
+        2
+    );
+}
+
+/// Cases: land:8.63, land:8.66, land:8.67, land:8.68
+#[test]
+fn one_remaining_engaged_opponent_preserves_tank_flags_until_its_own_breakoff() {
+    let (c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+    let second = UnitId::new("cw.2_nz_div.21st_nz_bn");
+    let other = UnitId::new("it.libyan_tank_command.lxii_l_tank_bn");
+    for id in [LEG, second.as_str()] {
+        place(&mut s, id, "C4021");
+    }
+    for id in [TANK, other.as_str()] {
+        place(&mut s, id, "C4020");
+    }
+    let defenders = [UnitId::new(TANK), other];
+    let attackers = [UnitId::new(LEG), second.clone()];
+    super::super::engagement::engage(&c, &mut s, &attackers, &defenders).unwrap();
+    let original: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    let mut rng = CampaignRng::from_seed([73; 32]);
+    for (n, id) in attackers.iter().enumerate() {
+        let order = Order {
+            unit: id.clone(),
+            path: vec!["C4022".into(), "C4023".into()],
+            with_stack: false,
+            close_assault: vec![],
+        };
+        let seat = SeatId::new(
+            Side::Commonwealth,
+            crate::ownership::seat_for_unit(&c, &s, id),
+        );
+        let mut events = vec![];
+        execute_nonphasing(
+            &c,
+            &mut s,
+            &order,
+            seat,
+            true,
+            NonPhasingMove::Retreat,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        )
+        .unwrap();
+        for d in &defenders {
+            assert_eq!(s.land.units[d].engaged, n == 0);
+            if n == 0 {
+                assert_eq!(s.land.engagements[d], BTreeSet::from([second.clone()]));
+            }
+        }
+        if n == 0 {
+            assert!(
+                !events
+                    .iter()
+                    .any(|e| e.audience == Audience::Side(Side::Axis)
+                        && matches!(&e.event, cna_protocol::GameEvent::UnitUpdated { .. }))
+            );
+        }
+        s = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    }
+    assert!(s.land.engagements.is_empty());
+    // Invalid participant sides are checked before any relation or flag changes.
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(super::super::engagement::engage(&c, &mut s, &attackers, &attackers).is_err());
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    // The graph's identities do not appear in the opponent's readable state.
+    let mut graph_only = original.clone();
+    graph_only.land.engagements.clear();
+    crate::testkit::assert_indistinguishable(&Cna::full(), &c, &original, &graph_only, Side::Axis);
+}
