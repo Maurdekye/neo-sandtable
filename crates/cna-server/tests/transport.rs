@@ -383,6 +383,8 @@ async fn websocket_snapshot_live_resume_switch_and_ahead_cursor_resync() {
     );
     // A damaged replay row requests a fresh snapshot instead of inventing the missing event.
     let db = rusqlite::Connection::open(dir.path().join(format!("{id}.sqlite"))).unwrap();
+    // Deliberately bypass the opening-index foreign key for this corruption injection only.
+    db.pragma_update(None, "foreign_keys", "OFF").unwrap();
     db.execute(
         "DELETE FROM perspective_events WHERE perspective='side:axis' AND seq=1",
         [],
