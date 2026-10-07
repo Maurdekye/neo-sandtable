@@ -330,10 +330,18 @@ impl ActionSchema {
                         };
                         o.insert("description".into(), Value::String(doc));
                     }
-                    props.insert(f.name.clone(), s);
-                    if !f.optional {
+                    if f.optional {
+                        // `check` accepts an optional field given as null (meaning absent), so
+                        // the exported schema must allow it too.
+                        let description = s.as_object_mut().and_then(|o| o.remove("description"));
+                        s = json!({ "anyOf": [s, { "type": "null" }] });
+                        if let (Some(d), Some(o)) = (description, s.as_object_mut()) {
+                            o.insert("description".into(), d);
+                        }
+                    } else {
                         required.push(Value::String(f.name.clone()));
                     }
+                    props.insert(f.name.clone(), s);
                 }
                 json!({
                     "type": "object",
@@ -419,6 +427,14 @@ mod tests {
             assert!(err.contains(says), "{bad} -> {err}");
         }
         assert!(space.clone().with_pass("skip").check(&json!(null)).is_ok());
+        // The exported schema agrees: optional fields admit null, required ones do not.
+        let exported = space.to_json_schema();
+        let props = &exported["items"]["properties"];
+        assert_eq!(props["label"]["anyOf"][1], json!({ "type": "null" }));
+        assert_eq!(props["label"]["anyOf"][0]["type"], json!("string"));
+        assert!(props["label"]["description"].is_string());
+        assert!(props["unit"].get("anyOf").is_none());
+        assert_eq!(exported["items"]["required"], json!(["unit", "n"]));
         let path = ActionSchema::Path {
             from: "C4218".into(),
             max_steps: 2,
