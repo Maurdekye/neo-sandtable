@@ -482,8 +482,17 @@ mod tests {
         }
     }
     #[test]
-    fn real_surface_masks_do_not_certify_any_edge_absence() {
-        let map = MapContent::load(&crate::repo_data_dir().join("map")).unwrap();
+    fn surface_masks_do_not_certify_any_edge_absence() {
+        let f = Fixture::new();
+        f.write(
+            "coverage.csv",
+            "layer,hex_id,neighbour_id,src,review_batch\nterrain,C4020,,land:8.37,test\n",
+        );
+        f.write(
+            "hexsides.csv",
+            "hex_id,direction,neighbour_id,feature,high_side,src,review_batch\n",
+        );
+        let map = f.load().unwrap();
         let a = HexId::new("C4020");
         let b = map.neighbors(&a)[0].id.clone();
         assert!(matches!(map.terrain_survey(&a), Survey::Present(_)));
@@ -493,7 +502,7 @@ mod tests {
         for k in SideKind::ALL {
             assert_eq!(map.hexside(&a, &b, k), Survey::Unknown);
         }
-        assert_eq!(map.terrain_survey(&HexId::new("C4026")), Survey::Unknown);
+        assert_eq!(map.terrain_survey(&HexId::new("C4022")), Survey::Unknown);
     }
     #[test]
     fn coverage_is_per_kind_and_queries_resolve_aliases_and_reverse_edges() {
