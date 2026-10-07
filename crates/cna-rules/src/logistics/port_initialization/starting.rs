@@ -194,7 +194,7 @@ fn override_policy(
         return Err(PortStartingDiagnostic::Override(malformed(
             content,
             record,
-            "scen:60.7 Tobruk must retain exact authored C4807 efficiency7",
+            "scen:60.7 Tobruk must retain its exact authored C4807 efficiency7",
         )));
     }
     let san_giorgio = matches!(
@@ -344,25 +344,24 @@ pub fn initial_port_starting_policy(
     port: &Port,
 ) -> Result<InitialPortStartingPolicy, PortStartingDiagnostic> {
     preflight_port_starting(content)?;
-    if let Location::Hex { hex } = &port.location {
-        if let Some(record) = content
+    if let Location::Hex { hex } = &port.location
+        && let Some(record) = content
             .scenario
             .construction
             .port_overrides
             .iter()
             .find(|record| content.map.canonical(&record.hex) == content.map.canonical(hex))
-        {
-            let (canonical, category) = validate_record_identity(content, record)
-                .map_err(PortStartingDiagnostic::Override)?;
-            if port.id != canonical.as_str() || port.name != category {
-                return Err(PortStartingDiagnostic::Override(malformed(
-                    content,
-                    record,
-                    "authored identity contradicts the trusted verified port",
-                )));
-            }
-            return override_policy(content, record);
+    {
+        let (canonical, category) =
+            validate_record_identity(content, record).map_err(PortStartingDiagnostic::Override)?;
+        if port.id != canonical.as_str() || port.name != category {
+            return Err(PortStartingDiagnostic::Override(malformed(
+                content,
+                record,
+                "authored identity contradicts the trusted verified port",
+            )));
         }
+        return override_policy(content, record);
     }
     let general = general_policy(content)?;
     if general == GeneralPolicy::ListedMax {

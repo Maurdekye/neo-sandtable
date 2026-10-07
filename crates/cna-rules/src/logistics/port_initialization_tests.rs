@@ -326,7 +326,11 @@ fn actual_loader_rejects_malformed_but_accepts_future_diagnostics_with_tracked_p
     assert!(error.contains("scen:60.7"));
     let future = original
         .replace("scen:60.7", "scen:61.1")
-        .replace("efficiency_level = 7", "efficiency_level = 5");
+        .replace("efficiency_level = 7", "efficiency_level = 5")
+        .replace(
+            "condition = \"san_giorgio_present\"",
+            "condition = \"future_condition\"",
+        );
     std::fs::write(&path, future).unwrap();
     let c = CnaContent::load(&fixture.root, "graziani").unwrap();
     let diagnostics = unsupported_port_policies(&c).unwrap();
