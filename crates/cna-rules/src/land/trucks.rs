@@ -3,7 +3,7 @@ use super::{breakdown, formation};
 use crate::{CnaContent, State, logistics, ownership, steps::illegal};
 use cna_content::{scenario::Supplies, units::Trucks};
 use cna_core::{
-    engine::{EngineError, Rejection},
+    engine::{Cx, EngineError, Rejection},
     ids::UnitId,
     quantity::{FuelTenths, WaterPoints},
 };
@@ -73,6 +73,18 @@ fn apply_transfer(
     t: &Transfer,
     strict: bool,
 ) -> Result<(), Rejection> {
+    if strict
+        && logistics::box_handling::blocks_movement(
+            draft,
+            &logistics::box_handling::Carrier::Unit(t.from.clone()),
+        )
+        .is_some()
+    {
+        return Err(Rejection::Engine(EngineError::Unsupported {
+            case: "land:8.88".into(),
+            detail: "truck division needs current-stage box handling apportionment".into(),
+        }));
+    }
     let cohorts = breakdown::cohorts::ensure(draft, &t.from).map_err(Rejection::Engine)?;
     breakdown::cohorts::ensure(draft, &t.to).map_err(Rejection::Engine)?;
     let mut selected = Trucks::default();
@@ -195,6 +207,19 @@ pub fn preview_reaction_division(
     division: &Division,
     strict: bool,
 ) -> Result<State, Rejection> {
+    if division.transfers.len() > 4096
+        || division.allocations.len() > 4096
+        || division.transfers.iter().any(|t| {
+            t.cohorts.len() > 4096
+                || t.cohorts
+                    .iter()
+                    .any(|g| g.id.is_empty() || g.id.chars().count() > 512)
+        })
+    {
+        return Err(illegal(
+            "truck division answer exceeds its advertised bounds",
+        ));
+    }
     let parent = ownership::parent_for_unit(c, s, reactor)
         .ok_or_else(|| illegal("only an attached reacting component can divide parent trucks"))?;
     let unit = s.land.units.get(reactor).ok_or_else(arithmetic)?;
@@ -267,6 +292,37 @@ pub fn preview_reaction_division(
     Ok(draft)
 }
 
+/// Commit an already own-known valid division; report box apportionment before physical separation.
+/// Cases: land:8.56, land:8.88, airlog:49.16, airlog:52.42
+pub fn commit_reaction_division(
+    c: &CnaContent,
+    s: &mut State,
+    reactor: &UnitId,
+    division: &Division,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), Rejection> {
+    let draft = preview_reaction_division(c, s, reactor, division, strict)?;
+    for from in division
+        .transfers
+        .iter()
+        .map(|t| &t.from)
+        .collect::<BTreeSet<_>>()
+    {
+        logistics::box_handling::prepare_division(
+            s,
+            &logistics::box_handling::Carrier::Unit(from.clone()),
+            strict,
+            cx,
+        )
+        .map_err(Rejection::Engine)?;
+    }
+    *s = draft;
+    Ok(())
+}
+
+mod schema;
+pub(super) use schema::space as division_schema;
 mod planning;
 pub use planning::reachable_divisions;
 

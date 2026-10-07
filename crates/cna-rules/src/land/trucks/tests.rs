@@ -186,3 +186,42 @@ fn reachable_ratings_require_enough_own_trucks_and_room_for_the_actual_cargo() {
         vec![10]
     );
 }
+
+/// Division apportionment is an explicit profile gap, and dev retains the original carrier history.
+/// Cases: land:8.56, land:8.88, land:3.6
+#[test]
+fn current_stage_box_division_gap_is_atomic_and_private() {
+    use cna_core::{dice::CampaignRng, engine::Cx, visibility::Audience};
+    let (c, mut s, from, to, d) = setup();
+    s.cursor.op_stage = Some(1);
+    s.land.units.get_mut(&from).unwrap().box_handling =
+        Some(logistics::box_handling::BoxHandling {
+            stage: logistics::water::WaterStage::current(&s),
+            loaded: Supplies {
+                fuel: 1,
+                ..Default::default()
+            },
+            unloaded: Default::default(),
+        });
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(
+        matches!(preview_reaction_division(&c,&s,&to,&d,true),Err(Rejection::Engine(EngineError::Unsupported{ref case,..})) if case=="land:8.88")
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    let mut rng = CampaignRng::from_seed([7; 32]);
+    let mut events = vec![];
+    let mut cx = Cx {
+        rng: &mut rng,
+        events: &mut events,
+    };
+    commit_reaction_division(&c, &mut s, &to, &d, false, &mut cx).unwrap();
+    assert!(s.land.units[&from].box_handling.is_some());
+    assert!(s.land.units[&to].box_handling.is_none());
+    assert_eq!(s.land.units[&to].trucks.medium, 1);
+    assert!(!cx.events.is_empty());
+    assert!(
+        cx.events
+            .iter()
+            .all(|e| e.audience == Audience::Side(s.land.units[&from].side))
+    );
+}

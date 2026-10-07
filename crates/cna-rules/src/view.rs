@@ -767,6 +767,9 @@ pub(crate) fn inspect(
             "reachable": if state.cursor.anchor()==crate::land::combat::retreat::ANCHOR {
                 crate::land::combat::retreat::reachable(content,state,&unit.id,strict)
             } else {crate::land::movement::reachable(content,state,&unit.id,strict)},
+            "fuel_truck_cohorts": crate::logistics::segment_fuel_cohorts(state,&unit.id).ok(),
+            "reaction_cpa_options": state.land.reaction.window.as_ref().and_then(|w|w.cpa_options.get(&unit.id)),
+            "reaction_division_paths": crate::land::reaction::plans(content,state,&unit.id,strict),
             "retreated_before_assault": state.land.combat.retreat.retreated.contains(&unit.id),
             "movement_allowance": crate::land::formation::allowance(content,state,&unit.id).map(|a| json!({"cpa":a.cpa,"motorized":a.motorized})),
             "command_role": crate::ownership::seat_for_unit(content,state,&unit.id),

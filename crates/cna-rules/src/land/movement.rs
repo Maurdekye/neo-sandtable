@@ -173,6 +173,11 @@ fn eligible_base(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId)
         return false;
     };
     u.side == seat.side
+        && logistics::box_handling::blocks_movement(
+            state,
+            &logistics::box_handling::Carrier::Unit(id.clone()),
+        )
+        .is_none()
         && state
             .land
             .breakdown
@@ -209,6 +214,14 @@ fn available(content: &CnaContent, state: &State, seat: SeatId) -> Vec<UnitId> {
                     .allowance(content, state, &u.id)
                     .is_some_and(|a| {
                         formations.members(&u.id).iter().all(|id| {
+                            if logistics::box_handling::blocks_movement(
+                                state,
+                                &logistics::box_handling::Carrier::Unit(id.clone()),
+                            )
+                            .is_some()
+                            {
+                                return false;
+                            }
                             if capability::validate_move(&state.land.units[id], a, 1).is_err() {
                                 return false;
                             }
@@ -425,6 +438,14 @@ fn run(
         Some(group) => group.members.to_vec(),
         None => unit_stack(content, state, order, seat, strict)?,
     };
+    for id in &moving {
+        if let Some(reason) = logistics::box_handling::blocks_movement(
+            state,
+            &logistics::box_handling::Carrier::Unit(id.clone()),
+        ) {
+            return Err(illegal(reason));
+        }
+    }
     let mut from = state.land.units[&order.unit]
         .location
         .hex()
@@ -593,7 +614,7 @@ fn run(
                 }));
         if cannot_enter {
             if truth && known.is_none() {
-                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:"Move stops before a newly disclosed controlled destination (land:10.24/10.29).".into()}));
+                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:"Move stops before a newly disclosed controlled destination (land:10.24/10.29).".into()}).at(from.clone()).about(order.unit.clone()));
                 break;
             }
             return Err(illegal(
@@ -612,9 +633,16 @@ fn run(
                 .iter()
                 .any(|h| state.stack_presence(&h.id, seat.side.opponent()));
         let reactors = if public_reaction {
-            super::reaction::candidates(content, state, &moving, &to, &order.close_assault, strict)?
+            super::reaction::candidate_options(
+                content,
+                state,
+                &moving,
+                &to,
+                &order.close_assault,
+                strict,
+            )?
         } else {
-            vec![]
+            BTreeMap::new()
         };
         for (id, limit) in moving.iter().zip(&limits) {
             validate_window_cp(state, &state.land.units[id], group_allowance, cp, *limit)?;
@@ -695,11 +723,11 @@ fn run(
                 total = last_legal.3;
                 fuel = last_legal.4;
                 events.truncate(last_legal.5);
-                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note {text:"Move stops at the last legal hex before newly disclosed control and stacking prevent continuation.".into()}));
+                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note {text:"Move stops at the last legal hex before newly disclosed control and stacking prevent continuation.".into()}).at(from.clone()).about(order.unit.clone()));
                 break;
             }
             if costs.iter().any(|c| c.assumed_edges) {
-                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:format!("{from} to {to}: incomplete edge layers; plain terrain assumed (land:8.37).")}));
+                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:format!("{from} to {to}: incomplete edge layers; plain terrain assumed (land:8.37).")}).at(to.clone()).about(order.unit.clone()));
             }
             if own_half {
                 for target in &order.close_assault {
@@ -711,14 +739,19 @@ fn run(
                             .or_default()
                             .insert(target.clone())
                     {
-                        events.push(EngineEvent::public(GameEvent::Note{text:format!("Stack at {to} announces close assault against {target} (land:8.53).") }));
+                        events.push(EngineEvent::public(GameEvent::Note{text:format!("Stack at {to} announces close assault against {target} (land:8.53).") }).at(target.clone()));
                     }
                 }
                 if public_reaction {
                     state.land.reaction.controls.clear();
                     state.land.reaction.window = Some(super::reaction::Window {
                         trigger_hex: to.clone(),
-                        eligible: reactors,
+                        eligible: reactors
+                            .iter()
+                            .filter(|(_, ratings)| ratings.values().any(|yes| *yes))
+                            .map(|(id, _)| id.clone())
+                            .collect(),
+                        cpa_options: reactors,
                         reacted: BTreeSet::new(),
                         mover_stopped: controlled
                             || moving.iter().any(|id| {
@@ -1073,13 +1106,17 @@ fn execute_orders(
             if !skip_invalid && index == 0 {
                 return Err(e);
             }
-            cx.emit(EngineEvent::new(
-                Audience::Side(seat.side),
-                GameEvent::Note {
-                    text: "A remaining planned move is unavailable after reaction; order skipped."
-                        .into(),
-                },
-            ));
+            cx.emit(
+                EngineEvent::new(
+                    Audience::Side(seat.side),
+                    GameEvent::Note {
+                        text:
+                            "A remaining planned move is unavailable after reaction; order skipped."
+                                .into(),
+                    },
+                )
+                .about(o.unit.clone()),
+            );
             s.land.movement.moved.insert(o.unit.clone());
             continue;
         }

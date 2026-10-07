@@ -2874,3 +2874,343 @@ fn incoming_cohort_search_restores_foreign_origin_stock_and_shared_rounding_cred
         serde_json::to_value(&paths).unwrap()
     );
 }
+
+/// Handling bans follow every represented physical carrier, with no profile exemption.
+/// Cases: land:8.88, land:9.21
+#[test]
+fn box_handling_blocks_each_represented_member_and_expires_next_stage() {
+    let (c, s, _o) = setup(LEG, Some("road"), false, None);
+    let child: UnitId = "cw.2_nz_div.21st_nz_bn".into();
+    for strict in [false, true] {
+        for blocked in [UnitId::new(LEG), child.clone()] {
+            let mut a = s.clone();
+            place(&mut a, child.as_str(), "C4020");
+            a.land.units.get_mut(&child).unwrap().attached_to = Some(LEG.into());
+            a.land.units.get_mut(&child).unwrap().detached = false;
+            a.land.units.get_mut(&blocked).unwrap().box_handling =
+                Some(logistics::box_handling::BoxHandling {
+                    stage: logistics::water::WaterStage::current(&a),
+                    loaded: cna_content::scenario::Supplies {
+                        stores: 1,
+                        ..Default::default()
+                    },
+                    unloaded: Default::default(),
+                });
+            let order = Order {
+                unit: LEG.into(),
+                path: vec!["C4021".into()],
+                with_stack: false,
+                close_assault: vec![],
+            };
+            let before = serde_json::to_value(&a).unwrap();
+            assert!(
+                validate_nonphasing(
+                    &c,
+                    &a,
+                    &order,
+                    SeatId::new(Side::Commonwealth, Role::FrontLine),
+                    strict,
+                    NonPhasingMove::Retreat
+                )
+                .is_err()
+            );
+            assert_eq!(serde_json::to_value(&a).unwrap(), before);
+            assert!(
+                nonphasing_reachable(&c, &a, &LEG.into(), strict, NonPhasingMove::Retreat)
+                    .is_empty()
+            );
+            a.cursor.op_stage = Some(2);
+            place(&mut a, child.as_str(), "C4020");
+            a.land.units.get_mut(&child).unwrap().attached_to = Some(LEG.into());
+            a.land.units.get_mut(&child).unwrap().detached = false;
+            assert!(
+                validate_nonphasing(
+                    &c,
+                    &a,
+                    &order,
+                    SeatId::new(Side::Commonwealth, Role::FrontLine),
+                    strict,
+                    NonPhasingMove::Retreat
+                )
+                .is_ok()
+            );
+        }
+    }
+}
+fn truck_reaction_fixture(native: i32) -> (CnaContent, Game<Cna>, Overlay, UnitId) {
+    use cna_content::units::{Toe, WeaponPoints};
+    use cna_tables::Bound;
+    let (mut c, mut s, overlay) = setup(TANK, Some("road"), false, None);
+    let path = cna_content::repo_data_dir().join("tables/airlog/54.2-truck-characteristics.toml");
+    let text = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace("cpa_inf = 20", "cpa_inf = 40");
+    c.tables.airlog.truck_characteristics = cna_tables::airlog::trucks::TruckTable::from_raw(
+        &cna_tables::RawTable::parse(&path, &text).unwrap(),
+    )
+    .unwrap();
+    let child: UnitId = "cw.2_nz_div.21st_nz_bn".into();
+    for id in [UnitId::new(LEG), child.clone()] {
+        place(&mut s, id.as_str(), "C4022");
+        s.land.units.get_mut(&id).unwrap().toe = Some(Toe::Under { under: 1 });
+        s.land.units.get_mut(&id).unwrap().trucks = Default::default();
+        s.land.units.get_mut(&id).unwrap().transport_trucks = Default::default();
+        s.logistics.unit_supply.get_mut(&id).unwrap().tank_fuel = FuelTenths::new(0);
+        c.units.units.get_mut(&id).unwrap().cpa = Some(native);
+    }
+    s.land.units.get_mut(&child).unwrap().attached_to = Some(LEG.into());
+    s.land.units.get_mut(&child).unwrap().detached = false;
+    s.land.units.get_mut(&LEG.into()).unwrap().trucks.medium = 1;
+    s.logistics
+        .unit_supply
+        .get_mut(&LEG.into())
+        .unwrap()
+        .tank_fuel = FuelTenths::new(10);
+    let class_id = c.units.units[&TANK.into()].class.clone().unwrap();
+    c.units.classes.get_mut(&class_id).unwrap().cpa_fixed = false;
+    c.units.classes.get_mut(&class_id).unwrap().cpa = 46;
+    c.units.units.get_mut(&TANK.into()).unwrap().cpa = None;
+    let weapon = match &s.land.units[&TANK.into()].toe {
+        Some(Toe::Weapons(ws)) => c.units.weapons[&ws[0].weapon].clone(),
+        _ => panic!("tank fixture has weapons"),
+    };
+    for cpa in [30, 35, 45, 46] {
+        let mut w = weapon.clone();
+        w.cpa = cpa;
+        c.units.weapons.insert(format!("test_cpa_{cpa}"), w);
+    }
+    s.land.units.get_mut(&TANK.into()).unwrap().toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: "test_cpa_30".into(),
+        n: 1,
+    }]));
+    {
+        let g = start(&c, s, true);
+        (c, g, overlay, child)
+    }
+}
+fn change_mover_cpa(g: &Game<Cna>, cpa: i32) -> Game<Cna> {
+    let mut g = g.clone();
+    g.state.land.units.get_mut(&TANK.into()).unwrap().toe =
+        Some(cna_content::units::Toe::Weapons(vec![
+            cna_content::units::WeaponPoints {
+                weapon: format!("test_cpa_{cpa}"),
+                n: 1,
+            },
+        ]));
+    g
+}
+fn announced_reaction_command(g: &Game<Cna>) -> Command {
+    let p = &g.state.decisions.pending[0];
+    Command::Respond(DecisionResponse {
+        decision_id: p.id.clone(),
+        seat: p.seat,
+        controller_epoch: 1,
+        decision_revision: p.revision,
+        idempotency_key: "truck-cpa-pair".into(),
+        action: json!([{"unit":TANK,"path":["C4021"],"close_assault":["C4022"]}]),
+        public_explanation: None,
+    })
+}
+/// The reacting side learns only eligibility for CPA options it can obtain from its own trucks.
+/// Cases: land:8.53, land:8.54, land:8.56, land:3.62
+#[test]
+fn reaction_reachable_cpa_options_hide_thresholds_between_equivalent_movers() {
+    let (c, a, _o, child) = truck_reaction_fixture(10);
+    let b = change_mover_cpa(&a, 35);
+    let command = announced_reaction_command(&a);
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::full(),
+        &c,
+        &a,
+        &b,
+        &command,
+        Side::Commonwealth,
+    );
+    let t = evaluate(&Cna::full(), &c, &a, &command).unwrap();
+    assert_eq!(
+        t.game
+            .state
+            .land
+            .reaction
+            .window
+            .as_ref()
+            .unwrap()
+            .cpa_options[&child],
+        BTreeMap::from([(10, false), (40, true)])
+    );
+}
+/// This is the source-authorized yes/no disclosure for physically reachable equipment options.
+/// Cases: land:8.53, land:8.54, land:8.56, land:3.62
+#[test]
+#[should_panic]
+fn reaction_cpa_pair_harness_detects_source_authorized_eligibility_difference() {
+    let (c, a, _o, _) = truck_reaction_fixture(20);
+    let b = change_mover_cpa(&a, 46);
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::full(),
+        &c,
+        &a,
+        &b,
+        &announced_reaction_command(&a),
+        Side::Commonwealth,
+    );
+}
+
+/// Motorization, division, detachment and the path commit together after own-known preflight.
+/// Cases: land:8.56, land:8.95, land:8.96, airlog:49.16, airlog:52.42
+#[test]
+fn reaction_divides_trucks_then_moves_component_with_checkpoint_and_rollback() {
+    let (c, g, _o, child) = truck_reaction_fixture(10);
+    let t = evaluate(&Cna::full(), &c, &g, &announced_reaction_command(&g)).unwrap();
+    let recovered: Game<Cna> =
+        serde_json::from_slice(&serde_json::to_vec(&t.game).unwrap()).unwrap();
+    let division = super::super::trucks::reachable_divisions(&c, &recovered.state, &child, true)
+        [&40]
+        .clone()
+        .unwrap();
+    let answer = json!([{"unit":child,"path":["C4023"],"truck_division":division}]);
+    let seat = SeatId::new(Side::Commonwealth, Role::FrontLine);
+    let original = serde_json::to_value(&recovered).unwrap();
+    let mut invalid = answer.clone();
+    invalid[0]["path"] = json!(["C4029"]);
+    assert!(respond(&c, &recovered, seat, invalid, true).is_err());
+    assert_eq!(serde_json::to_value(&recovered).unwrap(), original);
+    let moved = respond(&c, &recovered, seat, answer.clone(), true).unwrap();
+    assert_eq!(
+        moved.game.state.land.units[&child].location.hex(),
+        Some(&"C4023".into())
+    );
+    assert!(moved.game.state.land.units[&child].detached);
+    assert_eq!(moved.game.state.land.units[&child].trucks.medium, 1);
+    assert_eq!(moved.game.state.land.units[&LEG.into()].trucks.medium, 0);
+    assert_eq!(moved.game.state.land.units[&child].cp_spent_quarters, 6);
+    assert_eq!(
+        moved.game.state.land.units[&LEG.into()].cp_spent_quarters,
+        4
+    );
+    assert_eq!(
+        serde_json::to_value(respond(&c, &t.game, seat, answer, true).unwrap().game).unwrap(),
+        serde_json::to_value(&moved.game).unwrap()
+    );
+    assert!(
+        moved
+            .events
+            .iter()
+            .filter(|e| matches!(e.event, GameEvent::UnitUpdated { .. }))
+            .all(|e| e.audience != Audience::SideOnly(Side::Axis))
+    );
+}
+/// The scripted reactor uses a declared, physically motorized option; it never probes the mover.
+/// Cases: land:8.53, land:8.55, land:8.56
+#[test]
+fn reaction_division_baseline_is_seeded_and_always_accepted() {
+    let (c, g, _o, child) = truck_reaction_fixture(10);
+    let t = evaluate(&Cna::full(), &c, &g, &announced_reaction_command(&g)).unwrap();
+    let request = Cna::full()
+        .pending(&c, &t.game.state)
+        .into_iter()
+        .find(|p| {
+            p.kind == super::super::reaction::KIND
+                && p.seat.side == Side::Commonwealth
+                && p.seat.role == Role::FrontLine
+        })
+        .unwrap();
+    for n in 0..32u8 {
+        let mut rng = CampaignRng::from_seed([n; 32]);
+        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng);
+        assert!(
+            action.as_array().is_some_and(|a| !a.is_empty()),
+            "seed {n}: {action}"
+        );
+        assert_eq!(action[0]["unit"], json!(child));
+        assert!(
+            respond(&c, &t.game, request.seat, action.clone(), true).is_ok(),
+            "seed {n}: {action}"
+        );
+        let mut same = CampaignRng::from_seed([n; 32]);
+        assert_eq!(
+            action,
+            crate::baseline::random_orders(&c, &t.game.state, &request, &mut same)
+        );
+    }
+}
+
+/// The announced-assault CPA gap is six, so a rating of40 is blocked at46 and permitted at45.
+/// Cases: land:8.53, land:8.54, land:8.56
+#[test]
+fn reaction_truck_option_uses_exact_six_cpa_announcement_boundary() {
+    let (c, a, _o, child) = truck_reaction_fixture(20);
+    let b = change_mover_cpa(&a, 45);
+    let command = announced_reaction_command(&a);
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::full(),
+        &c,
+        &a,
+        &b,
+        &command,
+        Side::Commonwealth,
+    );
+    let t = evaluate(&Cna::full(), &c, &b, &command).unwrap();
+    assert_eq!(
+        t.game
+            .state
+            .land
+            .reaction
+            .window
+            .as_ref()
+            .unwrap()
+            .cpa_options[&child],
+        BTreeMap::from([(20, false), (40, true)])
+    );
+    let slower = change_mover_cpa(&a, 46);
+    let t = evaluate(&Cna::full(), &c, &slower, &command).unwrap();
+    assert_eq!(
+        t.game
+            .state
+            .land
+            .reaction
+            .window
+            .as_ref()
+            .unwrap()
+            .cpa_options[&child],
+        BTreeMap::from([(20, false), (40, false)])
+    );
+}
+
+/// The advertised schema and serde defaults agree, including optional nulls and nested text.
+/// Cases: land:8.56, land:8.95, airlog:49.16
+#[test]
+fn reaction_division_space_accepts_defaults_and_rejects_unadvertised_history() {
+    let (c, g, _, child) = truck_reaction_fixture(10);
+    let t = evaluate(&Cna::full(), &c, &g, &announced_reaction_command(&g)).unwrap();
+    let request = Cna::full()
+        .pending(&c, &t.game.state)
+        .into_iter()
+        .find(|p| {
+            p.kind == super::super::reaction::KIND
+                && p.seat == SeatId::new(Side::Commonwealth, Role::FrontLine)
+        })
+        .unwrap();
+    let division = super::super::trucks::reachable_divisions(&c, &t.game.state, &child, true)[&40]
+        .clone()
+        .unwrap();
+    let mut answer = json!([{"unit":child,"path":["C4023"],"with_stack":null,"close_assault":null,"truck_division":division}]);
+    answer[0]["truck_division"]["transfers"][0]["cargo"]["heavy"] = Value::Null;
+    assert!(request.space.schema.check(&answer).is_ok());
+    assert!(respond(&c, &t.game, request.seat, answer.clone(), true).is_ok());
+    let original = serde_json::to_value(&t.game).unwrap();
+    let mut unknown = answer.clone();
+    unknown[0]["truck_division"]["transfers"][0]["past_paid_cp"] = json!(0);
+    assert!(request.space.schema.check(&unknown).is_err());
+    assert!(respond(&c, &t.game, request.seat, unknown, true).is_err());
+    let mut empty = answer.clone();
+    empty[0]["truck_division"]["transfers"][0]["cohorts"][0]["id"] = json!("");
+    assert!(respond(&c, &t.game, request.seat, empty, true).is_err());
+    let mut missing = answer;
+    missing[0]["truck_division"]["transfers"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("from");
+    assert!(respond(&c, &t.game, request.seat, missing, true).is_err());
+    assert_eq!(serde_json::to_value(&t.game).unwrap(), original);
+}

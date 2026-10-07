@@ -69,6 +69,15 @@ pub fn random_orders(
             continue;
         }
         let strict = state.land.movement.strict;
+        if request.kind == reaction::KIND {
+            let options = reaction::plans(content, state, &id, strict);
+            if options.is_empty() {
+                continue;
+            }
+            let (division, paths) = &options[index(rng, options.len())];
+            let path = &paths[index(rng, paths.len())];
+            return json!([{"unit":id,"path":path.path,"truck_division":division}]);
+        }
         let paths: Vec<_> = movement::reachable(content, state, &id, strict)
             .into_iter()
             .filter(|r| !r.path.is_empty())
