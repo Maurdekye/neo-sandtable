@@ -389,7 +389,7 @@ are unchanged.
 
 ### GT1-6 digitization corridor
 
-`graziani-corridor.toml` is a proposed, narrower work envelope inside the
+`graziani-corridor.toml` is the approved, narrower work envelope inside the
 approved Graziani window. It is not a movement restriction or an assertion
 that any layer is complete. Regenerate with
 `py -3.12 tools/map/generate_corridor.py`; canonical membership includes source

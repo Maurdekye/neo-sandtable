@@ -34,7 +34,7 @@ def generate(folder):
         if anchor not in ids:
             raise ValueError("Priority corridor lost anchor: " + anchor)
     document = dict(schema_version=1, id="graziani-gt1-6-corridor",
-                    status="proposed_digitization_corridor",
+                    status="approved_digitization_corridor",
                     coordinate_profile="vassal-2021",
                     build_file_sha256=grid.metadata["build_file_sha256"],
                     canonical_count=len(ids), internal_edge_count=len(internal),

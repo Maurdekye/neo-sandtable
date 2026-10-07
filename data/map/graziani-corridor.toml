@@ -1,6 +1,6 @@
 schema_version = 1
 id = "graziani-gt1-6-corridor"
-status = "proposed_digitization_corridor"
+status = "approved_digitization_corridor"
 coordinate_profile = "vassal-2021"
 build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
 canonical_count = 834
