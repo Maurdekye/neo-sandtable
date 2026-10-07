@@ -661,13 +661,11 @@ fn run(
             let next = previous
                 .checked_add(cp)
                 .ok_or_else(|| illegal("CP expenditure overflow"))?;
-            let p = logistics::plan_segment_fuel(content, state, id, next)
+            let spent = logistics::spend_segment_fuel_report(content, state, id, next)
                 .map_err(|e| supply_error(e, strict))?;
             fuel = fuel
-                .checked_add(p.increment.get())
+                .checked_add(spent.increment.get())
                 .ok_or_else(|| illegal("fuel expenditure overflow"))?;
-            logistics::spend_segment_fuel(content, state, id, next)
-                .map_err(|e| supply_error(e, strict))?;
             capability::charge(
                 state.land.units.get_mut(id).unwrap(),
                 group_allowance,
