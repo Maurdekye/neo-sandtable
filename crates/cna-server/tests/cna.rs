@@ -9,8 +9,10 @@ use cna_server::{
 use rusqlite::{Connection, OpenFlags};
 use std::{
     fs,
+    io::Write,
     path::{Path, PathBuf},
-    time::Duration,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
 };
 
 fn data() -> PathBuf {
@@ -26,9 +28,52 @@ fn request(profile: &str, mode: &str, paused: bool) -> CreateRequest {
         paused,
     }
 }
-async fn terminal(handle: &CampaignHandle) -> CampaignStatus {
+// CI6ff168c/run37555623854: the scripted launcher completed in227.38s.
+// Its completion is a proxy, not a completed server measurement; parallel server
+// tests were still censored at120s. The lead approved this460s measurement ceiling,
+// about twice that completed proxy. CNA_PROFILE will calibrate each server limit
+// to2x its own completed CI campaign time. Default-test limits are unchanged.
+const SLOW_CAMPAIGN_LIMIT: Duration = Duration::from_secs(460);
+// Whole-roster benchmarks calibrate one campaign at a time on small hosted runners.
+static SLOW_CAMPAIGN_SLOT: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+fn report_campaign(handle: &CampaignHandle, path: &Path, label: &str, wall: Duration) {
+    let metrics = handle.runtime_metrics();
+    let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+    let commands: u64 = db
+        .query_row("SELECT COUNT(*) FROM commands", [], |r| r.get(0))
+        .unwrap();
+    let mut counts = std::collections::BTreeMap::new();
+    for request in resolved_decisions(path) {
+        let kind = request.kind.split(':').next().unwrap().to_owned();
+        *counts.entry(kind).or_insert(0_u64) += 1;
+    }
+    // Direct stderr is intentional: successful ignored-test measurements must appear in CI,
+    // where libtest normally captures successful eprintln output.
+    let _ = writeln!(
+        std::io::stderr(),
+        "CNA_PROFILE {label} wall_s={:.3} commands={commands} measured_commands={} engine_s={:.3} durable_writer_s={:.3} projections_s={:.3} controllers_s={:.3} decision_kinds={counts:?}",
+        wall.as_secs_f64(),
+        metrics.committed_commands,
+        metrics.engine.as_secs_f64(),
+        metrics.durable_writer.as_secs_f64(),
+        metrics.projections.as_secs_f64(),
+        metrics.controllers.as_secs_f64()
+    );
+    if handle.status() != CampaignStatus::Running {
+        assert_eq!(metrics.committed_commands, commands);
+    }
+}
+
+async fn terminal(handle: &CampaignHandle, path: Option<&Path>, label: &str) -> CampaignStatus {
+    let started = Instant::now();
     let mut status = handle.watch_status();
-    tokio::time::timeout(Duration::from_secs(120), async {
+    let limit = if path.is_some() {
+        SLOW_CAMPAIGN_LIMIT
+    } else {
+        Duration::from_secs(120)
+    };
+    let result = tokio::time::timeout(limit, async {
         loop {
             let current = status.borrow_and_update().clone();
             if matches!(
@@ -51,8 +96,11 @@ async fn terminal(handle: &CampaignHandle) -> CampaignStatus {
             }
         }
     })
-    .await
-    .unwrap_or_else(|_| {
+    .await;
+    if let Some(path) = path {
+        report_campaign(handle, path, label, started.elapsed());
+    }
+    result.unwrap_or_else(|_| {
         panic!(
             "campaign timeout at {:?}; seats {:?}",
             handle.projection(Perspective::Operator).view.clock,
@@ -96,6 +144,7 @@ fn assert_initiative_and_transcript_count(path: &Path, transcript_count: usize) 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "slow: whole campaign"]
 async fn real_graziani_baselines_finish_with_private_transcripts_and_exact_recovery() {
+    let _slot = SLOW_CAMPAIGN_SLOT.lock().await;
     check_real_baselines(true).await;
 }
 
@@ -146,7 +195,10 @@ async fn check_real_baselines(whole: bool) {
         handle.pause(false).await.unwrap();
         let handle = if whole {
             assert!(
-                matches!(terminal(&handle).await, CampaignStatus::Finished { .. }),
+                matches!(
+                    terminal(&handle, Some(&path), mode).await,
+                    CampaignStatus::Finished { .. }
+                ),
                 "{:?}",
                 handle.status()
             );
@@ -320,7 +372,7 @@ async fn full_profile_stops_without_guessing_and_mixed_recovery_keeps_profiles()
             .is_empty()
     );
     full.pause(false).await.unwrap();
-    let status = terminal(&full).await;
+    let status = terminal(&full, None, "full").await;
     assert!(
         matches!(&status,CampaignStatus::Stopped {error} if error.contains("unsupported")),
         "{status:?}"
@@ -495,6 +547,7 @@ async fn campaign_kind_and_profile_must_agree_before_creating_a_database() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "slow: whole campaign"]
 async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts() {
+    let _slot = SLOW_CAMPAIGN_SLOT.lock().await;
     check_http_real_profile(true).await;
 }
 
@@ -506,14 +559,19 @@ async fn http_bounded_real_profile_serves_private_transcripts_and_recovers() {
 async fn check_http_real_profile(whole: bool) {
     use cna_server::http::App;
     use serde_json::{Value, json};
-    use std::sync::Arc;
     let directory = tempfile::tempdir().unwrap();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
+    let created = Arc::new(Mutex::new(None::<CampaignHandle>));
+    let captured = Arc::clone(&created);
     let app = App::new(
         directory.path().to_owned(),
         port,
-        Arc::new(|request, dir| campaigns::create(dir, &data(), request)),
+        Arc::new(move |request, dir| {
+            let handle = campaigns::create(dir, &data(), request)?;
+            *captured.lock().unwrap() = Some(handle.clone());
+            Ok(handle)
+        }),
     );
     let router = app.router(&directory.path().join("missing-dist"));
     let task = tokio::spawn(async move {
@@ -588,7 +646,13 @@ async fn check_http_real_profile(whole: bool) {
             .status(),
         200
     );
-    tokio::time::timeout(Duration::from_secs(if whole { 120 } else { 20 }), async {
+    let started = Instant::now();
+    let limit = if whole {
+        SLOW_CAMPAIGN_LIMIT
+    } else {
+        Duration::from_secs(20)
+    };
+    let result = tokio::time::timeout(limit, async {
         loop {
             let detail: Value = client
                 .get(format!("{base}/api/campaigns/{id}"))
@@ -609,8 +673,17 @@ async fn check_http_real_profile(whole: bool) {
             tokio::time::sleep(Duration::from_millis(20)).await;
         }
     })
-    .await
-    .unwrap();
+    .await;
+    if whole {
+        let handle = created.lock().unwrap().as_ref().unwrap().clone();
+        report_campaign(
+            &handle,
+            &directory.path().join(format!("{id}.sqlite")),
+            "http/legal_random",
+            started.elapsed(),
+        );
+    }
+    result.unwrap();
     if !whole {
         assert_eq!(
             client

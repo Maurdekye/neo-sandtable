@@ -1,6 +1,7 @@
 //! Bounded actor commands and isolated, committed reader projections.
 use crate::{
     Binding, Campaign, CampaignStatus, Error, Receipt,
+    campaign::RuntimeMetrics,
     replay::ReplayReader,
     scripted::{Candidates, NoCandidates, Step},
 };
@@ -18,6 +19,7 @@ use std::{
     collections::BTreeMap,
     path::Path,
     sync::{Arc, Mutex},
+    time::Instant,
 };
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 
@@ -71,6 +73,7 @@ struct Inner {
     seats: BTreeMap<SeatId, watch::Receiver<SeatState>>,
     status: watch::Receiver<CampaignStatus>,
     reader: ReplayReader,
+    metrics: Arc<Mutex<RuntimeMetrics>>,
     supports_aggressive: bool,
     thread: Mutex<Option<std::thread::JoinHandle<Result<(), Error>>>>,
 }
@@ -105,6 +108,7 @@ fn projection<R: Ruleset>(campaign: &Campaign<R>, p: Perspective) -> Result<Proj
 }
 impl Publisher {
     fn update<R: Ruleset>(&mut self, campaign: &Campaign<R>) -> Result<(), Error> {
+        let start = Instant::now();
         for p in Perspective::all() {
             let previous_seq = self.projections[&p].borrow().seq;
             let next = projection(campaign, p)?;
@@ -168,6 +172,11 @@ impl Publisher {
                 true
             }
         });
+        campaign
+            .metrics
+            .lock()
+            .expect("runtime metrics lock")
+            .projections += start.elapsed();
         Ok(())
     }
 }
@@ -254,6 +263,7 @@ impl CampaignHandle {
             status: status_send,
             transcript_cursors,
         };
+        let metrics = Arc::clone(&campaign.metrics);
         let supports_aggressive = baseline.is_some();
         let thread = std::thread::Builder::new()
             .name("campaign-writer".into())
@@ -322,6 +332,7 @@ impl CampaignHandle {
                 seats,
                 status: status_recv,
                 reader: ReplayReader::new(path),
+                metrics,
                 supports_aggressive,
                 thread: Mutex::new(Some(thread)),
             }),
@@ -336,6 +347,10 @@ impl CampaignHandle {
             .map_err(|_| Error::NotRunning)?;
         let result = wait.await.map_err(|_| Error::NotRunning)??;
         Ok(serde_json::from_value(result)?)
+    }
+    /// Operator-process diagnostics only; no HTTP/WS/MCP endpoint exposes these timings.
+    pub fn runtime_metrics(&self) -> RuntimeMetrics {
+        *self.inner.metrics.lock().expect("runtime metrics lock")
     }
     pub fn projection(&self, p: Perspective) -> Projection {
         self.inner.projections[&p].borrow().clone()
@@ -466,6 +481,21 @@ impl CampaignHandle {
     }
 }
 pub(crate) fn auto_step<R: Ruleset>(
+    campaign: &mut Campaign<R>,
+    baseline: Option<&Baseline<R>>,
+    candidates: &dyn Candidates,
+    policy: Option<&ActionPolicy<R>>,
+) -> Result<Step, Error> {
+    let before = *campaign.metrics.lock().expect("runtime metrics lock");
+    let start = Instant::now();
+    let result = auto_step_inner(campaign, baseline, candidates, policy);
+    let elapsed = start.elapsed();
+    let mut after = campaign.metrics.lock().expect("runtime metrics lock");
+    let commit = (after.engine - before.engine) + (after.durable_writer - before.durable_writer);
+    after.controllers += elapsed.saturating_sub(commit);
+    result
+}
+fn auto_step_inner<R: Ruleset>(
     campaign: &mut Campaign<R>,
     baseline: Option<&Baseline<R>>,
     candidates: &dyn Candidates,

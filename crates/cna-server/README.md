@@ -166,7 +166,11 @@ mixed sandbox/CNA recovery. No provider invocation is needed for these tests.
 Default CNA checks use bounded decision windows, including an accepted real-unit move and
 mid-run recovery of all perspective views, counters, transcripts and adjudication RNG. Whole
 Graziani campaigns are marked `slow: whole campaign`; run them with
-`cargo test -p cna-server -- --ignored`. Their existing 120-second completion limits remain.
+`cargo test -p cna-server -- --ignored`. Ignored campaigns currently use a 460-second
+measurement ceiling, about twice the completed CI launcher proxy (227.38 seconds), while the
+server campaigns were still censored at their former 120-second limit. Default bounded-test
+limits stay unchanged. Completed server CI timings will set the slow limits
+to about twice each measured campaign duration.
 The bounded mover test prints engine, writer (including engine and SQLite), and all-perspective
 projection timings; it uses real unit data with a small test map rather than a full-roster benchmark.
 
@@ -175,3 +179,18 @@ One bounded fixture run resolved 16 decisions in 31 transitions: engine evaluati
 1.7 ms per resolved decision. These include automatic transitions between decisions. The test
 uses real Graziani unit data and a small map; this is not a full-roster benchmark, and SQLite
 cost was not measured independently from the writer. Numbers vary with machine load.
+
+Ignored whole-campaign tests emit `CNA_PROFILE` on CI with wall time, accepted command count,
+resolved decision counts by kind, and runtime engine, durable writer, projection and controller
+costs. The durable writer includes serialization, state/event hashing, pending and stream rows,
+and the SQLite `synchronous=FULL` transaction commit; it excludes engine evaluation. Projection
+time includes all 13 snapshots, 10 seat observations and committed stream fanout. Controller
+time includes scripted selection and pure validation outside those measured commit costs.
+These cumulative diagnostics reset on recovery and are available only through the trusted
+in-process handle, with no HTTP, WebSocket or MCP tool exposure. They do not alter game state,
+RNG, input pins, or the requirement to commit accepted commands before acknowledgment.
+
+The first completed local full-campaign measurement found projection and observation work
+used about 58% of wall time, compared with about 26% for the durable writer. Reusing unchanged
+perspective/seat projections is the leading performance follow-up, subject to privacy and
+invalidation tests. This is deferred; durability and per-command acknowledgment stay unchanged.

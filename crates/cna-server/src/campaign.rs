@@ -1,4 +1,9 @@
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::BTreeMap,
+    path::Path,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 
 use cna_core::{
     decision::{DecisionRequest, DecisionResponse},
@@ -82,9 +87,24 @@ pub struct Receipt {
     pub duplicate: bool,
 }
 
+/// Trusted-process timing diagnostics, never included in HTTP, WebSocket or seat tools.
+/// They reset on recovery and cannot affect persisted state, receipts or adjudication RNG.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RuntimeMetrics {
+    pub committed_commands: u64,
+    pub engine: Duration,
+    /// Serialization, state hashing, pending/stream rows and SQLite FULL transaction commit.
+    pub durable_writer: Duration,
+    /// All perspective snapshots, seat observations and committed stream publication.
+    pub projections: Duration,
+    /// Scripted selection/validation outside the separately measured engine and writer.
+    pub controllers: Duration,
+}
+
 /// Owned by exactly one writer. Viewers consume committed projections, never the mutable game.
 pub struct Campaign<R: Ruleset> {
     db: Connection,
+    pub(crate) metrics: Arc<Mutex<RuntimeMetrics>>,
     ruleset: R,
     pub(crate) content: R::Content,
     pub(crate) game: Game<R>,
@@ -194,6 +214,7 @@ impl<R: Ruleset> Campaign<R> {
         tx.commit()?;
         Ok(Self {
             db,
+            metrics: Arc::new(Mutex::new(RuntimeMetrics::default())),
             ruleset,
             content,
             game,
@@ -294,6 +315,7 @@ impl<R: Ruleset> Campaign<R> {
         }
         let campaign = Self {
             db,
+            metrics: Arc::new(Mutex::new(RuntimeMetrics::default())),
             ruleset,
             content,
             game,
@@ -523,6 +545,7 @@ impl<R: Ruleset> Campaign<R> {
         if self.status != CampaignStatus::Running {
             return Err(Error::NotRunning);
         }
+        let engine_start = Instant::now();
         let transition = match evaluate(&self.ruleset, &self.content, &self.game, &command) {
             Ok(t) => t,
             Err(Rejection::Engine(error)) => {
@@ -537,6 +560,8 @@ impl<R: Ruleset> Campaign<R> {
             }
             Err(e) => return Err(e.into()),
         };
+        let engine_elapsed = engine_start.elapsed();
+        let writer_start = Instant::now();
         let revision = self.revision + 1;
         let state_hash = hash(&transition.game)?;
         let status = match &transition.progress {
@@ -664,6 +689,12 @@ impl<R: Ruleset> Campaign<R> {
         self.game = transition.game;
         self.revision = revision;
         self.status = status;
+        {
+            let mut metrics = self.metrics.lock().expect("runtime metrics lock");
+            metrics.committed_commands += 1;
+            metrics.engine += engine_elapsed;
+            metrics.durable_writer += writer_start.elapsed();
+        }
         let decision_id = match command {
             Command::Respond(r) => Some(r.decision_id.to_string()),
             Command::Advance => None,
