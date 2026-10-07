@@ -3262,3 +3262,122 @@ fn reaction_division_space_accepts_defaults_and_rejects_unadvertised_history() {
     assert!(respond(&c, &t.game, request.seat, missing, true).is_err());
     assert_eq!(serde_json::to_value(&t.game).unwrap(), original);
 }
+
+/// Cases: land:3.62, land:8.13, land:8.65, land:13.21, land:19.12
+#[test]
+fn raw_counter_paths_are_exact_for_all_perspectives_and_attached_contents_stay_private() {
+    let (c, mut s, overlay) = setup(LEG, Some("road"), false, None);
+    let other = "cw.2_nz_div.21st_nz_bn";
+    let attached = "cw.2_nz_div.22nd_nz_bn";
+    for id in [other, attached] {
+        place(&mut s, id, "C4020");
+    }
+    s.land.units.get_mut(&attached.into()).unwrap().attached_to = Some(LEG.into());
+    s.land.units.get_mut(&attached.into()).unwrap().detached = false;
+    assert!(view::is_map_counter(&c, &s, &s.land.units[&LEG.into()]));
+    assert!(view::is_map_counter(&c, &s, &s.land.units[&other.into()]));
+    assert!(!view::is_map_counter(
+        &c,
+        &s,
+        &s.land.units[&attached.into()]
+    ));
+    let g = start(&c, s, true);
+    let action = json!([{"unit":LEG,"with_stack":true,"path":["C4021","C4022"]}]);
+    let primary = respond(&c, &g, seat(&g), action.clone(), true).unwrap();
+    let mut nonphasing = g.state.clone();
+    let mut rng = CampaignRng::from_state(&g.rng);
+    let mut retreat_events = vec![];
+    execute_nonphasing(
+        &c,
+        &mut nonphasing,
+        &Order {
+            unit: LEG.into(),
+            path: vec!["C4021".into(), "C4022".into()],
+            with_stack: true,
+            close_assault: vec![],
+        },
+        seat(&g),
+        true,
+        NonPhasingMove::Retreat,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut retreat_events,
+        },
+    )
+    .unwrap();
+    for (events, state) in [
+        (&primary.events, &primary.game.state),
+        (&retreat_events, &nonphasing),
+    ] {
+        for id in [LEG, other, attached] {
+            assert_eq!(
+                state.land.units[&id.into()].location.hex(),
+                Some(&"C4022".into())
+            );
+        }
+        for perspective in Perspective::all() {
+            let mut paths = events
+                .iter()
+                .filter(|e| perspective.can_see(&e.audience))
+                .filter_map(|e| match &e.event {
+                    GameEvent::UnitMoved {
+                        unit_id,
+                        path,
+                        cp_spent,
+                    } => Some((unit_id.as_str(), path.clone(), *cp_spent)),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            paths.sort();
+            let enemy = perspective.side() == Some(Side::Axis);
+            let mut expected = if enemy {
+                vec![LEG, other]
+            } else {
+                vec![LEG, other, attached]
+            }
+            .into_iter()
+            .map(|id| {
+                (
+                    id,
+                    vec!["C4021".to_string(), "C4022".to_string()],
+                    if enemy { None } else { Some(2) },
+                )
+            })
+            .collect::<Vec<_>>();
+            expected.sort();
+            assert_eq!(paths, expected, "{perspective}");
+        }
+    }
+    // Optional scratch export supplies the persistence owner an exact public-engine fixture.
+    if let Some(dir) = std::env::var_os("CNA_LAND_FOW_FIXTURE_DIR") {
+        let dir = PathBuf::from(dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let request = &g.state.decisions.pending[0];
+        let response = DecisionResponse {
+            decision_id: request.id.clone(),
+            seat: request.seat,
+            controller_epoch: 1,
+            decision_revision: request.revision,
+            idempotency_key: "raw-counter-path".into(),
+            action,
+            public_explanation: None,
+        };
+        std::fs::write(
+            dir.join("fixture.json"),
+            serde_json::to_vec_pretty(&json!({
+                "game":g,"response":response,"expected_game":primary.game,
+                "expected_events":primary.events,"visible":[LEG,other],"attached":attached,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let map_dir = dir.join("map");
+        std::fs::create_dir_all(&map_dir).unwrap();
+        for file in std::fs::read_dir(&overlay.dir).unwrap() {
+            let file = file.unwrap();
+            if file.file_type().unwrap().is_file() {
+                std::fs::copy(file.path(), map_dir.join(file.file_name())).unwrap();
+            }
+        }
+    }
+}
