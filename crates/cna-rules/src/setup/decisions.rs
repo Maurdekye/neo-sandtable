@@ -1,5 +1,5 @@
 //! Placement and first-line distribution in the shared blind setup window.
-use super::{SetupTask, placement, pools, preload, stacking};
+use super::{SetupTask, air, placement, pools, preload, stacking};
 use crate::state::{DumpLocation, Location, Pending};
 use crate::steps::{illegal, open};
 use crate::{CnaContent, State};
@@ -92,6 +92,17 @@ pub(super) fn open_task(
         SetupTask::Unit { unit, .. } => {
             serde_json::json!({"unit":unit,"group":state.land.units[unit].setup_group})
         }
+        SetupTask::Air { force, phase } => match phase {
+            air::Phase::Planes { aircraft, ready } => {
+                serde_json::json!({"force":force,"aircraft":aircraft,"ready":ready})
+            }
+            air::Phase::Sgsu { aircraft } => {
+                serde_json::json!({"force":force,"aircraft":aircraft,"sgsu":"unassigned"})
+            }
+            air::Phase::Pilots { rating } => {
+                serde_json::json!({"force":force,"pilot_rating":rating})
+            }
+        },
         SetupTask::Dump { dump, .. } => serde_json::json!({"dump":dump}),
         SetupTask::Trucks { group } => {
             serde_json::json!({"group":group,"pool":format!("first-line:{group}")})
@@ -298,7 +309,6 @@ fn refresh_stacking(
 
 /// Open the owning seats' choices without publishing free destinations.
 /// Cases: land:8.37, land:9.12, land:9.16, land:9.21, land:9.25, land:9.31, land:9.32
-/// Unsupported: scen:59.33 - squadron setup is still being implemented.
 /// Cases: scen:59.2, scen:59.42, scen:59.53, scen:60.31, scen:60.34, scen:60.41, scen:60.44, land:8.13
 /// Interpretations: interp:scen-0005
 pub(crate) fn enter(
@@ -391,39 +401,7 @@ pub(crate) fn enter(
     for group in groups {
         open_trucks(content, state, cx, &group)?;
     }
-    // Development can resolve available setup choices while the remaining procedures are built.
-    // Strict play must stop rather than treating the unassigned assets as placed.
-    let mut unfinished = BTreeMap::<(Side, &'static str), Role>::new();
-    for (force, assets) in &state.air.forces {
-        if assets.sgsu_available > 0 || assets.planes.values().any(|p| p.total > 0) {
-            unfinished.insert(
-                (
-                    if force == "axis" {
-                        Side::Axis
-                    } else {
-                        Side::Commonwealth
-                    },
-                    "scen:59.33",
-                ),
-                Role::Air,
-            );
-        }
-    }
-    for ((side, case), role) in unfinished {
-        let detail = "air or convoy setup assets remain awaiting their placement procedure";
-        if strict {
-            return Err(EngineError::Unsupported {
-                case: case.into(),
-                detail: detail.into(),
-            });
-        }
-        cx.emit(EngineEvent::new(
-            Audience::Seat(SeatId::new(side, role)),
-            GameEvent::Note {
-                text: format!("Awaiting setup ({case}): {detail}."),
-            },
-        ));
-    }
+    air::start(content, state, strict, cx)?;
     pools::start(content, state, strict, cx)?;
     preload::start(content, state, cx)?;
     Ok(())
@@ -515,6 +493,15 @@ pub(crate) fn answer(
         .cloned()
         .ok_or_else(|| Rejection::Engine(invariant("unknown setup task")))?;
     match task {
+        SetupTask::Air { force, phase } => air::answer(
+            content,
+            state,
+            pending,
+            (&force, &phase),
+            action,
+            strict,
+            cx,
+        )?,
         SetupTask::Unit { unit, case } => {
             let owner = state
                 .land

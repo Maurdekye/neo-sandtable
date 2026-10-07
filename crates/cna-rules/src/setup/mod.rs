@@ -1,4 +1,5 @@
 //! Scenario setup decisions and their private simultaneous window.
+mod air;
 mod decisions;
 mod facilities;
 pub mod placement;
@@ -27,6 +28,10 @@ pub struct SetupState {
     #[serde(default)]
     pub pools_started: bool,
     #[serde(default)]
+    pub air_started: bool,
+    #[serde(default)]
+    pub air_unavailable: std::collections::BTreeSet<String>,
+    #[serde(default)]
     pub preload_started: bool,
     #[serde(default)]
     pub preload_packing: BTreeMap<String, crate::logistics::CargoPacking>,
@@ -39,6 +44,10 @@ pub struct SetupState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SetupTask {
+    Air {
+        force: String,
+        phase: air::Phase,
+    },
     Unit {
         unit: UnitId,
         case: String,
@@ -63,3 +72,5 @@ pub enum SetupTask {
 pub(crate) const KIND_POOL: &str = pools::KIND;
 
 pub(crate) const KIND_PRELOAD: &str = preload::KIND;
+
+pub(crate) const KIND_AIR: &str = air::KIND;

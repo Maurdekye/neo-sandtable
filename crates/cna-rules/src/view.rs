@@ -432,6 +432,10 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "applicable_rule_cases": cases,
         },
         "your_forces": forces,
+        "air": {
+            "forces": state.air.forces.iter().filter(|(force,_)|sees_side(perspective,if force.as_str()=="axis"{Side::Axis}else{Side::Commonwealth})).collect::<BTreeMap<_,_>>(),
+            "squadrons": state.air.squadrons.iter().filter(|(_,s)|sees_side(perspective,s.side)).collect::<BTreeMap<_,_>>(),
+        },
         "logistics": {
             "truck_pool_destinations": state.setup.pool_locations.iter().filter(|(id,_)|state.logistics.truck_pools.iter().any(|p|&p.id==*id&&sees_side(perspective,p.side))).collect::<BTreeMap<_,_>>(),
             "truck_pools": state.logistics.truck_pools.iter().filter(|p|sees_side(perspective,p.side)).collect::<Vec<_>>(),
@@ -520,6 +524,12 @@ pub(crate) fn inspect(
         }
         return Ok(json!({"coastal_ship": ship, "id":target,
             "capacity_tons":content.units.coastal_ships.get(target).and_then(|s|s.capacity_tons)}));
+    }
+    if let Some(squadron) = state.air.squadrons.get(target) {
+        if !sees_side(perspective, squadron.side) {
+            return Err(hidden());
+        }
+        return Ok(json!({"squadron":squadron}));
     }
     if let Some(pool) = state.logistics.truck_pools.iter().find(|p| p.id == target) {
         if !sees_side(perspective, pool.side) {
