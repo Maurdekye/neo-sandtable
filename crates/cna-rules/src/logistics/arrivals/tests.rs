@@ -114,6 +114,28 @@ fn respond(
         },
     )
 }
+fn close_with_passes(c: &CnaContent, s: &mut State, rng: &mut CampaignRng) {
+    for _ in 0..8 {
+        if let Some(p) = s.decisions.pending.first().cloned() {
+            respond(c, s, &p, &Value::Null, rng).unwrap();
+        } else {
+            finish(
+                c,
+                s,
+                false,
+                &mut Cx {
+                    rng,
+                    events: &mut vec![],
+                },
+            )
+            .unwrap();
+            if s.logistics.arrival_supply.round == ArrivalRound::Complete {
+                return;
+            }
+        }
+    }
+    panic!("fixed arrival rounds did not close")
+}
 fn empty() -> Value {
     json!({"allocations":[],"well_allocations":[],"wells":[]})
 }
@@ -181,14 +203,11 @@ fn real_arrival_consumes_actual_stocks_and_does_not_reassess_prior_units() {
     let need = water::requirements(&c, &s, &AX.into()).unwrap();
     let value = json!({"allocations":[issue(full,need.infantry,need.activity,true,10)],"well_allocations":[],"wells":[]});
     respond(&c, &mut s, &pending, &value, &mut rng).unwrap();
-    assert!(
-        s.decisions.pending.len() <= 1,
-        "one list handles all quantities"
+    assert_eq!(
+        s.logistics.dumps["arrival-stock"].supplies.stores, 30,
+        "accepted lists wait for both side requests"
     );
-    // Fuel refill remains available, so pass any remaining optional refill window.
-    if let Some(p) = s.decisions.pending.first().cloned() {
-        respond(&c, &mut s, &p, &Value::Null, &mut rng).unwrap();
-    }
+    close_with_passes(&c, &mut s, &mut rng);
     assert_eq!(
         s.logistics.dumps["arrival-stock"].supplies.stores,
         30 - full
@@ -227,6 +246,7 @@ fn pass_does_not_create_supplies_and_shortages_are_scoped_to_arrivals() {
     start(&c, &mut s, [AX.into()].into(), &mut rng);
     let p = s.decisions.pending[0].clone();
     respond(&c, &mut s, &p, &Value::Null, &mut rng).unwrap();
+    close_with_passes(&c, &mut s, &mut rng);
     assert_eq!(s.logistics.rations[&AX.into()].stores_received, 0);
     assert_eq!(s.logistics.rations[&AX.into()].consecutive_short_gt, 1);
     assert_eq!(
@@ -341,7 +361,7 @@ fn arrival_baselines_feed_real_units_and_finish_across_64_seeds() {
         let mut rng = CampaignRng::from_seed([seed; 32]);
         let mut controller = CampaignRng::from_seed([seed ^ 63; 32]);
         start(&c, &mut s, [AX.into()].into(), &mut rng);
-        assert!(drain(&c, &mut s, &mut rng, &mut controller) <= 3);
+        assert_eq!(drain(&c, &mut s, &mut rng, &mut controller), 4);
         assert_eq!(
             s.logistics.rations[&AX.into()].stores_received,
             rations::stores_required(&c, &s, &AX.into()).unwrap()
@@ -382,7 +402,13 @@ fn hidden_well_conditions_cannot_change_arrival_answer_acceptance() {
     s.logistics.unit_supply.remove(&CW.into());
     let mut rng = CampaignRng::from_seed([5; 32]);
     start(&c, &mut s, [CW.into()].into(), &mut rng);
-    let p = s.decisions.pending[0].clone();
+    let p = s
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.seat.side == Side::Commonwealth)
+        .unwrap()
+        .clone();
     let a = Game::<Cna> {
         state: s,
         rng: rng.state(),
@@ -404,10 +430,12 @@ fn hidden_well_conditions_cannot_change_arrival_answer_acceptance() {
     let t = evaluate(&Cna::dev(), &c, &b, &command).unwrap().game;
     assert_eq!(t.rng, a.rng);
     assert!(t.state.logistics.drawn_water.is_empty());
-    assert_eq!(t.state.land.units[&CW.into()].cp_spent_quarters, 4);
+    assert_eq!(t.state.land.units[&CW.into()].cp_spent_quarters, 0);
     let mut checkpoint: Game<Cna> =
         serde_json::from_value(serde_json::to_value(&t).unwrap()).unwrap();
     let mut rng = CampaignRng::from_state(&checkpoint.rng);
+    let other = checkpoint.state.decisions.pending[0].clone();
+    respond(&c, &mut checkpoint.state, &other, &Value::Null, &mut rng).unwrap();
     let mut events = vec![];
     finish(
         &c,
@@ -484,25 +512,23 @@ fn enemy_learns_nothing_from_private_arrival_quantities() {
 }
 /// Cases: land:20.12, airlog:56.28
 #[test]
-fn empty_arrival_roster_opens_nothing_and_old_stage_flags_do_not_repeat() {
+fn empty_arrival_roster_has_two_fixed_forced_pass_rounds_and_no_repeated_stage() {
     let (c, mut s) = fixture();
     let mut rng = CampaignRng::from_seed([2; 32]);
     start(&c, &mut s, BTreeSet::new(), &mut rng);
+    assert_eq!(s.decisions.pending.len(), 2);
+    for p in &s.decisions.pending {
+        assert_eq!(p.secrecy, Secrecy::SecretSimultaneous);
+        assert!(p.space.pass.is_some());
+        assert!(matches!(&p.space.schema, ActionSchema::Choice { options } if options.is_empty()));
+    }
+    close_with_passes(&c, &mut s, &mut rng);
     assert!(s.decisions.pending.is_empty());
-    finish(
-        &c,
-        &mut s,
-        false,
-        &mut Cx {
-            rng: &mut rng,
-            events: &mut vec![],
-        },
-    )
-    .unwrap();
+    start(&c, &mut s, BTreeSet::new(), &mut rng);
     assert!(s.decisions.pending.is_empty());
     s.cursor.op_stage = Some(2);
     start(&c, &mut s, [AX.into()].into(), &mut rng);
-    assert_eq!(s.decisions.pending.len(), 1);
+    assert_eq!(s.decisions.pending.len(), 2);
 }
 
 /// Cases: airlog:52.42, land:3.6
@@ -545,7 +571,7 @@ fn unknown_arriving_hq_is_full_unsupported_or_dev_private_unassessed() {
         &[id.clone()].into(),
     )
     .unwrap();
-    assert!(s.decisions.pending.is_empty());
+    assert_eq!(s.decisions.pending.len(), 2);
     assert_eq!(s.land.units[&id], before);
     assert!(!s.logistics.rations.contains_key(&id));
     assert!(!s.logistics.unit_supply.contains_key(&id));
@@ -554,15 +580,20 @@ fn unknown_arriving_hq_is_full_unsupported_or_dev_private_unassessed() {
             .iter()
             .any(|e| matches!(&e.event,GameEvent::Note{text}if text.contains("unassessed")))
     );
-    assert!(events.iter().all(|e| {
-        Perspective::Side(side).can_see(&e.audience)
-            && !Perspective::Side(if side == Side::Axis {
-                Side::Commonwealth
-            } else {
-                Side::Axis
+    assert!(
+        events
+            .iter()
+            .filter(|e| matches!(e.event, GameEvent::Note { .. }))
+            .all(|e| {
+                Perspective::Side(side).can_see(&e.audience)
+                    && !Perspective::Side(if side == Side::Axis {
+                        Side::Commonwealth
+                    } else {
+                        Side::Axis
+                    })
+                    .can_see(&e.audience)
             })
-            .can_see(&e.audience)
-    }));
+    );
 }
 
 /// Cases: land:20.12, land:4.48, airlog:49.12, airlog:49.14, airlog:50.17, airlog:51.11, airlog:52.42
@@ -631,9 +662,21 @@ fn actual_classless_v_medium_tank_arrival_has_known_consumption_and_accepted_bas
                 &[TANK.into()].into(),
             )
             .unwrap();
-            for _ in 0..4 {
+            for _ in 0..8 {
                 if s.decisions.pending.is_empty() {
-                    break;
+                    finish(
+                        &c,
+                        &mut s,
+                        strict,
+                        &mut Cx {
+                            rng: &mut rng,
+                            events: &mut vec![],
+                        },
+                    )
+                    .unwrap();
+                    if s.logistics.arrival_supply.round == ArrivalRound::Complete {
+                        break;
+                    }
                 }
                 let p = s.decisions.pending.remove(0);
                 let action = baseline(&c, &s, p.seat.side, &mut controller);
@@ -851,4 +894,196 @@ fn rejected_arrival_lists_are_independent_of_hidden_enemy_rosters() {
             }
         }
     }
+}
+
+/// A private off-map reinforcement cannot change any fixed request, phase, clock or stream.
+/// Cases: land:3.6, land:20.12, airlog:52.13
+/// Interpretations: interp:airlog-0017
+#[test]
+fn fixed_arrival_rounds_hide_enemy_rosters_and_draws_through_dispatcher_and_recovery() {
+    let (mut c, mut state) = fixture();
+    // Land's successful placement barrier is complete. Exercise the real dispatcher from
+    // that fixed boundary; oob tests the six preceding role windows independently.
+    c.units.schedules.clear();
+    state.land.arrivals.supply_finished.insert("1:1".into());
+    state
+        .land
+        .arrivals
+        .newly_arrived
+        .insert("1:1".into(), [AX.into()].into());
+    state.land.units.get_mut(&UnitId::new(CW)).unwrap().location = Location::NotArrived;
+    state.logistics.rations.remove(&CW.into());
+    let mut a = Game::<Cna> {
+        state,
+        rng: CampaignRng::from_seed([74; 32]).state(),
+    };
+    let mut b = a.clone();
+    b.state
+        .land
+        .units
+        .get_mut(&UnitId::new(CW))
+        .unwrap()
+        .location = Location::OffMap {
+        id: "box_tripoli".into(),
+    };
+    b.state
+        .land
+        .arrivals
+        .newly_arrived
+        .get_mut("1:1")
+        .unwrap()
+        .insert(CW.into());
+    for round in [ArrivalRound::Supply, ArrivalRound::Water] {
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::dev(),
+            &c,
+            &a,
+            &b,
+            &Command::Advance,
+            Side::Axis,
+        );
+        a = evaluate(&Cna::dev(), &c, &a, &Command::Advance)
+            .unwrap()
+            .game;
+        b = evaluate(&Cna::dev(), &c, &b, &Command::Advance)
+            .unwrap()
+            .game;
+        assert_eq!(a.state.logistics.arrival_supply.round, round);
+        assert_eq!(b.state.logistics.arrival_supply.round, round);
+        assert_eq!(a.state.decisions.pending.len(), 2);
+        assert_eq!(b.state.decisions.pending.len(), 2);
+        // In one world the enemy passes; in the other it requests a genuine box well.
+        // Its response cannot revise or reschedule the observer's simultaneous request.
+        let pa = a
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat.side == Side::Commonwealth)
+            .unwrap()
+            .clone();
+        let pb = b
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat.side == Side::Commonwealth)
+            .unwrap()
+            .clone();
+        let action = if round == ArrivalRound::Supply {
+            json!({"allocations":[],"well_allocations":[],"wells":[{"unit":CW,"requested":1,"packing":CargoPacking::default()}]})
+        } else {
+            Value::Null
+        };
+        let ca = command(&pa, Value::Null);
+        let cb = command(&pb, action);
+        crate::testkit::assert_actions_indistinguishable(
+            &Cna::dev(),
+            &c,
+            (&a, &ca),
+            (&b, &cb),
+            Side::Axis,
+        );
+        for (game, command) in [(&mut a, ca), (&mut b, cb)] {
+            let saved: Game<Cna> =
+                serde_json::from_value(serde_json::to_value(&*game).unwrap()).unwrap();
+            let t = evaluate(&Cna::dev(), &c, game, &command).unwrap();
+            let replay = evaluate(&Cna::dev(), &c, &saved, &command).unwrap();
+            assert_eq!(
+                serde_json::to_value(&t.game).unwrap(),
+                serde_json::to_value(&replay.game).unwrap()
+            );
+            assert_eq!(
+                serde_json::to_value(&t.events).unwrap(),
+                serde_json::to_value(&replay.events).unwrap()
+            );
+            *game = t.game;
+        }
+        let own = a
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat.side == Side::Axis)
+            .unwrap()
+            .clone();
+        let cmd = command(&own, Value::Null);
+        crate::testkit::assert_action_indistinguishable(&Cna::dev(), &c, &a, &b, &cmd, Side::Axis);
+        a = evaluate(&Cna::dev(), &c, &a, &cmd).unwrap().game;
+        b = evaluate(&Cna::dev(), &c, &b, &cmd).unwrap().game;
+        assert!(a.state.decisions.pending.is_empty() && b.state.decisions.pending.is_empty());
+    }
+    // Final shortage/discard adjudication is idempotent across checkpoint recovery.
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::dev(),
+        &c,
+        &a,
+        &b,
+        &Command::Advance,
+        Side::Axis,
+    );
+    for game in [&mut a, &mut b] {
+        let saved: Game<Cna> =
+            serde_json::from_value(serde_json::to_value(&*game).unwrap()).unwrap();
+        let t = evaluate(&Cna::dev(), &c, game, &Command::Advance).unwrap();
+        let replay = evaluate(&Cna::dev(), &c, &saved, &Command::Advance).unwrap();
+        assert_eq!(
+            serde_json::to_value(&t.game).unwrap(),
+            serde_json::to_value(&replay.game).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(&t.events).unwrap(),
+            serde_json::to_value(&replay.events).unwrap()
+        );
+        *game = t.game;
+        assert_eq!(
+            game.state.logistics.arrival_supply.round,
+            ArrivalRound::Complete
+        );
+        assert!(game.state.logistics.drawn_water.is_empty());
+    }
+}
+
+/// Actual stocks and CP change only after both submitted lists close, independent of order.
+/// Cases: land:3.6, airlog:49.14, airlog:51.11, airlog:52.13
+#[test]
+fn supply_answers_hold_physical_changes_and_fixed_rounds_are_submission_order_independent() {
+    let (c, mut state) = fixture();
+    let mut rng = CampaignRng::from_seed([75; 32]);
+    start(&c, &mut state, [AX.into()].into(), &mut rng);
+    let mut controller = CampaignRng::from_seed([3; 32]);
+    let own = baseline(&c, &state, Side::Axis, &mut controller);
+    let mut results = vec![];
+    for order in [SIDES, [Side::Commonwealth, Side::Axis]] {
+        let mut s = state.clone();
+        let mut r = CampaignRng::from_state(&rng.state());
+        for side in order {
+            let p = s
+                .decisions
+                .pending
+                .iter()
+                .find(|p| p.seat.side == side)
+                .unwrap()
+                .clone();
+            respond(
+                &c,
+                &mut s,
+                &p,
+                if side == Side::Axis {
+                    &own
+                } else {
+                    &Value::Null
+                },
+                &mut r,
+            )
+            .unwrap();
+            assert_eq!(s.logistics.dumps, state.logistics.dumps);
+            assert_eq!(s.land.units, state.land.units);
+            assert_eq!(s.logistics.unit_supply, state.logistics.unit_supply);
+            assert_eq!(r.state(), rng.state());
+        }
+        close_with_passes(&c, &mut s, &mut r);
+        results.push(serde_json::to_value(&s).unwrap());
+    }
+    assert_eq!(results[0], results[1]);
 }

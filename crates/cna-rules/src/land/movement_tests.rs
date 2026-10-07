@@ -579,6 +579,10 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
             };
             moves += 1;
             json!([{"unit":LEG,"path":[to]}])
+        } else if p.space.pass.is_some()
+            && matches!(&p.space.schema, ActionSchema::Choice { options } if options.is_empty())
+        {
+            Value::Null
         } else if let ActionSchema::Choice { options } = &p.space.schema {
             json!(options[0].id)
         } else {
@@ -977,6 +981,10 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
                 "mandatory breakdown baseline must preserve every holding"
             );
             action
+        } else if request.space.pass.is_some()
+            && matches!(&request.space.schema, ActionSchema::Choice { options } if options.is_empty())
+        {
+            Value::Null
         } else if matches!(request.space.schema, ActionSchema::Choice { .. })
             || request.space.pass.is_none()
         {

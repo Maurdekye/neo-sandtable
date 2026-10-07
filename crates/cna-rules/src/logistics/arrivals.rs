@@ -1,4 +1,7 @@
 //! A post-arrival owner supply window, restricted to exact successfully placed unit ids.
+//! Every stage has two simultaneous rounds for both side Logistics seats, including empty
+//! forced-pass windows: stock issues and draw requests, then actual well-yield allocation.
+//! Physical issues, CP, dice and shortages resolve at finish, after the fixed barrier.
 //! Stocks are consumed by the ordinary supply APIs. Wells resolve after closure, so
 //! answer acceptance cannot probe hidden conditions (docs/engine.md section3 rule7).
 use super::{
@@ -32,11 +35,25 @@ const SIDES: [Side; 2] = [Side::Axis, Side::Commonwealth];
 /// Interpretations: interp:airlog-0017
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ArrivalSupplyWindow {
+    #[serde(default)]
+    pub round: ArrivalRound,
+    #[serde(default)]
+    pub submitted: BTreeMap<Side, Value>,
     pub stage: Option<water::WaterStage>,
     pub units: BTreeSet<UnitId>,
     pub done: BTreeSet<Side>,
     pub waiting: BTreeMap<Side, Vec<DrawOrder>>,
     pub completed_wells: BTreeSet<UnitId>,
+}
+/// Both sides receive the same two fixed rounds, including empty forced-pass batches.
+/// Cases: land:20.12, airlog:52.13, land:3.6
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ArrivalRound {
+    #[default]
+    Supply,
+    Water,
+    Complete,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -245,15 +262,29 @@ fn open_side(
     strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
-    if state.logistics.arrival_supply.done.contains(&side) {
+    if state.logistics.arrival_supply.round == ArrivalRound::Complete
+        || state.logistics.arrival_supply.submitted.contains_key(&side)
+    {
         return Ok(());
     }
     let OwnerDomains {
-        units,
-        drawn,
-        wells: well_ids,
+        mut units,
+        mut drawn,
+        wells: mut well_ids,
     } = owner_domains(content, state, side, strict)?;
-    if !strict {
+    let water_round = state.logistics.arrival_supply.round == ArrivalRound::Water;
+    if water_round {
+        units.clear();
+        well_ids.clear();
+        drawn.retain(|id| {
+            state
+                .logistics
+                .drawn_water
+                .get(id)
+                .is_some_and(|w| w.points > 0)
+        });
+    }
+    if !strict && !water_round {
         for id in &state.logistics.arrival_supply.units {
             if owned(state, side, id)
                 && matches!(
@@ -274,10 +305,6 @@ fn open_side(
             }
         }
     }
-    if units.is_empty() {
-        state.logistics.arrival_supply.done.insert(side);
-        return Ok(());
-    }
     let mut source_keys = BTreeSet::new();
     for id in &units {
         for d in available_sources_with_content(content, state, id).map_err(engine)? {
@@ -285,36 +312,6 @@ fn open_side(
                 source_keys.insert(serde_json::to_string(&d.source).unwrap());
             }
         }
-    }
-    let stage = water::WaterStage::current(state);
-    let work = units.iter().any(|id| {
-        let r = state.logistics.rations.get(id);
-        let req = water::requirements(content, state, id).ok();
-        let food = r.is_none_or(|r| r.issued_gt != Some(state.cursor.game_turn))
-            && rations::stores_required(content, state, id).is_ok_and(|n| n > 0);
-        let drink = r.is_none_or(|r| r.water_issue_stage != Some(stage))
-            && req.is_some_and(|r| r.infantry > 0 || r.activity > 0 || r.pasta > 0);
-        let tank = state
-            .logistics
-            .unit_supply
-            .get(id)
-            .map_or(0, |h| h.tank_fuel.get());
-        let fuel = fuel_capacity(content, state, id).is_ok_and(|c| c.get() > tank)
-            && available_sources_with_content(content, state, id).is_ok_and(|s| {
-                s.iter().any(|d| {
-                    !matches!(d.source, SupplySource::Tank | SupplySource::ReadyAmmo)
-                        && d.amount.fuel.get() > 0
-                })
-            });
-        food || drink
-            || fuel
-            || drawn.contains(id)
-            || well_ids.contains(id)
-                && req.is_some_and(|r| r.infantry > 0 || r.activity > 0 || r.pasta > 0)
-    });
-    if !work {
-        finalize_side(content, state, side, strict)?;
-        return Ok(());
     }
     let draw = list(
         ActionSchema::Record {
@@ -438,13 +435,54 @@ fn open_side(
         },
         well_ids.len(),
     );
-    open(state,cx,SeatId::new(side,Role::Logistics),KIND,
- "Supply newly arrived units from actual same-location stocks or wells. Submit whole lists; pass records remaining shortages. No free arrival supplies.".into(),
- &["land:20.12","airlog:49.14","airlog:49.16","airlog:51.11","airlog:52.13","airlog:52.41","airlog:52.42","airlog:56.28","land:3.6","interp:airlog-0017"],
- Trigger::Scheduled,Secrecy::Secret,ActionSpace::new(ActionSchema::Record{fields:vec![field("allocations","Stores, water and fuel issues",allocation),field("well_allocations","Allocate recorded water before drawing again",well_allocation),field("wells","Draws resolve after both lists close",wells)]}).with_pass("Finish arrival supply"));
+    let schema = if units.is_empty() && drawn.is_empty() && well_ids.is_empty() {
+        // A visibly empty choice domain plus declared pass lets the local driver avoid a
+        // model call. A record of optional empty lists would not prove a forced action.
+        ActionSchema::Choice { options: vec![] }
+    } else {
+        ActionSchema::Record {
+            fields: vec![
+                field("allocations", "Stores, water and fuel issues", allocation),
+                field(
+                    "well_allocations",
+                    "Allocate recorded water before drawing again",
+                    well_allocation,
+                ),
+                field("wells", "Draws resolve after both lists close", wells),
+            ],
+        }
+    };
+    let summary = if water_round {
+        "Allocate actual arrival well yields. Both sides have this fixed second round; pass discards unallocated water."
+    } else {
+        "Supply newly arrived units from actual same-location stocks or request one well draw per unit. Both sides have this fixed first round; shortages are assessed after the allocation round."
+    };
+    open(
+        state,
+        cx,
+        SeatId::new(side, Role::Logistics),
+        KIND,
+        summary.into(),
+        &[
+            "land:20.12",
+            "airlog:49.14",
+            "airlog:49.16",
+            "airlog:51.11",
+            "airlog:52.13",
+            "airlog:52.41",
+            "airlog:52.42",
+            "airlog:56.28",
+            "land:3.6",
+            "interp:airlog-0017",
+        ],
+        Trigger::Scheduled,
+        Secrecy::SecretSimultaneous,
+        ActionSpace::new(schema).with_pass("Finish arrival supply"),
+    );
     Ok(())
 }
-/// Call after land placement/withdrawals and supply-convoy arrival. Exactly one window per stage.
+/// Call after all fixed land-role batches close and supply convoys arrive.
+/// Entry opens the first of two fixed simultaneous rounds for both Logistics seats.
 /// Cases: land:20.12, airlog:56.28, land:3.6
 /// Interpretations: interp:airlog-0017
 pub fn enter(
@@ -682,86 +720,23 @@ pub fn answer(
         || p.seat.role != Role::Logistics
         || state.cursor.anchor() != "opstage.convoy_arrival"
         || state.logistics.arrival_supply.stage != Some(water::WaterStage::current(state))
-        || state.logistics.arrival_supply.done.contains(&p.seat.side)
+        || state.logistics.arrival_supply.round == ArrivalRound::Complete
+        || state
+            .logistics
+            .arrival_supply
+            .submitted
+            .contains_key(&p.seat.side)
     {
         return Err(illegal("not an active arrival supply window"));
     }
-    let mut draft = state.clone();
-    let mut events = vec![];
-    if action.is_null() {
-        finalize_side(content, &mut draft, p.seat.side, strict).map_err(Rejection::Engine)?;
-    } else {
-        let a: Answer = serde_json::from_value(action.clone())
-            .map_err(|_| illegal("invalid arrival supply lists"))?;
-        let domains =
-            owner_domains(content, state, p.seat.side, strict).map_err(Rejection::Engine)?;
-        if a.allocations.len() > domains.units.len()
-            || a.well_allocations.len() > domains.drawn.len()
-            || a.wells.len() > domains.wells.len()
-        {
-            return Err(illegal("too many arrival allocations"));
-        }
-        if a.allocations.is_empty() && a.well_allocations.is_empty() && a.wells.is_empty() {
-            finalize_side(content, &mut draft, p.seat.side, strict).map_err(Rejection::Engine)?;
-        } else {
-            let mut seen = BTreeSet::new();
-            for o in a.allocations {
-                if !domains.units.contains(&o.unit) {
-                    return Err(illegal("foreign arrival issue"));
-                }
-                if !seen.insert(o.unit.clone()) {
-                    return Err(illegal("repeated arrival issue"));
-                }
-                apply_issue(content, &mut draft, p.seat.side, o)?;
-            }
-            seen.clear();
-            for o in a.well_allocations {
-                if !domains.drawn.contains(&o.unit) || !seen.insert(o.unit.clone()) {
-                    return Err(illegal("foreign or repeated arrival well allocation"));
-                }
-                wells::allocate(
-                    content,
-                    &mut draft,
-                    &o.unit,
-                    &wells::Allocation {
-                        infantry: o.infantry,
-                        activity: o.activity,
-                        pasta: o.pasta,
-                        cargo: o.cargo,
-                        packing: o.packing,
-                    },
-                )?;
-            }
-            seen.clear();
-            for o in &a.wells {
-                if !domains.wells.contains(&o.unit) || !seen.insert(o.unit.clone()) {
-                    return Err(illegal("foreign or repeated arrival draw"));
-                }
-                wells::prepare_draw(content, &mut draft, &o.unit, o.requested, &o.packing)?;
-            }
-            if a.wells.is_empty() {
-                open_side(
-                    content,
-                    &mut draft,
-                    p.seat.side,
-                    strict,
-                    &mut Cx {
-                        rng: cx.rng,
-                        events: &mut events,
-                    },
-                )
-                .map_err(Rejection::Engine)?;
-            } else {
-                draft
-                    .logistics
-                    .arrival_supply
-                    .waiting
-                    .insert(p.seat.side, a.wells);
-            }
-        }
-    }
-    *state = draft;
-    cx.events.extend(events);
+    // Validate only an owner's draft. No physical change, dice, shortage or successor window
+    // is committed until both fixed side-role requests close (engine rule 7).
+    apply_answer(content, &mut state.clone(), p.seat.side, action, strict)?;
+    state
+        .logistics
+        .arrival_supply
+        .submitted
+        .insert(p.seat.side, action.clone());
     cx.emit(EngineEvent::new(
         Audience::Side(p.seat.side),
         GameEvent::Note {
@@ -770,9 +745,76 @@ pub fn answer(
     ));
     Ok("Recorded arrival supply".into())
 }
-/// Call from convoy-arrival finish after the pending barrier; resolve accepted wells in Player-A order.
+fn apply_answer(
+    content: &CnaContent,
+    draft: &mut State,
+    side: Side,
+    action: &Value,
+    strict: bool,
+) -> Result<Vec<DrawOrder>, Rejection> {
+    if action.is_null() {
+        return Ok(vec![]);
+    }
+    let a: Answer = serde_json::from_value(action.clone())
+        .map_err(|_| illegal("invalid arrival supply lists"))?;
+    let mut domains = owner_domains(content, draft, side, strict).map_err(Rejection::Engine)?;
+    if draft.logistics.arrival_supply.round == ArrivalRound::Water {
+        domains.units.clear();
+        domains.wells.clear();
+        domains.drawn.retain(|id| {
+            draft
+                .logistics
+                .drawn_water
+                .get(id)
+                .is_some_and(|w| w.points > 0)
+        });
+    }
+    if a.allocations.len() > domains.units.len()
+        || a.well_allocations.len() > domains.drawn.len()
+        || a.wells.len() > domains.wells.len()
+    {
+        return Err(illegal("too many arrival allocations"));
+    }
+    let mut seen = BTreeSet::new();
+    for o in a.allocations {
+        if !domains.units.contains(&o.unit) {
+            return Err(illegal("foreign arrival issue"));
+        }
+        if !seen.insert(o.unit.clone()) {
+            return Err(illegal("repeated arrival issue"));
+        }
+        apply_issue(content, draft, side, o)?;
+    }
+    seen.clear();
+    for o in a.well_allocations {
+        if !domains.drawn.contains(&o.unit) || !seen.insert(o.unit.clone()) {
+            return Err(illegal("foreign or repeated arrival well allocation"));
+        }
+        wells::allocate(
+            content,
+            draft,
+            &o.unit,
+            &wells::Allocation {
+                infantry: o.infantry,
+                activity: o.activity,
+                pasta: o.pasta,
+                cargo: o.cargo,
+                packing: o.packing,
+            },
+        )?;
+    }
+    seen.clear();
+    for o in &a.wells {
+        if !domains.wells.contains(&o.unit) || !seen.insert(o.unit.clone()) {
+            return Err(illegal("foreign or repeated arrival draw"));
+        }
+        wells::prepare_draw(content, draft, &o.unit, o.requested, &o.packing)?;
+    }
+    Ok(a.wells)
+}
+/// Both fixed side rounds close before adjudication. Well yields are seen before allocation.
 /// Cases: airlog:52.13, airlog:52.14, airlog:52.16, land:20.12, land:3.6
-/// Interpretations: interp:airlog-0016, interp:airlog-0017
+/// Interpretations: interp:airlog-0009, interp:airlog-0016, interp:airlog-0017
 pub fn finish(
     content: &CnaContent,
     state: &mut State,
@@ -781,49 +823,62 @@ pub fn finish(
 ) -> Result<(), EngineError> {
     if state.logistics.arrival_supply.stage != Some(water::WaterStage::current(state))
         || !state.decisions.pending.is_empty()
+        || state.logistics.arrival_supply.round == ArrivalRound::Complete
+        || SIDES
+            .iter()
+            .any(|s| !state.logistics.arrival_supply.submitted.contains_key(s))
     {
         return Ok(());
     }
-    let mut order = SIDES;
-    if state.turn.player_a == Some(Side::Commonwealth) {
-        order.reverse();
+    let mut draft = state.clone();
+    let answers = std::mem::take(&mut draft.logistics.arrival_supply.submitted);
+    let mut waiting = BTreeMap::new();
+    for side in SIDES {
+        let draws = apply_answer(content, &mut draft, side, &answers[&side], strict)
+            .map_err(|_| engine(SupplyError::Invalid))?;
+        waiting.insert(side, draws);
     }
-    let mut waiting = std::mem::take(&mut state.logistics.arrival_supply.waiting);
-    if state.turn.player_a.is_none() && waiting.values().any(|v| !v.is_empty()) {
-        let die = cx.rng.d6();
-        if die.value() <= 3 {
+    if draft.logistics.arrival_supply.round == ArrivalRound::Supply {
+        let mut order = SIDES;
+        if draft.turn.player_a == Some(Side::Commonwealth) {
             order.reverse();
         }
-        cx.emit(EngineEvent::new(
-            Audience::Operator,
-            GameEvent::DiceRolled {
-                purpose: "Arrival well ordering without Player A".into(),
-                dice: vec![die.value()],
-                reading: None,
-                rule: Some("interp:airlog-0016".into()),
-            },
-        ));
-    }
-    for side in order {
-        for o in waiting.remove(&side).unwrap_or_default() {
-            wells::resolve_draw(content, state, &o.unit, o.requested, cx)?;
-            state
-                .logistics
-                .arrival_supply
-                .completed_wells
-                .insert(o.unit);
+        if draft.turn.player_a.is_none() && waiting.values().any(|v| !v.is_empty()) {
+            let die = cx.rng.d6();
+            if die.value() <= 3 {
+                order.reverse();
+            }
+            cx.emit(EngineEvent::new(
+                Audience::Operator,
+                GameEvent::DiceRolled {
+                    purpose: "Arrival well ordering without Player A".into(),
+                    dice: vec![die.value()],
+                    reading: None,
+                    rule: Some("interp:airlog-0016".into()),
+                },
+            ));
         }
-    }
-    for side in SIDES {
-        if !state
-            .decisions
-            .pending
-            .iter()
-            .any(|p| p.kind == KIND && p.seat.side == side)
-        {
-            open_side(content, state, side, strict, cx)?;
+        for side in order {
+            for o in waiting.remove(&side).unwrap_or_default() {
+                wells::resolve_draw(content, &mut draft, &o.unit, o.requested, cx)?;
+                draft
+                    .logistics
+                    .arrival_supply
+                    .completed_wells
+                    .insert(o.unit);
+            }
         }
+        draft.logistics.arrival_supply.round = ArrivalRound::Water;
+        for side in SIDES {
+            open_side(content, &mut draft, side, strict, cx)?;
+        }
+    } else {
+        for side in SIDES {
+            finalize_side(content, &mut draft, side, strict)?;
+        }
+        draft.logistics.arrival_supply.round = ArrivalRound::Complete;
     }
+    *state = draft;
     Ok(())
 }
 
@@ -844,6 +899,7 @@ pub(super) fn baseline(
     let mut allocations = vec![];
     let mut well_allocations = vec![];
     let mut draws = vec![];
+    let water_round = state.logistics.arrival_supply.round == ArrivalRound::Water;
     let mut units = ids(content, state, side, false)
         .unwrap_or_default()
         .into_iter()
@@ -856,101 +912,109 @@ pub(super) fn baseline(
         .collect::<Vec<_>>();
     units.sort();
     for (_, _, _, id) in units {
-        let gt = draft.cursor.game_turn;
-        let stage = water::WaterStage::current(&draft);
-        let food_new = draft
-            .logistics
-            .rations
-            .get(&id)
-            .is_none_or(|r| r.issued_gt != Some(gt));
-        let water_new = draft
-            .logistics
-            .rations
-            .get(&id)
-            .is_none_or(|r| r.water_issue_stage != Some(stage));
-        let Ok(required) = water::requirements(content, &draft, &id) else {
-            continue;
-        };
-        let full = if food_new {
-            rations::stores_required(content, &draft, &id).unwrap_or(0)
-        } else {
-            0
-        };
-        let sources = available_sources_with_content(content, &draft, &id)
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|d| !matches!(d.source, SupplySource::Tank | SupplySource::ReadyAmmo))
-            .collect::<Vec<_>>();
-        let available = |f: fn(&SupplyDemand) -> i32| {
-            sources
-                .iter()
-                .map(|d| i64::from(f(&d.amount)))
-                .sum::<i64>()
-                .min(i64::from(i32::MAX)) as i32
-        };
-        let stores_available = available(|a| a.stores.get());
-        let mut water_available = available(|a| a.water.get());
-        let may_half = rations::class(content, &id)
-            .is_ok_and(|c| !matches!(c.unit_type.as_str(), "headquarters" | "engineer"));
-        let half = food_new
-            && full > 0
-            && stores_available < full
-            && stores_available >= full / 2
-            && may_half;
-        let food = if half {
-            full / 2
-        } else {
-            full.min(stores_available)
-        };
-        let pasta = water_available > 0
-            && rations::pasta(content, &id)
-            && ((food_new && food > 0) || (water_new && required.pasta == 1));
-        water_available -= i32::from(pasta);
-        let infantry = if water_new {
-            required.infantry.min(water_available)
-        } else {
-            0
-        };
-        water_available -= infantry;
-        let activity = if water_new {
-            required.activity.min(water_available)
-        } else {
-            0
-        };
-        let tank = draft
-            .logistics
-            .unit_supply
-            .get(&id)
-            .map_or(0, |h| h.tank_fuel.get());
-        let fuel = fuel_capacity(content, &draft, &id)
-            .map_or(0, |cap| (cap.get() - tank).max(0))
-            .min(available(|a| a.fuel.get()));
-        if (food_new && full > 0)
-            || water_new && (required.infantry > 0 || required.activity > 0 || required.pasta > 0)
-            || fuel > 0
-        {
-            let (mut f, mut w, mut g) = (food, infantry + activity + i32::from(pasta), fuel);
-            let mut funding = vec![];
-            for d in &sources {
-                let food = f.min(d.amount.stores.get());
-                let water = w.min(d.amount.water.get());
-                let fuel = g.min(d.amount.fuel.get());
-                if food > 0 || water > 0 || fuel > 0 {
-                    funding.push(json!({"source":serde_json::to_string(&d.source).unwrap(),"stores":food,"water":water,"fuel_tenths":fuel}));
-                    f -= food;
-                    w -= water;
-                    g -= fuel;
+        if !water_round {
+            let gt = draft.cursor.game_turn;
+            let stage = water::WaterStage::current(&draft);
+            let food_new = draft
+                .logistics
+                .rations
+                .get(&id)
+                .is_none_or(|r| r.issued_gt != Some(gt));
+            let water_new = draft
+                .logistics
+                .rations
+                .get(&id)
+                .is_none_or(|r| r.water_issue_stage != Some(stage));
+            let Ok(required) = water::requirements(content, &draft, &id) else {
+                continue;
+            };
+            let full = if food_new {
+                rations::stores_required(content, &draft, &id).unwrap_or(0)
+            } else {
+                0
+            };
+            let sources = available_sources_with_content(content, &draft, &id)
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|d| !matches!(d.source, SupplySource::Tank | SupplySource::ReadyAmmo))
+                .collect::<Vec<_>>();
+            let available = |f: fn(&SupplyDemand) -> i32| {
+                sources
+                    .iter()
+                    .map(|d| i64::from(f(&d.amount)))
+                    .sum::<i64>()
+                    .min(i64::from(i32::MAX)) as i32
+            };
+            let stores_available = available(|a| a.stores.get());
+            let mut water_available = available(|a| a.water.get());
+            let may_half = rations::class(content, &id)
+                .is_ok_and(|c| !matches!(c.unit_type.as_str(), "headquarters" | "engineer"));
+            let half = food_new
+                && full > 0
+                && stores_available < full
+                && stores_available >= full / 2
+                && may_half;
+            let food = if half {
+                full / 2
+            } else {
+                full.min(stores_available)
+            };
+            let pasta = water_available > 0
+                && rations::pasta(content, &id)
+                && ((food_new && food > 0) || (water_new && required.pasta == 1));
+            water_available -= i32::from(pasta);
+            let infantry = if water_new {
+                required.infantry.min(water_available)
+            } else {
+                0
+            };
+            water_available -= infantry;
+            let activity = if water_new {
+                required.activity.min(water_available)
+            } else {
+                0
+            };
+            let tank = draft
+                .logistics
+                .unit_supply
+                .get(&id)
+                .map_or(0, |h| h.tank_fuel.get());
+            let fuel = fuel_capacity(content, &draft, &id)
+                .map_or(0, |cap| (cap.get() - tank).max(0))
+                .min(available(|a| a.fuel.get()));
+            if (food_new && full > 0)
+                || water_new
+                    && (required.infantry > 0 || required.activity > 0 || required.pasta > 0)
+                || fuel > 0
+            {
+                let (mut f, mut w, mut g) = (food, infantry + activity + i32::from(pasta), fuel);
+                let mut funding = vec![];
+                for d in &sources {
+                    let food = f.min(d.amount.stores.get());
+                    let water = w.min(d.amount.water.get());
+                    let fuel = g.min(d.amount.fuel.get());
+                    if food > 0 || water > 0 || fuel > 0 {
+                        funding.push(json!({"source":serde_json::to_string(&d.source).unwrap(),"stores":food,"water":water,"fuel_tenths":fuel}));
+                        f -= food;
+                        w -= water;
+                        g -= fuel;
+                    }
+                }
+                let value = json!({"unit":id,"stores":food,"half":half,"pasta":pasta,"infantry":infantry,"activity":activity,"fuel_tenths":fuel,"draws":funding});
+                let issue: Issue = serde_json::from_value(value.clone()).unwrap();
+                let mut next = draft.clone();
+                if apply_issue(content, &mut next, side, issue).is_ok() {
+                    draft = next;
+                    allocations.push(value);
                 }
             }
-            let value = json!({"unit":id,"stores":food,"half":half,"pasta":pasta,"infantry":infantry,"activity":activity,"fuel_tenths":fuel,"draws":funding});
-            let issue: Issue = serde_json::from_value(value.clone()).unwrap();
-            let mut next = draft.clone();
-            if apply_issue(content, &mut next, side, issue).is_ok() {
-                draft = next;
-                allocations.push(value);
-            }
         }
-        if let Some(result) = draft.logistics.drawn_water.get(&id) {
+        if let Some(result) = draft
+            .logistics
+            .drawn_water
+            .get(&id)
+            .filter(|r| r.points > 0)
+        {
             let Ok(need) = water::requirements(content, &draft, &id) else {
                 continue;
             };
@@ -983,6 +1047,9 @@ pub(super) fn baseline(
                 draft = next;
                 well_allocations.push(json!({"unit":id,"infantry":infantry,"activity":activity,"pasta":pasta,"cargo":0,"packing":packing}));
             }
+        }
+        if water_round {
+            continue;
         }
         if draft.logistics.arrival_supply.completed_wells.contains(&id)
             || draft.logistics.drawn_water.contains_key(&id)

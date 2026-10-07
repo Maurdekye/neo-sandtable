@@ -88,7 +88,7 @@ fn play_until(
         }
         let request = ruleset.pending(content, &game.state).remove(0);
         let action = match &request.space.schema {
-            ActionSchema::Choice { options } => json!(options[0].id),
+            ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
             _ if request.space.pass.is_some() => Value::Null,
             other => first_answer(other),
         };
@@ -435,7 +435,7 @@ fn seat_commentary_travels_with_its_own_resolution_only() {
     let request = ruleset.pending(content, &game.state).remove(0);
     let respond = |explanation: Option<String>| {
         let action = match &request.space.schema {
-            ActionSchema::Choice { options } => json!(options[0].id),
+            ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
             _ if request.space.pass.is_some() => Value::Null,
             other => first_answer(other),
         };
@@ -529,7 +529,7 @@ fn moved_flags_stay_live_and_decision_ids_count_per_seat() {
             baseline::random_orders(content, &game.state, &request, &mut rng)
         } else {
             match &request.space.schema {
-                ActionSchema::Choice { options } => json!(options[0].id),
+                ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
                 _ if request.space.pass.is_some() => Value::Null,
                 _ => first_answer(&request.space.schema),
             }
@@ -722,7 +722,7 @@ fn shared_views_equal_each_perspectives_own_view() {
         } else {
             let request = ruleset.pending(content, &game.state).remove(0);
             let action = match &request.space.schema {
-                ActionSchema::Choice { options } => json!(options[0].id),
+                ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
                 _ if request.space.pass.is_some() => Value::Null,
                 other => first_answer(other),
             };
@@ -782,7 +782,7 @@ fn every_visible_change_in_game_turn_one_is_announced() {
         } else {
             let request = ruleset.pending(content, &game.state).remove(0);
             let action = match &request.space.schema {
-                ActionSchema::Choice { options } => json!(options[0].id),
+                ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
                 _ if request.space.pass.is_some() => Value::Null,
                 other => first_answer(other),
             };
