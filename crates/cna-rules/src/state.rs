@@ -224,6 +224,10 @@ pub struct LogisticsState {
     pub convoy_turns: BTreeMap<u16, crate::logistics::convoys::ConvoyTurn>,
     #[serde(default)]
     pub convoy_planning_queue: Vec<u16>,
+    #[serde(default)]
+    pub coastal_ships: BTreeMap<String, crate::logistics::coastal::CoastalShipState>,
+    #[serde(default)]
+    pub coastal_loading_closed_stage: Option<crate::logistics::water::WaterStage>,
     /// Supplies freely distributable among a side's airfields (`scen:60.34`, `scen:60.44`).
     pub air_supply_pool: BTreeMap<Side, Supplies>,
     /// Second- and third-line truck pools at set-up, by side, with their placement.

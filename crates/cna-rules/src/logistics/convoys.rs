@@ -126,6 +126,7 @@ pub fn initialize(
     }
     super::dump_markers::initialize(state, cx)?;
     ports::initialize(content, state);
+    super::coastal::initialize(content, state).map_err(engine)?;
     let Some(setup) = &content.scenario.fleet_logistics.axis_convoys else {
         state.logistics.convoys_initialized = true;
         return Ok(());

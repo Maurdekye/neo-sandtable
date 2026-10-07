@@ -72,6 +72,12 @@ impl Cna {
             "opstage.movement_and_combat.movement" => {
                 crate::land::movement::enter(content, state, self.strict, cx)
             }
+            "opstage.organization.tactical_shipping" => {
+                crate::logistics::coastal::enter_cw(content, state, cx)
+            }
+            "opstage.truck_convoy_movement" => {
+                crate::logistics::coastal::enter_axis(content, state, cx)
+            }
             "naval_convoy.schedule" => {
                 crate::logistics::convoys::schedule(content, state, self.strict, cx)
             }
@@ -185,6 +191,11 @@ impl Cna {
                 || kind.starts_with(crate::logistics::distribution::PREFIX) =>
             {
                 crate::logistics::distribution::answer(content, state, pending, action, cx)
+            }
+            kind if kind == crate::logistics::coastal::AXIS
+                || kind == crate::logistics::coastal::CW =>
+            {
+                crate::logistics::coastal::answer(content, state, pending, action, cx)
             }
             kind if kind.starts_with(crate::logistics::convoys::PREFIX) => {
                 crate::logistics::convoys::answer(content, state, pending, action, cx)

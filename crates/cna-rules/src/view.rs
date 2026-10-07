@@ -309,7 +309,7 @@ pub(crate) fn view(
         }
         units.insert(u.id.to_string(), view);
     }
-    let mut markers = Vec::new();
+    let mut markers = crate::logistics::coastal::markers(state);
     markers.extend(
         state
             .logistics
@@ -447,6 +447,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "unit_supply": state.logistics.unit_supply.iter().filter(|(id, _)| {
                 state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
             }).collect::<BTreeMap<_, _>>(),
+            "coastal_ships": if sees_side(perspective,Side::Axis){serde_json::to_value(&state.logistics.coastal_ships).unwrap()}else{json!({})},
             "convoy_turns": if sees_side(perspective,Side::Axis){serde_json::to_value(&state.logistics.convoy_turns).unwrap()}else{json!({})},
             "ports":state.logistics.ports.iter().filter(|(_,p)|sees_side(perspective,p.owner)).collect::<BTreeMap<_,_>>(),
             "dumps": state.logistics.dumps.iter().filter(|(_, d)| sees_side(perspective, d.side)).collect::<BTreeMap<_, _>>(),
@@ -506,6 +507,13 @@ pub(crate) fn inspect(
             "rations": state.logistics.rations.get(&unit.id).cloned().unwrap_or_default(),
             "supplies": state.logistics.unit_supply.get(&unit.id).cloned().unwrap_or_default(),
         }));
+    }
+    if let Some(ship) = state.logistics.coastal_ships.get(target) {
+        if !sees_side(perspective, Side::Axis) {
+            return Err(hidden());
+        }
+        return Ok(json!({"coastal_ship": ship, "id":target,
+            "capacity_tons":content.units.coastal_ships.get(target).and_then(|s|s.capacity_tons)}));
     }
     if let Some(pool) = state.logistics.truck_pools.iter().find(|p| p.id == target) {
         if !sees_side(perspective, pool.side) {

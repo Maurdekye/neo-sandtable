@@ -475,6 +475,8 @@ pub fn logistics_orders(
     }
     if kind == distribution::KIND
         || kind.starts_with(distribution::PREFIX)
+        || kind == super::coastal::AXIS
+        || kind == super::coastal::CW
         || kind.starts_with(super::convoys::PREFIX)
     {
         return request.space.pass.as_ref().map(|_| Value::Null);

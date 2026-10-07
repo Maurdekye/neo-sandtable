@@ -47,6 +47,7 @@ pub mod attrition;
 pub mod baseline;
 pub mod batches;
 pub mod capacity;
+pub mod coastal;
 pub mod convoys;
 pub mod distribution;
 pub mod dump_markers;
