@@ -11,6 +11,7 @@ pub mod engineering;
 mod grid;
 pub mod morale;
 pub mod raids;
+pub mod repair;
 pub mod terrain;
 pub mod weather;
 
@@ -28,6 +29,9 @@ crate::tables_group! {
         close_assault: assault::CloseAssaultTable,
         morale: morale::MoraleTable,
         breakdown: breakdown::BreakdownTable,
+        vehicle_repair_supply_costs: repair::VehicleRepairSupplyCosts,
+        destroyed_tanks_repair: repair::DestroyedTanksRepair,
+        broken_down_vehicle_repair: repair::BrokenDownVehicleRepair,
         capability_expenditure: capability::CapabilityExpenditure,
         initiative_ratings: administration::InitiativeRatings,
         terrain_effects: terrain::TerrainEffects,
