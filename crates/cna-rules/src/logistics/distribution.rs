@@ -31,8 +31,8 @@ const TYPES: [SupplyType; 4] = [
     SupplyType::Water,
 ];
 
-/// Stable owner-only transfer identities; tanks are receivers, never ordinary sources.
-/// Cases: airlog:49.16, airlog:49.17, airlog:50.15, airlog:53.24
+/// Stable owner-only transfer identities; tanks and ready ammo are receivers, not sources.
+/// Cases: airlog:49.16, airlog:49.17, airlog:50.15, airlog:50.17, airlog:53.24
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "id", rename_all = "snake_case")]
 pub enum Endpoint {
@@ -40,6 +40,7 @@ pub enum Endpoint {
     Cargo(UnitId),
     Pool(String),
     Tank(UnitId),
+    Ready(UnitId),
     Ground(Location),
 }
 
@@ -77,7 +78,7 @@ pub fn location(state: &State, side: Side, end: &Endpoint) -> Result<Location, S
                 _ => Err(SupplyError::Invalid),
             }
         }
-        Endpoint::Cargo(id) | Endpoint::Tank(id) => state
+        Endpoint::Cargo(id) | Endpoint::Tank(id) | Endpoint::Ready(id) => state
             .land
             .units
             .get(id)
@@ -121,7 +122,9 @@ pub(super) fn stock(state: &State, end: &Endpoint) -> Result<Supplies, SupplyErr
                 .ok_or(SupplyError::Invalid)?
                 .cargo
         }
-        Endpoint::Tank(_) | Endpoint::Ground(_) => return Err(SupplyError::Invalid),
+        Endpoint::Tank(_) | Endpoint::Ready(_) | Endpoint::Ground(_) => {
+            return Err(SupplyError::Invalid);
+        }
     })
 }
 fn set_stock(state: &mut State, end: &Endpoint, s: Supplies) {
@@ -144,7 +147,7 @@ fn set_stock(state: &mut State, end: &Endpoint, s: Supplies) {
                 .unwrap()
                 .cargo = s
         }
-        Endpoint::Tank(_) | Endpoint::Ground(_) => unreachable!(),
+        Endpoint::Tank(_) | Endpoint::Ready(_) | Endpoint::Ground(_) => unreachable!(),
     }
 }
 fn truck(end: &Endpoint) -> bool {
@@ -165,6 +168,7 @@ pub(super) fn endpoints(state: &State, side: Side) -> Vec<Endpoint> {
             out.push(Endpoint::Cargo(u.id.clone()));
         }
         out.push(Endpoint::Tank(u.id.clone()));
+        out.push(Endpoint::Ready(u.id.clone()));
     }
     out.extend(
         state
@@ -197,13 +201,19 @@ pub(super) fn sources(state: &State, side: Side, to: &Endpoint) -> Vec<Endpoint>
         .into_iter()
         .filter(|e| {
             e != to
-                && !matches!(e, Endpoint::Tank(_) | Endpoint::Ground(_))
+                && !matches!(
+                    e,
+                    Endpoint::Tank(_) | Endpoint::Ready(_) | Endpoint::Ground(_)
+                )
                 && !(truck(e) && truck(to))
-                && !(matches!(e, Endpoint::Pool(_)) && matches!(to, Endpoint::Tank(_)))
+                && !(matches!(e, Endpoint::Pool(_))
+                    && matches!(to, Endpoint::Tank(_) | Endpoint::Ready(_)))
                 && location(state, side, e).is_ok_and(|l| l == at)
                 && stock(state, e).is_ok_and(|s| {
                     if matches!(to, Endpoint::Tank(_)) {
                         s.fuel > 0
+                    } else if matches!(to, Endpoint::Ready(_)) {
+                        s.ammo > 0
                     } else {
                         TYPES.into_iter().any(|t| capacity::points(&s, t) > 0)
                     }
@@ -319,7 +329,8 @@ pub fn transfer(
     let at = location(state, side, from)?;
     if at != location(state, side, to)?
         || (truck(from) && truck(to))
-        || (matches!(from, Endpoint::Pool(_)) && matches!(to, Endpoint::Tank(_)))
+        || (matches!(from, Endpoint::Pool(_))
+            && matches!(to, Endpoint::Tank(_) | Endpoint::Ready(_)))
     {
         return Err(SupplyError::Invalid);
     }
@@ -360,7 +371,22 @@ pub fn transfer(
         to.clone()
     };
     let to = &target;
-    if let Endpoint::Tank(id) = to {
+    if let Endpoint::Ready(id) = to {
+        if amount.fuel != 0 || amount.stores != 0 || amount.water != 0 {
+            return Err(SupplyError::Invalid);
+        }
+        let cap = super::ready_ammo_capacity(content, &draft, id)?;
+        let holding = draft.logistics.unit_supply.entry(id.clone()).or_default();
+        let new = holding
+            .ready_ammo
+            .get()
+            .checked_add(amount.ammo)
+            .ok_or(SupplyError::Invalid)?;
+        if new > cap.get() {
+            return Err(SupplyError::Insufficient);
+        }
+        holding.ready_ammo = cna_core::quantity::AmmoPoints::new(new);
+    } else if let Endpoint::Tank(id) = to {
         if amount.ammo != 0 || amount.stores != 0 || amount.water != 0 {
             return Err(SupplyError::Invalid);
         }
@@ -410,7 +436,7 @@ pub fn transfer(
                     .unwrap();
                 validate_packing(content, &p.trucks, &Trucks::default(), &target, packing)?;
             }
-            Endpoint::Tank(_) | Endpoint::Ground(_) => unreachable!(),
+            Endpoint::Tank(_) | Endpoint::Ready(_) | Endpoint::Ground(_) => unreachable!(),
         }
         set_stock(&mut draft, to, target);
     }
@@ -447,6 +473,16 @@ fn menu(
         endpoints(state, side)
             .into_iter()
             .filter(|e| match e {
+                Endpoint::Ready(id) => {
+                    super::ready_ammo_capacity(content, state, id).is_ok_and(|cap| {
+                        state
+                            .logistics
+                            .unit_supply
+                            .get(id)
+                            .map_or(0, |h| h.ready_ammo.get())
+                            < cap.get()
+                    })
+                }
                 Endpoint::Tank(id) => fuel_capacity(content, state, id).is_ok_and(|cap| {
                     state
                         .logistics

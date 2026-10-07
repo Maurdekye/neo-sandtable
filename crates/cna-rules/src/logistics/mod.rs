@@ -55,6 +55,8 @@ pub mod pools;
 pub mod ports;
 pub use capacity::{CargoPacking, cargo_bound, fuel_capacity, validate_packing};
 mod rations;
+pub mod ready;
+pub use ready::{close_assault_ammo_action, ready_ammo_capacity};
 mod segment;
 pub mod stores;
 mod supply;

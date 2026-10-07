@@ -109,7 +109,12 @@ impl Cna {
                 crate::logistics::batches::enter_water(content, state, cx, self.strict)
             }
             "opstage.organization.supply_distribution" => {
-                crate::logistics::batches::enter_distribution(content, state, cx)
+                crate::logistics::batches::enter_distribution_with_policy(
+                    content,
+                    state,
+                    cx,
+                    self.strict,
+                )
             }
             "opstage.organization.attrition" => {
                 crate::logistics::attrition::enter(content, state, cx)

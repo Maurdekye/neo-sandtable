@@ -779,8 +779,17 @@ pub fn enter_distribution(
     state: &mut State,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    enter_distribution_with_policy(content, state, cx, false)
+}
+/// Cases: airlog:50.17, airlog:53.24, land:3.6
+pub fn enter_distribution_with_policy(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut Cx<'_>,
+    strict: bool,
+) -> Result<(), EngineError> {
     for side in SIDES {
-        open_distribution(content, state, side, cx)?;
+        open_distribution(content, state, side, cx, strict)?;
     }
     Ok(())
 }
@@ -789,6 +798,7 @@ fn open_distribution(
     state: &mut State,
     side: Side,
     cx: &mut Cx<'_>,
+    strict: bool,
 ) -> Result<(), EngineError> {
     let mut receivers = Vec::new();
     let mut source_ids = BTreeSet::new();
@@ -809,6 +819,29 @@ fn open_distribution(
         let accessible = distribution::sources(state, side, &to);
         if accessible.is_empty() {
             continue;
+        }
+        if let distribution::Endpoint::Ready(id) = &to {
+            match super::ready_ammo_capacity(content, state, id) {
+                Ok(cap)
+                    if state
+                        .logistics
+                        .unit_supply
+                        .get(id)
+                        .map_or(0, |h| h.ready_ammo.get())
+                        < cap.get() => {}
+                Ok(_) => continue,
+                Err(e) if strict => return Err(engine(e)),
+                Err(_) => {
+                    notice(
+                        cx,
+                        side,
+                        format!(
+                            "{id}: ready-ammunition capacity is unresolved (50.17); this unit's top-up is unavailable."
+                        ),
+                    );
+                    continue;
+                }
+            }
         }
         receivers.push(to);
         for source in accessible {
@@ -893,6 +926,7 @@ fn answer_distribution(
     p: &Pending,
     action: &Value,
     cx: &mut Cx<'_>,
+    strict: bool,
 ) -> Result<String, Rejection> {
     if action.is_null() || action.as_array().is_some_and(|a| a.is_empty()) {
         return Ok("Finished redistribution".into());
@@ -931,6 +965,7 @@ fn answer_distribution(
             rng: cx.rng,
             events: &mut events,
         },
+        strict,
     )
     .map_err(Rejection::Engine)?;
     *state = draft;
@@ -955,7 +990,7 @@ pub fn answer(
         STORES => answer_stores(content, state, p, action, cx),
         WATER => answer_water(content, state, p, action, cx, strict),
         WELL_ALLOCATION => answer_allocations(content, state, p, action, cx, strict),
-        DISTRIBUTION => answer_distribution(content, state, p, action, cx),
+        DISTRIBUTION => answer_distribution(content, state, p, action, cx, strict),
         _ => Err(illegal("unknown logistics batch")),
     }
 }
