@@ -629,3 +629,130 @@ fn nonadjacent_cap_uses_each_attached_or_stacked_members_preview_delta() {
         );
     }
 }
+
+/// Loss allocation holds later accepted retreats; the durable cursor resumes without rerunning motion.
+/// Cases: land:13.21,land:13.28,land:21.24,land:21.31,land:21.43
+#[test]
+fn mandatory_breakdown_parks_later_retreats_and_checkpoint_resumes_the_saved_order() {
+    let (c, mut g, _overlay) = fixture();
+    let later = g
+        .state
+        .units_of(Side::Commonwealth)
+        .find(|u| {
+            u.id.as_str() != LEG
+                && formation::class(&c, &u.id).is_some_and(|cl| cl.unit_type == "infantry")
+                && ownership::seat_for_unit(&c, &g.state, &u.id) == Role::FrontLine
+        })
+        .unwrap()
+        .id
+        .clone();
+    place(&mut g.state, later.as_str(), "C4030");
+    let first = g.state.land.units.get_mut(&LEG.into()).unwrap();
+    first.trucks.medium = 10;
+    first.transport_trucks = Default::default();
+    for id in [UnitId::new(LEG), later.clone()] {
+        let cap = crate::logistics::fuel_capacity(&c, &g.state, &id).unwrap();
+        g.state
+            .logistics
+            .unit_supply
+            .get_mut(&id)
+            .unwrap()
+            .tank_fuel = cap;
+    }
+    // An explicit prior travelled-edge exposure forces the interruption independently of the die face.
+    crate::land::breakdown::record_edge(
+        &mut g.state,
+        &LEG.into(),
+        &"C4020".into(),
+        280,
+        8,
+        cna_tables::land::weather::WeatherKind::Normal,
+    )
+    .unwrap();
+    let g = open_game(&c, &g);
+    let g = answer(
+        &c,
+        &g,
+        seat(),
+        json!([
+            Order::new(LEG.into(), vec!["C4021".into()]),
+            Order::new(later.clone(), vec!["C4031".into()]),
+        ]),
+    );
+    let mut g = close(&c, g);
+    let events = finish(&c, &mut g);
+    assert!(
+        g.state
+            .decisions
+            .pending
+            .iter()
+            .any(|p| p.kind == crate::land::breakdown::window::KIND)
+    );
+    assert_eq!(g.state.land.combat.retreat.next_order, 1);
+    assert!(!g.state.land.combat.retreat.resolved);
+    assert_eq!(
+        g.state.land.units[&later].location.hex(),
+        Some(&"C4030".into())
+    );
+    assert_eq!(g.state.land.units[&later].cp_spent_quarters, 0);
+    let private_choices: Vec<_> = events.iter().filter(|e| matches!(&e.event, GameEvent::DecisionOpened { decision } if decision.kind == crate::land::breakdown::window::KIND)).collect();
+    assert!(!private_choices.is_empty());
+    assert!(
+        private_choices
+            .iter()
+            .all(|e| !Perspective::Side(Side::Axis).can_see(&e.audience))
+    );
+    let first_cp = g.state.land.units[&LEG.into()].cp_spent_quarters;
+    let serialized = serde_json::to_value(&g).unwrap();
+    let run = |mut game: Game<Cna>| {
+        let mut events = vec![];
+        let mut local = CampaignRng::from_seed([9; 32]);
+        for _ in 0..16 {
+            if game.state.land.combat.retreat.resolved {
+                break;
+            }
+            for r in Cna::dev().pending(&c, &game.state) {
+                assert_eq!(r.kind, crate::land::breakdown::window::KIND);
+                assert!(r.space.pass.is_none());
+                let action = crate::baseline::random_breakdown(&c, &game.state, &r, &mut local);
+                assert!(
+                    !action.is_null(),
+                    "mandatory baseline must supply a real legal allocation"
+                );
+                let command = Command::Respond(DecisionResponse {
+                    decision_id: r.id.clone(),
+                    seat: r.seat,
+                    controller_epoch: 1,
+                    decision_revision: r.revision,
+                    idempotency_key: r.id.to_string(),
+                    action,
+                    public_explanation: None,
+                });
+                let before = game.rng.clone();
+                let batch = evaluate(&Cna::dev(), &c, &game, &command).unwrap();
+                assert_eq!(batch.game.rng, before);
+                game = batch.game;
+            }
+            events.extend(finish(&c, &mut game));
+        }
+        assert!(game.state.land.combat.retreat.resolved);
+        assert_eq!(game.state.land.combat.retreat.next_order, 2);
+        assert_eq!(
+            game.state.land.units[&LEG.into()].cp_spent_quarters,
+            first_cp
+        );
+        assert_eq!(
+            game.state.land.units[&later].location.hex(),
+            Some(&"C4031".into())
+        );
+        assert!(game.state.land.units[&later].cp_spent_quarters > 0);
+        let before = serde_json::to_value(&game).unwrap();
+        assert!(finish(&c, &mut game).is_empty());
+        assert_eq!(serde_json::to_value(&game).unwrap(), before);
+        (
+            serde_json::to_value(game).unwrap(),
+            serde_json::to_value(events).unwrap(),
+        )
+    };
+    assert_eq!(run(g), run(serde_json::from_value(serialized).unwrap()));
+}

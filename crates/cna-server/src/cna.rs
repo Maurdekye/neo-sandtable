@@ -144,6 +144,7 @@ fn movement_policy() -> ActionPolicy<Cna> {
                 | cna_rules::land::reaction::KIND
                 | cna_rules::land::reaction::CONTINUE
         ) && request.kind != cna_rules::land::combat::assignment::KIND
+            && request.kind != cna_rules::land::breakdown::window::KIND
             && request.kind != cna_rules::land::combat::retreat::KIND
             && request.kind != cna_rules::land::combat::POSITION_KIND
             && !request.kind.starts_with("cna.combat.barrage")
@@ -162,6 +163,8 @@ fn movement_policy() -> ActionPolicy<Cna> {
                     | cna_rules::land::reaction::CONTINUE
             ) {
                 b"cna-scripted-movement-v1".as_slice()
+            } else if request.kind == cna_rules::land::breakdown::window::KIND {
+                b"cna-scripted-breakdown-v1".as_slice()
             } else if request.kind.starts_with("cna.logistics.") {
                 b"cna-scripted-logistics-v1".as_slice()
             } else {
@@ -185,6 +188,11 @@ fn movement_policy() -> ActionPolicy<Cna> {
         }
         if request.kind.starts_with("cna.logistics.") {
             return None;
+        }
+        if request.kind == cna_rules::land::breakdown::window::KIND {
+            return Some(cna_rules::baseline::random_breakdown(
+                content, state, request, &mut rng,
+            ));
         }
         // Preserve legal-random's declared-pass choice before generating an order.
         // Reject face six to keep the existing one-in-five probability unbiased.
@@ -222,7 +230,7 @@ fn movement_policy() -> ActionPolicy<Cna> {
 mod tests {
     use super::*;
     use cna_content::map::{LineKind, MapContent, SideKind};
-    use cna_core::quantity::{AmmoPoints, FuelTenths, WaterPoints};
+    use cna_core::quantity::{AmmoPoints, WaterPoints};
     use cna_core::{
         engine::{Command, Ruleset, evaluate},
         ids::UnitId,
@@ -285,7 +293,7 @@ mod tests {
         state.logistics.unit_supply.insert(
             id.clone(),
             UnitSupply {
-                tank_fuel: FuelTenths::new(10000),
+                tank_fuel: cna_rules::logistics::fuel_capacity(&content, &state, &id).unwrap(),
                 ready_ammo: AmmoPoints::new(10000),
                 activity_water: WaterPoints::new(10000),
                 ..UnitSupply::default()
@@ -1382,5 +1390,83 @@ mod tests {
                 assert!(event.visible_to(perspective));
             }
         }
+    }
+
+    /// Mandatory loss policies return exact real allocations before generic pass/generation handling.
+    /// Cases: land:21.24,land:21.31,land:21.43,land:3.6
+    #[test]
+    fn mandatory_breakdown_policy_is_legal_deterministic_and_rng_isolated() {
+        use cna_core::decision::DecisionResponse;
+        let (content, mut game) = movement_fixture();
+        let id: UnitId = "it.libyan_tank_command.xxi_l_tank_bn".into();
+        cna_rules::land::breakdown::record_edge(
+            &mut game.state,
+            &id,
+            &"C4020".into(),
+            280,
+            8,
+            WeatherKind::Normal,
+        )
+        .unwrap();
+        let r = Cna::dev()
+            .pending(&content, &game.state)
+            .into_iter()
+            .find(|r| r.kind == cna_rules::land::movement::KIND)
+            .unwrap();
+        game = evaluate(
+            &Cna::dev(),
+            &content,
+            &game,
+            &Command::Respond(DecisionResponse {
+                decision_id: r.id.clone(),
+                seat: r.seat,
+                controller_epoch: 1,
+                decision_revision: r.revision,
+                idempotency_key: "actual-move".into(),
+                action: serde_json::json!([{"unit":id,"path":["C4021"]}]),
+                public_explanation: None,
+            }),
+        )
+        .unwrap()
+        .game;
+        if !Cna::dev()
+            .pending(&content, &game.state)
+            .iter()
+            .any(|r| r.kind == cna_rules::land::breakdown::window::KIND)
+        {
+            game = evaluate(&Cna::dev(), &content, &game, &Command::Advance)
+                .unwrap()
+                .game;
+        }
+        let r = Cna::dev()
+            .pending(&content, &game.state)
+            .into_iter()
+            .find(|r| r.kind == cna_rules::land::breakdown::window::KIND)
+            .expect("actual move opens private mandatory losses");
+        assert!(r.space.pass.is_none());
+        let before = serde_json::to_value(&game).unwrap();
+        let policy = movement_policy();
+        for epoch in 1..16 {
+            let action = policy(&content, &game.state, &r, epoch).unwrap();
+            assert!(!action.is_null());
+            assert_eq!(action, policy(&content, &game.state, &r, epoch).unwrap());
+            let batch = evaluate(
+                &Cna::dev(),
+                &content,
+                &game,
+                &Command::Respond(DecisionResponse {
+                    decision_id: r.id.clone(),
+                    seat: r.seat,
+                    controller_epoch: epoch,
+                    decision_revision: r.revision,
+                    idempotency_key: "actual-loss-choice".into(),
+                    action,
+                    public_explanation: None,
+                }),
+            )
+            .unwrap();
+            assert_eq!(batch.game.rng, game.rng);
+        }
+        assert_eq!(serde_json::to_value(&game).unwrap(), before);
     }
 }

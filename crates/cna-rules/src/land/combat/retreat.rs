@@ -31,6 +31,8 @@ pub struct RetreatState {
     pub entered: bool,
     pub closed: bool,
     pub resolved: bool,
+    /// Durable index over the canonical closed plan; interruptions never rerun accepted retreats.
+    pub next_order: usize,
     pub units: BTreeMap<UnitId, Start>,
     pub plans: BTreeMap<SeatId, Vec<Order>>,
     pub retreated: BTreeSet<UnitId>,
@@ -64,7 +66,7 @@ fn ids(c: &CnaContent, s: &State, seat: SeatId) -> Vec<UnitId> {
 /// Snapshot source eligibility and disclosed start control before opening fixed role windows.
 /// Cases: land:13.0, land:13.1, land:13.21, land:13.22, land:13.23, land:13.24, land:10.6
 /// Interpretations: interp:land-0030
-/// Unsupported: land:13.25, land:21.0 - optional demolition and vehicle breakdown remain gaps.
+/// Unsupported: land:13.25 - optional dump demolition remains a gap.
 pub fn enter(
     c: &CnaContent,
     s: &mut State,
@@ -167,7 +169,7 @@ pub fn enter(
         open(s,cx,seat,KIND,"Plan voluntary retreats in execution order; inspect own units for paths. Pass explicitly keeps them in place.".into(),
             &["land:13.1","land:13.21","land:13.22","land:13.23","land:13.24","land:13.26"],Trigger::Scheduled,Secrecy::Open,space);
     }
-    cx.emit(EngineEvent::new(Audience::Side(side),GameEvent::Note{text:"Development RBA supports unit movement; dump demolition and vehicle breakdown are not applied (land:13.25; land:21.0).".into()}));
+    cx.emit(EngineEvent::new(Audience::Side(side),GameEvent::Note{text:"Development RBA adjudicates unit movement and breakdown; optional dump demolition remains unapplied (land:13.25).".into()}));
     Ok(())
 }
 fn members(c: &CnaContent, s: &State, seat: SeatId, order: &Order) -> BTreeSet<UnitId> {
@@ -321,40 +323,57 @@ pub fn finish(
             detail: "retreat plans are not closed".into(),
         });
     }
-    for (seat, orders) in s.land.combat.retreat.plans.clone() {
-        for order in orders {
-            let selected = members(c, s, seat, &order);
-            match movement::execute_nonphasing(
-                c,
-                s,
-                &order,
-                seat,
-                s.land.combat.retreat.strict,
-                NonPhasingMove::Retreat,
-                cx,
-            ) {
-                Ok(cost) => {
-                    if !cost.path.is_empty() {
-                        s.land.combat.retreat.retreated.extend(selected);
-                    }
-                }
-                Err(Rejection::Engine(e)) => return Err(e),
-                Err(Rejection::Illegal { message }) => {
-                    if s.land.combat.retreat.strict {
-                        return Err(EngineError::Unsupported {
-                            case: "land:13.21".into(),
-                            detail: message,
-                        });
-                    }
-                    cx.emit(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:format!("Accepted retreat cannot execute after earlier adjudication: {message}; no replacement move was invented (land:13.21).") }));
-                }
-                Err(_) => {
-                    return Err(EngineError::Invariant {
-                        detail: "retreat ownership changed during adjudication".into(),
-                    });
+    crate::land::breakdown::window::finish(c, s, strict, cx)?;
+    if !s.decisions.pending.is_empty() {
+        return Ok(());
+    }
+    let orders: Vec<_> = s
+        .land
+        .combat
+        .retreat
+        .plans
+        .iter()
+        .flat_map(|(seat, orders)| orders.iter().map(move |order| (*seat, order.clone())))
+        .collect();
+    while let Some((seat, order)) = orders.get(s.land.combat.retreat.next_order).cloned() {
+        let selected = members(c, s, seat, &order);
+        match movement::execute_nonphasing(
+            c,
+            s,
+            &order,
+            seat,
+            s.land.combat.retreat.strict,
+            NonPhasingMove::Retreat,
+            cx,
+        ) {
+            Ok(cost) => {
+                if !cost.path.is_empty() {
+                    s.land.combat.retreat.retreated.extend(selected);
                 }
             }
-            crate::land::reaction::finish_adjudication(s)?;
+            Err(Rejection::Engine(e)) => return Err(e),
+            Err(Rejection::Illegal { message }) => {
+                if s.land.combat.retreat.strict {
+                    return Err(EngineError::Unsupported {
+                        case: "land:13.21".into(),
+                        detail: message,
+                    });
+                }
+                cx.emit(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:format!("Accepted retreat cannot execute after earlier adjudication: {message}; no replacement move was invented (land:13.21).") }));
+            }
+            Err(_) => {
+                return Err(EngineError::Invariant {
+                    detail: "retreat ownership changed during adjudication".into(),
+                });
+            }
+        }
+        crate::land::reaction::finish_adjudication(s)?;
+        s.land.combat.retreat.next_order += 1;
+        if crate::land::breakdown::window::park(s, None) {
+            crate::land::breakdown::window::finish(c, s, strict, cx)?;
+            if !s.decisions.pending.is_empty() {
+                return Ok(());
+            }
         }
     }
     s.land.combat.retreat.resolved = true;
