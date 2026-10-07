@@ -692,3 +692,48 @@ fn missing_general_fixed_coastal_rounds_survive_hidden_inventory_and_checkpoint(
         }
     }
 }
+
+/// A fixture adjustment cannot weaken production's malformed geometry refusal.
+/// Cases: airlog:55.18, scen:60.7
+#[test]
+fn malformed_anchor_refuses_runtime_before_any_entry_or_initialization_effect() {
+    let mut c = content();
+    let mut s = State::new(&c).unwrap();
+    c.scenario.construction.port_policy = None;
+    c.scenario.construction.port_overrides[0].hex = "outside-map-fixture".into();
+    let expected = preflight(&c, false).unwrap_err();
+    assert!(matches!(&expected, EngineError::Invariant { detail }
+        if detail.contains("outside-map-fixture") && detail.contains("scen:60.7")));
+    let before = serde_json::to_value(&s).unwrap();
+    for strict in [false, true] {
+        let mut rng = cna_core::dice::CampaignRng::from_seed([45; 32]);
+        let rng_before = rng.state();
+        let mut events = Vec::new();
+        assert_eq!(
+            initialize(
+                &c,
+                &mut s,
+                strict,
+                &mut cna_core::engine::Cx {
+                    rng: &mut rng,
+                    events: &mut events
+                }
+            ),
+            Err(expected.clone())
+        );
+        assert_eq!(
+            record_entry(
+                &c,
+                &mut s,
+                Side::Axis,
+                &Location::NotArrived,
+                strict,
+                &mut events
+            ),
+            Err(expected.clone())
+        );
+        assert_eq!(serde_json::to_value(&s).unwrap(), before);
+        assert_eq!(rng.state(), rng_before);
+        assert!(events.is_empty());
+    }
+}
