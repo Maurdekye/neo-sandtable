@@ -157,3 +157,85 @@ fn checkpoint_preserves_source_credit_and_preview_changes_nothing() {
     );
     assert_eq!(serde_json::to_value(&restored).unwrap(), before);
 }
+
+/// Cases: airlog:49.12, airlog:49.13, airlog:49.16
+#[test]
+fn foot_movement_updates_only_the_ledger_without_reading_unused_stocks() {
+    let (mut state, id) = game();
+    state.land.units.get_mut(&id).unwrap().toe =
+        State::new(content()).unwrap().land.units[&id].toe.clone();
+    state.land.units.get_mut(&id).unwrap().trucks = cna_content::units::Trucks::default();
+    // Converting this unused source to fuel tenths would overflow. A zero draw
+    // must not inspect it or require any source to exist.
+    state
+        .logistics
+        .dumps
+        .get_mut("origin")
+        .unwrap()
+        .supplies
+        .fuel = i32::MAX;
+    let holdings = serde_json::to_value(&state.logistics.dumps).unwrap();
+    let before = serde_json::to_value(&state).unwrap();
+    let plan = plan_segment_fuel(content(), &state, &id, 9).unwrap();
+    assert!(plan.increment.is_zero());
+    assert!(plan.draws.is_empty());
+    assert_eq!(serde_json::to_value(&state).unwrap(), before);
+    assert!(
+        spend_segment_fuel(content(), &mut state, &id, 9)
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        serde_json::to_value(&state.logistics.dumps).unwrap(),
+        holdings
+    );
+    assert_eq!(state.logistics.fuel_segments[&id].cp_quarters, 9);
+    assert_eq!(state.logistics.fuel_segments[&id], plan.ledger);
+    state.land.units.remove(&id);
+    assert_eq!(
+        plan_segment_fuel(content(), &state, &id, 10),
+        Err(SupplyError::Invalid)
+    );
+}
+
+/// Cases: airlog:49.13, airlog:49.16
+/// Interpretations: interp:airlog-0001
+#[test]
+fn unchanged_chart_bucket_preserves_credit_and_still_rejects_invalid_prior_draws() {
+    let (mut state, id) = game();
+    spend_segment_fuel(content(), &mut state, &id, 2).unwrap();
+    let prior_draws = state.logistics.fuel_segments[&id].draws.clone();
+    state
+        .logistics
+        .dumps
+        .get_mut("origin")
+        .unwrap()
+        .supplies
+        .fuel = i32::MAX;
+    assert!(
+        spend_segment_fuel(content(), &mut state, &id, 4)
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(state.logistics.fuel_segments[&id].cp_quarters, 4);
+    assert_eq!(state.logistics.fuel_segments[&id].draws, prior_draws);
+    assert_eq!(state.logistics.dumps["origin"].supplies.fuel, i32::MAX);
+    state.logistics.fuel_segments.get_mut(&id).unwrap().draws[0].fuel = FuelTenths::new(-1);
+    let before = serde_json::to_value(&state).unwrap();
+    assert_eq!(
+        spend_segment_fuel(content(), &mut state, &id, 4),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(serde_json::to_value(&state).unwrap(), before);
+    state.logistics.fuel_segments.get_mut(&id).unwrap().draws = prior_draws;
+    state
+        .logistics
+        .fuel_segments
+        .get_mut(&id)
+        .unwrap()
+        .paid_cost = FuelTenths::new(100);
+    assert_eq!(
+        plan_segment_fuel(content(), &state, &id, 4),
+        Err(SupplyError::Invalid)
+    );
+}

@@ -163,7 +163,25 @@ pub fn plan_segment_fuel(
     let increment = total
         .checked_sub(ledger.paid_cost)
         .ok_or(SupplyError::Invalid)?;
+    if increment.get() < 0 {
+        return Err(SupplyError::Invalid);
+    }
     let prior = prior_draws(&ledger)?;
+    // Foot movement and an unchanged chart bucket require no stock lookup.
+    // Validate the unit and recorded draws above even when nothing is withdrawn.
+    if increment.is_zero() {
+        ledger.cp_quarters = total_cp_quarters;
+        ledger.paid_cost = total;
+        ledger.draws = prior
+            .into_iter()
+            .map(|(source, fuel)| FuelDraw { source, fuel })
+            .collect();
+        return Ok(SegmentFuelPlan {
+            ledger,
+            increment,
+            draws: Vec::new(),
+        });
+    }
     let mut sources: Vec<_> = capacities(content, state, id, &ledger)?
         .into_iter()
         .collect();
@@ -225,8 +243,16 @@ pub fn spend_segment_fuel(
     id: &UnitId,
     total_cp_quarters: i32,
 ) -> Result<Vec<SupplyDraw>, SupplyError> {
-    let before = ledger_for(state, id)?;
     let plan = plan_segment_fuel(content, state, id, total_cp_quarters)?;
+    if plan.increment.is_zero() {
+        // Only the ledger changes; avoid cloning every logistics holding.
+        state
+            .logistics
+            .fuel_segments
+            .insert(id.clone(), plan.ledger);
+        return Ok(plan.draws);
+    }
+    let before = ledger_for(state, id)?;
     let sources = capacities(content, state, id, &before)?;
     let prior = prior_draws(&before)?;
     let mut next = apply_draws(
