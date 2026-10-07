@@ -1,4 +1,4 @@
-# 0012 — A real friendly dump permits ammunition-free enemy-ZOC entry
+# airlog-0012 â€” A real friendly dump permits ammunition-free enemy-ZOC entry
 
 - **Cases:** airlog:50.12
 - **Status:** adopted

@@ -1,4 +1,4 @@
-# 0024 — Barrage truck loss allocation and disclosure
+# land-0024 â€” Barrage truck loss allocation and disclosure
 
 - **Cases:** land:12.23, land:12.24, land:12.46, airlog:53.11, airlog:54.2
 - **Status:** adopted
@@ -12,7 +12,7 @@ How does even loss distribution apply when the engine stores supply cargo in agg
 
 ## Evidence
 
-Land:12.46 gives the defender the loss choice while requiring distribution among truck and cargo types. It also adds the carriers of destroyed motorized infantry to the table losses. Land:12.23–24 limits the pre-plot target catalog to anonymous broad classes. The conditional truck roll in 12.46 subsequently reveals truck presence for an actually barraged hex. The supply and truck capacity charts use different point units for different commodities; equal commodity point counts do not mean equal loads.
+Land:12.46 gives the defender the loss choice while requiring distribution among truck and cargo types. It also adds the carriers of destroyed motorized infantry to the table losses. Land:12.23â€“24 limits the pre-plot target catalog to anonymous broad classes. The conditional truck roll in 12.46 subsequently reveals truck presence for an actually barraged hex. The supply and truck capacity charts use different point units for different commodities; equal commodity point counts do not mean equal loads.
 
 ## Ruling
 
