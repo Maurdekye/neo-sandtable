@@ -14,7 +14,6 @@ use std::collections::BTreeSet;
 /// This helper does not apply infantry TOE casualties; call it before that mutation
 /// in the same transactional combat draft.
 /// Cases: land:12.46, airlog:54.2
-/// Interpretations: interp:land-0024
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UnitTruckCargoLoss {
@@ -30,7 +29,6 @@ pub struct UnitTruckCargoLoss {
 
 /// The actual chart count is capped only after additional infantry carriers disappear.
 /// Cases: land:12.46
-/// Interpretations: interp:land-0024
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TruckCargoLossReport {
     pub infantry_carriers_lost: Trucks,
@@ -211,7 +209,7 @@ fn minimum_carriers(
 /// Chart-hit troop carriers reduce transport allocation, without additional TOE deaths.
 /// Quantities and assignments in the returned report are owner-private information.
 /// Cases: land:12.46, airlog:53.11, airlog:54.2
-/// Interpretations: interp:land-0024, interp:airlog-0008
+/// Interpretations: interp:airlog-0008
 pub fn apply_truck_cargo_loss(
     content: &CnaContent,
     state: &mut State,
@@ -451,8 +449,7 @@ mod tests {
     }
 
     /// Cases: land:12.46, airlog:54.2
-    /// Interpretations: interp:land-0024
-    #[test]
+        #[test]
     fn infantry_carriers_die_first_then_chart_is_capped_and_cargo_is_conserved() {
         let (c, mut s, ids) = fixture();
         let id = &ids[0];
@@ -515,8 +512,7 @@ mod tests {
     }
 
     /// Cases: land:12.46
-    /// Interpretations: interp:land-0024
-    #[test]
+        #[test]
     fn chart_hits_may_dismount_survivors_without_killing_more_infantry() {
         let (c, mut s, ids) = fixture();
         let id = &ids[0];
@@ -538,8 +534,7 @@ mod tests {
     }
 
     /// Cases: land:12.46, airlog:54.2
-    /// Interpretations: interp:land-0024
-    #[test]
+        #[test]
     fn cargo_balance_uses_exact_truck_shares_and_empty_is_a_category() {
         let (c, mut s, ids) = fixture();
         let id = &ids[0];
@@ -618,8 +613,7 @@ mod tests {
     }
 
     /// Cases: land:12.46
-    /// Interpretations: interp:land-0024
-    #[test]
+        #[test]
     fn evenness_is_across_eligible_units_and_invalid_last_allocation_is_atomic() {
         let (c, mut s, ids) = fixture();
         s.land.units.get_mut(&ids[0]).unwrap().trucks.light = 2;
@@ -641,8 +635,7 @@ mod tests {
     }
 
     /// Cases: land:12.46, airlog:54.2
-    /// Interpretations: interp:land-0024
-    #[test]
+        #[test]
     fn insufficient_or_excess_carriers_missing_units_and_bad_packing_reject() {
         let (c, mut s, ids) = fixture();
         let id = &ids[0];
