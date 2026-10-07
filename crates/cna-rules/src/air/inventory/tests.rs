@@ -568,7 +568,8 @@ fn failed_base_migration_and_invalid_canonical_edits_preserve_bytes() {
     let mut legacy: State = serde_json::from_value(value).unwrap();
     legacy.air.squadrons.get_mut("axis.test").unwrap().facility = "unknown.site".into();
     let before = serde_json::to_vec(&legacy).unwrap();
-    assert!(initialize(&content, &mut legacy).is_err());
+    assert!(matches!(initialize(&content, &mut legacy),
+        Err(EngineError::Unsupported { case, .. }) if case == "airlog:35.11"));
     assert_eq!(before, serde_json::to_vec(&legacy).unwrap());
     assert!(!legacy.air.runtime.bases_initialized);
     let before = serde_json::to_vec(&state).unwrap();
