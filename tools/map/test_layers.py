@@ -71,9 +71,20 @@ class LayerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"Duplicate coverage"): Layers(self.folder)
 
     def test_unreadable_fragment_has_coast_but_no_terrain_mask(self):
+        # The unreadable fragment is a fixture, not a permanent public deferral.
+        with (self.folder / "hexes.csv").open(newline="") as f:
+            reader = csv.DictReader(f)
+            fields = reader.fieldnames
+            rows = list(reader)
+        fragment = next(row for row in rows if row["hex_id"] == "C4026")
+        fragment["terrain"] = "unclassified"
+        fragment["flags"] = "coastal|land|sea"
+        write_csv(self.folder / "hexes.csv", fields, rows)
+        self.cover("coastal", "C4026", "")
+        unreadable = Layers(self.folder)
+        self.assertIn(("coastal","C4026",""),unreadable.coverage)
+        self.assertNotIn(("terrain","C4026",""),unreadable.coverage)
         data=Layers(MAP)
-        self.assertIn(("coastal","C4026",""),data.coverage)
-        self.assertNotIn(("terrain","C4026",""),data.coverage)
         self.assertEqual({a for layer,a,b in data.coverage if layer=="terrain"},
                          {h for h,r in data.grid.hexes.items() if r["terrain"]!="unclassified"})
         self.assertEqual({a for layer,a,b in data.coverage if layer=="coastal"},
