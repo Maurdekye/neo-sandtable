@@ -188,6 +188,25 @@ fn space(ids: Vec<UnitId>, pass: bool) -> ActionSpace {
     };
     a
 }
+fn continuation_space(id: UnitId, pass: bool) -> ActionSpace {
+    let mut a = space(vec![id], pass);
+    if let ActionSchema::List { item, .. } = &mut a.schema
+        && let ActionSchema::Record { fields } = item.as_mut()
+    {
+        fields.push(FieldSchema {
+            name: "close_assault".into(),
+            doc: "Public enemy stack hexes against which the revised path announces close assault."
+                .into(),
+            schema: ActionSchema::List {
+                item: Box::new(ActionSchema::Hex { among: None }),
+                min: 0,
+                max: 6,
+            },
+            optional: true,
+        });
+    }
+    a
+}
 fn open_role(c: &CnaContent, s: &mut State, seat: SeatId, cx: &mut Cx<'_>) {
     let ids = eligible(s, seat, c);
     if ids.is_empty() {
@@ -338,7 +357,7 @@ pub(super) fn open_continuation(
         &["land:8.13", "land:8.51", "land:9.31", "land:9.32"],
         Trigger::Triggered,
         Secrecy::Open,
-        space(vec![k.unit.clone()], stop).with_context(
+        continuation_space(k.unit.clone(), stop).with_context(
             serde_json::json!({"unit":k.unit,"planned_remaining_path":k.planned_path}),
         ),
     );

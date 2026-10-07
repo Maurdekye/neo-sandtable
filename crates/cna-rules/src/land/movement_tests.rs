@@ -1826,3 +1826,189 @@ fn reaction_validation_is_equivalent_for_hidden_ammo_strength_and_edge_gap() {
         matches!(evaluate(&Cna::full(),&c,&accepted.game,&Command::Advance),Err(Rejection::Engine(EngineError::Unsupported{case,..})) if case=="land:10.21")
     );
 }
+
+/// Cases: land:3.61, land:3.62, land:8.51, land:10.6, land:18.0
+#[test]
+fn movement_and_reaction_windows_hide_enemy_cp_cohesion_reserves_and_intentions() {
+    let (c, g, _o, defender) = reaction_fixture();
+    let alter = |s: &mut State, id: &UnitId| {
+        let u = s.land.units.get_mut(id).unwrap();
+        u.cp_spent_quarters = 17;
+        u.voluntary_cp_quarters = 9;
+        u.cohesion_quarters = -31;
+        u.engaged = true;
+        u.reserve.status = super::super::reserve::Status::Second;
+        s.land
+            .assault_intentions
+            .insert(id.clone(), BTreeSet::from(["C4024".into()]));
+        s.logistics.unit_supply.get_mut(id).unwrap().ready_ammo =
+            cna_core::quantity::AmmoPoints::ZERO;
+    };
+    let mut hidden = g.state.clone();
+    alter(&mut hidden, &defender);
+    crate::testkit::assert_indistinguishable(&Cna::full(), &c, &g.state, &hidden, Side::Axis);
+    let t = respond(
+        &c,
+        &g,
+        seat(&g),
+        json!([{"unit":TANK,"path":["C4021"]}]),
+        true,
+    )
+    .unwrap();
+    let mut hidden = t.game.state.clone();
+    alter(&mut hidden, &TANK.into());
+    crate::testkit::assert_indistinguishable(
+        &Cna::full(),
+        &c,
+        &t.game.state,
+        &hidden,
+        Side::Commonwealth,
+    );
+}
+/// Cases: land:8.53, land:8.54
+#[test]
+fn faster_announced_assault_blocks_reaction_and_discloses_only_stack_hexes() {
+    let (c, g, _o, defender) = reaction_fixture();
+    let mut s = g.state.clone();
+    // Choose a real recce with the source's faster CPA and a battalion-sized target.
+    let fast = s
+        .units_of(Side::Axis)
+        .find(|u| {
+            formation::class(&c, &u.id).is_some_and(|a| a.unit_type == "recce" && a.cpa >= 40)
+                && formation::individual_allowance(&c, &s, &u.id).is_some_and(|a| a.motorized)
+        })
+        .unwrap()
+        .id
+        .clone();
+    s.land.units.get_mut(&TANK.into()).unwrap().location = Location::Eliminated;
+    place(&mut s, fast.as_str(), "C4020");
+    let a = formation::allowance(&c, &s, &fast).unwrap();
+    let b = formation::allowance(&c, &s, &defender).unwrap();
+    assert!(a.cpa >= b.cpa + 6, "{} versus {}", a.cpa, b.cpa);
+    assert!(
+        super::super::reaction::candidates(
+            &c,
+            &s,
+            std::slice::from_ref(&fast),
+            &"C4021".into(),
+            &[],
+            true
+        )
+        .unwrap()
+        .contains(&defender)
+    );
+    assert!(
+        !super::super::reaction::candidates(
+            &c,
+            &s,
+            std::slice::from_ref(&fast),
+            &"C4021".into(),
+            &["C4022".into()],
+            true
+        )
+        .unwrap()
+        .contains(&defender)
+    );
+    s.cursor.entered = false;
+    s.decisions.pending.clear();
+    let g = start(&c, s, true);
+    let t = respond(
+        &c,
+        &g,
+        seat(&g),
+        json!([{"unit":fast,"path":["C4021"],"close_assault":["C4022"]}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(
+        t.game.state.land.assault_intentions[&fast],
+        BTreeSet::from(["C4022".into()])
+    );
+    let announcement=t.events.iter().find(|e|matches!(&e.event,GameEvent::Note{text} if text.contains("announces close assault"))).unwrap();
+    assert_eq!(announcement.audience, Audience::Public);
+    let text = serde_json::to_string(&announcement.event).unwrap();
+    assert!(
+        text.contains("C4021")
+            && text.contains("C4022")
+            && !text.contains(fast.as_str())
+            && !text.contains(defender.as_str())
+    );
+}
+
+/// Cases: land:8.13, land:10.6
+#[test]
+#[ignore = "slow: benchmark"]
+fn profile_large_mobile_unit_inspect_on_real_graziani() {
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let mut s = State::new(&c).unwrap();
+    s.turn.weather = Some(crate::state::WeatherState {
+        kind: WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    s.turn.player_a = Some(Side::Axis);
+    s.cursor.block = Block::PlayerHalf;
+    s.cursor.half = Some(Half::A);
+    s.cursor.op_stage = Some(1);
+    s.cursor.index = 1;
+    let ids: Vec<_> = s.land.units.keys().cloned().collect();
+    for id in &ids {
+        s.logistics.unit_supply.insert(
+            id.clone(),
+            UnitSupply {
+                tank_fuel: FuelTenths::new(10000),
+                ready_ammo: cna_core::quantity::AmmoPoints::new(10000),
+                activity_water: WaterPoints::new(10000),
+                ..Default::default()
+            },
+        );
+        s.logistics.rations.insert(
+            id.clone(),
+            logistics::Rations {
+                water_stage: Some(logistics::water::WaterStage::current(&s)),
+                infantry_water_received: 2,
+                issued_gt: Some(s.cursor.game_turn),
+                pasta_gt: Some(s.cursor.game_turn),
+                ..Default::default()
+            },
+        );
+    }
+    let g = start(&c, s, false);
+    let chosen = g
+        .state
+        .units_of(Side::Axis)
+        .filter(|u| {
+            u.location.hex().is_some()
+                && formation::allowance(&c, &g.state, &u.id).is_some_and(|a| a.motorized)
+                && moving_limits(&c, &g.state, &u.id, false).is_ok()
+        })
+        .max_by_key(|u| {
+            (
+                formation::members(&c, &g.state, &u.id).len(),
+                formation::allowance(&c, &g.state, &u.id).unwrap().cpa,
+            )
+        })
+        .unwrap();
+    let owner = SeatId::new(
+        chosen.side,
+        ownership::seat_for_unit(&c, &g.state, &chosen.id),
+    );
+    let t = std::time::Instant::now();
+    for _ in 0..5 {
+        std::hint::black_box(
+            Cna::dev()
+                .inspect(&c, &g.state, Perspective::Seat(owner), chosen.id.as_str())
+                .unwrap(),
+        );
+    }
+    eprintln!(
+        "inspect {}: {} represented members, CPA {}, five queries {:?}",
+        chosen.id,
+        formation::members(&c, &g.state, &chosen.id).len(),
+        formation::allowance(&c, &g.state, &chosen.id).unwrap().cpa,
+        t.elapsed()
+    );
+    assert!(
+        t.elapsed() < std::time::Duration::from_secs(1),
+        "mean inspect should remain below200ms"
+    );
+}
