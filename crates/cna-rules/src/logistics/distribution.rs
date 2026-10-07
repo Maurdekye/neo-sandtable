@@ -1,6 +1,7 @@
 //! Same-location supply transfers. Truck cargo is unloaded before another truck loads it.
 //! This procedure handles the free Supply Distribution window only. Other windows must
 //! charge loading CP and preserve the no-leapfrogging cargo ledger before using this API.
+//! Cargo handling at the four off-map supply boxes stamps an OpStage movement ban.
 use super::stores::{engine, field, option};
 use super::{CargoPacking, SupplyError, capacity, fuel_capacity, validate_packing};
 use crate::{
@@ -311,8 +312,8 @@ pub fn validate_dump_capacity(
 /// Atomically load/unload one friendly same-location stock. For a tank receiver amount.fuel
 /// is in tenths, and the whole-point cargo source pays the ceiling exactly once. For all
 /// other receivers every amount is in whole points. Pools must unload to a dump first.
-/// Cases: airlog:49.14, airlog:49.16, airlog:50.15, airlog:53.24, airlog:54.13, airlog:54.2
-/// Interpretations: interp:airlog-0001, interp:airlog-0008
+/// Cases: airlog:49.14, airlog:49.16, airlog:50.15, airlog:53.24, airlog:54.13, airlog:54.2, land:8.88
+/// Interpretations: interp:airlog-0001, interp:airlog-0008, interp:airlog-0019
 #[allow(clippy::too_many_arguments)]
 pub fn transfer(
     content: &CnaContent,
@@ -451,7 +452,19 @@ pub fn transfer(
         capacity::set_points(&mut source, t, n);
     }
     set_stock(&mut draft, from, source);
-    state.logistics = draft.logistics;
+    if !matches!(to, Endpoint::Tank(_)) {
+        for (endpoint, loading) in [(from, false), (to, true)] {
+            let carrier = match endpoint {
+                Endpoint::Cargo(id) => Some(super::box_handling::Carrier::Unit(id.clone())),
+                Endpoint::Pool(id) => Some(super::box_handling::Carrier::Pool(id.clone())),
+                _ => None,
+            };
+            if let Some(carrier) = carrier {
+                super::box_handling::record_goods(&mut draft, &carrier, amount, loading)?;
+            }
+        }
+    }
+    *state = draft;
     Ok(())
 }
 

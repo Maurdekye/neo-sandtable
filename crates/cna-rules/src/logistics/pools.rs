@@ -72,6 +72,7 @@ pub fn add_truck_pool(
         location,
         trucks,
         cargo,
+        box_handling: None,
     });
     Ok(id)
 }

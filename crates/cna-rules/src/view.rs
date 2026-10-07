@@ -155,6 +155,23 @@ fn stamp_moved(state: &State, id: &UnitId, view: &mut wire::UnitView) {
     crate::land::combat::stamp_view(state, id, view);
     if let Some(detail) = view.detail.as_mut() {
         detail.insert(
+            "box_handling".to_owned(),
+            json!(
+                state
+                    .land
+                    .units
+                    .get(id)
+                    .and_then(|u| u.box_handling.as_ref())
+            ),
+        );
+        detail.insert(
+            "box_movement_block".to_owned(),
+            json!(crate::logistics::box_handling::blocks_movement(
+                state,
+                &crate::logistics::box_handling::Carrier::Unit(id.clone())
+            )),
+        );
+        detail.insert(
             "moved_this_segment".to_owned(),
             json!(state.land.movement.moved.contains(id)),
         );
@@ -703,6 +720,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             }).collect::<BTreeMap<_, _>>(),
             "food_losses": state.logistics.food_losses.iter().filter(|l| sees_side(perspective, l.owner)).collect::<Vec<_>>(),
             "prisoners": state.logistics.prisoners.iter().filter(|(_, p)| sees_side(perspective, p.owner)).collect::<BTreeMap<_, _>>(),
+            "unit_box_handling": state.land.units.iter().filter(|(_,u)|sees_side(perspective,u.side)).filter_map(|(id,u)|u.box_handling.as_ref().map(|h|(id,h))).collect::<BTreeMap<_,_>>(),
             "unit_supply": state.logistics.unit_supply.iter().filter(|(id, _)| {
                 state.land.units.get(*id).is_some_and(|u| sees_side(perspective, u.side))
             }).collect::<BTreeMap<_, _>>(),
@@ -770,6 +788,8 @@ pub(crate) fn inspect(
             "setup_destination": state.setup.unit_locations.get(&unit.id),
             "attached_to": unit.attached_to,
             "trucks": unit.trucks,
+            "box_handling": unit.box_handling,
+            "box_movement_block": crate::logistics::box_handling::blocks_movement(state,&crate::logistics::box_handling::Carrier::Unit(unit.id.clone())),
             "toe": format!("{:?}", unit.toe),
             "rations": state.logistics.rations.get(&unit.id).cloned().unwrap_or_default(),
             "supplies": state.logistics.unit_supply.get(&unit.id).cloned().unwrap_or_default(),

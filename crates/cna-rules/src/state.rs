@@ -128,6 +128,9 @@ pub struct LandUnit {
     /// First-line trucks explicitly allocated to moving this unit, not to supply cargo.
     #[serde(default)]
     pub transport_trucks: Trucks,
+    /// Owner-private cargo handling at an off-map supply box (land:8.88).
+    #[serde(default)]
+    pub box_handling: Option<crate::logistics::box_handling::BoxHandling>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -277,6 +280,8 @@ pub struct TruckPool {
     /// Cargo stays with this identity through placement, movement and removal.
     #[serde(default)]
     pub cargo: Supplies,
+    #[serde(default)]
+    pub box_handling: Option<crate::logistics::box_handling::BoxHandling>,
 }
 
 /// One side's air force (or Malta's): planes by type, pilots and SGSUs (`airlog:34`, `35`).
@@ -421,6 +426,7 @@ impl State {
                             setup_group: Some(group.id.clone()),
                             trucks: Trucks::default(),
                             transport_trucks: Trucks::default(),
+                            box_handling: None,
                         };
                         if land.units.insert(id.clone(), unit).is_some() {
                             return Err(format!("unit {id} is placed twice (group {})", group.id));
@@ -456,6 +462,7 @@ impl State {
                 setup_group: None,
                 trucks: Trucks::default(),
                 transport_trucks: Trucks::default(),
+                box_handling: None,
             });
         }
 
