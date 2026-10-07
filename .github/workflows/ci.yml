@@ -63,6 +63,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - run: python tools/content/check_utf8.py
       - run: python tools/rules/coverage.py --self-test
       # Fails only on citation errors (unknown or malformed case ids in crates/cna-rules);
       # missing cases are informational and land in the job summary and the artifact.
