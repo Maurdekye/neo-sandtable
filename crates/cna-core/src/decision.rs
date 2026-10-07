@@ -81,11 +81,20 @@ pub struct ActionSpace {
     pub schema: ActionSchema,
     /// If passing is legal, what passing means (e.g. "do not barrage this step").
     pub pass: Option<String>,
+    /// What the decision is about, as structured ids for viewers and seats (e.g.
+    /// `{"unit": "it.x", "group": "g3"}` for a set-up placement), so nobody has to parse the
+    /// summary. Never needed to answer; reaches exactly who sees the decision.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<Value>,
 }
 
 impl ActionSpace {
     pub fn new(schema: ActionSchema) -> Self {
-        Self { schema, pass: None }
+        Self {
+            schema,
+            pass: None,
+            context: None,
+        }
     }
 
     pub fn with_pass(mut self, meaning: impl Into<String>) -> Self {
@@ -93,15 +102,26 @@ impl ActionSpace {
         self
     }
 
-    /// A JSON Schema (draft 2020-12 subset) for the `action` field, for LLM tools.
+    /// Attach structured context (see [`ActionSpace::context`]).
+    pub fn with_context(mut self, context: Value) -> Self {
+        self.context = Some(context);
+        self
+    }
+
+    /// A JSON Schema (draft 2020-12 subset) for the `action` field, for LLM tools. Context, if
+    /// any, rides along as the `x-context` annotation.
     pub fn to_json_schema(&self) -> Value {
         let schema = self.schema.to_json_schema();
-        match &self.pass {
+        let mut out = match &self.pass {
             None => schema,
             Some(meaning) => json!({
                 "anyOf": [schema, { "type": "null", "description": format!("Pass: {meaning}") }]
             }),
+        };
+        if let (Some(context), Some(map)) = (&self.context, out.as_object_mut()) {
+            map.insert("x-context".to_owned(), context.clone());
         }
+        out
     }
 }
 
@@ -229,6 +249,22 @@ impl ActionSchema {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn context_rides_along_as_an_annotation() {
+        let space = ActionSpace::new(ActionSchema::Bool)
+            .with_pass("skip")
+            .with_context(json!({"unit": "it.a"}));
+        let schema = space.to_json_schema();
+        assert_eq!(schema["x-context"], json!({"unit": "it.a"}));
+        assert!(schema["anyOf"].is_array());
+        let plain = ActionSpace::new(ActionSchema::Bool).to_json_schema();
+        assert!(plain.get("x-context").is_none());
+        // Old serialized spaces without the field still load.
+        let old: ActionSpace =
+            serde_json::from_value(json!({"schema": {"type": "bool"}, "pass": null})).unwrap();
+        assert_eq!(old.context, None);
+    }
+
     use super::*;
 
     #[test]
