@@ -262,13 +262,37 @@ mod tests {
                 ..cna_rules::logistics::Rations::default()
             },
         );
+        // Prepare the real pre-game convoy window before this synthetic movement start.
+        let mut fixture_rng = CampaignRng::from_seed([3; 32]);
+        let mut fixture_events = Vec::new();
+        let mut cx = cna_core::engine::Cx {
+            rng: &mut fixture_rng,
+            events: &mut fixture_events,
+        };
+        cna_rules::logistics::convoys::initialize(&content, &mut state, false, &mut cx).unwrap();
+        while let Some(pos) = state
+            .decisions
+            .pending
+            .iter()
+            .position(|p| p.kind.starts_with(cna_rules::logistics::convoys::PREFIX))
+        {
+            let pending = state.decisions.pending.remove(pos);
+            cna_rules::logistics::convoys::answer(
+                &content,
+                &mut state,
+                &pending,
+                &serde_json::Value::Null,
+                &mut cx,
+            )
+            .unwrap();
+        }
         let rules = Cna::dev();
         let game = evaluate(
             &rules,
             &content,
             &Game {
                 state,
-                rng: CampaignRng::from_seed([3; 32]).state(),
+                rng: fixture_rng.state(),
             },
             &Command::Advance,
         )
