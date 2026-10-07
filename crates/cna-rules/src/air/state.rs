@@ -59,6 +59,7 @@ pub struct AirRuntime {
     pub facilities: BTreeMap<super::facilities::FacilityId, super::facilities::FacilityState>,
     pub sgsus: BTreeMap<super::sgsu::SgsuId, super::sgsu::SgsuState>,
     pub designation: super::designation::DesignationState,
+    pub tactical: super::missions::TacticalState,
     pub aircraft: BTreeMap<PlaneId, AircraftState>,
     pub pilots: BTreeMap<PilotId, PilotState>,
     /// Side-local monotone serials keep the other side's assets from affecting

@@ -8,6 +8,7 @@
 pub mod facilities;
 pub mod inventory;
 pub mod maintenance;
+pub mod missions;
 pub mod sgsu;
 pub mod state;
 
