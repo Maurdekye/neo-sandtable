@@ -229,3 +229,9 @@ control halo or unit-action certification is supplied by this edge cycle.
 The next three immutable worker inputs cover 225 fresh corridor pairs while retaining 288 unresolved kind observations without masks. Pipeline is unknown on all 225; unresolved records also retain exact rail, river, marine endpoint, contour/high-side, road and track uncertainty. After these inputs the raw union records some evidence on 868 corridor pairs and leaves 1,673 entirely untouched. Western/inland/eastern assigned inventories are respectively 344/969, 104/732 and 420/840 observed pairs; these are geographic coverage counts, not full movement-kind acceptance.
 
 All 33 terrain gaps and the unknown lake layer remain open. The new marine sides do not resolve endpoint substrate, inland water identity, city extent, complete control halos or action legality. Previously published abstentions remain immutable; no negative lake coverage is inferred.
+
+### Third assembled edge-cycle abstentions, 2026-10-07
+
+The three immutable inputs `map-terrain-edges-0003`, `map-lines-2-0007` and `map-lines-0008` retain 473 unresolved observations with no masks: pipeline on all 296 pairs, 81 slope and 81 ridge decisions, eight rail-kind identities, five track endpoints and two escarpment decisions. Broad contour bands, incidence near vertices, exact rail identity and high-side uncertainty are preserved in the per-side notes. No lake absence follows from the existing fourteen-kind survey.
+
+The union has some evidence on 1,164 corridor pairs and leaves 1,377 wholly unobserved. All 33 terrain gaps remain open. C3832 remains unclassified on C3732/C3832, C3733/C3832, C3831/C3832 and C3832/C3833; edge facts do not resolve its substrate. No city extent, complete control halo, new route certification or action permission is inferred.
