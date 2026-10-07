@@ -30,6 +30,7 @@ const campaign = await api('/api/campaigns', {
 })
 const base = `/api/campaigns/${campaign.id}`,
   seen = new Map()
+let lastSeq = null
 // Ignore changing ids/labels in the signature, while preserving the full actual schema in each fixture.
 const shape = (s) =>
   s && typeof s === 'object' && !Array.isArray(s)
@@ -72,8 +73,16 @@ const socket = new WebSocket(url),
     socket.addEventListener('message', (event) => {
       const m = JSON.parse(event.data)
       if (m.type === 'snapshot') {
+        lastSeq = m.seq
         for (const d of m.view.pending) record(d)
         void api(`${base}/resume`, {}).catch(reject)
+      }
+      if (m.type === 'event') {
+        if (lastSeq !== null && m.seq !== lastSeq + 1) {
+          reject(new Error('Fixture event sequence gap'))
+          return
+        }
+        lastSeq = m.seq
       }
       if (m.type === 'event' && m.event.kind === 'decision_opened')
         record(m.event.decision)
@@ -90,8 +99,10 @@ const socket = new WebSocket(url),
         if (['finished', 'stopped'].includes(status.status.state)) {
           if (status.status.state !== 'finished')
             throw new Error('Scripted fixture campaign stopped')
-          resolve()
-          return
+          if (lastSeq !== null && lastSeq >= status.snapshot.seq) {
+            resolve()
+            return
+          }
         }
         timer = setTimeout(poll, 1000)
       } catch (e) {

@@ -76,6 +76,12 @@ test('watches an actual legal CNA move, remaining units and reconnect highlights
   const hexes = lines.map((line) =>
     Object.fromEntries(line.split(',').map((v, i) => [keys[i], v])),
   )
+  const validationState = await (
+    await request.get(`${base}/seats/${seat}/observe`, { headers })
+  ).json()
+  const validationRequest = validationState.pending.find(
+    (d: { id: string }) => d.id === decision.id,
+  )
   let order: { unit: string; path: string[] } | undefined
   for (const id of ids.slice(0, 12)) {
     const origin = hexes.find((h) => h.hex_id === view.units[id].hex)!
@@ -98,7 +104,14 @@ test('watches an actual legal CNA move, remaining units and reconnect highlights
       const candidate = { unit: id, path: [hex.hex_id] }
       const valid = await request.post(
         `${base}/seats/${seat}/decisions/${decision.id}/validate`,
-        { headers, data: { action: [candidate] } },
+        {
+          headers,
+          data: {
+            action: [candidate],
+            controller_epoch: validationState.controller_epoch,
+            decision_revision: validationRequest.revision,
+          },
+        },
       )
       if (valid.ok()) {
         order = candidate
