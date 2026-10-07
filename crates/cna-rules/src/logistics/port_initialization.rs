@@ -125,13 +125,10 @@ fn same_name(a: &str, b: &str) -> bool {
     }
 }
 
-/// Validate public geometry, identity and chart range before selecting any policy.
-/// Cases: scen:60.7, airlog:55.11, airlog:55.18, airlog:55.25, airlog:55.3
-/// Interpretations: interp:scen-0007
-fn validate_record(
-    content: &CnaContent,
+fn validate_record_identity<'a>(
+    content: &'a CnaContent,
     record: &PortOverride,
-) -> Result<InitialPortPolicy, PortInitializationError> {
+) -> Result<(&'a HexId, PortName), PortInitializationError> {
     let canonical = content.map.canonical(&record.hex).ok_or_else(|| {
         malformed(
             content,
@@ -159,7 +156,17 @@ fn validate_record(
             "authored port identity contradicts a verified port icon",
         ));
     }
-    let category = ports::named(&record.port);
+    Ok((canonical, ports::named(&record.port)))
+}
+
+/// Validate public geometry, identity and chart range before selecting any policy.
+/// Cases: scen:60.7, airlog:55.11, airlog:55.18, airlog:55.25, airlog:55.3
+/// Interpretations: interp:scen-0007
+fn validate_record(
+    content: &CnaContent,
+    record: &PortOverride,
+) -> Result<InitialPortPolicy, PortInitializationError> {
+    let (canonical, category) = validate_record_identity(content, record)?;
     let row = content.tables.airlog.port_capacity.port(category);
     let scenario_tobruk =
         category == PortName::Tobruk && record.src.iter().any(|case| case == "scen:60.7");
@@ -292,3 +299,9 @@ pub fn initial_port_policy(
 #[cfg(test)]
 #[path = "port_initialization_tests.rs"]
 mod tests;
+
+mod starting;
+pub use starting::{
+    GeneralPortStartingDiagnostic, InitialPortStartingPolicy, PortStartingDiagnostic,
+    initial_port_starting_policy, port_starting_diagnostics, preflight_port_starting,
+};

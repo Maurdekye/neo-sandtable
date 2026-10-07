@@ -256,11 +256,11 @@ fn bad_geometry_and_alias_collisions_keep_actual_future_source_case() {
     );
 }
 
-struct DataFixture {
-    root: PathBuf,
+pub(super) struct DataFixture {
+    pub(super) root: PathBuf,
 }
 impl DataFixture {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let root = std::env::temp_dir().join(format!(
             "cna-port-policy-{}-{}",
