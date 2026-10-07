@@ -1,3 +1,9 @@
+import {
+  emptyMonitor,
+  startMonitor,
+  recordMonitor,
+  type MonitorState,
+} from '../monitoring'
 import { recordCommentary, type AcceptedCommentary } from '../commentary'
 import { recordStage, summaryFrame, type StageSummary } from '../stageTimeline'
 import type {
@@ -51,6 +57,7 @@ function movementState(
   return [...moved].filter((id) => Boolean(view.units[id]))
 }
 export interface ViewerState {
+  monitoring: MonitorState
   campaign: CampaignMeta | null
   perspective: Perspective
   frames: Frame[]
@@ -71,6 +78,7 @@ export function initialState(
   perspective: Perspective = 'operator',
 ): ViewerState {
   return {
+    monitoring: emptyMonitor(),
     campaign: null,
     perspective,
     frames: [],
@@ -201,11 +209,13 @@ export function applyEvent(view: ViewState, event: GameEvent): ViewState {
 export function receive(
   state: ViewerState,
   message: ServerMessage,
+  now = Date.now(),
 ): { state: ViewerState; subscribe?: Subscribe } {
   const resync = () => ({
     state: {
       ...state,
       frames: [],
+      monitoring: emptyMonitor(),
       stages: [],
       archiveFrame: null,
       commentaries: [],
@@ -248,6 +258,7 @@ export function receive(
     return {
       state: {
         ...state,
+        monitoring: startMonitor(message.view.pending, now),
         frames: [snapshot],
         stages: recordStage([], snapshot),
         commentaries: [],
@@ -285,6 +296,7 @@ export function receive(
       state: {
         ...state,
         frames,
+        monitoring: recordMonitor(state.monitoring, message, now),
         stages: recordStage(state.stages, frame, last),
         commentaries: recordCommentary(state.commentaries, frame),
         lastSeq: message.seq,
@@ -303,6 +315,7 @@ export function receive(
   return {
     state: {
       ...state,
+      monitoring: recordMonitor(state.monitoring, message, now),
       transcripts: [...state.transcripts, message].slice(-MAX_TRANSCRIPTS),
       transcriptSeq: { ...state.transcriptSeq, [message.seat]: message.tseq },
     },

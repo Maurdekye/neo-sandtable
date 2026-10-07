@@ -1,3 +1,4 @@
+import { SeatMonitor } from './SeatMonitor'
 import { StageTimeline } from './StageOverview'
 import { useEffect, useMemo, useState } from 'react'
 import type { Perspective } from './protocol'
@@ -351,6 +352,7 @@ function Viewer({ access }: { access?: Access }) {
           </button>
         )}
       </div>
+      <SeatMonitor state={state} access={access} />
       <main className="workspace">
         <aside className="formations">
           <div className="panel-heading">
