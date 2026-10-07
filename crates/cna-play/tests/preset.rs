@@ -9,7 +9,7 @@ use cna_play::{
     Demo,
     config::{Command, parse_args},
 };
-use cna_protocol::{GameEvent, ServerMessage, TranscriptEntry};
+use cna_protocol::{GameEvent, ServerMessage, TranscriptEntry, UsageSnapshot};
 use cna_seats::{
     driver::{
         CliKind, DriverError, EntryEmitter, EstimateBound, SeatDriver, SessionInfo, TurnOutcome,
@@ -482,6 +482,75 @@ fn preset() -> cna_play::config::LaunchConfig {
     config
 }
 
+fn expected_usage(record: &cna_play::journal::SeatJournal) -> Option<UsageSnapshot> {
+    let usage = record.usage.as_ref().filter(|u| u.revision > 0)?;
+    Some(UsageSnapshot {
+        controller_epoch: record.epoch,
+        revision: usage.revision,
+        provider: Some("claude-code".into()),
+        model: Some(
+            record
+                .session
+                .as_ref()
+                .and_then(|s| s.model.clone())
+                .unwrap_or_else(|| record.model.clone()),
+        ),
+        attempts: record.turns,
+        completed: record.stages.values().map(|s| s.completed).sum(),
+        input_tokens: usage.input_tokens,
+        output_tokens: usage.output_tokens,
+        cache_read_tokens: usage.cache_read_tokens,
+        cache_creation_tokens: usage.cache_creation_tokens,
+        reasoning_tokens: usage.reasoning_tokens,
+        reported_cost_usd: usage.reported_cost_usd,
+        incomplete_turns: record.incomplete_turns,
+    })
+}
+fn retain_latest_usage(
+    latest: &mut Option<(u64, UsageSnapshot)>,
+    tseq: u64,
+    snapshot: UsageSnapshot,
+) {
+    if latest.as_ref().is_none_or(|(_, old)| {
+        (snapshot.controller_epoch, snapshot.revision) > (old.controller_epoch, old.revision)
+    }) {
+        *latest = Some((tseq, snapshot));
+    }
+}
+
+#[test]
+fn usage_replay_selects_epoch_revision_without_summing_repeated_frames() {
+    let base = UsageSnapshot {
+        controller_epoch: 2,
+        revision: 3,
+        provider: None,
+        model: None,
+        attempts: 5,
+        completed: 4,
+        input_tokens: Some(12),
+        output_tokens: None,
+        cache_read_tokens: None,
+        cache_creation_tokens: None,
+        reasoning_tokens: None,
+        reported_cost_usd: Some(0.1),
+        incomplete_turns: 1,
+    };
+    let mut latest = None;
+    retain_latest_usage(&mut latest, 10, base.clone());
+    retain_latest_usage(&mut latest, 11, base.clone());
+    assert_eq!(latest, Some((10, base.clone())));
+    let mut old = base.clone();
+    old.controller_epoch = 1;
+    old.revision = 100;
+    retain_latest_usage(&mut latest, 12, old);
+    assert_eq!(latest, Some((10, base.clone())));
+    let mut next = base;
+    next.revision += 1;
+    next.input_tokens = Some(13);
+    retain_latest_usage(&mut latest, 13, next.clone());
+    assert_eq!(latest, Some((13, next)));
+}
+
 #[tokio::test]
 #[ignore = "slow: complete ten-seat inert preset game-turn; no provider calls"]
 async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
@@ -586,8 +655,12 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
         }
     }
     let mut budget_stops = vec![];
+    let mut usage_diagnostics = BTreeMap::new();
     for seat in SeatId::all() {
         let mut cursor = 0;
+        let mut pages = 0;
+        let mut rows = 0;
+        let mut latest = None;
         loop {
             let page = replay
                 .transcripts(Perspective::Operator, seat, cursor)
@@ -595,17 +668,37 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
             if page.is_empty() {
                 break;
             }
+            pages += 1;
+            rows += page.len();
             for message in page {
                 if let ServerMessage::Transcript { tseq, entry, .. } = message {
                     cursor = tseq;
-                    if let TranscriptEntry::System { text } = entry
-                        && text.starts_with("automatic budget stop:")
-                    {
-                        budget_stops.push(json!({"seat":seat,"reason":text}));
+                    match entry {
+                        TranscriptEntry::System { text }
+                            if text.starts_with("automatic budget stop:") =>
+                        {
+                            budget_stops.push(json!({"seat":seat,"reason":text}));
+                        }
+                        TranscriptEntry::UsageSnapshot(snapshot) => {
+                            retain_latest_usage(&mut latest, tseq, *snapshot)
+                        }
+                        _ => {}
                     }
                 }
             }
         }
+        let record = &accounting.seats[&seat];
+        let expected = expected_usage(record);
+        let matches_journal = latest.as_ref().map(|(_, u)| u) == expected.as_ref();
+        let pending = record.usage.as_ref().map_or(0, |u| u.outbox.len());
+        let acknowledged = record.usage.as_ref().map_or(0, |u| u.acknowledged_revision);
+        usage_diagnostics.insert(seat, json!({
+            "visited":record.turns>0,"pages":pages,"rows":rows,"last_tseq":cursor,
+            "latest":latest.as_ref().map(|(tseq, snapshot)|json!({"tseq":tseq,"snapshot":snapshot})),
+            "expected":expected,"matches_journal":matches_journal,
+            "acknowledged_revision":acknowledged,"pending_outbox":pending,
+            "unfinished_turn":record.inflight.is_some(),"incomplete_turns":record.incomplete_turns,
+        }));
     }
     let healthy = demo.handle.status() == cna_server::CampaignStatus::Paused
         && SeatId::all().all(|seat| {
@@ -657,6 +750,7 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
             "state":if complete { "OFFLINE_PRESET_GT1_BOUNDARY" } else { "incomplete" },
             "board_url":demo.board_url(),"campaign_id":demo.campaign_id(),"complete":complete,
             "final_clock":clock,"fence_repreview":fence_repreview,
+            "usage_diagnostics":usage_diagnostics,
             "usage_basis":"synthetic inert usage: 10 input/5 output/0.01 USD per completed fake window; provider/native calls zero"
         }));
     if handoff.ready.is_some() && final_handoff.is_ok() {
@@ -703,6 +797,7 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
     let report = json!({"scope":"game-turn one including setup; pass whenever declared; maximum advertised first-line truck allocation; otherwise minimal enumerated mandatory choice",
         "complete":complete,"fence_repreview":fence_repreview,"final_clock":clock,"healthy":healthy,"budget_stops":budget_stops,"error":combined.as_ref().err(),
         "gameplay_seconds":gameplay_seconds,"total_helper_seconds":started.elapsed().as_secs_f64(),"browser_acknowledged":browser_acknowledged,"paid_calls":0,"native_processes":0,"fake_peak":t.peak,"rows":rows,
+        "usage_diagnostics":usage_diagnostics,
         "measurement":"UTF-8 bytes only; provider tokens, real USD and an active-movement game-turn cost are unmeasured"});
     if let Ok(path) = std::env::var("CNA_PRESET_FULL_OUTPUT") {
         std::fs::write(path, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
@@ -716,6 +811,22 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
         "supervisor stopped before the full game-turn boundary; inspect report"
     );
     assert!(rows.iter().all(|r| r["counts_reconcile"] == true));
+    assert_eq!(usage_diagnostics.len(), 10);
+    for (seat, usage) in &usage_diagnostics {
+        assert!(
+            usage["visited"] == true && usage["latest"].is_object(),
+            "missing persisted usage for {seat}"
+        );
+        assert_eq!(
+            usage["matches_journal"], true,
+            "persisted usage differs from committed journal for {seat}"
+        );
+        assert_eq!(usage["pending_outbox"], 0, "unconfirmed usage for {seat}");
+        assert_eq!(
+            usage["acknowledged_revision"], usage["expected"]["revision"],
+            "unacknowledged usage revision for {seat}"
+        );
+    }
     assert_ne!(
         browser_acknowledged,
         Some(false),

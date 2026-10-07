@@ -180,6 +180,18 @@ both fresh handoff files after server shutdown on success, failure or missing
 acknowledgement, and reports cleanup errors. An unwinding guard also attempts removal.
 The browser helper retains its own `finally` cleanup as a second cleanup path.
 
+The final private READY marker and token-free measurement report also contain
+`usage_diagnostics`, keyed by seat. The existing paginated transcript scan records
+page/row counts, the last transcript sequence, and the highest persisted
+`(controller_epoch, revision)` usage snapshot with its `tseq`. It compares that
+snapshot with committed journal totals and records the acknowledged revision and
+pending outbox count. A completed game-turn requires matching persisted usage for
+all ten seats. An incomplete run reports visited/unvisited seats and unfinished or
+incomplete accounting without claiming completion. These usage values remain
+synthetic. The browser proof compares these persisted watermarks with raw WS and
+decoded UI values before RELEASE; cleanup acknowledgement alone is not a passing
+browser proof. No transcript bodies or credential URLs enter the measurement report.
+
 The new ignored-test hang guard is provisional, based on the measured local run;
 recalibrate it to about twice its first completed CI duration. Default tests and
 production model, tool and wall budgets are unchanged.
