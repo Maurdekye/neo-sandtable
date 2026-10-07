@@ -290,6 +290,16 @@ mod tests {
         .unwrap();
         let mut state = State::new(&content).unwrap();
         content.map = MapContent::load(directory.path()).unwrap();
+        // This synthetic three-hex fixture keeps only port facts within its geometry.
+        // Production content and source validation remain unchanged.
+        content
+            .scenario
+            .construction
+            .port_overrides
+            .retain(|record| content.map.canonical(&record.hex) == Some(&record.hex));
+        content.places.places.retain(|_, place| {
+            place.kind != "port" || content.map.canonical(&place.hex_id) == Some(&place.hex_id)
+        });
         for unit in state.land.units.values_mut() {
             unit.location = Location::Eliminated;
         }
