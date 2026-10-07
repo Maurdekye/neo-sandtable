@@ -790,24 +790,36 @@ fn open_distribution(
     side: Side,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
-    let endpoints = distribution::endpoints(state, side);
-    let receivers: Vec<_> = endpoints
-        .iter()
-        .filter(|e| !distribution::sources(state, side, e).is_empty())
-        .cloned()
-        .collect();
+    let mut receivers = Vec::new();
+    let mut source_ids = BTreeSet::new();
+    let mut sources = Vec::new();
+    for to in distribution::endpoints(state, side) {
+        if let distribution::Endpoint::Tank(id) = &to
+            && !super::fuel_capacity(content, state, id).is_ok_and(|cap| {
+                state
+                    .logistics
+                    .unit_supply
+                    .get(id)
+                    .map_or(0, |h| h.tank_fuel.get())
+                    < cap.get()
+            })
+        {
+            continue;
+        }
+        let accessible = distribution::sources(state, side, &to);
+        if accessible.is_empty() {
+            continue;
+        }
+        receivers.push(to);
+        for source in accessible {
+            if source_ids.insert(serde_json::to_string(&source).unwrap()) {
+                sources.push(source);
+            }
+        }
+    }
     if receivers.is_empty() {
         return Ok(());
     }
-    let sources: Vec<_> = endpoints
-        .iter()
-        .filter(|e| {
-            receivers
-                .iter()
-                .any(|to| distribution::sources(state, side, to).contains(e))
-        })
-        .cloned()
-        .collect();
     let choice = |ends: &[distribution::Endpoint]| ActionSchema::Choice {
         options: ends
             .iter()
