@@ -8,8 +8,8 @@ const cells = readFileSync('../data/map/hexes.csv', 'utf8')
   .split(/\r?\n/)
   .slice(1)
   .map((row) => {
-    const [id, q, r] = row.split(',')
-    return { id, q: Number(q), r: Number(r) }
+    const fields = row.split(',')
+    return { id: fields[0], q: Number(fields[4]), r: Number(fields[5]) }
   })
 const cell = new Map(cells.map((c) => [c.id, c]))
 const start = cells.find((c) => c.q === 66 && c.r === 20) ?? cells[0]
