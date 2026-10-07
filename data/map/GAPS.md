@@ -208,3 +208,18 @@ terminations/high endpoints and ambiguous marine/road endpoints retain unknown
 kind masks. Source observations do not certify a complete control halo or an
 engine action. Six Village/Bir dots still do not determine water subtypes or
 place extents; Derna and Tobruk port-anchor gaps remain unchanged.
+
+### Three-worker edge-cycle abstentions, 2026-10-07
+
+The exact records in `map-lines-0006`, `map-lines-2-0005` and
+`map-terrain-edges-0001` retain 318 unresolved kind observations: pipeline on
+all 192 pairs, 38 rail-kind decisions, three border decisions, eighteen
+river-kind decisions, 54 slope/ridge decisions, five road decisions and eight
+marine-side decisions. These supply no mask. Gray square-block identity,
+contour junctions/high endpoints and inland blue-water identity remain
+unresolved. No lake absence follows from a marine or river observation.
+
+C3832 and C4026 terrain remain unknown. Reviewed marine sides incident to
+C4026 do not classify that cell's land substrate. All 33 corridor terrain gaps
+and the four unknown coastal domains listed above are unchanged; no new route,
+control halo or unit-action certification is supplied by this edge cycle.

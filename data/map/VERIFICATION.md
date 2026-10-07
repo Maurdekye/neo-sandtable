@@ -540,3 +540,25 @@ source provenance, immutable raw bytes and preservation of prior records; they
 do not independently validate every worker source decision. Bounded second looks
 are restricted to the examples explicitly recorded. No original-1979 map audit
 or equivalence claim is supplied by these 2021 reviews.
+
+### Three-worker edge cycle, 2026-10-07
+
+Source batches `map-lines-0006`, `map-lines-2-0005` and
+`map-terrain-edges-0001` directly review 192 previously unobserved physical
+pairs, each against the fourteen currently supported kinds. Their 2,688
+observations contain 57 present, 2,313 absent and 318 unresolved decisions.
+They add 2,370 per-kind masks, twenty transport lines and 37 marine sides;
+unresolved decisions add no masks. No terrain, places, lake observations or
+complete route/control-halo certification is added. The union contains 7,938
+edge-kind masks, 138 lines and 157 side features. Corridor terrain remains
+801 known and 33 unknown.
+
+All three workers retain source-local native inspection evidence and their
+initial full-check receipts. The assembler preserves commit authorship and
+raw decisions, checks disjoint fresh-pair membership and prior records, and
+regenerates the union. The inland draft's Git line-ending normalization changes
+CRLF to LF only; normalized byte equality retains its source decisions and
+citations. The parent's TEC/source comparison for this first inland batch is
+bounded to sixteen sides in two inspection sheets, not all forty sides.
+Independent source accuracy remains unmeasured. Lake is still unsurveyed;
+historical thirteen-kind movement completeness does not certify that layer.
