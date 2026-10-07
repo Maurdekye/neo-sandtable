@@ -1822,7 +1822,20 @@ mod tests {
                 state.setup.started = true;
                 state.setup.closed = true;
                 state.logistics.convoys_initialized = true;
-                cna_rules::logistics::ports::initialize(&content, &mut state);
+                {
+                    let mut fixture_rng = CampaignRng::from_seed([0; 32]);
+                    let mut fixture_events = vec![];
+                    cna_rules::logistics::ports::initialize(
+                        &content,
+                        &mut state,
+                        false,
+                        &mut cna_core::engine::Cx {
+                            rng: &mut fixture_rng,
+                            events: &mut fixture_events,
+                        },
+                    )
+                    .unwrap();
+                }
                 state.turn.player_a = Some(Side::Axis);
                 state.turn.weather = Some(WeatherState {
                     kind: WeatherKind::Normal,
