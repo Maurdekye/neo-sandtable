@@ -760,6 +760,9 @@ pub(super) fn finish(
     }
     let mut w = w.clone();
     let mut draft = state.clone();
+    if draft.air.runtime.initialized() {
+        crate::air::inventory::initialize(content, &mut draft)?;
+    }
     let decisions = draft.decisions.clone();
     let mut events = Vec::new();
     let mut local = Cx {
@@ -783,8 +786,12 @@ pub(super) fn finish(
                 ))
             })?;
             p.space.check(&a).map_err(invariant)?;
-            super::answer(content, &mut draft, &p, &a, strict, &mut local)
-                .map_err(|r| invariant(format!("prepared arrival order failed closure: {r:?}")))?;
+            super::answer(content, &mut draft, &p, &a, strict, &mut local).map_err(
+                |r| match r {
+                    Rejection::Engine(error) if matches!(&task, Task::Air { .. }) => error,
+                    other => invariant(format!("prepared arrival order failed closure: {other:?}")),
+                },
+            )?;
             draft.decisions.pending.retain(|q| q.id != p.id);
             continue;
         }

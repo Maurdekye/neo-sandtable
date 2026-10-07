@@ -1448,16 +1448,27 @@ pub(crate) fn answer(
                 }
                 *remaining -= n;
                 state.land.arrivals.air_week.get_mut(&row).unwrap().1 -= n;
-                let force = state
-                    .air
-                    .forces
-                    .entry(crate::state::side_key(side).into())
-                    .or_default();
-                let count = force.planes.entry(plane.into()).or_default();
-                count.total = count
-                    .total
-                    .checked_add(n)
-                    .ok_or_else(|| illegal("aircraft count overflow"))?;
+                if state.air.runtime.initialized() {
+                    crate::air::inventory::receive_unassigned(
+                        content,
+                        &mut state.air,
+                        side,
+                        plane,
+                        n,
+                    )
+                    .map_err(Rejection::Engine)?;
+                } else {
+                    let force = state
+                        .air
+                        .forces
+                        .entry(crate::state::side_key(side).into())
+                        .or_default();
+                    let count = force.planes.entry(plane.into()).or_default();
+                    count.total = count
+                        .total
+                        .checked_add(n)
+                        .ok_or_else(|| illegal("aircraft count overflow"))?;
+                }
                 note(
                     cx,
                     side,
@@ -2006,6 +2017,381 @@ mod tests {
             matches!(&error,Rejection::Engine(EngineError::Unsupported{case,..})if case=="land:20.83"),
             "{error:?}"
         );
+    }
+    fn canonical_air_fixture(legacy_bases: bool) -> (CnaContent, Game<Cna>) {
+        let (mut c, mut game) = fixture();
+        let all = CnaContent::load(&cna_content::repo_data_dir(), "italian_campaign").unwrap();
+        c.units.schedules = all
+            .units
+            .schedules
+            .into_iter()
+            .filter(|s| {
+                s.file.side == Side::Commonwealth
+                    && s.arrivals.iter().any(|r| r.gt_from == Some(15))
+            })
+            .collect();
+        for schedule in &mut c.units.schedules {
+            schedule.arrivals.retain(|r| r.gt_from == Some(15));
+            schedule.withdrawals.clear();
+        }
+        game.state.air = State::new(&c).unwrap().air;
+        crate::air::inventory::initialize(&c, &mut game.state).unwrap();
+        if legacy_bases {
+            let mut checkpoint = json!(game);
+            let runtime = checkpoint["state"]["air"]["runtime"]
+                .as_object_mut()
+                .unwrap();
+            for field in ["bases_initialized", "facilities", "sgsus"] {
+                runtime.remove(field);
+            }
+            game = serde_json::from_value(checkpoint).unwrap();
+            assert!(!game.state.air.runtime.bases_initialized);
+        }
+        at(&mut game, 15, 1);
+        (c, game)
+    }
+    fn air_count_command(c: &CnaContent, game: &Game<Cna>, seat: SeatId, count: i32) -> Command {
+        let mut command = command_for(c, game, seat);
+        if seat == SeatId::new(Side::Commonwealth, Role::Air) {
+            let Command::Respond(response) = &mut command else {
+                unreachable!()
+            };
+            let row = response
+                .action
+                .as_object_mut()
+                .unwrap()
+                .values_mut()
+                .next()
+                .unwrap();
+            for n in row["planes"].as_object_mut().unwrap().values_mut() {
+                *n = json!(0);
+            }
+            row["planes"]["cw.hurricane_i"] = json!(count);
+        }
+        command
+    }
+    fn prepare_air_count(c: &CnaContent, mut game: Game<Cna>, count: i32) -> Game<Cna> {
+        let air = json!(game.state.air);
+        let rng = game.rng.clone();
+        for seat in Side::ALL.into_iter().flat_map(|side| {
+            [Role::Commander, Role::Logistics, Role::Air].map(move |role| SeatId::new(side, role))
+        }) {
+            let command = air_count_command(c, &game, seat, count);
+            let recovered: Game<Cna> = serde_json::from_value(json!(game)).unwrap();
+            let transition = evaluate(&Cna::dev(), c, &game, &command).unwrap();
+            let replay = evaluate(&Cna::dev(), c, &recovered, &command).unwrap();
+            assert_eq!(json!(transition.game), json!(replay.game));
+            assert_eq!(json!(transition.events), json!(replay.events));
+            game = transition.game;
+            assert_eq!(
+                json!(game.state.air),
+                air,
+                "Respond must not migrate or receive inventory"
+            );
+            assert_eq!(game.rng, rng);
+            assert_eq!(game.state.cursor.anchor(), "opstage.convoy_arrival");
+        }
+        game
+    }
+    /// Cases: land:3.6, airlog:34.84, airlog:35.11, airlog:36.0
+    #[test]
+    fn canonical_air_batch_closure_receives_once_and_migrates_legacy_bases_only_at_finish() {
+        for legacy in [false, true] {
+            let (c, start) = canonical_air_fixture(legacy);
+            let rules = if legacy { Cna::full() } else { Cna::dev() };
+            let initial = start.state.air.clone();
+            let opened = evaluate(&rules, &c, &start, &Command::Advance)
+                .unwrap()
+                .game;
+            assert_eq!(json!(opened.state.air), json!(initial));
+            let ready = prepare_air_count(&c, opened, 2);
+            let recovered: Game<Cna> = serde_json::from_value(json!(ready)).unwrap();
+            let transition = evaluate(&rules, &c, &ready, &Command::Advance).unwrap();
+            let replay = evaluate(&rules, &c, &recovered, &Command::Advance).unwrap();
+            assert_eq!(json!(transition.game), json!(replay.game));
+            assert_eq!(json!(transition.events), json!(replay.events));
+            let mut closed = transition.game;
+            crate::air::inventory::check(&c, &closed.state.air).unwrap();
+            assert!(closed.state.air.runtime.bases_initialized);
+            assert_eq!(closed.state.air.runtime.pilots, initial.runtime.pilots);
+            assert_eq!(
+                closed.state.air.runtime.pilot_serial,
+                initial.runtime.pilot_serial
+            );
+            assert_eq!(
+                closed.state.air.runtime.plane_serial[&Side::Axis],
+                initial.runtime.plane_serial[&Side::Axis]
+            );
+            assert_eq!(
+                closed.state.air.runtime.aircraft.len(),
+                initial.runtime.aircraft.len() + 2
+            );
+            for (id, plane) in &initial.runtime.aircraft {
+                assert_eq!(&closed.state.air.runtime.aircraft[id], plane);
+            }
+            let new: Vec<_> = closed
+                .state
+                .air
+                .runtime
+                .aircraft
+                .iter()
+                .filter(|(id, _)| !initial.runtime.aircraft.contains_key(*id))
+                .collect();
+            assert_eq!(new.len(), 2);
+            for (_, plane) in new {
+                assert_eq!(plane.aircraft, "cw.hurricane_i");
+                assert_eq!(plane.force, "commonwealth");
+                assert!(plane.squadron.is_none() && plane.facility.is_none());
+                assert!(!plane.refitted && !plane.fuelled && !plane.armed);
+            }
+            let before = initial.forces["commonwealth"].planes["cw.hurricane_i"];
+            assert_eq!(
+                closed.state.air.forces["commonwealth"].planes["cw.hurricane_i"],
+                crate::state::PlaneCount {
+                    total: before.total + 2,
+                    ..before
+                }
+            );
+            let row = row_id(&c.units.schedules[0].path, "air", 0);
+            assert_eq!(closed.state.land.arrivals.air_week[&row], (15, 13));
+            assert_eq!(
+                closed.state.land.arrivals.air_remaining[&row]["cw.hurricane_i"],
+                c.units.schedules[0].arrivals[0]
+                    .planes
+                    .iter()
+                    .find(|p| p.aircraft == "cw.hurricane_i")
+                    .unwrap()
+                    .n
+                    - 2
+            );
+            let once = json!(closed.state);
+            let mut rng = CampaignRng::from_state(&closed.rng);
+            let mut events = Vec::new();
+            assert!(
+                batched::finish(
+                    &c,
+                    &mut closed.state,
+                    false,
+                    &mut Cx {
+                        rng: &mut rng,
+                        events: &mut events
+                    }
+                )
+                .unwrap()
+            );
+            assert_eq!(json!(closed.state), once);
+            assert!(events.is_empty());
+            assert_eq!(rng.state(), closed.rng);
+            let air = json!(closed.state.air);
+            closed = finish_supply(&c, closed);
+            assert_eq!(
+                json!(closed.state.air),
+                air,
+                "later rounds must not receive again"
+            );
+        }
+    }
+    /// Cases: land:3.6, land:3.62, airlog:34.84
+    #[test]
+    fn canonical_air_batch_zero_vs_receipt_is_private_through_closure_and_recovery() {
+        let (c, start) = canonical_air_fixture(false);
+        let (mut a, mut b) = open_pair(&c, &start, &start, Side::Axis);
+        let initial = json!(start.state.air);
+        for seat in Side::ALL.into_iter().flat_map(|side| {
+            [Role::Commander, Role::Logistics, Role::Air].map(move |role| SeatId::new(side, role))
+        }) {
+            let ca = air_count_command(&c, &a, seat, 0);
+            let cb = air_count_command(&c, &b, seat, 2);
+            crate::testkit::assert_actions_indistinguishable(
+                &Cna::dev(),
+                &c,
+                (&a, &ca),
+                (&b, &cb),
+                Side::Axis,
+            );
+            a = evaluate(&Cna::dev(), &c, &a, &ca).unwrap().game;
+            b = evaluate(&Cna::dev(), &c, &b, &cb).unwrap().game;
+            assert_eq!(json!(a.state.air), initial);
+            assert_eq!(json!(b.state.air), initial);
+        }
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::dev(),
+            &c,
+            &a,
+            &b,
+            &Command::Advance,
+            Side::Axis,
+        );
+        let ta = evaluate(&Cna::dev(), &c, &a, &Command::Advance).unwrap();
+        let tb = evaluate(&Cna::dev(), &c, &b, &Command::Advance).unwrap();
+        assert_eq!(
+            json!(ta.game.state.air),
+            initial,
+            "zero list defers without allocating IDs"
+        );
+        assert_eq!(
+            tb.game.state.air.runtime.aircraft.len(),
+            ta.game.state.air.runtime.aircraft.len() + 2
+        );
+        let recovered: Game<Cna> = serde_json::from_value(json!(b)).unwrap();
+        let replay = evaluate(&Cna::dev(), &c, &recovered, &Command::Advance).unwrap();
+        assert_eq!(json!(tb.game), json!(replay.game));
+        assert_eq!(json!(tb.events), json!(replay.events));
+        let ids = tb
+            .game
+            .state
+            .air
+            .runtime
+            .aircraft
+            .keys()
+            .map(|id| id.0.clone())
+            .collect();
+        assert_eq!(
+            crate::testkit::visible_to(&Cna::dev(), &c, &ta.game.state, Side::Axis, &ids),
+            crate::testkit::visible_to(&Cna::dev(), &c, &tb.game.state, Side::Axis, &ids)
+        );
+    }
+    /// Cases: airlog:34.84, airlog:35.11
+    #[test]
+    fn canonical_air_batch_late_serial_overflow_rolls_back_bootstrap_quotas_and_events() {
+        let (c, mut start) = canonical_air_fixture(true);
+        start
+            .state
+            .air
+            .runtime
+            .plane_serial
+            .insert(Side::Commonwealth, u64::MAX - 1);
+        let opened = evaluate(&Cna::dev(), &c, &start, &Command::Advance)
+            .unwrap()
+            .game;
+        let mut ready = prepare_air_count(&c, opened, 2);
+        let before = json!(ready);
+        assert!(matches!(
+            evaluate(&Cna::dev(), &c, &ready, &Command::Advance),
+            Err(Rejection::Engine(EngineError::Invariant { detail })) if detail == "air inventory: IDs exhausted"
+        ));
+        let mut rng = CampaignRng::from_state(&ready.rng);
+        let mut events = Vec::new();
+        assert!(
+            batched::finish(
+                &c,
+                &mut ready.state,
+                false,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut events
+                }
+            )
+            .is_err()
+        );
+        assert_eq!(json!(ready), before);
+        assert_eq!(rng.state(), ready.rng);
+        assert!(events.is_empty());
+        assert!(!ready.state.air.runtime.bases_initialized);
+    }
+    /// Cases: land:3.6, airlog:34.84, airlog:35.11
+    #[test]
+    fn canonical_air_batch_preserves_exact_unsupported_errors_and_failed_draft_bytes() {
+        for missing_base in [false, true] {
+            let (mut c, mut start) = canonical_air_fixture(missing_base);
+            if missing_base {
+                start.state.air.squadrons.insert(
+                    "axis.missing".into(),
+                    crate::state::AirSquadron {
+                        id: "axis.missing".into(),
+                        force: "axis".into(),
+                        side: Side::Axis,
+                        nationality: "it".into(),
+                        facility: "unknown.site".into(),
+                        initial_aircraft: None,
+                        planes: BTreeMap::new(),
+                        pilots: BTreeMap::new(),
+                    },
+                );
+            } else {
+                crate::air::inventory::update(&c, &mut start.state.air, |runtime| {
+                    runtime
+                        .aircraft
+                        .retain(|_, p| p.aircraft != "cw.hurricane_i");
+                    Ok(())
+                })
+                .unwrap();
+                c.units.aircraft.remove("cw.hurricane_i");
+            }
+            let opened = evaluate(&Cna::dev(), &c, &start, &Command::Advance)
+                .unwrap()
+                .game;
+            let mut ready = prepare_air_count(&c, opened, 2);
+            let before = json!(ready);
+            let expected_case = if missing_base {
+                "airlog:35.11"
+            } else {
+                "airlog:34.84"
+            };
+            let expected_detail = if missing_base {
+                "Initial SGSU facility has no verified canonical source"
+            } else {
+                "Calendar-authorized aircraft content is missing"
+            };
+            for rules in [Cna::dev(), Cna::full()] {
+                let error = evaluate(&rules, &c, &ready, &Command::Advance).unwrap_err();
+                assert!(
+                    matches!(error, Rejection::Engine(EngineError::Unsupported { case, detail })
+                    if case == expected_case && detail == expected_detail)
+                );
+            }
+            let checkpoint: Game<Cna> = serde_json::from_value(before.clone()).unwrap();
+            assert_eq!(
+                format!(
+                    "{:?}",
+                    evaluate(&Cna::dev(), &c, &ready, &Command::Advance).unwrap_err()
+                ),
+                format!(
+                    "{:?}",
+                    evaluate(&Cna::dev(), &c, &checkpoint, &Command::Advance).unwrap_err()
+                )
+            );
+            let mut rng = CampaignRng::from_state(&ready.rng);
+            let mut events = Vec::new();
+            assert!(
+                matches!(batched::finish(&c, &mut ready.state, false, &mut Cx { rng: &mut rng, events: &mut events }),
+                Err(EngineError::Unsupported { case, detail }) if case == expected_case && detail == expected_detail)
+            );
+            assert_eq!(json!(ready), before);
+            assert_eq!(rng.state(), ready.rng);
+            assert!(events.is_empty());
+        }
+    }
+    /// Cases: land:3.6, airlog:34.84
+    #[test]
+    fn canonical_air_batch_owner_invalid_counts_are_rejected_without_import_or_receipt() {
+        let (c, start) = canonical_air_fixture(true);
+        let opened = evaluate(&Cna::dev(), &c, &start, &Command::Advance)
+            .unwrap()
+            .game;
+        let before = json!(opened);
+        for count in [-1, 16] {
+            let command = air_count_command(
+                &c,
+                &opened,
+                SeatId::new(Side::Commonwealth, Role::Air),
+                count,
+            );
+            assert!(evaluate(&Cna::dev(), &c, &opened, &command).is_err());
+            let checkpoint: Game<Cna> = serde_json::from_value(before.clone()).unwrap();
+            assert_eq!(
+                format!(
+                    "{:?}",
+                    evaluate(&Cna::dev(), &c, &opened, &command).unwrap_err()
+                ),
+                format!(
+                    "{:?}",
+                    evaluate(&Cna::dev(), &c, &checkpoint, &command).unwrap_err()
+                )
+            );
+            assert_eq!(json!(opened), before);
+            assert!(!opened.state.air.runtime.bases_initialized);
+        }
     }
     /// Cases: airlog:34.84
     #[test]
