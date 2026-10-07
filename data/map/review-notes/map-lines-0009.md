@@ -1,0 +1,198 @@
+# Western connecting sides, 2026-10-07
+
+One hundred fresh physical pairs in the western allocation were individually inspected on native2021 imagery against TEC.png. All previously observed physical pairs, including pilots and abstentions, were skipped. Selection includes74 outer-ring and26 expanded-ring connecting sides near the published spine; geography supplies no source classification or halo completeness. All fourteen supported kinds were considered per pair:1400 observations,1243 resolved masks (53 present,1190 absent) and157 unresolved.
+
+Direct positives by kind: 22 line:track, 3 side:all_sea, 6 side:escarpment, 22 side:slope. Contour high endpoints follow actual low-side splashes. Each marine side was inspected along its whole physical length including vertices, independently of endpoint terrain flags.
+
+Exact positives:
+- C3520/C3620: line:track
+- C3525/C3526: side:escarpment; high C3525
+- C3526/C3527: side:escarpment; high C3527
+- C3528/C3628: side:escarpment; high C3528
+- C3529/C3628: side:escarpment; high C3529
+- C3628/C3629: side:escarpment; high C3629
+- C3629/C3729: side:escarpment; high C3629
+- C3629/C3730: side:slope; high C3629
+- C3630/C3731: line:track
+- C3632/C3732: side:slope; high C3632
+- C3632/C3733: side:slope; high C3632
+- C3633/C3733: side:slope; high C3633
+- C3633/D3601: line:track
+- C3733/D3701: side:slope; high D3701
+- D3306/D3405: line:track
+- D3307/D3407: side:slope; high D3307
+- D3308/D3407: side:slope; high D3308
+- D3308/D3408: side:slope; high D3308
+- D3309/D3408: side:slope; high D3309
+- D3309/D3409: side:slope; high D3309
+- D3310/D3409: side:slope; high D3310
+- D3310/D3410: side:slope; high D3310
+- D3403/D3503: line:track
+- D3403/D3504: side:slope; high D3403
+- D3404/D3405: line:track
+- D3404/D3504: side:slope; high D3404
+- D3404/D3505: side:slope; high D3404
+- D3405/D3505: side:slope; high D3405
+- D3406/D3407: side:slope; high D3406
+- D3407/D3408: line:track
+- D3408/D3409: line:track
+- D3409/D3410: line:track
+- D3410/D3411: line:track
+- D3501/D3601: side:slope; high D3501
+- D3502/D3503: line:track
+- D3502/D3601: side:slope; high D3502
+- D3502/D3602: line:track
+- D3502/D3602: side:slope; high D3502
+- D3503/D3504: side:slope; high D3503
+- D3503/D3602: side:slope; high D3503
+- D3504/D3505: line:track
+- D3601/D3602: line:track
+- D4008/D4009: side:all_sea
+- D4009/D4010: side:all_sea
+- D4010/D4011: side:all_sea
+- C3321/C3420: line:track
+- C3327/C3427: line:track
+- C3328/C3427: line:track
+- C3419/C3420: line:track
+- C3419/C3520: line:track
+- C3424/C3425: line:track
+- C3425/C3426: line:track
+- C3426/C3427: line:track
+
+Unresolved evidence:
+- Pipeline: unsurveyed on all100; the key supplies no pipeline symbol.
+- C3527/C3528: side:escarpment, side:slope, side:ridge. Brown and gray contour junction at lower vertex prevents exact side/kind/direction verification.
+- C3527/C3627: line:track. Dashed track meets the upper-left vertex; an actual crossing away from that vertex is unverified.
+- C3628/C3729: side:escarpment, side:slope, side:ridge. Gray contour junction at the lower-right vertex prevents exact actual-side contour assignment.
+- C3630/C3730: side:escarpment, side:slope, side:ridge. Brown-gray junction at left vertex prevents exact actual-side contour assignment.
+- C3631/C3732: side:slope, side:ridge. Brown contour junction at lower-right vertex prevents exact actual-side assignment and direction.
+- C3633/D3601: line:railroad, line:unfinished_railroad. Single dashed track crosses actual vertical seam away from vertices; gray tied crossing has unverified exact rail identity. Registration seam is not a border.
+- C3729/C3730: side:escarpment, side:slope, side:ridge. Gray and brown contours join at the lower vertex; exact actual-side contour assignment is unverified.
+- C3732/C3733: side:slope, side:ridge. Brown contour junction at lower vertex prevents precise actual-side assignment.
+- D3307/D3406: side:slope, side:ridge. Brown contour ends at upper-right vertex; exact actual-side assignment is unverified.
+- D3403/D3503: side:slope, side:ridge. Single dashed track crosses actual diagonal away from vertices; brown contour junction at right vertex remains unverified on this side.
+- D3404/D3405: side:slope, side:ridge. Single dashed track crosses actual vertical side; brown junction at top vertex prevents exact contour assignment.
+- D3405/D3406: side:slope, side:ridge. Brown contour junction at top vertex prevents exact actual-side contour assignment.
+- D3407/D3408: side:slope, side:ridge. Single gray dashed track crosses actual vertical side away from vertices; brown contour junction prevents exact side/direction assignment.
+- D3408/D3409: side:slope, side:ridge. Single gray dashed track crosses actual vertical side away from vertices; brown contour junction prevents exact side/direction assignment.
+- D3409/D3410: side:slope, side:ridge. Single gray dashed track crosses actual vertical side away from vertices; brown contour junction prevents exact side/direction assignment.
+- D3410/D3411: side:slope, side:ridge. Single dashed track crosses actual vertical side. Individual close view shows brown ink at the lower junction on both sides; exact slope/ridge identity and high endpoint remain unresolved.
+- D3502/D3503: side:slope, side:ridge. Single gray dashed track crosses actual vertical side away from vertices; brown contour junction prevents exact side/direction assignment.
+- D3504/D3505: side:slope, side:ridge. Single dashed track crosses actual vertical side; brown lower-vertex junction has unverified exact assignment and high endpoint.
+- D3601/D3602: line:railroad, line:unfinished_railroad, side:slope, side:ridge. Single dashed track crosses actual vertical side; gray tied crossing has unverified exact rail identity. Brown junctions at both vertices leave contour assignment/direction unresolved.
+- C3324/C3423: line:railroad, line:unfinished_railroad. Gray tied-family stroke crosses or approaches an actual-side vertex; exact rail kind and precise alignment are unverified.
+- C3324/C3424: line:railroad, line:unfinished_railroad. Gray tied-family stroke crosses or approaches an actual-side vertex; exact rail kind and precise alignment are unverified.
+- C3325/C3424: line:railroad, line:unfinished_railroad. Gray tied-family stroke crosses or approaches an actual-side vertex; exact rail kind and precise alignment are unverified.
+- C3423/C3424: line:railroad, line:unfinished_railroad. Gray tied stroke approaches lower vertex; exact rail identity and actual-side crossing alignment are unverified.
+- C3425/C3426: side:escarpment, side:slope, side:ridge. Single gray dashed TEC track crosses actual side away from vertices. Contour junction at top vertex prevents exact actual-side kind and direction.
+- C3426/C3427: side:escarpment, side:slope, side:ridge. Single gray dashed TEC track crosses actual side away from vertices. Contour junction at top vertex prevents exact actual-side kind and direction.
+
+75 pairs resolve the historical thirteen movement kinds only. No lake presence, absence or mask is inferred, and no future lake completeness, complete control halo, control propagation or unit action is certified. No route manifest is emitted.
+
+Every selected endpoint already has public surface data on based0bbd5ac; no terrain dependency was identified. No cell, facility or place evidence is added.
+
+Unmarked4x native crops show every actual side; calculated locator overlays establish orientation only. Individual close review of D3410/D3411 withdrew a candidate slope: brown ink at the lower junction lies on both sides, leaving exact slope/ridge identity and direction unresolved. Near-vertex stroke contact is not certified as a crossing away from vertices. Contour ink on other sides and substrate tint are not used to assign a feature to the inspected side. Pale map registration seams are not borders.
+
+One observer on the2021 render; no independent observer agreement, population accuracy or original1979 equivalence claim. Source images/crops remain outside the repository. Cartographer owns tooling, schemas and shared GAPS/VERIFICATION. This bounded snapshot uses the sole assembler WIP workflow without an independent main ticket.
+
+Exact100 pairs:
+- C3520/C3521
+- C3520/C3620
+- C3521/C3522
+- C3521/C3620
+- C3522/C3523
+- C3523/C3524
+- C3524/C3525
+- C3525/C3526
+- C3526/C3527
+- C3527/C3528
+- C3527/C3627
+- C3528/C3627
+- C3528/C3628
+- C3529/C3628
+- C3619/C3620
+- C3619/C3720
+- C3620/C3720
+- C3627/C3628
+- C3628/C3629
+- C3628/C3729
+- C3629/C3729
+- C3629/C3730
+- C3630/C3730
+- C3630/C3731
+- C3631/C3731
+- C3631/C3732
+- C3632/C3732
+- C3632/C3733
+- C3633/C3733
+- C3633/D3601
+- C3633/D3701
+- C3719/C3720
+- C3729/C3730
+- C3730/C3731
+- C3731/C3732
+- C3732/C3733
+- C3733/D3701
+- D3305/D3405
+- D3306/D3405
+- D3306/D3406
+- D3307/D3406
+- D3307/D3407
+- D3308/D3407
+- D3308/D3408
+- D3309/D3408
+- D3309/D3409
+- D3310/D3409
+- D3310/D3410
+- D3402/D3503
+- D3403/D3503
+- D3403/D3504
+- D3404/D3405
+- D3404/D3504
+- D3404/D3505
+- D3405/D3406
+- D3405/D3505
+- D3406/D3407
+- D3407/D3408
+- D3408/D3409
+- D3409/D3410
+- D3410/D3411
+- D3410/D3511
+- D3501/D3601
+- D3502/D3503
+- D3502/D3601
+- D3502/D3602
+- D3503/D3504
+- D3503/D3602
+- D3504/D3505
+- D3601/D3602
+- D3601/D3701
+- D4008/D4009
+- D4009/D4010
+- D4010/D4011
+- C3320/C3420
+- C3321/C3420
+- C3321/C3421
+- C3322/C3421
+- C3322/C3422
+- C3323/C3422
+- C3323/C3423
+- C3324/C3423
+- C3324/C3424
+- C3325/C3424
+- C3325/C3425
+- C3326/C3425
+- C3326/C3426
+- C3327/C3426
+- C3327/C3427
+- C3328/C3427
+- C3419/C3420
+- C3419/C3520
+- C3420/C3421
+- C3420/C3520
+- C3421/C3422
+- C3422/C3423
+- C3423/C3424
+- C3424/C3425
+- C3425/C3426
+- C3426/C3427
