@@ -3155,7 +3155,7 @@ mod tests {
     }
     /// Cases: land:3.6, land:20.14, land:9.12
     #[test]
-    fn enemy_cannot_distinguish_capacity_waiting_from_another_buffered_destination() {
+    fn enemy_cannot_distinguish_capacity_waiting_from_a_buffered_placement() {
         let (mut c, mut a) = fixture();
         let arriving = [
             UnitId::new("cw.2_nz_div.24th_nz_bn"),
@@ -3209,14 +3209,9 @@ mod tests {
         }
         at(&mut a, 6, 3);
         let mut b = a.clone();
-        b.state
-            .land
-            .units
-            .get_mut(blockers.last().unwrap())
-            .unwrap()
-            .location = Location::OffMap {
-            id: "box_tripoli".into(),
-        };
+        // The map counters are identical. Only a hidden, not-yet-arrived counter differs:
+        // in A it privately fills the last spot before the second arrival is considered.
+        b.state.land.units.get_mut(&arriving[0]).unwrap().location = Location::Eliminated;
         let (a, b) = open_pair(&c, &a, &b, Side::Axis);
         let seat = SeatId::new(Side::Commonwealth, Role::Commander);
         let ca = command_for(&c, &a, seat);
@@ -3236,13 +3231,20 @@ mod tests {
             json!("await_capacity")
         );
         let (a, b) = prepare_pair(&c, a, b, Side::Axis);
-        for game in [&a, &b] {
-            assert!(
-                arriving
-                    .iter()
-                    .all(|id| game.state.land.units[id].location == Location::NotArrived)
-            );
-        }
+        assert!(
+            arriving
+                .iter()
+                .all(|id| a.state.land.units[id].location == Location::NotArrived)
+        );
+        assert_eq!(
+            b.state.land.units[&arriving[0]].location,
+            Location::Eliminated
+        );
+        assert_eq!(
+            b.state.land.units[&arriving[1]].location,
+            Location::NotArrived
+        );
+        crate::testkit::assert_indistinguishable(&Cna::dev(), &c, &a.state, &b.state, Side::Axis);
     }
 
     /// Cases: land:3.6, land:20.12, airlog:48.0
@@ -3451,14 +3453,121 @@ mod tests {
         let (a, b) = open_pair(&c, &a, &b, Side::Axis);
         let (a, b) = prepare_pair(&c, a, b, Side::Axis);
         assert_eq!(b.state.land.units[&named].location, location);
-        crate::testkit::assert_action_indistinguishable(
+        // At closure the two different departing printed counters are public (land:3.62).
+        // The earlier opening and every Respond still use the full secrecy harness.
+        let ta = evaluate(&Cna::dev(), &c, &a, &Command::Advance).unwrap();
+        let tb = evaluate(&Cna::dev(), &c, &b, &Command::Advance).unwrap();
+        assert_eq!(
+            ta.game.state.land.units[&named].location,
+            Location::NotArrived
+        );
+        assert_eq!(ta.game.state.land.units[&candidate].location, location);
+        assert_eq!(tb.game.state.land.units[&named].location, location);
+        assert_eq!(
+            tb.game.state.land.units[&candidate].location,
+            Location::NotArrived
+        );
+        assert_eq!(json!(ta.progress), json!(tb.progress));
+        assert_eq!(ta.game.rng, tb.game.rng);
+
+        // Changing exactly the two counter locations accounts for every readable difference;
+        // strengths, withdrawal plans, log-sheet contents and all scheduling remain private.
+        let mut expected_b = ta.game.state.clone();
+        expected_b.land.units.get_mut(&named).unwrap().location = location.clone();
+        expected_b.land.units.get_mut(&candidate).unwrap().location = Location::NotArrived;
+        crate::testkit::assert_indistinguishable(
             &Cna::dev(),
             &c,
-            &a,
-            &b,
-            &Command::Advance,
+            &expected_b,
+            &tb.game.state,
             Side::Axis,
         );
+
+        for perspective in std::iter::once(Perspective::Side(Side::Axis)).chain(
+            Role::ALL
+                .into_iter()
+                .map(|role| Perspective::Seat(SeatId::new(Side::Axis, role))),
+        ) {
+            let mut other_streams = Vec::new();
+            for (before, transition, departed, remaining) in
+                [(&a, &ta, &named, &candidate), (&b, &tb, &candidate, &named)]
+            {
+                let view = Cna::dev().view(&c, &transition.game.state, perspective);
+                let face =
+                    crate::view::counter_face(&c, &transition.game.state.land.units[remaining]);
+                assert_eq!(view.units.get(remaining.as_str()), Some(&face));
+                assert!(!view.units.contains_key(departed.as_str()));
+                for id in [&named, &candidate] {
+                    crate::testkit::assert_face_only(&Cna::dev().inspect(
+                        &c,
+                        &transition.game.state,
+                        perspective,
+                        id.as_str(),
+                    ));
+                }
+                let stack = view
+                    .stacks
+                    .iter()
+                    .find(|stack| {
+                        stack.side == Side::Commonwealth
+                            && Some(stack.hex.as_str()) == location.hex().map(|h| h.as_str())
+                    })
+                    .unwrap()
+                    .clone();
+                let expected = [
+                    EngineEvent::new(
+                        Audience::SideOnly(Side::Axis),
+                        GameEvent::UnitRemoved {
+                            unit_id: departed.to_string(),
+                            reason: "no longer in view".into(),
+                        },
+                    ),
+                    EngineEvent::new(
+                        Audience::SideOnly(Side::Axis),
+                        GameEvent::StackUpdated { stack },
+                    ),
+                ];
+                let seen: Vec<_> = transition
+                    .events
+                    .iter()
+                    .filter(|e| perspective.can_see(&e.audience))
+                    .collect();
+                let counters: Vec<_> = seen
+                    .iter()
+                    .copied()
+                    .filter(|e| {
+                        matches!(
+                            e.event,
+                            GameEvent::UnitUpdated { .. }
+                                | GameEvent::UnitRemoved { .. }
+                                | GameEvent::StackUpdated { .. }
+                                | GameEvent::StackRemoved { .. }
+                        )
+                    })
+                    .collect();
+                assert_eq!(json!(counters), json!(expected));
+                other_streams.push(
+                    seen.into_iter()
+                        .filter(|e| !expected.iter().any(|x| json!(x) == json!(e)))
+                        .map(|e| json!(e))
+                        .collect::<Vec<_>>(),
+                );
+                crate::testkit::events_explain_view_changes(
+                    &Cna::dev(),
+                    &c,
+                    &before.state,
+                    &transition.game.state,
+                    &transition.events,
+                    perspective,
+                )
+                .unwrap();
+                let recovered: Game<Cna> = serde_json::from_value(json!(before)).unwrap();
+                let replay = evaluate(&Cna::dev(), &c, &recovered, &Command::Advance).unwrap();
+                assert_eq!(json!(transition.game), json!(replay.game));
+                assert_eq!(json!(transition.events), json!(replay.events));
+            }
+            assert_eq!(other_streams[0], other_streams[1]);
+        }
     }
     /// Cases: land:20.83, land:20.85, land:4.43
     #[test]
