@@ -587,21 +587,28 @@ fn unknown_offmap_malta_and_tampered_project_effects_reject_without_state_change
             matches!(p.location, Location::OffMap { .. }).then_some((id.clone(), site.owner))
         })
         .unwrap();
-    for (side, id) in [
-        (Side::Axis, FacilityId("unknown.site".into())),
-        (Side::Commonwealth, FacilityId("malta.initial".into())),
-        (offmap.1, offmap.0),
+    for (side, id, unsupported_case) in [
+        (Side::Axis, FacilityId("unknown.site".into()), None),
+        (
+            Side::Commonwealth,
+            FacilityId("malta.initial".into()),
+            Some("airlog:44.14"),
+        ),
+        (offmap.1, offmap.0, Some("airlog:36.5")),
     ] {
         let before = serde_json::to_vec(&state).unwrap();
-        assert!(
-            start_work(
-                &content,
-                &mut state.air,
-                side,
-                &FacilityWork::RepairOne { id }
-            )
-            .is_err()
+        let result = start_work(
+            &content,
+            &mut state.air,
+            side,
+            &FacilityWork::RepairOne { id },
         );
+        if let Some(expected) = unsupported_case {
+            assert!(matches!(result,
+                Err(EngineError::Unsupported { case, .. }) if case == expected));
+        } else {
+            assert!(result.is_err());
+        }
         assert_eq!(before, serde_json::to_vec(&state).unwrap());
     }
     let project = Project::start(
