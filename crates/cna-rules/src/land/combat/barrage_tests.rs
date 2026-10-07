@@ -470,6 +470,14 @@ fn hidden_enemy_trucks_cannot_change_final_plot_validation() {
         Side::Axis,
     );
     let cmd = command(&clear, axis, PLOT, plan(&clear, axis));
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::full(),
+        content(),
+        &clear,
+        &trucks,
+        &cmd,
+        Side::Axis,
+    );
     let before_a = json!(clear);
     let before_b = json!(trucks);
     let a = evaluate(&Cna::full(), content(), &clear, &cmd).unwrap();
@@ -698,4 +706,21 @@ fn enemy_pins_are_indistinguishable_at_each_combat_window() {
 #[test]
 fn enemy_trucks_are_indistinguishable_at_each_combat_window() {
     assert_hidden_combat_fact(3);
+}
+
+/// Cases: land:3.6, land:12.13, land:12.23
+#[test]
+fn empty_role_plot_space_explicitly_has_no_orders() {
+    let g = plots(1);
+    for request in Cna::dev().pending(content(), &g.state) {
+        if request.seat.role != Role::FrontLine {
+            assert!(matches!(
+                request.space.schema,
+                ActionSchema::List { min: 0, max: 0, .. }
+            ));
+            assert!(request.space.pass.is_some());
+            let cmd = command(&g, request.seat, PLOT, json!([]));
+            assert!(evaluate(&Cna::dev(), content(), &g, &cmd).is_ok());
+        }
+    }
 }

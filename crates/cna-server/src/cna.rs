@@ -141,6 +141,7 @@ fn movement_policy() -> ActionPolicy<Cna> {
         if request.kind != cna_rules::land::movement::KIND
             && request.kind != cna_rules::land::combat::POSITION_KIND
             && !request.kind.starts_with("cna.combat.barrage")
+            && !request.kind.starts_with("cna.logistics.")
         {
             return None;
         }
@@ -149,6 +150,8 @@ fn movement_policy() -> ActionPolicy<Cna> {
         let mut hash = Sha256::new();
         hash.update(if request.kind == cna_rules::land::movement::KIND {
             b"cna-scripted-movement-v1".as_slice()
+        } else if request.kind.starts_with("cna.logistics.") {
+            b"cna-scripted-logistics-v1".as_slice()
         } else {
             b"cna-scripted-combat-v1".as_slice()
         });
@@ -157,10 +160,18 @@ fn movement_policy() -> ActionPolicy<Cna> {
         );
         let seed = hash.finalize().into();
         let mut rng = CampaignRng::from_seed(seed);
+        if let Some(action) =
+            cna_rules::baseline::logistics_orders(content, state, request, &mut rng)
+        {
+            return Some(action);
+        }
         if request.kind.starts_with("cna.combat.barrage") {
             return Some(cna_rules::baseline::random_barrages(
                 content, state, request, &mut rng,
             ));
+        }
+        if request.kind.starts_with("cna.logistics.") {
+            return None;
         }
         // Preserve legal-random's declared-pass choice before generating an order.
         // Reject face six to keep the existing one-in-five probability unbiased.
@@ -600,5 +611,342 @@ mod tests {
             writer_time.as_micros() / submitted as u128,
             projection_time.as_micros() / submitted as u128
         );
+    }
+
+    /// Cases: land:3.6, airlog:51.11, airlog:52.13, airlog:52.41
+    #[test]
+    fn logistics_policy_feeds_without_spending_adjudication_rng() {
+        use cna_content::scenario::Supplies;
+        use cna_rules::state::{Dump, DumpLocation};
+        let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut state = State::new(&content).unwrap();
+        let id = UnitId::new("it.1_libyan_div.viii_libyan_bn");
+        for unit in state.land.units.values_mut() {
+            unit.location = if unit.id == id {
+                Location::Hex {
+                    hex: "C4020".into(),
+                }
+            } else {
+                Location::NotArrived
+            };
+            unit.trucks = Default::default();
+            unit.transport_trucks = Default::default();
+        }
+        state.turn.weather = Some(WeatherState {
+            kind: WeatherKind::Normal,
+            storm_sections: vec![],
+        });
+        state.cursor.op_stage = Some(1);
+        state.logistics.dumps.clear();
+        state.logistics.dumps.insert(
+            "fixture-stock".into(),
+            Dump {
+                id: "fixture-stock".into(),
+                marker: "fixture-marker".into(),
+                side: cna_protocol::Side::Axis,
+                location: DumpLocation::Hex {
+                    hex: "C4020".into(),
+                },
+                supplies: Supplies {
+                    stores: 40,
+                    water: 40,
+                    ..Supplies::default()
+                },
+                active: true,
+                dummy: false,
+            },
+        );
+        let mut dice = CampaignRng::from_seed([7; 32]);
+        let mut events = vec![];
+        cna_rules::logistics::stores::enter(
+            &content,
+            &mut state,
+            &mut cna_core::engine::Cx {
+                rng: &mut dice,
+                events: &mut events,
+            },
+        )
+        .unwrap();
+        let request = Cna::dev()
+            .pending(&content, &state)
+            .into_iter()
+            .find(|r| r.seat.side == cna_protocol::Side::Axis)
+            .unwrap();
+        let before = serde_json::to_value(&state).unwrap();
+        let rng_before = dice.state();
+        let policy = movement_policy();
+        for epoch in 1..32 {
+            let action = policy(&content, &state, &request, epoch).unwrap();
+            assert_eq!(action, serde_json::json!(id));
+            assert_eq!(action, policy(&content, &state, &request, epoch).unwrap());
+            evaluate(
+                &Cna::dev(),
+                &content,
+                &Game {
+                    state: serde_json::from_value(before.clone()).unwrap(),
+                    rng: rng_before.clone(),
+                },
+                &Command::Respond(cna_core::decision::DecisionResponse {
+                    decision_id: request.id.clone(),
+                    seat: request.seat,
+                    controller_epoch: epoch,
+                    decision_revision: request.revision,
+                    idempotency_key: "feed".into(),
+                    action,
+                    public_explanation: None,
+                }),
+            )
+            .unwrap();
+        }
+        assert_eq!(serde_json::to_value(&state).unwrap(), before);
+        assert_eq!(dice.state(), rng_before);
+    }
+
+    /// Cases: land:3.6, land:12.23, land:12.42, land:12.45, airlog:52.42
+    #[test]
+    fn closed_barrage_recovers_and_adjudicates_once_with_private_persisted_streams() {
+        use cna_core::{decision::DecisionResponse, visibility::Perspective};
+        use cna_protocol::{GameEvent, Role, ServerMessage, Side};
+        let data = cna_content::repo_data_dir();
+        let content = CnaContent::load(&data, "graziani").unwrap();
+        let mut state = State::new(&content).unwrap();
+        let guns = [
+            (
+                Side::Axis,
+                UnitId::new("it.1_libyan_div.1st_libyan_artillery_regt"),
+                "C4218",
+            ),
+            (
+                Side::Commonwealth,
+                UnitId::new("cw.4_indian_div.25th_field_artillery_regt"),
+                "C4219",
+            ),
+        ];
+        for unit in state.land.units.values_mut() {
+            unit.location = Location::NotArrived;
+            unit.trucks = Default::default();
+            unit.transport_trucks = Default::default();
+        }
+        state.logistics.dumps.clear();
+        for (_, id, hex) in &guns {
+            state.land.units.get_mut(id).unwrap().location = Location::Hex { hex: (*hex).into() };
+            let supply = state.logistics.unit_supply.entry(id.clone()).or_default();
+            supply.ready_ammo = AmmoPoints::new(10000);
+            supply.activity_water = WaterPoints::new(10000);
+        }
+        state.turn.weather = Some(WeatherState {
+            kind: WeatherKind::Normal,
+            storm_sections: vec![],
+        });
+        state.turn.player_a = Some(Side::Axis);
+        state.cursor.block = Block::PlayerHalf;
+        state.cursor.half = Some(Half::A);
+        state.cursor.index = 3;
+        state.cursor.op_stage = Some(1);
+        state.cursor.entered = false;
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("closed-barrage.sqlite");
+        let pins = Pins {
+            rules_profile: cna_rules::PROFILE_DEV.into(),
+            content_hash: "real-graziani-barrage-fixture".into(),
+            engine_version: env!("CNA_ENGINE_SOURCE_HASH").into(),
+        };
+        let meta = CampaignMeta {
+            id: "closed-barrage".into(),
+            scenario_id: "graziani".into(),
+            rules_profile: cna_rules::PROFILE_DEV.into(),
+            title: "Closed barrage recovery".into(),
+            seats: SeatId::all()
+                .map(|seat| SeatInfo {
+                    id: seat.to_string(),
+                    side: seat.side,
+                    role: seat.role,
+                    controller: None,
+                    status: SeatStatus::Idle,
+                })
+                .collect(),
+        };
+        let mut campaign = Campaign::create(
+            &path,
+            Cna::dev(),
+            content,
+            Game {
+                state,
+                rng: CampaignRng::from_seed([1; 32]).state(),
+            },
+            meta,
+            pins.clone(),
+        )
+        .unwrap();
+        for seat in SeatId::all() {
+            campaign
+                .handover(
+                    seat,
+                    Some(ControllerInfo {
+                        kind: ControllerKind::Scripted,
+                        label: "scripted:legal_random".into(),
+                    }),
+                    serde_json::json!({"mode":"legal_random"}),
+                )
+                .unwrap();
+        }
+        let submit = |campaign: &mut Campaign<Cna>,
+                      request: cna_core::decision::DecisionRequest,
+                      action: serde_json::Value| {
+            let response = DecisionResponse {
+                decision_id: request.id.clone(),
+                seat: request.seat,
+                controller_epoch: campaign.binding(request.seat).controller_epoch,
+                decision_revision: request.revision,
+                idempotency_key: request.id.to_string(),
+                action,
+                public_explanation: None,
+            };
+            campaign.validate(&response).unwrap();
+            campaign.submit(response.clone()).unwrap();
+            response
+        };
+        campaign.advance().unwrap();
+        for request in campaign.pending() {
+            submit(&mut campaign, request, serde_json::Value::Null);
+        }
+        campaign.advance().unwrap();
+        for request in campaign.pending() {
+            let action = if request.seat.role == Role::FrontLine {
+                serde_json::json!([guns.iter().find(|g| g.0 == request.seat.side).unwrap().2])
+            } else {
+                serde_json::Value::Null
+            };
+            submit(&mut campaign, request, action);
+        }
+        let before_catalog_rng = campaign.game.rng.clone();
+        assert!(campaign.game.state.land.combat.barrage.targets.is_empty());
+        let hash = campaign.state_hash().unwrap();
+        drop(campaign);
+        let mut campaign = Campaign::recover(
+            &path,
+            Cna::dev(),
+            CnaContent::load(&data, "graziani").unwrap(),
+            &pins,
+        )
+        .unwrap();
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        campaign.advance().unwrap();
+        assert!(!campaign.game.state.land.combat.barrage.targets.is_empty());
+        let rng = campaign.game.rng.clone();
+        assert_eq!(rng, before_catalog_rng);
+        let mut retry = None;
+        for request in campaign.pending() {
+            let action = movement_policy()(
+                &campaign.content,
+                &campaign.game.state,
+                &request,
+                campaign.binding(request.seat).controller_epoch,
+            )
+            .unwrap();
+            retry = Some(submit(&mut campaign, request, action));
+        }
+        assert_eq!(campaign.game.rng, rng);
+        let hash = campaign.state_hash().unwrap();
+        let views: Vec<_> = Perspective::all()
+            .map(|p| {
+                (
+                    p,
+                    campaign.view(p).unwrap(),
+                    campaign.events_after(p, 0, 512).unwrap(),
+                )
+            })
+            .collect();
+        drop(campaign);
+        let mut campaign = Campaign::recover(
+            &path,
+            Cna::dev(),
+            CnaContent::load(&data, "graziani").unwrap(),
+            &pins,
+        )
+        .unwrap();
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        assert!(campaign.submit(retry.unwrap()).unwrap().duplicate);
+        for (p, view, events) in &views {
+            assert_eq!(campaign.view(*p).unwrap(), *view);
+            assert_eq!(campaign.events_after(*p, 0, 512).unwrap(), *events);
+        }
+        // A failed atomic adjudication commit must retain the accepted, closed plans,
+        // with no ammo/TOE/dice or persisted command delta. Recovery then retries Advance.
+        let db = rusqlite::Connection::open(&path).unwrap();
+        let count: i64 = db
+            .query_row("SELECT COUNT(*) FROM commands", [], |r| r.get(0))
+            .unwrap();
+        db.execute_batch("CREATE TRIGGER fail_barrage_event BEFORE INSERT ON events BEGIN SELECT RAISE(ABORT, 'fail barrage commit'); END;").unwrap();
+        assert!(campaign.advance().is_err());
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        assert_eq!(campaign.game.rng, rng);
+        assert_eq!(
+            db.query_row("SELECT COUNT(*) FROM commands", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            count
+        );
+        db.execute_batch("DROP TRIGGER fail_barrage_event").unwrap();
+        drop(db);
+        drop(campaign);
+        let mut campaign = Campaign::recover(
+            &path,
+            Cna::dev(),
+            CnaContent::load(&data, "graziani").unwrap(),
+            &pins,
+        )
+        .unwrap();
+        campaign.advance().unwrap();
+        assert!(campaign.game.state.land.combat.barrage.resolved);
+        assert_ne!(campaign.game.rng, rng);
+        for (_, id, _) in &guns {
+            assert_eq!(
+                campaign.game.state.logistics.unit_supply[id]
+                    .ready_ammo
+                    .get(),
+                9976
+            );
+            assert_eq!(
+                campaign.game.state.logistics.unit_supply[id]
+                    .activity_water
+                    .get(),
+                9994
+            );
+        }
+        for p in Perspective::all() {
+            let events = campaign.events_after(p, 0, 512).unwrap();
+            let mut expected = 1;
+            for event in events {
+                if let ServerMessage::Event { seq, event, .. } = event {
+                    assert_eq!(seq, expected);
+                    expected += 1;
+                    if let GameEvent::Note { text } = event
+                        && text.contains("Own barrage plot")
+                    {
+                        let enemy = match p {
+                            Perspective::Side(side) => Some(side.opponent()),
+                            Perspective::Seat(seat) => Some(seat.side.opponent()),
+                            _ => None,
+                        };
+                        if let Some(enemy) = enemy {
+                            let enemy_id = &guns.iter().find(|g| g.0 == enemy).unwrap().1;
+                            assert!(!text.contains(enemy_id.as_str()));
+                        }
+                    }
+                }
+            }
+        }
+        let game = serde_json::to_value(&campaign.game).unwrap();
+        let hash = campaign.state_hash().unwrap();
+        drop(campaign);
+        let campaign = Campaign::recover(
+            &path,
+            Cna::dev(),
+            CnaContent::load(&data, "graziani").unwrap(),
+            &pins,
+        )
+        .unwrap();
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        assert_eq!(serde_json::to_value(&campaign.game).unwrap(), game);
     }
 }
