@@ -89,6 +89,7 @@ test('renders projected setup areas and clears private choices on perspective sw
             event: {
               kind: 'decision_resolved',
               decision_id: 'opaque-setup-id',
+              seat: 'axis.commander',
               summary: 'Fixture window closed',
             },
           })
