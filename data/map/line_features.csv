@@ -1,4 +1,8 @@
 from_hex,to_hex,kind,src,review_batch
+C3623,C3723,track,land:8.33;land:8.37,map-lines-0005
+C3721,C3821,track,land:8.33;land:8.37,map-lines-0005
+C3722,C3723,track,land:8.33;land:8.37,map-lines-0005
+C3722,C3821,track,land:8.33;land:8.37,map-lines-0005
 C3822,C3823,unfinished_road,land:8.47;land:8.37,map-lines-0001
 C3822,C3922,unfinished_road,land:8.47;land:8.37,map-lines-0001
 C3823,C3824,unfinished_road,land:8.47;land:8.37,map-lines-0001
@@ -23,7 +27,9 @@ C4120,C4220,road,land:8.33;land:8.37,road-spine-0001
 C4121,C4122,track,land:8.33;land:8.37,map-lines-0003
 C4130,C4131,road,land:8.33;land:8.37,map-lines-0002
 C4131,C4132,road,land:8.33;land:8.37,map-lines-0002
+C4219,C4220,track,land:8.33;land:8.37,map-lines-0005
 C4220,C4320,road,land:8.37;land:8.47,bardia-road-0002
+C4319,C4320,track,land:8.33;land:8.37,map-lines-0005
 C4320,C4321,road,land:8.37;land:8.47,bardia-road-0002
 C4320,C4419,road,land:8.37;land:8.33,validation-0001
 C4419,C4519,road,land:8.37;land:8.33,validation-0001
