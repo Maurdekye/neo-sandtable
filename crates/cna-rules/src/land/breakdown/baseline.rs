@@ -124,18 +124,12 @@ pub fn plan(c: &CnaContent, s: &State, outcome: &RolledCheck) -> Option<LossPlan
     if let Some(plan) = with_losses(c, s, outcome, preferred) {
         return Some(plan);
     }
-    let total: i64 = outcome
-        .group
-        .assets
-        .iter()
-        .map(|a| i64::from(a.points))
-        .sum();
+    let (cells, indices) = super::allocation::grouped(&outcome.group.assets)?;
+    let total: i64 = cells.iter().map(|a| i64::from(a.points)).sum();
     if total <= 0 {
         return None;
     }
-    let bounds: Vec<_> = outcome
-        .group
-        .assets
+    let bounds: Vec<_> = cells
         .iter()
         .map(|a| {
             let n = i64::from(a.points) * i64::from(outcome.broken);
@@ -143,35 +137,44 @@ pub fn plan(c: &CnaContent, s: &State, outcome: &RolledCheck) -> Option<LossPlan
         })
         .collect();
     fn ties(
-        c: &CnaContent,
-        s: &State,
-        o: &RolledCheck,
+        cells: &[Asset],
         bounds: &[(i32, i32)],
         chosen: &mut Vec<i32>,
         left: i32,
+        try_plan: &mut impl FnMut(&[i32]) -> Option<LossPlan>,
     ) -> Option<LossPlan> {
         let i = chosen.len();
         if i == bounds.len() {
-            return (left == 0 && super::valid_group_allocation(&o.group.assets, o.broken, chosen))
-                .then(|| with_losses(c, s, o, chosen.clone()))
-                .flatten();
+            return (left == 0
+                && super::valid_group_allocation(cells, chosen.iter().sum(), chosen))
+            .then(|| try_plan(chosen))
+            .flatten();
         }
-        let lo_later: i64 = bounds[i + 1..].iter().map(|(l, _)| i64::from(*l)).sum();
-        let hi_later: i64 = bounds[i + 1..].iter().map(|(_, h)| i64::from(*h)).sum();
+        let lo: i64 = bounds[i + 1..].iter().map(|(l, _)| i64::from(*l)).sum();
+        let hi: i64 = bounds[i + 1..].iter().map(|(_, h)| i64::from(*h)).sum();
         for n in bounds[i].0..=bounds[i].1 {
             let remainder = i64::from(left) - i64::from(n);
-            if remainder < lo_later || remainder > hi_later {
+            if remainder < lo || remainder > hi {
                 continue;
             }
             chosen.push(n);
-            if let Some(p) = ties(c, s, o, bounds, chosen, left - n) {
+            if let Some(p) = ties(cells, bounds, chosen, left - n, try_plan) {
                 return Some(p);
             }
             chosen.pop();
         }
         None
     }
-    ties(c, s, outcome, &bounds, &mut vec![], outcome.broken)
+    ties(
+        &cells,
+        &bounds,
+        &mut vec![],
+        outcome.broken,
+        &mut |chosen| {
+            let expanded = super::allocation::expand(&outcome.group.assets, &indices, chosen)?;
+            with_losses(c, s, outcome, expanded)
+        },
+    )
 }
 fn with_losses(
     c: &CnaContent,

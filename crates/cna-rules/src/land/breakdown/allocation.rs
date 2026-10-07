@@ -77,10 +77,75 @@ fn maxflow(g: &mut [Vec<Edge>], start: usize, end: usize) -> i64 {
         flow += amount;
     }
 }
+/// Cohort identifiers distinguish physical history, not another vehicle type.
+/// Cases: land:21.36
+pub(super) fn grouped(assets: &[Asset]) -> Option<(Vec<Asset>, Vec<Vec<usize>>)> {
+    let mut cells: BTreeMap<(UnitId, Equipment), (i32, Vec<usize>)> = BTreeMap::new();
+    for (i, a) in assets.iter().enumerate() {
+        if a.points < 0 {
+            return None;
+        }
+        let e = cells
+            .entry((a.unit.clone(), a.equipment.clone()))
+            .or_default();
+        e.0 = e.0.checked_add(a.points)?;
+        e.1.push(i);
+    }
+    let mut out = vec![];
+    let mut indices = vec![];
+    for ((unit, equipment), (points, ii)) in cells {
+        out.push(Asset {
+            unit,
+            equipment,
+            points,
+            cohort: None,
+        });
+        indices.push(ii);
+    }
+    Some((out, indices))
+}
+pub(super) fn expand(assets: &[Asset], indices: &[Vec<usize>], chosen: &[i32]) -> Option<Vec<i32>> {
+    let mut out = vec![0; assets.len()];
+    for (ii, n) in indices.iter().zip(chosen) {
+        let mut left = *n;
+        for i in ii {
+            out[*i] = left.min(assets[*i].points);
+            left -= out[*i];
+        }
+        if left != 0 {
+            return None;
+        }
+    }
+    Some(out)
+}
 /// Both unit totals and vehicle-type totals lie in their proportional floor/ceiling quotas.
 /// Different owner tie choices remain legal; all rolled losses must be assigned.
 /// Cases: land:21.36
 pub fn valid_group_allocation(assets: &[Asset], broken: i32, allocation: &[i32]) -> bool {
+    if allocation.len() != assets.len()
+        || assets
+            .iter()
+            .zip(allocation)
+            .any(|(a, n)| *n < 0 || *n > a.points)
+    {
+        return false;
+    }
+    let Some((cells, indices)) = grouped(assets) else {
+        return false;
+    };
+    let Some(chosen) = indices
+        .iter()
+        .map(|ii| {
+            ii.iter()
+                .try_fold(0i32, |n, i| n.checked_add(allocation[*i]))
+        })
+        .collect::<Option<Vec<_>>>()
+    else {
+        return false;
+    };
+    valid_cells(&cells, broken, &chosen)
+}
+fn valid_cells(assets: &[Asset], broken: i32, allocation: &[i32]) -> bool {
     let points: Vec<_> = assets.iter().map(|a| a.points).collect();
     if !valid_allocation(&points, broken, allocation) {
         return false;
@@ -116,6 +181,11 @@ pub fn valid_group_allocation(assets: &[Asset], broken: i32, allocation: &[i32])
 /// This is controller assistance: the owning player can submit another valid allocation.
 /// Cases: land:21.36
 pub fn balanced_allocation(assets: &[Asset], broken: i32) -> Option<Vec<i32>> {
+    let (cells, indices) = grouped(assets)?;
+    let chosen = balanced_cells(&cells, broken)?;
+    expand(assets, &indices, &chosen)
+}
+fn balanced_cells(assets: &[Asset], broken: i32) -> Option<Vec<i32>> {
     if broken < 0 || assets.iter().any(|a| a.points < 0) {
         return None;
     }
@@ -251,5 +321,36 @@ mod tests {
         assert!(!valid_group_allocation(&assets, 3, &[1, 1, 1, 0, 0, 0]));
         let out = balanced_allocation(&assets, 3).unwrap();
         assert!(valid_group_allocation(&assets, 3, &out));
+    }
+    /// Cases: land:21.36
+    #[test]
+    fn identical_vehicle_cohorts_have_one_proportion_and_owner_selects_exact_history() {
+        let a = Asset {
+            unit: "a".into(),
+            equipment: Equipment::LightTruck,
+            points: 2,
+            cohort: Some("old".into()),
+        };
+        let b = Asset {
+            points: 100,
+            cohort: Some("new".into()),
+            ..a.clone()
+        };
+        assert!(valid_group_allocation(
+            &[a.clone(), b.clone()],
+            50,
+            &[2, 48]
+        ));
+        assert!(valid_group_allocation(
+            &[a.clone(), b.clone()],
+            50,
+            &[0, 50]
+        ));
+        assert!(!valid_group_allocation(
+            &[a.clone(), b.clone()],
+            50,
+            &[3, 47]
+        ));
+        assert_eq!(balanced_allocation(&[a, b], 50), Some(vec![2, 48]));
     }
 }
