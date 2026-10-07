@@ -20,10 +20,11 @@ next `acquire`; a holder whose checks run long calls `refresh`. Hold it only for
 and push, never while editing.
 
 Waiters queue fairly. `acquire` first places a ticket, `refs/heads/landing-queue/<UTC time>-<name>`,
-and only the oldest ticket may take a free lock. Re-running `acquire` keeps your ticket, so a
-wait that times out or is killed does not lose your place. A ticket whose owner does not take a
-free lock within GRACE_SECONDS is dropped by the next waiter, so a dead waiter never blocks the
-queue.
+and only the oldest ticket may take a free lock. Neither a `--wait` timeout nor a killed process
+gives the ticket up, and re-running `acquire` resumes with it, so you never lose your place by
+waiting in several bounded runs; `leave` gives it up. A ticket whose owner does not take a free
+lock within GRACE_SECONDS is dropped by the next waiter, so an absent waiter never blocks the
+queue for long.
 """
 
 from __future__ import annotations
@@ -173,8 +174,12 @@ def acquire(who: str, wait: int) -> int:
             print(f"position {position} of {len(queue)} in the queue; lock {held}; waiting")
             announced = state
         if time.monotonic() > deadline:
-            drop_tickets(who, queue)
-            print("gave up waiting and left the queue; nothing was pushed", file=sys.stderr)
+            # Keep the ticket: re-running acquire resumes at this place (`leave` gives it up).
+            print(
+                f"stopped waiting at position {position}; still queued, run acquire again to "
+                "resume (or leave to give up); nothing was pushed",
+                file=sys.stderr,
+            )
             return 1
         time.sleep(POLL_SECONDS)
 
