@@ -1232,21 +1232,27 @@ impl PlanningGroup<'_> {
 }
 struct PlanningNode {
     units: Vec<crate::state::LandUnit>,
-    unit_supply: BTreeMap<UnitId, crate::state::UnitSupply>,
-    dumps: BTreeMap<String, crate::state::Dump>,
+    unit_supply: Vec<(UnitId, Option<crate::state::UnitSupply>)>,
+    dumps: Vec<(String, crate::state::Dump)>,
     fuel_segments: Vec<(UnitId, Option<logistics::FuelSegmentLedger>)>,
     rations: Vec<(UnitId, Option<logistics::Rations>)>,
     movement: MovementState,
 }
 impl PlanningNode {
-    fn capture(state: &State, changed: &[UnitId]) -> Self {
+    fn capture(state: &State, changed: &[UnitId], stocks: &[UnitId], dumps: &[String]) -> Self {
         Self {
             units: changed
                 .iter()
                 .filter_map(|id| state.land.units.get(id).cloned())
                 .collect(),
-            unit_supply: state.logistics.unit_supply.clone(),
-            dumps: state.logistics.dumps.clone(),
+            unit_supply: stocks
+                .iter()
+                .map(|id| (id.clone(), state.logistics.unit_supply.get(id).cloned()))
+                .collect(),
+            dumps: dumps
+                .iter()
+                .map(|id| (id.clone(), state.logistics.dumps[id].clone()))
+                .collect(),
             fuel_segments: changed
                 .iter()
                 .map(|id| (id.clone(), state.logistics.fuel_segments.get(id).cloned()))
@@ -1262,8 +1268,22 @@ impl PlanningNode {
         for unit in &self.units {
             state.land.units.insert(unit.id.clone(), unit.clone());
         }
-        state.logistics.unit_supply.clone_from(&self.unit_supply);
-        state.logistics.dumps.clone_from(&self.dumps);
+        for (id, stock) in &self.unit_supply {
+            match stock {
+                Some(stock) => {
+                    state
+                        .logistics
+                        .unit_supply
+                        .insert(id.clone(), stock.clone());
+                }
+                None => {
+                    state.logistics.unit_supply.remove(id);
+                }
+            }
+        }
+        for (id, dump) in &self.dumps {
+            state.logistics.dumps.insert(id.clone(), dump.clone());
+        }
         for (id, ledger) in &self.fuel_segments {
             match ledger {
                 Some(ledger) => {
@@ -1417,7 +1437,57 @@ fn reachable_inner(
             .filter_map(|u| u.location.hex().cloned())
             .collect(),
     };
-    let mut frontier = BTreeMap::from([(origin.clone(), PlanningNode::capture(&draft, &changed))]);
+    // Fuel can debit the current members' tanks and friendly stocks at each captured
+    // segment origin. Activity water changes members and a stationary detached parent.
+    // These source identities are query-local; no other holding can change in this search.
+    let origins: BTreeSet<_> = members
+        .iter()
+        .map(|m| {
+            state
+                .logistics
+                .fuel_segments
+                .get(m)
+                .filter(|l| {
+                    l.segment.game_turn == state.cursor.game_turn
+                        && l.segment.op_stage == state.cursor.op_stage
+                        && l.segment.half == state.cursor.half
+                        && l.segment.cycle == state.cursor.cycle
+                })
+                .map_or_else(|| origin.clone(), |l| l.origin.clone())
+        })
+        .collect();
+    let mut stocks: BTreeSet<_> = changed.iter().cloned().collect();
+    stocks.extend(
+        state
+            .units_of(seat.side)
+            .filter(|u| u.location.hex().is_some_and(|h| origins.contains(h)))
+            .map(|u| u.id.clone()),
+    );
+    let mut dumps:BTreeSet<_>=state.logistics.dumps.iter().filter(|(_,d)|d.side==seat.side&&matches!(&d.location,crate::state::DumpLocation::Hex{hex} if origins.contains(hex))).map(|(id,_)|id.clone()).collect();
+    for id in &members {
+        if let Some(l) = state.logistics.fuel_segments.get(id) {
+            for draw in &l.draws {
+                match &draw.source {
+                    logistics::SupplySource::UnitStock(id) => {
+                        stocks.insert(id.clone());
+                    }
+                    logistics::SupplySource::Dump(id) => {
+                        dumps.insert(id.clone());
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    let stocks = stocks.into_iter().collect::<Vec<_>>();
+    let dumps = dumps
+        .into_iter()
+        .filter(|id| state.logistics.dumps.contains_key(id))
+        .collect::<Vec<_>>();
+    let mut frontier = BTreeMap::from([(
+        origin.clone(),
+        PlanningNode::capture(&draft, &changed, &stocks, &dumps),
+    )]);
     while let Some((cost, hex)) = queue.pop_first() {
         if hex != origin && best.get(&hex).is_none_or(|r| r.cp_quarters != cost) {
             continue;
@@ -1512,7 +1582,10 @@ fn reachable_inner(
                         draft.land.movement.moved.remove(&member);
                     }
                     queue.insert((r.cp_quarters, to.id.clone()));
-                    frontier.insert(to.id.clone(), PlanningNode::capture(&draft, &changed));
+                    frontier.insert(
+                        to.id.clone(),
+                        PlanningNode::capture(&draft, &changed, &stocks, &dumps),
+                    );
                     best.insert(to.id.clone(), r);
                 }
             }
