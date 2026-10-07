@@ -13,3 +13,6 @@ pub mod state;
 pub mod designation;
 /// Trusted finish-only combat calculation; no live phase dispatch yet.
 pub mod combat;
+
+/// Trusted target-group calculation; no live flak decision window yet.
+pub mod flak;
