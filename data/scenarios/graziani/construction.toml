@@ -11,9 +11,14 @@ railroad = { terminus = { kind = "hex", hex = "D3714", name = "Mersa Matruh" }, 
 ports = "All ports start at their listed efficiency, except Tobruk."
 src = ["scen:60.7"]
 
+[port_policy]
+default = "listed_max"
+src = ["scen:60.7"]
+
 [[port_override]]
 port = "tobruk"
 hex = "C4807"
 efficiency_level = 7
+condition = "san_giorgio_present"
 note = "The San Giorgio is partially sunk, blocking the harbor."
 src = ["scen:60.7"]

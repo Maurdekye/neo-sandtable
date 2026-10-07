@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 pub struct ScenarioConstruction {
     pub file: Option<FileHeader>,
     pub construction: Option<InitialConstruction>,
+    pub port_policy: Option<PortStartingPolicy>,
     #[serde(default, rename = "port_override")]
     pub port_overrides: Vec<PortOverride>,
     #[serde(skip)]
@@ -68,8 +69,46 @@ pub struct PortOverride {
     pub port: String,
     pub hex: HexId,
     pub efficiency_level: i32,
+    pub condition: Option<PortStartingCondition>,
     pub note: Option<String>,
     pub src: Vec<String>,
+}
+
+/// Authored scenario policy. Missing policy/default remains unknown; future tags
+/// retain their source value for procedure diagnostics rather than a numeric default.
+/// Cases: scen:60.7, scen:60.23
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PortStartingPolicy {
+    pub default: Option<PortDefaultPolicy>,
+    pub src: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum PortDefaultPolicy {
+    Known(KnownPortDefault),
+    Unsupported(String),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KnownPortDefault {
+    ListedMax,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum PortStartingCondition {
+    Known(KnownPortCondition),
+    Unsupported(String),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KnownPortCondition {
+    ExactEfficiency,
+    SanGiorgioPresent,
 }
 
 impl ScenarioConstruction {
@@ -105,8 +144,21 @@ impl ScenarioConstruction {
         if self.file.as_ref().is_some_and(|header| !cited(&header.src)) {
             return Err(self.invalid("construction file needs citations"));
         }
-        if (self.construction.is_some() || !self.port_overrides.is_empty()) && self.file.is_none() {
+        if (self.construction.is_some()
+            || self.port_policy.is_some()
+            || !self.port_overrides.is_empty())
+            && self.file.is_none()
+        {
             return Err(self.invalid("construction records need a cited file header"));
+        }
+        if let Some(policy) = &self.port_policy {
+            if !cited(&policy.src) {
+                return Err(self.invalid("port starting policy needs citations"));
+            }
+            if matches!(&policy.default, Some(PortDefaultPolicy::Unsupported(tag)) if tag.trim().is_empty())
+            {
+                return Err(self.invalid("port starting default must be a nonblank policy tag"));
+            }
         }
         if let Some(initial) = &self.construction {
             if !cited(&initial.src) {
@@ -125,6 +177,7 @@ impl ScenarioConstruction {
                 || entry.hex.as_str().trim().is_empty()
                 || entry.efficiency_level < 0
                 || !cited(&entry.src)
+                || matches!(&entry.condition, Some(PortStartingCondition::Unsupported(tag)) if tag.trim().is_empty())
             {
                 return Err(self.invalid(
                     "port override needs identity, hex, citations and nonnegative efficiency",
@@ -187,6 +240,13 @@ mod tests {
             )
         });
         assert_eq!(graziani.construction, italian.construction);
+        assert_eq!(
+            graziani.construction.port_policy,
+            Some(PortStartingPolicy {
+                default: Some(PortDefaultPolicy::Known(KnownPortDefault::ListedMax)),
+                src: vec!["scen:60.7".into()],
+            })
+        );
         let initial = graziani.construction.construction.as_ref().unwrap();
         assert_eq!(initial.minefields, Some(NoInitialWorks::Absent));
         assert_eq!(initial.fortifications, Some(NoInitialWorks::Absent));
@@ -196,6 +256,13 @@ mod tests {
             "D3714"
         );
         let port = &graziani.construction.port_overrides[0];
+        assert_eq!(graziani.construction.port_overrides.len(), 1);
+        assert_eq!(
+            port.condition,
+            Some(PortStartingCondition::Known(
+                KnownPortCondition::SanGiorgioPresent
+            ))
+        );
         assert_eq!(
             (port.port.as_str(), port.hex.as_str(), port.efficiency_level),
             ("tobruk", "C4807", 7)
@@ -213,6 +280,7 @@ mod tests {
         absent.validate().unwrap();
         assert!(absent.file.is_none());
         assert!(absent.construction.is_none());
+        assert!(absent.port_policy.is_none());
         let partial: ScenarioConstruction =
             toml::from_str("[file]\nsrc=['scen:60.7']\n[construction]\nsrc=['scen:60.7']").unwrap();
         partial.validate().unwrap();
@@ -221,6 +289,96 @@ mod tests {
         assert!(initial.fortifications.is_none());
         assert!(initial.pipeline.is_none());
         assert!(initial.railroad.is_none());
+    }
+
+    /// Cases: scen:60.7, scen:60.23
+    #[test]
+    fn legacy_annotations_and_omitted_policy_fields_supply_no_default() {
+        let source = "[file]\nsrc=['scen:60.7']\n[construction]\nports='source annotation only'\nsrc=['scen:60.7']\n[[port_override]]\nport='tobruk'\nhex='C4807'\nefficiency_level=7\nsrc=['scen:60.7']";
+        let setup: ScenarioConstruction = toml::from_str(source).unwrap();
+        setup.validate().unwrap();
+        assert!(setup.port_policy.is_none());
+        assert!(setup.port_overrides[0].condition.is_none());
+        let mut setup: ScenarioConstruction =
+            toml::from_str("[file]\nsrc=['scen:60.7']\n[port_policy]\nsrc=['scen:60.7']").unwrap();
+        setup.validate().unwrap();
+        assert!(setup.port_policy.as_ref().unwrap().default.is_none());
+        setup.file = None;
+        assert!(
+            setup.validate().is_err(),
+            "policy alone still needs a header"
+        );
+    }
+
+    /// Cases: scen:60.7
+    #[test]
+    fn cited_future_tags_load_without_masking_later_malformed_records() {
+        let fixture = Fixture::new("");
+        let path = fixture.dir().join("construction.toml");
+        let source = "[file]\nsrc=['scen:60.7']\n[port_policy]\ndefault='future_verified_policy'\nsrc=['scen:60.7']\n[[port_override]]\nport='tobruk'\nhex='C4807'\nefficiency_level=7\ncondition='future_verified_condition'\nsrc=['scen:60.7']";
+        std::fs::write(&path, source).unwrap();
+        let (setup, reads) = crate::record_reads(|| ScenarioConstruction::load(&path));
+        let setup = setup.unwrap();
+        assert_eq!(setup.source_path(), Some(path.as_path()));
+        assert_eq!(reads, vec![crate::normalize(&path)]);
+        assert_eq!(
+            setup.port_policy.unwrap().default,
+            Some(PortDefaultPolicy::Unsupported(
+                "future_verified_policy".into()
+            ))
+        );
+        assert_eq!(
+            setup.port_overrides[0].condition,
+            Some(PortStartingCondition::Unsupported(
+                "future_verified_condition".into()
+            ))
+        );
+        std::fs::write(
+            &path,
+            format!("{source}\n[[port_override]]\nport='bad'\nhex='C4218'\nefficiency_level=-1\nsrc=['scen:60.7']"),
+        )
+        .unwrap();
+        assert!(matches!(
+            ScenarioConstruction::load(&path),
+            Err(ContentError::Invalid { path: actual, .. }) if actual == path
+        ));
+    }
+
+    /// Cases: scen:60.7
+    #[test]
+    fn malformed_policy_shapes_blank_tags_and_missing_citations_are_rejected() {
+        for default in ["12", "[]", "{kind='listed_max'}"] {
+            assert!(
+                toml::from_str::<ScenarioConstruction>(&format!(
+                    "[file]\nsrc=['scen:60.7']\n[port_policy]\ndefault={default}\nsrc=['scen:60.7']"
+                ))
+                .is_err()
+            );
+        }
+        for mutation in 0..5 {
+            let mut setup = graziani();
+            match mutation {
+                0 => setup.port_policy.as_mut().unwrap().src.clear(),
+                1 => setup.port_policy.as_mut().unwrap().src = vec![" ".into()],
+                2 => {
+                    setup.port_policy.as_mut().unwrap().default =
+                        Some(PortDefaultPolicy::Unsupported(" ".into()));
+                }
+                3 => {
+                    setup.port_overrides[0].condition =
+                        Some(PortStartingCondition::Unsupported(" ".into()));
+                }
+                4 => setup.file = None,
+                _ => unreachable!(),
+            }
+            let error = setup.validate().unwrap_err();
+            assert!(error.to_string().contains("graziani"));
+        }
+        let mut setup = graziani();
+        setup.port_overrides[0].condition = Some(PortStartingCondition::Known(
+            KnownPortCondition::ExactEfficiency,
+        ));
+        setup.validate().unwrap();
     }
 
     /// Cases: scen:60.7
