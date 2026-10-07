@@ -1654,3 +1654,175 @@ fn reaction_eligibility_excludes_engaged_pinned_and_unmotorized_defenders() {
             .contains(&LEG.into())
     );
 }
+
+/// Cases: land:10.6, land:3.62, airlog:50.12
+#[test]
+fn hidden_strength_and_ammunition_never_change_movement_answer_acceptance() {
+    let (c, mut s, _o) = setup(LEG, Some("road"), false, None);
+    let enemy2 = "it.libyan_tank_command.lxii_l_tank_bn";
+    for id in [TANK, enemy2] {
+        place(&mut s, id, "C4023");
+    }
+    let g = start(&c, s, true);
+    let own = seat(&g);
+    let inspect = Cna::full()
+        .inspect(&c, &g.state, Perspective::Seat(own), LEG)
+        .unwrap();
+    let action = json!([{"unit":LEG,"path":["C4021","C4022","C4021"]}]);
+    for (strength, ammo) in [(0, 0), (0, 10000), (8, 0), (8, 10000)] {
+        let mut changed = g.clone();
+        for id in [TANK, enemy2] {
+            changed.state.land.units.get_mut(&id.into()).unwrap().toe =
+                Some(cna_content::units::Toe::Under { under: strength });
+            changed
+                .state
+                .logistics
+                .unit_supply
+                .get_mut(&id.into())
+                .unwrap()
+                .ready_ammo = cna_core::quantity::AmmoPoints::new(ammo);
+        }
+        assert_eq!(
+            inspect,
+            Cna::full()
+                .inspect(&c, &changed.state, Perspective::Seat(own), LEG)
+                .unwrap()
+        );
+        let t = respond(&c, &changed, own, action.clone(), true).unwrap();
+        assert!(t.events.iter().any(|e|matches!(&e.event,GameEvent::DecisionResolved{summary,..} if summary=="Accepted 1 planned movement orders.")));
+    }
+}
+/// Cases: land:10.21, land:10.6, land:3.62
+#[test]
+fn hidden_qualifying_control_gap_accepts_the_answer_then_stops_adjudication() {
+    let (mut c, mut s, o) = setup(LEG, Some("road"), false, None);
+    for id in [TANK, "it.libyan_tank_command.lxii_l_tank_bn"] {
+        place(&mut s, id, "C4023");
+    }
+    let path = o.dir.join("coverage.csv");
+    let rows = std::fs::read_to_string(&path).unwrap();
+    std::fs::write(
+        &path,
+        rows.lines()
+            .filter(|line| !line.starts_with("side:") || !line.contains("C4022,C4023"))
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n",
+    )
+    .unwrap();
+    c.map = MapContent::load(&o.dir).unwrap();
+    let g = start(&c, s, true);
+    let own = seat(&g);
+    let mut weak = g.clone();
+    for id in [TANK, "it.libyan_tank_command.lxii_l_tank_bn"] {
+        weak.state.land.units.get_mut(&id.into()).unwrap().toe =
+            Some(cna_content::units::Toe::Under { under: 0 });
+    }
+    let action = json!([{"unit":LEG,"path":["C4021","C4022"]}]);
+    assert_eq!(
+        Cna::full()
+            .inspect(&c, &g.state, Perspective::Seat(own), LEG)
+            .unwrap(),
+        Cna::full()
+            .inspect(&c, &weak.state, Perspective::Seat(own), LEG)
+            .unwrap()
+    );
+    assert!(respond(&c, &weak, own, action.clone(), true).is_ok());
+    let t = respond(&c, &g, own, action, true).unwrap();
+    assert!(t.game.state.decisions.pending.is_empty());
+    assert!(
+        matches!(t.game.state.land.reaction.adjudication_stop,Some(EngineError::Unsupported{ref case,..}) if case=="land:10.21")
+    );
+    assert!(
+        matches!(evaluate(&Cna::full(),&c,&t.game,&Command::Advance),Err(Rejection::Engine(EngineError::Unsupported{case,..})) if case=="land:10.21")
+    );
+}
+
+/// Cases: land:8.55, land:10.21, land:10.6, airlog:50.12
+#[test]
+fn reaction_validation_is_equivalent_for_hidden_ammo_strength_and_edge_gap() {
+    let (mut c, g, o, defender) = reaction_fixture();
+    let mut initial = g.state.clone();
+    let blockers = [
+        "it.libyan_tank_command.lxii_l_tank_bn",
+        "it.libyan_tank_command.lxiii_l_tank_bn",
+    ];
+    for id in blockers {
+        place(&mut initial, id, "C4024");
+    }
+    let initial = Game {
+        state: initial,
+        rng: g.rng.clone(),
+    };
+    let t = respond(
+        &c,
+        &initial,
+        seat(&initial),
+        json!([{"unit":TANK,"path":["C4021"]}]),
+        true,
+    )
+    .unwrap();
+    let own = seat(&t.game);
+    let original = Cna::full()
+        .inspect(&c, &t.game.state, Perspective::Seat(own), defender.as_str())
+        .unwrap();
+    for (strength, ammo) in [(0, 0), (0, 10000), (8, 0), (8, 10000)] {
+        let mut changed = t.game.clone();
+        for id in blockers {
+            changed.state.land.units.get_mut(&id.into()).unwrap().toe =
+                Some(cna_content::units::Toe::Under { under: strength });
+            changed
+                .state
+                .logistics
+                .unit_supply
+                .get_mut(&id.into())
+                .unwrap()
+                .ready_ammo = cna_core::quantity::AmmoPoints::new(ammo);
+        }
+        assert_eq!(
+            original,
+            Cna::full()
+                .inspect(
+                    &c,
+                    &changed.state,
+                    Perspective::Seat(own),
+                    defender.as_str()
+                )
+                .unwrap()
+        );
+        assert!(
+            respond(
+                &c,
+                &changed,
+                own,
+                json!([{"unit":defender,"path":["C4023"]}]),
+                true
+            )
+            .is_ok()
+        );
+    }
+    let path = o.dir.join("coverage.csv");
+    let rows = std::fs::read_to_string(&path).unwrap();
+    std::fs::write(
+        &path,
+        rows.lines()
+            .filter(|line| !line.starts_with("side:") || !line.contains("C4023,C4024"))
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n",
+    )
+    .unwrap();
+    c.map = MapContent::load(&o.dir).unwrap();
+    let accepted = respond(
+        &c,
+        &t.game,
+        own,
+        json!([{"unit":defender,"path":["C4023"]}]),
+        true,
+    )
+    .unwrap();
+    assert!(accepted.game.state.decisions.pending.is_empty());
+    assert!(
+        matches!(evaluate(&Cna::full(),&c,&accepted.game,&Command::Advance),Err(Rejection::Engine(EngineError::Unsupported{case,..})) if case=="land:10.21")
+    );
+}

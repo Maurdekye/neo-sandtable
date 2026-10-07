@@ -390,3 +390,14 @@ pub fn answer_continuation(
     }
     Ok("Interrupted movement choice complete.".into())
 }
+
+/// Raise a truth-only failure after the answer has been accepted and its windows parked.
+/// Cases: land:10.21, land:10.6, land:9.31
+pub(crate) fn finish_adjudication(state: &State) -> Result<(), EngineError> {
+    state
+        .land
+        .reaction
+        .adjudication_stop
+        .clone()
+        .map_or(Ok(()), Err)
+}

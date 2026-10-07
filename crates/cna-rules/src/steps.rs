@@ -35,10 +35,16 @@ impl Cna {
     pub(crate) fn finish_step(
         &self,
         _content: &CnaContent,
-        _state: &mut State,
+        state: &mut State,
         _cx: &mut Cx<'_>,
     ) -> Result<(), EngineError> {
-        Ok(())
+        match state.cursor.anchor() {
+            "opstage.movement_and_combat.movement"
+            | "opstage.movement_and_combat.combat.retreat_before_assault" => {
+                crate::land::reaction::finish_adjudication(state)
+            }
+            _ => Ok(()),
+        }
     }
 
     pub(crate) fn enter_step(
