@@ -406,6 +406,91 @@ fn limited_intelligence_shows_enemy_counter_faces_only() {
     assert!(shown.contains(&parent.to_string()) && !shown.contains(&child.to_string()));
 }
 
+/// A counter that leaves the other side's view (here by attaching to a parent in its hex) is
+/// announced to it by a reasonless removal; a reasonless removal a procedure emits is dropped and
+/// re-derived like any state-sync event, while one with a reason stays.
+/// Cases: land:3.62, land:19.12
+#[test]
+fn derived_removals_carry_no_reason() {
+    let content = content();
+    let before = State::new(content).unwrap();
+    let mut after = before.clone();
+    let (child, parent) = {
+        let mut by_hex = std::collections::BTreeMap::<String, Vec<&crate::state::LandUnit>>::new();
+        for u in before.units_of(Side::Commonwealth) {
+            if let Some(hex) = u.location.hex() {
+                by_hex.entry(hex.to_string()).or_default().push(u);
+            }
+        }
+        by_hex
+            .values()
+            .find_map(|units| {
+                let counters: Vec<_> = units
+                    .iter()
+                    .filter(|u| view::is_map_counter(content, &before, u))
+                    .collect();
+                (counters.len() >= 2).then(|| (counters[0].id.clone(), counters[1].id.clone()))
+            })
+            .expect("a Commonwealth hex with two counters")
+    };
+    let unit = after.land.units.get_mut(&child).unwrap();
+    unit.attached_to = Some(parent);
+    unit.detached = false;
+    let mut events = vec![];
+    let mut rng = CampaignRng::from_seed([1; 32]);
+    let mut cx = cna_core::engine::Cx {
+        rng: &mut rng,
+        events: &mut events,
+    };
+    let mut sync = view::Sync::new(&before, &cx);
+    cx.events.extend([
+        EngineEvent::new(
+            Audience::SideOnly(Side::Axis),
+            GameEvent::UnitRemoved {
+                unit_id: "cw.anything".into(),
+                reason: String::new(),
+            },
+        ),
+        EngineEvent::new(
+            Audience::Side(Side::Commonwealth),
+            GameEvent::UnitRemoved {
+                unit_id: "cw.eliminated".into(),
+                reason: "eliminated".into(),
+            },
+        ),
+    ]);
+    sync.point(content, &after, &mut cx);
+    let removals: Vec<_> = events
+        .iter()
+        .filter_map(|e| match &e.event {
+            GameEvent::UnitRemoved { unit_id, reason } => {
+                Some((e.audience.clone(), unit_id.clone(), reason.clone()))
+            }
+            _ => None,
+        })
+        .collect();
+    assert!(
+        removals.contains(&(
+            Audience::Side(Side::Commonwealth),
+            "cw.eliminated".into(),
+            "eliminated".into()
+        )),
+        "a reasoned removal is semantic and stays: {removals:?}"
+    );
+    assert!(
+        !removals.iter().any(|(_, id, _)| id == "cw.anything"),
+        "a procedure's reasonless removal is re-derived, not kept: {removals:?}"
+    );
+    assert!(
+        removals.contains(&(
+            Audience::SideOnly(Side::Axis),
+            child.to_string(),
+            String::new()
+        )),
+        "the other side sees the counter leave, without a reason: {removals:?}"
+    );
+}
+
 #[test]
 fn rejects_a_wrong_seat_and_a_stale_revision_without_change() {
     let content = content();

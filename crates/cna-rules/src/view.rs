@@ -259,14 +259,16 @@ fn stamp_moved(state: &State, id: &UnitId, view: &mut wire::UnitView) {
 /// centrally by [`Sync`]; procedures may emit them, but the central pass replaces
 /// them.
 fn is_state_sync(event: &wire::GameEvent) -> bool {
-    matches!(
-        event,
+    match event {
         wire::GameEvent::UnitUpdated { .. }
-            | wire::GameEvent::StackUpdated { .. }
-            | wire::GameEvent::StackRemoved { .. }
-            | wire::GameEvent::MarkerPlaced { .. }
-            | wire::GameEvent::MarkerRemoved { .. }
-    )
+        | wire::GameEvent::StackUpdated { .. }
+        | wire::GameEvent::StackRemoved { .. }
+        | wire::GameEvent::MarkerPlaced { .. }
+        | wire::GameEvent::MarkerRemoved { .. } => true,
+        // A removal without a reason only re-states the view; one with a reason is semantic.
+        wire::GameEvent::UnitRemoved { reason, .. } => reason.is_empty(),
+        _ => false,
+    }
 }
 
 /// The board perspectives: each side's and the operator's. A seat sees its side's board.
@@ -626,10 +628,11 @@ fn diff(
             perspective.can_see(&e.audience)
                 && matches!(&e.event, wire::GameEvent::UnitRemoved { unit_id, .. } if unit_id == id)
         });
+        // Reasonless: why a unit left a view is the procedure's to say, to whom it may.
         if after.unit_for(perspective, id).is_none() && !explained {
             derived.push(wire::GameEvent::UnitRemoved {
                 unit_id: id.clone(),
-                reason: "no longer in view".to_owned(),
+                reason: String::new(),
             });
         }
     }
