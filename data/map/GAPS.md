@@ -277,3 +277,44 @@ Every corridor physical pair now has some observation, but the following thirtee
 - C4322/C4421: `line:pipeline`, `line:railroad`, `line:road`, `line:unfinished_railroad`, `line:unfinished_road`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
 - C4420/C4421: `line:pipeline`, `line:road`, `line:unfinished_railroad`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
 - C4420/C4521: `line:pipeline`, `line:railroad`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
+
+### Approved Italian Campaign allocation and phase 2, 2026-10-07
+
+Neo-sandtable approved the 5,379-cell priority digitization extent for
+`scen:60.23`, with exact scratch membership SHA256
+`96f658ff42f229161b594501c9057e93ccaf828febc372a26346724fc12fc91b`.
+It contains 15,638 internal and 312 crossing edges, including 13,373 wholly
+unobserved pairs at `62ca87a`. This approval allocates map work; it does not
+change legal scenario boundaries or certify scenario support.
+
+Phase 2 explicitly retains the full 7,023-cell published grid, all free D/E
+placement choices, and country, facility and off-map resolution. Arbitrary
+placement outside the priority set must remain unreviewed and fail closed;
+the priority allocation must never silently restrict a legal setup choice.
+The full-grid envelope has 20,605 internal edges and no crossing edges.
+
+The Graziani terrain and historic pilot-kind gaps finish first. New Italian
+terrain work precedes edges in each area, starting with Tobruk/Bardia,
+then Derna/Mechili, Msus/Beda Fomm and Benghazi, Agadabia/El Agheila,
+and finally oasis and Egyptian support areas. Only one checked cycle runs
+at a time. No new Italian source classifications are claimed here.
+
+### Pipeline state and provisional lake contact, 2026-10-07
+
+The lead ruled that pipelines are scenario, construction and operating state,
+not a static map survey requirement. Existing `line:pipeline` records remain
+immutable historical evidence. They must carry no required-survey or play
+blocking weight in the future compatible map/consumer contract. Relevant
+state evidence is `scen:60.2`, `airlog:52.22`, `airlog:52.24`,
+`airlog:52.25` and `airlog:40.67`; printed transport alone establishes none
+of that state. Current implementation changes remain a separate atomic task.
+
+Provisional `map-0004` proposes lake contact only where printed inland water
+covers the shared-side midpoint and a majority of its length. Minor or
+endpoint-only contact does not qualify. Ambiguous or unreadable sides remain
+Unknown; existing marine and river observations supply no lake absence.
+The initial source-only sample has eight potential inland-water contact
+sides and four controls, with no published lake masks. The full corridor
+candidate count remains unmeasured until the paced candidate inventory.
+The rule's water subtype remains unsourced unless printed, and Land's
+compatible consumer belongs to a later atomic slot.
