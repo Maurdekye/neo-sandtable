@@ -241,3 +241,8 @@ The union has some evidence on 1,164 corridor pairs and leaves 1,377 wholly unob
 The three new immutable inputs retain 401 unresolved observations with no masks: pipeline on all 300 pairs, 31 slope and 31 ridge decisions, 22 escarpment junction or direction decisions, twelve rail-kind identities and five track endpoints. Partial contour incidence, mixed gray/ochre junctions, source high-side uncertainty and exact route crossings remain explicit in their own records. D3410/D3411 slope and D2019/D2119 partial gray-side uncertainty are retained rather than inferred from neighboring classes.
 
 The union leaves 1,077 corridor pairs wholly unobserved. All 33 terrain gaps and four unknown coastal domains remain unchanged. Marine and contour facts do not resolve lake identity, endpoint substrate, city extent, full control halos or action legality. Historical thirteen-kind completeness does not certify the unsurveyed lake layer.
+
+
+### Fifth assembled edge-cycle abstentions, 2026-10-07
+
+The three immutable inputs retain 431 unresolved observations without masks: pipeline on all 300 pairs, 42 slope and 42 ridge decisions, 22 escarpment identity or direction decisions, 24 rail-kind identities and one track endpoint. Partial contour incidence and high-side ambiguity remain in the raw records. No lake absence is inferred from the current fourteen-kind survey. The 33 corridor terrain gaps, including four cells with unknown coastal domain, remain unchanged; source-reviewed edges do not classify those cells or certify a route, control halo or action.
