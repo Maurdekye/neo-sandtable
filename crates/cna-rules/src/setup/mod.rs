@@ -5,7 +5,7 @@ pub mod placement;
 mod pools;
 mod preload;
 mod stacking;
-pub(crate) use decisions::{KIND_DUMP, KIND_TRUCKS, KIND_UNIT, answer, enter};
+pub(crate) use decisions::{KIND_DUMP, KIND_TRUCKS, KIND_UNIT, answer, enter, finish};
 
 use crate::state::Location;
 use cna_core::ids::{DecisionId, UnitId};
@@ -19,6 +19,10 @@ pub struct SetupState {
     pub closed: bool,
     pub tasks: BTreeMap<DecisionId, SetupTask>,
     pub unit_locations: BTreeMap<UnitId, Location>,
+    #[serde(default)]
+    pub placement_serial: u64,
+    #[serde(default)]
+    pub placement_order: BTreeMap<UnitId, u64>,
     pub dump_locations: BTreeMap<String, Location>,
     #[serde(default)]
     pub pools_started: bool,
