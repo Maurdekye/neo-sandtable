@@ -41,9 +41,12 @@ impl Cna {
             "opstage.organization.water_distribution" => {
                 crate::logistics::batches::finish_water(content, state, cx, self.strict)
             }
-            "opstage.movement_and_combat.movement"
-            | "opstage.movement_and_combat.combat.retreat_before_assault" => {
+            "opstage.movement_and_combat.movement" => {
                 crate::land::reaction::finish_adjudication(state)
+            }
+            crate::land::combat::retreat::ANCHOR => {
+                crate::land::reaction::finish_adjudication(state)?;
+                crate::land::combat::retreat::finish(content, state, cx, self.strict)
             }
             "opstage.movement_and_combat.combat.barrage" => {
                 crate::land::combat::barrage::finish(content, state, cx, self.strict)
@@ -84,6 +87,9 @@ impl Cna {
             "opstage.convoy_arrival" => crate::logistics::convoys::arrive(content, state, cx),
             "opstage.movement_and_combat.combat.barrage" => {
                 crate::land::combat::barrage::enter(content, state, cx, self.strict)
+            }
+            crate::land::combat::retreat::ANCHOR => {
+                crate::land::combat::retreat::enter(content, state, cx, self.strict)
             }
             "opstage.movement_and_combat.combat.position" => {
                 crate::land::combat::enter_positions(content, state, cx)
@@ -143,6 +149,9 @@ impl Cna {
             }
             crate::land::combat::barrage::LOSSES => {
                 crate::land::combat::barrage::losses(content, state, pending, action, cx)
+            }
+            crate::land::combat::retreat::KIND => {
+                crate::land::combat::retreat::answer(content, state, pending, action, cx)
             }
             crate::land::combat::POSITION_KIND => {
                 crate::land::combat::answer_positions(content, state, pending, action, cx)

@@ -85,3 +85,5 @@ pub fn random_orders(
 pub use crate::land::combat::random_positions;
 
 pub use crate::land::combat::barrage::random_plans as random_barrages;
+
+pub use crate::land::combat::retreat::random_orders as random_retreats;

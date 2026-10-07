@@ -1181,6 +1181,43 @@ pub fn nonphasing_reachable(
 ) -> Vec<Reachable> {
     reachable_inner(c, &nonphasing_draft(s, kind), id, strict)
 }
+/// Pure own-information validation; neither the input state nor adjudication dice changes.
+/// Cases: land:13.21, land:13.22, land:13.26
+pub fn validate_nonphasing(
+    c: &CnaContent,
+    s: &State,
+    o: &Order,
+    seat: SeatId,
+    strict: bool,
+    kind: NonPhasingMove,
+) -> Result<Reachable, Rejection> {
+    preview_nonphasing(c, s, o, seat, strict, kind).map(|(_, cost)| cost)
+}
+/// Retain an own-known simulation for ordered plan validation, never an authoritative transition.
+/// Cases: land:13.21, land:13.22, land:13.26
+pub(crate) fn preview_nonphasing(
+    c: &CnaContent,
+    s: &State,
+    o: &Order,
+    seat: SeatId,
+    strict: bool,
+    kind: NonPhasingMove,
+) -> Result<(State, Reachable), Rejection> {
+    let mut draft = nonphasing_draft(s, kind);
+    let cost = run(
+        c,
+        &mut draft,
+        o,
+        seat,
+        strict,
+        false,
+        true,
+        &mut vec![],
+        None,
+    )?;
+    Ok((draft, cost))
+}
+
 /// Execute a prevalidated nonphasing complete path, preserving the ordinary movement window.
 /// Hidden control stops the accepted move and a hidden technical gap stops adjudication.
 /// Cases: land:8.55, land:8.56, land:13.21, land:13.22, land:13.26

@@ -455,6 +455,8 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
         "combat": {
             "barrage_targets": crate::land::combat::barrage::disclosed(state,perspective),
             "barrage_plans": state.land.combat.barrage.plans.iter().filter(|(seat,_)|sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),
+            "retreat_plans": state.land.combat.retreat.plans.iter().filter(|(seat,_)|sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),
+            "retreated": state.land.combat.retreat.retreated.iter().filter(|id|state.land.units.get(*id).is_some_and(|u|sees_side(perspective,u.side))).collect::<Vec<_>>(),
             "pinned": state.land.combat.pinned.iter().filter(|id|state.land.units.get(*id).is_some_and(|u|sees_side(perspective,u.side))).collect::<Vec<_>>(),
             "positions": state.land.combat.positions.iter().filter(|(id,_)| state.land.units.get(*id).is_some_and(|u| sees_side(perspective,u.side))).collect::<BTreeMap<_,_>>(),
             "position_orders": state.land.combat.position_orders.iter().filter(|(seat,_)| sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),
@@ -481,7 +483,10 @@ pub(crate) fn inspect(
         let view = unit_view(content, unit);
         return Ok(json!({
             "unit": view,
-            "reachable": crate::land::movement::reachable(content,state,&unit.id,strict),
+            "reachable": if state.cursor.anchor()==crate::land::combat::retreat::ANCHOR {
+                crate::land::combat::retreat::reachable(content,state,&unit.id,strict)
+            } else {crate::land::movement::reachable(content,state,&unit.id,strict)},
+            "retreated_before_assault": state.land.combat.retreat.retreated.contains(&unit.id),
             "movement_allowance": crate::land::formation::allowance(content,state,&unit.id).map(|a| json!({"cpa":a.cpa,"motorized":a.motorized})),
             "command_role": crate::ownership::seat_for_unit(content,state,&unit.id),
             "gun_position": state.land.combat.positions.get(&unit.id),

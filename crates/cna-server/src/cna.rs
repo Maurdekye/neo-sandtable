@@ -138,7 +138,12 @@ pub fn recover(path: &Path, data: &Path, profile: &str) -> Result<CampaignHandle
 
 fn movement_policy() -> ActionPolicy<Cna> {
     Box::new(|content, state, request, epoch| {
-        if request.kind != cna_rules::land::movement::KIND
+        if !matches!(
+            request.kind.as_str(),
+            cna_rules::land::movement::KIND
+                | cna_rules::land::reaction::KIND
+                | cna_rules::land::reaction::CONTINUE
+        ) && request.kind != cna_rules::land::combat::retreat::KIND
             && request.kind != cna_rules::land::combat::POSITION_KIND
             && !request.kind.starts_with("cna.combat.barrage")
             && !request.kind.starts_with("cna.logistics.")
@@ -148,13 +153,20 @@ fn movement_policy() -> ActionPolicy<Cna> {
         // Derive a fresh controller-local stream from the versioned request/epoch.
         // Never read, advance or replace the campaign's adjudication dice.
         let mut hash = Sha256::new();
-        hash.update(if request.kind == cna_rules::land::movement::KIND {
-            b"cna-scripted-movement-v1".as_slice()
-        } else if request.kind.starts_with("cna.logistics.") {
-            b"cna-scripted-logistics-v1".as_slice()
-        } else {
-            b"cna-scripted-combat-v1".as_slice()
-        });
+        hash.update(
+            if matches!(
+                request.kind.as_str(),
+                cna_rules::land::movement::KIND
+                    | cna_rules::land::reaction::KIND
+                    | cna_rules::land::reaction::CONTINUE
+            ) {
+                b"cna-scripted-movement-v1".as_slice()
+            } else if request.kind.starts_with("cna.logistics.") {
+                b"cna-scripted-logistics-v1".as_slice()
+            } else {
+                b"cna-scripted-combat-v1".as_slice()
+            },
+        );
         hash.update(
             serde_json::to_vec(&(request, epoch)).expect("decision request is serializable"),
         );
@@ -185,6 +197,11 @@ fn movement_policy() -> ActionPolicy<Cna> {
             if choice == 1 {
                 return Some(serde_json::Value::Null);
             }
+        }
+        if request.kind == cna_rules::land::combat::retreat::KIND {
+            return Some(cna_rules::baseline::random_retreats(
+                content, state, request, &mut rng,
+            ));
         }
         if request.kind == cna_rules::land::combat::POSITION_KIND {
             return Some(cna_rules::baseline::random_positions(request, &mut rng));
@@ -948,5 +965,208 @@ mod tests {
         .unwrap();
         assert_eq!(campaign.state_hash().unwrap(), hash);
         assert_eq!(serde_json::to_value(&campaign.game).unwrap(), game);
+    }
+
+    /// Cases: land:3.6,land:13.21,land:13.24,land:13.28
+    #[test]
+    fn closed_retreat_recovers_before_atomic_execution_and_baseline_is_rng_isolated() {
+        use cna_core::decision::DecisionResponse;
+        use cna_core::visibility::Perspective;
+        let (content, mut game) = movement_fixture();
+        let id: UnitId = "cw.unassigned_inf.1st_rnf_mg_bn".into();
+        for unit in game.state.land.units.values_mut() {
+            unit.location = Location::Eliminated;
+        }
+        let unit = game.state.land.units.get_mut(&id).unwrap();
+        unit.location = Location::Hex {
+            hex: "C4020".into(),
+        };
+        unit.detached = true;
+        unit.attached_to = None;
+        game.state.logistics.unit_supply.insert(
+            id.clone(),
+            UnitSupply {
+                ready_ammo: AmmoPoints::new(10000),
+                activity_water: WaterPoints::new(10000),
+                ..Default::default()
+            },
+        );
+        game.state.logistics.rations.insert(
+            id.clone(),
+            cna_rules::logistics::Rations {
+                water_stage: Some(cna_rules::logistics::water::WaterStage::current(
+                    &game.state,
+                )),
+                infantry_water_received: 2,
+                issued_gt: Some(game.state.cursor.game_turn),
+                pasta_gt: Some(game.state.cursor.game_turn),
+                ..Default::default()
+            },
+        );
+        game.state.decisions.pending.clear();
+        game.state.cursor.index = cna_rules::seq::PLAYER_HALF
+            .iter()
+            .position(|step| step.anchor == cna_rules::land::combat::retreat::ANCHOR)
+            .unwrap();
+        game.state.cursor.entered = false;
+        let rng = game.rng.clone();
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("retreat.sqlite");
+        let pins = Pins {
+            rules_profile: cna_rules::PROFILE_DEV.into(),
+            content_hash: "real-roster-retreat-test-map".into(),
+            engine_version: env!("CNA_ENGINE_SOURCE_HASH").into(),
+        };
+        let meta = CampaignMeta {
+            id: "retreat".into(),
+            scenario_id: "graziani".into(),
+            rules_profile: cna_rules::PROFILE_DEV.into(),
+            title: "Retreat recovery".into(),
+            seats: SeatId::all()
+                .map(|s| SeatInfo {
+                    id: s.to_string(),
+                    side: s.side,
+                    role: s.role,
+                    controller: None,
+                    status: SeatStatus::Idle,
+                })
+                .collect(),
+        };
+        let mut campaign =
+            Campaign::create(&path, Cna::dev(), content, game, meta, pins.clone()).unwrap();
+        campaign.advance().unwrap();
+        let policy = movement_policy();
+        let mut retry = None;
+        let mut expected_move = None;
+        for request in campaign.pending() {
+            let (epoch, action) = if request.seat.role == cna_protocol::Role::FrontLine {
+                (1..64)
+                    .find_map(|epoch| {
+                        let action =
+                            policy(&campaign.content, &campaign.game.state, &request, epoch)
+                                .unwrap();
+                        action
+                            .as_array()
+                            .is_some_and(|a| !a.is_empty())
+                            .then_some((epoch, action))
+                    })
+                    .expect("scripted retreat chooses a real path")
+            } else {
+                (1, serde_json::Value::Null)
+            };
+            while campaign.binding(request.seat).controller_epoch < epoch {
+                campaign
+                    .handover(
+                        request.seat,
+                        Some(ControllerInfo {
+                            kind: ControllerKind::Scripted,
+                            label: "scripted:legal_random".into(),
+                        }),
+                        serde_json::json!({"mode":"legal_random"}),
+                    )
+                    .unwrap();
+            }
+            if let Some(path) = action
+                .as_array()
+                .and_then(|a| a.first())
+                .and_then(|a| a["path"].as_array())
+            {
+                expected_move = Some(path.last().unwrap().as_str().unwrap().to_owned());
+            }
+            let response = DecisionResponse {
+                decision_id: request.id.clone(),
+                seat: request.seat,
+                controller_epoch: campaign.binding(request.seat).controller_epoch,
+                decision_revision: request.revision,
+                idempotency_key: request.id.to_string(),
+                action,
+                public_explanation: None,
+            };
+            campaign.validate(&response).unwrap();
+            campaign.submit(response.clone()).unwrap();
+            retry = Some(response);
+            assert_eq!(campaign.game.rng, rng);
+            assert_eq!(
+                campaign.game.state.land.units[&id].location.hex(),
+                Some(&"C4020".into())
+            );
+        }
+        let hash = campaign.state_hash().unwrap();
+        let expected: Vec<_> = Perspective::all()
+            .map(|p| {
+                (
+                    p,
+                    campaign.view(p).unwrap(),
+                    campaign.events_after(p, 0, 512).unwrap(),
+                )
+            })
+            .collect();
+        drop(campaign);
+        let mut campaign =
+            Campaign::recover(&path, Cna::dev(), movement_fixture().0, &pins).unwrap();
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        assert!(campaign.submit(retry.unwrap()).unwrap().duplicate);
+        for (p, view, events) in expected {
+            assert_eq!(campaign.view(p).unwrap(), view);
+            assert_eq!(campaign.events_after(p, 0, 512).unwrap(), events);
+        }
+        let db = rusqlite::Connection::open(&path).unwrap();
+        let count: i64 = db
+            .query_row("SELECT COUNT(*) FROM commands", [], |r| r.get(0))
+            .unwrap();
+        db.execute_batch("CREATE TRIGGER fail_retreat BEFORE INSERT ON events BEGIN SELECT RAISE(ABORT, 'fail retreat'); END;").unwrap();
+        assert!(campaign.advance().is_err());
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        assert_eq!(campaign.game.rng, rng);
+        assert_eq!(
+            db.query_row("SELECT COUNT(*) FROM commands", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            count
+        );
+        db.execute_batch("DROP TRIGGER fail_retreat").unwrap();
+        drop(db);
+        campaign.advance().unwrap();
+        assert_eq!(
+            campaign.game.state.land.units[&id]
+                .location
+                .hex()
+                .unwrap()
+                .as_str(),
+            expected_move.unwrap()
+        );
+        assert!(
+            campaign
+                .game
+                .state
+                .land
+                .combat
+                .retreat
+                .retreated
+                .contains(&id)
+        );
+        assert_eq!(campaign.game.rng, rng);
+        let hash = campaign.state_hash().unwrap();
+        let cp = campaign.game.state.land.units[&id].cp_spent_quarters;
+        assert!(cp > 0);
+        drop(campaign);
+        let campaign = Campaign::recover(&path, Cna::dev(), movement_fixture().0, &pins).unwrap();
+        assert_eq!(campaign.state_hash().unwrap(), hash);
+        assert_eq!(campaign.game.state.land.units[&id].cp_spent_quarters, cp);
+        let db = rusqlite::Connection::open(&path).unwrap();
+        let mut rows=db.prepare("SELECT p.seq,e.payload FROM perspective_events p JOIN events e USING(event_id) WHERE p.perspective=? ORDER BY p.seq").unwrap();
+        for perspective in Perspective::all() {
+            for (index, row) in rows
+                .query_map([perspective.to_string()], |r| {
+                    Ok((r.get::<_, u64>(0)?, r.get::<_, String>(1)?))
+                })
+                .unwrap()
+                .enumerate()
+            {
+                let (seq, payload) = row.unwrap();
+                let event: cna_core::event::EngineEvent = serde_json::from_str(&payload).unwrap();
+                assert_eq!(seq, index as u64 + 1);
+                assert!(event.visible_to(perspective));
+            }
+        }
     }
 }

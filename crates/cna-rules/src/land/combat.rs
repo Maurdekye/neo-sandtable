@@ -17,6 +17,7 @@ use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub mod barrage;
+pub mod retreat;
 
 pub const POSITION_KIND: &str = "cna.combat.position";
 
@@ -40,6 +41,8 @@ pub struct PositionOrder {
 pub struct CombatState {
     #[serde(default)]
     pub barrage: barrage::BarrageState,
+    #[serde(default)]
+    pub retreat: retreat::RetreatState,
     pub pinned: BTreeSet<UnitId>,
     pub cp_charged: BTreeMap<UnitId, i32>,
     pub positions: BTreeMap<UnitId, Position>,
@@ -98,6 +101,7 @@ pub fn enter_positions(
     state: &mut State,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    state.land.combat.retreat = retreat::RetreatState::default();
     state.land.combat.position_orders.clear();
     state.land.combat.barrage.targets.clear();
     state.land.combat.barrage.plans.clear();

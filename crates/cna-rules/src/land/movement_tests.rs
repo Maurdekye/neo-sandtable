@@ -517,11 +517,13 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
     g.rng = fixture_rng.state();
     let rules = Cna::dev();
     let mut moves = 0;
-    for n in 0..1000 {
+    // Fixed combat role windows add answers while preserving the same bounded fixture.
+    for n in 0..2000 {
         let t = evaluate(&rules, &c, &g, &Command::Advance).unwrap();
         g = t.game;
         if matches!(t.progress, Some(Progress::Finished { .. })) {
             assert!(moves > 10);
+            eprintln!("synthetic movement campaign finished after {n} answers");
             return;
         }
         let p = rules.pending(&c, &g.state).remove(0);
@@ -556,7 +558,7 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
         .unwrap()
         .game;
     }
-    panic!("campaign did not finish");
+    panic!("campaign did not finish at {:?}", g.state.cursor);
 }
 
 /// Cases: land:8.15, land:8.24, land:8.65, land:10.24, land:10.26
