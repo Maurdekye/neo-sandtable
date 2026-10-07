@@ -937,6 +937,19 @@ pub fn answer(
     action: &Value,
     cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
+    answer_with_profile(content, state, pending, action, false, cx)
+}
+/// The dispatcher supplies the actual profile, including restored entered windows.
+/// Cases: airlog:55.18, airlog:56.31, airlog:56.32
+pub fn answer_with_profile(
+    content: &CnaContent,
+    state: &mut State,
+    pending: &Pending,
+    action: &Value,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<String, Rejection> {
+    ports::preflight(content, strict).map_err(Rejection::Engine)?;
     if !((pending.kind == AXIS && pending.seat == SeatId::new(Side::Axis, Role::Logistics))
         || (pending.kind == CW && pending.seat == SeatId::new(Side::Commonwealth, Role::Logistics)))
     {
@@ -947,6 +960,17 @@ pub fn answer(
 /// Apply the publicly scheduled coastal side exactly once after its window closes.
 /// Cases: airlog:55.14, airlog:56.31, airlog:56.32, land:3.6
 pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
+    finish_with_profile(content, state, false, cx)
+}
+/// Check immutable source policy even when a checkpoint already closed this batch.
+/// Cases: airlog:55.18, airlog:56.31, airlog:56.32
+pub fn finish_with_profile(
+    content: &CnaContent,
+    state: &mut State,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    ports::preflight(content, strict)?;
     let (kind, side) = match state.cursor.anchor() {
         "opstage.organization.tactical_shipping" => (CW, Side::Commonwealth),
         "opstage.truck_convoy_movement" if active(state) => (AXIS, Side::Axis),

@@ -737,3 +737,176 @@ fn malformed_anchor_refuses_runtime_before_any_entry_or_initialization_effect() 
         assert!(events.is_empty());
     }
 }
+
+/// Actual-profile dispatch remains uniform after restoring an already-entered step.
+/// Cases: airlog:55.18, land:3.6
+#[test]
+fn full_coastal_respond_and_entered_checkpoint_closure_preflight_uniformly() {
+    use cna_core::decision::DecisionResponse;
+    use cna_core::engine::{Command, Rejection, evaluate};
+    for anchor in [
+        "opstage.organization.tactical_shipping",
+        "opstage.truck_convoy_movement",
+    ] {
+        let (c, game, _) = coastal_game(anchor);
+        let opened = evaluate(&crate::Cna::dev(), &c, &game, &Command::Advance)
+            .unwrap()
+            .game;
+        let pending = opened.state.decisions.pending.first().unwrap();
+        let command = Command::Respond(DecisionResponse {
+            decision_id: pending.id.clone(),
+            seat: pending.seat,
+            controller_epoch: 1,
+            decision_revision: pending.revision,
+            idempotency_key: "profile-coastal-pass".into(),
+            action: serde_json::Value::Null,
+            public_explanation: None,
+        });
+        let mut hidden = opened.clone();
+        hidden.state.logistics.ports.clear();
+        hidden
+            .state
+            .logistics
+            .dumps
+            .get_mut("fixture.C4022")
+            .unwrap()
+            .supplies
+            .stores = 99;
+        crate::testkit::assert_action_indistinguishable(
+            &crate::Cna::full(),
+            &c,
+            &opened,
+            &hidden,
+            &command,
+            Side::Axis,
+        );
+        let expected = Rejection::Engine(preflight(&c, true).unwrap_err());
+        for g in [&opened, &hidden] {
+            let before = serde_json::to_value(g).unwrap();
+            for _ in 0..2 {
+                assert_eq!(
+                    evaluate(&crate::Cna::full(), &c, g, &command).unwrap_err(),
+                    expected
+                );
+                assert_eq!(serde_json::to_value(g).unwrap(), before);
+            }
+            let closed = evaluate(&crate::Cna::dev(), &c, g, &command).unwrap().game;
+            assert!(closed.state.cursor.entered);
+            assert!(closed.state.decisions.pending.is_empty());
+            for completed in [false, true] {
+                let mut restored = closed.clone();
+                if completed {
+                    let kind = if anchor.ends_with("tactical_shipping") {
+                        crate::logistics::coastal::CW
+                    } else {
+                        crate::logistics::coastal::AXIS
+                    };
+                    restored
+                        .state
+                        .logistics
+                        .allocation_batches
+                        .completed
+                        .insert(crate::logistics::batches::batch_key(&restored.state, kind));
+                }
+                let saved = serde_json::to_value(&restored).unwrap();
+                let recovered = serde_json::from_value(saved.clone()).unwrap();
+                assert_eq!(
+                    evaluate(&crate::Cna::full(), &c, &restored, &Command::Advance).unwrap_err(),
+                    expected
+                );
+                assert_eq!(
+                    evaluate(&crate::Cna::full(), &c, &recovered, &Command::Advance).unwrap_err(),
+                    expected
+                );
+                assert_eq!(serde_json::to_value(&restored).unwrap(), saved);
+            }
+        }
+    }
+}
+
+/// Explicit DEV compatibility wrappers preserve the same buffered plan and closure.
+/// Cases: airlog:55.18, airlog:56.31, land:3.6
+#[test]
+fn coastal_dev_wrappers_match_profile_helpers_without_stock_or_rng_changes_at_answer() {
+    use cna_core::{
+        dice::CampaignRng,
+        engine::{Command, Cx, evaluate},
+    };
+    for anchor in [
+        "opstage.organization.tactical_shipping",
+        "opstage.truck_convoy_movement",
+    ] {
+        let (c, game, _) = coastal_game(anchor);
+        let opened = evaluate(&crate::Cna::dev(), &c, &game, &Command::Advance)
+            .unwrap()
+            .game;
+        let pending = opened.state.decisions.pending.first().unwrap().clone();
+        let mut a = opened.state;
+        a.decisions.pending.clear();
+        let mut b = a.clone();
+        let stocks = a.logistics.dumps.clone();
+        let mut ra = CampaignRng::from_seed([46; 32]);
+        let mut rb = CampaignRng::from_seed([46; 32]);
+        let before_rng = ra.state();
+        let mut ea = Vec::new();
+        let mut eb = Vec::new();
+        assert_eq!(
+            crate::logistics::coastal::answer(
+                &c,
+                &mut a,
+                &pending,
+                &serde_json::Value::Null,
+                &mut Cx {
+                    rng: &mut ra,
+                    events: &mut ea
+                }
+            )
+            .unwrap(),
+            crate::logistics::coastal::answer_with_profile(
+                &c,
+                &mut b,
+                &pending,
+                &serde_json::Value::Null,
+                false,
+                &mut Cx {
+                    rng: &mut rb,
+                    events: &mut eb
+                }
+            )
+            .unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(&a).unwrap(),
+            serde_json::to_value(&b).unwrap()
+        );
+        assert_eq!(a.logistics.dumps, stocks);
+        assert_eq!(ea, eb);
+        assert_eq!(ra.state(), before_rng);
+        crate::logistics::coastal::finish(
+            &c,
+            &mut a,
+            &mut Cx {
+                rng: &mut ra,
+                events: &mut ea,
+            },
+        )
+        .unwrap();
+        crate::logistics::coastal::finish_with_profile(
+            &c,
+            &mut b,
+            false,
+            &mut Cx {
+                rng: &mut rb,
+                events: &mut eb,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_value(&a).unwrap(),
+            serde_json::to_value(&b).unwrap()
+        );
+        assert_eq!(ea, eb);
+        assert_eq!(ra.state(), before_rng);
+        assert_eq!(rb.state(), before_rng);
+    }
+}

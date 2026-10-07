@@ -46,7 +46,7 @@ impl Cna {
                 crate::logistics::batches::finish_distribution(content, state, cx)
             }
             "opstage.organization.tactical_shipping" | "opstage.truck_convoy_movement" => {
-                crate::logistics::coastal::finish(content, state, cx)
+                crate::logistics::coastal::finish_with_profile(content, state, self.strict, cx)
             }
             "opstage.organization.attrition" => {
                 crate::logistics::attrition::finish(content, state, cx)
@@ -285,7 +285,14 @@ impl Cna {
             kind if kind == crate::logistics::coastal::AXIS
                 || kind == crate::logistics::coastal::CW =>
             {
-                crate::logistics::coastal::answer(content, state, pending, action, cx)
+                crate::logistics::coastal::answer_with_profile(
+                    content,
+                    state,
+                    pending,
+                    action,
+                    self.strict,
+                    cx,
+                )
             }
             kind if kind.starts_with(crate::logistics::convoys::PREFIX) => {
                 crate::logistics::convoys::answer_with_profile(
