@@ -449,7 +449,7 @@ mod tests {
     }
 
     /// Cases: land:12.46, airlog:54.2
-        #[test]
+    #[test]
     fn infantry_carriers_die_first_then_chart_is_capped_and_cargo_is_conserved() {
         let (c, mut s, ids) = fixture();
         let id = &ids[0];
@@ -512,7 +512,7 @@ mod tests {
     }
 
     /// Cases: land:12.46
-        #[test]
+    #[test]
     fn chart_hits_may_dismount_survivors_without_killing_more_infantry() {
         let (c, mut s, ids) = fixture();
         let id = &ids[0];
@@ -534,7 +534,7 @@ mod tests {
     }
 
     /// Cases: land:12.46, airlog:54.2
-        #[test]
+    #[test]
     fn cargo_balance_uses_exact_truck_shares_and_empty_is_a_category() {
         let (c, mut s, ids) = fixture();
         let id = &ids[0];
@@ -613,7 +613,7 @@ mod tests {
     }
 
     /// Cases: land:12.46
-        #[test]
+    #[test]
     fn evenness_is_across_eligible_units_and_invalid_last_allocation_is_atomic() {
         let (c, mut s, ids) = fixture();
         s.land.units.get_mut(&ids[0]).unwrap().trucks.light = 2;
@@ -635,7 +635,7 @@ mod tests {
     }
 
     /// Cases: land:12.46, airlog:54.2
-        #[test]
+    #[test]
     fn insufficient_or_excess_carriers_missing_units_and_bad_packing_reject() {
         let (c, mut s, ids) = fixture();
         let id = &ids[0];
