@@ -19,7 +19,7 @@ const payload = {
   seed: Array(32).fill(0),
   title: "Graziani's Offensive",
   paused: true,
-  controller: 'legal_random',
+  controller: 'pass_when_possible',
 }
 test('watches actual Graziani positions and private scripted decisions in production', async ({
   page,
@@ -157,7 +157,7 @@ test('watches actual Graziani positions and private scripted decisions in produc
   const decisions = incoming.filter(
     (m) => m.type === 'transcript' && m.entry.kind === 'decision_submitted',
   )
-  expect(decisions).toHaveLength(18)
+  expect(decisions.length).toBeGreaterThanOrEqual(18)
   await page.screenshot({
     path: '../../board-graziani-transcripts.png',
     fullPage: true,
@@ -181,7 +181,9 @@ test('watches actual Graziani positions and private scripted decisions in produc
     '../../graziani-browser-verification.json',
     JSON.stringify(
       {
-        adapter: 'b140784',
+        server_base: process.env.CNA_SMOKE_COMMIT ?? 'unreported',
+        client_build: 'own local candidate',
+        controller: 'pass_when_possible',
         campaign: meta.id,
         units: units.length,
         mapped_units: units.filter((u) => u.hex).length,

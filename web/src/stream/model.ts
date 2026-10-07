@@ -1,5 +1,6 @@
 import type {
   CampaignMeta,
+  Clock,
   GameEvent,
   Perspective,
   ServerMessage,
@@ -11,6 +12,39 @@ export interface Frame {
   seq: number
   view: ViewState
   event: GameEvent | null
+  moved?: string[]
+}
+export function segmentKey(clock: Clock) {
+  return [
+    clock.game_turn,
+    clock.op_stage,
+    clock.stage,
+    clock.phase,
+    clock.segment,
+    clock.phasing,
+  ].join('|')
+}
+/** Viewer metadata stays cumulative even when the event that established it leaves the history buffer. */
+function movementState(
+  view: ViewState,
+  last?: Frame,
+  event?: GameEvent,
+): string[] {
+  const moved = new Set(
+    last?.moved ??
+      Object.values(last?.view.units ?? view.units)
+        .filter((u) => u.detail?.moved_this_segment === true)
+        .map((u) => u.id),
+  )
+  if (last && segmentKey(last.view.clock) !== segmentKey(view.clock))
+    moved.clear()
+  if (event?.kind === 'unit_moved') moved.add(event.unit_id)
+  else if (event?.kind === 'unit_updated') {
+    if (event.unit.detail?.moved_this_segment === true) moved.add(event.unit.id)
+    else if (event.unit.detail?.moved_this_segment === false)
+      moved.delete(event.unit.id)
+  } else if (event?.kind === 'unit_removed') moved.delete(event.unit_id)
+  return [...moved].filter((id) => Boolean(view.units[id]))
 }
 export interface ViewerState {
   campaign: CampaignMeta | null
@@ -191,7 +225,14 @@ export function receive(
     return {
       state: {
         ...state,
-        frames: [{ seq: message.seq, view: message.view, event: null }],
+        frames: [
+          {
+            seq: message.seq,
+            view: message.view,
+            event: null,
+            moved: movementState(message.view),
+          },
+        ],
         lastSeq: message.seq,
         connection: 'live',
         cursor: null,
@@ -207,9 +248,14 @@ export function receive(
       return { state }
     if (message.seq !== state.lastSeq + 1) return resync()
     const last = state.frames.at(-1)!
+    const updatedView = {
+      ...applyEvent(last.view, message.event),
+      clock: message.clock,
+    }
     const frame = {
       seq: message.seq,
-      view: { ...applyEvent(last.view, message.event), clock: message.clock },
+      view: updatedView,
+      moved: movementState(updatedView, last, message.event),
       event: message.event,
     }
     const frames = [...state.frames, frame].slice(-MAX_FRAMES)

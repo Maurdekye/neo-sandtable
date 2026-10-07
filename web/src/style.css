@@ -792,3 +792,165 @@ dd {
   padding: 10px;
   width: 100%;
 }
+
+.citation {
+  padding: 3px 5px;
+  font-size: 10px;
+  color: #e5c893;
+  background: #203741;
+  border: 1px solid #44616a;
+  cursor: help;
+}
+.citation-card {
+  position: fixed;
+  z-index: 1000;
+  width: min(360px, calc(100vw - 16px));
+  padding: 14px;
+  background: #122932;
+  color: #e6e5d3;
+  border: 1px solid #b8a477;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px #0008;
+  pointer-events: none;
+  max-height: 270px;
+  overflow-y: auto;
+}
+.citation-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+}
+.citation-card p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.citation-card small {
+  font-size: 10px;
+  color: #a7babf;
+  overflow-wrap: anywhere;
+}
+.layer-controls,
+.rules-coverage {
+  padding: 12px 10px;
+  border-bottom: 1px solid #29404a;
+  font-size: 11px;
+}
+.layer-controls summary,
+.rules-coverage summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.layer-controls fieldset {
+  border: 1px solid #29404a;
+  margin: 8px 0;
+  padding: 6px;
+}
+.layer-controls fieldset label {
+  display: inline-flex;
+  gap: 3px;
+  width: 50%;
+  font-size: 10px;
+  padding: 3px 0;
+}
+.layer-controls select,
+.rules-coverage select {
+  width: 100%;
+  margin: 5px 0;
+  font-size: 11px;
+}
+.layer-controls p,
+.rules-coverage p {
+  font-size: 10px;
+  line-height: 1.5;
+}
+.rules-coverage table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9px;
+  margin: 8px 0;
+}
+.rules-coverage td,
+.rules-coverage th {
+  padding: 5px 3px;
+  text-align: left;
+  border-bottom: 1px solid #29404a;
+  overflow-wrap: anywhere;
+}
+.rules-coverage td:first-child {
+  max-width: 125px;
+}
+.rules-coverage .current-step {
+  background: #394b40;
+  color: #f0dba7;
+}
+.layer-caption {
+  position: absolute;
+  left: 16px;
+  bottom: 46px;
+  pointer-events: none;
+  font-size: 10px;
+  padding: 5px 8px;
+  color: #d4dddb;
+  background: #142b33d9;
+}
+.edge-inspector {
+  font-size: 11px;
+  margin: 12px 0;
+  padding: 8px;
+  border: 1px solid #35505a;
+}
+.edge-inspector summary {
+  cursor: pointer;
+}
+.edge-inspector > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.edge-inspector small {
+  display: block;
+}
+
+.motion-caption {
+  position: absolute;
+  right: 16px;
+  top: 46px;
+  pointer-events: none;
+  font-size: 10px;
+  color: #9ae2c6;
+  background: #142b33d9;
+  padding: 5px 8px;
+}
+.motion-control {
+  display: flex;
+  gap: 5px;
+  padding: 10px;
+  font-size: 11px;
+  border-bottom: 1px solid #29404a;
+}
+.unit-row.moved {
+  box-shadow: inset 3px 0 #8be4c0;
+}
+.moved-label {
+  color: #8be4c0;
+  font-size: 11px;
+}
+.movable-units {
+  margin: 8px 0;
+}
+.movable-units summary {
+  font-size: 10px;
+  cursor: pointer;
+}
+.movable-units > button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 10px;
+  margin-top: 5px;
+}
+.movable-units {
+  max-height: 240px;
+  overflow-y: auto;
+}

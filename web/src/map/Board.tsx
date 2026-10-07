@@ -18,12 +18,24 @@ import {
   TERRAIN,
   vertices,
 } from './fixture'
+import { createMotions } from './motion'
+import { motionEvents } from '../movement'
+import type { Frame } from '../stream/model'
 import { counterSvg } from './counters'
+import { createOverlays } from './overlay'
+import { label, MAP_LAYERS, LAYER_FIXTURE, type LayerOptions } from './layers'
 interface Props {
   view: ViewState | undefined
   selected: string | null
   focus: { hex: string; nonce: number; bounds?: string[] } | null
   onSelect: (hex: string) => void
+  layers: LayerOptions
+  frames: Frame[]
+  seq: number | null
+  scope: string
+  moving: boolean
+  allowBatch: boolean
+  moved: Set<string>
 }
 interface Scene {
   app: Application
@@ -32,6 +44,9 @@ interface Scene {
   selection: Graphics
   textures: Map<string, Texture>
   updateVisibility: () => void
+  overlays: ReturnType<typeof createOverlays>
+  motions: ReturnType<typeof createMotions>
+  motionCursor: { scope: string; seq: number | null }
 }
 async function rasterize(svg: string): Promise<Texture> {
   const image = new Image()
@@ -43,12 +58,25 @@ async function rasterize(svg: string): Promise<Texture> {
   canvas.getContext('2d')!.drawImage(image, 0, 0, 120, 96)
   return Texture.from(canvas)
 }
-export function Board({ view, selected, focus, onSelect }: Props) {
+export function Board({
+  view,
+  selected,
+  focus,
+  onSelect,
+  layers,
+  frames: history,
+  seq,
+  scope,
+  moving,
+  allowBatch,
+  moved,
+}: Props) {
   const host = useRef<HTMLDivElement>(null),
     scene = useRef<Scene | null>(null),
     select = useRef(onSelect)
   const [ready, setReady] = useState(false),
     [fps, setFps] = useState(0),
+    [motionCount, setMotionCount] = useState(0),
     [error, setError] = useState('')
   select.current = onSelect
   useEffect(() => {
@@ -74,9 +102,12 @@ export function Board({ view, selected, focus, onSelect }: Props) {
       element.appendChild(app.canvas)
       const world = new Container(),
         terrain = new Container(),
+        overlay = new Container(),
         counters = new Container(),
+        motion = new Container(),
         selection = new Graphics()
-      world.addChild(terrain, counters, selection)
+      world.addChild(terrain, overlay, counters, motion, selection)
+      const motions = createMotions(motion)
       app.stage.addChild(world)
       const chunks = new Map<
         string,
@@ -108,10 +139,10 @@ export function Board({ view, selected, focus, onSelect }: Props) {
           chunks.set(key, chunk)
         }
         const p = center(h)
-        chunk.minX = Math.min(chunk.minX, p.x - 27)
-        chunk.maxX = Math.max(chunk.maxX, p.x + 27)
-        chunk.minY = Math.min(chunk.minY, p.y - 27)
-        chunk.maxY = Math.max(chunk.maxY, p.y + 27)
+        chunk.minX = Math.min(chunk.minX, p.x - 52)
+        chunk.maxX = Math.max(chunk.maxX, p.x + 52)
+        chunk.minY = Math.min(chunk.minY, p.y - 52)
+        chunk.maxY = Math.max(chunk.maxY, p.y + 52)
         chunk.graphics
           .poly(vertices(h))
           .fill(TERRAIN[h.terrain].color)
@@ -122,6 +153,7 @@ export function Board({ view, selected, focus, onSelect }: Props) {
             .fill({ color: 0xddd2af, alpha: 0.4 })
       })
       chunks.forEach((c) => c.container.cacheAsTexture({ resolution: 1 }))
+      const overlays = createOverlays(terrain, chunks)
       HEXES.filter((h) => h.label).forEach((h) => {
         const p = center(h)
         const text = new Text({
@@ -154,6 +186,9 @@ export function Board({ view, selected, focus, onSelect }: Props) {
         selection,
         textures: new Map(),
         updateVisibility,
+        overlays,
+        motions,
+        motionCursor: { scope: '', seq: null },
       }
       updateVisibility()
       let dragging = false,
@@ -206,6 +241,7 @@ export function Board({ view, selected, focus, onSelect }: Props) {
         const nextBand = next < 0.65 ? 0.5 : next > 1.8 ? 2 : 1
         if (nextBand !== band) {
           band = nextBand
+          overlays.resolution(band)
           chunks.forEach((c) => {
             c.container.cacheAsTexture(false)
             c.container.cacheAsTexture({ resolution: band })
@@ -225,6 +261,9 @@ export function Board({ view, selected, focus, onSelect }: Props) {
       app.ticker.add(() => {
         frames++
         const now = performance.now()
+        motions.tick(now)
+        const count = motions.count()
+        setMotionCount((old) => (old === count ? old : count))
         if (now - last >= 1000) {
           setFps(Math.round((frames * 1000) / (now - last)))
           last = now
@@ -238,6 +277,7 @@ export function Board({ view, selected, focus, onSelect }: Props) {
         app.canvas.removeEventListener('pointerup', up)
         app.canvas.removeEventListener('pointercancel', up)
         app.canvas.removeEventListener('wheel', wheel)
+        motions.clear()
         scene.current?.textures.forEach((t) => t.destroy(true))
         scene.current = null
         app.destroy(true, { children: true })
@@ -255,7 +295,15 @@ export function Board({ view, selected, focus, onSelect }: Props) {
   useEffect(() => {
     const s = scene.current
     if (!s || !ready) return
+    s.overlays.build(layers)
+    s.updateVisibility()
+  }, [layers, ready])
+  useEffect(() => {
+    const s = scene.current
+    if (!s || !ready) return
     if (!view) {
+      s.motions.clear()
+      s.motions.sprites(new Map())
       s.counters.removeChildren().forEach((c) => c.destroy())
       return
     }
@@ -272,16 +320,18 @@ export function Board({ view, selected, focus, onSelect }: Props) {
         }),
       )
       if (canceled) return
+      s!.motions.sprites(new Map())
       s!.counters.removeChildren().forEach((c) => c.destroy())
       const active = new Set(units.map(counterSvg))
       // Bound retired texture variants; textures still displayed remain alive.
       for (const [key, texture] of s!.textures) {
         if (s!.textures.size <= 256) break
-        if (!active.has(key)) {
+        if (!active.has(key) && !s!.motions.textures().has(texture)) {
           s!.textures.delete(key)
           texture.destroy(true)
         }
       }
+      const unitSprites = new Map<string, Sprite>()
       view!.markers.forEach((marker) => {
         const hex = HEX_BY_ID.get(marker.hex)
         if (!hex) return
@@ -351,6 +401,12 @@ export function Board({ view, selected, focus, onSelect }: Props) {
             p.y - 16 + (expanded ? Math.floor(i / 4) * 35 : -i * 3),
           )
           s!.counters.addChild(sprite)
+          unitSprites.set(id, sprite)
+          if (moved.has(id)) {
+            const flag = new Graphics().circle(0, 0, 3).fill(0x8be4c0)
+            flag.position.set(sprite.x + 3, sprite.y + 3)
+            s!.counters.addChild(flag)
+          }
         })
         if (stack.unit_ids.length > 1) {
           const badge = new Text({
@@ -367,12 +423,44 @@ export function Board({ view, selected, focus, onSelect }: Props) {
           s!.counters.addChild(badge)
         }
       })
+      s!.motions.sprites(unitSprites)
     }
     void draw().catch((e) => setError(String(e)))
     return () => {
       canceled = true
     }
-  }, [view, selected, ready])
+  }, [view, selected, ready, moved])
+  useEffect(() => {
+    const s = scene.current
+    if (!s || !ready) return
+    if (
+      s.motionCursor.scope !== scope ||
+      !view ||
+      !moving ||
+      (seq ?? 0) < (s.motionCursor.seq ?? 0)
+    )
+      s.motions.clear()
+    else if (seq !== s.motionCursor.seq) {
+      const events = motionEvents(history, s.motionCursor.seq, seq, allowBatch)
+      if (
+        !events.length &&
+        ((!allowBatch && seq! > (s.motionCursor.seq ?? 0) + 1) ||
+          !history.some((f) => f.seq === s.motionCursor.seq))
+      )
+        s.motions.clear()
+      else
+        s.motions.start(
+          events.filter(
+            (event) => !event.unitId || Boolean(view.units[event.unitId]),
+          ),
+          (id) => {
+            const unit = view.units[id]
+            return unit ? s.textures.get(counterSvg(unit)) : undefined
+          },
+        )
+    }
+    s.motionCursor = { scope, seq }
+  }, [history, seq, scope, moving, allowBatch, view, ready])
   useEffect(() => {
     const s = scene.current
     if (!s || !ready) return
@@ -409,6 +497,7 @@ export function Board({ view, selected, focus, onSelect }: Props) {
         ),
       )
     }
+    if (!points.length && s.world.scale.x < 0.85) s.world.scale.set(0.85)
     s.world.position.set(
       host.current!.clientWidth / 2 - p.x * s.world.scale.x,
       host.current!.clientHeight / 2 - p.y * s.world.scale.y,
@@ -431,7 +520,18 @@ export function Board({ view, selected, focus, onSelect }: Props) {
       <output className="fps" data-testid="fps">
         {fps} FPS · WebGL
       </output>
+      <output className="motion-caption" data-testid="motion-count">
+        {motionCount} active animations - green dot: moved this segment
+      </output>
       {error && <div className="map-error">Renderer unavailable: {error}</div>}
+      <div className="layer-caption" data-testid="layer-caption">
+        {LAYER_FIXTURE ? 'SYNTHETIC LAYER FIXTURE - ' : ''}
+        {MAP_LAYERS.features.length} {LAYER_FIXTURE ? 'generated' : 'surveyed'}{' '}
+        features -{' '}
+        {layers.coverage
+          ? `Hatch: unknown ${label(layers.coverage)}`
+          : 'Coverage hatch off'}
+      </div>
       <div className="legend">
         {Object.entries(TERRAIN)
           .filter(([key]) => HEXES.some((h) => h.terrain === key))

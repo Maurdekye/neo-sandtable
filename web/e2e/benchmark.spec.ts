@@ -5,7 +5,11 @@ test('records real and synthetic navigation timing', async ({
   browser,
 }) => {
   const results = []
-  for (const url of ['/', '/?map=synthetic', '/?fixture=dense']) {
+  for (const url of [
+    '/',
+    '/?map=synthetic&layers=fixture',
+    '/?fixture=dense&layers=fixture',
+  ]) {
     await page.goto(url)
     await expect(page.locator('.board canvas')).toBeVisible()
     await expect(page.getByTestId('fps')).not.toHaveText('0 FPS · WebGL')
@@ -80,6 +84,7 @@ test('records real and synthetic navigation timing', async ({
       intervals.sort((a, b) => a - b)
       return {
         hexes: document.querySelector('.map-caption')?.textContent,
+        layers: document.querySelector('.layer-caption')?.textContent,
         duration_ms: last - start,
         frames: intervals.length,
         fps: (intervals.length * 1000) / (last - start),
@@ -90,8 +95,8 @@ test('records real and synthetic navigation timing', async ({
         viewport: [innerWidth, innerHeight],
         dpr: devicePixelRatio,
         active_overlays: location.search.includes('dense')
-          ? 'none; 290 mapped units in 40 stacks plus six off-map/unplaced, mock active, three seat tabs'
-          : 'none; 18 generated counters, mock stream active, three seat tabs',
+          ? 'all generated feature kinds; road unknown hatch; 290 mapped units in 40 stacks plus six off-map/unplaced, mock active, three seat tabs'
+          : 'all feature kinds; road unknown hatch; 18 generated counters, mock stream active, three seat tabs',
       }
     })
     await page.mouse.up()

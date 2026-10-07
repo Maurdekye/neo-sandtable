@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { GameEvent, Perspective } from './protocol'
 import { Board } from './map/Board'
 import { Formations } from './Formations'
 import { locationLabel, unitLocation } from './location'
 import { StackList } from './StackList'
 import { PendingDecisions } from './PendingDecisions'
+import { RulesCoverage } from './Rules'
+import { LayerControls, LayerInspector } from './map/LayerControls'
+import { movedUnits } from './movement'
+import { DEFAULT_LAYERS } from './map/layers'
 import { HEX_BY_ID, INITIAL_HEX, TERRAIN } from './map/fixture'
 import {
   actions,
@@ -110,6 +114,14 @@ function Viewer({ access }: { access?: Access }) {
       nonce: number
       bounds?: string[]
     } | null>(null)
+  const [layers, setLayers] = useState(DEFAULT_LAYERS)
+  const [moving, setMoving] = useState(
+    !matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+  const moved = useMemo(
+    () => movedUnits(view, state.frames, frame?.seq ?? null),
+    [view, state.frames, frame?.seq],
+  )
   const [eventFilter, setEventFilter] = useState('all'),
     [campaignPaused, setCampaignPaused] = useState(
       mockMode && new URLSearchParams(location.search).get('paused') === '1',
@@ -354,7 +366,21 @@ function Viewer({ access }: { access?: Access }) {
           <div className="panel-heading">
             <span className="eyebrow">FORMATIONS</span>
           </div>
-          <PendingDecisions pending={view?.pending ?? []} />
+          <PendingDecisions
+            pending={view?.pending ?? []}
+            units={view?.units ?? {}}
+            onUnit={chooseUnit}
+          />
+          <LayerControls options={layers} onChange={setLayers} />
+          <label className="motion-control">
+            <input
+              type="checkbox"
+              checked={moving}
+              onChange={(event) => setMoving(event.target.checked)}
+            />
+            Animate disclosed movement
+          </label>
+          <RulesCoverage clock={view?.clock} />
           <Formations units={view?.units ?? {}} onUnit={chooseUnit} />
           <section className="formation">
             <h3>Objectives & markers</h3>
@@ -382,6 +408,18 @@ function Viewer({ access }: { access?: Access }) {
           selected={selected}
           focus={focus}
           onSelect={choose}
+          layers={layers}
+          frames={state.frames}
+          seq={frame?.seq ?? null}
+          scope={
+            state.perspective +
+            ':' +
+            (state.campaign?.id ?? '') +
+            (state.cursor === null ? ':live' : ':history')
+          }
+          moving={moving}
+          allowBatch={state.cursor === null || state.playing}
+          moved={moved}
         />
         <Transcripts
           seats={state.campaign?.seats ?? []}
@@ -412,12 +450,16 @@ function Viewer({ access }: { access?: Access }) {
               </div>
             </>
           )}
+          {selected && (
+            <LayerInspector hexId={selected} layer={layers.coverage} />
+          )}
           {stacks.map((stack) => (
             <StackList
               key={`${selected}:${stack.side}`}
               stack={stack}
               units={view!.units}
               selected={unitId}
+              moved={moved}
               onSelect={setUnitId}
             />
           ))}
@@ -435,6 +477,9 @@ function Viewer({ access }: { access?: Access }) {
           {unit && (
             <section className="unit-detail">
               <h3>{unit.name}</h3>
+              {moved.has(unit.id) && (
+                <p className="moved-label">Moved this segment</p>
+              )}
               <dl>
                 <dt>ID</dt>
                 <dd>{unit.id}</dd>

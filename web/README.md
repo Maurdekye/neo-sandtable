@@ -1,7 +1,7 @@
 # Campaign watch
 
 The spectator client uses React 19, strict TypeScript, Vite and PixiJS v8 WebGL.
-Node.js 22.12+ is required (tested locally on Node 24.12.0).
+Python 3.11+ and Node.js 22.12+ are required (tested locally on Node 24.12.0).
 
 ```sh
 npm ci
@@ -204,8 +204,7 @@ by Rust and receives 18 factual scripted decision entries, with perspective-filt
 seat replay. A second campaign holds a human-controlled initiative window open
 and verifies its real rule citations at the top of the formations panel.
 
-These are actual scenario data and transport checks. The development ruleset
-currently resolves initiative declarations and skips unimplemented procedures;
+These are actual scenario data and transport checks. That historical adapter resolved initiative declarations and skipped unimplemented procedures;
 Finished does not mean the full CNA rules are implemented. This check starts no
 paid LLM driver and makes no full-campaign throughput claim. Evidence files and
 screenshots are saved in the owning scratch folder.
@@ -217,3 +216,95 @@ selected its bound campaign/perspective, could not administer or cross campaigns
 (HTTP 403), and an attempted operator subscription closed with 1008 before any
 stream frames. No-capability API access returned 401. Five real integration checks
 passed; this run uses the factual scripted baseline, with no paid model driver.
+
+## Surveyed features, rule cards and movement
+
+All route and hexside feature kinds come from the schema-1 manifest in
+`data/map/layers.toml`. Roads are solid, tracks and unfinished routes are dashed,
+railroads have ties, pipelines have joints, and slope/escarpment ticks point from
+the published high side toward the lower side. These symbols are drawn by our
+code. They are not traced game art.
+
+The coverage selector inspects one named layer at a time. A subtle hatch marks
+cells or physical internal edges outside that layer's explicit coverage mask.
+No feature inside its mask means surveyed absence for that kind. Coverage of
+terrain, roads or another feature never implies coverage of a different layer.
+The selected hex inspector lists neighbours and their present / surveyed-none /
+unknown status, with source citations. Missing neighbours at the map boundary
+are identified separately. Feature checkboxes affect drawing, not coverage.
+The current published edge files are empty; they therefore show unknown until
+survey rows land. `?layers=fixture` enables clearly labeled generated feature
+data in development only, without altering the published map records.
+
+Citation buttons open registry titles and paraphrased summaries on hover or
+keyboard focus; Escape dismisses the card. `tools/export_viewer.mjs` selects
+Python 3.11+ (or the executable named by `PYTHON`) and invokes the web-owned
+Python exporter before dev, test and build. It exports registry text and runs
+the authoritative `tools/rules/coverage.py --json` command. Derived JSON stays
+ignored. The coverage panel provides applicable/implemented counts at every
+registry timing anchor, plus tested, unsupported and missing totals. Cases
+with several timing anchors count in each row; scenario totals count distinct
+cases. This is build-time source-citation coverage, including conditional
+cases, not evidence that every case runs in the selected rules profile.
+Registry and engine hashes identify the export's inputs.
+
+The pending movement panel reads only the published legal action schema's
+unit enum. It lists remaining eligible units for the disclosed seat and lets
+spectators inspect them; missing schemas remain explicit. Unit movements
+animate their disclosed paths from the preceding projected origin, with
+constant speed along each leg. Anonymous stack updates/removals pulse their
+disclosed location; no enemy route or composition is inferred. Animation does
+not delay adjudicated state, supports reduced-motion preferences, and clears
+on perspective changes, resyncs and history jumps. Green counter dots and
+inspector rows identify units moved in the current segment; snapshot flags
+preserve these highlights after reconnects. Up to 128 simultaneous visual
+tracks are retained, with at most 4,096 entered hexes per route.
+
+### Layer navigation measurement
+
+Measured 2026-10-06 with all feature switches on, road coverage hatch on,
+movement animation enabled, three transcript tabs and the mock stream active.
+Chromium 153.0.8010.12, Windows, ANGLE Vulkan SwiftShader software WebGL,
+1800 x 1050 viewport, DPR 1. Each case warms for 1.5 seconds, then uses real
+pointer-down pan and wheel input for eight seconds. The map layers share the
+terrain's culled 10-by-10-hex texture caches.
+
+| Fixture | Hexes | Positive features | FPS | Median / p95 frame ms |
+| --- | ---: | ---: | ---: | ---: |
+| Published grid, current survey | 7,023 | 0 | 60.0 | 16.7 / 16.7 |
+| Synthetic terrain and generated layers | 10,000 | 2,961 | 59.8 | 16.7 / 16.7 |
+| Dense synthetic roster, real geometry and generated layers | 7,023 | 2,061 | 52.5 | 16.7 / 16.8 |
+
+These measure warm navigation, not full-campaign event throughput or a hardware
+GPU. The dense fixture has 290 mapped units in 40 stacks, plus six off-map or
+unplaced units. Positive-feature stress data is generated and explicitly
+labeled; the published survey currently supplies no positive edges.
+`npm run smoke -- layers.spec.ts benchmark.spec.ts` exercises coverage controls
+and writes the measurements to the owning scratch folder.
+
+### Actual movement and replay verification
+
+The new movement browser check uses a fresh authenticated CNA development
+campaign, hands Axis Front Line to a human controller, and lets the scripted
+other seats reach its movement window. It reads the projected legal unit enum,
+validates an adjacent move through the rules engine, submits it with the current
+controller epoch/revision, and watches the production board. IX Libyan Bn moved
+from C4020 to C3920 from a window containing 116 eligible units. The board
+animated the move, removed moved units from the remaining list, preserved its
+highlight after reload, displayed the registry citation card, and cleared the
+private movement panel and animations on an opposing-side switch. This starts
+no paid driver.
+
+The full replay browser check now uses `pass_when_possible` so it can verify
+stable completion without spending time searching movement orders. It received
+90 factual decision transcripts on the movement-enabled development profile;
+the separate validated-move check supplies positive movement coverage.
+`cna.spec.ts`, `server.spec.ts` and `movement.spec.ts` also cover actual
+campaign-bound side/seat authorization and sandbox control/reconnect.
+
+Historical highlights are reconstructed from the contiguous selected segment,
+with snapshot and explicit unit flags plus authorized movement events. Repeated
+movement cycles separated by combat cannot inherit an older cycle's events.
+Movement metadata remains attached to each retained frame even after its
+establishing event is evicted. Playback before the 600-frame retention boundary
+is unavailable; fresh snapshots remain the reconnect baseline.

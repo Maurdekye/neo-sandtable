@@ -9,7 +9,11 @@
     "test": "vitest run",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "smoke": "playwright test"
+    "smoke": "playwright test",
+    "data:export": "node tools/export_viewer.mjs",
+    "predev": "npm run data:export",
+    "prebuild": "npm run data:export",
+    "pretest": "npm run data:export"
   },
   "dependencies": {
     "pixi.js": "^8.13.2",

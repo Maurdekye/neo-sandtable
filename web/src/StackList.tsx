@@ -7,11 +7,13 @@ export function StackList({
   units,
   selected,
   onSelect,
+  moved,
 }: {
   stack: Stack
   units: Record<string, UnitView>
   selected: string | null
   onSelect: (id: string) => void
+  moved: Set<string>
 }) {
   const [query, setQuery] = useState(''),
     text = query.trim().toLowerCase()
@@ -45,7 +47,7 @@ export function StackList({
       <div className="stack-unit-list">
         {filtered.map((u) => (
           <button
-            className={`unit-row ${selected === u.id ? 'selected' : ''}`}
+            className={`unit-row ${selected === u.id ? 'selected' : ''} ${moved.has(u.id) ? 'moved' : ''}`}
             key={u.id}
             data-unit-id={u.id}
             onClick={() => onSelect(u.id)}
@@ -58,6 +60,7 @@ export function StackList({
               {u.name}
               <small>
                 {u.size} · {u.kind}
+                {moved.has(u.id) ? ' - moved' : ''}
               </small>
             </span>
           </button>

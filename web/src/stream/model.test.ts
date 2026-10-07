@@ -215,3 +215,56 @@ describe('stream and replay invariants', () => {
     expect(v.stacks).toEqual([])
   })
 })
+
+it('retains moved metadata after event eviction and clears it at segment boundaries and snapshots', () => {
+  let state = connected()
+  state = receive(state, {
+    type: 'event',
+    seq: 8,
+    clock,
+    event: {
+      kind: 'unit_moved',
+      unit_id: 'u',
+      path: ['C4219'],
+      cp_spent: null,
+    },
+  }).state
+  for (let seq = 9; seq <= MAX_FRAMES + 10; seq++)
+    state = receive(state, {
+      type: 'event',
+      seq,
+      clock,
+      event: { kind: 'note', text: 'Fixture traffic' },
+    }).state
+  expect(state.frames.some((f) => f.event?.kind === 'unit_moved')).toBe(false)
+  expect(selectedFrame(state)?.moved).toEqual(['u'])
+  const nextClock = { ...clock, segment: 'combat' }
+  state = receive(state, {
+    type: 'event',
+    seq: MAX_FRAMES + 11,
+    clock: nextClock,
+    event: { kind: 'phase_changed', clock: nextClock },
+  }).state
+  expect(selectedFrame(state)?.moved).toEqual([])
+  state = receive(state, {
+    type: 'snapshot',
+    seq: 1000,
+    view: {
+      ...view,
+      units: { u: { ...view.units.u, detail: { moved_this_segment: true } } },
+    },
+  }).state
+  expect(selectedFrame(state)?.moved).toEqual(['u'])
+  state = receive(state, {
+    type: 'event',
+    seq: 1001,
+    clock,
+    event: {
+      kind: 'unit_updated',
+      unit: { ...view.units.u, detail: { moved_this_segment: false } },
+    },
+  }).state
+  expect(selectedFrame(state)?.moved).toEqual([])
+  state = receive(state, { type: 'resync' }).state
+  expect(state.frames).toEqual([])
+})
