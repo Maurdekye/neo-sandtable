@@ -78,19 +78,14 @@ impl Bound for BreakdownTable {
     }
 }
 impl BreakdownTable {
-    /// Fractions round up once; lower shifts can remove the check and upper shifts clamp at 71+.
-    /// Cases: land:21.31, land:21.32, land:21.33, land:21.34, land:21.38
-    pub fn percent_quarters(
-        &self,
-        points_quarters: i32,
-        column_shift: i32,
-        roll: TwoDiceReading,
-    ) -> Option<i32> {
+    /// Unadjusted printed band, after rounding the accumulated fraction upward.
+    /// Cases: land:21.26, land:21.27, land:21.31
+    pub fn column_quarters(&self, points_quarters: i32) -> Option<usize> {
         if points_quarters < 0 {
             return None;
         }
         let n = (i64::from(points_quarters) + 3) / 4;
-        let base = match n {
+        Some(match n {
             0..=3 => 0,
             4..=10 => 1,
             11..=20 => 2,
@@ -100,8 +95,18 @@ impl BreakdownTable {
             51..=60 => 6,
             61..=70 => 7,
             _ => 8,
-        };
-        let index = (i64::from(base) + i64::from(column_shift)).min(8);
+        })
+    }
+    /// Fractions round up once; lower shifts can remove the check and upper shifts clamp at 71+.
+    /// Cases: land:21.31, land:21.32, land:21.33, land:21.34, land:21.38
+    pub fn percent_quarters(
+        &self,
+        points_quarters: i32,
+        column_shift: i32,
+        roll: TwoDiceReading,
+    ) -> Option<i32> {
+        let base = self.column_quarters(points_quarters)? as i64;
+        let index = (base + i64::from(column_shift)).min(8);
         if index < 1 {
             return Some(0);
         }

@@ -133,6 +133,8 @@ pub struct LandUnit {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LandState {
     #[serde(default)]
+    pub breakdown: crate::land::breakdown::BreakdownState,
+    #[serde(default)]
     pub reaction: crate::land::reaction::ReactionState,
     /// Public target-hex assault announcements, retained until the OpStage ends.
     #[serde(default)]

@@ -130,6 +130,44 @@ pub fn entry_cost(table: &TerrainEffects, entry: Entry<'_>) -> Result<i32, Entry
     Ok(cost)
 }
 
+/// Breakdown exposure follows the travelled terrain, independently of movement CPA.
+/// Rain converts the road value to the track value; road bypass applies to hexside effects.
+/// Cases: land:21.21, land:21.37, land:8.37
+/// Interpretations: interp:land-0002
+pub fn entry_breakdown(table: &TerrainEffects, entry: Entry<'_>) -> Result<i32, EntryError> {
+    // Reuse crossing legality, including vehicle/escarpment and swollen-river restrictions.
+    entry_cost(table, entry)?;
+    let road = entry.route == Route::Road && !entry.rainstorm;
+    let track = matches!(entry.route, Route::Track | Route::UnfinishedRoad)
+        || entry.route == Route::Road && entry.rainstorm;
+    let value = |f| {
+        if track {
+            table.track_values(f, entry.motorized).1
+        } else {
+            table.feature(f).breakdown
+        }
+    };
+    let number = |v| match v {
+        Some(V::ValueQuarters(n) | V::AddQuarters(n)) => Ok(n),
+        None | Some(V::NoEffect) => Ok(0),
+        _ => Err(EntryError::MissingTerrain),
+    };
+    let mut total = number(if road {
+        table.feature(F::Road).breakdown
+    } else {
+        value(entry.terrain)
+    })?;
+    for &edge in entry.hexsides {
+        if road || (matches!(entry.route, Route::Road | Route::Railroad) && edge == F::MajorRiver) {
+            continue;
+        }
+        total = total
+            .checked_add(number(value(edge))?)
+            .ok_or(EntryError::Overflow)?;
+    }
+    Ok(total)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,6 +247,36 @@ mod tests {
         );
     }
 
+    /// Cases: land:21.21, land:21.37, land:8.37
+    /// Interpretations: interp:land-0002
+    #[test]
+    fn hand_checked_breakdown_prices_include_track_quarters_and_rain() {
+        let t = cna_tables::Tables::load(&cna_content::repo_data_dir()).unwrap();
+        let mut e = Entry {
+            terrain: F::Clear,
+            route: Route::Plain,
+            hexsides: &[F::Wadi],
+            rainstorm: false,
+            motorized: true,
+            salt_marsh_exception: false,
+            desert_prohibited: false,
+        };
+        assert_eq!(entry_breakdown(&t.land.terrain_effects, e), Ok(48)); // 4 + 8 BP
+        e.route = Route::Track;
+        assert_eq!(entry_breakdown(&t.land.terrain_effects, e), Ok(24)); // 2 + 4 BP
+        e.route = Route::Road;
+        assert_eq!(entry_breakdown(&t.land.terrain_effects, e), Ok(2));
+        e.rainstorm = true;
+        assert_eq!(entry_breakdown(&t.land.terrain_effects, e), Ok(24));
+        e.hexsides = &[];
+        e.terrain = F::MajorCity;
+        e.route = Route::Track;
+        e.rainstorm = false;
+        assert_eq!(entry_breakdown(&t.land.terrain_effects, e), Ok(1)); // 0.25 BP
+        e.route = Route::Railroad;
+        e.terrain = F::Clear;
+        assert_eq!(entry_breakdown(&t.land.terrain_effects, e), Ok(16));
+    }
     /// Cases: land:8.32, land:8.42, land:8.44, land:8.47
     #[test]
     fn network_does_not_bypass_vehicle_escarpment_restrictions() {

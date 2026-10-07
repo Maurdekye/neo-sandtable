@@ -15,6 +15,7 @@ use cna_tables::land::terrain::TerrainFeature as F;
 #[derive(Debug, Clone, Copy)]
 pub struct StepCost {
     pub cp_quarters: i32,
+    pub breakdown_quarters: i32,
     pub on_network: bool,
     pub assumed_edges: bool,
 }
@@ -207,6 +208,10 @@ pub fn step_cost_with_network(
         .map_err(|_| illegal("unit cannot cross this terrain"))?;
     Ok(StepCost {
         cp_quarters: cp,
+        breakdown_quarters: terrain::entry_breakdown(&content.tables.land.terrain_effects, entry)
+            .map_err(|_| {
+            unsupported("land:21.21", "breakdown terrain value is unresolved")
+        })?,
         on_network: matches!(route, Route::Road | Route::Track | Route::UnfinishedRoad),
         assumed_edges: unknown,
     })
