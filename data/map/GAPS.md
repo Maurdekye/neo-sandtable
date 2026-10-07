@@ -256,3 +256,24 @@ The three inputs retain 320 unresolved observations without masks: pipeline on a
 ### Seventh assembled edge-cycle abstentions, 2026-10-07
 
 The three raw inputs retain 379 unresolved observations without masks: pipeline on all 260 pairs, 53 slope and 53 ridge decisions, two escarpment decisions, two railroad and two unfinished-railroad identities, two border identities, three road-family decisions and two marine endpoints. Exact identities and reasons remain in the immutable raw reviews. C3019/C3120 and C3028/C3129 tied or coincident line/border symbols stay unresolved. C3024/C3124 and outside-corridor D2705–D2710 surface gaps remain authoritative. Eastern whole-share observation completion still leaves 1,260 kind abstentions, including every pipeline. The new seven-edge track strip covers the current thirteen movement kinds only; missing lake evidence, adjacent halo and action legality remain unknown. No edge review resolves the 33 corridor terrain gaps.
+
+
+### Final fresh corridor-edge inventory limits, 2026-10-07
+
+The four final inputs retain 368 unresolved decisions without masks: pipeline on all 257 pairs, 51 slope and 51 ridge decisions, and three railroad, three unfinished-railroad and three border identities. Exact outcomes and reasons remain in the immutable source reviews. No negative lake mask is inferred. Existing 33 corridor terrain gaps and all unknown outside-corridor endpoint surfaces remain authoritative.
+
+Every corridor physical pair now has some observation, but the following thirteen historic western pilot pairs have no current review or coverage for the listed kinds. These missing records remain unknown, distinct from explicitly authored abstentions. Existing source observations are preserved under the no-repeat physical-pair ruling. Additional missing-kind review remains a separate task before claiming current-kind completeness.
+
+- C3820/C3921: `line:pipeline`, `line:railroad`, `line:road`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:border`, `side:ridge`, `side:slope`, `side:wadi`.
+- C3821/C3921: `line:pipeline`, `line:railroad`, `line:road`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:border`, `side:ridge`, `side:slope`, `side:wadi`.
+- C3920/C3921: `line:pipeline`, `line:railroad`, `line:road`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:border`, `side:ridge`, `side:slope`, `side:wadi`.
+- C3920/C4020: `line:pipeline`, `line:railroad`, `line:road`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:border`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4019/C4020: `line:pipeline`, `line:railroad`, `line:road`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:border`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4020/C4021: `line:pipeline`, `line:railroad`, `line:road`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:border`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4020/C4121: `line:pipeline`, `line:railroad`, `line:road`, `line:unfinished_railroad`, `line:unfinished_road`, `side:border`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4320/C4419: `line:pipeline`, `line:railroad`, `line:unfinished_railroad`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4320/C4420: `line:pipeline`, `line:railroad`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4321/C4420: `line:pipeline`, `line:railroad`, `line:unfinished_railroad`, `line:unfinished_road`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4322/C4421: `line:pipeline`, `line:railroad`, `line:road`, `line:unfinished_railroad`, `line:unfinished_road`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4420/C4421: `line:pipeline`, `line:road`, `line:unfinished_railroad`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
+- C4420/C4521: `line:pipeline`, `line:railroad`, `line:track`, `line:unfinished_railroad`, `line:unfinished_road`, `side:all_sea`, `side:border`, `side:escarpment`, `side:major_river`, `side:minor_river`, `side:ridge`, `side:slope`, `side:wadi`.
