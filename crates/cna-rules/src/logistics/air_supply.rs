@@ -7,7 +7,7 @@ use crate::air::{
 };
 use crate::{CnaContent, State};
 use cna_content::scenario::Supplies;
-use cna_core::quantity::FuelTenths;
+use cna_core::{engine::EngineError, quantity::FuelTenths};
 use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -33,12 +33,24 @@ pub enum AirSupplyUse {
     AircraftServicing,
 }
 
+/// Foreign/missing consumers stay generic; own source gaps retain case/detail.
+#[derive(Debug, Clone, PartialEq)]
+pub enum AirSupplyError {
+    Supply(SupplyError),
+    Canonical(EngineError),
+}
+impl From<SupplyError> for AirSupplyError {
+    fn from(error: SupplyError) -> Self {
+        Self::Supply(error)
+    }
+}
+
 fn consumer_facility(
     content: &CnaContent,
     state: &State,
     owner: Side,
     consumer: &SgsuId,
-) -> Result<FacilityId, SupplyError> {
+) -> Result<FacilityId, AirSupplyError> {
     // Ownership comes before any hidden facility or stock resolution.
     let sgsu = state
         .air
@@ -47,18 +59,22 @@ fn consumer_facility(
         .get(consumer)
         .ok_or(SupplyError::Invalid)?;
     if sgsu.side().ok() != Some(owner) {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     if !state.air.runtime.bases_initialized {
         return Err(SupplyError::Unsupported {
             case: "airlog:35.11",
-        });
+        }
+        .into());
     }
     let SgsuPosition::Facility(id) = &sgsu.position else {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     };
     sgsu.location(content, &state.air.runtime.facilities)
-        .map_err(|_| SupplyError::Invalid)?;
+        .map_err(|error| match error {
+            unsupported @ EngineError::Unsupported { .. } => AirSupplyError::Canonical(unsupported),
+            EngineError::Invariant { .. } => SupplyError::Invalid.into(),
+        })?;
     Ok(id.clone())
 }
 
@@ -73,10 +89,10 @@ pub fn preview(
     consumer: &SgsuId,
     _use_: AirSupplyUse,
     prior: &BTreeMap<SupplySource, FuelTenths>,
-) -> Result<Vec<SupplyDraw>, SupplyError> {
+) -> Result<Vec<SupplyDraw>, AirSupplyError> {
     let facility = consumer_facility(content, state, owner, consumer)?;
     if prior.values().any(|n| n.get() < 0) {
-        return Err(SupplyError::Invalid);
+        return Err(SupplyError::Invalid.into());
     }
     let mut sources = Vec::new();
     for (id, dump) in &state.logistics.air_dumps {
@@ -84,7 +100,7 @@ pub fn preview(
             continue;
         }
         if id != &dump.id {
-            return Err(SupplyError::Invalid);
+            return Err(SupplyError::Invalid.into());
         }
         let source = SupplySource::AirDump(id.clone());
         let mut amount = super::supply::stock_demand(dump.supplies)?;
@@ -120,7 +136,7 @@ pub fn spend(
     consumer: &SgsuId,
     use_: AirSupplyUse,
     debit: AirSupplyDebit<'_>,
-) -> Result<(), SupplyError> {
+) -> Result<(), AirSupplyError> {
     let AirSupplyDebit {
         demand,
         draws,

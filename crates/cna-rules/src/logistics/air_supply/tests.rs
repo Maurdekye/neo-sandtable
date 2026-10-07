@@ -100,7 +100,7 @@ fn exact_site_and_answering_owner_are_required_without_facility_owner_gate() {
                 AirSupplyUse::SgsuOperation,
                 &prior
             ),
-            Err(SupplyError::Invalid)
+            Err(AirSupplyError::Supply(SupplyError::Invalid))
         );
     }
     assert_eq!(before, bytes(&state));
@@ -138,7 +138,7 @@ fn exact_site_and_answering_owner_are_required_without_facility_owner_gate() {
             AirSupplyUse::SgsuOperation,
             &prior
         ),
-        Err(SupplyError::Invalid)
+        Err(AirSupplyError::Supply(SupplyError::Invalid))
     );
 }
 
@@ -247,7 +247,7 @@ fn cumulative_fuel_rounding_retires_cargo_and_checkpoint_preserves_credit() {
                 prior: &prior
             }
         ),
-        Err(SupplyError::Insufficient)
+        Err(AirSupplyError::Supply(SupplyError::Insufficient))
     );
     assert_eq!(before, bytes(&state));
 }
@@ -275,7 +275,7 @@ fn failed_debits_are_byte_atomic_and_missing_stock_cannot_spend_old_credit() {
                 prior: &BTreeMap::new()
             }
         ),
-        Err(SupplyError::Insufficient)
+        Err(AirSupplyError::Supply(SupplyError::Insufficient))
     );
     assert_eq!(before, bytes(&state));
     let mut forged = draw(SupplyDemand::default());
@@ -293,7 +293,7 @@ fn failed_debits_are_byte_atomic_and_missing_stock_cannot_spend_old_credit() {
                 prior: &BTreeMap::new()
             }
         ),
-        Err(SupplyError::Invalid)
+        Err(AirSupplyError::Supply(SupplyError::Invalid))
     );
     assert_eq!(before, bytes(&state));
     let source = SupplySource::AirDump("missing".into());
@@ -428,4 +428,69 @@ fn enemy_stock_and_history_stay_private_and_old_land_pool_sources_exclude_air() 
     let restored: State = serde_json::from_slice(&legacy).unwrap();
     assert!(restored.logistics.air_dumps.is_empty());
     assert!(matches!(location, Location::Hex { .. }));
+}
+
+/// Cases: scen:59.35, airlog:36.17, airlog:35.11
+#[test]
+fn own_source_gap_retains_case_and_detail_after_owner_authorization() {
+    let (mut content, mut state, id) = fixture();
+    let source = content
+        .scenario
+        .facilities
+        .facilities
+        .iter_mut()
+        .find(|f| f.id == "airfield_benina")
+        .unwrap();
+    source.hex = Some("unverified.air-source-hex".into());
+    source.hexes.clear();
+    let original = state.air.runtime.sgsus[&id]
+        .location(&content, &state.air.runtime.facilities)
+        .unwrap_err();
+    assert!(matches!(&original, EngineError::Unsupported { case, .. } if case == "scen:59.35"));
+    let prior = BTreeMap::new();
+    assert_eq!(
+        preview(
+            &content,
+            &state,
+            Side::Axis,
+            &id,
+            AirSupplyUse::SgsuOperation,
+            &prior
+        ),
+        Err(AirSupplyError::Canonical(original.clone()))
+    );
+    let before = bytes(&state);
+    let demand = SupplyDemand {
+        fuel: FuelTenths::new(1),
+        ..Default::default()
+    };
+    assert_eq!(
+        spend(
+            &content,
+            &mut state,
+            Side::Axis,
+            &id,
+            AirSupplyUse::SgsuOperation,
+            AirSupplyDebit {
+                demand,
+                draws: &draw(demand),
+                prior: &prior
+            }
+        ),
+        Err(AirSupplyError::Canonical(original))
+    );
+    assert_eq!(bytes(&state), before);
+    for candidate in [&id, &SgsuId("missing".into())] {
+        assert_eq!(
+            preview(
+                &content,
+                &state,
+                Side::Commonwealth,
+                candidate,
+                AirSupplyUse::SgsuOperation,
+                &prior
+            ),
+            Err(AirSupplyError::Supply(SupplyError::Invalid))
+        );
+    }
 }
