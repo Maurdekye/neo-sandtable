@@ -874,6 +874,7 @@ pub(crate) fn inspect(
                 json!({"unit":id,"restrictions":assessment})
             }).collect::<Vec<_>>(),
             "location": unit.location,
+            "transit": crate::land::offmap::transit_for_unit(state, &unit.id),
             "setup_destination": state.setup.unit_locations.get(&unit.id),
             "attached_to": unit.attached_to,
             "assigned_to": crate::ownership::assigned_parent_for_unit(content,state,&unit.id),

@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::ranges::{IntRange, check_int_tiling};
 use crate::{Bound, RawTable, TableError};
@@ -96,7 +96,7 @@ impl InitiativeRatings {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OffMapPlace {
     Tunis,

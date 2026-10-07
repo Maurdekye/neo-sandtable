@@ -149,6 +149,9 @@ pub struct LandUnit {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LandState {
+    /// Owner-private off-map journeys and physical Transit group membership.
+    #[serde(default)]
+    pub off_map: crate::land::offmap::OffMapState,
     /// Symmetric truthful links; unit.engaged is the owner-facing derived status.
     #[serde(default)]
     pub engagements: BTreeMap<UnitId, BTreeSet<UnitId>>,

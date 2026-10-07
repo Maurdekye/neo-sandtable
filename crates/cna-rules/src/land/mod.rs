@@ -8,6 +8,7 @@ pub mod engagement;
 pub mod formation;
 pub mod map;
 pub mod movement;
+pub mod offmap;
 pub mod reaction;
 pub mod reserve;
 pub mod stacking;
