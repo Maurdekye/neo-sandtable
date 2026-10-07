@@ -588,7 +588,7 @@ pub(crate) fn answer(
             preload::answer(content, state, pending, asset, &operation, action, cx)?
         }
         SetupTask::Pool { pool, source } => {
-            pools::answer(content, state, pending, &pool, source, action, strict, cx)?
+            pools::answer(content, state, pending, (&pool, source), action, strict, cx)?
         }
         SetupTask::Trucks { group } => {
             let fields = action

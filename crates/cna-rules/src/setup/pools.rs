@@ -54,7 +54,24 @@ fn domain(
         "scen:59.44"
     };
     let mut choices = if record.purpose.as_deref() == Some("air_facilities") {
-        facilities::catalog(content)?
+        let catalog = facilities::catalog(content)?;
+        if !catalog.unresolved.is_empty() {
+            if strict {
+                return Err(EngineError::Unsupported {
+                    case: case.into(),
+                    detail: catalog.unresolved.join("; "),
+                });
+            }
+            note(
+                p.side,
+                format!(
+                    "Some initial air-facility truck destinations are unavailable until ownership/location is verified ({case}): {}.",
+                    catalog.unresolved.join("; ")
+                ),
+                cx,
+            );
+        }
+        catalog
             .facilities
             .into_iter()
             .filter(|f| f.side == p.side && f.force != "malta")
@@ -223,12 +240,12 @@ pub(super) fn answer(
     content: &CnaContent,
     state: &mut State,
     pending: &Pending,
-    id: &str,
-    source: usize,
+    selection: (&str, usize),
     action: &Value,
     strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), Rejection> {
+    let (id, source) = selection;
     let p = pool(state, id).map_err(Rejection::Engine)?.clone();
     if p.side != pending.seat.side {
         return Err(illegal("truck pool belongs to another side"));
