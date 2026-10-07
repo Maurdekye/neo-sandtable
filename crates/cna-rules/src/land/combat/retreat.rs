@@ -187,14 +187,36 @@ fn members(c: &CnaContent, s: &State, seat: SeatId, order: &Order) -> BTreeSet<U
         .flat_map(|id| formation::members(c, s, id))
         .collect()
 }
-fn capped(s: &State, member_ids: &BTreeSet<UnitId>, cost: &Reachable) -> bool {
+/// Apply each member's own breakoff and movement cost, never the ordered root's cost.
+/// Cases: land:13.22, land:13.23, land:13.24
+fn capped(
+    snapshot: &State,
+    before: &State,
+    after: &State,
+    member_ids: &BTreeSet<UnitId>,
+    path_len: usize,
+) -> bool {
     member_ids.iter().all(|id| {
-        s.land
+        snapshot
+            .land
             .combat
             .retreat
             .units
             .get(id)
-            .is_some_and(|start| start.adjacent || cost.cp_quarters <= 16 || cost.path.len() == 1)
+            .is_some_and(|start| {
+                if start.adjacent || path_len == 1 {
+                    return true;
+                }
+                before
+                    .land
+                    .units
+                    .get(id)
+                    .zip(after.land.units.get(id))
+                    .is_some_and(|(a, b)| {
+                        let delta = i64::from(b.cp_spent_quarters) - i64::from(a.cp_spent_quarters);
+                        (0..=16).contains(&delta)
+                    })
+            })
     })
 }
 fn validate_plans(c: &CnaContent, s: &State) -> Result<(), Rejection> {
@@ -228,7 +250,7 @@ fn validate_plans(c: &CnaContent, s: &State) -> Result<(), Rejection> {
                 s.land.combat.retreat.strict,
                 NonPhasingMove::Retreat,
             )?;
-            if !capped(s, &selected, &cost) {
+            if !capped(s, &preview, &next, &selected, cost.path.len()) {
                 return Err(illegal(
                     "nonadjacent retreat is limited to four CP or one hex",
                 ));
@@ -348,10 +370,37 @@ pub fn reachable(c: &CnaContent, s: &State, id: &UnitId, strict: bool) -> Vec<Re
     if !allowed(c, s, id, seat) {
         return vec![];
     }
-    let selected = formation::members(c, s, id).into_iter().collect();
+    let selected: BTreeSet<UnitId> = formation::members(c, s, id).into_iter().collect();
     movement::nonphasing_reachable(c, s, id, strict, NonPhasingMove::Retreat)
         .into_iter()
-        .filter(|cost| capped(s, &selected, cost))
+        .filter(|cost| {
+            // Adjacent members and a one-hex retreat have no four-CP cap. Avoid a second
+            // path evaluation in those common cases; all other members need their own delta.
+            if selected.iter().all(|member| {
+                s.land
+                    .combat
+                    .retreat
+                    .units
+                    .get(member)
+                    .is_some_and(|start| start.adjacent || cost.path.len() == 1)
+            }) {
+                return true;
+            }
+            if s.land
+                .combat
+                .retreat
+                .units
+                .get(id)
+                .is_some_and(|start| !start.adjacent)
+                && cost.cp_quarters > 16
+                && cost.path.len() != 1
+            {
+                return false;
+            }
+            let order = Order::new(id.clone(), cost.path.clone());
+            movement::preview_nonphasing(c, s, &order, seat, strict, NonPhasingMove::Retreat)
+                .is_ok_and(|(next, actual)| capped(s, s, &next, &selected, actual.path.len()))
+        })
         .collect()
 }
 fn index(rng: &mut CampaignRng, count: usize) -> usize {

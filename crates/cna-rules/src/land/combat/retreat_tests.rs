@@ -551,3 +551,81 @@ fn no_public_phasing_player_skips_entry_and_finish_without_fabricating_a_window(
     assert_eq!(serde_json::to_value(&g).unwrap(), before);
     assert!(events.is_empty());
 }
+
+/// Each represented member pays its own engaged/contact departure before its own cap is checked.
+/// Cases: land:13.22,land:13.23,land:13.24
+#[test]
+fn nonadjacent_cap_uses_each_attached_or_stacked_members_preview_delta() {
+    const ROOT: &str = "it.1_libyan_div.1st_libyan_regt_hq";
+    const CHILD: &str = "it.1_libyan_div.viii_libyan_bn";
+    for with_stack in [false, true] {
+        let (c, mut g, _overlay) = fixture();
+        g.state.land.units.get_mut(&LEG.into()).unwrap().location = Location::Eliminated;
+        g.state.turn.player_a = Some(Side::Commonwealth);
+        place(&mut g.state, ROOT, "C4020");
+        place(&mut g.state, CHILD, "C4020");
+        for id in [ROOT, CHILD] {
+            let fuel = crate::logistics::fuel_capacity(&c, &g.state, &id.into()).unwrap();
+            g.state
+                .logistics
+                .unit_supply
+                .get_mut(&id.into())
+                .unwrap()
+                .tank_fuel = fuel;
+        }
+        let child = g.state.land.units.get_mut(&CHILD.into()).unwrap();
+        child.engaged = true;
+        if !with_stack {
+            child.detached = false;
+            child.attached_to = Some(ROOT.into());
+        }
+        let g = open_game(&c, &g);
+        let owner = SeatId::new(
+            Side::Axis,
+            ownership::seat_for_unit(&c, &g.state, &ROOT.into()),
+        );
+        let mut order = Order::new(ROOT.into(), vec!["C4021".into(), "C4022".into()]);
+        order.with_stack = with_stack;
+        let selected = members(&c, &g.state, owner, &order);
+        assert!(selected.contains(&CHILD.into()));
+        let (preview, cost) = movement::preview_nonphasing(
+            &c,
+            &g.state,
+            &order,
+            owner,
+            false,
+            NonPhasingMove::Retreat,
+        )
+        .unwrap();
+        let child_delta = preview.land.units[&CHILD.into()].cp_spent_quarters
+            - g.state.land.units[&CHILD.into()].cp_spent_quarters;
+        assert!(cost.cp_quarters <= 16, "root must pass the old check");
+        assert!(child_delta > 16, "child must fail its own cap");
+        let before = serde_json::to_value(&g).unwrap();
+        assert!(
+            evaluate(
+                &Cna::dev(),
+                &c,
+                &g,
+                &command(&c, &g, owner, json!([order.clone()]))
+            )
+            .is_err()
+        );
+        assert_eq!(serde_json::to_value(&g).unwrap(), before);
+        if !with_stack {
+            assert!(
+                !reachable(&c, &g.state, &ROOT.into(), false)
+                    .iter()
+                    .any(|p| p.path == order.path)
+            );
+        }
+        // A one-hex retreat is still explicitly legal even when engaged departure alone uses 4CP.
+        order.path.truncate(1);
+        let accepted = answer(&c, &g, owner, json!([order]));
+        assert_eq!(accepted.rng, g.rng);
+        assert_eq!(
+            accepted.state.land.units[&CHILD.into()].cp_spent_quarters,
+            0
+        );
+    }
+}
