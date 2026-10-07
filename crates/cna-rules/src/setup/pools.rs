@@ -277,7 +277,7 @@ pub(super) fn answer(
     {
         return Err(illegal("choose a positive portion within the pool"));
     }
-    if p.cargo != Supplies::default() {
+    if p.cargo != Supplies::default() && trucks != p.trucks {
         return Err(Rejection::Engine(EngineError::Unsupported {
             case: "scen:59.44".into(),
             detail: "a loaded initial pool needs an explicit cargo split".into(),
@@ -305,6 +305,7 @@ pub(super) fn answer(
             Supplies::default(),
         )
         .map_err(|s| Rejection::Engine(invariant(&s)))?;
+        state.setup.pool_sources.insert(fresh.clone(), source);
         state.setup.pool_locations.insert(fresh, destination);
         open(content, state, id, source, strict, cx).map_err(Rejection::Engine)?;
     }
@@ -315,4 +316,35 @@ fn max_value(v: Option<&Value>) -> Result<i32, Rejection> {
         .and_then(|v| i32::try_from(v).ok())
         .filter(|n| *n >= 0)
         .ok_or_else(|| illegal("truck counts must be nonnegative integers"))
+}
+
+/// A losing combat placement can invalidate a convoy location; re-open that friendly choice only.
+/// Cases: scen:59.43, scen:59.44
+pub(super) fn finish(
+    content: &CnaContent,
+    state: &mut State,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    for (id, location) in std::mem::take(&mut state.setup.pool_locations) {
+        let source = *state
+            .setup
+            .pool_sources
+            .get(&id)
+            .ok_or_else(|| invariant("starting pool source is missing"))?;
+        let permitted = domain(content, state, &id, source, strict, cx)?
+            .is_some_and(|choices| choices.contains(&location));
+        if permitted {
+            state
+                .logistics
+                .truck_pools
+                .iter_mut()
+                .find(|p| p.id == id)
+                .ok_or_else(|| invariant("buffered truck pool disappeared"))?
+                .location = Some(location);
+        } else {
+            open(content, state, &id, source, strict, cx)?;
+        }
+    }
+    Ok(())
 }

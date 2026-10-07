@@ -60,6 +60,12 @@ fn finish(c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
         if game.state.setup.closed {
             return game;
         }
+        if game.state.decisions.pending.is_empty() {
+            game = evaluate(&Cna::dev(), c, &game, &Command::Advance)
+                .unwrap()
+                .game;
+            continue;
+        }
         let p = game.state.decisions.pending[0].clone();
         game = submit(c, &game, &p, first(&p.space.schema)).unwrap();
     }
@@ -191,9 +197,10 @@ fn private_choices_publish_presence_only_after_the_entire_window_and_preserve_tr
 /// Cases: scen:59.2, land:8.13
 /// Interpretations: interp:scen-0005
 #[test]
-fn later_opposing_collision_rejects_only_that_answer_and_can_retry() {
+fn opposing_hidden_buffers_do_not_change_answer_validation_and_collision_retries_at_closure() {
     let mut c = content();
-    let groups: Vec<_> = c
+    let mut state = State::new(&c).unwrap();
+    let selected: Vec<_> = c
         .scenario
         .land
         .iter_mut()
@@ -202,29 +209,125 @@ fn later_opposing_collision_rejects_only_that_answer_and_can_retry() {
             g.placement = Placement::HexesAny {
                 hexes: vec!["A0101".into(), "A0102".into()],
             };
-            (f.file.side.unwrap(), g.id.clone())
+            state
+                .land
+                .units
+                .values()
+                .find(|u| u.setup_group.as_ref() == Some(&g.id))
+                .unwrap()
+                .id
+                .clone()
         })
         .collect();
-    let mut game = opened(&c);
-    let requests: Vec<_> = groups.iter().map(|(side, group)| {
-        game.state.decisions.pending.iter().find(|p| p.kind == KIND_UNIT && p.seat.side == *side &&
-            matches!(&game.state.setup.tasks[&p.id], SetupTask::Unit { unit, .. } if game.state.land.units[unit].setup_group.as_ref() == Some(group))).unwrap().clone()
-    }).collect();
-    game = submit(&c, &game, &requests[0], json!("A0101")).unwrap();
-    let before = serde_json::to_string(&game).unwrap();
-    let error = submit(&c, &game, &requests[1], json!("A0101")).unwrap_err();
-    assert_eq!(error, illegal("not a legal setup destination"));
-    assert_eq!(serde_json::to_string(&game).unwrap(), before);
-    assert!(
-        game.state
-            .decisions
-            .pending
-            .iter()
-            .any(|p| p.id == requests[1].id)
+    for u in state.land.units.values_mut() {
+        u.location = Location::NotArrived;
+    }
+    state.land.undistributed_trucks.clear();
+    state.logistics.dumps.clear();
+    state.logistics.truck_pools.clear();
+    state.air.forces.clear();
+    for id in &selected {
+        let u = state.land.units.get_mut(id).unwrap();
+        u.location = Location::AwaitingSetup {
+            group: u.setup_group.clone().unwrap(),
+        };
+    }
+    let game = Game {
+        state,
+        rng: CampaignRng::from_seed([5; 32]).state(),
+    };
+    let game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+        .unwrap()
+        .game;
+    let first = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.seat.side == Side::Axis)
+        .unwrap()
+        .clone();
+    let second = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.seat.side == Side::Commonwealth)
+        .unwrap()
+        .clone();
+    let game = submit(&c, &game, &first, json!("A0101")).unwrap();
+    let axis = selected
+        .iter()
+        .find(|id| game.state.land.units[*id].side == Side::Axis)
+        .unwrap();
+    let cw = selected
+        .iter()
+        .find(|id| game.state.land.units[*id].side == Side::Commonwealth)
+        .unwrap();
+    let mut alternate = game.clone();
+    alternate.state.setup.unit_locations.insert(
+        axis.clone(),
+        Location::Hex {
+            hex: "A0102".into(),
+        },
     );
-    game = submit(&c, &game, &requests[1], json!("A0102")).unwrap();
-    assert!(!game.state.setup.closed);
-    assert_eq!(game.state.setup.unit_locations.len(), 2);
+    let cmd = Command::Respond(DecisionResponse {
+        decision_id: second.id.clone(),
+        seat: second.seat,
+        controller_epoch: 1,
+        decision_revision: second.revision,
+        idempotency_key: second.id.to_string(),
+        action: json!("A0101"),
+        public_explanation: None,
+    });
+    let accepted = evaluate(&Cna::dev(), &c, &game, &cmd).unwrap();
+    let other = evaluate(&Cna::dev(), &c, &alternate, &cmd).unwrap();
+    assert_eq!(
+        serde_json::to_value(&accepted.events).unwrap(),
+        serde_json::to_value(&other.events).unwrap()
+    );
+    assert_eq!(
+        Cna::dev().view(
+            &c,
+            &accepted.game.state,
+            Perspective::Side(Side::Commonwealth)
+        ),
+        Cna::dev().view(&c, &other.game.state, Perspective::Side(Side::Commonwealth))
+    );
+    assert!(!accepted.game.state.setup.closed);
+    assert!(accepted.game.state.decisions.pending.is_empty());
+    let retry = evaluate(&Cna::dev(), &c, &accepted.game, &Command::Advance)
+        .unwrap()
+        .game;
+    assert!(!retry.state.setup.closed);
+    assert_eq!(
+        retry.state.land.units[axis]
+            .location
+            .hex()
+            .unwrap()
+            .as_str(),
+        "A0101"
+    );
+    assert!(matches!(
+        retry.state.land.units[cw].location,
+        Location::AwaitingSetup { .. }
+    ));
+    let p = retry
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == KIND_UNIT)
+        .unwrap()
+        .clone();
+    assert_eq!(p.seat.side, Side::Commonwealth);
+    assert!(submit(&c, &retry, &p, json!("A0101")).is_err());
+    let accepted = submit(&c, &retry, &p, json!("A0102")).unwrap();
+    assert!(!accepted.state.setup.closed);
+    let completed = evaluate(&Cna::dev(), &c, &accepted, &Command::Advance)
+        .unwrap()
+        .game;
+    assert!(completed.state.setup.closed);
 }
 
 /// Cases: scen:59.42
@@ -388,6 +491,17 @@ fn convoy_planning_barrier_stays_in_setup_after_both_close_paths() {
     let mut rng = CampaignRng::from_seed([4; 32]);
     let mut events = vec![];
     enter(
+        &c,
+        &mut no_choices,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+        false,
+    )
+    .unwrap();
+    assert!(!no_choices.logistics.convoys_initialized);
+    super::finish(
         &c,
         &mut no_choices,
         &mut Cx {
@@ -738,6 +852,10 @@ fn optional_initial_cargo_shares_capacity_with_troops_and_never_spends_dump_supp
         .unwrap()
         .clone();
     game = submit(&c, &game, &p, Value::Null).unwrap();
+    assert!(!game.state.setup.closed);
+    game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+        .unwrap()
+        .game;
     assert!(game.state.setup.closed);
     assert!(game.state.logistics.dumps.is_empty());
 }
@@ -754,6 +872,12 @@ fn setup_context_identifies_each_owner_asset_and_survives_checkpointing() {
     for _ in 0..500 {
         if game.state.setup.closed {
             break;
+        }
+        if game.state.decisions.pending.is_empty() {
+            game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+                .unwrap()
+                .game;
+            continue;
         }
         let p = game.state.decisions.pending[0].clone();
         let context = p.space.to_json_schema()["x-context"].clone();
