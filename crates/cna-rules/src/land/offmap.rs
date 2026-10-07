@@ -31,7 +31,7 @@ pub struct OffMapState {
     pub next_group: u64,
 }
 
-/// Verify actual membership and co-location. An off-map name by itself grants no Transit rights.
+/// Verify the unit's actual saved membership and group location; a name alone grants no rights.
 /// The caller may use this fact for unlimited water consumption, never for creating supplies.
 /// Cases: land:8.81, land:8.82, land:8.87
 pub fn is_in_transit(state: &State, id: &UnitId) -> bool {
@@ -54,6 +54,7 @@ pub fn transit_for_unit<'a>(state: &'a State, id: &UnitId) -> Option<&'a Transit
             || leg.completed_stages >= leg.required_stages
             || !leg.members.contains(root)
             || !leg.members.contains(id)
+            || !matches!(&unit.location, Location::OffMap { id } if id == &leg.group)
         {
             return None;
         }
@@ -62,10 +63,11 @@ pub fn transit_for_unit<'a>(state: &'a State, id: &UnitId) -> Option<&'a Transit
             .iter()
             .all(|member| {
                 seen.insert(member)
-                    && state.land.units.get(member).is_some_and(|u| {
-                        u.side == Side::Axis
-                            && matches!(&u.location, Location::OffMap { id } if id == &leg.group)
-                    })
+                    && state
+                        .land
+                        .units
+                        .get(member)
+                        .is_some_and(|u| u.side == Side::Axis)
             })
             .then_some(leg)
     })
@@ -121,7 +123,9 @@ mod tests {
             id: "box_tripoli".into(),
         };
         assert!(!is_in_transit(&separated, &child));
-        assert!(!is_in_transit(&separated, &root));
+        // A trip cannot progress with a changed formation, but those still physically
+        // in its Transit box retain water consumption under 8.87.
+        assert!(is_in_transit(&separated, &root));
         let mut duplicate = s.clone();
         duplicate
             .land
