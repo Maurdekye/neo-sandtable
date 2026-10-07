@@ -77,9 +77,9 @@ impl Ruleset for Cna {
         state: &mut State,
         cx: &mut Cx<'_>,
     ) -> Result<Progress, EngineError> {
-        let moved = state.land.movement.moved.clone();
+        let before = state.clone();
         let progress = self.run_steps(content, state, cx);
-        view::sync_moved_flags(content, state, &moved, cx);
+        view::sync_state_events(content, &before, state, cx);
         progress
     }
 
@@ -90,9 +90,9 @@ impl Ruleset for Cna {
         response: &DecisionResponse,
         cx: &mut Cx<'_>,
     ) -> Result<(), Rejection> {
-        let moved = state.land.movement.moved.clone();
+        let before = state.clone();
         let outcome = self.resolve(content, state, response, cx);
-        view::sync_moved_flags(content, state, &moved, cx);
+        view::sync_state_events(content, &before, state, cx);
         outcome
     }
 

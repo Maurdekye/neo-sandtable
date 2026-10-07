@@ -5,7 +5,7 @@
 //! composition, status and attributes of enemy units are not. Own-side seats see everything their
 //! side knows; the operator sees everything and is labelled as omniscient by the board.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use cna_core::clock::{Anchor, Clock};
 use cna_core::engine::{Cx, Rejection};
@@ -161,43 +161,116 @@ fn stamp_moved(state: &State, id: &UnitId, view: &mut wire::UnitView) {
     }
 }
 
-/// Keep `moved_this_segment` in live updates consistent with snapshots. Runs at the end of every
-/// engine call (`advance`, `respond`): it stamps the flag on each `UnitUpdated` of a land unit and
-/// sends an update for every unit whose flag the call cleared (a new Movement Segment), so viewers
-/// never keep a stale `true`. `before` is the moved set when the call began.
-pub(crate) fn sync_moved_flags(
+/// Whether `event` only re-states what a perspective's board view now shows. Those are derived
+/// centrally by [`sync_state_events`]; procedures may emit them, but the central pass replaces
+/// them.
+fn is_state_sync(event: &wire::GameEvent) -> bool {
+    matches!(
+        event,
+        wire::GameEvent::UnitUpdated { .. }
+            | wire::GameEvent::StackUpdated { .. }
+            | wire::GameEvent::StackRemoved { .. }
+            | wire::GameEvent::MarkerPlaced { .. }
+            | wire::GameEvent::MarkerRemoved { .. }
+    )
+}
+
+/// Keep every viewer's live board equal to its snapshot, by construction. Runs at the end of
+/// every engine call (`advance`, `respond`). For each of the three board perspectives (each side
+/// and the operator) it compares the view before and after the call and emits exactly the
+/// difference, addressed to that perspective alone (`SideOnly(side)`, `Operator`): a
+/// `UnitUpdated` per unit whose view changed or appeared, a `UnitRemoved` per unit that left it
+/// (unless a procedure already said why), `StackUpdated`/`StackRemoved` per changed stack, and
+/// `MarkerPlaced`/`MarkerRemoved` per changed marker. State-sync events that procedures emitted
+/// are dropped first, so an enemy can never receive one its view does not justify (the
+/// presence-only contract, `land:3.6`). Semantic events (moves along paths, dice, decisions,
+/// notes, reasoned removals) are kept in order; the derived events follow them.
+pub(crate) fn sync_state_events(
     content: &CnaContent,
-    state: &State,
-    before: &BTreeSet<UnitId>,
+    before: &State,
+    after: &State,
     cx: &mut Cx<'_>,
 ) {
-    let moved = &state.land.movement.moved;
-    let updated: BTreeSet<String> = cx
-        .events
-        .iter()
-        .filter_map(|e| match &e.event {
-            wire::GameEvent::UnitUpdated { unit } => Some(unit.id.clone()),
-            _ => None,
-        })
-        .collect();
-    for id in before.difference(moved) {
-        if let Some(unit) = state.land.units.get(id)
-            && !updated.contains(&id.to_string())
-        {
-            cx.emit(EngineEvent::new(
-                Audience::Side(unit.side),
-                wire::GameEvent::UnitUpdated {
-                    unit: unit_view(content, unit),
-                },
-            ));
-        }
-    }
-    for event in cx.events.iter_mut() {
-        if let wire::GameEvent::UnitUpdated { unit } = &mut event.event {
-            let id = UnitId::new(&unit.id);
-            if state.land.units.contains_key(&id) {
-                stamp_moved(state, &id, unit);
+    cx.events.retain(|e| !is_state_sync(&e.event));
+    let perspectives = [
+        (
+            Perspective::Side(Side::Axis),
+            Audience::SideOnly(Side::Axis),
+        ),
+        (
+            Perspective::Side(Side::Commonwealth),
+            Audience::SideOnly(Side::Commonwealth),
+        ),
+        (Perspective::Operator, Audience::Operator),
+    ];
+    for (perspective, audience) in perspectives {
+        let (v0, v1) = (
+            view(content, before, perspective),
+            view(content, after, perspective),
+        );
+        let mut derived = Vec::new();
+        for (id, unit) in &v1.units {
+            if v0.units.get(id) != Some(unit) {
+                derived.push(wire::GameEvent::UnitUpdated { unit: unit.clone() });
             }
+        }
+        for id in v0.units.keys() {
+            let explained = cx.events.iter().any(|e| {
+                perspective.can_see(&e.audience)
+                    && matches!(&e.event, wire::GameEvent::UnitRemoved { unit_id, .. } if unit_id == id)
+            });
+            if !v1.units.contains_key(id) && !explained {
+                derived.push(wire::GameEvent::UnitRemoved {
+                    unit_id: id.clone(),
+                    reason: "no longer in view".to_owned(),
+                });
+            }
+        }
+        let stacks = |v: &wire::ViewState| -> BTreeMap<(String, Side), wire::Stack> {
+            v.stacks
+                .iter()
+                .map(|st| ((st.hex.clone(), st.side), st.clone()))
+                .collect()
+        };
+        let (s0, s1) = (stacks(&v0), stacks(&v1));
+        for (key, stack) in &s1 {
+            if s0.get(key) != Some(stack) {
+                derived.push(wire::GameEvent::StackUpdated {
+                    stack: stack.clone(),
+                });
+            }
+        }
+        for (hex, side) in s0.keys() {
+            if !s1.contains_key(&(hex.clone(), *side)) {
+                derived.push(wire::GameEvent::StackRemoved {
+                    hex: hex.clone(),
+                    side: *side,
+                });
+            }
+        }
+        let markers = |v: &wire::ViewState| -> BTreeMap<String, wire::Marker> {
+            v.markers
+                .iter()
+                .map(|m| (m.id.clone(), m.clone()))
+                .collect()
+        };
+        let (m0, m1) = (markers(&v0), markers(&v1));
+        for (id, marker) in &m1 {
+            if m0.get(id) != Some(marker) {
+                derived.push(wire::GameEvent::MarkerPlaced {
+                    marker: marker.clone(),
+                });
+            }
+        }
+        for id in m0.keys() {
+            if !m1.contains_key(id) {
+                derived.push(wire::GameEvent::MarkerRemoved {
+                    marker_id: id.clone(),
+                });
+            }
+        }
+        for event in derived {
+            cx.emit(EngineEvent::new(audience.clone(), event));
         }
     }
 }

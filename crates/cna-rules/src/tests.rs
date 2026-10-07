@@ -627,3 +627,66 @@ fn action_harness_catches_visible_differences() {
         Side::Axis,
     );
 }
+
+/// Every visible change in Game-Turn 1 is announced by an event its viewer receives (both
+/// sides and the operator), so live boards never go stale between snapshots.
+#[test]
+fn every_visible_change_in_game_turn_one_is_announced() {
+    let ruleset = Cna::dev();
+    let content = content();
+    let mut game = new_game(4);
+    let perspectives = [
+        Perspective::Side(Side::Axis),
+        Perspective::Side(Side::Commonwealth),
+        Perspective::Operator,
+    ];
+    let mut gaps = Vec::new();
+    for answered in 0..100_000 {
+        if game.state.cursor.game_turn > 1 || game.state.cursor.is_finished() {
+            break;
+        }
+        let command = if ruleset.pending(content, &game.state).is_empty() {
+            Command::Advance
+        } else {
+            let request = ruleset.pending(content, &game.state).remove(0);
+            let action = match &request.space.schema {
+                ActionSchema::Choice { options } => json!(options[0].id),
+                _ if request.space.pass.is_some() => Value::Null,
+                other => first_answer(other),
+            };
+            Command::Respond(DecisionResponse {
+                decision_id: request.id.clone(),
+                seat: request.seat,
+                controller_epoch: 1,
+                decision_revision: request.revision,
+                idempotency_key: format!("k{answered}"),
+                action,
+                public_explanation: None,
+            })
+        };
+        let t = evaluate(&ruleset, content, &game, &command).expect("legal play");
+        for p in perspectives {
+            if let Err(gap) = crate::testkit::events_explain_view_changes(
+                &ruleset,
+                content,
+                &game.state,
+                &t.game.state,
+                &t.events,
+                p,
+            ) {
+                gaps.push(format!(
+                    "{} @ {}: {p:?}: {gap}",
+                    answered,
+                    game.state.cursor.anchor()
+                ));
+            }
+        }
+        game = t.game;
+    }
+    assert!(
+        gaps.is_empty(),
+        "{} gaps, first: {:#?}",
+        gaps.len(),
+        &gaps[..]
+    );
+}

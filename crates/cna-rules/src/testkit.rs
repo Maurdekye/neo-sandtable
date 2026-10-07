@@ -15,8 +15,10 @@
 use std::collections::BTreeSet;
 
 use cna_core::engine::{Command, Game, Rejection, Ruleset, Transition, evaluate};
+use cna_core::event::EngineEvent;
 use cna_core::ids::SeatId;
 use cna_core::visibility::Perspective;
+use cna_protocol::GameEvent;
 use cna_protocol::{Role, Side};
 use serde_json::{Map, Value, json};
 
@@ -196,4 +198,119 @@ fn first_difference(a: &Value, b: &Value, path: String) -> Option<(String, Value
         _ if a == b => None,
         _ => Some((path, a.clone(), b.clone())),
     }
+}
+
+/// Viewers update from events, not snapshots. Assert that every change between `before` and
+/// `after` in `perspective`'s board view is announced by an event that perspective receives:
+/// a unit whose view changed or appeared needs a `UnitUpdated` (one that left needs
+/// `UnitRemoved`), a stack that appeared or changed needs a matching `StackUpdated` (one that
+/// vanished needs `StackRemoved`), markers need `MarkerPlaced`/`MarkerRemoved`, and new or
+/// resolved pending decisions need `DecisionOpened`/`DecisionResolved`. Returns the first gap.
+pub(crate) fn events_explain_view_changes(
+    ruleset: &Cna,
+    content: &CnaContent,
+    before: &State,
+    after: &State,
+    events: &[EngineEvent],
+    perspective: Perspective,
+) -> Result<(), String> {
+    let (v0, v1) = (
+        ruleset.view(content, before, perspective),
+        ruleset.view(content, after, perspective),
+    );
+    let seen: Vec<&GameEvent> = events
+        .iter()
+        .filter(|e| perspective.can_see(&e.audience))
+        .map(|e| &e.event)
+        .collect();
+    for (id, unit) in &v1.units {
+        if v0.units.get(id) != Some(unit)
+            && !seen
+                .iter()
+                .any(|e| matches!(e, GameEvent::UnitUpdated { unit: u } if &u.id == id))
+        {
+            let before_unit = serde_json::to_value(v0.units.get(id)).unwrap_or(Value::Null);
+            let after_unit = serde_json::to_value(unit).unwrap_or(Value::Null);
+            let what = first_difference(&before_unit, &after_unit, String::new())
+                .map(|(path, x, y)| format!("{path}: {x} -> {y}"))
+                .unwrap_or_default();
+            return Err(format!("unit {id} changed without a UnitUpdated ({what})"));
+        }
+    }
+    for id in v0.units.keys() {
+        if !v1.units.contains_key(id)
+            && !seen
+                .iter()
+                .any(|e| matches!(e, GameEvent::UnitRemoved { unit_id, .. } if unit_id == id))
+        {
+            return Err(format!("unit {id} left the view without a UnitRemoved"));
+        }
+    }
+    let stacks = |v: &cna_protocol::ViewState| {
+        v.stacks
+            .iter()
+            .map(|s| ((s.hex.clone(), s.side), s.clone()))
+            .collect::<std::collections::BTreeMap<_, _>>()
+    };
+    let (s0, s1) = (stacks(&v0), stacks(&v1));
+    for (key, stack) in &s1 {
+        if s0.get(key) != Some(stack)
+            && !seen
+                .iter()
+                .any(|e| matches!(e, GameEvent::StackUpdated { stack: st } if st == stack))
+        {
+            return Err(format!(
+                "stack {key:?} changed without a matching StackUpdated"
+            ));
+        }
+    }
+    for key in s0.keys() {
+        if !s1.contains_key(key)
+            && !seen.iter().any(|e| matches!(e, GameEvent::StackRemoved { hex, side } if (hex, side) == (&key.0, &key.1)))
+        {
+            return Err(format!("stack {key:?} vanished without a StackRemoved"));
+        }
+    }
+    for marker in &v1.markers {
+        if !v0.markers.contains(marker)
+            && !seen
+                .iter()
+                .any(|e| matches!(e, GameEvent::MarkerPlaced { marker: m } if m == marker))
+        {
+            let previous = v0.markers.iter().find(|m| m.id == marker.id);
+            return Err(format!(
+                "marker {} appeared or changed without a MarkerPlaced ({previous:?} -> {marker:?})",
+                marker.id
+            ));
+        }
+    }
+    for marker in &v0.markers {
+        if !v1.markers.iter().any(|m| m.id == marker.id)
+            && !seen.iter().any(
+                |e| matches!(e, GameEvent::MarkerRemoved { marker_id } if marker_id == &marker.id),
+            )
+        {
+            return Err(format!(
+                "marker {} vanished without a MarkerRemoved",
+                marker.id
+            ));
+        }
+    }
+    for d in &v1.pending {
+        if !v0.pending.iter().any(|p| p.id == d.id)
+            && !seen
+                .iter()
+                .any(|e| matches!(e, GameEvent::DecisionOpened { decision } if decision.id == d.id))
+        {
+            return Err(format!("decision {} opened without a DecisionOpened", d.id));
+        }
+    }
+    for d in &v0.pending {
+        if !v1.pending.iter().any(|p| p.id == d.id)
+            && !seen.iter().any(|e| matches!(e, GameEvent::DecisionResolved { decision_id, .. } if decision_id == &d.id))
+        {
+            return Err(format!("decision {} closed without a DecisionResolved", d.id));
+        }
+    }
+    Ok(())
 }
