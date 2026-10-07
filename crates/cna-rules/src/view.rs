@@ -1,9 +1,9 @@
 //! What each perspective may see: the board view, the seats' `observe` report and `inspect`
 //! details, filtered by Limited Intelligence (`land:3.6`).
 //!
-//! Rules as written (`land:3.61`, `land:3.62`, the owner's ruling of 2026-10-07): a player may
-//! examine any stack of counters on the game map, so every counter on the map is visible to the
-//! other side by its printed face (designation, type, size, nationality, printed stacking points).
+//! Enemy map counters disclose their printed faces under `land:3.61` and `land:3.62`,
+//! following the owner's 2026-10-07 ruling. Public face data includes designation, type,
+//! size, nationality and printed stacking points.
 //! What a counter contains is not: units attached to it (`land:4.25`, `land:19.12`), strength,
 //! TOE, capability, cohesion, supply and status. Off-map boxes are not on the game map. Own-side
 //! seats see everything their side knows; the operator sees everything and is labelled as
