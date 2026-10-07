@@ -69,6 +69,20 @@ pub trait Ruleset {
         perspective: Perspective,
     ) -> cna_protocol::ViewState;
 
+    /// The board views of several perspectives of one state, in order. Rulesets override it to
+    /// share work between perspectives; the result must equal calling `view` for each.
+    fn views(
+        &self,
+        content: &Self::Content,
+        state: &Self::State,
+        perspectives: &[Perspective],
+    ) -> Vec<cna_protocol::ViewState> {
+        perspectives
+            .iter()
+            .map(|p| self.view(content, state, *p))
+            .collect()
+    }
+
     /// Authorized detail about one thing — a hex, a unit, a dump, an airfield — identified by
     /// `target` (a hex id, unit id, or another id the ruleset documents), filtered for
     /// `perspective`. Backs the AI seats' `inspect` tool. An unknown or unauthorized target is a

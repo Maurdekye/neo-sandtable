@@ -77,7 +77,7 @@ impl Ruleset for Cna {
         state: &mut State,
         cx: &mut Cx<'_>,
     ) -> Result<Progress, EngineError> {
-        let before = state.clone();
+        let before = view::Board::new(content, state, &cna_protocol::Side::ALL);
         let progress = self.run_steps(content, state, cx);
         view::sync_state_events(content, &before, state, cx);
         progress
@@ -90,7 +90,7 @@ impl Ruleset for Cna {
         response: &DecisionResponse,
         cx: &mut Cx<'_>,
     ) -> Result<(), Rejection> {
-        let before = state.clone();
+        let before = view::Board::new(content, state, &cna_protocol::Side::ALL);
         let outcome = self.resolve(content, state, response, cx);
         view::sync_state_events(content, &before, state, cx);
         outcome
@@ -128,6 +128,15 @@ impl Ruleset for Cna {
         perspective: Perspective,
     ) -> cna_protocol::ViewState {
         view::view(content, state, perspective)
+    }
+
+    fn views(
+        &self,
+        content: &CnaContent,
+        state: &State,
+        perspectives: &[Perspective],
+    ) -> Vec<cna_protocol::ViewState> {
+        view::views(content, state, perspectives)
     }
 
     fn inspect(

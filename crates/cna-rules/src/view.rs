@@ -175,86 +175,295 @@ fn is_state_sync(event: &wire::GameEvent) -> bool {
     )
 }
 
+/// The board perspectives: each side's and the operator's. A seat sees its side's board.
+const BOARDS: [Perspective; 3] = [
+    Perspective::Side(Side::Axis),
+    Perspective::Side(Side::Commonwealth),
+    Perspective::Operator,
+];
+
+/// The index in [`BOARDS`] of the board `perspective` sees.
+fn board_index(perspective: Perspective) -> usize {
+    let side = match perspective {
+        Perspective::Operator => return 2,
+        Perspective::Side(side) => side,
+        Perspective::Seat(seat) => seat.side,
+    };
+    match side {
+        Side::Axis => 0,
+        Side::Commonwealth => 1,
+    }
+}
+
+/// One state's board, built once and shared by every perspective that looks at it: the full view
+/// of each unit of the built sides (on the map, in an off-map box or awaiting set-up placement)
+/// and of each broken-down vehicle marker, every stack's members, and the markers each side and
+/// the operator see. A perspective's board view is a filter of it, so [`view`], [`views`] and
+/// [`sync_state_events`] cannot disagree, and unit views are built once per state rather than
+/// once per perspective.
+pub(crate) struct Board {
+    /// Unit or broken-down vehicle marker id -> (owning side, full view), for the built sides.
+    units: BTreeMap<String, (Side, wire::UnitView)>,
+    /// Every occupied (hex, side) with its sorted member ids. Presence is public, the ids are
+    /// the owner's (`land:3.62`).
+    stacks: BTreeMap<(HexId, Side), Vec<String>>,
+    /// The markers each board perspective sees, in [`BOARDS`] order, each sorted by id.
+    markers: [Vec<wire::Marker>; 3],
+}
+
+impl Board {
+    /// The board of `state`, with full unit views for `sides`. Other sides' stacks count only for
+    /// their presence.
+    pub(crate) fn new(content: &CnaContent, state: &State, sides: &[Side]) -> Self {
+        let mut units = BTreeMap::new();
+        let mut stacks = BTreeMap::new();
+        for ((hex, side), members) in state.stacks() {
+            let markers: Vec<_> = state
+                .land
+                .breakdown
+                .markers
+                .values()
+                .filter(|m| m.side == side && m.hex == hex)
+                .collect();
+            let mut ids: Vec<_> = members.iter().map(|u| u.id.to_string()).collect();
+            ids.extend(markers.iter().map(|m| m.id.clone()));
+            ids.sort();
+            if sides.contains(&side) {
+                for m in markers {
+                    let view = crate::land::breakdown::markers::unit_view(m);
+                    units.insert(m.id.clone(), (side, view));
+                }
+                for u in members {
+                    let mut view = unit_view(content, u);
+                    // Own units only: whether the unit has already used its move this segment.
+                    stamp_moved(state, &u.id, &mut view);
+                    units.insert(u.id.to_string(), (side, view));
+                }
+            }
+            stacks.insert((hex, side), ids);
+        }
+        // Own units in play but not on a map hex: in an off-map box, or deployed and awaiting the
+        // owner's set-up placement. `hex` is null and `detail.location` says which.
+        for u in state.land.units.values() {
+            if !sides.contains(&u.side) {
+                continue;
+            }
+            let location = match &u.location {
+                Location::OffMap { id } => json!({ "at": "off_map", "id": id }),
+                Location::AwaitingSetup { group } => {
+                    json!({ "at": "awaiting_setup", "group": group })
+                }
+                Location::Hex { .. } | Location::NotArrived | Location::Eliminated => continue,
+            };
+            let mut view = unit_view(content, u);
+            stamp_moved(state, &u.id, &mut view);
+            if let Some(detail) = view.detail.as_mut() {
+                detail.insert("location".to_owned(), location);
+            }
+            units.insert(u.id.to_string(), (u.side, view));
+        }
+        Board {
+            units,
+            stacks,
+            markers: BOARDS.map(|p| markers(state, p)),
+        }
+    }
+
+    /// The units `perspective` sees, by id.
+    fn units_for(
+        &self,
+        perspective: Perspective,
+    ) -> impl Iterator<Item = (&String, &wire::UnitView)> {
+        self.units
+            .iter()
+            .filter(move |(_, (side, _))| sees_side(perspective, *side))
+            .map(|(id, (_, view))| (id, view))
+    }
+
+    /// Unit `id` as `perspective` sees it, if it does.
+    fn unit_for(&self, perspective: Perspective, id: &str) -> Option<&wire::UnitView> {
+        self.units
+            .get(id)
+            .filter(|(side, _)| sees_side(perspective, *side))
+            .map(|(_, view)| view)
+    }
+
+    /// The stack at (`hex`, `side`) as `perspective` sees it.
+    fn stack_for(
+        perspective: Perspective,
+        (hex, side): &(HexId, Side),
+        ids: &[String],
+    ) -> wire::Stack {
+        if sees_side(perspective, *side) {
+            wire::Stack {
+                hex: hex.to_string(),
+                side: *side,
+                visible_count: Some(ids.len() as u32),
+                unit_ids: ids.to_vec(),
+            }
+        } else {
+            // land:3.62: the stack's presence is public, its contents are not.
+            wire::Stack {
+                hex: hex.to_string(),
+                side: *side,
+                unit_ids: Vec::new(),
+                visible_count: None,
+            }
+        }
+    }
+
+    /// `perspective`'s board view, with the state's `clock` and the `pending` decisions it sees.
+    fn view_for(
+        &self,
+        perspective: Perspective,
+        clock: wire::Clock,
+        pending: Vec<wire::PendingDecision>,
+    ) -> wire::ViewState {
+        wire::ViewState {
+            clock,
+            stacks: self
+                .stacks
+                .iter()
+                .map(|(key, ids)| Self::stack_for(perspective, key, ids))
+                .collect(),
+            units: self
+                .units_for(perspective)
+                .map(|(id, view)| (id.clone(), view.clone()))
+                .collect(),
+            markers: self.markers[board_index(perspective)].clone(),
+            pending,
+        }
+    }
+
+    /// [`Board::view_for`] for a board built for one perspective: moves the unit views out
+    /// instead of copying them.
+    fn into_view(
+        mut self,
+        perspective: Perspective,
+        clock: wire::Clock,
+        pending: Vec<wire::PendingDecision>,
+    ) -> wire::ViewState {
+        wire::ViewState {
+            clock,
+            stacks: self
+                .stacks
+                .iter()
+                .map(|(key, ids)| Self::stack_for(perspective, key, ids))
+                .collect(),
+            units: self
+                .units
+                .into_iter()
+                .filter(|(_, (side, _))| sees_side(perspective, *side))
+                .map(|(id, (_, view))| (id, view))
+                .collect(),
+            markers: std::mem::take(&mut self.markers[board_index(perspective)]),
+            pending,
+        }
+    }
+}
+
+/// The markers `perspective` sees, sorted by id: coastal shipping, supply dumps (contents for
+/// the owner only) and the printed condition markers of wells it knows about.
+fn markers(state: &State, perspective: Perspective) -> Vec<wire::Marker> {
+    let mut markers = crate::logistics::coastal::markers(state);
+    markers.extend(
+        state
+            .logistics
+            .dumps
+            .values()
+            .filter_map(|dump| crate::logistics::dump_markers::marker(dump, perspective)),
+    );
+    // A well attempt reveals only its printed condition marker, never the secret roll or quantity.
+    // Cases: airlog:52.14, airlog:52.16
+    for hex in state.logistics.wells.keys() {
+        let known = crate::logistics::wells::condition(state, hex, perspective);
+        for condition in ["depleted", "poisoned"] {
+            if known.get(condition) == Some(&json!(true)) {
+                markers.push(wire::Marker {
+                    id: format!("well:{hex}:{condition}"),
+                    kind: format!("well_{condition}"),
+                    hex: hex.to_string(),
+                    side: None,
+                    label: Some(format!("{condition} well")),
+                });
+            }
+        }
+    }
+    // Marker order is public too: never preserve private dump-map key ordering.
+    // Cases: land:3.6, land:3.62
+    markers.sort_by(|a, b| a.id.cmp(&b.id));
+    markers
+}
+
 /// Keep every viewer's live board equal to its snapshot, by construction. Runs at the end of
-/// every engine call (`advance`, `respond`). For each of the three board perspectives (each side
-/// and the operator) it compares the view before and after the call and emits exactly the
-/// difference, addressed to that perspective alone (`SideOnly(side)`, `Operator`): a
-/// `UnitUpdated` per unit whose view changed or appeared, a `UnitRemoved` per unit that left it
-/// (unless a procedure already said why), `StackUpdated`/`StackRemoved` per changed stack, and
-/// `MarkerPlaced`/`MarkerRemoved` per changed marker. State-sync events that procedures emitted
-/// are dropped first, so an enemy can never receive one its view does not justify (the
-/// presence-only contract, `land:3.6`). Semantic events (moves along paths, dice, decisions,
-/// notes, reasoned removals) are kept in order; the derived events follow them.
+/// every engine call (`advance`, `respond`) with the board taken at its start. For each of the
+/// three board perspectives (each side and the operator) it compares the board before and after
+/// the call and emits exactly the difference, addressed to that perspective alone
+/// (`SideOnly(side)`, `Operator`): a `UnitUpdated` per unit whose view changed or appeared, a
+/// `UnitRemoved` per unit that left it (unless a procedure already said why),
+/// `StackUpdated`/`StackRemoved` per changed stack, and `MarkerPlaced`/`MarkerRemoved` per
+/// changed marker. State-sync events that procedures emitted are dropped first, so an enemy can
+/// never receive one its view does not justify (the presence-only contract, `land:3.6`).
+/// Semantic events (moves along paths, dice, decisions, notes, reasoned removals) are kept in
+/// order; the derived events follow them.
 pub(crate) fn sync_state_events(
     content: &CnaContent,
-    before: &State,
+    before: &Board,
     after: &State,
     cx: &mut Cx<'_>,
 ) {
     cx.events.retain(|e| !is_state_sync(&e.event));
-    let perspectives = [
-        (
-            Perspective::Side(Side::Axis),
-            Audience::SideOnly(Side::Axis),
-        ),
-        (
-            Perspective::Side(Side::Commonwealth),
-            Audience::SideOnly(Side::Commonwealth),
-        ),
-        (Perspective::Operator, Audience::Operator),
-    ];
-    for (perspective, audience) in perspectives {
-        let (v0, v1) = (
-            view(content, before, perspective),
-            view(content, after, perspective),
-        );
+    let after = Board::new(content, after, &Side::ALL);
+    for (index, perspective) in BOARDS.into_iter().enumerate() {
+        let audience = match perspective {
+            Perspective::Side(side) => Audience::SideOnly(side),
+            _ => Audience::Operator,
+        };
         let mut derived = Vec::new();
-        for (id, unit) in &v1.units {
-            if v0.units.get(id) != Some(unit) {
+        for (id, unit) in after.units_for(perspective) {
+            if before.unit_for(perspective, id) != Some(unit) {
                 derived.push(wire::GameEvent::UnitUpdated { unit: unit.clone() });
             }
         }
-        for id in v0.units.keys() {
+        for (id, _) in before.units_for(perspective) {
             let explained = cx.events.iter().any(|e| {
                 perspective.can_see(&e.audience)
                     && matches!(&e.event, wire::GameEvent::UnitRemoved { unit_id, .. } if unit_id == id)
             });
-            if !v1.units.contains_key(id) && !explained {
+            if after.unit_for(perspective, id).is_none() && !explained {
                 derived.push(wire::GameEvent::UnitRemoved {
                     unit_id: id.clone(),
                     reason: "no longer in view".to_owned(),
                 });
             }
         }
-        let stacks = |v: &wire::ViewState| -> BTreeMap<(String, Side), wire::Stack> {
-            v.stacks
-                .iter()
-                .map(|st| ((st.hex.clone(), st.side), st.clone()))
-                .collect()
-        };
-        let (s0, s1) = (stacks(&v0), stacks(&v1));
-        for (key, stack) in &s1 {
-            if s0.get(key) != Some(stack) {
+        // An enemy stack changes for this perspective only by appearing or vanishing.
+        for (key, ids) in &after.stacks {
+            let changed = before
+                .stacks
+                .get(key)
+                .is_none_or(|old| sees_side(perspective, key.1) && old != ids);
+            if changed {
                 derived.push(wire::GameEvent::StackUpdated {
-                    stack: stack.clone(),
+                    stack: Board::stack_for(perspective, key, ids),
                 });
             }
         }
-        for (hex, side) in s0.keys() {
-            if !s1.contains_key(&(hex.clone(), *side)) {
+        for (hex, side) in before.stacks.keys() {
+            if !after.stacks.contains_key(&(hex.clone(), *side)) {
                 derived.push(wire::GameEvent::StackRemoved {
-                    hex: hex.clone(),
+                    hex: hex.to_string(),
                     side: *side,
                 });
             }
         }
-        let markers = |v: &wire::ViewState| -> BTreeMap<String, wire::Marker> {
-            v.markers
+        let markers = |board: &Board| -> BTreeMap<String, wire::Marker> {
+            board.markers[index]
                 .iter()
                 .map(|m| (m.id.clone(), m.clone()))
                 .collect()
         };
-        let (m0, m1) = (markers(&v0), markers(&v1));
+        let (m0, m1) = (markers(before), markers(&after));
         for (id, marker) in &m1 {
             if m0.get(id) != Some(marker) {
                 derived.push(wire::GameEvent::MarkerPlaced {
@@ -339,111 +548,69 @@ pub(crate) fn view(
     state: &State,
     perspective: Perspective,
 ) -> wire::ViewState {
-    let mut stacks = Vec::new();
-    let mut units = BTreeMap::new();
-    for ((hex, side), members) in state.stacks() {
-        if sees_side(perspective, side) {
-            let markers: Vec<_> = state
-                .land
-                .breakdown
-                .markers
-                .values()
-                .filter(|m| m.side == side && m.hex == hex)
-                .collect();
-            let mut ids: Vec<_> = members.iter().map(|u| u.id.to_string()).collect();
-            ids.extend(markers.iter().map(|m| m.id.clone()));
-            ids.sort();
-            stacks.push(wire::Stack {
-                hex: hex.to_string(),
-                side,
-                visible_count: Some(ids.len() as u32),
-                unit_ids: ids,
-            });
-            for m in markers {
-                units.insert(m.id.clone(), crate::land::breakdown::markers::unit_view(m));
-            }
-            for u in members {
-                let mut view = unit_view(content, u);
-                // Own units only: whether the unit has already used its move this segment.
-                stamp_moved(state, &u.id, &mut view);
-                units.insert(u.id.to_string(), view);
-            }
-        } else {
-            // land:3.62: the stack's presence is public, its contents are not.
-            stacks.push(wire::Stack {
-                hex: hex.to_string(),
-                side,
-                unit_ids: Vec::new(),
-                visible_count: None,
-            });
-        }
-    }
-    // Own units in play but not on a map hex: in an off-map box, or deployed and awaiting the
-    // owner's set-up placement. `hex` is null and `detail.location` says which.
-    for u in state.land.units.values() {
-        if !sees_side(perspective, u.side) {
-            continue;
-        }
-        let location = match &u.location {
-            Location::OffMap { id } => json!({ "at": "off_map", "id": id }),
-            Location::AwaitingSetup { group } => json!({ "at": "awaiting_setup", "group": group }),
-            Location::Hex { .. } | Location::NotArrived | Location::Eliminated => continue,
-        };
-        let mut view = unit_view(content, u);
-        stamp_moved(state, &u.id, &mut view);
-        if let Some(detail) = view.detail.as_mut() {
-            detail.insert("location".to_owned(), location);
-        }
-        units.insert(u.id.to_string(), view);
-    }
-    let mut markers = crate::logistics::coastal::markers(state);
-    markers.extend(
-        state
-            .logistics
-            .dumps
-            .values()
-            .filter_map(|dump| crate::logistics::dump_markers::marker(dump, perspective)),
-    );
-    // A well attempt reveals only its printed condition marker, never the secret roll or quantity.
-    // Cases: airlog:52.14, airlog:52.16
-    for hex in state.logistics.wells.keys() {
-        let known = crate::logistics::wells::condition(state, hex, perspective);
-        for condition in ["depleted", "poisoned"] {
-            if known.get(condition) == Some(&json!(true)) {
-                markers.push(wire::Marker {
-                    id: format!("well:{hex}:{condition}"),
-                    kind: format!("well_{condition}"),
-                    hex: hex.to_string(),
-                    side: None,
-                    label: Some(format!("{condition} well")),
-                });
-            }
-        }
-    }
-    // Marker order is public too: never preserve private dump-map key ordering.
-    // Cases: land:3.6, land:3.62
-    markers.sort_by(|a, b| a.id.cmp(&b.id));
-    let pending = state
+    let sides: Vec<Side> = Side::ALL
+        .into_iter()
+        .filter(|s| sees_side(perspective, *s))
+        .collect();
+    Board::new(content, state, &sides).into_view(
+        perspective,
+        wire_clock(content, state),
+        pending_for(state, perspective),
+    )
+}
+
+/// The board views of several perspectives of one state, in order: one shared [`Board`] and
+/// each pending decision's schema built once. Equal to calling [`view`] for each.
+pub(crate) fn views(
+    content: &CnaContent,
+    state: &State,
+    perspectives: &[Perspective],
+) -> Vec<wire::ViewState> {
+    let sides: Vec<Side> = Side::ALL
+        .into_iter()
+        .filter(|s| perspectives.iter().any(|p| sees_side(*p, *s)))
+        .collect();
+    let board = Board::new(content, state, &sides);
+    let clock = wire_clock(content, state);
+    let pending: Vec<_> = state
         .decisions
         .pending
         .iter()
-        .filter(|p| perspective.can_see(&cna_core::visibility::Audience::Seat(p.seat)))
-        .map(|p| wire::PendingDecision {
-            id: p.id.to_string(),
-            seat: p.seat.to_string(),
-            kind: p.kind.clone(),
-            summary: p.summary.clone(),
-            opened_seq: 0,
-            rules: p.rules.clone(),
-            space: Some(p.space.to_json_schema()),
-        })
+        .map(|p| (p.seat, pending_view(p)))
         .collect();
-    wire::ViewState {
-        clock: wire_clock(content, state),
-        stacks,
-        units,
-        markers,
-        pending,
+    perspectives
+        .iter()
+        .map(|&perspective| {
+            let seen = pending
+                .iter()
+                .filter(|(seat, _)| perspective.can_see(&Audience::Seat(*seat)))
+                .map(|(_, d)| d.clone())
+                .collect();
+            board.view_for(perspective, clock.clone(), seen)
+        })
+        .collect()
+}
+
+/// The pending decisions `perspective` may see, as the board lists them.
+fn pending_for(state: &State, perspective: Perspective) -> Vec<wire::PendingDecision> {
+    state
+        .decisions
+        .pending
+        .iter()
+        .filter(|p| perspective.can_see(&Audience::Seat(p.seat)))
+        .map(pending_view)
+        .collect()
+}
+
+fn pending_view(p: &crate::state::Pending) -> wire::PendingDecision {
+    wire::PendingDecision {
+        id: p.id.to_string(),
+        seat: p.seat.to_string(),
+        kind: p.kind.clone(),
+        summary: p.summary.clone(),
+        opened_seq: 0,
+        rules: p.rules.clone(),
+        space: Some(p.space.to_json_schema()),
     }
 }
 
@@ -554,7 +721,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "position_orders": state.land.combat.position_orders.iter().filter(|(seat,_)| sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),
         },
         "enemy_stack_hexes": enemy_stacks,
-        "pending_decisions": view(content, state, perspective).pending,
+        "pending_decisions": pending_for(state, perspective),
         "result": state.result,
     })
 }

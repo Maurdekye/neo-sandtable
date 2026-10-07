@@ -628,6 +628,65 @@ fn action_harness_catches_visible_differences() {
     );
 }
 
+/// `views` shares one board and one schema per decision between perspectives; it must equal each
+/// perspective's own `view`, from set-up through the first movement decisions.
+#[test]
+fn shared_views_equal_each_perspectives_own_view() {
+    let ruleset = Cna::dev();
+    let content = content();
+    let mut game = new_game(4);
+    let all: Vec<Perspective> = Perspective::all().collect();
+    let mut checked = 0;
+    for answered in 0..2_000 {
+        let at_movement = game.state.cursor.anchor() == "opstage.movement_and_combat.movement";
+        if answered % 25 == 0 || at_movement {
+            let shared = ruleset.views(content, &game.state, &all);
+            for (p, view) in all.iter().zip(&shared) {
+                assert_eq!(
+                    view,
+                    &ruleset.view(content, &game.state, *p),
+                    "{p:?} at {answered}"
+                );
+            }
+            checked += 1;
+        }
+        if at_movement {
+            break;
+        }
+        let command = if ruleset.pending(content, &game.state).is_empty() {
+            Command::Advance
+        } else {
+            let request = ruleset.pending(content, &game.state).remove(0);
+            let action = match &request.space.schema {
+                ActionSchema::Choice { options } => json!(options[0].id),
+                _ if request.space.pass.is_some() => Value::Null,
+                other => first_answer(other),
+            };
+            Command::Respond(DecisionResponse {
+                decision_id: request.id.clone(),
+                seat: request.seat,
+                controller_epoch: 1,
+                decision_revision: request.revision,
+                idempotency_key: format!("k{answered}"),
+                action,
+                public_explanation: None,
+            })
+        };
+        game = evaluate(&ruleset, content, &game, &command)
+            .expect("legal play")
+            .game;
+    }
+    assert_eq!(
+        game.state.cursor.anchor(),
+        "opstage.movement_and_combat.movement",
+        "reached the first movement decisions ({checked} checks)"
+    );
+    assert!(
+        !game.state.decisions.pending.is_empty() && game.state.land.units.len() > 100,
+        "the last check saw pending decisions and a populated board"
+    );
+}
+
 /// Every visible change in Game-Turn 1 is announced by an event its viewer receives (both
 /// sides and the operator), so live boards never go stale between snapshots.
 #[test]

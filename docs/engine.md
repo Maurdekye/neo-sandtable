@@ -94,7 +94,9 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    view (each side, the operator) and emits exactly the difference to that perspective alone.
    Don't hand-emit them; any you emit are dropped and re-derived, so the enemy never receives one
    its view doesn't justify. A change appears in events if and only if it appears in the view, so
-   get the VIEW right (`view.rs`, owner-only detail via `sees_side`). Emit only semantic events
+   get the VIEW right (`view.rs`, owner-only detail via `sees_side`). Every board view is a
+   filter of one `view::Board` per state, so a unit's view is a function of the state, not of
+   who looks; `Ruleset::views` shares that board across perspectives. Emit only semantic events
    yourself: `UnitMoved` paths, `DiceRolled`, `CombatResolved`, decisions, `Note`s, and
    `UnitRemoved` with a reason. Address them by who may know: own facts to `Audience::Side(side)`,
    public facts to `Audience::Public`, and a redacted copy for the enemy to
