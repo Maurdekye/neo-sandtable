@@ -54,6 +54,9 @@ by `rules-airlog` (`data/tables/airlog/54.2-…`); scenario and schedule records
   `arrives_raw` when it is not `D`.
 - **TOE of a unit instance** (`toe`): `"N"` normal (= class maximum), `{ under = n }` (U@n),
   `{ over = n }` (O), or an explicit weapons list `toe = [{ weapon = "cw.mk_vi_light", n = 10 }]`.
+  Both `{ under = n }` and `{ over = n }` assign **n TOE points at arrival** (`land:4.45`).
+  The labels describe how that strength compares with normal TOE; n is the arriving strength,
+  never an amount to add to or subtract from the class maximum.
 - **Stacking points** are stored per unit (`stacking_points`): the counters print the value
   (`land:9.22`, `land:3.33`) and `land:9.4` maps it to the organizational level (division 5, super
   brigade 3, brigade/regiment 2, battalion 1, company 0). Values here follow the echelon through that
