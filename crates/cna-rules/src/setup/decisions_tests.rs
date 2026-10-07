@@ -405,3 +405,87 @@ fn convoy_planning_barrier_stays_in_setup_after_both_close_paths() {
             .any(|p| p.kind == "cna.logistics.convoy.plan:1")
     );
 }
+
+/// Cases: scen:59.2, land:9.12, land:9.31
+#[test]
+fn a_friendly_setup_choice_revises_other_groups_and_rejects_the_stale_answer() {
+    let mut c = content();
+    let mut state = State::new(&c).unwrap();
+    let ids: Vec<_> = state
+        .units_of(Side::Commonwealth)
+        .filter(|u| {
+            c.units.units[&u.id].stacking_points == Some(1)
+                && !c.units.units[&u.id].sheet.contains("garrison")
+                && c.units.units[&u.id]
+                    .class
+                    .as_ref()
+                    .is_some_and(|id| c.units.classes[id].unit_type == "infantry")
+        })
+        .take(9)
+        .map(|u| u.id.clone())
+        .collect();
+    assert_eq!(ids.len(), 9);
+    for u in state.land.units.values_mut() {
+        u.location = Location::NotArrived;
+        u.detached = true;
+    }
+    state.land.undistributed_trucks.clear();
+    state.logistics.dumps.clear();
+    state.logistics.truck_pools.clear();
+    state.air.forces.clear();
+    for id in &ids[..7] {
+        state.land.units.get_mut(id).unwrap().location = Location::Hex {
+            hex: "E1730".into(),
+        };
+    }
+    let file = c
+        .scenario
+        .land
+        .iter_mut()
+        .find(|f| f.file.side == Some(Side::Commonwealth))
+        .unwrap();
+    for (g, id) in file.groups.iter_mut().take(2).zip(&ids[7..]) {
+        g.placement = Placement::HexesAny {
+            hexes: vec!["E1730".into(), "E1830".into()],
+        };
+        let u = state.land.units.get_mut(id).unwrap();
+        u.setup_group = Some(g.id.clone());
+        u.location = Location::AwaitingSetup {
+            group: g.id.clone(),
+        };
+    }
+    let game = Game {
+        state,
+        rng: CampaignRng::from_seed([5; 32]).state(),
+    };
+    let mut game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
+        .unwrap()
+        .game;
+    let first = game.state.decisions.pending[0].clone();
+    let old = game.state.decisions.pending[1].clone();
+    game = submit(&c, &game, &first, json!("E1730")).unwrap();
+    let revised = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.id == old.id)
+        .unwrap()
+        .clone();
+    assert_eq!(revised.revision, old.revision + 1);
+    let ActionSchema::Choice { options } = &revised.space.schema else {
+        panic!()
+    };
+    assert_eq!(
+        options.iter().map(|o| o.id.as_str()).collect::<Vec<_>>(),
+        vec!["E1830"]
+    );
+    assert!(matches!(
+        submit(&c, &game, &old, json!("E1730")),
+        Err(Rejection::StaleRevision { .. })
+    ));
+    let before = serde_json::to_value(&game).unwrap();
+    assert!(submit(&c, &game, &revised, json!("E1730")).is_err());
+    assert_eq!(serde_json::to_value(&game).unwrap(), before);
+    submit(&c, &game, &revised, json!("E1830")).unwrap();
+}

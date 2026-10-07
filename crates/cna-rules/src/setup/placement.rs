@@ -43,7 +43,7 @@ fn at_hex(content: &CnaContent, hex: &HexId) -> Result<Location, EngineError> {
 
 /// Enumerate a placement's geographic domain without guessing unresolved memberships.
 /// Dynamic facility selectors are resolved by the air/logistics procedure, not by an empty set.
-/// TODO land:9 - stacking awaits the stacking procedure; geography is not a capacity check.
+/// Capacity is checked separately on the owner's provisional stack (land:9).
 /// Cases: scen:59.2, scen:60.31, scen:60.41
 pub fn choices(
     content: &CnaContent,

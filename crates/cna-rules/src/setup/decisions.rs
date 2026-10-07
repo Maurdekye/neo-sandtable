@@ -1,5 +1,5 @@
 //! Placement and first-line distribution in the shared blind setup window.
-use super::{SetupTask, placement};
+use super::{SetupTask, placement, stacking};
 use crate::state::{DumpLocation, Location, Pending};
 use crate::steps::{illegal, open};
 use crate::{CnaContent, State};
@@ -147,8 +147,145 @@ fn resolved_destination(domain: &[Location], action: &Value) -> Result<Location,
         .ok_or_else(|| illegal("not a legal setup destination"))
 }
 
+/// Cases: land:9.31, scen:59.2
+fn unavailable(
+    state: &State,
+    unit: &UnitId,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    if strict {
+        return Err(EngineError::Unsupported {
+            case: "land:9.31".into(),
+            detail: "no capacity-valid setup destination".into(),
+        });
+    }
+    cx.emit(EngineEvent::new(Audience::Side(state.land.units[unit].side),GameEvent::Note {
+        text:format!("{unit} and its remaining setup group await placement: no destination meets the assessed stacking limits (land:9.31)."),
+    }));
+    Ok(())
+}
+/// Cases: scen:59.2, land:9.12, land:9.21, land:9.31
+fn open_unit(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut Cx<'_>,
+    unit: &UnitId,
+    case: &str,
+    strict: bool,
+) -> Result<(), EngineError> {
+    let side = state.land.units[unit].side;
+    let (p, _) = group_placement(content, state, unit)?;
+    let Some(mut domain) = placement::for_profile(content, &p, side, case, strict, cx)? else {
+        return Ok(());
+    };
+    domain.retain(|l| !enemy_fixed_at(state, side, l));
+    let domain = stacking::choices(content, state, unit, domain, strict)?;
+    if domain.is_empty() {
+        return unavailable(state, unit, strict, cx);
+    }
+    open_task(
+        state,
+        cx,
+        SeatId::new(side, role(content, case, Role::Commander)),
+        KIND_UNIT,
+        format!("Place {unit} within its scenario setup area."),
+        case,
+        SetupTask::Unit {
+            unit: unit.clone(),
+            case: case.into(),
+        },
+        option_space(&domain),
+    );
+    Ok(())
+}
+/// Revise only the owner's requests affected by this friendly capacity change.
+/// Opposing free choices never alter the offered domain.
+/// Cases: land:9.12, land:9.21, land:9.31, scen:59.2
+fn refresh_stacking(
+    content: &CnaContent,
+    state: &mut State,
+    side: Side,
+    destination: &Location,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    let Some(hex) = destination.hex() else {
+        return Ok(());
+    };
+    // Unknown limits cannot change an assessed legal domain in development.
+    if !matches!(
+        content.map.terrain_survey(hex),
+        cna_content::map::Survey::Present(_)
+    ) {
+        return Ok(());
+    }
+    let tasks: Vec<_> = state
+        .decisions
+        .pending
+        .iter()
+        .filter(|p| p.kind == KIND_UNIT && p.seat.side == side)
+        .filter_map(|p| match state.setup.tasks.get(&p.id) {
+            Some(SetupTask::Unit { unit, case }) => {
+                Some((p.id.clone(), unit.clone(), case.clone()))
+            }
+            _ => None,
+        })
+        .collect();
+    for (id, unit, case) in tasks {
+        let (p, _) = group_placement(content, state, &unit)?;
+        let geographic = placement::choices(content, &p, side, &case)?;
+        if !geographic.contains(destination) {
+            continue;
+        }
+        let valid =
+            stacking::choices(content, state, &unit, vec![destination.clone()], strict)?.len() == 1;
+        let request = state
+            .decisions
+            .pending
+            .iter_mut()
+            .find(|p| p.id == id)
+            .expect("pending unit task");
+        let ActionSchema::Choice { options } = &mut request.space.schema else {
+            return Err(invariant("setup unit domain is not a choice"));
+        };
+        let key = placement::destination_id(destination).expect("hex destination");
+        let had = options.iter().any(|o| o.id == key);
+        if valid == had {
+            continue;
+        }
+        options.retain(|o| o.id != "await" && o.id != key);
+        if valid {
+            options.push(ChoiceOption {
+                id: key.clone(),
+                label: key,
+                detail: None,
+            });
+            options.sort_by(|a, b| a.id.cmp(&b.id));
+            request.space.pass = None;
+        }
+        let exhausted = options.is_empty();
+        if exhausted {
+            options.push(ChoiceOption {
+                id: "await".into(),
+                label: "Leave this group awaiting placement".into(),
+                detail: None,
+            });
+            request.space.pass = Some("Leave the group awaiting a legal setup destination".into());
+        }
+        request.revision = request
+            .revision
+            .checked_add(1)
+            .ok_or_else(|| invariant("setup decision revision exhausted"))?;
+        if exhausted {
+            unavailable(state, &unit, strict, cx)?;
+        }
+    }
+    Ok(())
+}
+
 /// Open the owning seats' choices without publishing free destinations.
-/// TODO land:9 - stacking awaits its procedure; no numerical limit is fabricated here.
+/// Cases: land:8.37, land:9.12, land:9.16, land:9.21, land:9.25, land:9.31, land:9.32
 /// Unsupported: scen:59.33 - squadron setup is still being implemented.
 /// Unsupported: scen:59.43 - air convoy setup is still being implemented.
 /// Unsupported: scen:59.44 - supply convoy setup is still being implemented.
@@ -172,7 +309,7 @@ pub(crate) fn enter(
         .map(|u| (u.id.clone(), u.side))
         .collect();
     let mut opened_groups = BTreeSet::new();
-    for (id, side) in units {
+    for (id, _side) in units {
         let group = state.land.units[&id]
             .setup_group
             .clone()
@@ -180,30 +317,8 @@ pub(crate) fn enter(
         if !opened_groups.insert(group) {
             continue;
         }
-        let (p, case) = group_placement(content, state, &id)?;
-        let Some(mut domain) = placement::for_profile(content, &p, side, &case, strict, cx)? else {
-            continue;
-        };
-        domain.retain(|l| !enemy_fixed_at(state, side, l));
-        if domain.is_empty() {
-            return Err(EngineError::Unsupported {
-                case,
-                detail: "no unoccupied setup destination".into(),
-            });
-        }
-        open_task(
-            state,
-            cx,
-            SeatId::new(side, role(content, &case, Role::Commander)),
-            KIND_UNIT,
-            format!("Place {id} within its scenario setup area."),
-            &case,
-            SetupTask::Unit {
-                unit: id,
-                case: case.clone(),
-            },
-            option_space(&domain),
-        );
+        let (_, case) = group_placement(content, state, &id)?;
+        open_unit(content, state, cx, &id, &case, strict)?;
     }
     let dumps: Vec<_> = state
         .logistics
@@ -416,46 +531,44 @@ pub(crate) fn answer(
             if owner != pending.seat.side {
                 return Err(illegal("setup unit belongs to another side"));
             }
-            let (p, _) = group_placement(content, state, &unit).map_err(Rejection::Engine)?;
-            let domain =
-                placement::choices(content, &p, owner, &case).map_err(Rejection::Engine)?;
-            let destination = resolved_destination(&domain, action)?;
-            if enemy_fixed_at(state, owner, &destination)
-                || enemy_buffered_at(state, owner, &destination)
-            {
-                return Err(illegal("not a legal setup destination"));
-            }
-            let group = state.land.units[&unit].setup_group.clone();
-            state.setup.unit_locations.insert(unit, destination);
-            // One domain per group at a time; every unit retains its own unrestricted choice.
-            let next = state
-                .land
-                .units
-                .values()
-                .find(|u| {
-                    u.setup_group == group
-                        && matches!(u.location, Location::AwaitingSetup { .. })
-                        && !state.setup.unit_locations.contains_key(&u.id)
-                })
-                .map(|u| u.id.clone());
-            if let Some(id) = next {
-                let (p, case) = group_placement(content, state, &id).map_err(Rejection::Engine)?;
-                let mut domain =
+            if action.is_null() || action.as_str() == Some("await") {
+                if pending.space.pass.is_none() {
+                    return Err(illegal("this setup unit still has legal destinations"));
+                }
+            } else {
+                let (p, _) = group_placement(content, state, &unit).map_err(Rejection::Engine)?;
+                let domain =
                     placement::choices(content, &p, owner, &case).map_err(Rejection::Engine)?;
-                domain.retain(|l| !enemy_fixed_at(state, owner, l));
-                open_task(
-                    state,
-                    cx,
-                    SeatId::new(owner, role(content, &case, Role::Commander)),
-                    KIND_UNIT,
-                    format!("Place {id} within its scenario setup area."),
-                    &case,
-                    SetupTask::Unit {
-                        unit: id,
-                        case: case.clone(),
-                    },
-                    option_space(&domain),
-                );
+                let destination = resolved_destination(&domain, action)?;
+                if enemy_fixed_at(state, owner, &destination)
+                    || enemy_buffered_at(state, owner, &destination)
+                {
+                    return Err(illegal("not a legal setup destination"));
+                }
+                stacking::check(content, state, &unit, &destination, strict, cx)?;
+                let group = state.land.units[&unit].setup_group.clone();
+                state
+                    .setup
+                    .unit_locations
+                    .insert(unit.clone(), destination.clone());
+                refresh_stacking(content, state, owner, &destination, strict, cx)
+                    .map_err(Rejection::Engine)?;
+                // One domain per group at a time; every unit retains its own unrestricted choice.
+                let next = state
+                    .land
+                    .units
+                    .values()
+                    .find(|u| {
+                        u.setup_group == group
+                            && matches!(u.location, Location::AwaitingSetup { .. })
+                            && !state.setup.unit_locations.contains_key(&u.id)
+                    })
+                    .map(|u| u.id.clone());
+                if let Some(id) = next {
+                    let (_, case) =
+                        group_placement(content, state, &id).map_err(Rejection::Engine)?;
+                    open_unit(content, state, cx, &id, &case, strict).map_err(Rejection::Engine)?;
+                }
             }
         }
         SetupTask::Dump { dump, case } => {
