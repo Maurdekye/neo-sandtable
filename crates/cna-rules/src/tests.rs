@@ -37,6 +37,21 @@ fn first_answer(schema: &ActionSchema) -> Value {
     }
 }
 
+/// Arrival batches conserve row totals instead of sampling each field independently.
+fn scripted_answer(
+    content: &CnaContent,
+    state: &State,
+    request: &cna_core::decision::DecisionRequest,
+) -> Value {
+    baseline::arrival_orders(content, state, request).unwrap_or_else(|| {
+        match &request.space.schema {
+            ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
+            _ if request.space.pass.is_some() => Value::Null,
+            other => first_answer(other),
+        }
+    })
+}
+
 fn new_game(seed: u8) -> Game<Cna> {
     Game {
         state: State::new(content()).expect("initial state"),
@@ -87,11 +102,7 @@ fn play_until(
             return (game, events, answered, Ok(Progress::Finished { summary }));
         }
         let request = ruleset.pending(content, &game.state).remove(0);
-        let action = match &request.space.schema {
-            ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
-            _ if request.space.pass.is_some() => Value::Null,
-            other => first_answer(other),
-        };
+        let action = scripted_answer(content, &game.state, &request);
         let response = DecisionResponse {
             decision_id: request.id.clone(),
             seat: request.seat,
@@ -434,11 +445,7 @@ fn seat_commentary_travels_with_its_own_resolution_only() {
     }
     let request = ruleset.pending(content, &game.state).remove(0);
     let respond = |explanation: Option<String>| {
-        let action = match &request.space.schema {
-            ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
-            _ if request.space.pass.is_some() => Value::Null,
-            other => first_answer(other),
-        };
+        let action = scripted_answer(content, &game.state, &request);
         evaluate(
             &ruleset,
             content,
@@ -528,11 +535,7 @@ fn moved_flags_stay_live_and_decision_ids_count_per_seat() {
         let action = if request.kind == land::movement::KIND && mover.is_none() {
             baseline::random_orders(content, &game.state, &request, &mut rng)
         } else {
-            match &request.space.schema {
-                ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
-                _ if request.space.pass.is_some() => Value::Null,
-                _ => first_answer(&request.space.schema),
-            }
+            scripted_answer(content, &game.state, &request)
         };
         let moving = action
             .as_array()
@@ -721,11 +724,7 @@ fn shared_views_equal_each_perspectives_own_view() {
             Command::Advance
         } else {
             let request = ruleset.pending(content, &game.state).remove(0);
-            let action = match &request.space.schema {
-                ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
-                _ if request.space.pass.is_some() => Value::Null,
-                other => first_answer(other),
-            };
+            let action = scripted_answer(content, &game.state, &request);
             Command::Respond(DecisionResponse {
                 decision_id: request.id.clone(),
                 seat: request.seat,
@@ -781,11 +780,7 @@ fn every_visible_change_in_game_turn_one_is_announced() {
             Command::Advance
         } else {
             let request = ruleset.pending(content, &game.state).remove(0);
-            let action = match &request.space.schema {
-                ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
-                _ if request.space.pass.is_some() => Value::Null,
-                other => first_answer(other),
-            };
+            let action = scripted_answer(content, &game.state, &request);
             Command::Respond(DecisionResponse {
                 decision_id: request.id.clone(),
                 seat: request.seat,

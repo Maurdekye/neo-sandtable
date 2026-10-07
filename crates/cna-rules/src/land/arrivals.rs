@@ -3064,6 +3064,67 @@ mod tests {
             after.state.land.units[&id].location,
             Location::OffMap { .. }
         ));
+        let mut a = evaluate(&Cna::dev(), &c, &a, &Command::Advance)
+            .unwrap()
+            .game;
+        let mut b = after;
+        let mut controller_a = CampaignRng::from_seed([91; 32]);
+        let mut controller_b = CampaignRng::from_seed([91; 32]);
+        // The complete dispatcher has two fixed supply rounds after the six land roles.
+        for _round in 0..2 {
+            for side in Side::ALL {
+                let action = |game: &Game<Cna>, rng: &mut CampaignRng| {
+                    let request = Cna::dev()
+                        .pending(&c, &game.state)
+                        .into_iter()
+                        .find(|r| r.seat == SeatId::new(side, Role::Logistics))
+                        .unwrap();
+                    assert_eq!(request.kind, crate::logistics::arrivals::KIND);
+                    Command::Respond(DecisionResponse {
+                        decision_id: request.id.clone(),
+                        seat: request.seat,
+                        controller_epoch: 1,
+                        decision_revision: request.revision,
+                        idempotency_key: request.id.to_string(),
+                        action: crate::baseline::logistics_orders(&c, &game.state, &request, rng)
+                            .unwrap(),
+                        public_explanation: None,
+                    })
+                };
+                let ca = action(&a, &mut controller_a);
+                let cb = action(&b, &mut controller_b);
+                crate::testkit::assert_actions_indistinguishable(
+                    &Cna::dev(),
+                    &c,
+                    (&a, &ca),
+                    (&b, &cb),
+                    Side::Commonwealth,
+                );
+                let recovered: Game<Cna> = serde_json::from_value(json!(b)).unwrap();
+                let replay = evaluate(&Cna::dev(), &c, &recovered, &cb).unwrap();
+                let next = evaluate(&Cna::dev(), &c, &b, &cb).unwrap();
+                assert_eq!(json!(replay.game), json!(next.game));
+                assert_eq!(json!(replay.events), json!(next.events));
+                a = evaluate(&Cna::dev(), &c, &a, &ca).unwrap().game;
+                b = next.game;
+            }
+            crate::testkit::assert_action_indistinguishable(
+                &Cna::dev(),
+                &c,
+                &a,
+                &b,
+                &Command::Advance,
+                Side::Commonwealth,
+            );
+            a = evaluate(&Cna::dev(), &c, &a, &Command::Advance)
+                .unwrap()
+                .game;
+            b = evaluate(&Cna::dev(), &c, &b, &Command::Advance)
+                .unwrap()
+                .game;
+        }
+        assert_ne!(a.state.cursor.anchor(), "opstage.convoy_arrival");
+        assert_eq!(a.state.cursor.anchor(), b.state.cursor.anchor());
     }
     /// Cases: land:3.6, land:20.14, airlog:48.0
     #[test]
