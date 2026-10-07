@@ -1,28 +1,30 @@
 # Headquarters fuel when equipment is unspecified
 
 - **Cases:** airlog:49.12, airlog:49.13, airlog:49.14, land:3.31, land:3.32, land:3.34, land:3.35, land:4.46a, land:4.46b, land:4.46c
-- **Status:** proposed
-- **Profile version:** draft
-- **Decided by:** oob, 2026-10-07
-- **Owner review:** pending
+- **Status:** adopted
+- **Profile version:** cna-2021-dev / cna-2021-full
+- **Decided by:** the owner, 2026-10-07
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2; house rule chosen)
 
 ## Question
-How can movement fuel be priced for an HQ with a normal, unparenthesized TOE count but no identified vehicles or weapons?
+How can movement fuel be priced for a headquarters with an unparenthesized TOE count but no identified vehicles or weapons?
 
 ## Evidence
-The Commonwealth, Italian and German Unit Characteristics chart images were checked in full, including their HQ blocks and legends. Each prints movement and combat characteristics plus TOE limits; none contains a fuel consumption column or an HQ fuel default. The Tank and Gun Characteristics charts provide rates for identified weapon systems instead.
+The Commonwealth, Italian and German Unit Characteristics charts were checked in full, including their HQ blocks and legends. They give movement and combat characteristics and TOE limits, but no fuel consumption column or general HQ fuel rate. Tank and Gun Characteristics charts supply rates for identified equipment instead.
 
-Airlog:49.12 includes HQs with unparenthesized TOE among fuel users. Airlog:49.13 prices moving vehicle points using their own consumption factor and groups of five movement CP, rounding a partial group upward. It supplies a rate of one for trucks and reconnaissance/armored-car points, without extending that rate to all headquarters. Land:3.34 and land:3.35 describe gun and tank points belonging to HQs; land:4.46 describes the characteristics of their actual equipment. The slower component's CPA in land:3.32 is not a fuel consumption factor.
+Airlog:49.12 includes headquarters with unparenthesized TOE among fuel users. Airlog:49.13 prices vehicle points with their consumption factor and movement CP grouped in fives, rounding a partial group upward. Its factor of one applies to truck and reconnaissance points; the text does not assign that factor to all headquarters. Land:3.34/3.35 distinguish an HQ's own gun or tank points from its attached units. CPA is not a consumption factor.
 
-In the current OA data, six Commonwealth HQs of classes cw.e/cw.f and three Italian HQs of class it.g have toe = "N" without a weapon list. Normal TOE establishes the count, not the vehicle model. The Italian class permits artillery, without identifying a gun. The Commonwealth rows provide intrinsic ratings without an explicit equipment choice domain.
+The current OA records contain six Commonwealth cw.e/cw.f headquarters and three Italian it.g headquarters with normal TOE but no weapon composition. Their scalar counts identify strength without establishing an equipment model.
 
 ## Ruling
-For an HQ whose current TOE explicitly identifies weapons, sum fuel using each weapon's recorded rate and current point count. Price separately recorded first-line trucks separately; an HQ counter must not add another copy of its children's fuel bill. Apply the stated reconnaissance/truck rate only to points positively identified as those types.
+This is a **HOUSE RULE chosen by the owner**, not a reading of the printed rules. A headquarters whose current TOE is a normal numeric count with no identified equipment consumes movement fuel at factor one for each of its own TOE points. Apply the vehicle-point pricing procedure of airlog:49.13: charge for groups of five movement CP, rounding a partial group up. The owner chose the truck and reconnaissance factor so these headquarters can participate in movement rather than remain frozen by missing equipment data.
 
-A scalar or normal HQ TOE with no identified equipment has an unresolved rate. Do not treat the missing rate as zero, set every HQ to one, derive a rate from CPA, or choose a plausible gun. Before fuel-dependent movement, resolve the equipment through a player choice only where the class and source rules supply a legal equipment domain. Where no such domain exists, movement remains explicitly Unsupported, citing airlog:49.12 and this interpretation, in both profiles. The development profile may skip unimplemented phases; it must not execute a movement that silently consumes no fuel.
+The canonical classifier is the source UnitClass.unit_type of headquarters. The scalar count must be unparenthesized (max_toe_paren is false), and the current TOE must be Normal, Under or Over rather than an explicit Weapons list. Normal resolves to the recorded maximum; Under and Over hold the actual current counts. The nine current affected records are the cw.e/cw.f and it.g headquarters described above. Men-only parenthesized HQ TOE is outside this vehicle-point house rule.
+
+Headquarters with identified weapons retain each weapon's own rate and point count. First-line trucks are priced separately. A parent never adds another bill for its children's fuel. The house rule does not identify a vehicle model or add a source fuel_rate to the class records.
 
 ## Rationale
-The rules establish an obligation to consume fuel but do not provide a general HQ price. Keeping the missing identity visible preserves both facts and prevents unsupported movement from creating free transport.
+The sources require fuel use but leave the general HQ rate unspecified. Factor one is an explicit **HOUSE RULE chosen by the owner**, rather than a conclusion supported by those sources. It supplies a playable cost without pretending that an unknown equipment model has been transcribed. GAPS U-025 remains open as the permanent record of this source gap and the house-rule rate.
 
 ## Affected behaviour and tests
-GAPS U-025 tracks the missing rates; the class records gain no invented fuel field. This proposal is a contract for the movement fuel API, not an implemented fuel procedure. Rules-airlog owns its implementation and tests: explicit weapon mixtures and trucks use their known rates; bare normal HQ TOE returns Unsupported without changing fuel or position.
+Rules-airlog owns the implementation and regressions for the adopted movement fuel contract. Required tests cover the nine affected scalar HQ records, absolute Under/Over counts, partial five-CP groups, continued per-weapon rates, separate first-line truck billing, and no rebilling of attached children. No printed class consumption figure is invented. The earlier Unsupported-only proposal is superseded by this adoption.
