@@ -342,9 +342,11 @@ pub fn transfer(
         let Location::Hex { hex } = at else {
             return Err(SupplyError::Invalid);
         };
+        let marker = super::dump_markers::next_marker(&mut draft.logistics)?;
         draft.logistics.dumps.insert(
             id.clone(),
             crate::state::Dump {
+                marker,
                 id: id.clone(),
                 side,
                 location: DumpLocation::Hex { hex: hex.clone() },

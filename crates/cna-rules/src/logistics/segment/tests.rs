@@ -22,6 +22,7 @@ fn game() -> (State, UnitId) {
     state.logistics.dumps.insert(
         "origin".into(),
         Dump {
+            marker: String::new(),
             id: "origin".into(),
             side: Side::Axis,
             location: DumpLocation::Hex { hex: origin },

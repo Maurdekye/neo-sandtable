@@ -41,6 +41,7 @@ pub mod baseline;
 pub mod capacity;
 pub mod convoys;
 pub mod distribution;
+pub mod dump_markers;
 pub mod pools;
 pub mod ports;
 pub use capacity::{CargoPacking, cargo_bound, fuel_capacity, validate_packing};

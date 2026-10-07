@@ -27,6 +27,7 @@ fn dump(state: &mut State, id: &UnitId, name: &str, side: Side, n: i32) {
     state.logistics.dumps.insert(
         name.into(),
         Dump {
+            marker: String::new(),
             id: name.into(),
             side,
             location: DumpLocation::Hex {

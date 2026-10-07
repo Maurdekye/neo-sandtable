@@ -124,6 +124,7 @@ pub fn initialize(
     if state.logistics.convoys_initialized {
         return Ok(());
     }
+    super::dump_markers::initialize(state, cx)?;
     ports::initialize(content, state);
     let Some(setup) = &content.scenario.fleet_logistics.axis_convoys else {
         state.logistics.convoys_initialized = true;
@@ -595,11 +596,17 @@ pub fn arrive(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
             })
             .map(|d| d.id.clone())
             .unwrap_or_else(|| format!("axis.port.{}", port.id));
+        let marker = if let Some(d) = draft.logistics.dumps.get(&id) {
+            d.marker.clone()
+        } else {
+            super::dump_markers::next_marker(&mut draft.logistics).map_err(engine)?
+        };
         let dump = draft
             .logistics
             .dumps
             .entry(id.clone())
             .or_insert_with(|| Dump {
+                marker,
                 id,
                 side: Side::Axis,
                 location: match &port.location {

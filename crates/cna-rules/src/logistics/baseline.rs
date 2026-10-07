@@ -397,6 +397,7 @@ mod tests {
         s.logistics.dumps.insert(
             "fixture-stock".into(),
             Dump {
+                marker: String::new(),
                 id: "fixture-stock".into(),
                 side: cna_protocol::Side::Axis,
                 location: DumpLocation::Hex {

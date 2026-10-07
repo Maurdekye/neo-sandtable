@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 
 use crate::content::CnaContent;
 use crate::seq::Block;
-use crate::state::{DumpLocation, LandUnit, Location, State};
+use crate::state::{LandUnit, Location, State};
 use crate::steps::illegal;
 
 /// Whether `perspective` may see the full detail of something belonging to `side`.
@@ -310,30 +310,13 @@ pub(crate) fn view(
         units.insert(u.id.to_string(), view);
     }
     let mut markers = Vec::new();
-    for dump in state.logistics.dumps.values() {
-        let DumpLocation::Hex { hex } = &dump.location else {
-            continue;
-        };
-        let own = sees_side(perspective, dump.side);
-        markers.push(wire::Marker {
-            id: format!("dump:{}", dump.id),
-            kind: "supply_dump".into(),
-            hex: hex.to_string(),
-            side: Some(dump.side),
-            label: own.then(|| {
-                let s = dump.supplies;
-                format!(
-                    "{}{}: ammo {}, fuel {}, stores {}, water {}",
-                    dump.id,
-                    if dump.dummy { " (dummy)" } else { "" },
-                    s.ammo,
-                    s.fuel,
-                    s.stores,
-                    s.water
-                )
-            }),
-        });
-    }
+    markers.extend(
+        state
+            .logistics
+            .dumps
+            .values()
+            .filter_map(|dump| crate::logistics::dump_markers::marker(dump, perspective)),
+    );
     // A well attempt reveals only its printed condition marker, never the secret roll or quantity.
     // Cases: airlog:52.14, airlog:52.16
     for hex in state.logistics.wells.keys() {
@@ -524,6 +507,22 @@ pub(crate) fn inspect(
             return Err(hidden());
         }
         return Ok(json!({"truck_pool":pool}));
+    }
+    if let Some(dump) = state
+        .logistics
+        .dumps
+        .values()
+        .find(|d| !d.marker.is_empty() && d.marker == target)
+    {
+        if sees_side(perspective, dump.side) {
+            return Ok(
+                json!({"dump":dump, "setup_destination":state.setup.dump_locations.get(&dump.id)}),
+            );
+        }
+        if let Some(marker) = crate::logistics::dump_markers::marker(dump, perspective) {
+            return Ok(json!({"marker":marker}));
+        }
+        return Err(hidden());
     }
     if let Some(dump) = state.logistics.dumps.get(target) {
         if !sees_side(perspective, dump.side) {

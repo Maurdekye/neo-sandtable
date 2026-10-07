@@ -20,6 +20,7 @@ fn setup(stores: i32, water: i32) -> (State, UnitId) {
     state.logistics.dumps.insert(
         "food".into(),
         Dump {
+            marker: String::new(),
             id: "food".into(),
             side: Side::Axis,
             location: DumpLocation::Hex { hex },

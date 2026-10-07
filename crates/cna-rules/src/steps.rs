@@ -49,7 +49,10 @@ impl Cna {
     ) -> Result<(), EngineError> {
         let anchor = state.cursor.anchor();
         match anchor {
-            "setup" => crate::setup::enter(content, state, cx, self.strict),
+            "setup" => {
+                crate::logistics::dump_markers::initialize(state, cx)?;
+                crate::setup::enter(content, state, cx, self.strict)
+            }
             "initiative" => determine_initiative(content, state, cx),
             "opstage.initiative_declaration" => {
                 open_initiative_declaration(state, cx);

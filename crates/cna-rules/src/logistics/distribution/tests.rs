@@ -208,6 +208,7 @@ fn extra_dump_counters_cannot_multiply_hex_capacity() {
         s.logistics.dumps.insert(
             id.clone(),
             crate::state::Dump {
+                marker: String::new(),
                 id,
                 side: Side::Axis,
                 location: DumpLocation::Hex {

@@ -145,6 +145,9 @@ pub struct LandState {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Dump {
     pub id: String,
+    /// Opaque public counter label, independent of internal identity and kind.
+    #[serde(default)]
+    pub marker: String,
     pub side: Side,
     pub location: DumpLocation,
     pub supplies: Supplies,
@@ -193,6 +196,10 @@ pub struct LogisticsState {
     #[serde(default)]
     pub unit_supply: BTreeMap<UnitId, UnitSupply>,
     pub dumps: BTreeMap<String, Dump>,
+    #[serde(default)]
+    pub next_dump_marker: u64,
+    #[serde(default)]
+    pub dump_markers_initialized: bool,
     #[serde(default)]
     pub ports: BTreeMap<String, crate::logistics::ports::PortState>,
     #[serde(default)]
@@ -424,6 +431,7 @@ impl State {
             logistics.dumps.insert(
                 d.id.clone(),
                 Dump {
+                    marker: String::new(),
                     id: d.id.clone(),
                     side: d.side,
                     location,
@@ -439,6 +447,7 @@ impl State {
                 logistics.dumps.insert(
                     id.clone(),
                     Dump {
+                        marker: String::new(),
                         id,
                         side: d.side,
                         location: DumpLocation::AwaitingSetup {

@@ -36,6 +36,15 @@ fn real_gt1_capacity_plan_arrival_and_enemy_secrecy_survive_checkpoint() {
     let mut s = State::new(&c).unwrap();
     let mut rng = CampaignRng::from_seed([8; 32]);
     let mut events = vec![];
+    // Initial identities are assigned during setup, before secret convoy planning.
+    super::super::dump_markers::initialize(
+        &mut s,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
     let mut expected = rng.clone();
     let die = expected.d6();
     let enemy_before = crate::view::observe(&c, &s, Perspective::Side(Side::Commonwealth));
