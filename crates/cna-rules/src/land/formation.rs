@@ -237,7 +237,9 @@ fn live_children(content: &CnaContent, state: &State, id: &UnitId) -> Vec<UnitId
         .collect()
 }
 /// Evaluate TOE shells and the proportion of non-shell assigned equivalents with the parent.
-/// Graziani uses the historical OA roster as its assigned maximum, including future arrivals.
+/// Capacity gap U-029 (land:9.26, land:19.3): until parent mappings are populated,
+/// the printed OA roster is the fixed maximum approximation, including future arrivals.
+/// Runtime assignment overrides must never shrink this maximum.
 /// Cases: land:9.26, land:9.27, land:9.28
 pub fn is_shell(content: &CnaContent, state: &State, id: &UnitId) -> bool {
     fn inner(
@@ -405,6 +407,41 @@ mod tests {
             .detached = true;
         assert!(is_shell(&c, &s, &hq));
         assert_eq!(stacking_halves(&c, &s, &hq), 6);
+    }
+    /// Cases: land:19.13, land:19.14, land:9.27, land:9.28
+    #[test]
+    fn assignment_changes_cannot_shrink_a_shells_fixed_capacity() {
+        use crate::state::Assignment;
+        let (c, mut s) = setup();
+        let parent: UnitId = "it.1_libyan_div.1st_libyan_infantry_hq".into();
+        let child: UnitId = "it.1_libyan_div.1st_libyan_regt_hq".into();
+        let printed_capacity = c.units.children(&parent).count();
+        s.land.units.get_mut(&child).unwrap().detached = true;
+        assert!(is_shell(&c, &s, &parent));
+        assert_eq!(
+            crate::ownership::assigned_parent_for_unit(&c, &s, &child),
+            Some(&parent)
+        );
+        s.land.units.get_mut(&child).unwrap().assignment = Assignment::Independent;
+        assert!(is_shell(&c, &s, &parent));
+        assert_eq!(
+            c.units.children(&parent).count(),
+            printed_capacity,
+            "runtime never rewrites source capacity"
+        );
+        let a = s.clone();
+        let mut b = s;
+        b.land.units.get_mut(&child).unwrap().assignment = Assignment::Printed;
+        crate::testkit::assert_indistinguishable(
+            &crate::Cna::dev(),
+            &c,
+            &a,
+            &b,
+            Side::Commonwealth,
+        );
+        let owner = crate::view::unit_view(&c, &a.land.units[&child]);
+        assert!(owner.parent.is_none());
+        assert!(owner.detail.unwrap()["assigned_to"].is_null());
     }
     /// Cases: land:9.26, land:9.28, land:10.15
     #[test]

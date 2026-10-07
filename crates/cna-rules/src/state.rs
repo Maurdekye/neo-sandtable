@@ -92,6 +92,18 @@ impl Location {
     }
 }
 
+/// Assignment reserves an organization slot even when the unit is detached.
+/// Printed is distinct from explicit independence and survives old checkpoints.
+/// Cases: land:19.11, land:19.13, land:19.14
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "parent", rename_all = "snake_case")]
+pub enum Assignment {
+    #[default]
+    Printed,
+    Independent,
+    Parent(UnitId),
+}
+
 /// One land unit's dynamic state. Static characteristics (class, ratings, OA hierarchy) stay in
 /// content and are looked up by id.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -101,6 +113,8 @@ pub struct LandUnit {
     pub location: Location,
     /// The parent the unit is attached to, when not with its assigned parent (`land:19`).
     pub attached_to: Option<UnitId>,
+    #[serde(default)]
+    pub assignment: Assignment,
     /// Current TOE: starts as printed on the OA sheet / set-up.
     pub toe: Option<Toe>,
     /// Capability expenditure this OpStage, in quarter CP (`land:6`).
@@ -431,6 +445,7 @@ impl State {
                             side: oa.side,
                             location: location.clone(),
                             attached_to,
+                            assignment: Assignment::default(),
                             toe: oa.toe.clone(),
                             cp_spent_quarters: 0,
                             reserve: crate::land::reserve::ReserveState::default(),
@@ -467,6 +482,7 @@ impl State {
                     Location::NotArrived
                 },
                 attached_to: None,
+                assignment: Assignment::default(),
                 toe: oa.toe.clone(),
                 cp_spent_quarters: 0,
                 reserve: crate::land::reserve::ReserveState::default(),

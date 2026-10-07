@@ -7,20 +7,56 @@ use cna_core::ids::UnitId;
 use cna_protocol::Role;
 use std::collections::BTreeSet;
 
-/// Resolve the current attachment, falling back to the printed assignment unless detached.
+/// Single assignment resolver, usable by both the runtime and an owner unit projection.
+/// Absent runtime units (including future arrivals) retain their printed assignment.
+/// Cases: land:19.11, land:19.13, land:19.14
+pub fn assigned_parent<'a>(
+    content: &'a CnaContent,
+    id: &UnitId,
+    unit: Option<&'a crate::state::LandUnit>,
+) -> Option<&'a UnitId> {
+    match unit.map(|u| &u.assignment) {
+        Some(crate::state::Assignment::Independent) => None,
+        Some(crate::state::Assignment::Parent(parent)) => Some(parent),
+        Some(crate::state::Assignment::Printed) | None => {
+            content.units.units.get(id)?.parent.as_ref()
+        }
+    }
+}
+
+/// The effective assigned parent; attachment and physical location do not change it.
+/// Cases: land:19.11, land:19.13, land:19.14
+pub fn assigned_parent_for_unit<'a>(
+    content: &'a CnaContent,
+    state: &'a State,
+    id: &UnitId,
+) -> Option<&'a UnitId> {
+    assigned_parent(content, id, state.land.units.get(id))
+}
+
+/// Single attachment resolver for runtime and owner view adapters.
+/// Explicit detachment suppresses all fallback; an attachment may differ from assignment.
+/// Cases: land:9.21, land:19.11, land:19.13, land:19.14
+pub fn parent_for_land_unit<'a>(
+    content: &'a CnaContent,
+    unit: &'a crate::state::LandUnit,
+) -> Option<&'a UnitId> {
+    if unit.detached {
+        return None;
+    }
+    unit.attached_to
+        .as_ref()
+        .or_else(|| assigned_parent(content, &unit.id, Some(unit)))
+}
+
+/// Resolve the current attachment, falling back to the effective assignment unless detached.
 /// Cases: land:9.21, land:19.11
 pub fn parent_for_unit<'a>(
     content: &'a CnaContent,
     state: &'a State,
     id: &UnitId,
 ) -> Option<&'a UnitId> {
-    let unit = state.land.units.get(id)?;
-    if unit.detached {
-        return None;
-    }
-    unit.attached_to
-        .as_ref()
-        .or_else(|| content.units.units.get(id)?.parent.as_ref())
+    parent_for_land_unit(content, state.land.units.get(id)?)
 }
 
 /// The default command role for a valid land unit; unknown ids conservatively use rear area.
@@ -66,6 +102,42 @@ mod tests {
     use super::*;
     fn content() -> CnaContent {
         CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap()
+    }
+    /// Cases: land:19.11, land:19.13, land:19.14
+    #[test]
+    fn assignment_and_attachment_are_distinct_and_old_checkpoints_keep_printed_fallback() {
+        use crate::state::{Assignment, LandUnit};
+        let c = content();
+        let mut s = State::new(&c).unwrap();
+        let child: UnitId = "it.1_libyan_div.viii_libyan_bn".into();
+        let original = assigned_parent_for_unit(&c, &s, &child).unwrap().clone();
+        let other: UnitId = "it.1_libyan_div.2nd_libyan_regt_hq".into();
+        let mut old = serde_json::to_value(&s.land.units[&child]).unwrap();
+        old.as_object_mut().unwrap().remove("assignment");
+        let restored: LandUnit = serde_json::from_value(old).unwrap();
+        assert_eq!(restored.assignment, Assignment::Printed);
+        s.land.units.get_mut(&child).unwrap().assignment = Assignment::Parent(other.clone());
+        assert_eq!(assigned_parent_for_unit(&c, &s, &child), Some(&other));
+        assert_eq!(parent_for_unit(&c, &s, &child), Some(&other));
+        s.land.units.get_mut(&child).unwrap().attached_to = Some(original.clone());
+        assert_eq!(assigned_parent_for_unit(&c, &s, &child), Some(&other));
+        assert_eq!(parent_for_unit(&c, &s, &child), Some(&original));
+        s.land.units.get_mut(&child).unwrap().detached = true;
+        assert!(parent_for_unit(&c, &s, &child).is_none());
+        assert_eq!(assigned_parent_for_unit(&c, &s, &child), Some(&other));
+        s.land.units.get_mut(&child).unwrap().assignment = Assignment::Independent;
+        assert!(assigned_parent_for_unit(&c, &s, &child).is_none());
+        assert_eq!(
+            serde_json::from_value::<LandUnit>(
+                serde_json::to_value(&s.land.units[&child]).unwrap()
+            )
+            .unwrap()
+            .assignment,
+            Assignment::Independent
+        );
+        // No runtime entry is also a printed fallback, not invented independence.
+        s.land.units.remove(&child);
+        assert_eq!(assigned_parent_for_unit(&c, &s, &child), Some(&original));
     }
     /// Cases: land:8.18, land:19.11
     #[test]

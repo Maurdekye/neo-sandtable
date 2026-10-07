@@ -526,6 +526,14 @@ pub(crate) fn unit_view(content: &CnaContent, unit: &LandUnit) -> wire::UnitView
     }
     detail.insert("engaged".to_owned(), json!(unit.engaged));
     detail.insert("reserve".to_owned(), json!(unit.reserve));
+    detail.insert(
+        "assigned_to".to_owned(),
+        json!(crate::ownership::assigned_parent(
+            content,
+            &unit.id,
+            Some(unit)
+        )),
+    );
     detail.insert("trucks".to_owned(), json!(unit.trucks));
     detail.insert("transport_trucks".to_owned(), json!(unit.transport_trucks));
     detail.insert(
@@ -550,14 +558,7 @@ pub(crate) fn unit_view(content: &CnaContent, unit: &LandUnit) -> wire::UnitView
         size: board_size(oa.and_then(|o| o.echelon.as_deref())),
         nationality: oa.map_or_else(String::new, |o| o.nationality.clone()),
         hex: unit.location.hex().map(|h| h.to_string()),
-        parent: if unit.detached {
-            None
-        } else {
-            unit.attached_to
-                .clone()
-                .or_else(|| oa.and_then(|o| o.parent.clone()))
-                .map(|p| p.to_string())
-        },
+        parent: crate::ownership::parent_for_land_unit(content, unit).map(ToString::to_string),
         detail: Some(detail),
     }
 }
@@ -854,6 +855,7 @@ pub(crate) fn inspect(
             "location": unit.location,
             "setup_destination": state.setup.unit_locations.get(&unit.id),
             "attached_to": unit.attached_to,
+            "assigned_to": crate::ownership::assigned_parent_for_unit(content,state,&unit.id),
             "trucks": unit.trucks,
             "box_handling": unit.box_handling,
             "box_movement_block": crate::logistics::box_handling::blocks_movement(state,&crate::logistics::box_handling::Carrier::Unit(unit.id.clone())),
