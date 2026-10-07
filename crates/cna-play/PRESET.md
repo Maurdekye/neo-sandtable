@@ -8,8 +8,8 @@ answers run locally before taking a process slot or admitting a model turn.
 **Preparation checkpoint:** real model admission is closed. The Claude driver
 currently supplies no verified estimate bound, so this command pauses cleanly
 before launching any native process. The pinned native price/output enforcement
-proof, complete preset board dry run and owner spend approval remain required.
-Do not interpret the bounded test evidence below as a completed game-turn.
+proof, production-board evidence for the complete inert preset and owner spend approval remain required.
+The complete inert game-turn below exercises the launcher; it does not prove native enforcement or predict AI play.
 
 After those gates are satisfied and the owner approves the spend, the proposed
 command for one game-turn is:
@@ -108,6 +108,76 @@ at most two fake admissions per seat; its per-seat/phase counts and prompt/obser
 byte sizes are printed as `OFFLINE_PRESET_SAMPLE`. Fake usage and injected ceilings
 are synthetic, never provider or billing measurements. The final test uses a real
 Claude driver with an absent executable to prove the unverified-bound gate stops
-before any native start. Complete game-turn counts, native request enforcement and
-live board proof remain pending. Seat tokens are private; board links printed by the
+before any native start. Native request enforcement and the complete preset production-board proof remain pending. Seat tokens are private; board links printed by the
 trusted launcher must not be copied into public logs or fixtures.
+
+
+## Complete inert game-turn and browser handoff
+
+The following runs the exact runbook preset arguments with in-process fake drivers,
+through the real server and each seat's own MCP endpoint. It never launches a native
+CLI or calls a provider. The fake passes whenever offered, allocates the advertised
+maximum first-line truck quantities during setup, and otherwise chooses minimal
+enumerated mandatory answers. Validation remains required; an illegal answer fails.
+
+```powershell
+$env:CNA_LIVE_CLI_TESTS = '0'
+$env:CNA_PRESET_FULL_OUTPUT = '<absolute private report path>'
+cargo test -p cna-play --test preset full_game_turn_inert_preset_reports_each_seat_and_phase -- --ignored --exact --nocapture
+```
+
+On the f83abf7 baseline the proof completed in 174.86 seconds on the local machine.
+It reached all three Operations Stages and the persisted GT1 fence with healthy
+bindings and no budget stop. Re-previewing that fence changed no projected state or
+event sequence. The saved clock remains at OP3: crossing automatic Post and GT2 in
+one Advance discards that entire preview. An `Ok` supervisor return alone never
+counts as a completed game-turn. Counts reconcile against every canonical
+`DecisionResolved`, including locally forced answers.
+
+| Seat | Setup fake windows | OP1 | OP2 | OP3 | Other pre-stage | Local forced |
+|---|---:|---:|---:|---:|---:|---:|
+| Axis commander | 19 | 1 | 1 | 1 | 0 | 3 |
+| Axis front line | 0 | 9 | 9 | 8 | 0 | 13 |
+| Axis rear area | 0 | 7 | 7 | 7 | 0 | 15 |
+| Axis logistics | 132 | 3 | 3 | 3 | 1 | 42 |
+| Axis air | 55 | 1 | 1 | 1 | 1 | 3 |
+| Commonwealth commander | 28 | 0 | 0 | 1 | 0 | 2 |
+| Commonwealth front line | 0 | 9 | 9 | 9 | 0 | 12 |
+| Commonwealth rear area | 0 | 2 | 2 | 2 | 0 | 27 |
+| Commonwealth logistics | 205 | 3 | 3 | 4 | 1 | 41 |
+| Commonwealth air | 41 | 1 | 1 | 1 | 1 | 3 |
+
+This policy produces 593 fake windows and 161 local forced answers, 754 canonical
+answers total. Setup accounts for 480 fake windows; OP1-3 account for 109, and other
+pre-stage windows for four. Peak fake concurrency is two. These are measurements of
+this policy, not required model-call counts for a supplied or moving army. Setup is
+reported separately and changes when the chosen allocations change.
+
+The report records UTF-8 sizes of system/user prompts, observations, action
+schemas and tool-result text, and each window's anchor. These are actual bytes,
+not token counts; persistent history, multiple model responses and provider cache
+accounting make byte-to-token or byte-to-dollar conversion unmeasured. Fake usage
+snapshots deliberately contain synthetic 10 input tokens, 5 output tokens and
+USD0.01 per completed window. The board must label evidence as synthetic. The
+older two-window Haiku sample in README measured USD0.1009509 and 6225 raw input /
+6400 output tokens under its restricted-supply conditions. Applying that unit cost
+to setup, this pass policy or an active full stage would not be a measured estimate.
+
+For the isolated production-browser proof, set `CNA_PRESET_BOARD_READY` and
+`CNA_PRESET_BOARD_RELEASE` to fresh absolute paths in trusted helper scratch before
+running the same command. The ready JSON initially has `state: "ready"`,
+`campaign_id`, `board_url` and `usage_basis`. The operator URL is a same-origin
+fragment capability; read it into helper memory only. Never copy it into a fixture,
+public log, screenshot or a seat's environment. The file is trusted output, not a
+seat working directory. It is updated after the game stops: successful completion
+uses `state: "OFFLINE_PRESET_GT1_BOUNDARY"`, `complete: true`, `final_clock` and
+`fence_repreview: true`. The server remains alive while the helper captures board
+transcripts, synthetic usage and the paused boundary. Create the release file only
+after capturing evidence; its contents are ignored. A separate 120-second browser
+acknowledgement guard then shuts the helper down and fails if acknowledgement was
+missing. Omit both variables for a pure server measurement. Remove the private
+capability file in the browser helper's `finally` cleanup.
+
+The new ignored-test hang guard is provisional, based on the measured local run;
+recalibrate it to about twice its first completed CI duration. Default tests and
+production model, tool and wall budgets are unchanged.

@@ -9,7 +9,7 @@ use cna_play::{
     Demo,
     config::{Command, parse_args},
 };
-use cna_protocol::{ServerMessage, TranscriptEntry};
+use cna_protocol::{GameEvent, ServerMessage, TranscriptEntry};
 use cna_seats::{
     driver::{
         CliKind, DriverError, EntryEmitter, EstimateBound, SeatDriver, SessionInfo, TurnOutcome,
@@ -38,8 +38,11 @@ struct Trace {
     phases: BTreeMap<SeatId, BTreeMap<String, u64>>,
     prompt_bytes: BTreeMap<SeatId, Vec<usize>>,
     observe_bytes: BTreeMap<SeatId, Vec<usize>>,
+    windows: BTreeMap<SeatId, Vec<Value>>,
+    tool_text_bytes: BTreeMap<SeatId, usize>,
 }
 struct Fake {
+    client: reqwest::Client,
     seat: SeatId,
     url: String,
     sink: TranscriptSink,
@@ -50,6 +53,7 @@ struct Fake {
     model: String,
     trace: Arc<Mutex<Trace>>,
     refuse_cleanup: Arc<AtomicBool>,
+    batch_setup: bool,
 }
 impl Fake {
     async fn call(&self, tool: &str, args: Value) -> Result<Value, DriverError> {
@@ -60,11 +64,18 @@ impl Fake {
             tool: tool.into(),
             args: args.clone(),
         });
-        let response:Value=reqwest::Client::new().post(&self.url).json(&json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":tool,"arguments":args}})).send().await.map_err(|e|DriverError::Protocol(e.to_string()))?.json().await.map_err(|e|DriverError::Protocol(e.to_string()))?;
+        let response:Value=self.client.post(&self.url).json(&json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":tool,"arguments":args}})).send().await.map_err(|e|DriverError::Protocol(format!("{:#?}", e.without_url())))?.json().await.map_err(|e|DriverError::Protocol(format!("{:#?}", e.without_url())))?;
         let result = &response["result"];
         let text = result["content"][0]["text"]
             .as_str()
             .ok_or_else(|| DriverError::Protocol(response.to_string()))?;
+        *self
+            .trace
+            .lock()
+            .unwrap()
+            .tool_text_bytes
+            .entry(self.seat)
+            .or_default() += text.len();
         emitter.emit(tool_result_entry(id, result["isError"] != true, text));
         if result["isError"] == true {
             return Err(DriverError::Cli(text.into()));
@@ -119,6 +130,14 @@ impl SeatDriver for Fake {
     }
     async fn run_turn(&mut self, prompt: &str, _: Duration) -> Result<TurnOutcome, DriverError> {
         assert!(self.alive);
+        let before_bytes = self
+            .trace
+            .lock()
+            .unwrap()
+            .tool_text_bytes
+            .get(&self.seat)
+            .copied()
+            .unwrap_or(0);
         self.trace
             .lock()
             .unwrap()
@@ -150,10 +169,19 @@ impl SeatDriver for Fake {
                 .map(|n| format!("OpStage{n}"))
                 .unwrap_or_else(|| request.clock.anchor.stage().into())
         );
+        self.trace.lock().unwrap().windows.entry(self.seat).or_default().push(json!({
+            "phase":phase,"anchor":request.clock.anchor,"kind":request.kind,"user_prompt_bytes":prompt.len(),
+            "observation_bytes":observed.to_string().len(),"action_description_bytes":described.to_string().len(),
+            "provider_tokens":null
+        }));
         let action = if request.space.pass.is_some() {
             Value::Null
         } else {
-            first(&request.space.schema)?
+            if self.batch_setup && request.kind == "cna.setup.first_line_trucks" {
+                largest_setup_allocation(&request.space.schema)?
+            } else {
+                first(&request.space.schema)?
+            }
         };
         self.call(
             "validate",
@@ -161,6 +189,12 @@ impl SeatDriver for Fake {
         )
         .await?;
         self.call("submit",json!({"decision_id":request.id,"revision":request.revision,"action":action,"public_explanation":"Inert fixture answer; no AI/provider call."})).await?;
+        {
+            let mut t = self.trace.lock().unwrap();
+            let bytes = t.tool_text_bytes[&self.seat] - before_bytes;
+            t.windows.get_mut(&self.seat).unwrap().last_mut().unwrap()["tool_result_text_bytes"] =
+                json!(bytes);
+        }
         *self
             .trace
             .lock()
@@ -260,16 +294,48 @@ fn first(schema: &ActionSchema) -> Result<Value, DriverError> {
         }
     })
 }
+// Choose quantities only from this own-seat advertised allocation record. This
+// batches a finite setup pool, without reading engine state or another seat.
+fn largest_setup_allocation(schema: &ActionSchema) -> Result<Value, DriverError> {
+    match schema {
+        ActionSchema::Record { fields } => Ok(Value::Object(
+            fields
+                .iter()
+                .filter(|f| !f.optional)
+                .map(|f| {
+                    Ok((
+                        f.name.clone(),
+                        match &f.schema {
+                            ActionSchema::Integer { max, .. } => json!(max),
+                            other => first(other)?,
+                        },
+                    ))
+                })
+                .collect::<Result<_, DriverError>>()?,
+        )),
+        _ => Err(DriverError::Protocol(
+            "setup allocation must advertise a record".into(),
+        )),
+    }
+}
 fn repo() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 fn drivers(demo: &Demo, trace: Arc<Mutex<Trace>>) -> Vec<(SeatId, Box<dyn SeatDriver>)> {
+    drivers_with_policy(demo, trace, false)
+}
+fn drivers_with_policy(
+    demo: &Demo,
+    trace: Arc<Mutex<Trace>>,
+    batch_setup: bool,
+) -> Vec<(SeatId, Box<dyn SeatDriver>)> {
     demo.config
         .claude_seats()
         .map(|(seat, model)| {
             (
                 seat,
                 Box::new(Fake {
+                    client: reqwest::Client::new(),
                     seat,
                     url: demo.mcp.url(seat).unwrap(),
                     sink: demo.sink.clone(),
@@ -281,6 +347,7 @@ fn drivers(demo: &Demo, trace: Arc<Mutex<Trace>>) -> Vec<(SeatId, Box<dyn SeatDr
                     model: model.into(),
                     trace: trace.clone(),
                     refuse_cleanup: Arc::new(AtomicBool::new(false)),
+                    batch_setup,
                 }) as Box<dyn SeatDriver>,
             )
         })
@@ -302,6 +369,244 @@ fn preset() -> cna_play::config::LaunchConfig {
         panic!()
     };
     config
+}
+
+#[tokio::test]
+#[ignore = "slow: complete ten-seat inert preset game-turn; no provider calls"]
+async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
+    use cna_core::visibility::Perspective;
+    let root = tempfile::tempdir().unwrap();
+    let repo = repo();
+    let Command::Play(config) = parse_args(
+        &[
+            "--preset",
+            "graziani-haiku",
+            "--stop-after-turn",
+            "1",
+            "--budget-usd",
+            "30",
+        ]
+        .map(str::to_string),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    let demo = Demo::with_config(
+        root.path(),
+        &repo.join("data"),
+        &repo.join("web/dist"),
+        config,
+    )
+    .await
+    .unwrap();
+    let trace = Arc::new(Mutex::new(Trace::default()));
+    let mut seats = drivers_with_policy(&demo, trace.clone(), true);
+    let (stop, rx) = watch::channel(false);
+    // Optional trusted browser handoff. The operator URL never enters a driver,
+    // transcript, public report or stdout; the helper consumes this private file in memory.
+    let ready = std::env::var_os("CNA_PRESET_BOARD_READY").map(PathBuf::from);
+    let release = std::env::var_os("CNA_PRESET_BOARD_RELEASE").map(PathBuf::from);
+    if ready.is_some() {
+        assert!(release.is_some(), "browser release path required");
+    }
+    if let Some(path) = &ready {
+        std::fs::write(path, serde_json::to_vec(&json!({
+            "state":"ready","board_url":demo.board_url(),"campaign_id":demo.campaign_id(),
+            "usage_basis":"synthetic inert usage: 10 input/5 output/0.01 USD per completed fake window; provider/native calls zero"
+        })).unwrap()).unwrap();
+    }
+    for seat in SeatId::all() {
+        demo.sink.system(seat, "OFFLINE PRESET: all driver usage is synthetic; no provider or native model process is running.");
+    }
+    let started = std::time::Instant::now();
+    // Persisted per-decision/lifetime bounds remain in force. Full-turn completion
+    // additionally requires the actual fence, never merely an Ok supervisor result.
+    // PROVISIONAL new slow-test guard: local f83abf7-based proof completed in
+    // 174.86 s (preset-full-third-measurement-fixed.log, 2026-10-07). Recalibrate
+    // to about 2x the first completed CI duration; no CI duration exists yet.
+    // Send graceful stop and join supervisors, rather than canceling cleanup.
+    let result = {
+        let play = demo.play_durable(&mut seats, rx);
+        tokio::pin!(play);
+        tokio::select! {
+            result = &mut play => result,
+            _ = tokio::time::sleep(Duration::from_secs(400)) => {
+                let _ = stop.send(true);
+                cna_play::combine_results(Err("offline full-turn measurement hang guard reached".into()), play.await)
+            }
+        }
+    };
+    let gameplay_seconds = started.elapsed().as_secs_f64();
+    let accounting = demo.journal.as_ref().unwrap().snapshot().unwrap();
+    let projection = demo.handle.projection(Perspective::Operator);
+    let clock = projection.view.clock.clone();
+    let replay = demo.handle.replay();
+    let mut canonical: BTreeMap<SeatId, BTreeMap<String, u64>> = BTreeMap::new();
+    let mut cursor = 0;
+    loop {
+        let page = replay
+            .events(Perspective::Operator, cursor, projection.seq)
+            .unwrap();
+        if page.is_empty() {
+            break;
+        }
+        for message in page {
+            if let ServerMessage::Event {
+                seq, clock, event, ..
+            } = message
+            {
+                cursor = seq;
+                if let GameEvent::DecisionResolved { seat, .. } = event {
+                    let phase = format!(
+                        "GT{}:{}",
+                        clock.game_turn,
+                        clock
+                            .op_stage
+                            .map(|n| format!("OpStage{n}"))
+                            .unwrap_or(clock.stage)
+                    );
+                    *canonical
+                        .entry(seat.parse().unwrap())
+                        .or_default()
+                        .entry(phase)
+                        .or_default() += 1;
+                }
+            }
+        }
+    }
+    let mut budget_stops = vec![];
+    for seat in SeatId::all() {
+        let mut cursor = 0;
+        loop {
+            let page = replay
+                .transcripts(Perspective::Operator, seat, cursor)
+                .unwrap();
+            if page.is_empty() {
+                break;
+            }
+            for message in page {
+                if let ServerMessage::Transcript { tseq, entry, .. } = message {
+                    cursor = tseq;
+                    if let TranscriptEntry::System { text } = entry
+                        && text.starts_with("automatic budget stop:")
+                    {
+                        budget_stops.push(json!({"seat":seat,"reason":text}));
+                    }
+                }
+            }
+        }
+    }
+    let healthy = demo.handle.status() == cna_server::CampaignStatus::Paused
+        && SeatId::all().all(|seat| {
+            let b = demo.handle.seat(seat).binding;
+            !b.paused && b.failure.is_none()
+        });
+    let stages_seen = (1..=3).all(|n| {
+        canonical
+            .values()
+            .any(|p| p.contains_key(&format!("GT1:OpStage{n}")))
+    });
+    let candidate = result.is_ok()
+        && healthy
+        && budget_stops.is_empty()
+        && projection.view.pending.is_empty()
+        && clock.game_turn == 1
+        && stages_seen;
+    // An Advance can cross automatic Post anchors and reach GT2 in one preview.
+    // The fence discards that whole preview, so the saved clock can remain in OP3.
+    // With no pending decisions or running fake drivers, explicitly resume ONLY
+    // the existing actor. The same fence must park it again without any event/view change.
+    let fence_repreview = if candidate {
+        let mut status = demo.handle.watch_status();
+        let resumed = demo.handle.pause(false).await;
+        let parked = tokio::time::timeout(Duration::from_secs(30), async {
+            loop {
+                if *status.borrow_and_update() == cna_server::CampaignStatus::Paused {
+                    break;
+                }
+                status.changed().await.map_err(|e| e.to_string())?;
+            }
+            Ok::<_, String>(())
+        })
+        .await;
+        resumed.is_ok()
+            && matches!(parked, Ok(Ok(())))
+            && demo.handle.projection(Perspective::Operator) == projection
+            && demo.handle.run_boundary().await.unwrap()
+                == Some(cna_server::RunBoundary {
+                    game_turn: 1,
+                    op_stage: None,
+                })
+    } else {
+        false
+    };
+    let complete = candidate && fence_repreview;
+    let mut browser_acknowledged = None;
+    if let Some(path) = &ready {
+        std::fs::write(path, serde_json::to_vec(&json!({
+            "state":if complete { "OFFLINE_PRESET_GT1_BOUNDARY" } else { "incomplete" },
+            "board_url":demo.board_url(),"campaign_id":demo.campaign_id(),"complete":complete,
+            "final_clock":clock,"fence_repreview":fence_repreview,
+            "usage_basis":"synthetic inert usage: 10 input/5 output/0.01 USD per completed fake window; provider/native calls zero"
+        })).unwrap()).unwrap();
+        // Browser acknowledgement is independent of game/model deadlines. This
+        // optional 120 s cleanup guard applies only to the local evidence helper.
+        let release = release.as_ref().unwrap();
+        let acknowledged = tokio::time::timeout(Duration::from_secs(120), async {
+            while !release.exists() {
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+        })
+        .await;
+        browser_acknowledged = Some(acknowledged.is_ok());
+        if acknowledged.is_err() {
+            eprintln!("offline browser acknowledgement absent; shutting down helper");
+        }
+    }
+    let system_bytes: BTreeMap<_, _> = SeatId::all()
+        .map(|seat| {
+            (
+                seat,
+                cna_seats::run::PromptBuilder::system_prompt(&demo.prompts, seat).len(),
+            )
+        })
+        .collect();
+    let cleanup = demo.shutdown().await;
+    let combined = cna_play::combine_results(result, cleanup);
+    let t = trace.lock().unwrap();
+    let rows: Vec<_> = SeatId::all().map(|seat| {
+        let record = &accounting.seats[&seat];
+        let accepted = t.decisions.get(&seat).copied().unwrap_or(0);
+        let automatic = record.stages.values().map(|s|s.automatic_completed).sum::<u64>();
+        let resolved = canonical.get(&seat).map(|p|p.values().sum::<u64>()).unwrap_or(0);
+        json!({"seat":seat,"model_admissions":record.turns,
+            "system_prompt_bytes":system_bytes[&seat],
+            "successful_fake_submit_receipts":accepted,"canonical_answers":resolved,
+            "canonical_answers_by_phase":canonical.get(&seat),"model_decisions_by_phase":t.phases.get(&seat),
+            "automatic_answers":automatic,"counts_reconcile":resolved==accepted+automatic,
+            "windows":t.windows.get(&seat),"accounting":"synthetic fake usage, not measured provider tokens or USD"})
+    }).collect();
+    let report = json!({"scope":"game-turn one including setup; pass whenever declared; maximum advertised first-line truck allocation; otherwise minimal enumerated mandatory choice",
+        "complete":complete,"fence_repreview":fence_repreview,"final_clock":clock,"healthy":healthy,"budget_stops":budget_stops,"error":combined.as_ref().err(),
+        "gameplay_seconds":gameplay_seconds,"total_helper_seconds":started.elapsed().as_secs_f64(),"browser_acknowledged":browser_acknowledged,"paid_calls":0,"native_processes":0,"fake_peak":t.peak,"rows":rows,
+        "measurement":"UTF-8 bytes only; provider tokens, real USD and an active-movement game-turn cost are unmeasured"});
+    if let Ok(path) = std::env::var("CNA_PRESET_FULL_OUTPUT") {
+        std::fs::write(path, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
+    }
+    println!("OFFLINE_PRESET_GAME_TURN {report}");
+    assert_eq!(t.active, 0);
+    assert!(t.peak <= 2);
+    combined.unwrap();
+    assert!(
+        complete,
+        "supervisor stopped before the full game-turn boundary; inspect report"
+    );
+    assert!(rows.iter().all(|r| r["counts_reconcile"] == true));
+    assert_ne!(
+        browser_acknowledged,
+        Some(false),
+        "browser helper did not acknowledge evidence capture"
+    );
 }
 async fn healthy(demo: &Demo) {
     assert_eq!(demo.handle.status(), cna_server::CampaignStatus::Paused);
@@ -544,6 +849,7 @@ async fn accounted_turn_with_failed_parking_retains_full_envelope() {
     let trace = Arc::new(Mutex::new(Trace::default()));
     let refuse = Arc::new(AtomicBool::new(true));
     let driver = Fake {
+        client: reqwest::Client::new(),
         seat,
         url: demo.mcp.url(seat).unwrap(),
         sink: demo.sink.clone(),
@@ -554,6 +860,7 @@ async fn accounted_turn_with_failed_parking_retains_full_envelope() {
         model: "haiku".into(),
         trace: trace.clone(),
         refuse_cleanup: refuse.clone(),
+        batch_setup: false,
     };
     let mut drivers = vec![(seat, Box::new(driver) as Box<dyn SeatDriver>)];
     let (_tx, rx) = watch::channel(false);
