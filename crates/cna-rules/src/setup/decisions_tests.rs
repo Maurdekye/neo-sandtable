@@ -958,3 +958,70 @@ fn enemy_initial_air_and_pool_holdings_are_indistinguishable_during_setup() {
         crate::testkit::assert_indistinguishable(&Cna::dev(), &c, &game.state, &other, observer);
     }
 }
+
+/// Cases: scen:59.45, airlog:53.11, airlog:54.2
+#[test]
+fn optional_cargo_and_motorization_operations_can_be_cancelled_without_changes() {
+    let c = content();
+    let mut game = finish(&c, opened(&c));
+    game.state.setup.closed = false;
+    game.state.decisions.pending.clear();
+    game.state.setup.tasks.clear();
+    game.state.setup.preload_started = false;
+    let unit = game
+        .state
+        .land
+        .units
+        .values()
+        .find(|u| {
+            u.setup_group.is_some()
+                && u.trucks.total() > 0
+                && crate::land::formation::class(&c, &u.id)
+                    .is_some_and(|cl| cl.unit_type == "infantry")
+        })
+        .unwrap()
+        .id
+        .clone();
+    let mut rng = CampaignRng::from_state(&game.rng);
+    let mut events = Vec::new();
+    let mut cx = cna_core::engine::Cx {
+        rng: &mut rng,
+        events: &mut events,
+    };
+    super::super::preload::start(&c, &mut game.state, &mut cx).unwrap();
+    for operation in ["load", "motorize"] {
+        let p = game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| {
+                p.space
+                    .context
+                    .as_ref()
+                    .is_some_and(|x| x["unit"] == unit.as_str())
+            })
+            .unwrap()
+            .clone();
+        game = submit(&c, &game, &p, json!(operation)).unwrap();
+        let p = game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| {
+                p.space
+                    .context
+                    .as_ref()
+                    .is_some_and(|x| x["unit"] == unit.as_str())
+            })
+            .unwrap()
+            .clone();
+        assert!(p.space.pass.is_some());
+        let before = game.state.land.units[&unit].clone();
+        let supply = game.state.logistics.unit_supply.get(&unit).cloned();
+        game = submit(&c, &game, &p, Value::Null).unwrap();
+        assert_eq!(game.state.land.units[&unit], before);
+        assert_eq!(game.state.logistics.unit_supply.get(&unit).cloned(), supply);
+    }
+}
