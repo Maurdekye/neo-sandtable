@@ -5,11 +5,11 @@ use crate::{
 };
 use cna_content::{scenario::Placement, units::Trucks};
 use std::sync::OnceLock;
-fn content() -> &'static CnaContent {
+pub(super) fn content() -> &'static CnaContent {
     static C: OnceLock<CnaContent> = OnceLock::new();
     C.get_or_init(|| CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap())
 }
-fn game() -> (State, CargoSite, CargoSite, CargoSite) {
+pub(super) fn game() -> (State, CargoSite, CargoSite, CargoSite) {
     let mut s = State::new(content()).unwrap();
     s.cursor.op_stage = Some(1);
     let mut pools = vec![];
@@ -429,4 +429,125 @@ fn shared_supply_debits_retire_exact_whole_goods_and_keep_fractional_fuel_credit
         .remove("cargo_history");
     let legacy: State = serde_json::from_value(legacy).unwrap();
     assert!(legacy.logistics.cargo_history.histories.is_empty());
+}
+
+/// Cases: airlog:53.25
+/// Interpretations: interp:airlog-0020
+#[test]
+fn continuous_goods_use_their_own_physical_history_not_the_parent_body() {
+    let (mut s, a, _, _) = game();
+    advance(&mut s, Side::Axis, &a, timing(0, 120), 16).unwrap();
+    // Parent body has spent eight CP; the original carrying truck has spent four.
+    advance(&mut s, Side::Axis, &a, timing(32, 120), 12).unwrap();
+    assert_eq!(
+        parcels(&s, Side::Axis, &a).unwrap()[0].spent_cp_quarters,
+        28
+    );
+    assert_ne!(
+        parcels(&s, Side::Axis, &a).unwrap()[0].spent_cp_quarters,
+        44
+    );
+}
+/// Cases: airlog:53.22, airlog:53.24, airlog:53.25
+#[test]
+fn zero_cp_unloading_keeps_the_original_ceiling_without_changing_fresh_choices() {
+    let (mut s, a, b, d) = game();
+    assert_eq!(all(&s, &a)[0].lot, "fresh");
+    let choices = all(&s, &a);
+    transfer_with_origin(
+        &mut s,
+        Side::Axis,
+        &a,
+        &d,
+        goods(10),
+        &choices,
+        Some(timing(0, 120)),
+        None,
+    )
+    .unwrap();
+    physically_transfer(&mut s, &a, &d, 10);
+    let p = parcels(&s, Side::Axis, &d).unwrap()[0].clone();
+    assert_eq!(p.spent_cp_quarters, 0);
+    assert_eq!(p.ceiling_cp_quarters, Some(120));
+    let choices = all(&s, &d);
+    transfer(
+        &mut s,
+        Side::Axis,
+        &d,
+        &b,
+        goods(10),
+        &choices,
+        Some(timing(0, 160)),
+    )
+    .unwrap();
+    physically_transfer(&mut s, &d, &b, 10);
+    assert_eq!(
+        parcels(&s, Side::Axis, &b).unwrap()[0].ceiling_cp_quarters,
+        Some(120)
+    );
+}
+/// Cases: airlog:53.24, airlog:53.25
+#[test]
+fn distinct_histories_require_explicit_choices_and_uniform_choices_are_deterministic() {
+    let (mut s, a, _, _) = game();
+    assert_eq!(
+        select(&s, Side::Axis, &a, goods(4), None).unwrap()[0].lot,
+        "fresh"
+    );
+    advance(&mut s, Side::Axis, &a, timing(0, 120), 4).unwrap();
+    let CargoSite::Pool(id) = &a else {
+        unreachable!()
+    };
+    s.logistics
+        .truck_pools
+        .iter_mut()
+        .find(|p| &p.id == id)
+        .unwrap()
+        .cargo
+        .stores += 2;
+    assert_eq!(
+        select(&s, Side::Axis, &a, goods(4), None),
+        Err(CargoError::ChoiceRequired)
+    );
+    let explicit = vec![LotSelection {
+        lot: "fresh".into(),
+        goods: goods(2),
+    }];
+    assert_eq!(
+        select(&s, Side::Axis, &a, goods(2), Some(&explicit)).unwrap(),
+        explicit
+    );
+    assert!(select(&s, Side::Commonwealth, &a, goods(1), None).is_err());
+}
+
+/// Cases: airlog:53.24, airlog:53.25
+#[test]
+fn explicit_parcel_selection_validates_exact_available_totals_before_any_transfer() {
+    let (s, a, _, _) = game();
+    let chosen = LotSelection {
+        lot: "fresh".into(),
+        goods: goods(2),
+    };
+    assert_eq!(
+        select(
+            &s,
+            Side::Axis,
+            &a,
+            goods(2),
+            Some(&[chosen.clone(), chosen.clone()])
+        ),
+        Err(CargoError::Invalid)
+    );
+    assert_eq!(
+        select(&s, Side::Axis, &a, goods(3), Some(&[chosen])),
+        Err(CargoError::Invalid)
+    );
+    let over = LotSelection {
+        lot: "fresh".into(),
+        goods: goods(11),
+    };
+    assert_eq!(
+        select(&s, Side::Axis, &a, goods(11), Some(&[over])),
+        Err(CargoError::Insufficient)
+    );
 }

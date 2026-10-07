@@ -16,12 +16,14 @@ pub enum CargoSite {
     Pool(String),
     Dump(String),
     Ship(String),
+    BrokenMarker(String),
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CargoError {
     Invalid,
     Insufficient,
     Ceiling,
+    ChoiceRequired,
 }
 impl From<CargoError> for SupplyError {
     fn from(e: CargoError) -> Self {
@@ -34,6 +36,7 @@ impl From<CargoError> for SupplyError {
 pub fn rejection(e: CargoError) -> Rejection {
     crate::steps::illegal(match e {
         CargoError::Ceiling => "goods exceed their first carrier's CP ceiling (airlog:53.25)",
+        CargoError::ChoiceRequired => "choose cargo parcels with distinct histories (airlog:53.25)",
         CargoError::Insufficient => "cargo parcel quantity is unavailable",
         CargoError::Invalid => "invalid cargo history or parcel choice",
     })
@@ -63,6 +66,7 @@ pub struct CargoHistoryState {
     #[serde(with = "map_entries")]
     pub histories: BTreeMap<CargoSite, CargoHistory>,
     pub next_id: BTreeMap<Side, u64>,
+    pub motion: motion::MotionState,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CargoEntry {
@@ -114,6 +118,7 @@ pub struct Parcel {
     pub goods: Supplies,
     pub spent_cp_quarters: i32,
     pub ceiling_cp_quarters: Option<i32>,
+    pub continuous_first_line: bool,
 }
 fn get(s: &Supplies, k: usize) -> i32 {
     [s.ammo, s.fuel, s.stores, s.water][k]
@@ -174,6 +179,7 @@ pub fn owner(state: &State, site: &CargoSite) -> Option<Side> {
             .find(|p| &p.id == id)
             .map(|p| p.side),
         CargoSite::Dump(id) => state.logistics.dumps.get(id).map(|d| d.side),
+        CargoSite::BrokenMarker(id) => state.land.breakdown.markers.get(id).map(|m| m.side),
         CargoSite::Ship(id) => state
             .logistics
             .coastal_ships
@@ -202,6 +208,10 @@ fn stock(state: &State, site: &CargoSite) -> Result<Supplies, CargoError> {
         }
         CargoSite::Dump(id) => state.logistics.dumps[id].supplies,
         CargoSite::Ship(id) => state.logistics.coastal_ships[id].cargo,
+        CargoSite::BrokenMarker(id) => state.land.breakdown.markers[id]
+            .cargo
+            .totals()
+            .map_err(|_| CargoError::Invalid)?,
     };
     if !valid(&s) {
         return Err(CargoError::Invalid);
@@ -298,6 +308,7 @@ pub fn parcels(state: &State, side: Side, site: &CargoSite) -> Result<Vec<Parcel
             goods: l.goods,
             spent_cp_quarters: l.spent_cp_quarters,
             ceiling_cp_quarters: Some(l.ceiling_cp_quarters),
+            continuous_first_line: l.continuous_first_line,
         })
         .collect::<Vec<_>>();
     if !empty(&fresh) {
@@ -306,6 +317,7 @@ pub fn parcels(state: &State, side: Side, site: &CargoSite) -> Result<Vec<Parcel
             goods: fresh,
             spent_cp_quarters: 0,
             ceiling_cp_quarters: None,
+            continuous_first_line: false,
         });
     }
     Ok(parcels)
@@ -351,7 +363,6 @@ pub fn advance(
     for lot in &mut h.lots {
         lot.spent_cp_quarters = lot
             .spent_cp_quarters
-            .max(previous.spent_cp_quarters)
             .checked_add(delta)
             .ok_or(CargoError::Invalid)?;
         if lot.spent_cp_quarters > lot.ceiling_cp_quarters
@@ -379,6 +390,23 @@ pub fn transfer(
     selection: &[LotSelection],
     recipient: Option<CarrierTiming>,
 ) -> Result<(), CargoError> {
+    transfer_with_origin(state, side, from, to, amount, selection, None, recipient)
+}
+/// Preserve the first physical truck's allowance even when fresh goods are
+/// unloaded before that truck has moved. Timings must come from physical history.
+/// Cases: airlog:53.22, airlog:53.24, airlog:53.25
+/// Interpretations: interp:airlog-0020
+#[allow(clippy::too_many_arguments)]
+pub fn transfer_with_origin(
+    state: &mut State,
+    side: Side,
+    from: &CargoSite,
+    to: &CargoSite,
+    amount: Supplies,
+    selection: &[LotSelection],
+    origin: Option<CarrierTiming>,
+    recipient: Option<CarrierTiming>,
+) -> Result<(), CargoError> {
     if from == to
         || owner(state, from) != Some(side)
         || owner(state, to) != Some(side)
@@ -387,6 +415,12 @@ pub fn transfer(
         || to.carrier() != recipient.is_some()
     {
         return Err(CargoError::Invalid);
+    }
+    if origin.is_some() && !from.carrier() {
+        return Err(CargoError::Invalid);
+    }
+    if let Some(t) = origin {
+        timing(t)?;
     }
     if let Some(t) = recipient {
         timing(t)?;
@@ -402,13 +436,16 @@ pub fn transfer(
         }
         add(&mut total, &choice.goods)?;
         let mut carried = if choice.lot == "fresh" {
+            if from.carrier() && origin.is_none() {
+                return Err(CargoError::Invalid);
+            }
             sub(&mut fresh, &choice.goods)?;
-            recipient.map(|t| CargoLot {
+            origin.or(recipient).map(|t| CargoLot {
                 id: String::new(),
                 goods: choice.goods,
                 spent_cp_quarters: t.spent_cp_quarters,
                 ceiling_cp_quarters: t.cpa_quarters,
-                continuous_first_line: matches!(to, CargoSite::Unit(_)),
+                continuous_first_line: origin.is_none() && matches!(to, CargoSite::Unit(_)),
             })
         } else {
             let lot = source
@@ -483,15 +520,171 @@ pub fn disclosed(state: &State, perspective: Perspective) -> Vec<CargoEntry> {
         .collect()
 }
 
+/// Choose automatically only when every usable parcel has the same history.
+/// Different histories require the owner's explicit selection at handling.
+/// Cases: airlog:53.24, airlog:53.25, land:3.6
+/// Interpretations: interp:airlog-0020
+pub fn select(
+    state: &State,
+    side: Side,
+    site: &CargoSite,
+    amount: Supplies,
+    selection: Option<&[LotSelection]>,
+) -> Result<Vec<LotSelection>, CargoError> {
+    if !valid(&amount) || empty(&amount) {
+        return Err(CargoError::Invalid);
+    }
+    let available = parcels(state, side, site)?;
+    if let Some(selection) = selection {
+        let mut total = Supplies::default();
+        let mut seen = BTreeSet::new();
+        for chosen in selection {
+            if !seen.insert(&chosen.lot) || !valid(&chosen.goods) || empty(&chosen.goods) {
+                return Err(CargoError::Invalid);
+            }
+            let parcel = available
+                .iter()
+                .find(|p| p.lot == chosen.lot)
+                .ok_or(CargoError::Invalid)?;
+            let mut held = parcel.goods;
+            sub(&mut held, &chosen.goods)?;
+            add(&mut total, &chosen.goods)?;
+        }
+        if total != amount {
+            return Err(CargoError::Invalid);
+        }
+        return Ok(selection.to_vec());
+    }
+    let relevant: Vec<_> = available
+        .iter()
+        .filter(|p| (0..4).any(|k| get(&amount, k) > 0 && get(&p.goods, k) > 0))
+        .collect();
+    if let Some(first) = relevant.first()
+        && relevant.iter().any(|p| {
+            (
+                p.spent_cp_quarters,
+                p.ceiling_cp_quarters,
+                p.continuous_first_line,
+            ) != (
+                first.spent_cp_quarters,
+                first.ceiling_cp_quarters,
+                first.continuous_first_line,
+            )
+        })
+    {
+        return Err(CargoError::ChoiceRequired);
+    }
+    let mut left = amount;
+    let mut choices = vec![];
+    for parcel in relevant {
+        let mut goods = Supplies::default();
+        for k in 0..4 {
+            let n = get(&left, k).min(get(&parcel.goods, k));
+            let before = get(&left, k);
+            set(&mut left, k, before - n);
+            set(&mut goods, k, n);
+        }
+        if !empty(&goods) {
+            choices.push(LotSelection {
+                lot: parcel.lot.clone(),
+                goods,
+            });
+        }
+    }
+    if !empty(&left) {
+        return Err(CargoError::Insufficient);
+    }
+    Ok(choices)
+}
+/// Owner-only enumerated lot domains; absent selection is valid for uniform history.
+/// Cases: airlog:53.24, airlog:53.25, land:3.6
+pub fn selection_field(
+    state: &State,
+    side: Side,
+    sites: &[CargoSite],
+) -> cna_core::decision::FieldSchema {
+    use cna_core::decision::{ActionSchema, FieldSchema};
+    let available: Vec<_> = sites
+        .iter()
+        .flat_map(|s| parcels(state, side, s).unwrap_or_default())
+        .collect();
+    let mut options = BTreeMap::new();
+    for p in &available {
+        options.entry(p.lot.clone()).or_insert_with(|| {
+            super::stores::option(
+                p.lot.clone(),
+                format!(
+                    "{}: {} quarter CP; ceiling {:?}",
+                    p.lot, p.spent_cp_quarters, p.ceiling_cp_quarters
+                ),
+            )
+        });
+    }
+    FieldSchema {
+        name: "lots".into(),
+        doc: "Exact parcel quantities; required only when usable histories differ".into(),
+        optional: true,
+        schema: ActionSchema::List {
+            min: 0,
+            max: available.len() as u32,
+            item: Box::new(ActionSchema::Record {
+                fields: vec![
+                    super::stores::field(
+                        "lot",
+                        "Owner-known parcel",
+                        ActionSchema::Choice {
+                            options: options.into_values().collect(),
+                        },
+                    ),
+                    super::stores::field(
+                        "goods",
+                        "Whole goods selected from this parcel",
+                        ActionSchema::Record {
+                            fields: ["ammo", "fuel", "stores", "water"]
+                                .into_iter()
+                                .enumerate()
+                                .map(|(k, n)| {
+                                    super::stores::field(
+                                        n,
+                                        "Whole supply points",
+                                        ActionSchema::Integer {
+                                            min: 0,
+                                            max: available
+                                                .iter()
+                                                .map(|p| i64::from(get(&p.goods, k)))
+                                                .max()
+                                                .unwrap_or(0),
+                                        },
+                                    )
+                                })
+                                .collect(),
+                        },
+                    ),
+                ],
+            }),
+        },
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CargoSnapshot {
     entries: BTreeMap<CargoSite, Option<CargoHistory>>,
+    motion: Vec<motion::MotionEntry>,
     serials: BTreeMap<Side, Option<u64>>,
 }
 /// Capture only sites a hypothetical operation may change, including its supply
 /// sources. Restore the side-local serial too so inspection allocates no identities.
 pub fn snapshot(state: &State, sites: &[CargoSite]) -> CargoSnapshot {
     CargoSnapshot {
+        motion: state
+            .logistics
+            .cargo_history
+            .motion
+            .entries
+            .iter()
+            .filter(|e| sites.contains(&e.site))
+            .cloned()
+            .collect(),
         entries: sites
             .iter()
             .map(|site| {
@@ -514,6 +707,24 @@ pub fn snapshot(state: &State, sites: &[CargoSite]) -> CargoSnapshot {
     }
 }
 pub fn restore(state: &mut State, snapshot: &CargoSnapshot) {
+    state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .retain(|e| !snapshot.entries.contains_key(&e.site));
+    state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .extend(snapshot.motion.clone());
+    state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .sort_by(|a, b| a.site.cmp(&b.site));
     for (site, h) in &snapshot.entries {
         if let Some(h) = h {
             state
@@ -533,6 +744,8 @@ pub fn restore(state: &mut State, snapshot: &CargoSnapshot) {
         }
     }
 }
+
+pub mod motion;
 
 #[cfg(test)]
 mod tests;
