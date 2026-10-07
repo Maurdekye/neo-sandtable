@@ -138,6 +138,14 @@ pub fn recover(path: &Path, data: &Path, profile: &str) -> Result<CampaignHandle
 
 fn movement_policy() -> ActionPolicy<Cna> {
     Box::new(|content, state, request, epoch| {
+        if request.kind == "cna.arrivals.batch" {
+            // Fixed arrival windows need the source-conserving policy, never the generic sampler.
+            // A missing mandatory policy pauses at the actor's Null/no-pass guard.
+            return Some(
+                cna_rules::baseline::arrival_orders(content, state, request)
+                    .unwrap_or(serde_json::Value::Null),
+            );
+        }
         if !matches!(
             request.kind.as_str(),
             cna_rules::land::movement::KIND
@@ -1787,6 +1795,267 @@ mod tests {
             assert_eq!(batch.game.rng, game.rng);
         }
         assert_eq!(serde_json::to_value(&game).unwrap(), before);
+    }
+
+    /// Cases: land:3.6, land:20.12, airlog:34.84, airlog:53.11
+    #[tokio::test]
+    async fn arrival_batches_use_the_real_actor_policy_and_recover_exact_allocations() {
+        use cna_content::units::Trucks;
+        use cna_core::{decision::DecisionResponse, visibility::Perspective};
+        use cna_protocol::{Role, Side};
+        use std::time::Duration;
+        for mode in ["legal_random", "pass_when_possible"] {
+            for (gt, role) in [(5, Role::Logistics), (15, Role::Air)] {
+                let data = cna_content::repo_data_dir();
+                let content = CnaContent::load(&data, "italian_campaign").unwrap();
+                let mut state = State::new(&content).unwrap();
+                state.setup.started = true;
+                state.setup.closed = true;
+                state.logistics.convoys_initialized = true;
+                cna_rules::logistics::ports::initialize(&content, &mut state);
+                state.turn.player_a = Some(Side::Axis);
+                state.turn.weather = Some(WeatherState {
+                    kind: WeatherKind::Normal,
+                    storm_sections: vec![],
+                });
+                state.logistics.dumps.clear();
+                state.logistics.truck_pools.clear();
+                state.land.undistributed_trucks.clear();
+                state.air.forces.clear();
+                for unit in state.land.units.values_mut() {
+                    unit.location = Location::NotArrived;
+                    unit.trucks = Trucks::default();
+                    unit.transport_trucks = Trucks::default();
+                }
+                state.cursor.game_turn = gt;
+                state.cursor.op_stage = Some(1);
+                state.cursor.block = Block::OpStage;
+                state.cursor.index = cna_rules::seq::OPSTAGE
+                    .iter()
+                    .position(|s| s.anchor == "opstage.convoy_arrival")
+                    .unwrap();
+                state.cursor.entered = false;
+                let directory = tempfile::tempdir().unwrap();
+                let path = directory.path().join("arrivals.sqlite");
+                let pins = Pins {
+                    rules_profile: cna_rules::PROFILE_DEV.into(),
+                    content_hash: "real-italian-arrival-window".into(),
+                    engine_version: env!("CNA_ENGINE_SOURCE_HASH").into(),
+                };
+                let meta = CampaignMeta {
+                    id: "arrivals".into(),
+                    scenario_id: "italian_campaign".into(),
+                    rules_profile: cna_rules::PROFILE_DEV.into(),
+                    title: "Real arrival actor".into(),
+                    seats: SeatId::all()
+                        .map(|s| SeatInfo {
+                            id: s.to_string(),
+                            side: s.side,
+                            role: s.role,
+                            controller: None,
+                            status: SeatStatus::Idle,
+                        })
+                        .collect(),
+                };
+                let mut campaign = Campaign::create(
+                    &path,
+                    Cna::dev(),
+                    content,
+                    Game {
+                        state,
+                        rng: CampaignRng::from_seed([6; 32]).state(),
+                    },
+                    meta,
+                    pins.clone(),
+                )
+                .unwrap();
+                campaign.advance().unwrap();
+                let requests = campaign.pending();
+                assert_eq!(requests.len(), 6);
+                assert!(requests.iter().all(|r| r.kind == "cna.arrivals.batch"));
+                let rng = campaign.game.rng.clone();
+                let units = serde_json::to_value(&campaign.game.state.land.units).unwrap();
+                let mut expected = std::collections::BTreeMap::new();
+                {
+                    let seat = SeatId::new(Side::Commonwealth, role);
+                    let request = requests.iter().find(|r| r.seat == seat).unwrap();
+                    assert!(
+                        request.space.pass.is_none(),
+                        "real {role:?} allocation is mandatory"
+                    );
+                    let action = cna_rules::baseline::arrival_orders(
+                        &campaign.content,
+                        &campaign.game.state,
+                        request,
+                    )
+                    .unwrap();
+                    assert!(!action.is_null());
+                    expected.insert(seat, (request.id.clone(), action));
+                    campaign
+                        .handover(
+                            seat,
+                            Some(ControllerInfo {
+                                kind: ControllerKind::Scripted,
+                                label: mode.into(),
+                            }),
+                            serde_json::json!({"mode":mode}),
+                        )
+                        .unwrap();
+                }
+                // Other roles remain human: the actor must buffer allocations, not close the barrier.
+                let handle =
+                    CampaignHandle::spawn_with_policy(campaign, &path, movement_policy()).unwrap();
+                let result = tokio::time::timeout(Duration::from_secs(30), async {
+                    for (&seat, (id, _)) in &expected {
+                        let mut watch = handle.watch_seat(seat);
+                        let state = watch
+                            .wait_for(|s| {
+                                s.binding.paused || !s.pending.iter().any(|r| r.id == *id)
+                            })
+                            .await
+                            .map_err(|e| e.to_string())?;
+                        if state.binding.paused {
+                            return Err(format!(
+                                "{mode} {seat} paused: {:?}",
+                                state.binding.failure
+                            ));
+                        }
+                    }
+                    Ok::<(), String>(())
+                })
+                .await;
+                // Always join the actual writer before reporting a failed assertion.
+                handle.shutdown().await.unwrap();
+                result.unwrap().unwrap();
+                let views: Vec<_> = Perspective::all()
+                    .map(|p| (p, handle.projection(p)))
+                    .collect();
+                let mut campaign = Campaign::recover(
+                    &path,
+                    Cna::dev(),
+                    CnaContent::load(&data, "italian_campaign").unwrap(),
+                    &pins,
+                )
+                .unwrap();
+                assert_eq!(
+                    campaign.game.rng, rng,
+                    "buffered policy answers cannot draw campaign dice"
+                );
+                assert_eq!(
+                    serde_json::to_value(&campaign.game.state.land.units).unwrap(),
+                    units
+                );
+                for (p, projection) in &views {
+                    assert_eq!(campaign.view(*p).unwrap(), projection.view);
+                    assert_eq!(campaign.current_seq(*p).unwrap(), projection.seq);
+                }
+                let db = rusqlite::Connection::open(&path).unwrap();
+                let rows: Vec<String> = db
+                    .prepare("SELECT command FROM commands WHERE seat != '' ORDER BY revision")
+                    .unwrap()
+                    .query_map([], |r| r.get(0))
+                    .unwrap()
+                    .map(Result::unwrap)
+                    .collect();
+                assert_eq!(rows.len(), 1);
+                for row in rows {
+                    let Command::Respond(response) = serde_json::from_str::<Command>(&row).unwrap()
+                    else {
+                        panic!("real actor response required")
+                    };
+                    assert_eq!(response.action, expected[&response.seat].1);
+                    assert_eq!(response.decision_id, expected[&response.seat].0);
+                    assert!(!response.action.is_null());
+                    let hash = campaign.state_hash().unwrap();
+                    assert!(campaign.submit(response.clone()).unwrap().duplicate);
+                    assert_eq!(campaign.state_hash().unwrap(), hash);
+                    let logs = campaign
+                        .transcripts_after(Perspective::Seat(response.seat), response.seat, 0, 512)
+                        .unwrap();
+                    assert_eq!(
+                        logs.len(),
+                        1,
+                        "exact retry cannot duplicate submission transcript"
+                    );
+                    assert!(
+                        campaign
+                            .transcripts_after(Perspective::Side(Side::Axis), response.seat, 0, 512)
+                            .unwrap()
+                            .is_empty()
+                    );
+                }
+                drop(db);
+                // Complete the remaining private declarations, then adjudicate only under Advance.
+                for request in campaign.pending() {
+                    let action = cna_rules::baseline::arrival_orders(
+                        &campaign.content,
+                        &campaign.game.state,
+                        &request,
+                    )
+                    .unwrap();
+                    campaign
+                        .submit(DecisionResponse {
+                            decision_id: request.id.clone(),
+                            seat: request.seat,
+                            controller_epoch: campaign.binding(request.seat).controller_epoch,
+                            decision_revision: request.revision,
+                            idempotency_key: format!("finish:{}", request.id),
+                            action,
+                            public_explanation: None,
+                        })
+                        .unwrap();
+                    assert_eq!(campaign.game.rng, rng);
+                }
+                campaign.advance().unwrap();
+                let trucks =
+                    campaign
+                        .game
+                        .state
+                        .land
+                        .units
+                        .values()
+                        .fold(Trucks::default(), |mut t, u| {
+                            t.light += u.trucks.light;
+                            t.medium += u.trucks.medium;
+                            t.heavy += u.trucks.heavy;
+                            t
+                        });
+                if role == Role::Logistics {
+                    assert_eq!(
+                        trucks,
+                        Trucks {
+                            light: 5,
+                            medium: 20,
+                            heavy: 0
+                        }
+                    );
+                }
+                if role == Role::Air {
+                    assert!(
+                        campaign
+                            .game
+                            .state
+                            .air
+                            .forces
+                            .values()
+                            .flat_map(|f| f.planes.values())
+                            .any(|p| p.total > 0)
+                    );
+                }
+                let hash = campaign.state_hash().unwrap();
+                let dice = campaign.game.rng.clone();
+                drop(campaign);
+                let restored = Campaign::recover(
+                    &path,
+                    Cna::dev(),
+                    CnaContent::load(&data, "italian_campaign").unwrap(),
+                    &pins,
+                )
+                .unwrap();
+                assert_eq!(restored.state_hash().unwrap(), hash);
+                assert_eq!(restored.game.rng, dice);
+            }
+        }
     }
 }
 
