@@ -135,6 +135,7 @@ D3215,D3315,track,land:8.33;land:8.37,map-lines-2-0009
 D3218,D3219,track,land:8.33;land:8.37,map-lines-2-0009
 D3219,D3320,track,land:8.33;land:8.37,map-lines-2-0009
 D3221,D3321,track,land:8.33;land:8.37,map-lines-2-0009
+D3222,D3323,track,land:8.33;land:8.37,map-lines-2-0010
 D3225,D3326,track,land:8.33;land:8.37,map-lines-2-0003
 D3228,D3329,track,land:8.33;land:8.37,map-lines-2-0003
 D3230,D3331,road,land:8.33;land:8.37,map-lines-2-0003
@@ -151,6 +152,7 @@ D3311,D3411,unfinished_road,land:8.47;land:8.37,map-lines-2-0001
 D3313,D3314,track,land:8.33;land:8.37,map-lines-2-0001
 D3313,D3412,track,land:8.33;land:8.37,map-lines-2-0001
 D3314,D3315,track,land:8.33;land:8.37,map-lines-2-0001
+D3315,D3316,track,land:8.33;land:8.37,map-lines-2-0010
 D3315,D3415,track,land:8.33;land:8.37,map-lines-2-0001
 D3316,D3317,track,land:8.33;land:8.37,map-lines-2-0002
 D3317,D3318,track,land:8.33;land:8.37,map-lines-2-0002
@@ -178,6 +180,7 @@ D3410,D3411,track,land:8.33;land:8.37,map-lines-0009
 D3411,D3412,track,land:8.33;land:8.37,map-lines-2-0001
 D3411,D3512,unfinished_road,land:8.47;land:8.37,map-lines-2-0001
 D3415,D3515,track,land:8.33;land:8.37,map-lines-2-0001
+D3415,D3516,track,land:8.33;land:8.37,map-lines-2-0010
 D3418,D3518,track,land:8.33;land:8.37,map-lines-2-0002
 D3419,D3420,road,land:8.33;land:8.37,map-lines-2-0002
 D3419,D3519,road,land:8.33;land:8.37,map-lines-2-0002
