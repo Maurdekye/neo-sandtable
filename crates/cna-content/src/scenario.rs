@@ -565,13 +565,39 @@ impl ScenarioContent {
             }
         }
         for force in &self.air {
-            let planes = force
-                .planes
-                .iter()
-                .chain(force.malta.iter().flat_map(|m| &m.planes));
-            for plane in planes {
-                if !units.aircraft.contains_key(&plane.aircraft) {
-                    return Err(invalid(format!("unknown aircraft {}", plane.aircraft)));
+            for planes in std::iter::once(force.planes.as_slice())
+                .chain(force.malta.iter().map(|m| m.planes.as_slice()))
+            {
+                let mut ids = std::collections::BTreeSet::new();
+                for plane in planes {
+                    if !units.aircraft.contains_key(&plane.aircraft) {
+                        return Err(invalid(format!("unknown aircraft {}", plane.aircraft)));
+                    }
+                    if !ids.insert(&plane.aircraft)
+                        || plane.total < 0
+                        || plane.ready.is_some_and(|n| n < 0 || n > plane.total)
+                        || plane.sgsu.is_some_and(|n| n < 0)
+                    {
+                        return Err(invalid(format!(
+                            "invalid initial aircraft counts or duplicate {}",
+                            plane.aircraft
+                        )));
+                    }
+                    let mut exceptions = std::collections::BTreeSet::new();
+                    for id in &plane.composition_exception_with {
+                        if id == &plane.aircraft
+                            || !exceptions.insert(id)
+                            || !planes.iter().any(|other| {
+                                &other.aircraft == id
+                                    && other.composition_exception_with.contains(&plane.aircraft)
+                            })
+                        {
+                            return Err(invalid(format!(
+                                "{}: composition exceptions must be unique and symmetric within the force",
+                                plane.aircraft
+                            )));
+                        }
+                    }
                 }
             }
         }
