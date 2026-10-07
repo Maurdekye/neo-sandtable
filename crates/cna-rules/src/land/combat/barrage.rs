@@ -59,6 +59,14 @@ pub struct BarrageState {
     #[serde(default)]
     pub strict: bool,
     pub generation: u64,
+    #[serde(default)]
+    pub declarations_closed: bool,
+    #[serde(default)]
+    pub plots_opened: bool,
+    #[serde(default)]
+    pub plots_closed: bool,
+    #[serde(default)]
+    pub resolved: bool,
     pub declarations: BTreeMap<SeatId, Vec<HexId>>,
     pub targets: BTreeMap<Side, Vec<Target>>,
     pub plans: BTreeMap<SeatId, Vec<Fire>>,
@@ -126,6 +134,10 @@ pub fn enter(
     cx: &mut Cx<'_>,
     strict: bool,
 ) -> Result<(), EngineError> {
+    // Refuse the incomplete procedure uniformly before any hidden target is queried.
+    if strict {
+        return Err(truck_gap());
+    }
     let generation = s
         .land
         .combat
@@ -351,7 +363,13 @@ fn space(c: &CnaContent, s: &State, seat: SeatId) -> ActionSpace {
         .get(&seat.side)
         .into_iter()
         .flatten()
-        .map(|t| t.label.clone());
+        .map(|t| t.label.clone())
+        .collect::<Vec<_>>();
+    let max = if ids.is_empty() || targets.is_empty() {
+        0
+    } else {
+        4096
+    };
     ActionSpace::new(list(
         ActionSchema::Record {
             fields: vec![
@@ -359,7 +377,7 @@ fn space(c: &CnaContent, s: &State, seat: SeatId) -> ActionSpace {
                 field("guns", list(gun, 4096), false),
             ],
         },
-        4096,
+        max,
     ))
     .with_pass("Do not barrage any target.")
 }
@@ -370,7 +388,7 @@ pub fn declare(
     s: &mut State,
     p: &Pending,
     a: &Value,
-    cx: &mut Cx<'_>,
+    _cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
     let hs: Vec<HexId> = if a.is_null() {
         vec![]
@@ -384,6 +402,45 @@ pub fn declare(
     }
     s.land.combat.barrage.declarations.insert(p.seat, hs);
     if !s.decisions.pending.iter().any(|d| d.kind == DECLARE) {
+        s.land.combat.barrage.declarations_closed = true;
+    }
+    Ok("Firing hex declaration committed.".into())
+}
+fn truck_gap() -> EngineError {
+    EngineError::Unsupported {
+        case: "land:12.46".into(),
+        detail: "truck/cargo loss allocation is not implemented yet".into(),
+    }
+}
+fn adjudication_error(error: Rejection) -> EngineError {
+    match error {
+        Rejection::Engine(error) => error,
+        other => EngineError::Invariant {
+            detail: format!("accepted barrage plan could not be adjudicated: {other:?}"),
+        },
+    }
+}
+/// Only Advance discloses the catalog or resolves a closed simultaneous firing window.
+/// Explicit phase guards prevent repeated dice, stock charges and loss windows on replay.
+/// Cases: land:3.6, land:12.23, land:12.24, land:12.42, land:12.45, land:12.46
+pub fn finish(
+    c: &CnaContent,
+    s: &mut State,
+    cx: &mut Cx<'_>,
+    strict: bool,
+) -> Result<(), EngineError> {
+    if strict {
+        return Err(truck_gap());
+    }
+    if s.land.combat.barrage.resolved {
+        return Ok(());
+    }
+    if !s.land.combat.barrage.plots_opened {
+        if !s.land.combat.barrage.declarations_closed {
+            return Err(EngineError::Invariant {
+                detail: "barrage declarations were not closed".into(),
+            });
+        }
         for side in Side::ALL {
             let firing: BTreeSet<_> = s
                 .land
@@ -397,7 +454,7 @@ pub fn declare(
             cx.emit(EngineEvent::public(GameEvent::Note {
                 text: format!("Barrage firing hexes {:?}: {}", side, json!(firing)),
             }));
-            let ts = catalog(c, s, side, cx.rng)?;
+            let ts = catalog(c, s, side, cx.rng).map_err(adjudication_error)?;
             s.land.combat.barrage.targets.insert(side, ts);
             cx.emit(EngineEvent::new(
                 Audience::Side(side),
@@ -412,9 +469,20 @@ pub fn declare(
         for seat in seats() {
             open(s,cx,seat,PLOT,"Plot secret barrages against disclosed anonymous targets; choose participating TOE and ammunition sources.".into(),&["land:12.13","land:12.14","land:12.15","land:12.16","land:12.23","land:12.32","airlog:50.13"],Trigger::Scheduled,Secrecy::SecretSimultaneous,space(c,s,seat));
         }
+        s.land.combat.barrage.plots_opened = true;
+        return Ok(());
     }
-    Ok("Firing hex declaration committed.".into())
+    if !s.land.combat.barrage.plots_closed {
+        return Err(EngineError::Invariant {
+            detail: "barrage plans were not closed".into(),
+        });
+    }
+    let paid = validate(c, s, None).map_err(adjudication_error)?;
+    resolve(c, s, paid, cx).map_err(adjudication_error)?;
+    s.land.combat.barrage.resolved = true;
+    Ok(())
 }
+
 fn component(
     c: &CnaContent,
     s: &State,
@@ -485,12 +553,19 @@ fn draw(c: &CnaContent, s: &mut State, g: &Contribution) -> Result<(), Rejection
 /// Recheck the whole side's private plans against a shadow state, reserving shared stocks in
 /// canonical seat order. Neither accepted partial plans nor rejected answers spend ammunition.
 /// Cases: land:11.34, land:12.13, land:12.14, land:12.15, land:12.16, land:12.31, land:12.32, airlog:50.13
-fn validate(c: &CnaContent, s: &State) -> Result<State, Rejection> {
+fn validate(c: &CnaContent, s: &State, side: Option<Side>) -> Result<State, Rejection> {
     let mut shadow = s.clone();
     let mut used = BTreeMap::<(UnitId, Option<String>), i32>::new();
     let mut targets = BTreeSet::new();
     let mut calls = BTreeMap::<UnitId, usize>::new();
-    for (seat, plans) in &s.land.combat.barrage.plans {
+    for (seat, plans) in s
+        .land
+        .combat
+        .barrage
+        .plans
+        .iter()
+        .filter(|(seat, _)| side.is_none_or(|side| seat.side == side))
+    {
         let own: BTreeSet<_> = available(c, s, *seat).into_iter().collect();
         for fire in plans {
             let target = s
@@ -568,26 +643,6 @@ fn validate(c: &CnaContent, s: &State) -> Result<State, Rejection> {
             }
         }
     }
-    let firing: BTreeSet<_> = s
-        .land
-        .combat
-        .barrage
-        .plans
-        .iter()
-        .flat_map(|(seat, fs)| {
-            fs.iter().flat_map(|f| {
-                f.guns.iter().map(|g| {
-                    (
-                        seat.side,
-                        s.land.units[&g.unit].location.hex().unwrap().clone(),
-                    )
-                })
-            })
-        })
-        .collect();
-    for (side, hex) in firing {
-        charge(c, &mut shadow, side, &hex, true)?;
-    }
     Ok(shadow)
 }
 /// Plot answers remain private. All stock reservation and strength validation precede any dice.
@@ -597,7 +652,7 @@ pub fn answer(
     s: &mut State,
     p: &Pending,
     a: &Value,
-    cx: &mut Cx<'_>,
+    _cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
     let plans: Vec<Fire> = if a.is_null() {
         vec![]
@@ -608,9 +663,9 @@ pub fn answer(
         return Err(illegal("too many barrage entries"));
     }
     s.land.combat.barrage.plans.insert(p.seat, plans);
-    let paid = validate(c, s)?;
+    validate(c, s, Some(p.seat.side))?;
     if !s.decisions.pending.iter().any(|d| d.kind == PLOT) {
-        resolve(c, s, paid, cx)?;
+        s.land.combat.barrage.plots_closed = true;
     }
     Ok("Private barrage plan committed.".into())
 }
@@ -627,6 +682,7 @@ fn charge(
     side: Side,
     hex: &HexId,
     firing: bool,
+    cx: &mut Cx<'_>,
 ) -> Result<(), Rejection> {
     let phasing = s.cursor.phasing(s.turn.player_a) == Some(side);
     let total = if phasing && firing { 20 } else { 12 };
@@ -641,11 +697,38 @@ fn charge(
         if delta > 0 {
             let allowance = super::super::formation::individual_allowance(c, s, &id)
                 .ok_or_else(|| err("land:11.2", "combat CPA unavailable"))?;
-            // Attacking dry vehicles cannot opt into a barrage. Receiving fire remains mandatory;
-            // the logistics restriction does not grant immunity to an enemy's attack.
-            if firing {
-                logistics::spend_activity_water(c, s, &id)
-                    .map_err(|_| illegal("firing hex lacks required activity water"))?;
+            // Barrage may fire or be received while dry. All CPA use still records its
+            // original stage demand, paid reserve and outstanding shortage before casualties.
+            match logistics::consume_activity_water_forced(c, s, &id) {
+                Ok(payment) if payment.shortfall.get() > 0 => {
+                    cx.emit(EngineEvent::new(
+                        Audience::Side(side),
+                        GameEvent::Note {
+                            text: format!(
+                                "Own combat activity water for {id}: consumed {}, outstanding {}.",
+                                payment.consumed.get(),
+                                payment.shortfall.get()
+                            ),
+                        },
+                    ));
+                }
+                Ok(_) => {}
+                Err(logistics::SupplyError::Unsupported { case })
+                    if !s.land.combat.barrage.strict =>
+                {
+                    cx.emit(EngineEvent::new(Audience::Side(side), GameEvent::Note {
+                        text: format!("Development gap {case}: own unit {id} activity water cannot be assessed."),
+                    }));
+                }
+                Err(logistics::SupplyError::Unsupported { case }) => {
+                    return Err(err(case, "combat activity-water requirement unavailable"));
+                }
+                Err(_) => {
+                    return Err(err(
+                        "airlog:52.42",
+                        "invalid combat activity-water accounting",
+                    ));
+                }
             }
             super::super::capability::charge(
                 s.land.units.get_mut(&id).unwrap(),
@@ -681,6 +764,25 @@ fn roll(cx: &mut Cx<'_>, purpose: String) -> cna_core::dice::TwoDiceReading {
     }));
     d
 }
+/// Target and current parent trucks qualify only while co-located with the target.
+/// Attached truck totals already include troop carriers; do not add that subset again.
+/// Cases: land:12.46, land:19.11
+/// Interpretations: interp:land-0024
+pub(crate) fn eligible_truck_units(c: &CnaContent, s: &State, t: &Target) -> Vec<UnitId> {
+    let mut ids = BTreeSet::from([t.unit.clone()]);
+    if let Some(parent) = ownership::parent_for_unit(c, s, &t.unit) {
+        ids.insert(parent.clone());
+    }
+    let side = s.land.units[&t.unit].side;
+    ids.into_iter()
+        .filter(|id| {
+            s.land
+                .units
+                .get(id)
+                .is_some_and(|u| u.side == side && u.location.hex() == Some(&t.hex))
+        })
+        .collect()
+}
 /// All plans use the pre-casualty strength. Commit shared ammunition once, resolve in stable
 /// seat order and each controller's requested target order, and defer loss choices until both sides have fired.
 /// Cases: land:11.32, land:11.34, land:12.42, land:12.43, land:12.44, land:12.45, land:12.46
@@ -707,11 +809,11 @@ fn resolve(c: &CnaContent, s: &mut State, paid: State, cx: &mut Cx<'_>) -> Resul
         }
     }
     for (side, hex) in &firing {
-        charge(c, &mut paid, *side, hex, true)?;
+        charge(c, &mut paid, *side, hex, true, cx)?;
     }
     for (side, hex) in receiving {
         if !firing.contains(&(side, hex.clone())) {
-            charge(c, &mut paid, side, &hex, false)?;
+            charge(c, &mut paid, side, &hex, false, cx)?;
         }
     }
     s.logistics = paid.logistics;
@@ -761,15 +863,9 @@ fn resolve(c: &CnaContent, s: &mut State, paid: State, cx: &mut Cx<'_>) -> Resul
                     s.land.units[&t.unit].transport_trucks.total() > 0,
                 )
                 .ok_or_else(|| err("land:12.6", "barrage table lookup failed"))?;
-            let has_trucks = s
-                .units_of(seat.side.opponent())
-                .any(|u| u.location.hex() == Some(&t.hex) && u.trucks.total() > 0);
-            if has_trucks && s.land.combat.barrage.strict {
-                return Err(err(
-                    "land:12.46",
-                    "truck/cargo loss allocation is not implemented yet",
-                ));
-            }
+            let has_trucks = eligible_truck_units(c, s, t)
+                .iter()
+                .any(|id| s.land.units[id].trucks.total() > 0);
             let trucks = if has_trucks {
                 let td = roll(cx, format!("Concurrent truck barrage at {}", t.label));
                 c.tables
@@ -1126,7 +1222,7 @@ pub fn random_plans(
                 .barrage
                 .plans
                 .insert(r.seat, vec![f.clone()]);
-            if validate(c, &shadow).is_ok() {
+            if validate(c, &shadow, Some(r.seat.side)).is_ok() {
                 return json!([f]);
             }
         }

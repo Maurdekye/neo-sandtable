@@ -88,7 +88,10 @@ fn plots(seed: u8) -> Game<Cna> {
         let hs = hexes(content(), &g.state, seat);
         g = answer(g, seat, DECLARE, json!(hs));
     }
-    g
+    assert!(g.state.decisions.pending.is_empty());
+    evaluate(&Cna::dev(), content(), &g, &Command::Advance)
+        .unwrap()
+        .game
 }
 fn plan(g: &Game<Cna>, seat: SeatId) -> Value {
     let r = Cna::dev()
@@ -145,6 +148,18 @@ fn simultaneous_real_guns_fire_before_any_losses_and_restore_checkpoint() {
         all_events.extend(t.events);
         g = t.game;
     }
+    assert!(g.state.decisions.pending.is_empty());
+    assert_eq!(g.rng, initial.rng);
+    assert_eq!(
+        json!(g.state.logistics.unit_supply),
+        json!(initial.state.logistics.unit_supply)
+    );
+    let restored = serde_json::from_value::<Game<Cna>>(json!(g)).unwrap();
+    let t = evaluate(&Cna::dev(), content(), &g, &Command::Advance).unwrap();
+    let resumed = evaluate(&Cna::dev(), content(), &restored, &Command::Advance).unwrap();
+    assert_eq!(json!(t.game), json!(resumed.game));
+    all_events.extend(t.events);
+    g = t.game;
     assert_eq!(g.state.decisions.pending.len(), 6);
     assert!(g.state.decisions.pending.iter().all(|r| r.kind == LOSSES));
     let rolls: Vec<_> = all_events
@@ -299,10 +314,13 @@ fn truck_gap_stops_full_and_dev_reports_unapplied_losses_without_inventing_cargo
     let cmd = command(&g, last, PLOT, Value::Null);
     let mut full = g.clone();
     full.state.land.combat.barrage.strict = true;
+    let full = evaluate(&Cna::full(), content(), &full, &cmd).unwrap().game;
     assert!(
-        matches!(evaluate(&Cna::full(),content(),&full,&cmd),Err(Rejection::Engine(EngineError::Unsupported{case,..})) if case=="land:12.46")
+        matches!(evaluate(&Cna::full(),content(),&full,&Command::Advance),Err(Rejection::Engine(EngineError::Unsupported{case,..})) if case=="land:12.46")
     );
-    let t = evaluate(&Cna::dev(), content(), &g, &cmd).unwrap();
+    let closed = evaluate(&Cna::dev(), content(), &g, &cmd).unwrap().game;
+    assert_eq!(closed.rng, g.rng);
+    let t = evaluate(&Cna::dev(), content(), &closed, &Command::Advance).unwrap();
     assert_eq!(t.game.state.land.units[&id].trucks.light, 2);
     assert_eq!(
         t.game.state.logistics.unit_supply[&id].carried,
@@ -344,4 +362,340 @@ fn label_assignment_is_not_canonical_order_or_a_cross_step_tracking_key() {
         );
     }
     assert!(associations.len() > 1);
+}
+
+fn close_one_sided(mut g: Game<Cna>) -> Game<Cna> {
+    let axis = SeatId::new(Side::Axis, Role::FrontLine);
+    let fire = plan(&g, axis);
+    assert!(!fire.as_array().unwrap().is_empty());
+    g = answer(g, axis, PLOT, fire);
+    for seat in seats().filter(|seat| *seat != axis) {
+        g = answer(g, seat, PLOT, Value::Null);
+    }
+    g
+}
+/// Cases: airlog:52.42, airlog:52.43, airlog:52.51, land:6.13, land:11.21
+#[test]
+fn one_sided_barrage_accounts_for_ample_short_and_dry_recipient_water() {
+    let id = UnitId::new("cw.4_indian_div.25th_field_artillery_regt");
+    for held in [10000, 2, 0] {
+        let mut g = plots(1);
+        g.state
+            .logistics
+            .unit_supply
+            .get_mut(&id)
+            .unwrap()
+            .activity_water = WaterPoints::new(held);
+        let closed = close_one_sided(g);
+        assert_eq!(
+            closed.state.logistics.unit_supply[&id].activity_water.get(),
+            held
+        );
+        let t = evaluate(&Cna::dev(), content(), &closed, &Command::Advance).unwrap();
+        assert_eq!(t.game.state.land.units[&id].cp_spent_quarters, 12);
+        assert_eq!(
+            t.game.state.logistics.unit_supply[&id].activity_water.get(),
+            (held - 6).max(0)
+        );
+        assert_eq!(
+            logistics::activity_water_due(content(), &t.game.state, &id).unwrap(),
+            (6 - held).max(0)
+        );
+        assert_eq!(
+            t.events
+                .iter()
+                .filter(|e| matches!(e.event, GameEvent::DiceRolled { .. }))
+                .count(),
+            1
+        );
+        assert!(
+            t.game
+                .state
+                .land
+                .combat
+                .barrage
+                .casualties
+                .contains_key(&id)
+        );
+        let checkpoint: Game<Cna> = serde_json::from_value(json!(t.game)).unwrap();
+        let unchanged = evaluate(&Cna::dev(), content(), &checkpoint, &Command::Advance).unwrap();
+        assert_eq!(json!(unchanged.game), json!(checkpoint));
+        assert!(unchanged.events.is_empty());
+    }
+}
+/// Cases: airlog:52.42, airlog:52.51, land:11.21, land:12.45
+#[test]
+fn dry_gun_can_fire_and_keeps_its_unpaid_activity_balance() {
+    let id = UnitId::new("it.1_libyan_div.1st_libyan_artillery_regt");
+    let mut g = plots(1);
+    g.state
+        .logistics
+        .unit_supply
+        .get_mut(&id)
+        .unwrap()
+        .activity_water = WaterPoints::new(0);
+    let closed = close_one_sided(g);
+    let t = evaluate(&Cna::dev(), content(), &closed, &Command::Advance).unwrap();
+    assert_eq!(t.game.state.land.units[&id].cp_spent_quarters, 20);
+    assert_eq!(
+        t.game.state.logistics.unit_supply[&id].ready_ammo.get(),
+        9976
+    );
+    assert_eq!(
+        logistics::activity_water_due(content(), &t.game.state, &id).unwrap(),
+        6
+    );
+    assert!(t.events.iter().any(
+        |e| matches!(&e.event, GameEvent::Note { text } if text.contains("outstanding 6"))
+            && e.audience == Audience::Side(Side::Axis)
+    ));
+}
+/// Cases: land:3.6, land:12.46
+#[test]
+fn hidden_enemy_trucks_cannot_change_final_plot_validation() {
+    let axis = SeatId::new(Side::Axis, Role::FrontLine);
+    let id = UnitId::new("cw.4_indian_div.25th_field_artillery_regt");
+    let mut clear = plots(1);
+    for seat in seats().filter(|seat| *seat != axis) {
+        clear = answer(clear, seat, PLOT, Value::Null);
+    }
+    clear.state.land.combat.barrage.strict = true;
+    let mut trucks = clear.clone();
+    trucks.state.land.units.get_mut(&id).unwrap().trucks.light = 2;
+    crate::testkit::assert_indistinguishable(
+        &Cna::full(),
+        content(),
+        &clear.state,
+        &trucks.state,
+        Side::Axis,
+    );
+    let cmd = command(&clear, axis, PLOT, plan(&clear, axis));
+    let before_a = json!(clear);
+    let before_b = json!(trucks);
+    let a = evaluate(&Cna::full(), content(), &clear, &cmd).unwrap();
+    let b = evaluate(&Cna::full(), content(), &trucks, &cmd).unwrap();
+    assert_eq!(a.game.rng, clear.rng);
+    assert_eq!(b.game.rng, trucks.rng);
+    assert_eq!(
+        json!(a.game.state.logistics.unit_supply),
+        json!(clear.state.logistics.unit_supply)
+    );
+    assert_eq!(
+        json!(b.game.state.logistics.unit_supply),
+        json!(trucks.state.logistics.unit_supply)
+    );
+    crate::testkit::assert_indistinguishable(
+        &Cna::full(),
+        content(),
+        &a.game.state,
+        &b.game.state,
+        Side::Axis,
+    );
+    for g in [&a.game, &b.game] {
+        assert!(
+            matches!(evaluate(&Cna::full(), content(), g, &Command::Advance),
+            Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "land:12.46")
+        );
+    }
+    assert_eq!(json!(clear), before_a);
+    assert_eq!(json!(trucks), before_b);
+}
+/// Cases: land:3.6, land:12.46
+#[test]
+fn strict_barrage_entry_refuses_uniformly_before_any_hidden_catalog_work() {
+    let mut clear = game(1);
+    clear.state.cursor.index = 4;
+    let mut trucks = clear.clone();
+    trucks
+        .state
+        .land
+        .units
+        .get_mut(&UnitId::new("cw.4_indian_div.25th_field_artillery_regt"))
+        .unwrap()
+        .trucks
+        .light = 2;
+    for g in [&clear, &trucks] {
+        let before = json!(g);
+        assert!(
+            matches!(evaluate(&Cna::full(), content(), g, &Command::Advance),
+            Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "land:12.46")
+        );
+        assert_eq!(json!(g), before);
+    }
+}
+/// Cases: land:12.46, land:19.11
+/// Interpretations: interp:land-0024
+#[test]
+fn truck_roll_uses_only_target_and_current_colocated_parent_trucks() {
+    let base = plots(1);
+    let target = base.state.land.combat.barrage.targets[&Side::Axis][0].clone();
+    let parent = ownership::parent_for_unit(content(), &base.state, &target.unit)
+        .unwrap()
+        .clone();
+    let unrelated = base
+        .state
+        .units_of(Side::Commonwealth)
+        .find(|u| u.id != target.unit && u.id != parent)
+        .unwrap()
+        .id
+        .clone();
+    for (holder, should_roll) in [(&unrelated, false), (&target.unit, true), (&parent, true)] {
+        let mut g = base.clone();
+        let u = g.state.land.units.get_mut(holder).unwrap();
+        u.location = Location::Hex {
+            hex: target.hex.clone(),
+        };
+        u.trucks.heavy = 8;
+        u.transport_trucks.heavy = 6;
+        // Co-located HQ fixtures have no printed individual CPA. Their mandatory receiving
+        // charge is already present; this case isolates eligibility and conditional dice.
+        if holder != &target.unit {
+            u.cp_spent_quarters = 12;
+            g.state.land.combat.cp_charged.insert(holder.clone(), 12);
+        }
+        let eligible = eligible_truck_units(content(), &g.state, &target);
+        assert_eq!(
+            eligible
+                .iter()
+                .map(|id| g.state.land.units[id].trucks.total())
+                .sum::<i32>(),
+            if should_roll { 8 } else { 0 }
+        );
+        let closed = close_one_sided(g);
+        let t = evaluate(&Cna::dev(), content(), &closed, &Command::Advance).unwrap();
+        let count = t
+            .events
+            .iter()
+            .filter(|e| {
+                matches!(&e.event, GameEvent::DiceRolled { purpose, .. }
+            if purpose.contains("Concurrent truck barrage"))
+            })
+            .count();
+        assert_eq!(count, usize::from(should_roll));
+    }
+    let mut detached = base.clone();
+    detached
+        .state
+        .land
+        .units
+        .get_mut(&target.unit)
+        .unwrap()
+        .detached = true;
+    detached.state.land.units.get_mut(&parent).unwrap().location = Location::Hex {
+        hex: target.hex.clone(),
+    };
+    detached
+        .state
+        .land
+        .units
+        .get_mut(&parent)
+        .unwrap()
+        .trucks
+        .light = 2;
+    assert!(!eligible_truck_units(content(), &detached.state, &target).contains(&parent));
+    detached
+        .state
+        .land
+        .units
+        .get_mut(&target.unit)
+        .unwrap()
+        .detached = false;
+    detached
+        .state
+        .land
+        .units
+        .get_mut(&target.unit)
+        .unwrap()
+        .attached_to = Some(unrelated.clone());
+    assert!(!eligible_truck_units(content(), &detached.state, &target).contains(&parent));
+}
+fn assert_hidden_combat_fact(kind: u8) {
+    let position = evaluate(&Cna::dev(), content(), &game(1), &Command::Advance)
+        .unwrap()
+        .game;
+    let mut declaration = position.clone();
+    for seat in seats() {
+        declaration = answer(declaration, seat, super::super::POSITION_KIND, Value::Null);
+    }
+    declaration = evaluate(&Cna::dev(), content(), &declaration, &Command::Advance)
+        .unwrap()
+        .game;
+    let plotting = plots(1);
+    let closed = close_one_sided(plotting.clone());
+    let losses = evaluate(&Cna::dev(), content(), &closed, &Command::Advance)
+        .unwrap()
+        .game;
+    let enemy = UnitId::new("cw.4_indian_div.25th_field_artillery_regt");
+    let cw = SeatId::new(Side::Commonwealth, Role::FrontLine);
+    for g in [&position, &declaration, &plotting, &closed, &losses] {
+        let mut changed = g.clone();
+        match kind {
+            0 => {
+                changed
+                    .state
+                    .land
+                    .combat
+                    .positions
+                    .insert(enemy.clone(), Position::Back);
+            }
+            1 => {
+                changed.state.land.combat.barrage.plans.insert(
+                    cw,
+                    vec![Fire {
+                        target: "private".into(),
+                        guns: vec![Contribution {
+                            unit: enemy.clone(),
+                            weapon: None,
+                            toe: 1,
+                            draws: vec![],
+                        }],
+                    }],
+                );
+            }
+            2 => {
+                changed.state.land.combat.pinned.insert(enemy.clone());
+            }
+            _ => {
+                changed
+                    .state
+                    .land
+                    .units
+                    .get_mut(&enemy)
+                    .unwrap()
+                    .trucks
+                    .light = 2;
+            }
+        }
+        crate::testkit::assert_indistinguishable(
+            &Cna::dev(),
+            content(),
+            &g.state,
+            &changed.state,
+            Side::Axis,
+        );
+    }
+}
+
+/// Cases: land:3.6, land:12.12
+#[test]
+fn enemy_positions_are_indistinguishable_at_each_combat_window() {
+    assert_hidden_combat_fact(0);
+}
+
+/// Cases: land:3.6, land:12.45
+#[test]
+fn enemy_plots_are_indistinguishable_at_each_combat_window() {
+    assert_hidden_combat_fact(1);
+}
+
+/// Cases: land:3.6, land:12.44
+#[test]
+fn enemy_pins_are_indistinguishable_at_each_combat_window() {
+    assert_hidden_combat_fact(2);
+}
+
+/// Cases: land:3.6, land:12.46
+#[test]
+fn enemy_trucks_are_indistinguishable_at_each_combat_window() {
+    assert_hidden_combat_fact(3);
 }
