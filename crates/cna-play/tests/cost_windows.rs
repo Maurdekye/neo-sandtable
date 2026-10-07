@@ -5,10 +5,7 @@ use cna_core::{
     decision::{ActionSchema, DecisionRequest},
     ids::{Role, SeatId, Side},
 };
-use cna_play::{
-    Demo,
-    config::{GameKind, LaunchConfig},
-};
+use cna_play::config::{GameKind, LaunchConfig};
 use cna_seats::{
     automatic,
     driver::{CliKind, DriverError, SeatDriver, SessionInfo, TurnOutcome, Usage},
@@ -46,6 +43,33 @@ fn first(schema: &ActionSchema) -> Value {
         _ => panic!("fixture needs an enumerable action"),
     }
 }
+async fn wait_answered(
+    handle: &cna_server::actor::CampaignHandle,
+    seat: SeatId,
+    request: &DecisionRequest,
+) -> Result<(), DriverError> {
+    // The actor reply may precede watch publication. Wait for the exact
+    // answered revision to disappear before sampling another model window.
+    tokio::time::timeout(Duration::from_secs(30), async {
+        let mut windows = handle.watch_seat(seat);
+        while windows
+            .borrow_and_update()
+            .pending
+            .iter()
+            .any(|p| p.id == request.id && p.revision == request.revision)
+        {
+            windows
+                .changed()
+                .await
+                .map_err(|e| DriverError::Cli(e.to_string()))?;
+        }
+        Ok::<_, DriverError>(())
+    })
+    .await
+    .map_err(|_| DriverError::Timeout)??;
+    Ok(())
+}
+
 struct Fake {
     handle: cna_server::actor::CampaignHandle,
     router: Arc<ToolRouter>,
@@ -231,6 +255,7 @@ impl SeatDriver for Fake {
         } else {
             first(&request.space.schema)
         };
+        request.space.check(&action).map_err(DriverError::Cli)?;
         self.call(
             "submit",
             json!({"decision_id":request.id,"revision":request.revision,"action":action}),
@@ -240,25 +265,7 @@ impl SeatDriver for Fake {
         if let Some(items) = action.as_array() {
             self.answer_sizes.push(items.len() as u64);
         }
-        // The actor reply may precede watch publication. Wait for the exact
-        // answered revision to disappear before sampling another model window.
-        tokio::time::timeout(Duration::from_secs(30), async {
-            let mut windows = self.handle.watch_seat(self.seat);
-            while windows
-                .borrow_and_update()
-                .pending
-                .iter()
-                .any(|p| p.id == request.id && p.revision == request.revision)
-            {
-                windows
-                    .changed()
-                    .await
-                    .map_err(|e| DriverError::Cli(e.to_string()))?;
-            }
-            Ok::<_, DriverError>(())
-        })
-        .await
-        .map_err(|_| DriverError::Timeout)??;
+        wait_answered(&self.handle, self.seat, &request).await?;
         self.turns += 1;
         Ok(TurnOutcome {
             ok: true,
@@ -281,17 +288,15 @@ impl SeatDriver for Fake {
 
 #[tokio::test]
 #[ignore = "slow: complete first real OpStage exposure measurement"]
-async fn first_opstage_model_visible_windows_before_and_after_forced_answers() {
+async fn first_opstage_model_visible_windows_before_and_after_forced_answers_excluding_setup() {
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
-    let demo = Demo::with_config(
+    let demo = support::setup_demo(
         root.path(),
-        &repo.join("data"),
-        &repo.join("web/dist"),
+        &repo,
         LaunchConfig::resolve(GameKind::Cna, &["*=human".into()]).unwrap(),
     )
-    .await
-    .unwrap();
+    .await;
     let seats: Vec<_> = Side::ALL
         .into_iter()
         .flat_map(|side| {
@@ -323,7 +328,8 @@ async fn first_opstage_model_visible_windows_before_and_after_forced_answers() {
     let mut accepted = 0;
     demo.handle.pause(false).await.unwrap();
     let start = tokio::time::Instant::now();
-    // Measured 70s locally including preparation; 120s bounds stalls.
+    // Setup is excluded: prepare it through real transitions before timing this OpStage trace.
+    // Keep the existing 120s trace guard; blind placement no longer consumes it.
     let result = tokio::time::timeout(Duration::from_secs(120), async {
         loop {
             let mut progress = false;
@@ -351,6 +357,9 @@ async fn first_opstage_model_visible_windows_before_and_after_forced_answers() {
                     )
                     .await
                     .map_err(|e| e.to_string())?;
+                    wait_answered(&demo.handle, driver.seat, &request)
+                        .await
+                        .map_err(|e| e.to_string())?;
                 } else {
                     if driver.id.is_none() {
                         driver.start(None).await.map_err(|e| e.to_string())?;
@@ -379,7 +388,24 @@ async fn first_opstage_model_visible_windows_before_and_after_forced_answers() {
         }
     })
     .await
-    .map_err(|_| "first OpStage trace timed out".into())
+    .map_err(|_| {
+        format!(
+            "first OpStage trace timed out after {accepted} decisions; status {:?}; pending {:?}",
+            demo.handle.status(),
+            seats
+                .iter()
+                .map(|s| (
+                    *s,
+                    demo.handle
+                        .seat(*s)
+                        .pending
+                        .iter()
+                        .map(|p| p.kind.clone())
+                        .collect::<Vec<_>>()
+                ))
+                .collect::<Vec<_>>()
+        )
+    })
     .and_then(|r| r);
     if matches!(demo.handle.status(), cna_server::CampaignStatus::Running) {
         demo.handle.pause(true).await.unwrap();

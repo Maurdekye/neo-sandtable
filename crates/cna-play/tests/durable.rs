@@ -123,6 +123,7 @@ impl SeatDriver for Inert {
         } else {
             first(&request.space.schema)
         };
+        request.space.check(&action).map_err(DriverError::Cli)?;
         self.call(
             "submit",
             json!({"decision_id":request.id,"revision":request.revision,"action":action}),

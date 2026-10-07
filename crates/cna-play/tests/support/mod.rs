@@ -38,114 +38,138 @@ fn fixture_limits(config: &mut LaunchConfig) {
 
 /// Setup uses actual engine transitions with a pass-when-offered policy, never invented stock.
 /// Counts bound preparation; the clock is a hang guard, not an expected runtime.
-/// The cache contains bytes only: no writer/MCP survives its test runtime.
+// The trace excludes setup spend, so evaluate that same setup policy without
+// publishing an observation and transcript for every blind placement choice.
+async fn setup_checkpoint(
+    root: &Path,
+    repo: &Path,
+    config: &LaunchConfig,
+) -> Result<(String, BTreeMap<SeatId, u64>), String> {
+    let seed_root = root.join("seed");
+    let mut preparation = config.clone();
+    preparation.session = None;
+    preparation.max_turns = 2;
+    preparation.tool_calls = 40;
+    let seed = Demo::with_config(
+        &seed_root,
+        &repo.join("data"),
+        &repo.join("web/dist"),
+        preparation,
+    )
+    .await?;
+    let id = seed.campaign_id();
+    let bindings: BTreeMap<_, _> = SeatId::all()
+        .map(|s| (s, seed.handle.seat(s).binding))
+        .collect();
+    seed.shutdown().await?;
+    // Obtain immutable pins from the real factory. Standard recovery verifies them again.
+    let db = rusqlite::Connection::open(seed_root.join(format!("{id}.sqlite")))
+        .map_err(|e| e.to_string())?;
+    let (meta, pins): (String, String) = db
+        .query_row("SELECT meta, pins FROM campaign WHERE id=1", [], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .map_err(|e| e.to_string())?;
+    drop(db);
+    let data = repo.join("data");
+    let path = root.join(format!("{id}.sqlite"));
+    let epochs = tokio::task::spawn_blocking(move || -> Result<BTreeMap<SeatId, u64>, String> {
+        let content = CnaContent::load(&data, "graziani")?;
+        let rules = Cna::dev();
+        let mut game = Game {
+            state: State::new(&content)?,
+            rng: CampaignRng::from_seed([7; 32]).state(),
+        };
+        let mut answered = 0;
+        loop {
+            game = evaluate(&rules, &content, &game, &Command::Advance)
+                .map_err(|e| e.to_string())?
+                .game;
+            if game.state.cursor.anchor().split('.').next() != Some("setup") {
+                break;
+            }
+            if answered >= MAX_PREPARATION_COMMANDS {
+                return Err("setup exceeded its accepted-decision safety bound".into());
+            }
+            let request = rules
+                .pending(&content, &game.state)
+                .into_iter()
+                .next()
+                .ok_or("setup has no pending decision")?;
+            let mut selected = None;
+            for attempt in 0..32 {
+                let response = answer(
+                    &request,
+                    bindings[&request.seat].controller_epoch,
+                    Mode::PassWhenPossible,
+                    attempt,
+                    &NoCandidates,
+                )
+                .map_err(|e| e.to_string())?;
+                if let Ok(transition) =
+                    evaluate(&rules, &content, &game, &Command::Respond(response))
+                {
+                    selected = Some(transition.game);
+                    break;
+                }
+            }
+            game = selected
+                .ok_or_else(|| format!("no accepted fixture setup action for {}", request.kind))?;
+            answered += 1;
+        }
+        let mut campaign = Campaign::create(
+            &path,
+            rules,
+            content,
+            game,
+            serde_json::from_str(&meta).map_err(|e| e.to_string())?,
+            serde_json::from_str(&pins).map_err(|e| e.to_string())?,
+        )
+        .map_err(|e| e.to_string())?;
+        let mut epochs = BTreeMap::new();
+        for (seat, binding) in bindings {
+            let llm = binding
+                .controller
+                .as_ref()
+                .is_some_and(|c| c.kind == cna_protocol::ControllerKind::LlmCli);
+            let rebound = campaign
+                .handover(seat, binding.controller, binding.config)
+                .map_err(|e| e.to_string())?;
+            if llm {
+                epochs.insert(seat, rebound.controller_epoch);
+            }
+        }
+        campaign.set_paused(true).map_err(|e| e.to_string())?;
+        // Drop the owned SQLite writer before ordinary factory recovery.
+        drop(campaign);
+        Ok(epochs)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    Ok((id, epochs))
+}
+
+#[allow(dead_code)]
+pub async fn setup_demo(root: &Path, repo: &Path, mut config: LaunchConfig) -> Demo {
+    let (id, epochs) = setup_checkpoint(root, repo, &config).await.unwrap();
+    fixture_limits(&mut config);
+    let journal = SessionJournal::create(root, &id, config, &epochs).unwrap();
+    drop(journal);
+    Demo::resume(
+        &root.join(format!("{id}.sqlite")),
+        &repo.join("data"),
+        &repo.join("web/dist"),
+    )
+    .await
+    .unwrap()
+}
+
+/// The movement cache contains bytes only: no writer/MCP survives its test runtime.
 pub async fn movement_demo(root: &Path, repo: &Path, mut config: LaunchConfig) -> Demo {
     let checkpoint = MOVEMENT
         .get_or_try_init(|| async {
             let prepared_root = tempfile::tempdir().map_err(|e| e.to_string())?;
-            let seed_root = prepared_root.path().join("seed");
-            let mut preparation = config.clone();
-            preparation.session = None;
-            preparation.max_turns = 2;
-            preparation.tool_calls = 40;
-            let seed = Demo::with_config(
-                &seed_root,
-                &repo.join("data"),
-                &repo.join("web/dist"),
-                preparation,
-            )
-            .await?;
-            let id = seed.campaign_id();
-            let bindings: BTreeMap<_, _> = SeatId::all()
-                .map(|s| (s, seed.handle.seat(s).binding))
-                .collect();
-            seed.shutdown().await?;
-            // Obtain immutable pins from the real factory. Standard recovery verifies them again.
-            let db = rusqlite::Connection::open(seed_root.join(format!("{id}.sqlite")))
-                .map_err(|e| e.to_string())?;
-            let (meta, pins): (String, String) = db
-                .query_row("SELECT meta, pins FROM campaign WHERE id=1", [], |r| {
-                    Ok((r.get(0)?, r.get(1)?))
-                })
-                .map_err(|e| e.to_string())?;
-            drop(db);
-            let data = repo.join("data");
-            let path = prepared_root.path().join(format!("{id}.sqlite"));
-            let epochs =
-                tokio::task::spawn_blocking(move || -> Result<BTreeMap<SeatId, u64>, String> {
-                    let content = CnaContent::load(&data, "graziani")?;
-                    let rules = Cna::dev();
-                    let mut game = Game {
-                        state: State::new(&content)?,
-                        rng: CampaignRng::from_seed([7; 32]).state(),
-                    };
-                    let mut answered = 0;
-                    loop {
-                        game = evaluate(&rules, &content, &game, &Command::Advance)
-                            .map_err(|e| e.to_string())?
-                            .game;
-                        if game.state.cursor.anchor().split('.').next() != Some("setup") {
-                            break;
-                        }
-                        if answered >= MAX_PREPARATION_COMMANDS {
-                            return Err("setup exceeded its accepted-decision safety bound".into());
-                        }
-                        let request = rules
-                            .pending(&content, &game.state)
-                            .into_iter()
-                            .next()
-                            .ok_or("setup has no pending decision")?;
-                        let mut selected = None;
-                        for attempt in 0..32 {
-                            let response = answer(
-                                &request,
-                                bindings[&request.seat].controller_epoch,
-                                Mode::PassWhenPossible,
-                                attempt,
-                                &NoCandidates,
-                            )
-                            .map_err(|e| e.to_string())?;
-                            if let Ok(transition) =
-                                evaluate(&rules, &content, &game, &Command::Respond(response))
-                            {
-                                selected = Some(transition.game);
-                                break;
-                            }
-                        }
-                        game = selected.ok_or_else(|| {
-                            format!("no accepted fixture setup action for {}", request.kind)
-                        })?;
-                        answered += 1;
-                    }
-                    let mut campaign = Campaign::create(
-                        &path,
-                        rules,
-                        content,
-                        game,
-                        serde_json::from_str(&meta).map_err(|e| e.to_string())?,
-                        serde_json::from_str(&pins).map_err(|e| e.to_string())?,
-                    )
-                    .map_err(|e| e.to_string())?;
-                    let mut epochs = BTreeMap::new();
-                    for (seat, binding) in bindings {
-                        let llm = binding
-                            .controller
-                            .as_ref()
-                            .is_some_and(|c| c.kind == cna_protocol::ControllerKind::LlmCli);
-                        let rebound = campaign
-                            .handover(seat, binding.controller, binding.config)
-                            .map_err(|e| e.to_string())?;
-                        if llm {
-                            epochs.insert(seat, rebound.controller_epoch);
-                        }
-                    }
-                    campaign.set_paused(true).map_err(|e| e.to_string())?;
-                    // Drop the owned SQLite writer before ordinary factory recovery.
-                    drop(campaign);
-                    Ok(epochs)
-                })
-                .await
-                .map_err(|e| e.to_string())??;
+            let (id, epochs) = setup_checkpoint(prepared_root.path(), repo, &config).await?;
             let mut preparation = config.clone();
             fixture_limits(&mut preparation);
             let journal = SessionJournal::create(prepared_root.path(), &id, preparation, &epochs)?;

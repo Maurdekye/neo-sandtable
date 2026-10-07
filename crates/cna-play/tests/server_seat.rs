@@ -100,6 +100,10 @@ impl SeatDriver for FakeCli {
             } else {
                 first_fixture_action(&request.space.schema)
             };
+            request
+                .space
+                .check(&action)
+                .expect("fixture action matches advertised schema");
             self.call(
                 "submit",
                 json!({"decision_id":id,"revision":request.revision,"action":action}),
@@ -994,7 +998,63 @@ async fn cna_scripted_only_runs_and_recovers_without_any_driver_endpoint() {
     let (root, demo) = configured(config).await;
     assert!(demo.epochs.is_empty());
     assert!(demo.mcp.url(demo.seat).is_none());
-    demo.play_sessions(&mut [], 1).await.unwrap();
+    // PROVISIONAL: CI run37570418901 censored at 600 s, local 335 s;
+    // recalibrate to ~2x the first completed CI duration.
+    // Production scripted and paid limits remain unchanged.
+    let mut seats: Vec<_> = cna_core::ids::SeatId::all()
+        .map(|seat| (seat, demo.handle.watch_seat(seat)))
+        .collect();
+    demo.handle.pause(false).await.unwrap();
+    let started = tokio::time::Instant::now();
+    let mut status = demo.handle.watch_status();
+    let result = tokio::time::timeout(Duration::from_secs(1200), async {
+        loop {
+            match status.borrow_and_update().clone() {
+                cna_server::CampaignStatus::Running => {}
+                cna_server::CampaignStatus::Finished { .. } => return Ok::<_, String>(()),
+                other => return Err(format!("scripted fixture stopped: {other:?}")),
+            }
+            for (seat, state) in &seats {
+                let state = state.borrow();
+                if state.binding.paused {
+                    return Err(format!(
+                        "scripted fixture seat {seat} paused: {:?}",
+                        state.binding.failure
+                    ));
+                }
+            }
+            // A failed seat need not change Running status. Watch the binding
+            // publications themselves; stream events can precede those publications.
+            let mut changes: futures_util::stream::FuturesUnordered<_> =
+                seats.iter_mut().map(|(_, state)| state.changed()).collect();
+            tokio::select! {
+                changed = status.changed() => changed.map_err(|e| e.to_string())?,
+                Some(changed) = changes.next() => changed.map_err(|e| e.to_string())?,
+            }
+        }
+    })
+    .await
+    .map_err(|_| {
+        format!(
+            "scripted fixture hang guard elapsed; metrics {:?}",
+            demo.handle.runtime_metrics()
+        )
+    })
+    .and_then(|r| r);
+    if let Err(error) = result {
+        let cleanup = demo.shutdown().await;
+        cna_play::combine_results(Err(error), cleanup).unwrap();
+        unreachable!();
+    }
+    // Write directly so a successful libtest run retains this calibration sample in CI logs.
+    use std::io::Write as _;
+    writeln!(
+        std::io::stdout(),
+        "CNA_PLAY_SCRIPTED_COMPLETE seconds={:.3} commands={}",
+        started.elapsed().as_secs_f64(),
+        demo.handle.runtime_metrics().committed_commands
+    )
+    .unwrap();
     assert!(matches!(
         demo.handle.status(),
         cna_server::CampaignStatus::Finished { .. }
