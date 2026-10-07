@@ -6,8 +6,8 @@ observer = "cartographer"
 observed_on = "2026-10-07"
 verification = "visual_single_pass"
 id = "map-cartographer-0001"
-selection = "Retained C and D00..10 corridor share;122 unclassified cells individually viewed,121 newly accepted; existing C4026 abstention preserved"
-notes = "Eight native2x full-cell sheets plus16 enlarged6x boundary/coast detail cells.105clear9rough7sea;6newcoastalclear. Beige rough patches distinguished from brown/gray hexside contours and neighboring terrain outside shared sides. Facilities and all edge layers remain separately reviewed. No classifier output, random holdout, independent observer or original1979 accuracy claim."
+selection = "Retained C and D00..10 corridor share;122 unclassified cells individually viewed,120 newly accepted;C3832 deferred under map-0003; existing C4026 abstention preserved"
+notes = "Eight native2x full-cell sheets plus16 enlarged6x boundary/coast detail cells.105clear8rough7sea;6newcoastalclear. Beige rough patches distinguished from brown/gray hexside contours and neighboring terrain outside shared sides. Facilities and all edge layers remain separately reviewed. No classifier output, random holdout, independent observer or original1979 accuracy claim."
 
 [[hex]]
 hex_id = "C2833"
@@ -358,8 +358,8 @@ hex_id = "C3728"
 status = "accepted"
 terrain = "rough"
 flags = ["land"]
-src = ["land:8.37", "interp:map-0002"]
-note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features. Minor substrate: clear, in a broad cream region distinct from contour and shoreline decoration; rough is visibly predominant under provisional map-0003."
 
 [[hex]]
 hex_id = "C3729"
@@ -374,16 +374,16 @@ hex_id = "C3730"
 status = "accepted"
 terrain = "rough"
 flags = ["land"]
-src = ["land:8.37", "interp:map-0002"]
-note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features. Minor substrate: clear, in a broad cream region distinct from contour and shoreline decoration; rough is visibly predominant under provisional map-0003."
 
 [[hex]]
 hex_id = "C3731"
 status = "accepted"
 terrain = "rough"
 flags = ["land"]
-src = ["land:8.37", "interp:map-0002"]
-note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features. Minor substrate: clear, in a broad cream region distinct from contour and shoreline decoration; rough is visibly predominant under provisional map-0003."
 
 [[hex]]
 hex_id = "C3732"
@@ -406,8 +406,8 @@ hex_id = "C3828"
 status = "accepted"
 terrain = "rough"
 flags = ["land"]
-src = ["land:8.37", "interp:map-0002"]
-note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features. Minor substrate: clear, in a broad cream region distinct from contour and shoreline decoration; rough is visibly predominant under provisional map-0003."
 
 [[hex]]
 hex_id = "C3829"
@@ -430,16 +430,16 @@ hex_id = "C3831"
 status = "accepted"
 terrain = "rough"
 flags = ["land"]
-src = ["land:8.37", "interp:map-0002"]
-note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features. Minor substrate: clear, in a broad cream region distinct from contour and shoreline decoration; rough is visibly predominant under provisional map-0003."
 
 [[hex]]
 hex_id = "C3832"
-status = "accepted"
-terrain = "rough"
+status = "deferred"
+terrain = "unclassified"
 flags = ["land"]
-src = ["land:8.37", "interp:map-0002"]
-note = "Beige irregular terrain patch extends inside this cell and matches rough substrate; gray/brown contour bands remain separate edge features."
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct map-0003 re-review: rough and clear occupy similar substantial areas; neither clearly predominates. Both substrates retained as evidence; defer rather than select by a narrow pixel majority."
 
 [[hex]]
 hex_id = "C3833"

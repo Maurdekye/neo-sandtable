@@ -1,0 +1,29 @@
+[batch]
+id = "zmap-0003-graziani-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "Direct mixed-land substrate audit under provisional map-0003"
+notes = "Earlier records preserved; explicit source-bound amendments. Minor substrates retained in notes; graphical contour and shoreline bands are not additional land terrain. No raster-majority classifier decisions."
+supersedes = "graziani-0001"
+
+[[hex]]
+hex_id = "C3626"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+proposed_terrain = "rough"
+note = "Direct map-0003 re-review retains predominant rough. Minor substrate: clear, in a broad cream area; contour/shoreline decorative ink is excluded from substrate comparison. Prior record preserved by explicit amendment."
+
+[[hex]]
+hex_id = "C3627"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+proposed_terrain = "rough"
+note = "Direct map-0003 re-review retains predominant rough. Minor substrate: clear, in a broad cream area; contour/shoreline decorative ink is excluded from substrate comparison. Prior record preserved by explicit amendment."

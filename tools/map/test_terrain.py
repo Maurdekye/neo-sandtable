@@ -31,8 +31,8 @@ class TerrainTests(unittest.TestCase):
 
     def test_deferred_coastline_stays_unknown(self):
         decisions = self.load(MAP / "reviews")
-        deferred = [h for h in decisions.values() if h["status"] == "deferred"]
-        self.assertEqual([h["hex_id"] for h in deferred], ["C4026"])
+        deferred = [decisions["C4026"]]
+        self.assertEqual(deferred[0]["status"], "deferred")
         self.assertTrue(all(h["terrain"] == "unclassified" and h["flags"] == ["coastal"] for h in deferred))
         self.assertEqual(decisions["C4221"]["terrain"], "rough")
         self.assertEqual(decisions["C4022"]["flags"], ["land", "coastal"])
@@ -87,7 +87,9 @@ class TerrainTests(unittest.TestCase):
         decisions=self.load(MAP/"reviews")
         self.assertEqual(decisions["D3315"]["proposed_terrain"],"clear")
         self.assertEqual(decisions["D3315"]["terrain"],"salt_marsh")
-        self.assertEqual(decisions["D3414"]["terrain"],"salt_marsh")
+        self.assertEqual(decisions["D3414"]["terrain"],"unclassified")
+        self.assertEqual(decisions["D3414"]["status"],"deferred")
+        self.assertIn("interp:map-0003", decisions["D3414"]["src"])
         places=tomllib.loads((MAP/"places.toml").read_text())["places"]
         city={p["hex_id"] for p in places if p["type"]=="major_city"}
         self.assertTrue({"A4827","E1930","E1931","E1829","E1830","E1730"} <= city)

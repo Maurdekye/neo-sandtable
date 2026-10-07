@@ -154,3 +154,11 @@ The lead's second opinion on Sollum blue blocks and gray tied strokes
 suggests possible border/rail families, but does not verify either exact
 kind. C3921/C4020 rail kinds and border remain unknown. Pricing relevance
 is a rules procedure question and does not alter map masks.
+
+Provisional map-0003 mixed-land abstentions: C2822,C2922,C3024,C3124,
+C3832,D2917,D3414 have no clear predominant land substrate on direct
+re-review. Their surface mask is removed; coastal/domain evidence remains.
+C4026 retains its independent unreadable coastal fragment. Owner batch3
+may overturn predominance; old decisions and minor substrates are retained
+in source-bound review amendments. Earlier clear-cell minor-substrate
+audit remains incomplete; no fullmap reinterpretation audit is claimed.

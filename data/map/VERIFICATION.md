@@ -442,7 +442,21 @@ unmeasured. Source images and locator crops stay outside the repository.
 ## Cartographer retained corridor surface batch (2026-10-07)
 
 See review-notes/map-cartographer-0001.md and its source-bound raw batch:
-122 cells individually inspected,121 new classifications105clear9rough7sea,
+122 cells individually inspected,120 new classifications105clear8rough7sea,
 six coastal flags. The prior C4026 abstention is retained. No new edge
 masks, facilities or completed movement strips are inferred. Single-observer
 post-review error and original1979 equivalence remain unmeasured.
+
+## Provisional mixed-land audit (map-0003, 2026-10-07)
+
+Direct review of40 rough and2 salt-marsh cells across the earlier public
+map and current local candidate identified seven earlier published
+decisions that change under the provisional predominance rule: C2822,
+C2922,C3024,C3124,D2917,D3414 are deferred; D3116 changes from rough to
+clear with minor rough retained. Thirteen earlier mixed-land observations
+receive explicit amendments, including retained classes and their minor
+clear substrate. Candidate C3832 also defers; five other candidate mixed
+rough/clear cells retain rough with minor clear recorded. Color-area
+diagnostics guided this direct audit and never supplied accepted labels.
+This is a bounded audit of non-clear classes, not a fresh independent
+review of every earlier clear cell or a measured population error rate.

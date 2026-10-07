@@ -3877,7 +3877,7 @@ C2818,C,28,18,67,35,clear,land,land:4.1;land:8.37
 C2819,C,28,19,68,35,clear,land,land:4.1;land:8.37
 C2820,C,28,20,69,35,clear,land,land:4.1;land:8.37
 C2821,C,28,21,70,35,clear,land,land:4.1;land:8.37
-C2822,C,28,22,71,35,rough,land,land:4.1;land:8.37
+C2822,C,28,22,71,35,unclassified,land,land:4.1;land:8.37;interp:map-0003
 C2823,C,28,23,72,35,clear,land,land:4.1;land:8.37
 C2824,C,28,24,73,35,clear,land,land:4.1;land:8.37
 C2825,C,28,25,74,35,clear,land,land:4.1;land:8.37
@@ -3910,7 +3910,7 @@ C2918,C,29,18,67,34,clear,land,land:4.1;land:8.37
 C2919,C,29,19,68,34,clear,land,land:4.1;land:8.37
 C2920,C,29,20,69,34,clear,land,land:4.1;land:8.37
 C2921,C,29,21,70,34,clear,land,land:4.1;land:8.37
-C2922,C,29,22,71,34,rough,land,land:4.1;land:8.37
+C2922,C,29,22,71,34,unclassified,land,land:4.1;land:8.37;interp:map-0003
 C2923,C,29,23,72,34,clear,land,land:4.1;land:8.37
 C2924,C,29,24,73,34,clear,land,land:4.1;land:8.37
 C2925,C,29,25,74,34,clear,land,land:4.1;land:8.37
@@ -3945,7 +3945,7 @@ C3020,C,30,20,70,33,clear,land,land:4.1;land:8.37
 C3021,C,30,21,71,33,clear,land,land:4.1;land:8.37
 C3022,C,30,22,72,33,clear,land,land:4.1;land:8.37
 C3023,C,30,23,73,33,clear,land,land:4.1;land:8.37
-C3024,C,30,24,74,33,rough,land,land:4.1;land:8.37
+C3024,C,30,24,74,33,unclassified,land,land:4.1;land:8.37;interp:map-0003
 C3025,C,30,25,75,33,clear,land,land:4.1;land:8.37
 C3026,C,30,26,76,33,clear,land,land:4.1;land:8.37
 C3027,C,30,27,77,33,clear,land,land:4.1;land:8.37
@@ -3978,8 +3978,8 @@ C3120,C,31,20,70,32,clear,land,land:4.1;land:8.37
 C3121,C,31,21,71,32,clear,land,land:4.1;land:8.37
 C3122,C,31,22,72,32,clear,land,land:4.1;land:8.37
 C3123,C,31,23,73,32,clear,land,land:4.1;land:8.37
-C3124,C,31,24,74,32,rough,land,land:4.1;land:8.37
-C3125,C,31,25,75,32,rough,land,land:4.1;land:8.37
+C3124,C,31,24,74,32,unclassified,land,land:4.1;land:8.37;interp:map-0003
+C3125,C,31,25,75,32,rough,land,land:4.1;land:8.37;interp:map-0003
 C3126,C,31,26,76,32,clear,land,land:4.1;land:8.37
 C3127,C,31,27,77,32,clear,land,land:4.1;land:8.37
 C3128,C,31,28,78,32,clear,land,land:4.1;land:8.37;interp:map-0002
@@ -4145,8 +4145,8 @@ C3622,C,36,22,75,27,clear,land,land:4.1;land:8.37
 C3623,C,36,23,76,27,clear,land,land:4.1;land:8.37
 C3624,C,36,24,77,27,rough,land,land:4.1;land:8.37
 C3625,C,36,25,78,27,rough,land,land:4.1;land:8.37
-C3626,C,36,26,79,27,rough,land,land:4.1;land:8.37
-C3627,C,36,27,80,27,rough,land,land:4.1;land:8.37
+C3626,C,36,26,79,27,rough,land,land:4.1;land:8.37;interp:map-0003
+C3627,C,36,27,80,27,rough,land,land:4.1;land:8.37;interp:map-0003
 C3628,C,36,28,81,27,rough,land,land:4.1;land:8.37;interp:map-0002
 C3629,C,36,29,82,27,clear,land,land:4.1;land:8.37;interp:map-0002
 C3630,C,36,30,83,27,clear,land,land:4.1;land:8.37;interp:map-0002
@@ -4180,10 +4180,10 @@ C3724,C,37,24,77,26,clear,land,land:4.1;land:8.37
 C3725,C,37,25,78,26,clear,land,land:4.1;land:8.37
 C3726,C,37,26,79,26,clear,land,land:4.1;land:8.37
 C3727,C,37,27,80,26,clear,land,land:4.1;land:8.37
-C3728,C,37,28,81,26,rough,land,land:4.1;land:8.37;interp:map-0002
+C3728,C,37,28,81,26,rough,land,land:4.1;land:8.37;interp:map-0002;interp:map-0003
 C3729,C,37,29,82,26,rough,land,land:4.1;land:8.37;interp:map-0002
-C3730,C,37,30,83,26,rough,land,land:4.1;land:8.37;interp:map-0002
-C3731,C,37,31,84,26,rough,land,land:4.1;land:8.37;interp:map-0002
+C3730,C,37,30,83,26,rough,land,land:4.1;land:8.37;interp:map-0002;interp:map-0003
+C3731,C,37,31,84,26,rough,land,land:4.1;land:8.37;interp:map-0002;interp:map-0003
 C3732,C,37,32,85,26,clear,land,land:4.1;land:8.37;interp:map-0002
 C3733,C,37,33,86,26,clear,land,land:4.1;land:8.37;interp:map-0002
 C3801,C,38,1,55,25,unclassified,,land:4.1
@@ -4213,11 +4213,11 @@ C3824,C,38,24,78,25,clear,land,land:4.1;land:8.37
 C3825,C,38,25,79,25,clear,land,land:4.1;land:8.37
 C3826,C,38,26,80,25,clear,land,land:4.1;land:8.37
 C3827,C,38,27,81,25,clear,land,land:4.1;land:8.37
-C3828,C,38,28,82,25,rough,land,land:4.1;land:8.37;interp:map-0002
+C3828,C,38,28,82,25,rough,land,land:4.1;land:8.37;interp:map-0002;interp:map-0003
 C3829,C,38,29,83,25,clear,land,land:4.1;land:8.37;interp:map-0002
 C3830,C,38,30,84,25,clear,land,land:4.1;land:8.37;interp:map-0002
-C3831,C,38,31,85,25,rough,land,land:4.1;land:8.37;interp:map-0002
-C3832,C,38,32,86,25,rough,land,land:4.1;land:8.37;interp:map-0002
+C3831,C,38,31,85,25,rough,land,land:4.1;land:8.37;interp:map-0002;interp:map-0003
+C3832,C,38,32,86,25,unclassified,land,land:4.1;land:8.37;interp:map-0002;interp:map-0003
 C3833,C,38,33,87,25,clear,land,land:4.1;land:8.37;interp:map-0002
 C3901,C,39,1,55,24,unclassified,,land:4.1
 C3902,C,39,2,56,24,unclassified,,land:4.1
@@ -4406,7 +4406,7 @@ C4516,C,45,16,73,18,unclassified,,land:4.1
 C4517,C,45,17,74,18,unclassified,,land:4.1
 C4518,C,45,18,75,18,unclassified,,land:4.1
 C4519,C,45,19,76,18,clear,land,land:4.1;land:8.37;interp:map-0002
-C4520,C,45,20,77,18,rough,land|coastal,land:4.1;land:8.37;interp:map-0002
+C4520,C,45,20,77,18,rough,land|coastal,land:4.1;land:8.37;interp:map-0002;interp:map-0003
 C4521,C,45,21,78,18,sea,sea,land:4.1;land:8.37;interp:map-0002
 C4601,C,46,1,59,17,unclassified,,land:4.1
 C4602,C,46,2,60,17,unclassified,,land:4.1
@@ -5425,7 +5425,7 @@ D2913,D,29,13,95,34,clear,land,land:4.1;land:8.37
 D2914,D,29,14,96,34,clear,land,land:4.1;land:8.37
 D2915,D,29,15,97,34,clear,land,land:4.1;land:8.37
 D2916,D,29,16,98,34,rough,land,land:4.1;land:8.37
-D2917,D,29,17,99,34,rough,land,land:4.1;land:8.37
+D2917,D,29,17,99,34,unclassified,land,land:4.1;land:8.37;interp:map-0003
 D2918,D,29,18,100,34,unclassified,,land:4.1
 D2919,D,29,19,101,34,unclassified,,land:4.1
 D2920,D,29,20,102,34,unclassified,,land:4.1
@@ -5457,7 +5457,7 @@ D3012,D,30,12,95,33,clear,land,land:4.1;land:8.37
 D3013,D,30,13,96,33,clear,land,land:4.1;land:8.37
 D3014,D,30,14,97,33,clear,land,land:4.1;land:8.37
 D3015,D,30,15,98,33,rough,land,land:4.1;land:8.37
-D3016,D,30,16,99,33,rough,land,land:4.1;land:8.37
+D3016,D,30,16,99,33,rough,land,land:4.1;land:8.37;interp:map-0003
 D3017,D,30,17,100,33,clear,land,land:4.1;land:8.37
 D3018,D,30,18,101,33,unclassified,,land:4.1
 D3019,D,30,19,102,33,unclassified,,land:4.1
@@ -5490,7 +5490,7 @@ D3112,D,31,12,95,32,clear,land,land:4.1;land:8.37
 D3113,D,31,13,96,32,clear,land,land:4.1;land:8.37
 D3114,D,31,14,97,32,clear,land,land:4.1;land:8.37
 D3115,D,31,15,98,32,rough,land,land:4.1;land:8.37
-D3116,D,31,16,99,32,rough,land,land:4.1;land:8.37
+D3116,D,31,16,99,32,clear,land,land:4.1;land:8.37;interp:map-0003
 D3117,D,31,17,100,32,clear,land,land:4.1;land:8.37
 D3118,D,31,18,101,32,unclassified,,land:4.1
 D3119,D,31,19,102,32,unclassified,,land:4.1
@@ -5555,7 +5555,7 @@ D3311,D,33,11,95,30,clear,land,land:4.1;land:8.37
 D3312,D,33,12,96,30,clear,land,land:4.1;land:8.37
 D3313,D,33,13,97,30,clear,land,land:4.1;land:8.37
 D3314,D,33,14,98,30,clear,land,land:4.1;land:8.37
-D3315,D,33,15,99,30,salt_marsh,land,land:4.1;land:8.37;land:8.44
+D3315,D,33,15,99,30,salt_marsh,land,land:4.1;land:8.37;land:8.44;interp:map-0003
 D3316,D,33,16,100,30,clear,land,land:4.1;land:8.37
 D3317,D,33,17,101,30,clear,land,land:4.1;land:8.37
 D3318,D,33,18,102,30,unclassified,,land:4.1
@@ -5587,7 +5587,7 @@ D3410,D,34,10,95,29,clear,land,land:4.1;land:8.37
 D3411,D,34,11,96,29,clear,land,land:4.1;land:8.37
 D3412,D,34,12,97,29,clear,land,land:4.1;land:8.37
 D3413,D,34,13,98,29,clear,land,land:4.1;land:8.37
-D3414,D,34,14,99,29,salt_marsh,land,land:4.1;land:8.37;land:8.44
+D3414,D,34,14,99,29,unclassified,land,land:4.1;land:8.37;land:8.44;interp:map-0003
 D3415,D,34,15,100,29,clear,land,land:4.1;land:8.37
 D3416,D,34,16,101,29,rough,land,land:4.1;land:8.37
 D3417,D,34,17,102,29,rough,land,land:4.1;land:8.37

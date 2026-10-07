@@ -4,7 +4,7 @@ coastal,C2818,,land:8.37,graziani-0003
 coastal,C2819,,land:8.37,graziani-0003
 coastal,C2820,,land:8.37,graziani-0003
 coastal,C2821,,land:8.37,graziani-0003
-coastal,C2822,,land:8.37,graziani-0003
+coastal,C2822,,land:8.37;interp:map-0003,zmap-0003-graziani-0003
 coastal,C2823,,land:8.37,graziani-0003
 coastal,C2824,,land:8.37,graziani-0003
 coastal,C2825,,land:8.37,graziani-0003
@@ -15,7 +15,7 @@ coastal,C2918,,land:8.37,graziani-0003
 coastal,C2919,,land:8.37,graziani-0003
 coastal,C2920,,land:8.37,graziani-0003
 coastal,C2921,,land:8.37,graziani-0003
-coastal,C2922,,land:8.37,graziani-0003
+coastal,C2922,,land:8.37;interp:map-0003,zmap-0003-graziani-0003
 coastal,C2923,,land:8.37,graziani-0003
 coastal,C2924,,land:8.37,graziani-0003
 coastal,C2925,,land:8.37,graziani-0003
@@ -27,7 +27,7 @@ coastal,C3020,,land:8.37,graziani-0003
 coastal,C3021,,land:8.37,graziani-0003
 coastal,C3022,,land:8.37,graziani-0003
 coastal,C3023,,land:8.37,graziani-0003
-coastal,C3024,,land:8.37,graziani-0003
+coastal,C3024,,land:8.37;interp:map-0003,zmap-0003-graziani-0003
 coastal,C3025,,land:8.37,graziani-0003
 coastal,C3026,,land:8.37,graziani-0003
 coastal,C3027,,land:8.37,graziani-0003
@@ -43,8 +43,8 @@ coastal,C3120,,land:8.37,graziani-0003
 coastal,C3121,,land:8.37,graziani-0003
 coastal,C3122,,land:8.37,graziani-0003
 coastal,C3123,,land:8.37,graziani-0003
-coastal,C3124,,land:8.37,graziani-0003
-coastal,C3125,,land:8.37,graziani-0003
+coastal,C3124,,land:8.37;interp:map-0003,zmap-0003-graziani-0003
+coastal,C3125,,land:8.37;interp:map-0003,zmap-0003-graziani-0003
 coastal,C3126,,land:8.37,graziani-0003
 coastal,C3127,,land:8.37,graziani-0003
 coastal,C3128,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -125,8 +125,8 @@ coastal,C3622,,land:8.37,graziani-0001
 coastal,C3623,,land:8.37,graziani-0001
 coastal,C3624,,land:8.37,graziani-0001
 coastal,C3625,,land:8.37,graziani-0001
-coastal,C3626,,land:8.37,graziani-0001
-coastal,C3627,,land:8.37,graziani-0001
+coastal,C3626,,land:8.37;interp:map-0003,zmap-0003-graziani-0001
+coastal,C3627,,land:8.37;interp:map-0003,zmap-0003-graziani-0001
 coastal,C3628,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,C3629,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,C3630,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -143,10 +143,10 @@ coastal,C3724,,land:8.37,graziani-0001
 coastal,C3725,,land:8.37,graziani-0001
 coastal,C3726,,land:8.37,graziani-0001
 coastal,C3727,,land:8.37,graziani-0001
-coastal,C3728,,land:8.37;interp:map-0002,map-cartographer-0001
+coastal,C3728,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
 coastal,C3729,,land:8.37;interp:map-0002,map-cartographer-0001
-coastal,C3730,,land:8.37;interp:map-0002,map-cartographer-0001
-coastal,C3731,,land:8.37;interp:map-0002,map-cartographer-0001
+coastal,C3730,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
+coastal,C3731,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
 coastal,C3732,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,C3733,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,C3818,,land:8.37,graziani-0001
@@ -159,11 +159,11 @@ coastal,C3824,,land:8.37,graziani-0001
 coastal,C3825,,land:8.37,graziani-0001
 coastal,C3826,,land:8.37,graziani-0001
 coastal,C3827,,land:8.37,graziani-0001
-coastal,C3828,,land:8.37;interp:map-0002,map-cartographer-0001
+coastal,C3828,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
 coastal,C3829,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,C3830,,land:8.37;interp:map-0002,map-cartographer-0001
-coastal,C3831,,land:8.37;interp:map-0002,map-cartographer-0001
-coastal,C3832,,land:8.37;interp:map-0002,map-cartographer-0001
+coastal,C3831,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
+coastal,C3832,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
 coastal,C3833,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,C3918,,land:8.37,graziani-0001
 coastal,C3919,,land:8.37,graziani-0001
@@ -230,7 +230,7 @@ coastal,C4419,,land:8.37;interp:map-0002,bardia-north-0001
 coastal,C4420,,land:8.37;interp:map-0002,bardia-north-0001
 coastal,C4421,,land:8.37;interp:map-0002,bardia-north-0001
 coastal,C4519,,land:8.37;interp:map-0002,bardia-north-0001
-coastal,C4520,,land:8.37;interp:map-0002,bardia-north-0001
+coastal,C4520,,land:8.37;interp:map-0002;interp:map-0003,zmap-0003-bardia-north-0001
 coastal,C4521,,land:8.37;interp:map-0002,bardia-north-0001
 coastal,D2801,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,D2802,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -265,7 +265,7 @@ coastal,D2913,,land:8.37,graziani-0004
 coastal,D2914,,land:8.37,graziani-0004
 coastal,D2915,,land:8.37,graziani-0004
 coastal,D2916,,land:8.37,graziani-0004
-coastal,D2917,,land:8.37,graziani-0004
+coastal,D2917,,land:8.37;interp:map-0003,zmap-0003-graziani-0004
 coastal,D3001,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,D3002,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,D3003,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -281,7 +281,7 @@ coastal,D3012,,land:8.37,graziani-0004
 coastal,D3013,,land:8.37,graziani-0004
 coastal,D3014,,land:8.37,graziani-0004
 coastal,D3015,,land:8.37,graziani-0004
-coastal,D3016,,land:8.37,graziani-0004
+coastal,D3016,,land:8.37;interp:map-0003,zmap-0003-graziani-0004
 coastal,D3017,,land:8.37,graziani-0004
 coastal,D3101,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,D3102,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -298,7 +298,7 @@ coastal,D3112,,land:8.37,graziani-0004
 coastal,D3113,,land:8.37,graziani-0004
 coastal,D3114,,land:8.37,graziani-0004
 coastal,D3115,,land:8.37,graziani-0004
-coastal,D3116,,land:8.37,graziani-0004
+coastal,D3116,,land:8.37;interp:map-0003,zmap-0003-graziani-0004
 coastal,D3117,,land:8.37,graziani-0004
 coastal,D3201,,land:8.37;interp:map-0002,map-cartographer-0001
 coastal,D3202,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -331,7 +331,7 @@ coastal,D3311,,land:8.37,graziani-0004
 coastal,D3312,,land:8.37,graziani-0004
 coastal,D3313,,land:8.37,graziani-0004
 coastal,D3314,,land:8.37,graziani-0004
-coastal,D3315,,land:8.37;land:8.44,graziani-0004
+coastal,D3315,,land:8.37;land:8.44;interp:map-0003,zmap-0003-graziani-0004
 coastal,D3316,,land:8.37,graziani-0004
 coastal,D3317,,land:8.37,graziani-0004
 coastal,D3401,,land:8.37;interp:map-0002,corridor-d-0001
@@ -347,7 +347,7 @@ coastal,D3410,,land:8.37,graziani-0004
 coastal,D3411,,land:8.37,graziani-0004
 coastal,D3412,,land:8.37,graziani-0004
 coastal,D3413,,land:8.37,graziani-0004
-coastal,D3414,,land:8.37;land:8.44,graziani-0004
+coastal,D3414,,land:8.37;land:8.44;interp:map-0003,zmap-0003-graziani-0004
 coastal,D3415,,land:8.37,graziani-0004
 coastal,D3416,,land:8.37,graziani-0004
 coastal,D3417,,land:8.37,graziani-0004
@@ -699,7 +699,6 @@ terrain,C2818,,land:8.37,graziani-0003
 terrain,C2819,,land:8.37,graziani-0003
 terrain,C2820,,land:8.37,graziani-0003
 terrain,C2821,,land:8.37,graziani-0003
-terrain,C2822,,land:8.37,graziani-0003
 terrain,C2823,,land:8.37,graziani-0003
 terrain,C2824,,land:8.37,graziani-0003
 terrain,C2825,,land:8.37,graziani-0003
@@ -710,7 +709,6 @@ terrain,C2918,,land:8.37,graziani-0003
 terrain,C2919,,land:8.37,graziani-0003
 terrain,C2920,,land:8.37,graziani-0003
 terrain,C2921,,land:8.37,graziani-0003
-terrain,C2922,,land:8.37,graziani-0003
 terrain,C2923,,land:8.37,graziani-0003
 terrain,C2924,,land:8.37,graziani-0003
 terrain,C2925,,land:8.37,graziani-0003
@@ -722,7 +720,6 @@ terrain,C3020,,land:8.37,graziani-0003
 terrain,C3021,,land:8.37,graziani-0003
 terrain,C3022,,land:8.37,graziani-0003
 terrain,C3023,,land:8.37,graziani-0003
-terrain,C3024,,land:8.37,graziani-0003
 terrain,C3025,,land:8.37,graziani-0003
 terrain,C3026,,land:8.37,graziani-0003
 terrain,C3027,,land:8.37,graziani-0003
@@ -738,8 +735,7 @@ terrain,C3120,,land:8.37,graziani-0003
 terrain,C3121,,land:8.37,graziani-0003
 terrain,C3122,,land:8.37,graziani-0003
 terrain,C3123,,land:8.37,graziani-0003
-terrain,C3124,,land:8.37,graziani-0003
-terrain,C3125,,land:8.37,graziani-0003
+terrain,C3125,,land:8.37;interp:map-0003,zmap-0003-graziani-0003
 terrain,C3126,,land:8.37,graziani-0003
 terrain,C3127,,land:8.37,graziani-0003
 terrain,C3128,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -820,8 +816,8 @@ terrain,C3622,,land:8.37,graziani-0001
 terrain,C3623,,land:8.37,graziani-0001
 terrain,C3624,,land:8.37,graziani-0001
 terrain,C3625,,land:8.37,graziani-0001
-terrain,C3626,,land:8.37,graziani-0001
-terrain,C3627,,land:8.37,graziani-0001
+terrain,C3626,,land:8.37;interp:map-0003,zmap-0003-graziani-0001
+terrain,C3627,,land:8.37;interp:map-0003,zmap-0003-graziani-0001
 terrain,C3628,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,C3629,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,C3630,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -838,10 +834,10 @@ terrain,C3724,,land:8.37,graziani-0001
 terrain,C3725,,land:8.37,graziani-0001
 terrain,C3726,,land:8.37,graziani-0001
 terrain,C3727,,land:8.37,graziani-0001
-terrain,C3728,,land:8.37;interp:map-0002,map-cartographer-0001
+terrain,C3728,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
 terrain,C3729,,land:8.37;interp:map-0002,map-cartographer-0001
-terrain,C3730,,land:8.37;interp:map-0002,map-cartographer-0001
-terrain,C3731,,land:8.37;interp:map-0002,map-cartographer-0001
+terrain,C3730,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
+terrain,C3731,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
 terrain,C3732,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,C3733,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,C3818,,land:8.37,graziani-0001
@@ -854,11 +850,10 @@ terrain,C3824,,land:8.37,graziani-0001
 terrain,C3825,,land:8.37,graziani-0001
 terrain,C3826,,land:8.37,graziani-0001
 terrain,C3827,,land:8.37,graziani-0001
-terrain,C3828,,land:8.37;interp:map-0002,map-cartographer-0001
+terrain,C3828,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
 terrain,C3829,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,C3830,,land:8.37;interp:map-0002,map-cartographer-0001
-terrain,C3831,,land:8.37;interp:map-0002,map-cartographer-0001
-terrain,C3832,,land:8.37;interp:map-0002,map-cartographer-0001
+terrain,C3831,,land:8.37;interp:map-0002;interp:map-0003,map-cartographer-0001
 terrain,C3833,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,C3918,,land:8.37,graziani-0001
 terrain,C3919,,land:8.37,graziani-0001
@@ -924,7 +919,7 @@ terrain,C4419,,land:8.37;interp:map-0002,bardia-north-0001
 terrain,C4420,,land:8.37;interp:map-0002,bardia-north-0001
 terrain,C4421,,land:8.37;interp:map-0002,bardia-north-0001
 terrain,C4519,,land:8.37;interp:map-0002,bardia-north-0001
-terrain,C4520,,land:8.37;interp:map-0002,bardia-north-0001
+terrain,C4520,,land:8.37;interp:map-0002;interp:map-0003,zmap-0003-bardia-north-0001
 terrain,C4521,,land:8.37;interp:map-0002,bardia-north-0001
 terrain,D2801,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,D2802,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -959,7 +954,6 @@ terrain,D2913,,land:8.37,graziani-0004
 terrain,D2914,,land:8.37,graziani-0004
 terrain,D2915,,land:8.37,graziani-0004
 terrain,D2916,,land:8.37,graziani-0004
-terrain,D2917,,land:8.37,graziani-0004
 terrain,D3001,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,D3002,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,D3003,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -975,7 +969,7 @@ terrain,D3012,,land:8.37,graziani-0004
 terrain,D3013,,land:8.37,graziani-0004
 terrain,D3014,,land:8.37,graziani-0004
 terrain,D3015,,land:8.37,graziani-0004
-terrain,D3016,,land:8.37,graziani-0004
+terrain,D3016,,land:8.37;interp:map-0003,zmap-0003-graziani-0004
 terrain,D3017,,land:8.37,graziani-0004
 terrain,D3101,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,D3102,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -992,7 +986,7 @@ terrain,D3112,,land:8.37,graziani-0004
 terrain,D3113,,land:8.37,graziani-0004
 terrain,D3114,,land:8.37,graziani-0004
 terrain,D3115,,land:8.37,graziani-0004
-terrain,D3116,,land:8.37,graziani-0004
+terrain,D3116,,land:8.37;interp:map-0003,zmap-0003-graziani-0004
 terrain,D3117,,land:8.37,graziani-0004
 terrain,D3201,,land:8.37;interp:map-0002,map-cartographer-0001
 terrain,D3202,,land:8.37;interp:map-0002,map-cartographer-0001
@@ -1025,7 +1019,7 @@ terrain,D3311,,land:8.37,graziani-0004
 terrain,D3312,,land:8.37,graziani-0004
 terrain,D3313,,land:8.37,graziani-0004
 terrain,D3314,,land:8.37,graziani-0004
-terrain,D3315,,land:8.37;land:8.44,graziani-0004
+terrain,D3315,,land:8.37;land:8.44;interp:map-0003,zmap-0003-graziani-0004
 terrain,D3316,,land:8.37,graziani-0004
 terrain,D3317,,land:8.37,graziani-0004
 terrain,D3401,,land:8.37;interp:map-0002,corridor-d-0001
@@ -1041,7 +1035,6 @@ terrain,D3410,,land:8.37,graziani-0004
 terrain,D3411,,land:8.37,graziani-0004
 terrain,D3412,,land:8.37,graziani-0004
 terrain,D3413,,land:8.37,graziani-0004
-terrain,D3414,,land:8.37;land:8.44,graziani-0004
 terrain,D3415,,land:8.37,graziani-0004
 terrain,D3416,,land:8.37,graziani-0004
 terrain,D3417,,land:8.37,graziani-0004

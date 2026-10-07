@@ -2,10 +2,10 @@
 
 122 previously unclassified cells in the retained C/western-D share were
 individually inspected on eight source-native 2x sheets. Sixteen boundary
-and shoreline cells were enlarged to 6x. The batch accepts 121 new cells:
-105 clear, nine rough and seven sea. Six clear cells are coastal.
+and shoreline cells were enlarged to 6x. The batch accepts 120 new cells:
+105 clear, eight rough and seven sea. Six clear cells are coastal.
 
-The rough cells are C3528,C3628,C3728,C3729,C3730,C3731,C3828,C3831,C3832.
+The rough cells are C3528,C3628,C3728,C3729,C3730,C3731,C3828,C3831.
 The sea cells are C4128,C4228,C4229,C4230,C4231,C4232,C4233.
 Coastal clear is C4028,C4129,C4130,C4131,C4132,C4133.
 The full accepted ID list and decisions are in reviews/map-cartographer-0001.toml.
@@ -27,3 +27,8 @@ Every published surface decision is directly inspected against the 2021
 map and TEC.png. No classifier label, random error bound, independent
 agreement or original1979 equivalence is claimed. Post-review population
 error remains unmeasured. Source images and crops stay outside the repo.
+
+Provisional map-0003 audit supersedes the local121-cell candidate: C3832
+is now deferred because clear and rough have no clear predominance. Minor
+clear substrate is recorded for six mixed-land cells, including this
+abstention. C4026 remains the separate older coastal abstention.
