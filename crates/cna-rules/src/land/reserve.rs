@@ -118,11 +118,11 @@ fn open_selection(
     cx: &mut Cx<'_>,
     designate: bool,
 ) -> bool {
-    let eligible = ids(content, state, designate);
-    if eligible.is_empty() {
+    let Some(side) = state.cursor.phasing(state.turn.player_a) else {
         return false;
-    }
-    let side = state.cursor.phasing(state.turn.player_a).unwrap();
+    };
+    let eligible = ids(content, state, designate);
+    let forced_pass = eligible.is_empty();
     let max = eligible.len() as u32;
     let space = ActionSpace::new(ActionSchema::List {
         item: Box::new(ActionSchema::Unit { among: eligible }),
@@ -133,7 +133,8 @@ fn open_selection(
         "Designate no reserves."
     } else {
         "Keep these units in reserve."
-    });
+    })
+    .with_context(serde_json::json!({"forced_pass":forced_pass}));
     open(
         state,
         cx,
@@ -163,7 +164,8 @@ fn open_selection(
     );
     true
 }
-/// Only the current phasing side designates reserves, before its first movement segment.
+/// The fixed phasing role always closes a designation barrier, including an empty roster.
+/// No window or public phase is skipped because of private unit eligibility.
 /// Cases: land:18.11, land:18.12, land:18.15, land:18.21
 pub fn enter_designation(
     content: &CnaContent,
@@ -174,6 +176,7 @@ pub fn enter_designation(
     Ok(())
 }
 /// The first release converts remaining I to II; later releases can activate II.
+/// The fixed role closes an empty barrier too, before the repeat decision opens.
 /// Cases: land:18.13, land:18.14, land:18.23, land:18.24
 pub fn enter_release(
     content: &CnaContent,
@@ -408,5 +411,86 @@ mod tests {
         assert!(validate_path(u, 2).is_err());
         u.reserve.status = Status::Second;
         assert!(validate_path(u, 1).is_err());
+    }
+    /// Cases: land:18.11, land:18.13, land:18.14, land:18.21, land:3.6
+    #[test]
+    fn hidden_offmap_eligibility_cannot_skip_designation_or_release_clock_barriers() {
+        use cna_core::{
+            dice::CampaignRng,
+            engine::{Command, Game, evaluate},
+        };
+        use cna_protocol::Side;
+        let (c, mut a, id) = fixture();
+        for u in a.land.units.values_mut().filter(|u| u.side == Side::Axis) {
+            u.location = Location::Eliminated;
+        }
+        a.cursor.block = crate::seq::Block::PlayerHalf;
+        a.cursor.game_turn = 1;
+        a.cursor.op_stage = Some(1);
+        a.cursor.half = Some(crate::seq::Half::A);
+        a.turn.player_a = Some(Side::Axis);
+        for (anchor, kind) in [
+            ("opstage.reserve_designation", DESIGNATE),
+            ("opstage.movement_and_combat.reserve_release", RELEASE),
+        ] {
+            a.cursor.index = crate::seq::PLAYER_HALF
+                .iter()
+                .position(|step| step.anchor == anchor)
+                .unwrap();
+            a.cursor.entered = false;
+            a.decisions.pending.clear();
+            let mut b = a.clone();
+            let u = b.land.units.get_mut(&id).unwrap();
+            u.location = Location::OffMap {
+                id: "box_tripoli".into(),
+            };
+            u.reserve.status = Status::First;
+            let ga = Game {
+                state: a.clone(),
+                rng: CampaignRng::from_seed([77; 32]).state(),
+            };
+            let gb = Game {
+                state: b,
+                rng: ga.rng.clone(),
+            };
+            for rules in [crate::Cna::dev(), crate::Cna::full()] {
+                crate::testkit::assert_action_indistinguishable(
+                    &rules,
+                    &c,
+                    &ga,
+                    &gb,
+                    &Command::Advance,
+                    Side::Commonwealth,
+                );
+                let ta = evaluate(&rules, &c, &ga, &Command::Advance).unwrap();
+                let tb = evaluate(&rules, &c, &gb, &Command::Advance).unwrap();
+                for t in [&ta, &tb] {
+                    assert_eq!(t.game.state.cursor.anchor(), anchor);
+                    assert_eq!(t.game.state.decisions.pending.len(), 1);
+                    assert_eq!(t.game.state.decisions.pending[0].kind, kind);
+                    assert_eq!(
+                        t.game.state.decisions.pending[0].seat,
+                        SeatId::new(Side::Axis, Role::RearArea)
+                    );
+                }
+                let p = &ta.game.state.decisions.pending[0];
+                assert!(p.space.pass.is_some());
+                assert!(p.space.check(&Value::Null).is_ok());
+                assert!(matches!(p.space.schema, ActionSchema::List { max: 0, .. }));
+                assert_eq!(
+                    p.space.context.as_ref().unwrap()["forced_pass"],
+                    serde_json::json!(true)
+                );
+                let restored: State =
+                    serde_json::from_value(serde_json::to_value(&ta.game.state).unwrap()).unwrap();
+                crate::testkit::assert_indistinguishable(
+                    &rules,
+                    &c,
+                    &restored,
+                    &tb.game.state,
+                    Side::Commonwealth,
+                );
+            }
+        }
     }
 }
