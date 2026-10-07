@@ -59,7 +59,9 @@ impl Cna {
             "setup" => crate::setup::finish(content, state, cx, self.strict),
             "opstage.convoy_arrival" => {
                 crate::land::arrivals::finish(content, state, self.strict, cx)?;
-                if !state.decisions.pending.is_empty() || !state.land.arrivals.tasks.is_empty() {
+                if !state.decisions.pending.is_empty()
+                    || !crate::land::arrivals::ready_for_supply(state)
+                {
                     return Ok(());
                 }
                 // Cases: land:20.12, airlog:56.28
@@ -219,7 +221,8 @@ impl Cna {
             crate::land::movement::KIND => {
                 crate::land::movement::answer(content, state, pending, action, self.strict, cx)
             }
-            crate::land::arrivals::PLACE
+            crate::land::arrivals::BATCH
+            | crate::land::arrivals::PLACE
             | crate::land::arrivals::TRUCKS
             | crate::land::arrivals::SUBSTITUTE
             | crate::land::arrivals::TRANSPORT
