@@ -55,10 +55,28 @@ fn play(
     usize,
     Result<Progress, Rejection>,
 ) {
+    play_until(ruleset, seed, u16::MAX)
+}
+
+/// Like `play`, but stop (reporting `AwaitingDecisions`) once the cursor moves past game-turn
+/// `last_gt`, so default tests stay quick as the rules grow (CONTRIBUTING: test time).
+fn play_until(
+    ruleset: Cna,
+    seed: u8,
+    last_gt: u16,
+) -> (
+    Game<Cna>,
+    Vec<EngineEvent>,
+    usize,
+    Result<Progress, Rejection>,
+) {
     let content = content();
     let mut game = new_game(seed);
     let mut events = Vec::new();
-    for answered in 0..10_000 {
+    for answered in 0..100_000 {
+        if game.state.cursor.game_turn > last_gt {
+            return (game, events, answered, Ok(Progress::AwaitingDecisions));
+        }
         let t = match evaluate(&ruleset, content, &game, &Command::Advance) {
             Ok(t) => t,
             Err(e) => return (game, events, answered, Err(e)),
@@ -141,7 +159,32 @@ fn graziani_initial_state_places_the_set_up() {
     assert!(state.air.forces.contains_key("axis") && state.air.forces.contains_key("commonwealth"));
 }
 
+/// Game-Turn 1 of a dev campaign: set-up closes, trucks are distributed, and each of the
+/// three OpStages opens its initiative declaration. The bounded default counterpart of the
+/// whole-campaign test below.
 #[test]
+fn dev_profile_plays_game_turn_one_through_setup_and_initiative() {
+    let (game, events, answered, result) = play_until(Cna::dev(), 7, 1);
+    assert!(result.is_ok(), "{result:?}");
+    assert!(game.state.setup.closed);
+    assert!(game.state.land.undistributed_trucks.is_empty());
+    assert!(answered > 3, "setup adds decisions before initiative");
+    let declarations = events
+        .iter()
+        .filter(|e| matches!(&e.event, GameEvent::DecisionOpened { decision } if decision.kind == "cna.initiative_declaration"))
+        .count();
+    assert_eq!(
+        declarations, 3,
+        "one declaration per OpStage of Game-Turn 1"
+    );
+    assert!(
+        game.state.cursor.game_turn >= 2,
+        "the campaign moved past Game-Turn 1"
+    );
+}
+
+#[test]
+#[ignore = "slow: whole campaign"]
 fn dev_profile_plays_graziani_to_the_end_with_initiative_decisions() {
     let (game, events, answered, result) = play(Cna::dev(), 7);
     let summary = match result {
@@ -184,8 +227,25 @@ fn full_profile_stops_at_the_first_unimplemented_applicable_case() {
     }
 }
 
+/// Two runs of the same seed agree exactly through Game-Turn 2 (state, RNG and every event).
 #[test]
 fn campaigns_are_deterministic_per_seed() {
+    let (a, ea, _, _) = play_until(Cna::dev(), 3, 2);
+    let (b, eb, _, _) = play_until(Cna::dev(), 3, 2);
+    assert_eq!(a.rng, b.rng);
+    assert_eq!(
+        serde_json::to_value(&a.state).unwrap(),
+        serde_json::to_value(&b.state).unwrap()
+    );
+    assert_eq!(
+        serde_json::to_string(&ea.iter().map(|e| &e.event).collect::<Vec<_>>()).unwrap(),
+        serde_json::to_string(&eb.iter().map(|e| &e.event).collect::<Vec<_>>()).unwrap()
+    );
+}
+
+#[test]
+#[ignore = "slow: whole campaign twice"]
+fn whole_campaigns_are_deterministic_per_seed() {
     let (a, ea, _, _) = play(Cna::dev(), 3);
     let (b, eb, _, _) = play(Cna::dev(), 3);
     assert_eq!(a.rng, b.rng);
