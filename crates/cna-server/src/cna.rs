@@ -150,7 +150,7 @@ fn movement_policy() -> ActionPolicy<Cna> {
             && !request.kind.starts_with("cna.combat.barrage")
             && !request.kind.starts_with("cna.logistics.")
         {
-            return None;
+            return Ok(None);
         }
         // Derive a fresh controller-local stream from the versioned request/epoch.
         // Never read, advance or replace the campaign's adjudication dice.
@@ -179,20 +179,20 @@ fn movement_policy() -> ActionPolicy<Cna> {
         if let Some(action) =
             cna_rules::baseline::logistics_orders(content, state, request, &mut rng)
         {
-            return Some(action);
+            return Ok(Some(action));
         }
         if request.kind.starts_with("cna.combat.barrage") {
-            return Some(cna_rules::baseline::random_barrages(
+            return Ok(Some(cna_rules::baseline::random_barrages(
                 content, state, request, &mut rng,
-            ));
+            )));
         }
         if request.kind.starts_with("cna.logistics.") {
-            return None;
+            return Ok(None);
         }
         if request.kind == cna_rules::land::breakdown::window::KIND {
-            return Some(cna_rules::baseline::random_breakdown(
+            return Ok(Some(cna_rules::baseline::random_breakdown(
                 content, state, request, &mut rng,
-            ));
+            )));
         }
         // Preserve legal-random's declared-pass choice before generating an order.
         // Reject face six to keep the existing one-in-five probability unbiased.
@@ -204,25 +204,27 @@ fn movement_policy() -> ActionPolicy<Cna> {
                 }
             };
             if choice == 1 {
-                return Some(serde_json::Value::Null);
+                return Ok(Some(serde_json::Value::Null));
             }
         }
         if request.kind == cna_rules::land::combat::assignment::KIND {
-            return Some(cna_rules::baseline::random_assignments(
+            return Ok(Some(cna_rules::baseline::random_assignments(
                 content, state, request, &mut rng,
-            ));
+            )));
         }
         if request.kind == cna_rules::land::combat::retreat::KIND {
-            return Some(cna_rules::baseline::random_retreats(
+            return Ok(Some(cna_rules::baseline::random_retreats(
                 content, state, request, &mut rng,
-            ));
+            )));
         }
         if request.kind == cna_rules::land::combat::POSITION_KIND {
-            return Some(cna_rules::baseline::random_positions(request, &mut rng));
+            return Ok(Some(cna_rules::baseline::random_positions(
+                request, &mut rng,
+            )));
         }
-        Some(cna_rules::baseline::random_orders(
+        Ok(Some(cna_rules::baseline::random_orders(
             content, state, request, &mut rng,
-        ))
+        )))
     })
 }
 
@@ -241,7 +243,7 @@ mod tests {
     };
     use cna_tables::land::weather::WeatherKind;
 
-    fn movement_fixture() -> (CnaContent, Game<Cna>) {
+    pub(super) fn movement_fixture() -> (CnaContent, Game<Cna>) {
         let data = cna_content::repo_data_dir();
         let mut content = CnaContent::load(&data, "graziani").unwrap();
         let directory = tempfile::tempdir().unwrap();
@@ -367,7 +369,9 @@ mod tests {
         let policy = movement_policy();
         let (epoch, action) = (0..64)
             .find_map(|epoch| {
-                let action = policy(&content, &game.state, &request, epoch).unwrap();
+                let action = policy(&content, &game.state, &request, epoch)
+                    .unwrap()
+                    .unwrap();
                 action
                     .as_array()
                     .is_some_and(|a| !a.is_empty())
@@ -377,11 +381,14 @@ mod tests {
         assert!((0..64).any(|epoch| {
             policy(&content, &game.state, &request, epoch)
                 .unwrap()
+                .unwrap()
                 .is_null()
         }));
         assert_eq!(
             action,
-            policy(&content, &game.state, &request, epoch).unwrap()
+            policy(&content, &game.state, &request, epoch)
+                .unwrap()
+                .unwrap()
         );
         assert_eq!(before, serde_json::to_value(&game).unwrap());
         let accepted = evaluate(
@@ -402,7 +409,7 @@ mod tests {
         assert_eq!(game.rng, accepted.game.rng);
         let mut other = request;
         other.kind = "cna.initiative_declaration".into();
-        assert_eq!(policy(&content, &game.state, &other, 7), None);
+        assert_eq!(policy(&content, &game.state, &other, 7), Ok(None));
         assert_ne!(before, serde_json::to_value(&accepted.game).unwrap());
     }
 
@@ -464,7 +471,9 @@ mod tests {
         // Select an epoch that exercises a real move, keeping the campaign dice untouched.
         let (epoch, first_action) = (2..64)
             .find_map(|epoch| {
-                let action = policy(&content, &campaign.game.state, &request, epoch).unwrap();
+                let action = policy(&content, &campaign.game.state, &request, epoch)
+                    .unwrap()
+                    .unwrap();
                 action
                     .as_array()
                     .is_some_and(|a| !a.is_empty())
@@ -714,7 +723,7 @@ mod tests {
         let stock_before = state.logistics.dumps["fixture-stock"].supplies;
         let policy = movement_policy();
         for epoch in 1..32 {
-            let action = policy(&content, &state, &request, epoch).unwrap();
+            let action = policy(&content, &state, &request, epoch).unwrap().unwrap();
             assert_eq!(
                 action,
                 serde_json::json!([{
@@ -731,7 +740,10 @@ mod tests {
                     }]
                 }])
             );
-            assert_eq!(action, policy(&content, &state, &request, epoch).unwrap());
+            assert_eq!(
+                action,
+                policy(&content, &state, &request, epoch).unwrap().unwrap()
+            );
             let mut submitted = evaluate(
                 &Cna::dev(),
                 &content,
@@ -973,6 +985,7 @@ mod tests {
                 &request,
                 campaign.binding(request.seat).controller_epoch,
             )
+            .unwrap()
             .unwrap();
             retry = Some(submit(&mut campaign, request, action));
         }
@@ -1157,6 +1170,7 @@ mod tests {
                     .find_map(|epoch| {
                         let action =
                             policy(&campaign.content, &campaign.game.state, &request, epoch)
+                                .unwrap()
                                 .unwrap();
                         action
                             .as_array()
@@ -1363,11 +1377,14 @@ mod tests {
             assert_eq!(request.seat.role, Role::FrontLine);
             let (epoch, action) = (1..64)
                 .find_map(|epoch| {
-                    let action =
-                        policy(&campaign.content, &campaign.game.state, &request, epoch).unwrap();
+                    let action = policy(&campaign.content, &campaign.game.state, &request, epoch)
+                        .unwrap()
+                        .unwrap();
                     assert_eq!(
                         action,
-                        policy(&campaign.content, &campaign.game.state, &request, epoch).unwrap()
+                        policy(&campaign.content, &campaign.game.state, &request, epoch)
+                            .unwrap()
+                            .unwrap()
                     );
                     action
                         .as_array()
@@ -1746,9 +1763,12 @@ mod tests {
         let before = serde_json::to_value(&game).unwrap();
         let policy = movement_policy();
         for epoch in 1..16 {
-            let action = policy(&content, &game.state, &r, epoch).unwrap();
+            let action = policy(&content, &game.state, &r, epoch).unwrap().unwrap();
             assert!(!action.is_null());
-            assert_eq!(action, policy(&content, &game.state, &r, epoch).unwrap());
+            assert_eq!(
+                action,
+                policy(&content, &game.state, &r, epoch).unwrap().unwrap()
+            );
             let batch = evaluate(
                 &Cna::dev(),
                 &content,
@@ -1769,3 +1789,7 @@ mod tests {
         assert_eq!(serde_json::to_value(&game).unwrap(), before);
     }
 }
+
+#[cfg(test)]
+#[path = "cna_policy_tests.rs"]
+mod policy_tests;

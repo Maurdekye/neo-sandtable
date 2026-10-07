@@ -7,7 +7,7 @@ use std::{
 
 use cna_core::{
     decision::{DecisionRequest, DecisionResponse},
-    engine::{Command, Game, Progress, Rejection, Ruleset, evaluate},
+    engine::{Command, EngineError, Game, Progress, Rejection, Ruleset, evaluate},
     ids::SeatId,
     visibility::{Audience, Perspective},
 };
@@ -528,6 +528,18 @@ impl<R: Ruleset> Campaign<R> {
         Ok(())
     }
 
+    /// A rules or policy failure changes only the campaign control status. Do not claim a
+    /// durable stop or replace the in-memory status unless its write succeeds.
+    pub(crate) fn stop_engine(&mut self, error: &EngineError) -> Result<(), Error> {
+        let stopped = CampaignStatus::Stopped {
+            error: error.to_string(),
+        };
+        self.db
+            .execute("UPDATE campaign SET status=? WHERE id=1", [json(&stopped)?])?;
+        self.status = stopped;
+        Ok(())
+    }
+
     /// Runtime failure cannot resume automatically, even if publishing a committed projection
     /// failed. Persist the stop when storage permits; retain it in memory if storage is broken.
     pub(crate) fn stop_runtime(&mut self, error: &Error) -> Result<(), Error> {
@@ -693,12 +705,7 @@ impl<R: Ruleset> Campaign<R> {
         {
             Ok(t) => t,
             Err(Rejection::Engine(error)) => {
-                let stopped = CampaignStatus::Stopped {
-                    error: error.to_string(),
-                };
-                self.db
-                    .execute("UPDATE campaign SET status=? WHERE id=1", [json(&stopped)?])?;
-                self.status = stopped;
+                self.stop_engine(&error)?;
                 tracing::error!(%error, "campaign stopped at an unsupported case or invariant");
                 return Err(Rejection::Engine(error).into());
             }
@@ -735,12 +742,7 @@ impl<R: Ruleset> Campaign<R> {
             let error = cna_core::engine::EngineError::Invariant {
                 detail: "ruleset progress and pending decisions disagree".into(),
             };
-            let stopped = CampaignStatus::Stopped {
-                error: error.to_string(),
-            };
-            self.db
-                .execute("UPDATE campaign SET status=? WHERE id=1", [json(&stopped)?])?;
-            self.status = stopped;
+            self.stop_engine(&error)?;
             return Err(Rejection::Engine(error).into());
         }
         let clock = self.ruleset.clock(&self.content, &self.game.state);

@@ -135,7 +135,7 @@ fn null_policy_without_declared_pass_pauses_before_any_command_and_survives_rest
         let policy_calls = calls.clone();
         let policy: ActionPolicy<NullPolicyRules> = Box::new(move |_, _, _, _| {
             policy_calls.fetch_add(1, Ordering::SeqCst);
-            Some(Value::Null)
+            Ok(Some(Value::Null))
         });
         let step = auto_step(&mut campaign, None, &NoCandidates, Some(&policy)).unwrap();
         let db = rusqlite::Connection::open(&path).unwrap();

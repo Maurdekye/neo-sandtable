@@ -248,3 +248,14 @@ submitted while campaign-paused; they do not adjudicate the next step. Clearing 
 raising the limit does not resume implicitly: use the existing resume control.
 Recovery preserves the boundary and last committed state, and resumption re-evaluates
 the same deterministic Advance.
+
+Ruleset policy hooks distinguish an unhandled request (`Ok(None)`) from a generated
+action (`Ok(Some(action))`) and a rules failure (`Err(EngineError)`). Only an unhandled
+request falls through to generic generation. A policy failure durably stops the campaign
+before submission, preserving its game, RNG, pending requests, transcripts and healthy
+controller bindings. Restart retains that stop. A failed storage write follows the existing
+fatal-writer path and does not claim that the stop was persisted.
+
+`CampaignHandle::spawn_with_fallible_baseline` accepts a checked aggressive baseline.
+Existing `spawn` and `spawn_with_candidates` adapt infallible baselines without changing
+their answers. Null without a declared pass retains the existing seat-pause behavior.

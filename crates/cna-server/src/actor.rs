@@ -7,7 +7,7 @@ use crate::{
 };
 use cna_core::{
     decision::{DecisionRequest, DecisionResponse},
-    engine::{Rejection, Ruleset},
+    engine::{EngineError, Rejection, Ruleset},
     ids::SeatId,
     visibility::{Audience, Perspective},
 };
@@ -69,9 +69,25 @@ pub struct SeatState {
 
 pub type Baseline<R> =
     Box<dyn Fn(&<R as Ruleset>::Content, &<R as Ruleset>::State, &DecisionRequest) -> Value + Send>;
+/// Checked aggressive baseline. Existing infallible callers are adapted by `spawn`.
+pub type FallibleBaseline<R> = Box<
+    dyn Fn(
+            &<R as Ruleset>::Content,
+            &<R as Ruleset>::State,
+            &DecisionRequest,
+        ) -> Result<Value, EngineError>
+        + Send,
+>;
 
+/// None is reserved for unhandled request kinds. A checked owner policy must not
+/// replace an engine gap or invariant with None, Null, an empty plan or another candidate.
 pub(crate) type ActionPolicy<R> = Box<
-    dyn Fn(&<R as Ruleset>::Content, &<R as Ruleset>::State, &DecisionRequest, u64) -> Option<Value>
+    dyn Fn(
+            &<R as Ruleset>::Content,
+            &<R as Ruleset>::State,
+            &DecisionRequest,
+            u64,
+        ) -> Result<Option<Value>, EngineError>
         + Send,
 >;
 
@@ -264,7 +280,26 @@ impl CampaignHandle {
         R::State: Send + Sync,
         R::Content: Send + Sync,
     {
+        let baseline = baseline.map(|baseline| {
+            Box::new(
+                move |content: &R::Content, state: &R::State, request: &DecisionRequest| {
+                    Ok(baseline(content, state, request))
+                },
+            ) as FallibleBaseline<R>
+        });
         Self::spawn_with_controllers(campaign, path, baseline, candidates, None)
+    }
+    pub fn spawn_with_fallible_baseline<R>(
+        campaign: Campaign<R>,
+        path: &Path,
+        baseline: FallibleBaseline<R>,
+    ) -> Result<Self, Error>
+    where
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
+    {
+        Self::spawn_with_controllers(campaign, path, Some(baseline), Box::new(NoCandidates), None)
     }
     pub(crate) fn spawn_with_policy<R>(
         campaign: Campaign<R>,
@@ -281,7 +316,7 @@ impl CampaignHandle {
     fn spawn_with_controllers<R>(
         campaign: Campaign<R>,
         path: &Path,
-        baseline: Option<Baseline<R>>,
+        baseline: Option<FallibleBaseline<R>>,
         candidates: Box<dyn Candidates + Send>,
         policy: Option<ActionPolicy<R>>,
     ) -> Result<Self, Error>
@@ -586,7 +621,7 @@ impl CampaignHandle {
 }
 pub(crate) fn auto_step<R: Ruleset>(
     campaign: &mut Campaign<R>,
-    baseline: Option<&Baseline<R>>,
+    baseline: Option<&FallibleBaseline<R>>,
     candidates: &dyn Candidates,
     policy: Option<&ActionPolicy<R>>,
 ) -> Result<Step, Error> {
@@ -601,7 +636,7 @@ pub(crate) fn auto_step<R: Ruleset>(
 }
 fn auto_step_inner<R: Ruleset>(
     campaign: &mut Campaign<R>,
-    baseline: Option<&Baseline<R>>,
+    baseline: Option<&FallibleBaseline<R>>,
     candidates: &dyn Candidates,
     policy: Option<&ActionPolicy<R>>,
 ) -> Result<Step, Error> {
@@ -621,19 +656,24 @@ fn auto_step_inner<R: Ruleset>(
             || (campaign.binding(request.seat).config["mode"] == "pass_when_possible"
                 && request.space.pass.is_none()))
         && let Some(policy) = policy
-        && let Some(action) = policy(
+    {
+        // None declines this request kind; Err must stop before generic generation or a
+        // declared pass can substitute an answer. The writer serializes the durable stop.
+        let result = policy(
             &campaign.content,
             &campaign.game.state,
             request,
             campaign.binding(request.seat).controller_epoch,
-        )
-    {
-        let label = if campaign.binding(request.seat).config["mode"] == "pass_when_possible" {
-            "scripted:pass_when_possible"
-        } else {
-            "scripted:legal_random"
-        };
-        return apply_baseline(campaign, request, action, label);
+        );
+        let action = checked_policy_result(campaign, result)?;
+        if let Some(action) = action {
+            let label = if campaign.binding(request.seat).config["mode"] == "pass_when_possible" {
+                "scripted:pass_when_possible"
+            } else {
+                "scripted:legal_random"
+            };
+            return apply_baseline(campaign, request, action, label);
+        }
     }
     if let Some(request) =
         first_scripted.filter(|d| campaign.binding(d.seat).config["mode"] == "aggressive")
@@ -645,10 +685,23 @@ fn auto_step_inner<R: Ruleset>(
                 error: "aggressive baseline unavailable".into(),
             });
         };
-        let action = baseline(&campaign.content, &campaign.game.state, &request);
+        let result = baseline(&campaign.content, &campaign.game.state, &request);
+        let action = checked_policy_result(campaign, result)?;
         return apply_baseline(campaign, &request, action, "aggressive");
     }
     campaign.step(candidates)
+}
+fn checked_policy_result<R: Ruleset, T>(
+    campaign: &mut Campaign<R>,
+    result: Result<T, EngineError>,
+) -> Result<T, Error> {
+    match result {
+        Ok(action) => Ok(action),
+        Err(error) => {
+            campaign.stop_engine(&error)?;
+            Err(Rejection::Engine(error).into())
+        }
+    }
 }
 fn apply_baseline<R: Ruleset>(
     campaign: &mut Campaign<R>,
