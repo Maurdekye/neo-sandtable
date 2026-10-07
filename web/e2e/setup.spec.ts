@@ -14,6 +14,7 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
     'Set CNA_SMOKE_SERVER and CNA_SMOKE_CAPABILITY',
   )
   test.setTimeout(240000)
+  const started = Date.now()
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   const created = await request.post(`${server}/api/campaigns`, {
@@ -83,6 +84,8 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
   )
   await panel.locator('.setup-unit').click()
   await expect(page.locator('.unit-detail')).toContainText('Awaiting setup')
+  await panel.locator('.setup-destinations summary').click()
+  await panel.scrollIntoViewIfNeeded()
   await page.screenshot({
     path: '../../board-graziani-setup.png',
     fullPage: true,
@@ -174,10 +177,47 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
           await request.post(`${base}/seats/${seat.id}/controller`, {
             headers,
             data: {
-              controller: { kind: 'scripted', label: 'pass_when_possible' },
+              controller: seat.id.endsWith('.air')
+                ? { kind: 'human', label: 'Enumerated air test fixture' }
+                : { kind: 'scripted', label: 'pass_when_possible' },
               config: { mode: 'pass_when_possible' },
             },
           })
+        ).ok(),
+      ).toBeTruthy()
+    }
+    // Air has no board projection. Complete its enumerated choices with a bounded fixture,
+    // keeping the actual map placements driven by server-scripted seats.
+    for (let count = 0; count < 200; count++) {
+      const current = await (await request.get(base, { headers })).json()
+      const air = current.snapshot.view.pending.find(
+        (d: { kind: string }) => d.kind === 'cna.setup.air',
+      )
+      if (!air) break
+      expect(count, 'bounded initial air allocation').toBeLessThan(199)
+      const observed = await (
+        await request.get(`${base}/seats/${air.seat}/observe`, { headers })
+      ).json()
+      const core = observed.pending.find((d: { id: string }) => d.id === air.id)
+      const action = air.space.enum[0]
+      expect(typeof action).toBe('string')
+      expect(
+        (
+          await request.post(
+            `${base}/seats/${air.seat}/decisions/${air.id}/submit`,
+            {
+              headers,
+              data: {
+                decision_id: air.id,
+                seat: air.seat,
+                controller_epoch: observed.controller_epoch,
+                decision_revision: core.revision,
+                idempotency_key: `board-air-fixture:${air.id}`,
+                action,
+                public_explanation: null,
+              },
+            },
+          )
         ).ok(),
       ).toBeTruthy()
     }
@@ -246,6 +286,7 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
       })
     ).json()
     expect(ownPlaced.snapshot.view.units[unitId].hex).toBe(destination)
+    expect(ownPlaced.snapshot.view.clock.segment).not.toBe('combat')
     const opponentPlaced = await (
       await request.get(`${base}?perspective=side:axis`, {
         headers: enemyHeaders,
@@ -261,6 +302,10 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
     await page.getByLabel('Find formation or unit').fill(unitId)
     await page.locator(`.formation-unit[data-unit-id="${unitId}"]`).click()
     await expect(page.locator('.unit-detail')).toContainText(destination)
+    await page.getByRole('tab', { name: /commonwealth.*commander/ }).click()
+    await expect(
+      page.locator('.entry-decision_submitted').first(),
+    ).toBeVisible()
     await page.screenshot({
       path: '../../board-graziani-setup-revealed.png',
       fullPage: true,
@@ -270,6 +315,9 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
       '../../setup-browser-verification.json',
       JSON.stringify(
         {
+          commit: process.env.CNA_SMOKE_COMMIT,
+          elapsed_ms: Date.now() - started,
+          reveal_before_combat: true,
           unit: unitId,
           name: unit.name,
           destination,

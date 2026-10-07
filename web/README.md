@@ -344,3 +344,14 @@ metadata and a fresh server database, as for the other actual integration checks
 It holds a human placement window, validates/submits one legal choice, lets
 scripted seats finish set-up and verifies the final public presence separately
 from private unit identities. It starts no paid model driver.
+
+The checked real set-up run on engine `f5542bd` selected 8th Field Artillery Regt
+from its five published Cairo destinations. A validated E1730 choice remained
+buffered: an isolated Axis viewer received neither its position nor its identity.
+Server-scripted land placements pulsed into the board at shared-window closure;
+the unit inspector then showed E1730, while the opposing stack disclosed only
+presence. Both front-line seats were held to prevent later combat updates from
+masking a missing closure publication. Initial air allocation, which has no board
+projection, used bounded fixture answers from its exact published enum. The run
+took 196.7 seconds on the busy shared machine and reported no browser errors.
+This is a correctness check, not a navigation FPS measurement.
