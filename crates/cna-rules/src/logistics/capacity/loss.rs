@@ -13,7 +13,8 @@ use std::collections::BTreeSet;
 /// All cargo assignments are explicit, including empty and personnel-carrying trucks.
 /// This helper does not apply infantry TOE casualties; call it before that mutation
 /// in the same transactional combat draft.
-/// Cases: land:12.46, airlog:54.2
+/// Cases: land:12.46
+/// Interpretations: interp:land-0024, airlog:54.2
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UnitTruckCargoLoss {
