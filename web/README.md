@@ -540,3 +540,10 @@ preflight/handover races, literal commentary, memory-only access and route isola
 separate human tabs: commander setup and frontline coast movement, with cross-seat denials.
 `tools/sample_console_schemas.mjs` is an authoring tool outside the console bundle; it samples
 advertised action spaces from an all-scripted real Graziani stream, with no paid calls.
+
+The committed Graziani schema fixture keeps one original example per decision kind and structural
+shape. Empty enums and zero bounds remain distinct; different positive stock totals and enum
+counts do not create duplicate forms. The capture checks every event sequence, pauses on stream
+lag and resumes from durable replay, and writes a fixture only after reaching Finished with the
+complete event tail. The manual real-browser proof is separate from the default checks; its
+bounded guard is documented beside the test with the completed local measurement.

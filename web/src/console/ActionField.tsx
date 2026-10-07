@@ -27,6 +27,16 @@ export function ActionField({
   const s = concrete(schema),
     kind = fieldKind(schema),
     description = schema.description ?? s.description
+  if (s.type === 'null')
+    return (
+      <div className="console-field">
+        <strong>{label}: Pass</strong>
+        {description && <small>{description}</small>}
+        <button disabled={disabled} onClick={() => onChange(null)}>
+          Pass
+        </button>
+      </div>
+    )
   if (nullable(schema))
     return (
       <fieldset disabled={disabled}>

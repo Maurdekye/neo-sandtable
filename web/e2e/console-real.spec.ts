@@ -12,7 +12,9 @@ test('two isolated human tabs answer real Graziani setup and a coast movement or
     !server || !operator,
     'Set fresh no-paid authenticated smoke server',
   )
-  test.setTimeout(240000)
+  // Manual slow proof: completed 1.6 min (1.9 min including startup) on 2026-10-07.
+  // Earlier setup-only observations took up to 2.6 min; keep a bounded 2x ceiling.
+  test.setTimeout(360000)
   const opHeaders = { Authorization: `Bearer ${operator}` },
     created = await request.post(`${server}/api/campaigns`, {
       headers: opHeaders,
@@ -71,7 +73,7 @@ test('two isolated human tabs answer real Graziani setup and a coast movement or
         const url = new URL(r.url())
         if (url.pathname.startsWith('/api/')) {
           calls.push({ seat, path: url.pathname })
-          expect(r.headers().authorization).toBe(`Bearer ${cap}`)
+          expect(r.headers().authorization === `Bearer ${cap}`).toBe(true)
           expect(
             url.pathname === '/api/session' ||
               url.pathname.startsWith(
@@ -98,7 +100,7 @@ test('two isolated human tabs answer real Graziani setup and a coast movement or
         `${server}/console.html?campaign=${meta.id}&seat=${seat}#cap=${cap}`,
       )
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(seat)
-      expect(page.url()).not.toContain(cap)
+      expect(!page.url().includes(cap)).toBe(true)
       const other = seats[1 - i],
         headers = { Authorization: `Bearer ${cap}` }
       for (const path of [
@@ -149,13 +151,22 @@ test('two isolated human tabs answer real Graziani setup and a coast movement or
         .click()
       expect((await result).ok()).toBeTruthy()
     }
-    const deadline = Date.now() + 150000
+    const deadline = Date.now() + 300000
     while (Date.now() < deadline) {
       const front = await observe(seats[1])
       movement = front.pending.find(
         (d: { kind: string }) => d.kind === 'cna.movement.orders',
       )
       if (movement) break
+      if (front.pending.length) {
+        const pending = front.pending[0]
+        console.log(`Answering own front_line prerequisite: ${pending.kind}`)
+        await expect(pages[1].locator('.console-decision')).toContainText(
+          pending.summary,
+        )
+        await answer(pages[1])
+        continue
+      }
       const commander = await observe(seats[0]),
         pending = commander.pending[0]
       if (pending && placements === 0) {
@@ -198,7 +209,27 @@ test('two isolated human tabs answer real Graziani setup and a coast movement or
             { timeout: 7000 },
           )
         }
-      } else await pages[0].waitForTimeout(150)
+      } else await pages[0].waitForTimeout(750)
+    }
+    if (!movement) {
+      const status = await (
+        await request.get(`${base}?perspective=operator`, {
+          headers: opHeaders,
+        })
+      ).json()
+      console.log(
+        JSON.stringify({
+          status: status.status,
+          clock: status.snapshot?.view?.clock,
+          pending: status.snapshot?.view?.pending?.map(
+            (d: { seat: string; kind: string; summary: string }) => ({
+              seat: d.seat,
+              kind: d.kind,
+              summary: d.summary,
+            }),
+          ),
+        }),
+      )
     }
     expect(placements).toBeGreaterThan(0)
     expect(
@@ -248,7 +279,6 @@ test('two isolated human tabs answer real Graziani setup and a coast movement or
     await front.getByRole('checkbox', { name: 'Pass', exact: true }).uncheck()
     await front.getByRole('button', { name: 'Add Action', exact: true }).click()
     await front.getByLabel('unit', { exact: true }).selectOption(order!.unit)
-    await front.getByRole('button', { name: 'Add path', exact: true }).click()
     await front.getByLabel('path 1', { exact: true }).fill(order!.path[0])
     await front
       .getByLabel('Seat commentary')
@@ -257,6 +287,14 @@ test('two isolated human tabs answer real Graziani setup and a coast movement or
     await expect
       .poll(() => moved.includes(order!.unit), { timeout: 15000 })
       .toBe(true)
+    await front.getByText('Own seat event feed', { exact: true }).click()
+    await front
+      .locator('.event-row[data-kind="unit_moved"][data-hex="C4220"]')
+      .getByRole('button', { name: 'Locate C4220', exact: true })
+      .click()
+    await expect(front.locator('.console-units')).toContainText(
+      units.get(order!.unit)!.name,
+    )
     await front.screenshot({
       path: '../../board-human-movement.png',
       fullPage: true,

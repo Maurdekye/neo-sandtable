@@ -29,10 +29,19 @@ const campaign = await api('/api/campaigns', {
   controller: 'legal_random',
 })
 const base = `/api/campaigns/${campaign.id}`,
-  seen = new Map()
-let lastSeq = null
+  seen = new Map(),
+  variants = new Set()
+let lastSeq = null,
+  closed = false,
+  recoveryTarget = null,
+  recoveries = 0,
+  recovering = false,
+  resumeAfterReplay = false,
+  timer
 // Ignore changing ids/labels in the signature, while preserving the full actual schema in each fixture.
-const shape = (s) =>
+// Keep empty enums and zero bounds distinct, but do not duplicate a form for each stock total.
+// The fixture retains the original full schema of one actual example for every kind/shape.
+const shape = (s, structural = true) =>
   s && typeof s === 'object' && !Array.isArray(s)
     ? Object.fromEntries(
         Object.entries(s)
@@ -43,15 +52,36 @@ const shape = (s) =>
           .map(([k, v]) => [
             k,
             k === 'enum'
-              ? { count: v.length }
-              : Array.isArray(v)
-                ? v.map(shape)
-                : shape(v),
+              ? {
+                  count: structural
+                    ? v.length
+                      ? 'nonempty'
+                      : 'empty'
+                    : v.length,
+                }
+              : structural &&
+                  [
+                    'minimum',
+                    'maximum',
+                    'minLength',
+                    'maxLength',
+                    'minItems',
+                    'maxItems',
+                  ].includes(k)
+                ? v === 0
+                  ? 'zero'
+                  : v > 0
+                    ? 'positive'
+                    : 'negative'
+                : Array.isArray(v)
+                  ? v.map((x) => shape(x, structural))
+                  : shape(v, structural),
           ]),
       )
     : s
 const record = (d) => {
   if (!d.space) return
+  variants.add(d.kind + JSON.stringify(shape(d.space, false)))
   const key = d.kind + JSON.stringify(shape(d.space))
   if (!seen.has(key))
     seen.set(key, { kind: d.kind, rules: d.rules, space: d.space })
@@ -83,17 +113,47 @@ const socket = new WebSocket(url),
           return
         }
         lastSeq = m.seq
+        if (recovering && lastSeq === recoveryTarget) {
+          recovering = false
+          if (resumeAfterReplay && !closed)
+            void api(`${base}/resume`, {}).catch(reject)
+        }
       }
       if (m.type === 'event' && m.event.kind === 'decision_opened')
         record(m.event.decision)
-      if (m.type === 'resync')
-        reject(new Error('Fixture stream lagged; refusing incomplete sample'))
+      if (m.type === 'resync') {
+        if (lastSeq === null || recovering) {
+          reject(new Error('Fixture replay could not restore continuity'))
+          return
+        }
+        recovering = true
+        recoveries++
+        // Pause the authoring baseline, then recover every missing event from durable replay.
+        // Never replace a gap with a newer snapshot and call it complete coverage.
+        void (async () => {
+          await api(`${base}/pause`, {})
+          const status = await api(`${base}?perspective=operator`)
+          recoveryTarget = status.snapshot.seq
+          resumeAfterReplay = status.status.state !== 'finished'
+          socket.send(
+            JSON.stringify({
+              type: 'subscribe',
+              perspective: 'operator',
+              from_seq: lastSeq,
+            }),
+          )
+          if (lastSeq === recoveryTarget) {
+            recovering = false
+            if (resumeAfterReplay && !closed) await api(`${base}/resume`, {})
+          }
+        })().catch(reject)
+      }
     })
     socket.addEventListener('error', () =>
       reject(new Error('Fixture stream failed')),
     )
-    let timer
     const poll = async () => {
+      if (closed) return
       try {
         const status = await api(`${base}?perspective=operator`)
         if (['finished', 'stopped'].includes(status.status.state)) {
@@ -104,13 +164,16 @@ const socket = new WebSocket(url),
             return
           }
         }
-        timer = setTimeout(poll, 1000)
+        if (!closed) timer = setTimeout(poll, 5000)
       } catch (e) {
         reject(e)
       }
     }
-    timer = setTimeout(poll, 1000)
-    socket.addEventListener('close', () => clearTimeout(timer))
+    timer = setTimeout(poll, 5000)
+    socket.addEventListener('close', () => {
+      closed = true
+      clearTimeout(timer)
+    })
   })
 try {
   await Promise.race([
@@ -133,6 +196,12 @@ try {
         rules_profile: 'cna-2021-dev',
         controller: 'legal_random',
         paid_calls: 0,
+        completed: true,
+        observed_variants: variants.size,
+        sampling:
+          'one actual example per kind and structural shape; empty enums and zero bounds distinct',
+        replay_recoveries: recoveries,
+        final_seq: lastSeq,
         samples: [...seen.values()],
       },
       null,
@@ -141,6 +210,8 @@ try {
   )
   console.log(`Recorded ${seen.size} actual schema variants; no paid calls`)
 } finally {
+  closed = true
+  clearTimeout(timer)
   socket.close()
   await api(`${base}/pause`, {}).catch(() => {})
 }

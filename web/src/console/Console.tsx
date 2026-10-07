@@ -182,6 +182,11 @@ export function Console({ boot }: { boot: Boot }) {
   )
   const inspect = async (target: string) => {
     const serial = ++inspectionSerial.current
+    const disclosed = viewer.current?.frames.at(-1)?.view.units[target]?.hex
+    if (disclosed && HEX_BY_ID.has(disclosed)) {
+      setSelected(disclosed)
+      setFocus({ hex: disclosed, nonce: Date.now() })
+    }
     try {
       const result = await boot.client.inspect(target)
       if (mounted.current && serial === inspectionSerial.current)
