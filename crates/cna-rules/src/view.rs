@@ -412,10 +412,27 @@ fn markers(state: &State, perspective: Perspective) -> Vec<wire::Marker> {
     markers
 }
 
+/// Whether every state input [`Board::new`] reads is equal in `a` and `b`, so both states have
+/// the same board and every perspective the same units, stacks and markers: the units
+/// themselves (their views depend only on the unit and the content), the movement and combat
+/// stamps, broken-down vehicle markers, and each board perspective's markers. Most engine calls
+/// only record answers, and this lets them skip building two boards. Anything new that
+/// `Board::new` reads (directly or through a stamp) must be compared here too;
+/// `every_visible_change_in_game_turn_one_is_announced` fails if a change slips past.
+fn board_unchanged(a: &State, b: &State) -> bool {
+    a.land.units == b.land.units
+        && a.land.movement.moved == b.land.movement.moved
+        && a.land.combat.positions == b.land.combat.positions
+        && a.land.combat.pinned == b.land.combat.pinned
+        && serde_json::to_value(&a.land.breakdown.markers).ok()
+            == serde_json::to_value(&b.land.breakdown.markers).ok()
+        && BOARDS.into_iter().all(|p| markers(a, p) == markers(b, p))
+}
+
 /// Keep every viewer's live board equal to its snapshot, by construction. Runs at the end of
-/// every engine call (`advance`, `respond`) with the board taken at its start. For each of the
-/// three board perspectives (each side and the operator) it compares the board before and after
-/// the call and emits exactly the difference, addressed to that perspective alone
+/// every engine call (`advance`, `respond`) with the state as it was at its start. For each of
+/// the three board perspectives (each side and the operator) it compares the board before and
+/// after the call and emits exactly the difference, addressed to that perspective alone
 /// (`SideOnly(side)`, `Operator`): a `UnitUpdated` per unit whose view changed or appeared, a
 /// `UnitRemoved` per unit that left it (unless a procedure already said why),
 /// `StackUpdated`/`StackRemoved` per changed stack, and `MarkerPlaced`/`MarkerRemoved` per
@@ -425,11 +442,15 @@ fn markers(state: &State, perspective: Perspective) -> Vec<wire::Marker> {
 /// order; the derived events follow them.
 pub(crate) fn sync_state_events(
     content: &CnaContent,
-    before: &Board,
+    before: &State,
     after: &State,
     cx: &mut Cx<'_>,
 ) {
     cx.events.retain(|e| !is_state_sync(&e.event));
+    if board_unchanged(before, after) {
+        return;
+    }
+    let before = &Board::new(content, before, &Side::ALL);
     let after = Board::new(content, after, &Side::ALL);
     for (index, perspective) in BOARDS.into_iter().enumerate() {
         let audience = match perspective {
