@@ -185,6 +185,9 @@ impl Cna {
             if !state.cursor.entered {
                 // What the previous step changed is announced before the next phase change.
                 sync.point(content, state, cx);
+                if state.cursor.block == seq::Block::OpStage && state.cursor.index == 0 {
+                    land::engineering::open_stage(state);
+                }
                 state.cursor.entered = true;
                 cx.emit(EngineEvent::public(GameEvent::PhaseChanged {
                     clock: view::wire_clock(content, state),
@@ -209,6 +212,7 @@ impl Cna {
             if new_op_stage {
                 state.turn.player_a = None;
                 land::capability::finish_opstage(state);
+                land::engineering::open_stage(state);
             }
         }
         Err(EngineError::Invariant {

@@ -27,6 +27,9 @@ pub struct State {
     pub land: LandState,
     pub logistics: LogisticsState,
     pub air: AirState,
+    /// Private engineering commitments and observed stage activity.
+    #[serde(default)]
+    pub engineering: crate::land::engineering::EngineeringState,
     pub decisions: Decisions,
     /// Owner-private setup choices until the simultaneous window closes.
     #[serde(default)]
@@ -618,6 +621,7 @@ impl State {
             land,
             logistics,
             air,
+            engineering: crate::land::engineering::EngineeringState::default(),
             decisions: Decisions::default(),
             setup: crate::setup::SetupState {
                 pool_sources: logistics_pool_sources,
