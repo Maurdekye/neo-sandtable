@@ -954,3 +954,84 @@ dd {
   max-height: 240px;
   overflow-y: auto;
 }
+
+.placement-decision {
+  border-left: 2px solid #7ac9ee;
+  padding-left: 8px;
+  margin: 10px 0;
+}
+.placement-decision p,
+.placement-decision label {
+  font-size: 10px;
+  line-height: 1.5;
+}
+.placement-decision label {
+  display: block;
+  margin-top: 8px;
+}
+.placement-decision input {
+  width: 100%;
+  margin-top: 4px;
+}
+.placement-decision .show-placement {
+  width: 100%;
+  font-size: 10px;
+  text-align: left;
+}
+.placement-decision .show-placement[aria-pressed='true'] {
+  border-color: #7ac9ee;
+  color: #a4dcf5;
+}
+.setup-destinations {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 10px;
+}
+.setup-destinations button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-top: 4px;
+  font-size: 10px;
+}
+.placement-caption {
+  position: absolute;
+  left: 16px;
+  top: 76px;
+  max-width: calc(100% - 32px);
+  color: #a4dcf5;
+  background: #142b33eb;
+  padding: 5px 8px;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.pending-decisions article.active-placement {
+  border-color: #7ac9ee;
+}
+.setup-unit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-color: #7ac9ee;
+  background: #24434c;
+  font-size: 11px;
+}
+.setup-awaiting {
+  margin: 8px 0;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 10px;
+}
+.setup-awaiting button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-top: 4px;
+  font-size: 10px;
+}
+.setup-awaiting .current-placement {
+  border-color: #7ac9ee;
+  color: #a4dcf5;
+}

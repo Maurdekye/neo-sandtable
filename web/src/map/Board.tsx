@@ -19,6 +19,7 @@ import {
   vertices,
 } from './fixture'
 import { createMotions } from './motion'
+import { createPlacements } from './placements'
 import { motionEvents } from '../movement'
 import type { Frame } from '../stream/model'
 import { counterSvg } from './counters'
@@ -36,6 +37,7 @@ interface Props {
   moving: boolean
   allowBatch: boolean
   moved: Set<string>
+  placement: { label: string; hexes: string[] } | null
 }
 interface Scene {
   app: Application
@@ -45,6 +47,7 @@ interface Scene {
   textures: Map<string, Texture>
   updateVisibility: () => void
   overlays: ReturnType<typeof createOverlays>
+  placements: ReturnType<typeof createPlacements>
   motions: ReturnType<typeof createMotions>
   motionCursor: { scope: string; seq: number | null }
 }
@@ -70,6 +73,7 @@ export function Board({
   moving,
   allowBatch,
   moved,
+  placement,
 }: Props) {
   const host = useRef<HTMLDivElement>(null),
     scene = useRef<Scene | null>(null),
@@ -103,11 +107,20 @@ export function Board({
       const world = new Container(),
         terrain = new Container(),
         overlay = new Container(),
+        placementLayer = new Container(),
         counters = new Container(),
         motion = new Container(),
         selection = new Graphics()
-      world.addChild(terrain, overlay, counters, motion, selection)
+      world.addChild(
+        terrain,
+        overlay,
+        placementLayer,
+        counters,
+        motion,
+        selection,
+      )
       const motions = createMotions(motion)
+      const placements = createPlacements(placementLayer)
       app.stage.addChild(world)
       const chunks = new Map<
         string,
@@ -171,6 +184,13 @@ export function Board({
       )
       const updateVisibility = () => {
         const scale = world.scale.x
+        placements.visibility(
+          scale,
+          world.x,
+          world.y,
+          element.clientWidth,
+          element.clientHeight,
+        )
         chunks.forEach((c) => {
           c.container.renderable =
             c.maxX * scale + world.x > 0 &&
@@ -187,6 +207,7 @@ export function Board({
         textures: new Map(),
         updateVisibility,
         overlays,
+        placements,
         motions,
         motionCursor: { scope: '', seq: null },
       }
@@ -277,6 +298,7 @@ export function Board({
         app.canvas.removeEventListener('pointerup', up)
         app.canvas.removeEventListener('pointercancel', up)
         app.canvas.removeEventListener('wheel', wheel)
+        placements.clear()
         motions.clear()
         scene.current?.textures.forEach((t) => t.destroy(true))
         scene.current = null
@@ -292,6 +314,12 @@ export function Board({
       if (initialized) cleanup()
     }
   }, [])
+  useEffect(() => {
+    const s = scene.current
+    if (!s || !ready) return
+    s.placements.build(placement?.hexes ?? [])
+    s.updateVisibility()
+  }, [placement, ready])
   useEffect(() => {
     const s = scene.current
     if (!s || !ready) return
@@ -520,6 +548,11 @@ export function Board({
       <output className="fps" data-testid="fps">
         {fps} FPS · WebGL
       </output>
+      {placement && (
+        <output className="placement-caption" data-testid="placement-highlight">
+          {placement.hexes.length} legal set-up hexes - {placement.label}
+        </output>
+      )}
       <output className="motion-caption" data-testid="motion-count">
         {motionCount} active animations - green dot: moved this segment
       </output>

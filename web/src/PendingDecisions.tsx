@@ -1,3 +1,5 @@
+import { PlacementDecision } from './PlacementDecision'
+import { isPlacement } from './setup'
 import { movementUnits } from './movement'
 import type { UnitView } from './protocol'
 import { Citation } from './Rules'
@@ -7,16 +9,31 @@ export function PendingDecisions({
   pending,
   units,
   onUnit,
+  activePlacement,
+  onPlacement,
+  onHex,
 }: {
   pending: PendingDecision[]
   units: Record<string, UnitView>
   onUnit: (id: string) => void
+  activePlacement: string | undefined
+  onPlacement: (id: string) => void
+  onHex: (id: string) => void
 }) {
   return (
     <section className="pending-decisions">
       <h3>Pending decisions ({pending.length})</h3>
       {pending.map((d) => (
-        <article key={d.id} data-seat={d.seat} data-decision-id={d.id}>
+        <article
+          className={
+            isPlacement(d) && activePlacement === d.id
+              ? 'active-placement'
+              : undefined
+          }
+          key={d.id}
+          data-seat={d.seat}
+          data-decision-id={d.id}
+        >
           <strong>{d.summary}</strong>
           <small>
             {d.seat} · {d.kind}
@@ -41,6 +58,16 @@ export function PendingDecisions({
                 ))
               )}
             </details>
+          )}
+          {isPlacement(d) && (
+            <PlacementDecision
+              decision={d}
+              active={activePlacement === d.id}
+              onShow={onPlacement}
+              onHex={onHex}
+              units={units}
+              onUnit={onUnit}
+            />
           )}
           <div className="rule-citations" aria-label="Rule citations">
             {d.rules?.map((rule) => (

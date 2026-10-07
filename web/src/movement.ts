@@ -114,6 +114,30 @@ export function motionEvents(
       const key = `unit:${event.unit_id}`,
         points = [origin, ...route].map((h) => center(h!))
       results.set(key, { key, unitId: event.unit_id, points })
+    } else if (event?.kind === 'unit_updated') {
+      const previousUnit = frames[i - 1].view.units[event.unit.id]
+      const location = previousUnit?.detail?.location
+      const isAwaiting =
+        location &&
+        typeof location === 'object' &&
+        !Array.isArray(location) &&
+        location.at === 'awaiting_setup'
+      const destination = event.unit.hex && HEX_BY_ID.get(event.unit.hex)
+      if (isAwaiting && !previousUnit.hex && destination) {
+        const key = `unit:${event.unit.id}`
+        results.set(key, {
+          key,
+          unitId: event.unit.id,
+          points: [center(destination)],
+        })
+      }
+    } else if (event?.kind === 'marker_placed') {
+      const destination = HEX_BY_ID.get(event.marker.hex)
+      if (destination)
+        results.set(`marker:${event.marker.id}`, {
+          key: `marker:${event.marker.id}`,
+          points: [center(destination)],
+        })
     } else if (
       event?.kind === 'stack_updated' ||
       event?.kind === 'stack_removed'

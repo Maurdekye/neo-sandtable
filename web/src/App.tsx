@@ -8,6 +8,7 @@ import { PendingDecisions } from './PendingDecisions'
 import { RulesCoverage } from './Rules'
 import { LayerControls, LayerInspector } from './map/LayerControls'
 import { movedUnits } from './movement'
+import { isPlacement, placementDestinations, placementHexes } from './setup'
 import { DEFAULT_LAYERS } from './map/layers'
 import { HEX_BY_ID, INITIAL_HEX, TERRAIN } from './map/fixture'
 import {
@@ -122,6 +123,20 @@ function Viewer({ access }: { access?: Access }) {
     () => movedUnits(view, state.frames, frame?.seq ?? null),
     [view, state.frames, frame?.seq],
   )
+  const [placementId, setPlacementId] = useState<string | null>(null)
+  const placementDecision =
+    view?.pending.find((d) => isPlacement(d) && d.id === placementId) ??
+    view?.pending.find(isPlacement)
+  const placement = useMemo(
+    () =>
+      placementDecision && placementDestinations(placementDecision) !== null
+        ? {
+            label: placementDecision.summary,
+            hexes: placementHexes(placementDecision),
+          }
+        : null,
+    [placementDecision],
+  )
   const [eventFilter, setEventFilter] = useState('all'),
     [campaignPaused, setCampaignPaused] = useState(
       mockMode && new URLSearchParams(location.search).get('paused') === '1',
@@ -227,6 +242,13 @@ function Viewer({ access }: { access?: Access }) {
   function locate(id: string) {
     choose(id)
     setFocus({ hex: id, nonce: Date.now() })
+  }
+  function showPlacement(id: string) {
+    setPlacementId(id)
+    const request = view?.pending.find((d) => d.id === id && isPlacement(d))
+    const hexes = placementHexes(request)
+    if (hexes.length)
+      setFocus({ hex: hexes[0], nonce: Date.now(), bounds: hexes })
   }
   function chooseUnit(id: string) {
     const unit = view?.units[id]
@@ -370,6 +392,9 @@ function Viewer({ access }: { access?: Access }) {
             pending={view?.pending ?? []}
             units={view?.units ?? {}}
             onUnit={chooseUnit}
+            activePlacement={placementDecision?.id}
+            onPlacement={showPlacement}
+            onHex={locate}
           />
           <LayerControls options={layers} onChange={setLayers} />
           <label className="motion-control">
@@ -420,6 +445,7 @@ function Viewer({ access }: { access?: Access }) {
           moving={moving}
           allowBatch={state.cursor === null || state.playing}
           moved={moved}
+          placement={placement}
         />
         <Transcripts
           seats={state.campaign?.seats ?? []}
