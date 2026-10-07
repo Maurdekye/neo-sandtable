@@ -171,7 +171,7 @@ fn open(
     } else {
         "scen:59.44"
     };
-    let fields = vec![
+    let mut fields = vec![
         FieldSchema {
             name: "destination".into(),
             doc: "Initial location for these truck points".into(),
@@ -182,6 +182,13 @@ fn open(
         field("medium", trucks.medium),
         field("heavy", trucks.heavy),
     ];
+    if p.cargo != Supplies::default() {
+        for field in &mut fields {
+            if let ActionSchema::Integer { min, max } = &mut field.schema {
+                *min = *max;
+            }
+        }
+    }
     decisions::open_task(
         state,
         cx,

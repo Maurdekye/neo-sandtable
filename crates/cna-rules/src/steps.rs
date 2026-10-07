@@ -31,7 +31,7 @@ impl Cna {
     /// docs/engine.md Ã‚Â§3 rule 7: answering is not adjudicating). Dispatches on the anchor like
     /// `enter_step`; a procedure may open further decisions here, and is called again each time
     /// its step has nothing pending, so it must track what it has already resolved. No step
-    /// resolves here yet.
+    /// The setup arm adjudicates the completed blind placement window.
     pub(crate) fn finish_step(
         &self,
         content: &CnaContent,
@@ -46,6 +46,7 @@ impl Cna {
             | "opstage.movement_and_combat.combat.retreat_before_assault" => {
                 crate::land::reaction::finish_adjudication(state)
             }
+            "setup" => crate::setup::finish(content, state, cx, self.strict),
             _ => Ok(()),
         }
     }
