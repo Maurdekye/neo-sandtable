@@ -6,7 +6,13 @@
 //! sources returned by [`available_sources`], then calls [`spend_for_unit`] with its
 //! chosen allocation before moving or resolving fire. Repeated movement answers
 //! use [`plan_segment_fuel`] and [`spend_segment_fuel`] with cumulative segment CP;
-//! these preserve the segment origin and already-paid rounding credit. A failed allocation changes
+//! these preserve physical movement history and one shared source-rounding account.
+//! Truck division calls transfer_selected_segment_fuel_cohorts before physical
+//! counts change; removals/recovery use the matching cohort helpers. Store removed
+//! cohorts with broken vehicles. Unit-body CP stays independent, and lost vehicle
+//! TOE never refunds historical fuel. Planning uses snapshot_fuel_accounts and
+//! restore_fuel_accounts alongside ordinary holdings/ledger snapshots.
+//! A failed allocation changes
 //! nothing. The caller emits the resulting events to the owning side.
 //!
 //! Movement also calls [`movement_restrictions`] before accepting a path. Enforce
@@ -51,7 +57,11 @@ mod segment;
 pub mod stores;
 mod supply;
 pub use segment::{
-    FuelDraw, FuelSegmentLedger, SegmentFuelPlan, SegmentKey, plan_segment_fuel, spend_segment_fuel,
+    FuelAccountSnapshot, FuelCohortSelection, FuelDraw, FuelFundingAccount, FuelSegmentLedger,
+    FuelTruckKind, SegmentFuelPlan, SegmentKey, TruckFuelCohort, plan_segment_fuel,
+    remove_segment_fuel_cohorts, remove_selected_segment_fuel_cohorts, restore_fuel_accounts,
+    restore_segment_fuel_cohorts, segment_fuel_cohorts, snapshot_fuel_accounts, spend_segment_fuel,
+    transfer_segment_fuel_cohorts, transfer_selected_segment_fuel_cohorts,
 };
 pub mod water;
 pub mod weather;

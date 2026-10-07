@@ -1,17 +1,18 @@
-//! Incremental movement fuel, retaining whole-point source-rounding credit.
-
+//! Cohort movement fuel. Historical charges are frozen, and a funding account's
+//! whole-point source credit is shared once by every cohort split from it.
 use super::supply::{
-    SupplyDemand, SupplyDraw, SupplyError, SupplySource, apply_draws,
+    SupplyDemand, SupplyDraw, SupplyError, SupplySource, apply_draws_from_logistics,
     available_sources_at_with_content, movement_fuel_cost,
 };
-use crate::seq::Half;
-use crate::{CnaContent, State};
-use cna_core::ids::{HexId, UnitId};
-use cna_core::quantity::FuelTenths;
+use crate::{CnaContent, State, seq::Half, state::Location};
+use cna_content::units::Trucks;
+use cna_core::{
+    ids::{HexId, UnitId},
+    quantity::FuelTenths,
+};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-/// A segment identity from the engine cursor; a later segment starts a fresh ledger.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SegmentKey {
     pub game_turn: u16,
@@ -29,15 +30,56 @@ impl SegmentKey {
         }
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FuelDraw {
     pub source: SupplySource,
     pub fuel: FuelTenths,
 }
 
-/// Exact accumulated cost and source draws for a single unit's movement segment.
-/// Source draws use a vector because tagged source identities are not JSON object keys.
+/// Physical truck groups keep their identities across movement segments. A split
+/// gets a new identity and retains its parent's identity for other physical histories.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FuelTruckKind {
+    Light,
+    Medium,
+    Heavy,
+}
+impl FuelTruckKind {
+    fn count(self, trucks: &Trucks) -> i32 {
+        match self {
+            Self::Light => trucks.light,
+            Self::Medium => trucks.medium,
+            Self::Heavy => trucks.heavy,
+        }
+    }
+}
+const KINDS: [FuelTruckKind; 3] = [
+    FuelTruckKind::Light,
+    FuelTruckKind::Medium,
+    FuelTruckKind::Heavy,
+];
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TruckFuelCohort {
+    pub id: String,
+    pub parent: Option<String>,
+    pub kind: FuelTruckKind,
+    pub count: i32,
+    pub cp_quarters: i32,
+    pub account: UnitId,
+    pub segment: SegmentKey,
+}
+/// Charges already funded by one original movement group. Splitting a group never
+/// duplicates its source credit. Body and removed-vehicle historical charges stay paid.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FuelFundingAccount {
+    pub side: cna_protocol::Side,
+    pub segment: SegmentKey,
+    pub origin: HexId,
+    pub paid_cost: FuelTenths,
+    pub draws: Vec<FuelDraw>,
+}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FuelSegmentLedger {
     pub segment: SegmentKey,
@@ -45,110 +87,275 @@ pub struct FuelSegmentLedger {
     pub cp_quarters: i32,
     pub paid_cost: FuelTenths,
     pub draws: Vec<FuelDraw>,
+    #[serde(default)]
+    pub cohorts: Vec<TruckFuelCohort>,
+    #[serde(default)]
+    pub cohorts_initialized: bool,
+    #[serde(default)]
+    pub next_cohort_serial: u64,
 }
-
-/// Read-only plan; committing recomputes it from the current trusted state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct AccountPlan {
+    id: UnitId,
+    account: FuelFundingAccount,
+    prior: BTreeMap<SupplySource, FuelTenths>,
+    sources: BTreeMap<SupplySource, SupplyDemand>,
+    draws: Vec<SupplyDraw>,
+    increment: FuelTenths,
+}
+/// Pure movement preview. All accounts touched by this preview are committed atomically.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SegmentFuelPlan {
     pub ledger: FuelSegmentLedger,
     pub increment: FuelTenths,
     pub draws: Vec<SupplyDraw>,
+    funding: Vec<AccountPlan>,
 }
-
-fn prior_draws(
-    ledger: &FuelSegmentLedger,
+fn add(a: i32, b: i32) -> Result<i32, SupplyError> {
+    a.checked_add(b).ok_or(SupplyError::Invalid)
+}
+fn mul(a: i32, b: i32) -> Result<i32, SupplyError> {
+    a.checked_mul(b).ok_or(SupplyError::Invalid)
+}
+fn draws_map(
+    draws: &[FuelDraw],
+    paid: FuelTenths,
 ) -> Result<BTreeMap<SupplySource, FuelTenths>, SupplyError> {
-    let mut prior = BTreeMap::new();
-    for draw in &ledger.draws {
-        if draw.fuel.get() < 0 || matches!(draw.source, SupplySource::ReadyAmmo) {
+    if paid.get() < 0 {
+        return Err(SupplyError::Invalid);
+    }
+    let mut result: BTreeMap<SupplySource, FuelTenths> = BTreeMap::new();
+    let mut sum = 0;
+    for d in draws {
+        if d.fuel.get() < 0 || matches!(d.source, SupplySource::ReadyAmmo) {
             return Err(SupplyError::Invalid);
         }
-        let old: FuelTenths = prior.get(&draw.source).copied().unwrap_or_default();
-        let new = old
-            .get()
-            .checked_add(draw.fuel.get())
-            .ok_or(SupplyError::Invalid)?;
-        prior.insert(draw.source.clone(), FuelTenths::new(new));
+        sum = add(sum, d.fuel.get())?;
+        let old = result.get(&d.source).copied().unwrap_or_default().get();
+        result.insert(d.source.clone(), FuelTenths::new(add(old, d.fuel.get())?));
     }
-    Ok(prior)
+    if sum != paid.get() {
+        return Err(SupplyError::Invalid);
+    }
+    Ok(result)
 }
-
-fn rounded_credit(source: &SupplySource, previous: FuelTenths) -> FuelTenths {
+fn as_draws(map: BTreeMap<SupplySource, FuelTenths>) -> Vec<FuelDraw> {
+    map.into_iter()
+        .map(|(source, fuel)| FuelDraw { source, fuel })
+        .collect()
+}
+fn credit(source: &SupplySource, previous: FuelTenths) -> i32 {
     if matches!(
         source,
         SupplySource::Tank | SupplySource::ReadyAmmo | SupplySource::Unlimited
     ) {
-        return FuelTenths::ZERO;
+        0
+    } else {
+        (10 - previous.get().rem_euclid(10)) % 10
     }
-    // Divide before multiplying so the credit stays representable at i32::MAX.
-    FuelTenths::new((10 - previous.get().rem_euclid(10)) % 10)
 }
-
+fn chart(content: &CnaContent, cp_quarters: i32) -> Result<i32, SupplyError> {
+    if cp_quarters < 0 {
+        return Err(SupplyError::Invalid);
+    }
+    if cp_quarters == 0 {
+        return Ok(0);
+    }
+    let cp = cp_quarters / 4 + i32::from(cp_quarters % 4 != 0);
+    content
+        .tables
+        .airlog
+        .fuel_consumption
+        .fuel_for(1, cp)
+        .map(|n| n.get())
+        .ok_or(SupplyError::Unsupported {
+            case: "airlog:49.19",
+        })
+}
+fn truck_total(trucks: &Trucks) -> Result<i32, SupplyError> {
+    let mut total = 0;
+    for k in KINDS {
+        let n = k.count(trucks);
+        if n < 0 {
+            return Err(SupplyError::Invalid);
+        }
+        total = add(total, n)?
+    }
+    Ok(total)
+}
+fn body_cost(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    cp: i32,
+) -> Result<i32, SupplyError> {
+    let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
+    let full = movement_fuel_cost(content, state, id, cp)?.get();
+    full.checked_sub(mul(chart(content, cp)?, truck_total(&unit.trucks)?)?)
+        .filter(|v| *v >= 0)
+        .ok_or(SupplyError::Invalid)
+}
+fn new_id(ledger: &mut FuelSegmentLedger, id: &UnitId) -> Result<String, SupplyError> {
+    ledger.next_cohort_serial = ledger
+        .next_cohort_serial
+        .checked_add(1)
+        .ok_or(SupplyError::Invalid)?;
+    Ok(format!("{id}.fuel-trucks-{}", ledger.next_cohort_serial))
+}
+fn validate_cohorts(ledger: &FuelSegmentLedger, trucks: &Trucks) -> Result<(), SupplyError> {
+    let mut ids = BTreeSet::new();
+    for k in KINDS {
+        let count = ledger
+            .cohorts
+            .iter()
+            .filter(|c| c.kind == k)
+            .try_fold(0, |n, c| {
+                if c.count <= 0
+                    || c.cp_quarters < 0
+                    || c.segment != ledger.segment
+                    || !ids.insert(c.id.clone())
+                {
+                    return Err(SupplyError::Invalid);
+                }
+                add(n, c.count)
+            })?;
+        if count != k.count(trucks) {
+            return Err(SupplyError::Invalid);
+        }
+    }
+    Ok(())
+}
 fn ledger_for(state: &State, id: &UnitId) -> Result<FuelSegmentLedger, SupplyError> {
+    let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
     let segment = SegmentKey::current(state);
-    if let Some(ledger) = state
-        .logistics
-        .fuel_segments
-        .get(id)
-        .filter(|l| l.segment == segment)
-    {
-        return Ok(ledger.clone());
+    let old = state.logistics.fuel_segments.get(id);
+    let mut ledger = if let Some(old) = old.filter(|l| l.segment == segment) {
+        old.clone()
+    } else {
+        FuelSegmentLedger {
+            segment: segment.clone(),
+            origin: unit.location.hex().ok_or(SupplyError::Invalid)?.clone(),
+            cp_quarters: 0,
+            paid_cost: FuelTenths::ZERO,
+            draws: vec![],
+            cohorts: old.map_or_else(Vec::new, |l| l.cohorts.clone()),
+            cohorts_initialized: old.is_some_and(|l| l.cohorts_initialized),
+            next_cohort_serial: old.map_or(0, |l| l.next_cohort_serial),
+        }
+    };
+    if ledger.cp_quarters < 0 {
+        return Err(SupplyError::Invalid);
     }
-    let origin = state
-        .land
-        .units
-        .get(id)
-        .and_then(|u| u.location.hex())
-        .ok_or(SupplyError::Invalid)?
-        .clone();
-    Ok(FuelSegmentLedger {
-        segment,
-        origin,
-        cp_quarters: 0,
-        paid_cost: FuelTenths::ZERO,
-        draws: Vec::new(),
-    })
+    draws_map(&ledger.draws, ledger.paid_cost)?;
+    if !ledger.cohorts_initialized {
+        for kind in KINDS {
+            let count = kind.count(&unit.trucks);
+            if count < 0 {
+                return Err(SupplyError::Invalid);
+            }
+            if count > 0 {
+                let cohort_id = new_id(&mut ledger, id)?;
+                ledger.cohorts.push(TruckFuelCohort {
+                    id: cohort_id,
+                    parent: None,
+                    kind,
+                    count,
+                    cp_quarters: ledger.cp_quarters,
+                    account: id.clone(),
+                    segment: segment.clone(),
+                });
+            }
+        }
+        ledger.cohorts_initialized = true;
+    } else if old.is_some_and(|l| l.segment != segment) {
+        for cohort in &mut ledger.cohorts {
+            cohort.cp_quarters = 0;
+            cohort.account = id.clone();
+            cohort.segment = segment.clone();
+        }
+    }
+    validate_cohorts(&ledger, &unit.trucks)?;
+    Ok(ledger)
 }
-
+fn account_for(
+    state: &State,
+    id: &UnitId,
+    ledger: &FuelSegmentLedger,
+) -> Result<FuelFundingAccount, SupplyError> {
+    let account = state
+        .logistics
+        .fuel_accounts
+        .get(id)
+        .filter(|a| a.segment == ledger.segment)
+        .ok_or(SupplyError::Invalid)?;
+    draws_map(&account.draws, account.paid_cost)?;
+    Ok(account.clone())
+}
+fn own_account(
+    state: &State,
+    id: &UnitId,
+    ledger: &FuelSegmentLedger,
+) -> Result<FuelFundingAccount, SupplyError> {
+    if let Some(a) = state
+        .logistics
+        .fuel_accounts
+        .get(id)
+        .filter(|a| a.segment == ledger.segment)
+    {
+        draws_map(&a.draws, a.paid_cost)?;
+        Ok(a.clone())
+    } else {
+        Ok(FuelFundingAccount {
+            side: state.land.units.get(id).ok_or(SupplyError::Invalid)?.side,
+            segment: ledger.segment.clone(),
+            origin: ledger.origin.clone(),
+            paid_cost: ledger.paid_cost,
+            draws: ledger.draws.clone(),
+        })
+    }
+}
 fn capacities(
     content: &CnaContent,
     state: &State,
     id: &UnitId,
-    ledger: &FuelSegmentLedger,
+    account: &FuelFundingAccount,
+    used: &BTreeMap<SupplySource, i32>,
 ) -> Result<BTreeMap<SupplySource, SupplyDemand>, SupplyError> {
+    if state.land.units.get(id).ok_or(SupplyError::Invalid)?.side != account.side {
+        return Err(SupplyError::Invalid);
+    }
     let mut sources: BTreeMap<_, _> = available_sources_at_with_content(
         content,
         state,
         id,
-        &crate::state::Location::Hex {
-            hex: ledger.origin.clone(),
+        &Location::Hex {
+            hex: account.origin.clone(),
         },
     )?
     .into_iter()
     .map(|s| (s.source, s.amount))
     .collect();
-    for (source, previous) in prior_draws(ledger)? {
-        let credit = rounded_credit(&source, previous);
-        if credit.is_zero() {
-            continue;
-        }
-        let amount = sources.entry(source).or_default();
+    for (source, amount) in &mut sources {
         amount.fuel = FuelTenths::new(
             amount
                 .fuel
                 .get()
-                .checked_add(credit.get())
-                .ok_or(SupplyError::Invalid)?,
+                .checked_sub(used.get(source).copied().unwrap_or(0))
+                .filter(|v| *v >= 0)
+                .ok_or(SupplyError::Insufficient)?,
         );
+    }
+    for (source, paid) in draws_map(&account.draws, account.paid_cost)? {
+        let amount = sources.entry(source.clone()).or_default();
+        amount.fuel = FuelTenths::new(add(amount.fuel.get(), credit(&source, paid))?);
     }
     Ok(sources)
 }
-
-/// Price cumulative movement CP within this segment and allocate only the increase.
-/// Previously rounded source credit is consumed before new fuel. Origin stocks
-/// remain the only external sources, even after the unit moves elsewhere.
-/// Cases: airlog:49.13, airlog:49.15, airlog:49.16
-/// Interpretations: interp:airlog-0001
+/// Price only new physical movement. Changing composition freezes earlier charges;
+/// incoming truck cohorts continue their own CP history, independently of body CP.
+/// No source scan is needed for a zero increment.
+/// Cases: airlog:49.12, airlog:49.13, airlog:49.15, airlog:49.16
+/// Interpretations: interp:airlog-0001, interp:airlog-0018
 pub fn plan_segment_fuel(
     content: &CnaContent,
     state: &State,
@@ -156,87 +363,112 @@ pub fn plan_segment_fuel(
     total_cp_quarters: i32,
 ) -> Result<SegmentFuelPlan, SupplyError> {
     let mut ledger = ledger_for(state, id)?;
-    if total_cp_quarters < ledger.cp_quarters {
-        return Err(SupplyError::Invalid);
-    }
-    let total = movement_fuel_cost(content, state, id, total_cp_quarters)?;
-    let increment = total
-        .checked_sub(ledger.paid_cost)
+    let delta = total_cp_quarters
+        .checked_sub(ledger.cp_quarters)
+        .filter(|n| *n >= 0)
         .ok_or(SupplyError::Invalid)?;
-    if increment.get() < 0 {
-        return Err(SupplyError::Invalid);
+    let before_body = body_cost(content, state, id, ledger.cp_quarters)?;
+    let after_body = body_cost(content, state, id, total_cp_quarters)?;
+    let body_increment = after_body
+        .checked_sub(before_body)
+        .filter(|n| *n >= 0)
+        .ok_or(SupplyError::Invalid)?;
+    let mut costs: BTreeMap<UnitId, i32> = BTreeMap::new();
+    if body_increment > 0 {
+        costs.insert(id.clone(), body_increment);
     }
-    let prior = prior_draws(&ledger)?;
-    // Foot movement and an unchanged chart bucket require no stock lookup.
-    // Validate the unit and recorded draws above even when nothing is withdrawn.
-    if increment.is_zero() {
-        ledger.cp_quarters = total_cp_quarters;
-        ledger.paid_cost = total;
-        ledger.draws = prior
-            .into_iter()
-            .map(|(source, fuel)| FuelDraw { source, fuel })
-            .collect();
-        return Ok(SegmentFuelPlan {
-            ledger,
-            increment,
-            draws: Vec::new(),
-        });
-    }
-    let mut sources: Vec<_> = capacities(content, state, id, &ledger)?
-        .into_iter()
-        .collect();
-    sources.sort_by_key(|(source, _)| {
-        (
-            rounded_credit(source, prior.get(source).copied().unwrap_or_default()).is_zero(),
-            source.clone(),
-        )
-    });
-    let mut need = increment;
-    let mut draws = Vec::new();
-    for (source, capacity) in sources {
-        let fuel = FuelTenths::new(capacity.fuel.get().min(need.get()));
-        if fuel.is_zero() {
-            continue;
+    for cohort in &mut ledger.cohorts {
+        let next = add(cohort.cp_quarters, delta)?;
+        let increase = mul(
+            chart(content, next)? - chart(content, cohort.cp_quarters)?,
+            cohort.count,
+        )?;
+        if increase < 0 {
+            return Err(SupplyError::Invalid);
         }
-        need -= fuel;
-        draws.push(SupplyDraw {
-            source,
-            amount: SupplyDemand {
-                fuel,
-                ..SupplyDemand::default()
-            },
+        let old = costs.get(&cohort.account).copied().unwrap_or(0);
+        if increase > 0 {
+            costs.insert(cohort.account.clone(), add(old, increase)?);
+        }
+        cohort.cp_quarters = next;
+    }
+    let increment = FuelTenths::new(costs.values().try_fold(0, |n, v| add(n, *v))?);
+    let mut combined = draws_map(&ledger.draws, ledger.paid_cost)?;
+    let mut funding = Vec::new();
+    let mut all_draws = Vec::new();
+    let mut used = BTreeMap::new();
+    for (account_id, cost) in costs {
+        let mut account = if account_id == *id {
+            own_account(state, id, &ledger)?
+        } else {
+            account_for(state, &account_id, &ledger)?
+        };
+        let prior = draws_map(&account.draws, account.paid_cost)?;
+        let sources = capacities(content, state, id, &account, &used)?;
+        let mut choices: Vec<_> = sources.iter().collect();
+        choices.sort_by_key(|(s, _)| {
+            (
+                credit(s, prior.get(s).copied().unwrap_or_default()) == 0,
+                (*s).clone(),
+            )
         });
-    }
-    if !need.is_zero() {
-        return Err(SupplyError::Insufficient);
-    }
-    let mut combined = prior;
-    for draw in &draws {
-        let old = combined.get(&draw.source).copied().unwrap_or_default();
-        let new = old
-            .get()
-            .checked_add(draw.amount.fuel.get())
-            .ok_or(SupplyError::Invalid)?;
-        combined.insert(draw.source.clone(), FuelTenths::new(new));
+        let mut need = cost;
+        let mut draws = Vec::new();
+        let mut new_prior = prior.clone();
+        for (source, amount) in choices {
+            let take = amount.fuel.get().min(need);
+            if take == 0 {
+                continue;
+            }
+            need -= take;
+            let before = prior.get(source).copied().unwrap_or_default();
+            let after = FuelTenths::new(add(before.get(), take)?);
+            let actual = match source {
+                SupplySource::Unlimited => 0,
+                SupplySource::Tank => take,
+                _ => mul((after.ceil_points() - before.ceil_points()).get(), 10)?,
+            };
+            let old = used.get(source).copied().unwrap_or(0);
+            used.insert(source.clone(), add(old, actual)?);
+            new_prior.insert(source.clone(), after);
+            let old = combined.get(source).copied().unwrap_or_default();
+            combined.insert(source.clone(), FuelTenths::new(add(old.get(), take)?));
+            draws.push(SupplyDraw {
+                source: source.clone(),
+                amount: SupplyDemand {
+                    fuel: FuelTenths::new(take),
+                    ..SupplyDemand::default()
+                },
+            });
+        }
+        if need != 0 {
+            return Err(SupplyError::Insufficient);
+        }
+        account.paid_cost = FuelTenths::new(add(account.paid_cost.get(), cost)?);
+        account.draws = as_draws(new_prior);
+        all_draws.extend(draws.clone());
+        funding.push(AccountPlan {
+            id: account_id,
+            account,
+            prior,
+            sources,
+            draws,
+            increment: FuelTenths::new(cost),
+        });
     }
     ledger.cp_quarters = total_cp_quarters;
-    ledger.paid_cost = total;
-    ledger.draws = combined
-        .into_iter()
-        .map(|(source, fuel)| FuelDraw { source, fuel })
-        .collect();
+    ledger.paid_cost = FuelTenths::new(add(ledger.paid_cost.get(), increment.get())?);
+    ledger.draws = as_draws(combined);
     Ok(SegmentFuelPlan {
         ledger,
         increment,
-        draws,
+        draws: all_draws,
+        funding,
     })
 }
-
-/// Commit a recomputed segment plan, preserving exact tanks and cumulative
-/// whole-point source charges. Failure leaves both holdings and ledger untouched.
-/// The movement caller passes total moving CP, excluding combat/non-movement CP.
+/// Atomically commit every physical cohort and funding withdrawal in the preview.
 /// Cases: airlog:49.13, airlog:49.15, airlog:49.16
-/// Interpretations: interp:airlog-0001
+/// Interpretations: interp:airlog-0001, interp:airlog-0018
 pub fn spend_segment_fuel(
     content: &CnaContent,
     state: &mut State,
@@ -245,30 +477,309 @@ pub fn spend_segment_fuel(
 ) -> Result<Vec<SupplyDraw>, SupplyError> {
     let plan = plan_segment_fuel(content, state, id, total_cp_quarters)?;
     if plan.increment.is_zero() {
-        // Only the ledger changes; avoid cloning every logistics holding.
         state
             .logistics
             .fuel_segments
             .insert(id.clone(), plan.ledger);
         return Ok(plan.draws);
     }
-    let before = ledger_for(state, id)?;
-    let sources = capacities(content, state, id, &before)?;
-    let prior = prior_draws(&before)?;
-    let mut next = apply_draws(
-        state,
-        id,
-        SupplyDemand {
-            fuel: plan.increment,
-            ..SupplyDemand::default()
-        },
-        &plan.draws,
-        &sources,
-        &prior,
-    )?;
+    let mut next = state.logistics.clone();
+    for funding in &plan.funding {
+        next = apply_draws_from_logistics(
+            &next,
+            id,
+            SupplyDemand {
+                fuel: funding.increment,
+                ..SupplyDemand::default()
+            },
+            &funding.draws,
+            &funding.sources,
+            &funding.prior,
+        )?;
+        next.fuel_accounts
+            .insert(funding.id.clone(), funding.account.clone());
+    }
     next.fuel_segments.insert(id.clone(), plan.ledger);
     state.logistics = next;
     Ok(plan.draws)
+}
+/// Snapshot just the shared accounts a movement plan can change. Capture before
+/// hypothetical execution, restore afterwards along with unit ledgers and holdings.
+#[derive(Debug, Clone)]
+pub struct FuelAccountSnapshot {
+    accounts: BTreeMap<UnitId, Option<FuelFundingAccount>>,
+}
+pub fn snapshot_fuel_accounts(state: &State, units: &[UnitId]) -> FuelAccountSnapshot {
+    let mut keys: BTreeSet<_> = units.iter().cloned().collect();
+    for id in units {
+        if let Some(ledger) = state.logistics.fuel_segments.get(id) {
+            keys.extend(ledger.cohorts.iter().map(|c| c.account.clone()));
+        }
+    }
+    FuelAccountSnapshot {
+        accounts: keys
+            .into_iter()
+            .map(|id| {
+                let old = state.logistics.fuel_accounts.get(&id).cloned();
+                (id, old)
+            })
+            .collect(),
+    }
+}
+pub fn restore_fuel_accounts(state: &mut State, snapshot: &FuelAccountSnapshot) {
+    for (id, old) in &snapshot.accounts {
+        if let Some(old) = old {
+            state
+                .logistics
+                .fuel_accounts
+                .insert(id.clone(), old.clone());
+        } else {
+            state.logistics.fuel_accounts.remove(id);
+        }
+    }
+}
+fn initialize(
+    state: &State,
+    id: &UnitId,
+) -> Result<(FuelSegmentLedger, FuelFundingAccount), SupplyError> {
+    let ledger = ledger_for(state, id)?;
+    let account = own_account(state, id, &ledger)?;
+    Ok((ledger, account))
+}
+fn select(
+    ledger: &mut FuelSegmentLedger,
+    owner: &UnitId,
+    trucks: Trucks,
+) -> Result<Vec<TruckFuelCohort>, SupplyError> {
+    let mut selected = Vec::new();
+    for kind in KINDS {
+        let mut need = kind.count(&trucks);
+        if need < 0 {
+            return Err(SupplyError::Invalid);
+        }
+        let length = ledger.cohorts.len();
+        for i in 0..length {
+            if need == 0 {
+                break;
+            }
+            if ledger.cohorts[i].kind != kind {
+                continue;
+            }
+            let take = need.min(ledger.cohorts[i].count);
+            let mut cohort = ledger.cohorts[i].clone();
+            if take < cohort.count {
+                let parent = cohort.id.clone();
+                cohort.id = new_id(ledger, owner)?;
+                cohort.parent = Some(parent);
+            }
+            ledger.cohorts[i].count -= take;
+            cohort.count = take;
+            need -= take;
+            selected.push(cohort);
+        }
+        if need != 0 {
+            return Err(SupplyError::Invalid);
+        }
+    }
+    ledger.cohorts.retain(|c| c.count > 0);
+    Ok(selected)
+}
+/// Before physical truck-count mutation, transfer cohorts at a friendly shared hex.
+/// The returned split lineage lets Land transfer truck BP history without body BP.
+/// Cargo, tanks, water credit, and physical counts are separate explicit operations.
+/// Cases: land:8.56, airlog:49.13, airlog:49.16
+/// Interpretations: interp:airlog-0018
+pub fn transfer_segment_fuel_cohorts(
+    state: &mut State,
+    from: &UnitId,
+    to: &UnitId,
+    trucks: Trucks,
+) -> Result<Vec<TruckFuelCohort>, SupplyError> {
+    if from == to {
+        return Err(SupplyError::Invalid);
+    }
+    let a = state.land.units.get(from).ok_or(SupplyError::Invalid)?;
+    let b = state.land.units.get(to).ok_or(SupplyError::Invalid)?;
+    if a.side != b.side || a.location != b.location || a.location.hex().is_none() {
+        return Err(SupplyError::Invalid);
+    }
+    let (mut donor, da) = initialize(state, from)?;
+    let (mut recipient, ra) = initialize(state, to)?;
+    let cohorts = select(&mut donor, from, trucks)?;
+    let mut known: BTreeSet<_> = recipient.cohorts.iter().map(|c| c.id.clone()).collect();
+    for c in &cohorts {
+        if !known.insert(c.id.clone()) {
+            return Err(SupplyError::Invalid);
+        }
+    }
+    recipient.cohorts.extend(cohorts.clone());
+    state.logistics.fuel_accounts.insert(from.clone(), da);
+    state.logistics.fuel_accounts.insert(to.clone(), ra);
+    state.logistics.fuel_segments.insert(from.clone(), donor);
+    state.logistics.fuel_segments.insert(to.clone(), recipient);
+    Ok(cohorts)
+}
+/// Before removing broken or destroyed trucks, retain their exact moving history.
+/// Store the returned cohorts with broken trucks; destroyed cohorts may be discarded.
+/// The funding account retains their already-paid contribution in either case.
+/// Cases: land:21.25, land:21.29, airlog:49.13, airlog:49.16
+/// Interpretations: interp:airlog-0018
+pub fn remove_segment_fuel_cohorts(
+    state: &mut State,
+    id: &UnitId,
+    trucks: Trucks,
+) -> Result<Vec<TruckFuelCohort>, SupplyError> {
+    let (mut ledger, account) = initialize(state, id)?;
+    let cohorts = select(&mut ledger, id, trucks)?;
+    state.logistics.fuel_accounts.insert(id.clone(), account);
+    state.logistics.fuel_segments.insert(id.clone(), ledger);
+    Ok(cohorts)
+}
+/// Before adding recovered trucks, restore their physical history. Later segments
+/// begin a new fuel charge while stable identities remain available for BP history.
+/// Cases: land:21.25, land:21.29, airlog:49.13, airlog:49.16
+/// Interpretations: interp:airlog-0018
+pub fn restore_segment_fuel_cohorts(
+    state: &mut State,
+    id: &UnitId,
+    cohorts: &[TruckFuelCohort],
+) -> Result<(), SupplyError> {
+    let (mut ledger, account) = initialize(state, id)?;
+    let owner_side = state.land.units.get(id).ok_or(SupplyError::Invalid)?.side;
+    let mut ids: BTreeSet<_> = state
+        .logistics
+        .fuel_segments
+        .iter()
+        .filter(|(owner, _)| {
+            *owner != id
+                && state
+                    .land
+                    .units
+                    .get(*owner)
+                    .is_some_and(|u| u.side == owner_side)
+        })
+        .flat_map(|(_, l)| l.cohorts.iter().map(|c| c.id.clone()))
+        .chain(ledger.cohorts.iter().map(|c| c.id.clone()))
+        .collect();
+    for original in cohorts {
+        if original.count <= 0 || original.cp_quarters < 0 || !ids.insert(original.id.clone()) {
+            return Err(SupplyError::Invalid);
+        }
+        let mut c = original.clone();
+        if c.segment != ledger.segment {
+            c.segment = ledger.segment.clone();
+            c.cp_quarters = 0;
+            c.account = id.clone();
+        } else if !state
+            .logistics
+            .fuel_accounts
+            .get(&c.account)
+            .is_some_and(|a| a.segment == ledger.segment && a.side == owner_side)
+        {
+            return Err(SupplyError::Invalid);
+        }
+        ledger.cohorts.push(c);
+    }
+    state.logistics.fuel_accounts.insert(id.clone(), account);
+    state.logistics.fuel_segments.insert(id.clone(), ledger);
+    Ok(())
+}
+
+/// Select exact physical groups, as needed when trucks have different breakdown histories.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FuelCohortSelection {
+    pub id: String,
+    pub count: i32,
+}
+
+/// Current physical cohorts, without mutating state or discovering other units.
+/// Cases: airlog:49.13, land:21.25, land:21.29
+pub fn segment_fuel_cohorts(
+    state: &State,
+    id: &UnitId,
+) -> Result<Vec<TruckFuelCohort>, SupplyError> {
+    Ok(ledger_for(state, id)?.cohorts)
+}
+fn select_named(
+    ledger: &mut FuelSegmentLedger,
+    owner: &UnitId,
+    selection: &[FuelCohortSelection],
+) -> Result<Vec<TruckFuelCohort>, SupplyError> {
+    let mut seen = BTreeSet::new();
+    let mut result = Vec::new();
+    for choice in selection {
+        if choice.count <= 0 || !seen.insert(choice.id.clone()) {
+            return Err(SupplyError::Invalid);
+        }
+        let i = ledger
+            .cohorts
+            .iter()
+            .position(|c| c.id == choice.id)
+            .ok_or(SupplyError::Invalid)?;
+        let mut cohort = ledger.cohorts[i].clone();
+        if choice.count > cohort.count {
+            return Err(SupplyError::Invalid);
+        }
+        if choice.count < cohort.count {
+            let parent = cohort.id.clone();
+            cohort.id = new_id(ledger, owner)?;
+            cohort.parent = Some(parent);
+        }
+        cohort.count = choice.count;
+        ledger.cohorts[i].count -= choice.count;
+        result.push(cohort);
+    }
+    ledger.cohorts.retain(|c| c.count > 0);
+    Ok(result)
+}
+/// Transfer only the chosen physical groups, before changing attached truck counts.
+/// Cases: land:8.56, airlog:49.13, airlog:49.16
+/// Interpretations: interp:airlog-0018
+pub fn transfer_selected_segment_fuel_cohorts(
+    state: &mut State,
+    from: &UnitId,
+    to: &UnitId,
+    selection: &[FuelCohortSelection],
+) -> Result<Vec<TruckFuelCohort>, SupplyError> {
+    if from == to {
+        return Err(SupplyError::Invalid);
+    }
+    let a = state.land.units.get(from).ok_or(SupplyError::Invalid)?;
+    let b = state.land.units.get(to).ok_or(SupplyError::Invalid)?;
+    if a.side != b.side || a.location != b.location || a.location.hex().is_none() {
+        return Err(SupplyError::Invalid);
+    }
+    let (mut donor, da) = initialize(state, from)?;
+    let (mut recipient, ra) = initialize(state, to)?;
+    let cohorts = select_named(&mut donor, from, selection)?;
+    let mut known: BTreeSet<_> = recipient.cohorts.iter().map(|c| c.id.clone()).collect();
+    for c in &cohorts {
+        if !known.insert(c.id.clone()) {
+            return Err(SupplyError::Invalid);
+        }
+    }
+    recipient.cohorts.extend(cohorts.clone());
+    state.logistics.fuel_accounts.insert(from.clone(), da);
+    state.logistics.fuel_accounts.insert(to.clone(), ra);
+    state.logistics.fuel_segments.insert(from.clone(), donor);
+    state.logistics.fuel_segments.insert(to.clone(), recipient);
+    Ok(cohorts)
+}
+/// Remove only the groups that suffered the rolled loss; returned history travels
+/// with a broken-truck marker and is not replaced by its unit body's history.
+/// Cases: land:21.25, land:21.29, airlog:49.13, airlog:49.16
+/// Interpretations: interp:airlog-0018
+pub fn remove_selected_segment_fuel_cohorts(
+    state: &mut State,
+    id: &UnitId,
+    selection: &[FuelCohortSelection],
+) -> Result<Vec<TruckFuelCohort>, SupplyError> {
+    let (mut ledger, account) = initialize(state, id)?;
+    let cohorts = select_named(&mut ledger, id, selection)?;
+    state.logistics.fuel_accounts.insert(id.clone(), account);
+    state.logistics.fuel_segments.insert(id.clone(), ledger);
+    Ok(cohorts)
 }
 
 #[cfg(test)]

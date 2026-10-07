@@ -407,6 +407,16 @@ pub(super) fn apply_draws(
     sources: &BTreeMap<SupplySource, SupplyDemand>,
     prior: &BTreeMap<SupplySource, FuelTenths>,
 ) -> Result<LogisticsState, SupplyError> {
+    apply_draws_from_logistics(&state.logistics, unit_id, demand, draws, sources, prior)
+}
+pub(super) fn apply_draws_from_logistics(
+    logistics: &LogisticsState,
+    unit_id: &UnitId,
+    demand: SupplyDemand,
+    draws: &[SupplyDraw],
+    sources: &BTreeMap<SupplySource, SupplyDemand>,
+    prior: &BTreeMap<SupplySource, FuelTenths>,
+) -> Result<LogisticsState, SupplyError> {
     if !demand.valid() {
         return Err(SupplyError::Invalid);
     }
@@ -433,7 +443,7 @@ pub(super) fn apply_draws(
             return Err(SupplyError::Insufficient);
         }
     }
-    let mut next = state.logistics.clone();
+    let mut next = logistics.clone();
     for (source, amount) in allocations {
         match source {
             SupplySource::Unlimited => {}

@@ -187,6 +187,9 @@ pub struct LogisticsState {
     /// Movement fuel already charged in this unit's current segment.
     #[serde(default)]
     pub fuel_segments: BTreeMap<UnitId, crate::logistics::FuelSegmentLedger>,
+    /// Original moving groups retain a single source rounding account after truck splits.
+    #[serde(default)]
+    pub fuel_accounts: BTreeMap<UnitId, crate::logistics::FuelFundingAccount>,
     #[serde(default)]
     pub wells: BTreeMap<HexId, WellState>,
     /// Pipeline connectivity and destroyed status; construction procedures own updates.

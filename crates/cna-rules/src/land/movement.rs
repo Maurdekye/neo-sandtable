@@ -1262,6 +1262,7 @@ impl PlanningGroup<'_> {
     }
 }
 struct PlanningNode {
+    fuel_accounts: logistics::FuelAccountSnapshot,
     units: Vec<crate::state::LandUnit>,
     unit_supply: Vec<(UnitId, Option<crate::state::UnitSupply>)>,
     dumps: Vec<(String, crate::state::Dump)>,
@@ -1272,6 +1273,7 @@ struct PlanningNode {
 impl PlanningNode {
     fn capture(state: &State, changed: &[UnitId], stocks: &[UnitId], dumps: &[String]) -> Self {
         Self {
+            fuel_accounts: logistics::snapshot_fuel_accounts(state, changed),
             units: changed
                 .iter()
                 .filter_map(|id| state.land.units.get(id).cloned())
@@ -1296,6 +1298,7 @@ impl PlanningNode {
         }
     }
     fn restore(&self, state: &mut State) {
+        logistics::restore_fuel_accounts(state, &self.fuel_accounts);
         for unit in &self.units {
             state.land.units.insert(unit.id.clone(), unit.clone());
         }
