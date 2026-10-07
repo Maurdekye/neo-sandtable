@@ -23,6 +23,8 @@ informational); unknown citations always do.
 
 * Citation = `<book>:<id>` with book in land | airlog | scen and id as printed (`8.37`, `4.44b`).
   A line may continue onto the next comment line if it ends with a comma.
+* `orig79:<book>:<case>` on Cases lines cites the original 1979 printing. Its format is
+  checked and its locations are reported in `original_citations`, outside all 2021 counts.
 * A case is *implemented* when a `Cases:` line outside test code cites it; *tested* when it is
   implemented and also cited by a `Cases:` line in test code (inside a `#[cfg(test)]` item, a
   file with an inner `#![cfg(test)]`, a `tests.rs`, or any file under a `tests/` directory).
@@ -78,6 +80,7 @@ BOOKS = ("land", "airlog", "scen")
 PROCEDURAL = {"automatic", "decision"}
 NONE_ANCHOR = "(none)"
 
+ORIGINAL_RE = re.compile(r"^orig79:(land|airlog|scen):(\d+\.\d+[a-z]?)$")
 CITE_RE = re.compile(r"^(land|airlog|scen):(\d+\.\d+[a-z]?)$")
 CASES_RE = re.compile(r"^\s*(?://[/!]?)\s*Cases:\s*(.*?)\s*$")
 UNSUPPORTED_RE = re.compile(r"^\s*(?://[/!]?)\s*Unsupported:\s*(.*?)\s*$")
@@ -228,6 +231,7 @@ def parse_citations(files, cases, sections):
     cites: dict[str, dict] = {}
     errors: list[dict] = []
     warnings: list[dict] = []
+    original: dict[str, dict] = {}
 
     def entry(key):
         return cites.setdefault(key, {"impl_loc": [], "test_loc": [], "unsupported": []})
@@ -237,6 +241,10 @@ def parse_citations(files, cases, sections):
             if kind == "cases":
                 for tok in (t.strip().rstrip(".;") for t in body.split(",")):
                     if not tok:
+                        continue
+                    if ORIGINAL_RE.fullmatch(tok):
+                        e = original.setdefault(tok, {"impl_loc": [], "test_loc": []})
+                        e["test_loc" if in_test else "impl_loc"].append(loc)
                         continue
                     m = CITE_RE.match(tok)
                     if not m:
@@ -271,7 +279,7 @@ def parse_citations(files, cases, sections):
         if e["test_loc"] and not e["impl_loc"] and not e["unsupported"]:
             warnings.append({"kind": "test_only_citation", "location": e["test_loc"][0],
                              "text": f"{key} is cited only in test code"})
-    return cites, errors, warnings
+    return cites, original, errors, warnings
 
 
 # --------------------------------------------------------------------------- analysis
@@ -280,7 +288,7 @@ def analyze(registry_dir: Path, src_dirs: list[Path], only: str | None = None) -
     cases, sections = load_registry(registry_dir)
     vocab = anchor_vocabulary(registry_dir / "README.md")
     files = source_files(src_dirs)
-    cites, errors, warnings = parse_citations(files, cases, sections)
+    cites, original, errors, warnings = parse_citations(files, cases, sections)
     scenarios = [only] if only else scenarios_in(cases)
     if only and only not in scenarios_in(cases):
         raise SystemExit(f"unknown scenario {only!r}; registry has {scenarios_in(cases)}")
@@ -348,6 +356,10 @@ def analyze(registry_dir: Path, src_dirs: list[Path], only: str | None = None) -
                           "unsupported": sorted(set(e["unsupported"])),
                           "locations": e["impl_loc"] + e["test_loc"]}
                       for k, e in sorted(cites.items())},
+        "original_citations": [{"citation": k, "implemented": bool(e["impl_loc"]),
+                                "tested": bool(e["impl_loc"] and e["test_loc"]),
+                                "locations": e["impl_loc"] + e["test_loc"]}
+                               for k, e in sorted(original.items())],
         "errors": errors,
         "warnings": warnings,
     }
@@ -381,6 +393,12 @@ def markdown(rep: dict) -> str:
                            f"{r['missing']} missing</summary>\n")
                 out.append(", ".join(r["missing_ids"]))
                 out.append("\n</details>\n")
+    if rep.get("original_citations"):
+        out += ["", "## Original 1979 citations", "",
+                "These citations are outside the 2021 registry coverage counts.", ""]
+        out += [f"- `{e['citation']}`: " + ", ".join(f"`{p}`" for p in e['locations'])
+                for e in rep["original_citations"]]
+        out.append("")
     if rep["errors"]:
         out += ["## Citation errors", ""]
         out += [f"- `{e['location']}` {e['kind']}: `{e['text']}`" for e in rep["errors"]]
@@ -555,6 +573,21 @@ def self_test() -> int:
                                     encoding="utf-8")
         rep2 = analyze(reg, [src], only="graziani")
         check(not rep2["errors"] and list(rep2["scenarios"]) == ["graziani"], "clean run")
+        (src / "lib.rs").write_text("/// Cases: orig79:land:4.22, orig79:airlog:49.12\nfn a() {}\n"
+                                    "#[cfg(test)]\nmod tests {\n/// Cases: orig79:land:4.22\nfn b() {}\n}\n",
+                                    encoding="utf-8")
+        originals = analyze(reg, [src], only="graziani")
+        check(not originals["errors"] and originals["scenarios"]["graziani"]["missing"] == 5,
+              "original citations neither error nor satisfy the 2021 registry")
+        check([e["citation"] for e in originals["original_citations"]] ==
+              ["orig79:airlog:49.12", "orig79:land:4.22"], "original citations own ordered list")
+        check(originals["original_citations"][1]["tested"], "original citation test locations")
+        (src / "lib.rs").write_text("/// Cases: orig79:bogus:4.22, orig79:land:four, orig79:land:4.22:extra\nfn a() {}\n",
+                                    encoding="utf-8")
+        bad_originals = analyze(reg, [src])
+        check(len(bad_originals["errors"]) == 3 and
+              all(e["kind"] == "malformed_citation" for e in bad_originals["errors"]),
+              "malformed original printing citations rejected")
         rep3 = analyze(reg, [root / "nope"])
         check(not rep3["inputs"]["crate_present"]
               and rep3["scenarios"]["graziani"]["missing"] == 5, "missing crate")
