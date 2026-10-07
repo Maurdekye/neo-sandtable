@@ -947,6 +947,9 @@ fn profile_real_roster_movement() {
 #[test]
 #[ignore = "slow: benchmark"]
 fn profile_movers_full_graziani_campaign() {
+    // A timing test: production never builds the two boards that verify a board-sync skip, and
+    // every other test still verifies them.
+    let _timing = crate::view::BoardSkipVerificationOff::new();
     real_roster_movers(10000, true);
 }
 /// Cases: land:8.11, land:8.13, land:19.44

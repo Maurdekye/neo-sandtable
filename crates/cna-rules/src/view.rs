@@ -540,6 +540,32 @@ fn board_unchanged(a: &State, b: &State) -> bool {
         && BOARDS.into_iter().all(|p| markers(a, p) == markers(b, p))
 }
 
+#[cfg(test)]
+thread_local! {
+    static VERIFY_SKIPS: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+}
+
+/// Turns off this thread's verification of [`board_unchanged`] skips until dropped. Every test
+/// verifies them by default; production never builds the two boards. Only timing tests that must
+/// measure production-like cost hold one.
+#[cfg(test)]
+pub(crate) struct BoardSkipVerificationOff;
+
+#[cfg(test)]
+impl BoardSkipVerificationOff {
+    pub(crate) fn new() -> Self {
+        VERIFY_SKIPS.with(|v| v.set(false));
+        BoardSkipVerificationOff
+    }
+}
+
+#[cfg(test)]
+impl Drop for BoardSkipVerificationOff {
+    fn drop(&mut self) {
+        VERIFY_SKIPS.with(|v| v.set(true));
+    }
+}
+
 /// Keeps every viewer's live board equal to its snapshot, by construction. An engine call opens
 /// one with the state as it was at its start ([`Sync::new`]) and calls [`Sync::point`] before
 /// each phase change and at its end. At each point, for each of the three board perspectives
@@ -579,11 +605,13 @@ impl Sync {
             .extend(since.into_iter().filter(|e| !is_state_sync(&e.event)));
         if board_unchanged(&self.last, state) {
             #[cfg(test)]
-            assert_eq!(
-                Board::new(content, &self.last, &Side::ALL),
-                Board::new(content, state, &Side::ALL),
-                "board_unchanged missed an input that Board::new reads"
-            );
+            if VERIFY_SKIPS.with(std::cell::Cell::get) {
+                assert_eq!(
+                    Board::new(content, &self.last, &Side::ALL),
+                    Board::new(content, state, &Side::ALL),
+                    "board_unchanged missed an input that Board::new reads"
+                );
+            }
             self.mark = cx.events.len();
             return;
         }
