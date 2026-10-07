@@ -1,4 +1,4 @@
-﻿# air-0006 — Refit after transfer flight
+# air-0006 — Refit after transfer flight
 
 - **Cases:** airlog:38.31, airlog:42.14, airlog:37.15, airlog:37.32
 - **Status:** proposed
@@ -29,3 +29,7 @@ Case 42.14 addresses transfers specifically and distinguishes permission to depa
 ## Affected behaviour and tests
 
 Planned hooks: air transfer/emergency completion and maintenance eligibility. Tests will cover departure by a fuelled unrefitted aircraft, loss of refit after successful transfer, retained refit after a failed emergency departure, and inability to fly a subsequent non-transfer mission until refit succeeds. These tests and operational hooks are not implemented in this proposal commit.
+
+## Provisional implementation authorization
+
+The lead provisionally accepted this reading for implementation on 2026-10-07, relayed through rules-mgr and rules-air. The file remains proposed for the next interpretation review batch. This authorization covers the planned transfer hooks and tests; the proposal commit does not itself implement operational transfer behavior.

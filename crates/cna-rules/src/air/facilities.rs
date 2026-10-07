@@ -192,8 +192,17 @@ impl FacilityState {
 
     /// Intrinsic AA is relevant only to strafing and dive-bombing missions.
     /// Cases: airlog:36.18, airlog:36.3
-    pub fn intrinsic_aa(&self, strafing_or_dive_bombing: bool) -> i32 {
-        i32::from(self.operational() && strafing_or_dive_bombing)
+    pub fn intrinsic_aa(&self, strafing_or_dive_bombing: bool) -> Result<i32, EngineError> {
+        if !strafing_or_dive_bombing || self.current_capacity == FacilityCapacity::Levels(0) {
+            return Ok(0);
+        }
+        if self.project_unavailable {
+            return Err(EngineError::Unsupported {
+                case: "airlog:36.18".into(),
+                detail: "Intrinsic AA during a facility upgrade awaits interp:air-0007".into(),
+            });
+        }
+        Ok(1)
     }
 }
 
@@ -269,11 +278,11 @@ mod tests {
         );
         basin.damage(&properties, 1, true).unwrap();
         assert!(basin.operational());
-        assert_eq!(basin.intrinsic_aa(false), 0);
-        assert_eq!(basin.intrinsic_aa(true), 1);
+        assert_eq!(basin.intrinsic_aa(false).unwrap(), 0);
+        assert_eq!(basin.intrinsic_aa(true).unwrap(), 1);
         basin.damage(&properties, 1, false).unwrap();
         assert!(!basin.operational());
-        assert_eq!(basin.intrinsic_aa(true), 0);
+        assert_eq!(basin.intrinsic_aa(true).unwrap(), 0);
         let (mut med, properties) =
             fixture(FacilityKind::Airfield, FacilityTheatre::AxisMediterranean);
         med.damage(&properties, 6, false).unwrap();
@@ -299,6 +308,11 @@ mod tests {
         let before = field.clone();
         assert!(field.repair_one(&properties).is_err());
         assert_eq!(field, before);
+        assert!(matches!(
+            field.intrinsic_aa(true),
+            Err(EngineError::Unsupported { .. })
+        ));
+        assert_eq!(field.intrinsic_aa(false).unwrap(), 0);
         assert_eq!(
             FacilityKind::LandingStrip.upgrade_to(),
             Some(FacilityKind::Airfield)
