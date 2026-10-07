@@ -559,6 +559,7 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
             .all(|pending| !pending.kind.starts_with("cna.setup."))
     );
     g.state.setup.closed = true;
+    crate::air::inventory::initialize(&c, &mut g.state).unwrap();
     // This synthetic fixture starts mid-half. Prepare its empty pre-game convoy plans
     // through the real logistics API before running movement, preserving its actual RNG.
     let mut fixture_rng = CampaignRng::from_state(&g.rng);
