@@ -413,3 +413,59 @@ claim or full-campaign throughput measurement. The dense synthetic scene
 misses 60 FPS with these overlays enabled. Raw measurements live in the scratch
 artifact `navigation-benchmark-coast.json`. Reproduce with
 `CNA_BENCHMARK_COVERAGE=1 npm run smoke -- benchmark.spec.ts`.
+
+
+## Watching longer campaigns
+
+The collapsed Stage overview groups only received events by game turn and OpStage.
+Movement groups use the unit's disclosed parent formation, or the unit itself when
+no parent is supplied. Each group shows its received movement count and largest
+published path in route hexes. The entry opens that exact movement frame and focuses
+its published destination. Anonymous opposing stacks contribute presence entries;
+they do not become invented units, routes or movement counts.
+
+Combat result totals count CombatResolved events. Dice, narrative combat notes,
+reasoned removals, breakdown counters, arrivals and off-map transitions remain
+separate entries. Supply and shortage headings classify received Notes; they do
+not establish numerical losses or infer supplies from prose. Generic Locate uses
+only the supplied event locator, while intrinsic movement/combat/stack positions
+remain usable. An absent location stays unlocated.
+
+Memory is bounded to the latest 12 stage summaries, 80 notable entries and 128
+formation groups per stage, plus 256 accepted commentary checkpoints. Received
+event counts remain cumulative after an entry's detail is omitted. A resumed
+snapshot marks its stage partial: earlier events were not received. A perspective,
+campaign or resync reset clears summaries. The ordinary playback ring retains
+600 frames. Summary entries retain their own exact immutable frame beyond that
+ring; a checkpoint caption explains that intermediate frames are unavailable and
+Step/Play are disabled until returning to retained history or live play. No state
+is reconstructed from missing events.
+
+Seat commentary comes exclusively from canonical accepted
+DecisionResolved.explanation. It is shown with that seat's decision in the overview
+and paired to its submitted transcript by seat, decision id and game sequence.
+The server's seat audience admits the owning seat, its side and the operator.
+Absent explanation means no commentary. Rendering uses React text escaping:
+HTML, Markdown and apparent URLs remain literal text, without links. Scripted
+baselines currently supply no explanation. The synthetic browser regression
+checks hostile literal text, perspective reset and archival playback after 620
+events; the real baseline proof verifies movement summaries without invented
+commentary. Optional nullable schema fields do not change required movement unit
+enum extraction.
+
+
+Actual baseline proof on 2026-10-07 (viewer f1b56e4 over map/engine699a3ea):
+a fresh zero-seed Graziani campaign reached scripted setup within the first
+three-minute bound. Resuming that same saved campaign and binary completed the
+browser check in 10.2 seconds. Its partial OpStage1 summary received 55 new events,
+retained two movement groups, and jumped exactly to event2163 with LocateC3921.
+Cirene's received route was C4120/C4020/C3921 (3CP), crossing road-spine-0001 before
+leaving it; another received path was C4120/C4220. The legal_random dev profile
+still has incomplete-map assumptions; the demonstration does not certify
+full-profile route legality. Opponent switching removed private movement and
+commentary, with no browser errors or fabricated baseline explanation. No actual
+CombatResolved was received in this short run. Screenshot and machine-readable
+proof are board-graziani-stage-timeline.png and
+stage-timeline-browser-verification.json in board scratch. Canonical commentary
+has separate hostile-literal fixture coverage; this baseline proof does not claim
+an AI supplied an explanation or cover a whole multi-hour game.

@@ -54,7 +54,7 @@ function SeatTranscript({
   useEffect(() => {
     if (follow && scroller.current)
       scroller.current.scrollTop = scroller.current.scrollHeight
-  }, [messages, filter, follow])
+  }, [messages, commentaries, filter, follow])
   return (
     <>
       <div className="transcript-controls">
