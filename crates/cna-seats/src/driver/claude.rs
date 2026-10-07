@@ -140,6 +140,21 @@ pub fn claude_args(
     a
 }
 
+/// Installed-version gate for durable resume totals (official CLI >=2.1.277).
+pub fn supported_version(text: &str) -> Result<String, DriverError> {
+    let version = text.split_whitespace().next().unwrap_or("");
+    let numbers = version
+        .split('.')
+        .map(str::parse::<u32>)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| DriverError::Isolation("unrecognized Claude version".into()))?;
+    if numbers.len() != 3 || (numbers[0], numbers[1], numbers[2]) < (2, 1, 277) {
+        return Err(DriverError::Isolation(
+            "Claude >=2.1.277 is required for durable resumed totals".into(),
+        ));
+    }
+    Ok(version.into())
+}
 /// The MCP config document for a seat endpoint.
 pub fn mcp_config_json(url: &str) -> Value {
     json!({ "mcpServers": { MCP_NAME: { "type": "http", "url": url } } })
@@ -305,6 +320,9 @@ impl StreamParser for ClaudeParser {
                 out.push(StreamEvent::TurnDone(TurnOutcome {
                     ok: !is_error,
                     error: is_error.then(|| {
+                        if v["subtype"] == "error_max_budget_usd" {
+                            return "error_max_budget_usd".into();
+                        }
                         v["result"]
                             .as_str()
                             .or(v["subtype"].as_str())
@@ -323,6 +341,12 @@ impl StreamParser for ClaudeParser {
                         reasoning_tokens: usage["output_tokens_details"]["thinking_tokens"]
                             .as_u64(),
                         cost_usd: v["total_cost_usd"].as_f64(),
+                        cost_basis_known: v["modelUsage"].as_object().map(|models| {
+                            !models.is_empty()
+                                && models.values().all(|m| {
+                                    matches!(m["costBasis"].as_str(), Some("list" | "managed"))
+                                })
+                        }),
                     },
                     quota: Vec::new(),
                 }));
@@ -345,6 +369,7 @@ pub struct ClaudeDriver {
     session_id: Option<String>,
     telemetry: super::SessionTelemetry,
     idle: bool,
+    reported_cost_limit: Option<f64>,
 }
 
 impl ClaudeDriver {
@@ -357,6 +382,7 @@ impl ClaudeDriver {
             session_id: None,
             telemetry: super::SessionTelemetry::default(),
             idle: true,
+            reported_cost_limit: None,
         }
     }
 
@@ -383,9 +409,31 @@ impl ClaudeDriver {
             env.push(("CLAUDE_CODE_AUTO_COMPACT_WINDOW", window.to_string().into()));
             env.push(("CLAUDE_AUTOCOMPACT_PCT_OVERRIDE", "80".into()));
         }
+        env.push(("CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK", "1".into()));
         env
     }
 
+    pub async fn verify_version(&self) -> Result<String, DriverError> {
+        let mut cmd = Command::new(self.exe()?);
+        cmd.args(["--version"])
+            .current_dir(&self.cfg.sandbox)
+            .kill_on_drop(true)
+            .stdin(std::process::Stdio::null());
+        #[cfg(windows)]
+        cmd.creation_flags(0x0800_0000);
+        apply_seat_env(&mut cmd, &self.env());
+        let out = tokio::time::timeout(Duration::from_secs(10), cmd.output())
+            .await
+            .map_err(|_| DriverError::Timeout)?
+            .map_err(|e| DriverError::Spawn {
+                cli: "claude",
+                source: e,
+            })?;
+        if !out.status.success() {
+            return Err(DriverError::Isolation("Claude version probe failed".into()));
+        }
+        supported_version(&String::from_utf8_lossy(&out.stdout))
+    }
     /// Check that the configured login is the expected account (`claude auth status`).
     pub async fn verify_account(&self) -> Result<String, DriverError> {
         let mut cmd = Command::new(self.exe()?);
@@ -439,6 +487,15 @@ impl SeatDriver for ClaudeDriver {
         CliKind::Claude
     }
 
+    fn set_reported_cost_limit(&mut self, remaining_usd: f64) -> Result<(), DriverError> {
+        if self.proc.is_some() || !remaining_usd.is_finite() || remaining_usd <= 0. {
+            return Err(DriverError::Isolation(
+                "positive finite cost limit requires a parked process".into(),
+            ));
+        }
+        self.reported_cost_limit = Some(remaining_usd);
+        Ok(())
+    }
     async fn start(&mut self, resume_session: Option<&str>) -> Result<SessionInfo, DriverError> {
         if let Some(p) = &mut self.proc {
             p.kill().await;
@@ -464,6 +521,7 @@ impl SeatDriver for ClaudeDriver {
         std::fs::create_dir_all(&self.cfg.run_dir).map_err(io)?;
         let mcp_path = self.cfg.run_dir.join(format!("{}.mcp.json", self.cfg.seat));
         std::fs::write(&mcp_path, mcp_config_json(&self.cfg.mcp_url).to_string()).map_err(io)?;
+        let version = self.verify_version().await?;
         let email = self.verify_account().await?;
 
         let new_id = uuid::Uuid::new_v4().to_string();
@@ -472,8 +530,11 @@ impl SeatDriver for ClaudeDriver {
             None => (SessionArg::New(&new_id), new_id.clone()),
         };
         let mut cmd = Command::new(self.exe()?);
-        cmd.args(claude_args(&self.cfg, &mcp_path, arg))
-            .current_dir(&self.cfg.sandbox);
+        let mut args = claude_args(&self.cfg, &mcp_path, arg);
+        if let Some(limit) = self.reported_cost_limit {
+            args.extend(["--max-budget-usd".into(), limit.to_string()]);
+        }
+        cmd.args(args).current_dir(&self.cfg.sandbox);
         apply_seat_env(&mut cmd, &self.env());
         self.proc = Some(ChildProc::spawn(&mut cmd).map_err(io)?);
         self.session_id = Some(id.clone());
@@ -495,7 +556,7 @@ impl SeatDriver for ClaudeDriver {
         Ok(SessionInfo {
             session_id: id,
             model: Some(self.cfg.model.clone()),
-            cli_version: None,
+            cli_version: Some(version),
             resumed: resume_session.is_some(),
         })
     }
@@ -607,6 +668,44 @@ mod tests {
         FIXTURE.lines().flat_map(|l| p.feed(l)).collect()
     }
 
+    #[test]
+    #[allow(clippy::float_arithmetic)]
+    fn dated_haiku_reference_bounds_one_response_without_claiming_native_enforcement() {
+        let table: Value =
+            serde_json::from_str(include_str!("../../data/estimate_prices_2026-10-07.json"))
+                .unwrap();
+        assert_eq!(table["verified_date"], "2026-10-07");
+        assert_eq!(table["pinned_model"], "claude-haiku-4-5-20251001");
+        let bound = super::super::EstimateBound {
+            pinned_model: table["pinned_model"].as_str().unwrap().into(),
+            context_tokens: table["context_tokens"].as_u64().unwrap(),
+            output_tokens: table["model_max_output_tokens"].as_u64().unwrap(),
+            max_input_or_cache_write_usd_per_token: table["cache_write_1h"].as_f64().unwrap()
+                / 1_000_000.,
+            output_usd_per_token: table["output"].as_f64().unwrap() / 1_000_000.,
+            evidence: "lead-verified dated source table; native cap enforcement remains unproved"
+                .into(),
+        };
+        assert!((bound.ceiling_usd().unwrap() - 0.72).abs() < 1e-12);
+    }
+    #[test]
+    fn version_and_cost_basis_gates_do_not_assume_installed_configuration() {
+        assert!(supported_version("2.1.276 (Claude Code)").is_err());
+        assert!(supported_version("unknown").is_err());
+        assert!(supported_version("2.1.277 (Claude Code)").is_ok());
+        let mut p = ClaudeParser::default();
+        let events=p.feed(r#"{"type":"result","subtype":"error_max_budget_usd","is_error":true,"result":"budget reached","total_cost_usd":0.3,"usage":{"input_tokens":10,"output_tokens":5},"modelUsage":{"haiku":{"costBasis":"list"}}}"#);
+        let StreamEvent::TurnDone(outcome) = &events[0] else {
+            panic!()
+        };
+        assert_eq!(outcome.error.as_deref(), Some("error_max_budget_usd"));
+        assert_eq!(outcome.usage.cost_basis_known, Some(true));
+        let events=p.feed(r#"{"type":"result","subtype":"success","modelUsage":{"haiku":{"costBasis":"unknown"}}}"#);
+        let StreamEvent::TurnDone(outcome) = &events[0] else {
+            panic!()
+        };
+        assert_eq!(outcome.usage.cost_basis_known, Some(false));
+    }
     #[test]
     fn fixture_yields_one_init_with_only_the_seat_tools() {
         let events = parse_all();

@@ -1,4 +1,5 @@
 //! Validated launcher choices; no CLI or database is touched while parsing.
+use crate::budget::{RunControl, SpendBudget};
 use cna_core::ids::SeatId;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::PathBuf};
@@ -48,6 +49,8 @@ pub struct LaunchConfig {
     pub max_turns: usize,
     pub tool_calls: u64,
     pub session: Option<SessionLimits>,
+    #[serde(default)]
+    pub run: Option<RunControl>,
 }
 impl Default for LaunchConfig {
     fn default() -> Self {
@@ -56,6 +59,11 @@ impl Default for LaunchConfig {
 }
 impl LaunchConfig {
     pub fn resolve(kind: GameKind, specs: &[String]) -> Result<Self, String> {
+        let config = Self::resolve_bindings(kind, specs)?;
+        config.validate()?;
+        Ok(config)
+    }
+    fn resolve_bindings(kind: GameKind, specs: &[String]) -> Result<Self, String> {
         let fallback = Controller::Scripted(
             if kind == GameKind::Cna {
                 "legal_random"
@@ -107,16 +115,22 @@ impl LaunchConfig {
             max_turns: 2,
             tool_calls: 40,
             session: None,
+            run: None,
         };
-        config.validate()?;
         Ok(config)
     }
     pub fn validate(&self) -> Result<(), String> {
         if self.seats.len() != 10 || SeatId::all().any(|seat| !self.seats.contains_key(&seat)) {
             return Err("every campaign seat needs a binding".into());
         }
-        if self.claude_seats().count() > 2 {
+        if self.run.is_none() && self.claude_seats().count() > 2 {
             return Err("bounded launcher supports at most two Claude seats".into());
+        }
+        if let Some(run) = &self.run {
+            if self.session.is_none() {
+                return Err("run controls require durable sessions".into());
+            }
+            run.validate(&self.claude_seats().map(|(s, _)| s).collect::<Vec<_>>())?;
         }
         if let Some(limits) = &self.session {
             limits.validate()?;
@@ -167,24 +181,111 @@ pub enum Command {
     Play(LaunchConfig),
     Replay(PathBuf),
     Resume(PathBuf),
+    ResumeControlled {
+        path: PathBuf,
+        updates: ResumeUpdates,
+    },
     Help,
 }
+#[derive(Clone, Debug, Default)]
+pub struct ResumeUpdates {
+    pub boundary: Option<cna_server::RunBoundary>,
+    pub usd_shares: BTreeMap<SeatId, f64>,
+    pub token_shares: BTreeMap<SeatId, u64>,
+}
+impl ResumeUpdates {
+    pub fn apply(&self, old: &RunControl, seats: &[SeatId]) -> Result<RunControl, String> {
+        let budget = match &old.budget {
+            SpendBudget::ReportedUsd { global, .. }
+                if !self.usd_shares.is_empty() && self.token_shares.is_empty() =>
+            {
+                SpendBudget::usd(*global, seats, self.usd_shares.clone())?
+            }
+            SpendBudget::Tokens { global, .. }
+                if !self.token_shares.is_empty() && self.usd_shares.is_empty() =>
+            {
+                SpendBudget::tokens(*global, seats, self.token_shares.clone())?
+            }
+            _ if self.usd_shares.is_empty() && self.token_shares.is_empty() => old.budget.clone(),
+            _ => return Err("rebalance unit must match the lifetime budget".into()),
+        };
+        let run = RunControl {
+            boundary: self.boundary.unwrap_or(old.boundary),
+            budget,
+        };
+        run.validate(seats)?;
+        Ok(run)
+    }
+}
+
 pub fn parse_args(args: &[String]) -> Result<Command, String> {
     let mut kind = GameKind::Sandbox;
     let mut specs = Vec::new();
     let mut turns = 2;
     let mut calls = 40;
     let mut session = None;
+    let mut stop_turn = None;
+    let mut stop_stage = None;
+    let mut usd = None;
+    let mut tokens = None;
+    let mut usd_shares = BTreeMap::new();
+    let mut token_shares = BTreeMap::new();
+    let mut preset = false;
     let mut i = 0;
     if args == ["--help"] || args == ["-h"] {
         return Ok(Command::Help);
     }
     if args.first().map(String::as_str) == Some("--resume") {
-        return if args.len() == 2 {
-            Ok(Command::Resume(args[1].clone().into()))
-        } else {
-            Err("--resume takes only the campaign database; budgets cannot be replaced".into())
-        };
+        let path = args.get(1).ok_or("resume needs campaign database")?.into();
+        if args.len() == 2 {
+            return Ok(Command::Resume(path));
+        }
+        let mut updates = ResumeUpdates::default();
+        let mut turn = None;
+        let mut stage = None;
+        let mut i = 2;
+        while i < args.len() {
+            let value = args.get(i + 1).ok_or("missing resume control value")?;
+            match args[i].as_str() {
+                "--stop-after-turn" => {
+                    if turn
+                        .replace(value.parse::<u16>().map_err(|_| "invalid game-turn")?)
+                        .is_some()
+                    {
+                        return Err("duplicate boundary".into());
+                    }
+                }
+                "--stop-after-opstage" => {
+                    if stage
+                        .replace(value.parse::<u8>().map_err(|_| "invalid OpStage")?)
+                        .is_some()
+                    {
+                        return Err("duplicate OpStage".into());
+                    }
+                }
+                "--seat-budget-usd" => parse_share(value, &mut updates.usd_shares)?,
+                "--seat-budget-tokens" => parse_share(value, &mut updates.token_shares)?,
+                _ => return Err(
+                    "resume changes only boundary or explicit seat shares; lifetime caps remain"
+                        .into(),
+                ),
+            }
+            i += 2;
+        }
+        if stage.is_some() && turn.is_none() {
+            return Err("OpStage requires game-turn".into());
+        }
+        updates.boundary = turn.map(|game_turn| cna_server::RunBoundary {
+            game_turn,
+            op_stage: stage,
+        });
+        if updates
+            .boundary
+            .is_some_and(|b| b.game_turn == 0 || b.op_stage.is_some_and(|s| !(1..=3).contains(&s)))
+        {
+            return Err("invalid resume boundary".into());
+        }
+        return Ok(Command::ResumeControlled { path, updates });
     }
     if args.first().map(String::as_str) == Some("--replay") {
         return if args.len() == 2 {
@@ -204,6 +305,54 @@ pub fn parse_args(args: &[String]) -> Result<Command, String> {
             .get(i + 1)
             .ok_or_else(|| format!("missing value for {flag}"))?;
         match flag.as_str() {
+            "--preset" => {
+                if preset || value != "graziani-haiku" {
+                    return Err("unknown or repeated preset".into());
+                }
+                preset = true;
+                kind = GameKind::Cna;
+                specs.push("*=claude:claude-haiku-4-5-20251001".into());
+                session = Some(SessionLimits {
+                    wall_seconds: 21_600,
+                    ..SessionLimits::default()
+                });
+                turns = 8192;
+                calls = 100_000;
+            }
+            "--stop-after-turn" => {
+                if stop_turn
+                    .replace(value.parse::<u16>().map_err(|_| "invalid game-turn")?)
+                    .is_some()
+                {
+                    return Err("duplicate game-turn boundary".into());
+                }
+            }
+            "--stop-after-opstage" => {
+                if stop_stage
+                    .replace(value.parse::<u8>().map_err(|_| "invalid OpStage")?)
+                    .is_some()
+                {
+                    return Err("duplicate OpStage boundary".into());
+                }
+            }
+            "--budget-usd" => {
+                if usd
+                    .replace(value.parse::<f64>().map_err(|_| "invalid USD cap")?)
+                    .is_some()
+                {
+                    return Err("duplicate USD cap".into());
+                }
+            }
+            "--budget-tokens" => {
+                if tokens
+                    .replace(value.parse::<u64>().map_err(|_| "invalid token cap")?)
+                    .is_some()
+                {
+                    return Err("duplicate token cap".into());
+                }
+            }
+            "--seat-budget-usd" => parse_share(value, &mut usd_shares)?,
+            "--seat-budget-tokens" => parse_share(value, &mut token_shares)?,
             "--kind" => {
                 kind = match value.as_str() {
                     "sandbox" => GameKind::Sandbox,
@@ -234,12 +383,60 @@ pub fn parse_args(args: &[String]) -> Result<Command, String> {
         }
         i += 2;
     }
-    let mut config = LaunchConfig::resolve(kind, &specs)?;
+    let mut config = LaunchConfig::resolve_bindings(kind, &specs)?;
     config.max_turns = turns;
     config.tool_calls = calls;
     config.session = session;
+    if preset
+        || stop_turn.is_some()
+        || stop_stage.is_some()
+        || usd.is_some()
+        || tokens.is_some()
+        || !usd_shares.is_empty()
+        || !token_shares.is_empty()
+    {
+        let boundary = cna_server::RunBoundary {
+            game_turn: stop_turn.ok_or("run controls require --stop-after-turn")?,
+            op_stage: stop_stage,
+        };
+        let seats = config.claude_seats().map(|(s, _)| s).collect::<Vec<_>>();
+        let budget = match (usd, tokens) {
+            (Some(cap), None) if token_shares.is_empty() => {
+                SpendBudget::usd(cap, &seats, usd_shares)?
+            }
+            (None, Some(cap)) if usd_shares.is_empty() => {
+                SpendBudget::tokens(cap, &seats, token_shares)?
+            }
+            _ => return Err("choose exactly one reported-USD or token cap".into()),
+        };
+        config.run = Some(RunControl { boundary, budget });
+    }
     config.validate()?;
+    if preset
+        && (config.kind != GameKind::Cna
+            || config.claude_seats().count() != 10
+            || config
+                .claude_seats()
+                .any(|(_, m)| m != "claude-haiku-4-5-20251001"))
+    {
+        return Err("graziani-haiku preset requires all ten Haiku seats and CNA".into());
+    }
     Ok(Command::Play(config))
+}
+
+fn parse_share<T: std::str::FromStr>(
+    value: &str,
+    shares: &mut BTreeMap<SeatId, T>,
+) -> Result<(), String> {
+    let (seat, value) = value
+        .split_once('=')
+        .ok_or("seat budget requires SEAT=AMOUNT")?;
+    let seat = seat.parse::<SeatId>().map_err(|e| e.to_string())?;
+    let value = value.parse::<T>().map_err(|_| "invalid seat budget")?;
+    if shares.insert(seat, value).is_some() {
+        return Err("duplicate seat allocation".into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -247,6 +444,49 @@ mod tests {
     use super::*;
     fn args(v: &[&str]) -> Vec<String> {
         v.iter().map(|s| (*s).into()).collect()
+    }
+    #[test]
+    fn preset_requires_a_limit_and_durable_controlled_resume() {
+        let Command::Play(config) = parse_args(&args(&[
+            "--preset",
+            "graziani-haiku",
+            "--stop-after-turn",
+            "1",
+            "--budget-usd",
+            "10",
+        ]))
+        .unwrap() else {
+            panic!()
+        };
+        assert_eq!(config.claude_seats().count(), 10);
+        assert!(config.session.is_some());
+        assert_eq!(config.run.unwrap().boundary.game_turn, 1);
+        for bad in [
+            args(&["--preset", "graziani-haiku"]),
+            args(&[
+                "--preset",
+                "graziani-haiku",
+                "--stop-after-turn",
+                "0",
+                "--budget-usd",
+                "10",
+            ]),
+            args(&[
+                "--preset",
+                "graziani-haiku",
+                "--stop-after-turn",
+                "1",
+                "--budget-usd",
+                "NaN",
+            ]),
+            args(&["--resume", "a.sqlite", "--budget-usd", "99"]),
+        ] {
+            assert!(parse_args(&bad).is_err());
+        }
+        assert!(matches!(
+            parse_args(&args(&["--resume", "a.sqlite", "--stop-after-turn", "2"])).unwrap(),
+            Command::ResumeControlled { .. }
+        ));
     }
     #[test]
     fn explicit_bindings_override_wildcard_in_either_order() {

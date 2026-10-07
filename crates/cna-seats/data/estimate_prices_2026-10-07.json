@@ -1,0 +1,20 @@
+{
+  "verified_date": "2026-10-07",
+  "verified_by": "project lead, direct official-source lookup",
+  "sources": [
+    "https://platform.claude.com/docs/en/about-claude/models/overview",
+    "https://platform.claude.com/docs/en/about-claude/pricing",
+    "https://code.claude.com/docs/en/env-vars"
+  ],
+  "unit": "USD per million tokens; client-side API-equivalent estimate, not subscription charges",
+  "pinned_model": "claude-haiku-4-5-20251001",
+  "context_tokens": 200000,
+  "model_max_output_tokens": 64000,
+  "input": 1,
+  "cache_write_5m": 1.25,
+  "cache_write_1h": 2,
+  "cache_read": 0.10,
+  "output": 5,
+  "inference_geo": "global standard",
+  "notes": "Subscription uses one-hour cache TTL. Unknown price basis or output enforcement fails closed. Known model maximum output is the conservative alternative to an unproved lower output setting. Earliest stated retirement boundary Oct 15 is not a confirmed retirement date."
+}

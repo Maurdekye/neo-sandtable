@@ -1,10 +1,11 @@
 //! Trusted launcher journal, separate from the campaign event log and seat working directories.
 //! SQLite commits precede model work. In-flight reservations survive a hard crash.
+use crate::budget::{Admission, RunControl, SpendBudget};
 use crate::config::LaunchConfig;
 use cna_core::ids::SeatId;
 use cna_protocol::UsageSnapshot;
 use cna_seats::{
-    driver::{SessionInfo, SessionTelemetry, TurnOutcome},
+    driver::{EstimateBound, SessionInfo, SessionTelemetry, TurnOutcome},
     mcp::ToolBudget,
 };
 use rusqlite::{Connection, OpenFlags, params};
@@ -122,6 +123,14 @@ pub struct SeatJournal {
     pub wall_millis: u64,
     pub recoveries: u32,
     pub incomplete_turns: u64,
+    #[serde(default)]
+    pub incomplete_token_turns: u64,
+    #[serde(default)]
+    pub uncertain_budget_spend: bool,
+    #[serde(default)]
+    pub admitted_estimate_usd: Option<f64>,
+    #[serde(default)]
+    pub admitted_tokens: Option<u64>,
     pub reported_cost_usd: f64,
     pub last_session_cost: f64,
     pub compactions: u64,
@@ -137,6 +146,8 @@ pub struct JournalState {
     pub campaign_id: String,
     pub config: LaunchConfig,
     pub seats: BTreeMap<SeatId, SeatJournal>,
+    #[serde(default)]
+    pub largest_turn_cost_usd: f64,
 }
 pub struct SessionJournal {
     path: PathBuf,
@@ -223,6 +234,10 @@ impl SessionJournal {
                         wall_millis: 0,
                         recoveries: 0,
                         incomplete_turns: 0,
+                        incomplete_token_turns: 0,
+                        uncertain_budget_spend: false,
+                        admitted_estimate_usd: None,
+                        admitted_tokens: None,
                         reported_cost_usd: 0.,
                         last_session_cost: 0.,
                         compactions: 0,
@@ -239,6 +254,7 @@ impl SessionJournal {
             campaign_id: id.into(),
             config,
             seats,
+            largest_turn_cost_usd: 0.,
         };
         let encoded = serde_json::to_string(&state).map_err(|e| e.to_string())?;
         journal
@@ -280,10 +296,18 @@ impl SessionJournal {
         // Keep the full interrupted reservation charged. Result-less turns have unknown spend.
         journal.update(|state| {
             for s in state.seats.values_mut() {
+                let admitted = s.admitted_estimate_usd.is_some() || s.admitted_tokens.is_some();
+                if admitted {
+                    // A crash cannot prove whether a launched process started model work.
+                    // Retain its reservation and block admission until accounting is reconciled.
+                    s.uncertain_budget_spend = true;
+                    s.incomplete_token_turns += 1;
+                }
                 let migrated = migrate_usage(s);
                 let interrupted = s.inflight.take().is_some_and(|r| r.kind == "turn");
                 if interrupted {
                     s.incomplete_turns += 1;
+                    s.incomplete_token_turns += 1;
                 }
                 if interrupted || (migrated && s.turns > 0) {
                     queue_usage(s)?;
@@ -301,7 +325,13 @@ impl SessionJournal {
             migrate_usage(s);
             if s.inflight.take().is_some_and(|r| r.kind == "turn") {
                 s.incomplete_turns += 1;
+                s.incomplete_token_turns += 1;
+                s.uncertain_budget_spend = true;
                 queue_usage(s)?;
+            } else if !s.uncertain_budget_spend && s.incomplete_turns == 0 {
+                // stop() has confirmed cleanup before model input was sent.
+                s.admitted_estimate_usd = None;
+                s.admitted_tokens = None;
             }
             Ok(())
         })
@@ -418,6 +448,248 @@ impl SessionJournal {
             }
             Ok(())
         })
+    }
+    /// Explicit operator rebalance. Global cap/unit and accumulated spend are immutable here.
+    pub fn reconfigure_run(&self, run: RunControl) -> Result<(), String> {
+        self.update(|state| {
+            if state.seats.values().any(|s| {
+                s.inflight.is_some()
+                    || s.admitted_estimate_usd.is_some()
+                    || s.admitted_tokens.is_some()
+            }) {
+                return Err("cannot rebalance while a model turn is admitted or unresolved".into());
+            }
+            let old = state
+                .config
+                .run
+                .as_ref()
+                .ok_or("campaign has no run controls")?;
+            let same_cap = match (&old.budget, &run.budget) {
+                (
+                    SpendBudget::ReportedUsd { global: a, .. },
+                    SpendBudget::ReportedUsd { global: b, .. },
+                ) => a == b,
+                (SpendBudget::Tokens { global: a, .. }, SpendBudget::Tokens { global: b, .. }) => {
+                    a == b
+                }
+                _ => false,
+            };
+            if !same_cap {
+                return Err("rebalance cannot reset or replace the lifetime global cap".into());
+            }
+            run.validate(&state.seats.keys().copied().collect::<Vec<_>>())?;
+            state.config.run = Some(run);
+            Ok(())
+        })
+    }
+    /// Admission uses committed lifetime spend before any model observation/spawn.
+    /// Forced answers do not call this method or consume a process slot.
+    #[allow(clippy::float_arithmetic)]
+    pub fn admission(
+        &self,
+        seat: SeatId,
+        bound: Option<&EstimateBound>,
+    ) -> Result<Admission, String> {
+        Self::check_admission(&self.snapshot()?, seat, bound)
+    }
+    /// Atomically reserve the proved estimate; concurrent seats cannot reuse headroom.
+    // Decimal provider estimates are operator accounting, outside game adjudication.
+    #[allow(clippy::float_arithmetic)]
+    pub fn admit(&self, seat: SeatId, bound: Option<&EstimateBound>) -> Result<Admission, String> {
+        self.update(|state| {
+            let result = Self::check_admission(state, seat, bound)?;
+            if matches!(result, Admission::Ready { .. }) {
+                let bound = bound.ok_or("missing admitted bound")?;
+                let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
+                match result {
+                    Admission::Ready {
+                        remaining_usd: Some(remaining_usd),
+                        ..
+                    } => {
+                        s.admitted_estimate_usd =
+                            Some(remaining_usd + bound.ceiling_usd().map_err(|e| e.to_string())?)
+                    }
+                    Admission::Ready {
+                        remaining_tokens: Some(remaining_tokens),
+                        ..
+                    } => {
+                        s.admitted_tokens = Some(
+                            bound
+                                .context_tokens
+                                .checked_add(bound.output_tokens)
+                                .and_then(|response| response.checked_add(remaining_tokens))
+                                .ok_or("token envelope overflow")?,
+                        )
+                    }
+                    _ => {}
+                }
+            }
+            Ok(result)
+        })
+    }
+    pub fn release_admission(&self, seat: SeatId) -> Result<(), String> {
+        self.update(|state| {
+            let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
+            if s.uncertain_budget_spend || s.incomplete_turns > 0 || s.incomplete_token_turns > 0 {
+                return Ok(()); // Never free uncertain headroom after interrupted model work.
+            }
+            if s.inflight.as_ref().is_some_and(|r| r.kind == "turn") {
+                return Err("cannot release an unresolved model admission".into());
+            }
+            s.admitted_estimate_usd = None;
+            s.admitted_tokens = None;
+            Ok(())
+        })
+    }
+    #[allow(clippy::float_arithmetic)]
+    fn check_admission(
+        state: &JournalState,
+        seat: SeatId,
+        bound: Option<&EstimateBound>,
+    ) -> Result<Admission, String> {
+        let run = state.config.run.as_ref().ok_or("missing run controls")?;
+        let own = state.seats.get(&seat).ok_or("unknown budget seat")?;
+        let Some(bound) = bound else {
+            return Ok(Admission::Stop(
+                "unproved model/context/price/output ceiling; no real admission".into(),
+            ));
+        };
+        if bound.pinned_model != own.model {
+            return Ok(Admission::Stop(
+                "estimate bound differs from pinned model".into(),
+            ));
+        }
+        let ceiling = bound.ceiling_usd().map_err(|e| e.to_string())?;
+        if state.seats.values().any(|s| match &run.budget {
+            SpendBudget::ReportedUsd { .. } => s.incomplete_turns > 0 || s.uncertain_budget_spend,
+            SpendBudget::Tokens { .. } => s.incomplete_token_turns > 0,
+        }) {
+            return Ok(Admission::Stop(
+                "unknown telemetry; committed accounting retained".into(),
+            ));
+        }
+        if own.admitted_estimate_usd.is_some() || own.admitted_tokens.is_some() {
+            return Err("overlapping model admissions".into());
+        }
+        if own.turns >= state.config.max_turns as u64 || own.calls >= state.config.tool_calls {
+            return Ok(Admission::Stop(
+                "lifetime turn/tool allocation exhausted".into(),
+            ));
+        }
+        match &run.budget {
+            SpendBudget::ReportedUsd {
+                global,
+                allocations,
+            } => {
+                let spent: f64 = state.seats.values().map(|s| s.reported_cost_usd).sum();
+                let reserved: f64 = state
+                    .seats
+                    .values()
+                    .filter_map(|s| s.admitted_estimate_usd)
+                    .sum();
+                let remaining = global - spent - reserved;
+                let own_remaining =
+                    allocations.get(&seat).ok_or("missing seat allotment")? - own.reported_cost_usd;
+                if !remaining.is_finite()
+                    || !own_remaining.is_finite()
+                    || !state.largest_turn_cost_usd.is_finite()
+                    || state.largest_turn_cost_usd < 0.
+                {
+                    return Err("invalid budget telemetry".into());
+                }
+                if own_remaining <= 0. {
+                    return Ok(Admission::Stop(format!(
+                        "{seat} reported-cost allotment exhausted"
+                    )));
+                }
+                // A turn can make multiple provider responses. Reserve the actual native
+                // remaining-allotment cap plus one response crossing it, then retain a
+                // separate global response margin. Observed costs never bound admission.
+                let margin = ceiling.max(0.25);
+                let envelope = own_remaining + ceiling;
+                let required_global = envelope + margin;
+                if !required_global.is_finite() {
+                    return Err("estimate envelope overflow".into());
+                }
+                if remaining < required_global || own_remaining < ceiling + margin {
+                    return Ok(Admission::Stop(
+                        "global reported-cost admission margin reached".into(),
+                    ));
+                }
+                Ok(Admission::Ready {
+                    remaining_usd: Some(own_remaining),
+                    remaining_tokens: None,
+                })
+            }
+            SpendBudget::Tokens {
+                global,
+                allocations,
+            } => {
+                let mut spent = 0u64;
+                let mut own_spent = 0;
+                for (s, record) in &state.seats {
+                    let tokens = if record.turns == 0 {
+                        0
+                    } else {
+                        let u = record.usage.as_ref().ok_or("missing usage")?;
+                        // Claude reports uncached input separately from cache channels.
+                        // Reasoning is part of output, not an extra universal charge.
+                        let (Some(input), Some(output), Some(read), Some(create)) = (
+                            u.input_tokens,
+                            u.output_tokens,
+                            u.cache_read_tokens,
+                            u.cache_creation_tokens,
+                        ) else {
+                            return Ok(Admission::Stop(
+                                "unknown token channels; no guessed accounting".into(),
+                            ));
+                        };
+                        [input, output, read, create]
+                            .into_iter()
+                            .try_fold(0u64, |n, v| n.checked_add(v))
+                            .ok_or("token total overflow")?
+                    };
+                    spent = spent
+                        .checked_add(tokens)
+                        .ok_or("global token total overflow")?;
+                    if *s == seat {
+                        own_spent = tokens;
+                    }
+                }
+                let remaining = allocations
+                    .get(&seat)
+                    .ok_or("missing seat allotment")?
+                    .saturating_sub(own_spent);
+                if spent >= *global || remaining == 0 {
+                    return Ok(Admission::Stop("token allotment exhausted".into()));
+                }
+                let reserved = state
+                    .seats
+                    .values()
+                    .filter_map(|s| s.admitted_tokens)
+                    .try_fold(0u64, |n, v| n.checked_add(v))
+                    .ok_or("token reservation overflow")?;
+                let ceiling = bound
+                    .context_tokens
+                    .checked_add(bound.output_tokens)
+                    .ok_or("token ceiling overflow")?;
+                let required = ceiling.checked_mul(2).ok_or("token margin overflow")?;
+                let required_global = remaining
+                    .checked_add(required)
+                    .ok_or("token envelope overflow")?;
+                if remaining < required
+                    || global.saturating_sub(spent).saturating_sub(reserved) < required_global
+                {
+                    return Ok(Admission::Stop(
+                        "proved token ceiling plus margin unavailable".into(),
+                    ));
+                }
+                Ok(Admission::Ready {
+                    remaining_usd: None,
+                    remaining_tokens: Some(remaining.min(global - spent)),
+                })
+            }
+        }
     }
     /// Reserve a bounded operation before it starts; the reservation remains charged on hard kill.
     pub fn reserve(
@@ -577,7 +849,13 @@ impl SessionJournal {
                             incomplete = true;
                             raw
                         };
-                        s.last_session_cost = raw;
+                        state.largest_turn_cost_usd = state.largest_turn_cost_usd.max(delta);
+                        if !(!o.ok && raw == 0. && s.last_session_cost > 0.) {
+                            s.last_session_cost = raw;
+                        }
+                        if state.config.run.is_some() && o.usage.cost_basis_known != Some(true) {
+                            s.uncertain_budget_spend = true;
+                        }
                         s.reported_cost_usd += delta;
                         stage.reported_cost_usd += delta;
                         if !s.reported_cost_usd.is_finite() {
@@ -590,7 +868,30 @@ impl SessionJournal {
                 } else {
                     incomplete = true;
                 }
+                if state.config.run.is_some()
+                    && outcome.is_some_and(|o| !o.ok && o.usage.cost_usd == Some(0.))
+                {
+                    s.uncertain_budget_spend = true;
+                }
+                let token_incomplete = outcome.is_none_or(|o| {
+                    o.usage.input_tokens.is_none()
+                        || o.usage.output_tokens.is_none()
+                        || o.usage.cached_input_tokens.is_none()
+                        || o.usage.cache_creation_tokens.is_none()
+                });
+                s.incomplete_token_turns += u64::from(token_incomplete);
                 s.incomplete_turns += u64::from(incomplete);
+                let accounted = match state.config.run.as_ref().map(|r| &r.budget) {
+                    Some(SpendBudget::ReportedUsd { .. }) => {
+                        !incomplete && !s.uncertain_budget_spend
+                    }
+                    Some(SpendBudget::Tokens { .. }) => !token_incomplete,
+                    None => true,
+                };
+                if accounted {
+                    s.admitted_estimate_usd = None;
+                    s.admitted_tokens = None;
+                }
                 queue_usage(s)?;
             }
             Ok(())
@@ -677,6 +978,289 @@ mod tests {
             },
             quota: vec![],
         }
+    }
+    fn bound() -> EstimateBound {
+        EstimateBound {
+            pinned_model: "haiku".into(),
+            context_tokens: 10,
+            output_tokens: 10,
+            max_input_or_cache_write_usd_per_token: 0.001,
+            output_usd_per_token: 0.001,
+            evidence: "inert unit fixture; not native proof".into(),
+        }
+    }
+    #[test]
+    fn concurrent_seats_cannot_reuse_the_native_cap_envelope() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let other: SeatId = "axis.commander".parse().unwrap();
+        let mut c = config();
+        c.seats
+            .insert(other, crate::config::Controller::Claude("haiku".into()));
+        c.run = Some(RunControl {
+            boundary: cna_server::RunBoundary {
+                game_turn: 1,
+                op_stage: None,
+            },
+            budget: SpendBudget::usd(
+                1.,
+                &[seat(), other],
+                BTreeMap::from([(seat(), 0.45), (other, 0.45)]),
+            )
+            .unwrap(),
+        });
+        let j = std::sync::Arc::new(
+            SessionJournal::create(
+                root.path(),
+                &id,
+                c,
+                &BTreeMap::from([(seat(), 2), (other, 2)]),
+            )
+            .unwrap(),
+        );
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+        let outcomes = std::thread::scope(|scope| {
+            let tasks: Vec<_> = [seat(), other]
+                .into_iter()
+                .map(|seat| {
+                    let j = j.clone();
+                    let barrier = barrier.clone();
+                    scope.spawn(move || {
+                        barrier.wait();
+                        j.admit(seat, Some(&bound())).unwrap()
+                    })
+                })
+                .collect();
+            tasks
+                .into_iter()
+                .map(|t| t.join().unwrap())
+                .collect::<Vec<_>>()
+        });
+        assert_eq!(
+            outcomes
+                .iter()
+                .filter(|r| matches!(r, Admission::Ready { .. }))
+                .count(),
+            1
+        );
+        assert_eq!(
+            outcomes
+                .iter()
+                .filter(|r| matches!(r, Admission::Stop(_)))
+                .count(),
+            1
+        );
+        let reserved: f64 = j
+            .snapshot()
+            .unwrap()
+            .seats
+            .values()
+            .filter_map(|s| s.admitted_estimate_usd)
+            .sum();
+        assert!((reserved - 0.47).abs() < 1e-12);
+    }
+    #[test]
+    fn concurrent_admission_and_crash_keep_uncertain_headroom_reserved() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let mut c = config();
+        c.run = Some(RunControl {
+            boundary: cna_server::RunBoundary {
+                game_turn: 1,
+                op_stage: Some(1),
+            },
+            budget: SpendBudget::usd(2., &[seat()], BTreeMap::from([(seat(), 1.)])).unwrap(),
+        });
+        let j = std::sync::Arc::new(
+            SessionJournal::create(root.path(), &id, c, &BTreeMap::from([(seat(), 2)])).unwrap(),
+        );
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+        let outcomes = std::thread::scope(|scope| {
+            let tasks: Vec<_> = (0..2)
+                .map(|_| {
+                    let j = j.clone();
+                    let barrier = barrier.clone();
+                    scope.spawn(move || {
+                        barrier.wait();
+                        j.admit(seat(), Some(&bound()))
+                    })
+                })
+                .collect();
+            tasks
+                .into_iter()
+                .map(|t| t.join().unwrap())
+                .collect::<Vec<_>>()
+        });
+        assert_eq!(
+            outcomes
+                .iter()
+                .filter(|r| matches!(r, Ok(Admission::Ready { .. })))
+                .count(),
+            1
+        );
+        assert_eq!(outcomes.iter().filter(|r| r.is_err()).count(), 1);
+        assert_eq!(
+            j.snapshot().unwrap().seats[&seat()].admitted_estimate_usd,
+            Some(1.02)
+        );
+        let run = j.snapshot().unwrap().config.run.unwrap();
+        assert!(j.reconfigure_run(run).is_err());
+        drop(j); // crash after admission, before any durable turn-start marker
+        let j = SessionJournal::recover(root.path(), &id).unwrap();
+        let s = j.snapshot().unwrap();
+        assert!(s.seats[&seat()].uncertain_budget_spend);
+        assert_eq!(s.seats[&seat()].admitted_estimate_usd, Some(1.02));
+        assert!(matches!(
+            j.admission(seat(), Some(&bound())).unwrap(),
+            Admission::Stop(_)
+        ));
+        j.release_admission(seat()).unwrap();
+        assert_eq!(
+            j.snapshot().unwrap().seats[&seat()].admitted_estimate_usd,
+            Some(1.02)
+        );
+    }
+    #[test]
+    fn verified_no_model_cleanup_and_accounted_completion_release_reservations() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let mut c = config();
+        c.run = Some(RunControl {
+            boundary: cna_server::RunBoundary {
+                game_turn: 1,
+                op_stage: None,
+            },
+            budget: SpendBudget::usd(2., &[seat()], BTreeMap::from([(seat(), 1.)])).unwrap(),
+        });
+        let j =
+            SessionJournal::create(root.path(), &id, c, &BTreeMap::from([(seat(), 2)])).unwrap();
+        assert!(matches!(
+            j.admit(seat(), Some(&bound())).unwrap(),
+            Admission::Ready { .. }
+        ));
+        j.release_admission(seat()).unwrap(); // caller verified stop before sending model input
+        assert!(
+            j.snapshot().unwrap().seats[&seat()]
+                .admitted_estimate_usd
+                .is_none()
+        );
+        j.admit(seat(), Some(&bound())).unwrap();
+        j.reserve_decision(seat(), "GT1:OpStage1", 1000, "d", 0)
+            .unwrap();
+        assert!(j.release_admission(seat()).is_err());
+        let mut report = outcome(0.01);
+        report.usage.cost_basis_known = Some(true);
+        j.complete(seat(), 1, Some(&report), &SessionTelemetry::default())
+            .unwrap();
+        assert!(
+            j.snapshot().unwrap().seats[&seat()]
+                .admitted_estimate_usd
+                .is_none()
+        );
+        assert_eq!(j.snapshot().unwrap().seats[&seat()].reported_cost_usd, 0.01);
+        assert!(matches!(
+            j.admission(seat(), None).unwrap(),
+            Admission::Stop(_)
+        ));
+    }
+    #[test]
+    fn remaining_admission_rebalance_and_uncertainty_survive_resume() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let mut c = config();
+        c.run = Some(RunControl {
+            boundary: cna_server::RunBoundary {
+                game_turn: 1,
+                op_stage: Some(1),
+            },
+            budget: SpendBudget::usd(2., &[seat()], BTreeMap::from([(seat(), 1.)])).unwrap(),
+        });
+        let j =
+            SessionJournal::create(root.path(), &id, c, &BTreeMap::from([(seat(), 2)])).unwrap();
+        assert_eq!(
+            j.admission(seat(), Some(&bound())).unwrap(),
+            Admission::Ready {
+                remaining_usd: Some(1.),
+                remaining_tokens: None
+            }
+        );
+        let mut report = outcome(0.1);
+        report.usage.cost_basis_known = Some(true);
+        j.reserve_decision(seat(), "GT1:OpStage1", 1000, "d", 0)
+            .unwrap();
+        j.complete(seat(), 1, Some(&report), &SessionTelemetry::default())
+            .unwrap();
+        drop(j);
+        let j = SessionJournal::recover(root.path(), &id).unwrap();
+        assert_eq!(
+            j.admission(seat(), Some(&bound())).unwrap(),
+            Admission::Ready {
+                remaining_usd: Some(0.9),
+                remaining_tokens: None
+            }
+        );
+        let mut run = j.snapshot().unwrap().config.run.unwrap();
+        run.boundary.game_turn = 2;
+        if let SpendBudget::ReportedUsd { allocations, .. } = &mut run.budget {
+            allocations.insert(seat(), 0.6);
+        }
+        j.reconfigure_run(run.clone()).unwrap();
+        let Admission::Ready {
+            remaining_usd: Some(value),
+            ..
+        } = j.admission(seat(), Some(&bound())).unwrap()
+        else {
+            panic!()
+        };
+        assert!((value - 0.5).abs() < 1e-12);
+        if let SpendBudget::ReportedUsd { global, .. } = &mut run.budget {
+            *global = 3.;
+        }
+        assert!(j.reconfigure_run(run).is_err());
+        report.usage.cost_basis_known = Some(false);
+        report.usage.cost_usd = Some(0.15);
+        j.reserve_decision(seat(), "GT1:OpStage1", 1000, "d", 1)
+            .unwrap();
+        j.complete(seat(), 1, Some(&report), &SessionTelemetry::default())
+            .unwrap();
+        assert!(matches!(
+            j.admission(seat(), Some(&bound())).unwrap(),
+            Admission::Stop(_)
+        ));
+        drop(j);
+        let j = SessionJournal::recover(root.path(), &id).unwrap();
+        assert!(matches!(
+            j.admission(seat(), Some(&bound())).unwrap(),
+            Admission::Stop(_)
+        ));
+    }
+    #[test]
+    fn global_margin_and_resultless_turns_stop_before_new_observations() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let mut c = config();
+        c.run = Some(RunControl {
+            boundary: cna_server::RunBoundary {
+                game_turn: 1,
+                op_stage: None,
+            },
+            budget: SpendBudget::usd(0.2, &[seat()], BTreeMap::new()).unwrap(),
+        });
+        let j =
+            SessionJournal::create(root.path(), &id, c, &BTreeMap::from([(seat(), 2)])).unwrap();
+        assert!(matches!(
+            j.admission(seat(), Some(&bound())).unwrap(),
+            Admission::Stop(_)
+        ));
+        j.reserve_decision(seat(), "GT1:OpStage1", 1000, "d", 0)
+            .unwrap();
+        drop(j);
+        let j = SessionJournal::recover(root.path(), &id).unwrap();
+        assert_eq!(j.snapshot().unwrap().seats[&seat()].incomplete_turns, 1);
+        assert!(matches!(
+            j.admission(seat(), Some(&bound())).unwrap(),
+            Admission::Stop(_)
+        ));
     }
     #[test]
     fn usage_outbox_survives_restart_and_acknowledges_only_confirmed_revisions() {

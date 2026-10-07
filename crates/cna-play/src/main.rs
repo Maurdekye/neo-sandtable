@@ -12,13 +12,14 @@ use cna_seats::{
 };
 use std::{path::PathBuf, time::Duration};
 
-const USAGE: &str = "cna-play [--kind sandbox|cna] [--seat SEAT=claude:MODEL|scripted:MODE|human] [--turns N] [--tool-calls N] [--long-lived --wall-seconds N --turn-timeout N --context-tokens N --recoveries N]\n  Wildcard: --seat '*=scripted:legal_random'\n  CNA: --kind cna --seat axis.commander=claude:haiku --seat '*=scripted:legal_random'\n  Resume: --resume CAMPAIGN.sqlite (original lifetime budgets)\n  Replay: --replay CAMPAIGN.sqlite (no CLI starts)";
+const USAGE: &str = "cna-play [--kind sandbox|cna] [--seat SEAT=claude:MODEL|scripted:MODE|human] [--turns N] [--tool-calls N] [--long-lived --wall-seconds N --turn-timeout N --context-tokens N --recoveries N]\n  Wildcard: --seat '*=scripted:legal_random'\n  CNA: --kind cna --seat axis.commander=claude:haiku --seat '*=scripted:legal_random'\n  Preset: --preset graziani-haiku --stop-after-turn G [--stop-after-opstage S] --budget-usd USD [--seat-budget-usd SEAT=USD for EVERY seat]\n  Resume: --resume CAMPAIGN.sqlite [--stop-after-turn G --stop-after-opstage S] [--seat-budget-usd SEAT=USD for EVERY seat] (lifetime global cap/spend retained)\n  Replay: --replay CAMPAIGN.sqlite (no CLI starts)";
 
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let command = parse_args(&args).unwrap_or_else(|error| panic!("{error}\n{USAGE}"));
     let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut updates = None;
     let (config, resume) = match command {
         Command::Help => {
             println!("{USAGE}");
@@ -29,6 +30,15 @@ async fn main() {
             return;
         }
         Command::Play(config) => (config, None),
+        Command::ResumeControlled {
+            path,
+            updates: change,
+        } => {
+            let config = cna_play::journal::SessionJournal::config_for_campaign(&path)
+                .expect("read durable config");
+            updates = Some(change);
+            (config, Some(path))
+        }
         Command::Resume(path) => (
             cna_play::journal::SessionJournal::config_for_campaign(&path)
                 .expect("read durable launch configuration"),
@@ -61,7 +71,7 @@ async fn main() {
             .expect("fresh campaign directory")
             .keep()
     };
-    let demo = if let Some(path) = &resume {
+    let mut demo = if let Some(path) = &resume {
         Demo::resume(path, &repo.join("data"), &repo.join("web/dist")).await
     } else {
         Demo::with_config(
@@ -73,6 +83,25 @@ async fn main() {
         .await
     }
     .expect("create or recover campaign");
+    if let Some(updates) = updates {
+        let old = demo
+            .config
+            .run
+            .as_ref()
+            .expect("run controls required for explicit rebalance");
+        let seats = demo
+            .config
+            .claude_seats()
+            .map(|(s, _)| s)
+            .collect::<Vec<_>>();
+        let run = updates
+            .apply(old, &seats)
+            .expect("valid explicit operator controls");
+        demo.reconfigure_run(run)
+            .await
+            .expect("persist controls without resume");
+    }
+    let config = demo.config.clone();
     println!("Board: {}", demo.board_url());
     for (seat, url) in demo.human_console_urls() {
         println!("Human console ({seat}): {url}");
@@ -85,6 +114,22 @@ async fn main() {
         config.max_turns,
         config.tool_calls
     );
+    if let Some(run) = &config.run {
+        println!(
+            "Run boundary: {:?}. At most two active CLI processes; forced answers use no slot.",
+            run.boundary
+        );
+        match &run.budget {
+            cna_play::budget::SpendBudget::ReportedUsd { .. } => println!(
+                "Provider-reported cost limit: an estimate, can overshoot by at most about one model turn. Allocations: {:?}",
+                run.budget
+            ),
+            cna_play::budget::SpendBudget::Tokens { .. } => println!(
+                "Lifetime token allocations (native enforcement required): {:?}",
+                run.budget
+            ),
+        }
+    }
     if let Some(journal) = &demo.journal {
         println!(
             "Durable journal: {}. Resume preserves all lifetime budgets. Limits: {:?}",
