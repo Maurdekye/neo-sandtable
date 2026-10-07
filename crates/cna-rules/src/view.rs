@@ -167,7 +167,6 @@ pub(crate) fn is_map_counter(content: &CnaContent, state: &State, unit: &LandUni
 /// recce, artillery, anti-tank, anti-air). A headquarters counter shows a headquarters, whatever
 /// is attached to it.
 /// Cases: land:3.62
-#[allow(dead_code)] // for land-0023 and land-0030, which switch to the visible counter type
 pub(crate) fn printed_combat_face(content: &CnaContent, id: &UnitId) -> bool {
     crate::land::formation::combat_unit(content, id)
 }

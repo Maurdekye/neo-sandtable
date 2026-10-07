@@ -1470,7 +1470,7 @@ fn either_phasing_side_repeats_without_resetting_cp_or_stage_water() {
 /// Cases: land:8.23
 /// Interpretations: interp:land-0023
 #[test]
-fn cycle_proximity_counts_any_unit_and_is_captured_before_combat_changes_positions() {
+fn cycle_proximity_uses_printed_combat_faces_and_precombat_positions() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
     place(&mut s, LEG, "C4023");
     s.decisions.pending.clear();
@@ -1507,9 +1507,9 @@ fn cycle_proximity_counts_any_unit_and_is_captured_before_combat_changes_positio
     s.land.movement.cycle_blocked.clear();
     s.land.movement.ended = false;
     super::super::cycles::finish_movement(&c, &mut s);
-    assert!(!s.land.movement.cycle_blocked.contains(&TANK.into())); // nearby noncombat unit qualifies
+    assert!(s.land.movement.cycle_blocked.contains(&TANK.into())); // an HQ face is not combat
     s.cursor.cycle = 2;
-    assert!(!reachable(&c, &s, &TANK.into(), false).is_empty());
+    assert!(reachable(&c, &s, &TANK.into(), false).is_empty());
 }
 
 /// Cases: land:18.11, land:18.12, land:18.13, land:18.14, land:18.22, land:18.23, land:18.24, land:18.25, land:18.26
@@ -2216,8 +2216,45 @@ fn repeated_movement_does_not_disclose_combat_contents_of_nearby_enemy_stack() {
         s.cursor.cycle = 2;
     }
     crate::testkit::assert_indistinguishable(&Cna::dev(), &c, &a, &b, Side::Axis);
-    assert!(!a.land.movement.cycle_blocked.contains(&TANK.into()));
-    assert!(!b.land.movement.cycle_blocked.contains(&TANK.into()));
+    assert!(a.land.movement.cycle_blocked.contains(&TANK.into()));
+    assert!(b.land.movement.cycle_blocked.contains(&TANK.into()));
+}
+
+/// Cases: land:3.62, land:8.23
+/// Interpretations: interp:land-0023
+#[test]
+fn printed_combat_proximity_ignores_variable_strength_in_both_phasing_halves() {
+    for own in [TANK, LEG] {
+        for half in [Half::A, Half::B] {
+            let (c, mut a, _o) = setup(own, Some("road"), false, None);
+            let enemy = if own == TANK { LEG } else { TANK };
+            a.cursor.half = Some(half);
+            let side = a.land.units[&own.into()].side;
+            a.turn.player_a = Some(if half == Half::A {
+                side
+            } else {
+                side.opponent()
+            });
+            place(&mut a, enemy, "C4022");
+            assert!(crate::view::is_map_counter(
+                &c,
+                &a,
+                &a.land.units[&enemy.into()]
+            ));
+            assert!(crate::view::printed_combat_face(&c, &enemy.into()));
+            let mut b = a.clone();
+            let unit = b.land.units.get_mut(&enemy.into()).unwrap();
+            unit.toe = Default::default();
+            unit.cohesion_quarters = -104;
+            unit.cp_spent_quarters = 8;
+            for state in [&mut a, &mut b] {
+                super::super::cycles::finish_movement(&c, state);
+                state.cursor.cycle = 2;
+                assert!(!state.land.movement.cycle_blocked.contains(&own.into()));
+            }
+            crate::testkit::assert_indistinguishable(&Cna::full(), &c, &a, &b, side);
+        }
+    }
 }
 /// Rules as written, the enemy watches a counter move between occupied hexes by its printed
 /// face; a pass tells it nothing, and neither does anything hidden about the mover.

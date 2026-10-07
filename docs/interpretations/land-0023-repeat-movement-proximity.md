@@ -1,25 +1,25 @@
-# land-0023 - Public enemy presence unlocks repeated movement
+# land-0023 - Visible combat counters unlock repeated movement
 
-- **Cases:** land:8.23, land:18.0
-- **Status:** proposed
+- **Cases:** land:8.23, land:18.0, land:3.62
+- **Status:** adopted
 - **Profile version:** cna-full-v1 / cna-dev-v1
-- **Decided by:** neo-sandtable, 2026-10-07
-- **Owner review:** pending
+- **Decided by:** project owner, 2026-10-07 (batch 2; rules-as-written fog)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 2; fog rules as written)
 
 ## Question
-The two clauses of the repeated-movement restriction use different enemy categories. Should a nearby noncombat unit permit a further move?
+The two clauses of the repeated-movement restriction use different enemy categories. Should a nearby noncombat counter permit a further move?
 
 ## Evidence
-land:8.23 first permits another move when an enemy unit is within two hexes. Its following restriction identifies enemy combat units and bars further movement when none is nearby. Reserve status supplies an explicit exception. land:8.21 and land:8.22 give the repeating sequence to whichever side currently phases.
+land:8.23 first permits another move when an enemy unit is nearby. Its following restriction identifies enemy combat units and bars further movement when none is within two hexes. Reserve status supplies an explicit exception. land:8.21 and land:8.22 give the repeating sequence to whichever side currently phases. Under land:3.62 the opponent can see the printed face of independent and formation parent map counters; units attached on log sheets and variable contents remain secret.
 
 ## Ruling
-A unit may move again in that half only if its preceding Movement Segment ends within two hexes of any enemy unit on the map, or the reserve exception applies. A nearby enemy noncombat counter qualifies. A dump alone does not count as a unit. The current phasing side may repeat; capability-point spending remains cumulative within the OpStage.
+A unit may move again in that half when its preceding Movement Segment ends within two hexes of a visible enemy map counter whose printed type is a combat type, or when the reserve exception applies. A visible noncombat counter does not qualify. A parent or headquarters qualifies only by its own printed face, irrespective of hidden attached combat units. Capability-point spending remains cumulative within the OpStage.
 
 ## Rationale
-The first clause explicitly permits proximity to any enemy unit. This reading depends only on public stack presence, preserving limited intelligence without introducing an additional disclosure rule.
+The operative restriction names combat units. The owner's rules-as-written visibility decision makes the relevant printed counter type public without disclosing attachments, strength, status or any other variable content. A proximity test over those visible faces therefore needs no additional disclosure exception.
 
-## Alternative for owner review
-The second clause can instead be read to require an enemy combat unit. That would make repeat eligibility a disclosed bit about hidden enemy stack contents. Adopting that alternative would require an explicit disclosure exception under land:3.6. The project initially proposed that narrower reading, then the secrecy audit identified its information channel; this proposal now uses the first clause pending owner review.
+## Superseded provisional reading
+The earlier secrecy-audit proposal used any enemy unit because the then-current engine exposed only stack presence. The owner rejected that visibility model in batch 2. This adopted reading replaces the temporary any-unit predicate; it does not permit inspecting hidden log-sheet units.
 
 ## Affected behaviour and tests
-Cycle and reserve procedures test an enemy unit at distances two and three, a noncombat neighbour, the reserve exception, both phasing halves, and retained CP after repetition. A shared-harness pair replaces an enemy combat stack with noncombat units at the same public hex and checks every own-side read surface. The reserve procedure supplies its exception.
+The continual-movement predicate uses the canonical visible-counter query and printed combat classification. Regressions cover distance two versus three, both phasing halves, reserve exceptions and cumulative CP. Privacy pairs retain the same visible parent face while changing its hidden attached combat contents; both worlds must expose identical repeat eligibility.

@@ -15,8 +15,8 @@ use serde_json::Value;
 pub const KIND: &str = "cna.movement.repeat";
 
 /// Record the end of movement before breakdown or combat can change positions.
-/// A unit that has finished away from enemy presence cannot regain movement by a later enemy retreat.
-/// Cases: land:8.21, land:8.22, land:8.23
+/// A unit that finishes away from visible combat counters cannot regain movement by a later retreat.
+/// Cases: land:8.21, land:8.22, land:8.23, land:3.62
 /// Interpretations: interp:land-0023
 pub fn finish_movement(content: &CnaContent, state: &mut State) {
     if state.land.movement.ended
@@ -32,10 +32,13 @@ pub fn finish_movement(content: &CnaContent, state: &mut State) {
         return;
     };
     let enemy: Vec<_> = state
-        .stacks()
-        .into_keys()
-        .filter(|(_, s)| *s == side.opponent())
-        .filter_map(|(h, _)| content.map.get(&h).map(|h| h.axial))
+        .units_of(side.opponent())
+        .filter(|u| {
+            crate::view::is_map_counter(content, state, u)
+                && crate::view::printed_combat_face(content, &u.id)
+        })
+        .filter_map(|u| u.location.hex().and_then(|h| content.map.get(h)))
+        .map(|h| h.axial)
         .collect();
     let blocked: Vec<_> = state
         .units_of(side)
