@@ -49,6 +49,9 @@ D3318,NE,D3418,slope,D3318,land:8.35;land:8.37,map-lines-2-0002
 D3321,E,D3322,slope,D3321,land:8.35;land:8.37,map-lines-2-0002
 D3322,NW,D3421,slope,D3421,land:8.35;land:8.37,map-lines-2-0002
 D3322,NE,D3422,slope,D3322,land:8.35;land:8.37,map-lines-2-0002
+D3331,NE,D3431,all_sea,,land:8.35;land:8.37,map-lines-2-0003
+D3332,NW,D3431,all_sea,,land:8.35;land:8.37,map-lines-2-0003
+D3332,NE,D3432,all_sea,,land:8.35;land:8.37,map-lines-2-0003
 D3412,NE,D3513,slope,D3412,land:8.35;land:8.37,map-lines-2-0001
 D3413,NW,D3513,slope,D3413,land:8.35;land:8.37,map-lines-2-0001
 D3413,NE,D3514,slope,D3413,land:8.35;land:8.37,map-lines-2-0001
