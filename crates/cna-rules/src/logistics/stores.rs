@@ -84,6 +84,11 @@ pub fn weekly_losses(content: &CnaContent, state: &mut State) {
             holding.activity_water -= WaterPoints::new(water_loss as i32);
         }
     }
+    for pool in &mut state.logistics.truck_pools {
+        if pool.location.as_ref().is_some_and(|l| l.hex().is_some()) {
+            reduce(&mut pool.cargo, pool.side);
+        }
+    }
     for (side, pool) in &mut state.logistics.air_supply_pool {
         reduce(pool, *side);
     }

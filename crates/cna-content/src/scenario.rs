@@ -336,6 +336,9 @@ pub struct DummyDumpSetup {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct SecondThirdLineTrucks {
+    /// Stable source identity when the scenario supplies one.
+    #[serde(default)]
+    pub id: Option<String>,
     pub side: Side,
     pub placement: Placement,
     #[serde(flatten)]

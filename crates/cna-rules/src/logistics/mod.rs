@@ -27,6 +27,7 @@
 
 pub mod attrition;
 pub mod capacity;
+pub mod pools;
 pub use capacity::{CargoPacking, cargo_bound, fuel_capacity, validate_packing};
 mod rations;
 mod segment;

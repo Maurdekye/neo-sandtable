@@ -190,6 +190,12 @@ pub struct LogisticsState {
     pub air_supply_pool: BTreeMap<Side, Supplies>,
     /// Second- and third-line truck pools at set-up, by side, with their placement.
     pub truck_pools: Vec<TruckPool>,
+    /// Per-side monotonic pool serials; checkpoints preserve identity allocation.
+    #[serde(default)]
+    pub truck_pool_serial: BTreeMap<Side, u64>,
+    /// Includes retired pools so a removed id cannot be assigned again.
+    #[serde(default)]
+    pub truck_pool_ids: BTreeSet<String>,
 }
 
 /// Dynamic holdings belonging to one land unit.
@@ -210,9 +216,17 @@ pub struct UnitSupply {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TruckPool {
+    pub id: String,
     pub side: Side,
+    /// Immutable starting placement, retained as provenance after setup.
     pub placement: Placement,
+    /// Current resolved location; None leaves placement to the owning setup seat.
+    #[serde(default)]
+    pub location: Option<Location>,
     pub trucks: Trucks,
+    /// Cargo stays with this identity through placement, movement and removal.
+    #[serde(default)]
+    pub cargo: Supplies,
 }
 
 /// One side's air force (or Malta's): planes by type, pilots and SGSUs (`airlog:34`, `35`).
@@ -418,11 +432,28 @@ impl State {
         }
         logistics.air_supply_pool = supply.air_supply_pool.clone();
         for t in &supply.second_third_line_trucks {
-            logistics.truck_pools.push(TruckPool {
-                side: t.side,
-                placement: t.placement.clone(),
-                trucks: t.trucks,
-            });
+            let location = match &t.placement {
+                Placement::Hex { hex } => Some(Location::Hex {
+                    hex: content
+                        .map
+                        .canonical(hex)
+                        .ok_or_else(|| format!("truck pool: unknown hex {hex}"))?
+                        .clone(),
+                }),
+                Placement::City { city } if is_box(city) => Some(Location::OffMap {
+                    id: format!("box_{city}"),
+                }),
+                _ => None,
+            };
+            crate::logistics::pools::add_truck_pool(
+                &mut logistics,
+                t.id.as_deref(),
+                t.side,
+                t.placement.clone(),
+                location,
+                t.trucks,
+                Supplies::default(),
+            )?;
         }
 
         let mut air = AirState::default();

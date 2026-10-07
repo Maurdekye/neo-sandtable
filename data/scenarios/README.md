@@ -216,6 +216,7 @@ water = 100
 src = ["scen:60.34"]
 
 [[second_third_line_trucks]]        # supply.toml
+# id = "axis.supplies.tripoli"      # optional stable source id; omitted ids get engine serials
 side = "axis"
 placement = { kind = "city", city = "tripoli" }
 light = 25

@@ -76,6 +76,11 @@ pub fn determine(
                     hot_stock_loss(&mut dump.supplies)?;
                 }
             }
+            for pool in &mut next.truck_pools {
+                if pool.location.as_ref().is_some_and(|l| l.hex().is_some()) {
+                    hot_stock_loss(&mut pool.cargo)?;
+                }
+            }
             for (id, holdings) in &mut next.unit_supply {
                 if state
                     .land

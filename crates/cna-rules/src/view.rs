@@ -450,6 +450,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
         },
         "your_forces": forces,
         "logistics": {
+            "truck_pools": state.logistics.truck_pools.iter().filter(|p|sees_side(perspective,p.side)).collect::<Vec<_>>(),
             "well_conditions": state.logistics.wells.keys().filter_map(|hex| {
                 let condition=crate::logistics::wells::condition(state,hex,perspective);
                 (!condition.as_object().expect("condition object").is_empty()).then_some((hex,condition))
@@ -497,6 +498,12 @@ pub(crate) fn inspect(
             "rations": state.logistics.rations.get(&unit.id).cloned().unwrap_or_default(),
             "supplies": state.logistics.unit_supply.get(&unit.id).cloned().unwrap_or_default(),
         }));
+    }
+    if let Some(pool) = state.logistics.truck_pools.iter().find(|p| p.id == target) {
+        if !sees_side(perspective, pool.side) {
+            return Err(hidden());
+        }
+        return Ok(json!({"truck_pool":pool}));
     }
     if let Some(dump) = state.logistics.dumps.get(target) {
         if !sees_side(perspective, dump.side) {
