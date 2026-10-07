@@ -133,6 +133,7 @@ pub(super) fn candidate_options(
         let pinned_by_announcement = announced.contains(u.location.hex().unwrap())
             && moving.iter().any(|p| formation::can_pin(c, s, p, &u.id));
         let ratings = super::trucks::reachable_divisions(c, s, &u.id, strict)
+            .map_err(Rejection::Engine)?
             .into_keys()
             .map(|cpa| {
                 (
@@ -233,43 +234,55 @@ pub fn plans(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)> {
+) -> Result<Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)>, EngineError> {
     let Some(w) = &s.land.reaction.window else {
-        return vec![];
+        return Ok(vec![]);
     };
     if !w.eligible.contains(id)
         || formation::members(c, s, id)
             .iter()
             .any(|m| w.reacted.contains(m))
     {
-        return vec![];
+        return Ok(vec![]);
     }
-    super::trucks::reachable_divisions(c, s, id, strict)
-        .into_values()
-        .filter_map(|division| {
-            let draft = match &division {
-                Some(d) => super::trucks::preview_reaction_division(c, s, id, d, strict).ok()?,
-                None => s.clone(),
-            };
-            let order = ReactionOrder {
-                unit: id.clone(),
-                path: vec![],
-                with_stack: false,
-                close_assault: vec![],
-                truck_division: division.clone(),
-            };
-            validate_saved_cpa(c, s, &draft, &order).ok()?;
-            let paths = movement::nonphasing_reachable(
-                c,
-                &draft,
-                id,
-                strict,
-                movement::NonPhasingMove::Reaction,
-            );
-            (!paths.is_empty()).then_some((division, paths))
-        })
-        .collect()
+    let mut out = vec![];
+    for division in super::trucks::reachable_divisions(c, s, id, strict)?.into_values() {
+        let draft = match &division {
+            Some(d) => {
+                let Some(draft) = movement::feasible(super::trucks::preview_reaction_division(
+                    c, s, id, d, strict,
+                ))?
+                else {
+                    continue;
+                };
+                draft
+            }
+            None => s.clone(),
+        };
+        let order = ReactionOrder {
+            unit: id.clone(),
+            path: vec![],
+            with_stack: false,
+            close_assault: vec![],
+            truck_division: division.clone(),
+        };
+        if movement::feasible(validate_saved_cpa(c, s, &draft, &order))?.is_none() {
+            continue;
+        }
+        let paths = movement::nonphasing_reachable(
+            c,
+            &draft,
+            id,
+            strict,
+            movement::NonPhasingMove::Reaction,
+        )?;
+        if !paths.is_empty() {
+            out.push((division, paths));
+        }
+    }
+    Ok(out)
 }
+
 fn eligible(s: &State, seat: SeatId, c: &CnaContent) -> Vec<UnitId> {
     s.land.reaction.window.as_ref().map_or_else(Vec::new, |w| {
         w.eligible
@@ -566,11 +579,19 @@ pub(super) fn open_continuation(
         .location
         .hex()
         .ok_or_else(|| illegal("interrupted mover is no longer on the map"))?;
-    let stop = super::stacking::validate_end(c, s, hex, k.seat.side, strict).is_ok();
+    let stop = movement::feasible(super::stacking::validate_end(
+        c,
+        s,
+        hex,
+        k.seat.side,
+        strict,
+    ))
+    .map_err(Rejection::Engine)?
+    .is_some();
     if k.mover_stopped && stop {
         return movement::finish_continuation(c, s, strict, cx);
     }
-    let reaches = movement::reachable(c, s, &k.unit, strict);
+    let reaches = movement::reachable(c, s, &k.unit, strict).map_err(Rejection::Engine)?;
     if !stop && reaches.is_empty() {
         if strict {
             movement::defer_stop(

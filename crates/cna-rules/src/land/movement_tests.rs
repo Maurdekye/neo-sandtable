@@ -829,7 +829,9 @@ fn randomized_baseline_orders_are_accepted_across_many_seeds_in_both_profiles() 
         let mut destinations = BTreeSet::new();
         for seed in 0..48u8 {
             let mut rng = CampaignRng::from_seed([seed; 32]);
-            let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng);
+            let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng)
+                .unwrap()
+                .expect("movement kind is handled");
             assert!(!action.as_array().unwrap().is_empty());
             destinations.insert(action[0]["path"].clone().to_string());
             respond(&c, &g, request.seat, action, strict).unwrap();
@@ -846,7 +848,9 @@ fn randomized_baseline_orders_are_accepted_across_many_seeds_in_both_profiles() 
             &unmoving,
             &request,
             &mut CampaignRng::from_seed([1; 32]),
-        );
+        )
+        .unwrap()
+        .expect("movement kind is handled");
         assert_eq!(action, json!([]));
     }
 }
@@ -869,7 +873,7 @@ fn inspect_includes_a_legal_destination_beyond_an_overfull_transit_hex() {
         place(&mut s, &id, "C4021");
     }
     let g = start(&c, s, true);
-    let paths = reachable(&c, &g.state, &LEG.into(), true);
+    let paths = reachable(&c, &g.state, &LEG.into(), true).unwrap();
     assert!(!paths.iter().any(|r| r.hex.as_str() == "C4021"));
     let path = paths.iter().find(|r| r.hex.as_str() == "C4022").unwrap();
     assert_eq!(path.cp_quarters, 8);
@@ -921,7 +925,9 @@ fn profile_real_roster_movement() {
             &g.state,
             &request,
             &mut CampaignRng::from_seed([seed; 32]),
-        );
+        )
+        .unwrap()
+        .expect("movement kind is handled");
         eprintln!(
             "baseline seed{seed}: {:?}, {} orders",
             t.elapsed(),
@@ -983,7 +989,9 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
             after_setup += 1;
         }
         let action = if request.kind == KIND {
-            let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng);
+            let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng)
+                .unwrap()
+                .expect("movement kind is handled");
             moves += action.as_array().unwrap().len();
             action
         } else if request.kind == super::super::breakdown::window::KIND {
@@ -1048,7 +1056,7 @@ fn planning_rebuilds_occupancy_after_a_nearby_move_and_checkpoint() {
     let (c, s, _o) = setup(TANK, Some("road"), false, None);
     let g = start(&c, s, true);
     let id: UnitId = TANK.into();
-    let original = serde_json::to_value(reachable(&c, &g.state, &id, true)).unwrap();
+    let original = serde_json::to_value(reachable(&c, &g.state, &id, true).unwrap()).unwrap();
     let mut congested = g.state.clone();
     let others: Vec<_> = congested
         .units_of(Side::Axis)
@@ -1064,17 +1072,17 @@ fn planning_rebuilds_occupancy_after_a_nearby_move_and_checkpoint() {
     for other in &others {
         place(&mut congested, other, "C4021");
     }
-    let paths = reachable(&c, &congested, &id, true);
+    let paths = reachable(&c, &congested, &id, true).unwrap();
     let dest = paths.iter().find(|r| r.hex.as_str() == "C4021").unwrap();
     assert_eq!(dest.cp_quarters, 8);
     let encoded = serde_json::to_value(&congested).unwrap();
     let recovered: State = serde_json::from_value(encoded).unwrap();
     assert_eq!(
-        serde_json::to_value(reachable(&c, &recovered, &id, true)).unwrap(),
+        serde_json::to_value(reachable(&c, &recovered, &id, true).unwrap()).unwrap(),
         serde_json::to_value(&paths).unwrap()
     );
     assert_eq!(
-        serde_json::to_value(reachable(&c, &g.state, &id, true)).unwrap(),
+        serde_json::to_value(reachable(&c, &g.state, &id, true).unwrap()).unwrap(),
         original
     );
     let changed = Game::<Cna> {
@@ -1104,7 +1112,7 @@ fn planning_detaches_once_for_a_complete_path_and_stops_at_remaining_cp() {
     s.land.units.get_mut(&child.into()).unwrap().detached = false;
     let g = start(&c, s, true);
     let before = serde_json::to_value(&g.state).unwrap();
-    let paths = reachable(&c, &g.state, &child.into(), true);
+    let paths = reachable(&c, &g.state, &child.into(), true).unwrap();
     let dest = paths.iter().find(|r| r.hex.as_str() == "C4023").unwrap();
     assert_eq!(dest.cp_quarters, 16); // one CP detach, three one-CP road entries
     let t = respond(
@@ -1129,7 +1137,11 @@ fn planning_detaches_once_for_a_complete_path_and_stops_at_remaining_cp() {
         .get_mut(&child.into())
         .unwrap()
         .voluntary_cp_quarters = ceiling - 5;
-    assert!(reachable(&c, &exhausted, &child.into(), true).is_empty());
+    assert!(
+        reachable(&c, &exhausted, &child.into(), true)
+            .unwrap()
+            .is_empty()
+    );
 }
 /// Cases: land:6.15, land:9.21, land:19.46
 #[test]
@@ -1205,7 +1217,7 @@ fn restricted_infantry_members_set_the_whole_formations_cpa_ceiling() {
             accepted.game.state.land.units[&parent.into()].cp_spent_quarters,
             a.cpa * 4
         );
-        let paths = reachable(&c, &g.state, &parent.into(), true);
+        let paths = reachable(&c, &g.state, &parent.into(), true).unwrap();
         assert!(!paths.is_empty());
         assert!(paths.iter().all(|p| p.cp_quarters <= 4));
     }
@@ -1225,7 +1237,11 @@ fn dry_vehicle_stops_its_entire_stack_without_spending_fuel_cp_or_water() {
         .activity_water = WaterPoints::ZERO;
     let owner = seat(&g);
     assert!(!available(&c, &g.state, owner).contains(&TANK.into()));
-    assert!(reachable(&c, &g.state, &TANK.into(), true).is_empty());
+    assert!(
+        reachable(&c, &g.state, &TANK.into(), true)
+            .unwrap()
+            .is_empty()
+    );
     let before = serde_json::to_value(&g.state).unwrap();
     let err = respond(
         &c,
@@ -1323,7 +1339,11 @@ fn activity_water_covers_all_attached_trucks_once_per_stage_even_after_recovery(
     let mut next_stage = t.game.state;
     next_stage.cursor.op_stage = Some(2);
     next_stage.land.movement.moved.clear();
-    assert!(reachable(&c, &next_stage, &TANK.into(), true).is_empty());
+    assert!(
+        reachable(&c, &next_stage, &TANK.into(), true)
+            .unwrap()
+            .is_empty()
+    );
 }
 /// Cases: land:3.62, airlog:51.23, airlog:52.51, airlog:52.52
 #[test]
@@ -1352,7 +1372,9 @@ fn supplied_baseline_remains_legal_with_half_rations_and_a_dry_candidate() {
                 &g.state,
                 &request,
                 &mut CampaignRng::from_seed([seed; 32]),
-            );
+            )
+            .unwrap()
+            .expect("movement kind is handled");
             assert!(!action.as_array().unwrap().is_empty());
             assert_eq!(action[0]["unit"], other);
             respond(&c, &g, request.seat, action, strict).unwrap();
@@ -1485,7 +1507,7 @@ fn cycle_proximity_counts_any_unit_and_is_captured_before_combat_changes_positio
     super::super::cycles::finish_movement(&c, &mut s);
     assert!(!s.land.movement.cycle_blocked.contains(&TANK.into())); // nearby noncombat unit qualifies
     s.cursor.cycle = 2;
-    assert!(!reachable(&c, &s, &TANK.into(), false).is_empty());
+    assert!(!reachable(&c, &s, &TANK.into(), false).unwrap().is_empty());
 }
 
 /// Cases: land:18.11, land:18.12, land:18.13, land:18.14, land:18.22, land:18.23, land:18.24, land:18.25, land:18.26
@@ -1514,7 +1536,7 @@ fn reserve_designation_movement_and_release_survive_recovery() {
     let g = evaluate(&Cna::dev(), &c, &recovered, &Command::Advance)
         .unwrap()
         .game;
-    let reach = reachable(&c, &g.state, &TANK.into(), false);
+    let reach = reachable(&c, &g.state, &TANK.into(), false).unwrap();
     assert!(reach.iter().all(|r| r.path.len() == 1));
     assert!(
         respond(
@@ -1559,7 +1581,11 @@ fn reserve_designation_movement_and_release_survive_recovery() {
         .unwrap()
         .game;
     assert!(g.state.decisions.pending.iter().all(|p| p.kind != KIND));
-    assert!(reachable(&c, &g.state, &TANK.into(), false).is_empty());
+    assert!(
+        reachable(&c, &g.state, &TANK.into(), false)
+            .unwrap()
+            .is_empty()
+    );
     let mut release = g;
     // This fixture advances only the reserve/movement windows, not the separate combat windows.
     release.state.decisions.pending.clear();
@@ -1587,7 +1613,11 @@ fn reserve_designation_movement_and_release_survive_recovery() {
         .unwrap()
         .game;
     assert_eq!(g.state.cursor.cycle, 3);
-    assert!(!reachable(&c, &g.state, &TANK.into(), false).is_empty());
+    assert!(
+        !reachable(&c, &g.state, &TANK.into(), false)
+            .unwrap()
+            .is_empty()
+    );
 }
 
 fn reaction_fixture() -> (CnaContent, Game<Cna>, Overlay, UnitId) {
@@ -1694,7 +1724,9 @@ fn reaction_baseline_answers_are_accepted_for_many_seeds() {
     assert_eq!(request.kind, super::super::reaction::KIND);
     for n in 0..96u8 {
         let mut rng = CampaignRng::from_seed([n; 32]);
-        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng);
+        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng)
+            .unwrap()
+            .expect("movement kind is handled");
         let accepted = respond(&c, &t.game, request.seat, action.clone(), true);
         assert!(accepted.is_ok(), "seed {n}: {action}: {:?}", accepted.err());
     }
@@ -2145,7 +2177,9 @@ fn reaction_in_overfull_transit_hex_requires_a_legal_continuation() {
             &t.game.state,
             &request,
             &mut CampaignRng::from_seed([n; 32]),
-        );
+        )
+        .unwrap()
+        .expect("movement kind is handled");
         assert!(respond(&c, &t.game, mover, action, true).is_ok());
     }
     let result = respond(
@@ -2893,7 +2927,7 @@ fn incoming_cohort_search_restores_foreign_origin_stock_and_shared_rounding_cred
         Some(&"C4020".into())
     );
     let before = serde_json::to_value(&s).unwrap();
-    let paths = reachable(&c, &s, &child, true);
+    let paths = reachable(&c, &s, &child, true).unwrap();
     assert!(paths.iter().any(|p| p.hex.as_str() == "C4033"));
     assert!(paths.iter().any(|p| p.hex.as_str() == "C4010"));
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
@@ -2910,12 +2944,12 @@ fn incoming_cohort_search_restores_foreign_origin_stock_and_shared_rounding_cred
         assert_eq!(cost.cp_quarters, r.cp_quarters, "{}", r.hex);
     }
     assert_eq!(
-        serde_json::to_value(reachable(&c, &s, &child, true)).unwrap(),
+        serde_json::to_value(reachable(&c, &s, &child, true).unwrap()).unwrap(),
         serde_json::to_value(&paths).unwrap()
     );
     let restored: State = serde_json::from_value(before).unwrap();
     assert_eq!(
-        serde_json::to_value(reachable(&c, &restored, &child, true)).unwrap(),
+        serde_json::to_value(reachable(&c, &restored, &child, true).unwrap()).unwrap(),
         serde_json::to_value(&paths).unwrap()
     );
 }
@@ -2962,6 +2996,7 @@ fn box_handling_blocks_each_represented_member_and_expires_next_stage() {
             assert_eq!(serde_json::to_value(&a).unwrap(), before);
             assert!(
                 nonphasing_reachable(&c, &a, &LEG.into(), strict, NonPhasingMove::Retreat)
+                    .unwrap()
                     .is_empty()
             );
             a.cursor.op_stage = Some(2);
@@ -3110,7 +3145,7 @@ fn reaction_divides_trucks_then_moves_component_with_checkpoint_and_rollback() {
     let recovered: Game<Cna> =
         serde_json::from_slice(&serde_json::to_vec(&t.game).unwrap()).unwrap();
     let division = super::super::trucks::reachable_divisions(&c, &recovered.state, &child, true)
-        [&40]
+        .unwrap()[&40]
         .clone()
         .unwrap();
     let answer = json!([{"unit":child,"path":["C4023"],"truck_division":division}]);
@@ -3165,7 +3200,9 @@ fn reaction_division_baseline_is_seeded_and_always_accepted() {
         .unwrap();
     for n in 0..32u8 {
         let mut rng = CampaignRng::from_seed([n; 32]);
-        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng);
+        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng)
+            .unwrap()
+            .expect("movement kind is handled");
         assert!(
             action.as_array().is_some_and(|a| !a.is_empty()),
             "seed {n}: {action}"
@@ -3179,6 +3216,8 @@ fn reaction_division_baseline_is_seeded_and_always_accepted() {
         assert_eq!(
             action,
             crate::baseline::random_orders(&c, &t.game.state, &request, &mut same)
+                .unwrap()
+                .expect("movement kind is handled")
         );
     }
 }
@@ -3239,7 +3278,8 @@ fn reaction_division_space_accepts_defaults_and_rejects_unadvertised_history() {
                 && p.seat == SeatId::new(Side::Commonwealth, Role::FrontLine)
         })
         .unwrap();
-    let division = super::super::trucks::reachable_divisions(&c, &t.game.state, &child, true)[&40]
+    let division = super::super::trucks::reachable_divisions(&c, &t.game.state, &child, true)
+        .unwrap()[&40]
         .clone()
         .unwrap();
     let mut answer = json!([{"unit":child,"path":["C4023"],"with_stack":null,"close_assault":null,"truck_division":division}]);
@@ -3261,4 +3301,74 @@ fn reaction_division_space_accepts_defaults_and_rejects_unadvertised_history() {
         .remove("from");
     assert!(respond(&c, &t.game, request.seat, missing, true).is_err());
     assert_eq!(serde_json::to_value(&t.game).unwrap(), original);
+}
+
+/// Cases: land:3.62, land:8.17
+#[test]
+fn checked_search_filters_only_ordinary_illegal_candidates() {
+    assert_eq!(feasible(Ok(17)).unwrap(), Some(17));
+    assert_eq!(
+        feasible::<()>(Err(illegal("known path is illegal"))).unwrap(),
+        None
+    );
+    for error in [
+        EngineError::Unsupported {
+            case: "land:8.37".into(),
+            detail: "source detail".into(),
+        },
+        EngineError::Invariant {
+            detail: "ledger detail".into(),
+        },
+    ] {
+        assert_eq!(
+            feasible::<()>(Err(Rejection::Engine(error.clone()))).unwrap_err(),
+            error
+        );
+    }
+    let unexpected = Rejection::StaleRevision {
+        expected: 3,
+        got: 2,
+    };
+    assert_eq!(
+        feasible::<()>(Err(unexpected.clone())).unwrap_err(),
+        EngineError::Invariant {
+            detail: format!("unexpected rejection in trusted movement query: {unexpected:?}"),
+        }
+    );
+}
+
+/// Cases: land:3.62, land:8.37
+#[test]
+fn checked_selected_source_error_reaches_inspect_and_policy_without_mutation() {
+    let (mut c, mut s, _overlay) = setup(LEG, None, false, None);
+    c.map = CnaContent::load(&cna_content::repo_data_dir(), "graziani")
+        .unwrap()
+        .map;
+    place(&mut s, LEG, "C1020");
+    let g = start(&c, s, false);
+    let original = serde_json::to_value(&g).unwrap();
+    let expected = reachable(&c, &g.state, &LEG.into(), true).unwrap_err();
+    assert!(matches!(&expected, EngineError::Unsupported { case, .. } if case=="land:8.37"));
+    assert_eq!(
+        Cna::full()
+            .inspect(&c, &g.state, Perspective::Side(Side::Commonwealth), LEG)
+            .unwrap_err(),
+        Rejection::Engine(expected.clone())
+    );
+    let request = Cna::full().pending(&c, &g.state)[0].clone();
+    let mut controller = CampaignRng::from_seed([92; 32]);
+    let mut strict = g.state.clone();
+    strict.land.movement.strict = true;
+    assert_eq!(
+        crate::baseline::random_orders(&c, &strict, &request, &mut controller).unwrap_err(),
+        expected
+    );
+    assert_eq!(serde_json::to_value(&g).unwrap(), original);
+    // Authorization still wins over querying the same unknown source.
+    crate::testkit::assert_face_only(&Cna::full().inspect(
+        &c,
+        &g.state,
+        Perspective::Side(Side::Axis),
+        LEG,
+    ));
 }

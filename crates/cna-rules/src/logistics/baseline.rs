@@ -729,6 +729,8 @@ mod tests {
                 a
             } else if request.kind == crate::land::movement::KIND {
                 crate::baseline::random_orders(c, &g.state, &request, &mut controller)
+                    .unwrap()
+                    .expect("movement kind is handled")
             } else if request.space.pass.is_some() {
                 Value::Null
             } else {

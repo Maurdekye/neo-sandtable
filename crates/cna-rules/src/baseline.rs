@@ -8,6 +8,7 @@ use crate::{
 use cna_core::{
     decision::{ActionSchema, DecisionRequest},
     dice::CampaignRng,
+    engine::EngineError,
 };
 use serde_json::{Value, json};
 
@@ -39,23 +40,29 @@ pub fn random_orders(
     state: &State,
     request: &DecisionRequest,
     rng: &mut CampaignRng,
-) -> Value {
+) -> Result<Option<Value>, EngineError> {
     if !matches!(
         request.kind.as_str(),
         movement::KIND | reaction::KIND | reaction::CONTINUE
     ) {
-        return Value::Null;
+        return Ok(None);
     }
     let ActionSchema::List { item, .. } = &request.space.schema else {
-        return json!([]);
+        return Err(EngineError::Invariant {
+            detail: "handled movement request has an invalid advertised schema".into(),
+        });
     };
     let ActionSchema::Record { fields } = item.as_ref() else {
-        return json!([]);
+        return Err(EngineError::Invariant {
+            detail: "handled movement request has an invalid advertised schema".into(),
+        });
     };
     let Some(ActionSchema::Unit { among }) =
         fields.iter().find(|f| f.name == "unit").map(|f| &f.schema)
     else {
-        return json!([]);
+        return Err(EngineError::Invariant {
+            detail: "handled movement request has an invalid advertised schema".into(),
+        });
     };
     let mut units = among.clone();
     while !units.is_empty() {
@@ -70,15 +77,17 @@ pub fn random_orders(
         }
         let strict = state.land.movement.strict;
         if request.kind == reaction::KIND {
-            let options = reaction::plans(content, state, &id, strict);
+            let options = reaction::plans(content, state, &id, strict)?;
             if options.is_empty() {
                 continue;
             }
             let (division, paths) = &options[index(rng, options.len())];
             let path = &paths[index(rng, paths.len())];
-            return json!([{"unit":id,"path":path.path,"truck_division":division}]);
+            return Ok(Some(
+                json!([{"unit":id,"path":path.path,"truck_division":division}]),
+            ));
         }
-        let paths: Vec<_> = movement::reachable(content, state, &id, strict)
+        let paths: Vec<_> = movement::reachable(content, state, &id, strict)?
             .into_iter()
             .filter(|r| !r.path.is_empty())
             .collect();
@@ -86,9 +95,14 @@ pub fn random_orders(
             continue;
         }
         let path = &paths[index(rng, paths.len())];
-        return json!([{"unit":id,"path":path.path}]);
+        return Ok(Some(json!([{"unit":id,"path":path.path}])));
     }
-    json!([])
+    if request.space.pass.is_none() {
+        return Err(EngineError::Invariant {
+            detail: "mandatory movement request has no legal baseline path".into(),
+        });
+    }
+    Ok(Some(json!([])))
 }
 
 pub use crate::land::combat::random_positions;

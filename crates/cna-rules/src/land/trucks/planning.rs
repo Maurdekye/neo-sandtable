@@ -130,10 +130,31 @@ fn pack(
     }
     Some(result)
 }
-fn choices(s: &State, id: &UnitId, counts: [i32; 3]) -> Option<Vec<FuelCohortSelection>> {
+fn invariant(detail: &str) -> EngineError {
+    EngineError::Invariant {
+        detail: detail.into(),
+    }
+}
+fn choices(
+    s: &State,
+    id: &UnitId,
+    counts: [i32; 3],
+    strict: bool,
+) -> Result<Option<Vec<FuelCohortSelection>>, EngineError> {
     let mut need = counts;
     let mut choices = vec![];
-    for g in logistics::segment_fuel_cohorts(s, id).ok()? {
+    let Some(groups) = super::super::movement::feasible(
+        logistics::segment_fuel_cohorts(s, id).map_err(|e| supply(e, strict)),
+    )?
+    else {
+        return Ok(None);
+    };
+    for g in groups {
+        if g.count <= 0 {
+            return Err(invariant(
+                "reaction division has invalid physical cohort count",
+            ));
+        }
         let k = match g.kind {
             FuelTruckKind::Light => 0,
             FuelTruckKind::Medium => 1,
@@ -145,15 +166,28 @@ fn choices(s: &State, id: &UnitId, counts: [i32; 3]) -> Option<Vec<FuelCohortSel
             need[k] -= n;
         }
     }
-    (need == [0; 3]).then_some(choices)
+    Ok((need == [0; 3]).then_some(choices))
 }
-fn body_capacity(c: &CnaContent, s: &State, id: &UnitId) -> Option<i32> {
+fn body_capacity(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Result<Option<i32>, EngineError> {
     let mut draft = s.clone();
-    draft.land.units.get_mut(id)?.trucks = Trucks::default();
-    logistics::fuel_capacity(c, &draft, id)
-        .ok()
-        .map(|n| n.get())
+    draft
+        .land
+        .units
+        .get_mut(id)
+        .ok_or_else(|| invariant("reaction division is missing a trusted family member"))?
+        .trucks = Trucks::default();
+    super::super::movement::feasible(
+        logistics::fuel_capacity(c, &draft, id)
+            .map(|n| n.get())
+            .map_err(|e| supply(e, strict)),
+    )
 }
+
 fn tank_capacity(c: &CnaContent, n: [i32; 3]) -> Option<i32> {
     (0..3).try_fold(0i32, |sum, k| {
         sum.checked_add(
@@ -174,10 +208,12 @@ fn append(
     d: &mut Division,
     t: Transfer,
     strict: bool,
-) -> Option<()> {
-    apply_transfer(c, s, &t, strict).ok()?;
+) -> Result<Option<()>, EngineError> {
+    if super::super::movement::feasible(apply_transfer(c, s, &t, strict))?.is_none() {
+        return Ok(None);
+    }
     d.transfers.push(t);
-    Some(())
+    Ok(Some(()))
 }
 /// Consolidate parent-owned trucks, then divide the exact physical cohorts and cargo.
 /// Intermediate concentrations exist only inside the transaction; final cohesion retention,
@@ -191,26 +227,31 @@ fn witness(
     a: &[[i32; 3]],
     t: &[[i32; 3]],
     strict: bool,
-) -> Option<Division> {
-    let root = ids
-        .iter()
-        .position(|id| ownership::parent_for_unit(c, s, id).is_none_or(|p| !ids.contains(p)))?;
-    let stock = ids.iter().try_fold(Supplies::default(), |sum, id| {
-        let mut sum = points(sum);
-        let n = points(
-            s.logistics
-                .unit_supply
-                .get(id)
-                .cloned()
-                .unwrap_or_default()
-                .carried,
-        );
-        for k in 0..4 {
-            sum[k] = sum[k].checked_add(n[k])?;
-        }
-        Some(goods(sum))
-    })?;
-    let packing = pack(c, a, t, stock)?;
+) -> Result<Option<Division>, EngineError> {
+    let Some((root, packing)) = (|| {
+        let root = ids
+            .iter()
+            .position(|id| ownership::parent_for_unit(c, s, id).is_none_or(|p| !ids.contains(p)))?;
+        let stock = ids.iter().try_fold(Supplies::default(), |sum, id| {
+            let mut sum = points(sum);
+            let n = points(
+                s.logistics
+                    .unit_supply
+                    .get(id)
+                    .cloned()
+                    .unwrap_or_default()
+                    .carried,
+            );
+            for k in 0..4 {
+                sum[k] = sum[k].checked_add(n[k])?;
+            }
+            Some(goods(sum))
+        })?;
+        let packing = pack(c, a, t, stock)?;
+        Some((root, packing))
+    })() else {
+        return Ok(None);
+    };
     let mut draft = s.clone();
     let mut d = Division::default();
     for (i, id) in ids.iter().enumerate().filter(|(i, _)| *i != root) {
@@ -224,21 +265,34 @@ fn witness(
             .get(id)
             .cloned()
             .unwrap_or_default();
-        let loaded = pack(c, &[n], &[[0; 3]], source.carried)?.remove(0);
-        let fuel = (source.tank_fuel.get() - body_capacity(c, &draft, id)?).max(0);
+        let Some(mut loaded) = pack(c, &[n], &[[0; 3]], source.carried) else {
+            return Ok(None);
+        };
+        let loaded = loaded.remove(0);
+        let Some(body) = body_capacity(c, &draft, id, strict)? else {
+            return Ok(None);
+        };
+        let fuel = (source.tank_fuel.get() - body).max(0);
+        let Some(selected) = choices(&draft, id, n, strict)? else {
+            return Ok(None);
+        };
         let t = Transfer {
             from: id.clone(),
             to: ids[root].clone(),
-            cohorts: choices(&draft, id, n)?,
+            cohorts: selected,
             cargo: loaded,
             tank_fuel_tenths: fuel,
             activity_water_points: source.activity_water.get(),
         };
-        append(c, &mut draft, &mut d, t, strict)?;
+        if append(c, &mut draft, &mut d, t, strict)?.is_none() {
+            return Ok(None);
+        }
         debug_assert_eq!(ns(draft.land.units[&ids[i]].trucks), [0; 3]);
     }
     // Return vehicle fuel with the physical trucks, preserving each body's original fuel.
-    let root_body = body_capacity(c, &draft, &ids[root])?;
+    let Some(root_body) = body_capacity(c, &draft, &ids[root], strict)? else {
+        return Ok(None);
+    };
     let mut spare_fuel = (draft
         .logistics
         .unit_supply
@@ -253,7 +307,10 @@ fn witness(
         if a[i] == [0; 3] {
             continue;
         }
-        let fuel = spare_fuel.min(tank_capacity(c, a[i])?);
+        let fuel = spare_fuel.min(
+            tank_capacity(c, a[i])
+                .ok_or_else(|| invariant("reaction division tank capacity overflow"))?,
+        );
         spare_fuel -= fuel;
         let water = draft
             .logistics
@@ -265,16 +322,22 @@ fn witness(
             .get();
         let required = a[i]
             .into_iter()
-            .try_fold(0i32, |sum, n| sum.checked_add(n))?;
+            .try_fold(0i32, |sum, n| sum.checked_add(n))
+            .ok_or_else(|| invariant("reaction division water demand overflow"))?;
+        let Some(selected) = choices(&draft, &ids[root], a[i], strict)? else {
+            return Ok(None);
+        };
         let t = Transfer {
             from: ids[root].clone(),
             to: id.clone(),
-            cohorts: choices(&draft, &ids[root], a[i])?,
+            cohorts: selected,
             cargo: packing[i].clone(),
             tank_fuel_tenths: fuel,
             activity_water_points: water.min(required),
         };
-        append(c, &mut draft, &mut d, t, strict)?;
+        if append(c, &mut draft, &mut d, t, strict)?.is_none() {
+            return Ok(None);
+        }
     }
     d.allocations = ids
         .iter()
@@ -285,8 +348,12 @@ fn witness(
             packing: packing[i].clone(),
         })
         .collect();
-    preview_reaction_division(c, s, reactor, &d, strict).ok()?;
-    Some(d)
+    if super::super::movement::feasible(preview_reaction_division(c, s, reactor, &d, strict))?
+        .is_none()
+    {
+        return Ok(None);
+    }
+    Ok(Some(d))
 }
 struct Search<'a> {
     c: &'a CnaContent,
@@ -301,9 +368,14 @@ struct Search<'a> {
     answer: Option<Division>,
 }
 impl Search<'_> {
-    fn retained(&mut self, i: usize, remaining: [i32; 3], mut a: Vec<[i32; 3]>) {
+    fn retained(
+        &mut self,
+        i: usize,
+        remaining: [i32; 3],
+        mut a: Vec<[i32; 3]>,
+    ) -> Result<(), EngineError> {
         if self.answer.is_some() {
-            return;
+            return Ok(());
         }
         if i == self.ids.len() {
             for k in 0..3 {
@@ -317,8 +389,8 @@ impl Search<'_> {
                 &a,
                 &self.transport,
                 self.strict,
-            );
-            return;
+            )?;
+            return Ok(());
         }
         let u = &self.s.land.units[&self.ids[i]];
         if u.cohesion_quarters <= -20 && u.trucks.total() > 0 && a[i] == [0; 3] {
@@ -328,41 +400,42 @@ impl Search<'_> {
                     next[k] -= 1;
                     let mut n = a.clone();
                     n[i][k] += 1;
-                    self.retained(i + 1, next, n);
+                    self.retained(i + 1, next, n)?;
                 }
             }
         } else {
-            self.retained(i + 1, remaining, a);
+            self.retained(i + 1, remaining, a)?;
         }
+        Ok(())
     }
-    fn transport(&mut self, i: usize, remaining: [i32; 3]) {
+    fn transport(&mut self, i: usize, remaining: [i32; 3]) -> Result<(), EngineError> {
         if self.answer.is_some() {
-            return;
+            return Ok(());
         }
         if i == self.ids.len() {
-            self.retained(0, remaining, self.transport.clone());
-            return;
+            self.retained(0, remaining, self.transport.clone())?;
+            return Ok(());
         }
         let id = &self.ids[i];
         if !self.moving.contains(id) {
-            self.transport(i + 1, remaining);
-            return;
+            self.transport(i + 1, remaining)?;
+            return Ok(());
         }
         let mut base = self.s.clone();
         base.land.units.get_mut(id).unwrap().transport_trucks = Trucks::default();
         if formation::individual_allowance(self.c, &base, id).is_some_and(|a| a.cpa >= self.target)
         {
-            self.transport(i + 1, remaining);
-            return;
+            self.transport(i + 1, remaining)?;
+            return Ok(());
         }
         let Some(class) = formation::class(self.c, id) else {
-            return;
+            return Ok(());
         };
         let need = formation::strength(self.c, self.s, id)
             .checked_mul(2)
-            .unwrap_or(0);
+            .ok_or_else(|| invariant("reaction division transport demand overflow"))?;
         if need <= 0 {
-            return;
+            return Ok(());
         }
         let capacities = KINDS.map(|kind| {
             let chart = self.c.tables.airlog.truck_characteristics.truck(kind);
@@ -407,14 +480,15 @@ impl Search<'_> {
                         continue;
                     }
                     self.transport[i] = n;
-                    self.transport(i + 1, std::array::from_fn(|k| remaining[k] - n[k]));
+                    self.transport(i + 1, std::array::from_fn(|k| remaining[k] - n[k]))?;
                     if self.answer.is_some() {
-                        return;
+                        return Ok(());
                     }
                 }
             }
         }
         self.transport[i] = [0; 3];
+        Ok(())
     }
 }
 /// Every offered rating has a complete legal witness using only this family's holdings.
@@ -426,20 +500,20 @@ pub fn reachable_divisions(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> BTreeMap<i32, Option<Division>> {
+) -> Result<BTreeMap<i32, Option<Division>>, EngineError> {
     let mut out = BTreeMap::new();
     if let Some(a) = formation::allowance(c, s, id) {
         out.insert(a.cpa, None);
     }
     if ownership::parent_for_unit(c, s, id).is_none() {
-        return out;
+        return Ok(out);
     }
     let ids = family(c, s, id);
     let Some(root) = ids
         .iter()
         .position(|id| ownership::parent_for_unit(c, s, id).is_none_or(|p| !ids.contains(p)))
     else {
-        return out;
+        return Ok(out);
     };
     let Some(available) = ids.iter().try_fold([0i32; 3], |mut n, id| {
         for (k, count) in ns(s.land.units[id].trucks).into_iter().enumerate() {
@@ -450,10 +524,12 @@ pub fn reachable_divisions(
         }
         Some(n)
     }) else {
-        return out;
+        return Err(invariant(
+            "reaction division family truck inventory is invalid or overflows",
+        ));
     };
     if available == [0; 3] {
-        return out;
+        return Ok(out);
     }
     let moving: BTreeSet<_> = formation::members(c, s, id).into_iter().collect();
     let mut ratings = BTreeSet::new();
@@ -498,13 +574,17 @@ pub fn reachable_divisions(
             target,
             answer: None,
         };
-        search.transport(0, available);
-        if let Some(d) = search.answer
-            && let Ok(draft) = preview_reaction_division(c, s, id, &d, strict)
-            && let Some(a) = formation::allowance(c, &draft, id)
-        {
-            out.entry(a.cpa).or_insert(Some(d));
+        search.transport(0, available)?;
+        if let Some(d) = search.answer {
+            let Some(draft) =
+                super::super::movement::feasible(preview_reaction_division(c, s, id, &d, strict))?
+            else {
+                continue;
+            };
+            if let Some(a) = formation::allowance(c, &draft, id) {
+                out.entry(a.cpa).or_insert(Some(d));
+            }
         }
     }
-    out
+    Ok(out)
 }

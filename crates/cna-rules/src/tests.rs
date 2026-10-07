@@ -693,6 +693,8 @@ fn moved_flags_stay_live_and_decision_ids_count_per_seat() {
         let request = ruleset.pending(content, &game.state).remove(0);
         let action = if request.kind == land::movement::KIND && mover.is_none() {
             baseline::random_orders(content, &game.state, &request, &mut rng)
+                .unwrap()
+                .expect("movement kind is handled")
         } else {
             match &request.space.schema {
                 ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),

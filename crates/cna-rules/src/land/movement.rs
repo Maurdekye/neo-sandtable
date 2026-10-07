@@ -79,6 +79,18 @@ pub struct Reachable {
     #[serde(skip)]
     end_valid: bool,
 }
+/// Only an ordinary illegal candidate may be omitted from an own-information search.
+/// Cases: land:3.62, land:8.17
+pub(crate) fn feasible<T>(result: Result<T, Rejection>) -> Result<Option<T>, EngineError> {
+    match result {
+        Ok(value) => Ok(Some(value)),
+        Err(Rejection::Illegal { .. }) => Ok(None),
+        Err(Rejection::Engine(error)) => Err(error),
+        Err(other) => Err(EngineError::Invariant {
+            detail: format!("unexpected rejection in trusted movement query: {other:?}"),
+        }),
+    }
+}
 fn unsupported(case: &str, detail: &str) -> Rejection {
     Rejection::Engine(EngineError::Unsupported {
         case: case.into(),
@@ -781,7 +793,12 @@ fn run(
                 before_to != state.stack_presence(&to, seat.side),
                 events,
             );
-            if stacking::validate_end(content, state, &to, seat.side, strict).is_ok() {
+            if feasible(stacking::validate_end(
+                content, state, &to, seat.side, strict,
+            ))
+            .map_err(Rejection::Engine)?
+            .is_some()
+            {
                 last_legal = Some((
                     state.clone(),
                     to.clone(),
@@ -809,7 +826,7 @@ fn run(
         Some(group) => group.stacks.validate_end(&from, strict),
         None => stacking::validate_end(content, state, &from, seat.side, strict),
     };
-    let end_valid = end.is_ok();
+    let end_valid = feasible(end.clone()).map_err(Rejection::Engine)?.is_some();
     if check_end
         && !path.is_empty()
         && (state.land.movement.mode != WindowMode::Segment || state.land.reaction.window.is_none())
@@ -1292,7 +1309,7 @@ pub fn nonphasing_reachable(
     id: &UnitId,
     strict: bool,
     kind: NonPhasingMove,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, EngineError> {
     reachable_inner(c, &nonphasing_draft(s, kind), id, strict)
 }
 /// Pure own-information validation; neither the input state nor adjudication dice changes.
@@ -1448,7 +1465,7 @@ impl PlanningNode {
             movement: state.land.movement.clone(),
         }
     }
-    fn restore(&self, state: &mut State) {
+    fn restore(&self, state: &mut State) -> Result<(), EngineError> {
         logistics::restore_fuel_accounts(state, &self.fuel_accounts);
         for unit in &self.units {
             state.land.units.insert(unit.id.clone(), unit.clone());
@@ -1493,12 +1510,18 @@ impl PlanningNode {
             }
         }
         state.land.movement.clone_from(&self.movement);
+        Ok(())
     }
 }
 /// Paths are priced using only the side's disclosed control answers. An unknown future control
 /// is labelled; inspect never asks authoritative enemy strength at a hypothetical destination.
 /// Cases: land:3.62, land:8.13, land:8.17, land:10.6
-pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool) -> Vec<Reachable> {
+pub fn reachable(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Result<Vec<Reachable>, EngineError> {
     if state.land.movement.mode == WindowMode::Segment
         && state
             .land
@@ -1516,9 +1539,9 @@ fn reachable_inner(
     state: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, EngineError> {
     let Some(unit) = state.land.units.get(id) else {
-        return vec![];
+        return Ok(vec![]);
     };
     let seat = SeatId::new(unit.side, ownership::seat_for_unit(content, state, id));
     if (state.land.movement.mode == WindowMode::Segment
@@ -1527,7 +1550,7 @@ fn reachable_inner(
             && state.cursor.phasing(state.turn.player_a) != Some(unit.side))
         || !eligible(content, state, id, seat)
     {
-        return vec![];
+        return Ok(vec![]);
     }
     let moving = state
         .land
@@ -1544,18 +1567,19 @@ fn reachable_inner(
         .filter_map(|m| formation::individual_allowance(content, state, m))
         .min_by_key(|a| a.cpa)
     else {
-        return vec![];
+        return Ok(vec![]);
     };
     // Every entered edge costs at least one quarter CP. Do not search a graph when even
     // that lower bound is impossible for a represented member or its fuel holdings.
     for member in &moving {
-        if moving_limits(content, state, member, strict)
-            .and_then(|limit| {
+        if feasible(
+            moving_limits(content, state, member, strict).and_then(|limit| {
                 validate_window_cp(state, &state.land.units[member], allowance, 1, limit)
-            })
-            .is_err()
+            }),
+        )?
+        .is_none()
         {
-            return vec![];
+            return Ok(vec![]);
         }
         let previous = state
             .logistics
@@ -1568,11 +1592,18 @@ fn reachable_inner(
                     && ledger.segment.cycle == state.cursor.cycle
             })
             .map_or(0, |ledger| ledger.cp_quarters);
-        if previous
+        let next = previous
             .checked_add(1)
-            .is_none_or(|next| logistics::plan_segment_fuel(content, state, member, next).is_err())
+            .ok_or_else(|| EngineError::Invariant {
+                detail: "movement search fuel CP overflow".into(),
+            })?;
+        if feasible(
+            logistics::plan_segment_fuel(content, state, member, next)
+                .map_err(|error| supply_error(error, strict)),
+        )?
+        .is_none()
         {
-            return vec![];
+            return Ok(vec![]);
         }
     }
     let origin = unit.location.hex().unwrap().clone();
@@ -1584,7 +1615,7 @@ fn reachable_inner(
         changed.push(parent.clone());
     }
     let mut draft = state.clone();
-    let Ok(members) = unit_stack(
+    let Some(members) = feasible(unit_stack(
         content,
         &mut draft,
         &Order {
@@ -1601,15 +1632,18 @@ fn reachable_inner(
         },
         seat,
         strict,
-    ) else {
-        return vec![];
-    };
-    let Ok(limits) = members
-        .iter()
-        .map(|id| moving_limits(content, &draft, id, strict))
-        .collect::<Result<Vec<_>, _>>()
+    ))?
     else {
-        return vec![];
+        return Ok(vec![]);
+    };
+    let Some(limits) = feasible(
+        members
+            .iter()
+            .map(|id| moving_limits(content, &draft, id, strict))
+            .collect::<Result<Vec<_>, _>>(),
+    )?
+    else {
+        return Ok(vec![]);
     };
     let base = draft.clone();
     let group = PlanningGroup {
@@ -1724,21 +1758,23 @@ fn reachable_inner(
         let Some(node) = frontier.remove(&hex) else {
             continue;
         };
-        node.restore(&mut draft);
-        if group
-            .members
-            .iter()
-            .zip(&group.limits)
-            .any(|(member, limit)| {
-                validate_window_cp(
-                    &draft,
-                    &draft.land.units[member],
-                    group.allowance,
-                    1,
-                    *limit,
-                )
-                .is_err()
-            })
+        node.restore(&mut draft)?;
+        if feasible(
+            group
+                .members
+                .iter()
+                .zip(&group.limits)
+                .try_for_each(|(member, limit)| {
+                    validate_window_cp(
+                        &draft,
+                        &draft.land.units[member],
+                        group.allowance,
+                        1,
+                        *limit,
+                    )
+                }),
+        )?
+        .is_none()
         {
             continue;
         }
@@ -1770,12 +1806,14 @@ fn reachable_inner(
                 || best
                     .get(&to.id)
                     .is_some_and(|r| r.cp_quarters <= cost.saturating_add(1))
-                || map::terrain(content, &to.id, strict).is_err()
             {
                 continue;
             }
-            node.restore(&mut draft);
-            if let Ok(mut r) = run(
+            if feasible(map::terrain(content, &to.id, strict))?.is_none() {
+                continue;
+            }
+            node.restore(&mut draft)?;
+            let result = run(
                 content,
                 &mut draft,
                 &Order {
@@ -1796,31 +1834,33 @@ fn reachable_inner(
                 false,
                 &mut Vec::new(),
                 Some(&group),
-            ) {
-                let mut path = prior.as_ref().map_or_else(Vec::new, |p| p.path.clone());
-                path.extend(r.path);
-                r.path = path;
-                r.cp_quarters = draft.land.units[id].cp_spent_quarters - initial_cp;
-                r.fuel_tenths += prior.as_ref().map_or(0, |p| p.fuel_tenths);
-                r.control_unknown |= prior.as_ref().is_some_and(|p| p.control_unknown);
-                if best
-                    .get(&to.id)
-                    .is_none_or(|old| r.cp_quarters < old.cp_quarters)
-                {
-                    for member in formation::members(content, &draft, id) {
-                        draft.land.movement.moved.remove(&member);
-                    }
-                    queue.insert((r.cp_quarters, to.id.clone()));
-                    frontier.insert(
-                        to.id.clone(),
-                        PlanningNode::capture(&draft, &changed, &stocks, &dumps),
-                    );
-                    best.insert(to.id.clone(), r);
+            );
+            let Some(mut r) = feasible(result)? else {
+                continue;
+            };
+            let mut path = prior.as_ref().map_or_else(Vec::new, |p| p.path.clone());
+            path.extend(r.path);
+            r.path = path;
+            r.cp_quarters = draft.land.units[id].cp_spent_quarters - initial_cp;
+            r.fuel_tenths += prior.as_ref().map_or(0, |p| p.fuel_tenths);
+            r.control_unknown |= prior.as_ref().is_some_and(|p| p.control_unknown);
+            if best
+                .get(&to.id)
+                .is_none_or(|old| r.cp_quarters < old.cp_quarters)
+            {
+                for member in formation::members(content, &draft, id) {
+                    draft.land.movement.moved.remove(&member);
                 }
+                queue.insert((r.cp_quarters, to.id.clone()));
+                frontier.insert(
+                    to.id.clone(),
+                    PlanningNode::capture(&draft, &changed, &stocks, &dumps),
+                );
+                best.insert(to.id.clone(), r);
             }
         }
     }
-    best.into_values().filter(|r| r.end_valid).collect()
+    Ok(best.into_values().filter(|r| r.end_valid).collect())
 }
 
 #[cfg(test)]
