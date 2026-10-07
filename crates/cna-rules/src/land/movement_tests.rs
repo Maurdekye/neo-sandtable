@@ -1046,6 +1046,9 @@ fn profiling_answer(
             "mandatory breakdown baseline must preserve every holding"
         );
         action
+    } else if request.kind == "cna.arrivals.batch" {
+        crate::baseline::arrival_orders(c, state, request)
+            .expect("mandatory arrival batch has a source-conserving plan")
     } else if request.space.pass.is_some()
         && matches!(&request.space.schema, ActionSchema::Choice { options } if options.is_empty())
     {
