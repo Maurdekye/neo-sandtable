@@ -1486,6 +1486,8 @@ fn reserve_designation_movement_and_release_survive_recovery() {
     assert!(g.state.decisions.pending.iter().all(|p| p.kind != KIND));
     assert!(reachable(&c, &g.state, &TANK.into(), false).is_empty());
     let mut release = g;
+    // This fixture advances only the reserve/movement windows, not the separate combat windows.
+    release.state.decisions.pending.clear();
     release.state.cursor.index = 9;
     release.state.cursor.entered = false;
     let release = evaluate(&Cna::dev(), &c, &release, &Command::Advance)
