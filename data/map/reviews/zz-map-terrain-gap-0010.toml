@@ -1,0 +1,36 @@
+[batch]
+id = "zz-map-terrain-gap-0010"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-terrain"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+supersedes = "map-terrain-0008"
+selection = "Exact assigned Graziani terrain-gap cells: D3332,E2301,E2405"
+notes = "Fresh complete native4x and8x cell views against actual TEC; adopted map-0002/map-0003. Explicit amendments preserve prior inputs. No automated color classifier, lake/facility/edge/halo/action inference or source-error estimate."
+
+[[hex]]
+hex_id = "D3332"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views compared directly with TEC show a yellow branching salt-marsh network on the beige land wedge inside the bottom printed sides. Salt marsh occupies the predominant visible LAND footprint; cream clear ground forms the smaller surrounding region. Accept salt_marsh with land/coastal under map-0002/map-0003. Minor substrate: clear. Marine blue is excluded from land predominance; nearby road/rail ink below the cell does not supply terrain."
+
+[[hex]]
+hex_id = "E2301"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show beige rough middle/right ground and cream clear left/lower/upper ground. Their footprints remain too comparable for a confident decision. Gray contour graphics are separate. Retain Unknown."
+
+[[hex]]
+hex_id = "E2405"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show a beige rough central island with broad cream clear margins. No confidently predominant land substrate is established. Retain Unknown."

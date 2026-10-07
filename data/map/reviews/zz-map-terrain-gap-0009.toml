@@ -1,0 +1,28 @@
+[batch]
+id = "zz-map-terrain-gap-0009"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-terrain"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+supersedes = "zmap-0003-graziani-0004"
+selection = "Exact assigned Graziani terrain-gap cells: D2917,D3414"
+notes = "Fresh complete native4x and8x cell views against actual TEC; adopted map-0002/map-0003. Explicit amendments preserve prior inputs. No automated color classifier, lake/facility/edge/halo/action inference or source-error estimate."
+
+[[hex]]
+hex_id = "D2917"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show beige rough upper/left/central ground and substantial cream clear upper-right/lower/right ground. No confident predominance is established. Ochre outside/border graphics do not add a substrate. Retain Unknown."
+
+[[hex]]
+hex_id = "D3414"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show a salt-marsh patterned central body and substantial cream clear ground. Ochre contour margins complicate the visible substrate footprint and do not establish mountain terrain. No confident predominance; retain Unknown."

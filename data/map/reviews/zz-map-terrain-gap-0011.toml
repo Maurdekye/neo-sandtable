@@ -1,0 +1,92 @@
+[batch]
+id = "zz-map-terrain-gap-0011"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-terrain"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+supersedes = "map-terrain-0009"
+selection = "Exact assigned Graziani terrain-gap cells: E3210,E3214,E3311,E3312,E3412,E3413,E3414,E3514,E3614,E3713"
+notes = "Fresh complete native4x and8x cell views against actual TEC; adopted map-0002/map-0003. Explicit amendments preserve prior inputs. No automated color classifier, lake/facility/edge/halo/action inference or source-error estimate."
+
+[[hex]]
+hex_id = "E3210"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show a diagonal beige rough central patch and substantial cream clear margins; tied transport ink obscures part of the mixed footprint. No confident predominance; retain Unknown."
+
+[[hex]]
+hex_id = "E3214"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show flat gray-green ground mixed with cream clear ground. The gray-green fill cannot be confidently bound to the actual TEC delta or swamp example. A geographic label or neighboring classification cannot settle it. Known land, terrain Unknown."
+
+[[hex]]
+hex_id = "E3311"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show horizontal green lines and reed-like tufts across the land body. These suggest swamp but differ from the thin vertical strokes in the actual TEC example; the family binding remains unverified. Marginal contour graphics are separate. Known land, terrain Unknown."
+
+[[hex]]
+hex_id = "E3312"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show horizontal green lines and reed-like tufts on land, with road/tied transport crossings. A swamp hypothesis cannot be verified against the actual TEC example. Do not treat the patterned background as clear terrain. Known land, terrain Unknown."
+
+[[hex]]
+hex_id = "E3412"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show horizontal green lines and reed-like tufts within the printed cell. Their TEC substrate binding remains unresolved. Blue chiefly outside the right printed side does not establish marine coastal ground in this cell. Known land, terrain Unknown."
+
+[[hex]]
+hex_id = "E3413"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show patterned land with horizontal green lines/reed-like tufts and blue water within the upper/right body. The land pattern is not confidently bound to TEC, and the water identity as sea, lake or river is unresolved. Retain terrain AND coastal-domain Unknown; empty flags deliberately supply neither mask."
+
+[[hex]]
+hex_id = "E3414"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show patterned cream land bordered by blue within the cell. The land-pattern TEC binding and the marine/inland identity of the blue water remain unresolved. Retain terrain AND coastal-domain Unknown; empty flags supply neither mask."
+
+[[hex]]
+hex_id = "E3514"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show flat gray-green ground, cream regions and blue within left/lower parts. Gray-green cannot be confidently bound to actual TEC; blue water identity remains unresolved. The adjacent port symbol lies outside this cell and establishes neither substrate nor water subtype. Retain both domains Unknown with empty flags."
+
+[[hex]]
+hex_id = "E3614"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show flat gray-green ground, cream regions, a blue band and a closed blue pool inside the printed boundary. The TEC land binding and sea/lake/river identity remain unresolved. A neighboring flying-boat graphic alone does not settle this cell. Retain both terrain and coastal-domain Unknown with empty flags."
+
+[[hex]]
+hex_id = "E3713"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native4x and8x views show a small coastal land fragment with building graphics spilling across the southeast printed side from the adjacent city drawing. This does not establish a separate major-city hex or a readable predominant land substrate. Retain terrain Unknown/coastal; no city extent inferred."
