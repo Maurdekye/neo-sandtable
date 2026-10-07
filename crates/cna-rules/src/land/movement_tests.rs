@@ -1409,6 +1409,8 @@ fn either_phasing_side_repeats_without_resetting_cp_or_stage_water() {
         assert_eq!(
             t.game.state.logistics.fuel_segments[&own.into()]
                 .origin
+                .hex()
+                .unwrap()
                 .as_str(),
             "C4021"
         );

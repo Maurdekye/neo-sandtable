@@ -1605,7 +1605,9 @@ fn reachable_inner(
                         && l.segment.half == state.cursor.half
                         && l.segment.cycle == state.cursor.cycle
                 })
-                .map_or_else(|| origin.clone(), |l| l.origin.clone())
+                .and_then(|l| l.origin.hex())
+                .cloned()
+                .unwrap_or_else(|| origin.clone())
         })
         .collect();
     let mut stocks: BTreeSet<_> = changed.iter().cloned().collect();

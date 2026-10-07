@@ -6,10 +6,7 @@ use super::supply::{
 };
 use crate::{CnaContent, State, seq::Half, state::Location};
 use cna_content::units::Trucks;
-use cna_core::{
-    ids::{HexId, UnitId},
-    quantity::FuelTenths,
-};
+use cna_core::{ids::UnitId, quantity::FuelTenths};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -76,14 +73,16 @@ pub struct TruckFuelCohort {
 pub struct FuelFundingAccount {
     pub side: cna_protocol::Side,
     pub segment: SegmentKey,
-    pub origin: HexId,
+    #[serde(deserialize_with = "deserialize_origin")]
+    pub origin: Location,
     pub paid_cost: FuelTenths,
     pub draws: Vec<FuelDraw>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FuelSegmentLedger {
     pub segment: SegmentKey,
-    pub origin: HexId,
+    #[serde(deserialize_with = "deserialize_origin")]
+    pub origin: Location,
     pub cp_quarters: i32,
     pub paid_cost: FuelTenths,
     pub draws: Vec<FuelDraw>,
@@ -110,6 +109,29 @@ pub struct SegmentFuelPlan {
     pub increment: FuelTenths,
     pub draws: Vec<SupplyDraw>,
     funding: Vec<AccountPlan>,
+}
+// Legacy checkpoints stored an origin as a bare hex id. New checkpoints retain
+// the actual map or off-map location, including a distinct traveling-group id.
+fn deserialize_origin<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Location, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Origin {
+        Legacy(cna_core::ids::HexId),
+        Current(Location),
+    }
+    let location = match Origin::deserialize(d)? {
+        Origin::Legacy(hex) => Location::Hex { hex },
+        Origin::Current(location) => location,
+    };
+    validate_origin(&location).map_err(|_| serde::de::Error::custom("invalid fuel origin"))?;
+    Ok(location)
+}
+fn validate_origin(location: &Location) -> Result<(), SupplyError> {
+    match location {
+        Location::Hex { .. } => Ok(()),
+        Location::OffMap { id } if !id.is_empty() => Ok(()),
+        _ => Err(SupplyError::Invalid),
+    }
 }
 fn add(a: i32, b: i32) -> Result<i32, SupplyError> {
     a.checked_add(b).ok_or(SupplyError::Invalid)
@@ -234,7 +256,7 @@ fn ledger_for(state: &State, id: &UnitId) -> Result<FuelSegmentLedger, SupplyErr
     } else {
         FuelSegmentLedger {
             segment: segment.clone(),
-            origin: unit.location.hex().ok_or(SupplyError::Invalid)?.clone(),
+            origin: unit.location.clone(),
             cp_quarters: 0,
             paid_cost: FuelTenths::ZERO,
             draws: vec![],
@@ -243,6 +265,8 @@ fn ledger_for(state: &State, id: &UnitId) -> Result<FuelSegmentLedger, SupplyErr
             next_cohort_serial: old.map_or(0, |l| l.next_cohort_serial),
         }
     };
+    validate_origin(&ledger.origin)?;
+    validate_origin(&unit.location)?;
     if ledger.cp_quarters < 0 {
         return Err(SupplyError::Invalid);
     }
@@ -288,6 +312,7 @@ fn account_for(
         .get(id)
         .filter(|a| a.segment == ledger.segment)
         .ok_or(SupplyError::Invalid)?;
+    validate_origin(&account.origin)?;
     draws_map(&account.draws, account.paid_cost)?;
     Ok(account.clone())
 }
@@ -302,6 +327,7 @@ fn own_account(
         .get(id)
         .filter(|a| a.segment == ledger.segment)
     {
+        validate_origin(&a.origin)?;
         draws_map(&a.draws, a.paid_cost)?;
         Ok(a.clone())
     } else {
@@ -324,17 +350,11 @@ fn capacities(
     if state.land.units.get(id).ok_or(SupplyError::Invalid)?.side != account.side {
         return Err(SupplyError::Invalid);
     }
-    let mut sources: BTreeMap<_, _> = available_sources_at_with_content(
-        content,
-        state,
-        id,
-        &Location::Hex {
-            hex: account.origin.clone(),
-        },
-    )?
-    .into_iter()
-    .map(|s| (s.source, s.amount))
-    .collect();
+    let mut sources: BTreeMap<_, _> =
+        available_sources_at_with_content(content, state, id, &account.origin)?
+            .into_iter()
+            .map(|s| (s.source, s.amount))
+            .collect();
     for (source, amount) in &mut sources {
         amount.fuel = FuelTenths::new(
             amount
@@ -353,8 +373,12 @@ fn capacities(
 }
 /// Price only new physical movement. Changing composition freezes earlier charges;
 /// incoming truck cohorts continue their own CP history, independently of body CP.
+/// Origins retain their actual location. An off-map traveling group may draw from
+/// carried first-line stocks at that exact group location; it gains no access to
+/// a departed box or unrelated traveling groups. Each new segment captures the
+/// current location, preserving physical cohorts and their funding credit.
 /// No source scan is needed for a zero increment.
-/// Cases: airlog:49.12, airlog:49.13, airlog:49.15, airlog:49.16
+/// Cases: airlog:49.12, airlog:49.13, airlog:49.15, airlog:49.16, land:8.83, land:8.84
 /// Interpretations: interp:airlog-0001, interp:airlog-0018
 pub fn plan_segment_fuel(
     content: &CnaContent,

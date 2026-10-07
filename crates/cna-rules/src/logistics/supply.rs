@@ -549,7 +549,7 @@ pub fn available_sources_with_content(
     available_sources_at_with_content(content, state, id, location)
 }
 /// Content-aware sources at the trusted movement origin, including scenario supply.
-/// Cases: scen:60.44, airlog:49.16
+/// Cases: scen:60.44, airlog:49.16, land:8.84
 pub fn available_sources_at_with_content(
     content: &CnaContent,
     state: &State,
@@ -557,6 +557,17 @@ pub fn available_sources_at_with_content(
     location: &Location,
 ) -> Result<Vec<SupplyDraw>, SupplyError> {
     let mut sources = available_sources_at_location(state, id, location)?;
+    // Only catalogue locations are named boxes. Opaque traveling-group locations
+    // identify co-located carried stocks, never a dump or a scenario supply base.
+    if matches!(location, Location::OffMap { id } if !content.areas.locations.contains_key(id)) {
+        sources.retain(|s| {
+            matches!(
+                s.source,
+                SupplySource::Tank | SupplySource::ReadyAmmo | SupplySource::UnitStock(_)
+            )
+        });
+        return Ok(sources);
+    }
     let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
     if let Some(unlimited) = &content.scenario.supply.unlimited_supply
         && unlimited.side == unit.side

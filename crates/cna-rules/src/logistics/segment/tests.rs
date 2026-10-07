@@ -3,6 +3,7 @@ use super::*;
 use crate::state::{Dump, DumpLocation, Location};
 use cna_content::scenario::Supplies;
 use cna_content::units::{Toe, WeaponPoints};
+use cna_core::ids::HexId;
 use cna_protocol::Side;
 use std::sync::OnceLock;
 
@@ -86,7 +87,14 @@ fn moving_away_keeps_origin_sourcing_and_rejection_is_atomic() {
         Err(SupplyError::Insufficient)
     );
     assert_eq!(serde_json::to_value(&state).unwrap(), before);
-    assert_eq!(state.logistics.fuel_segments[&id].origin.as_str(), "C4020");
+    assert_eq!(
+        state.logistics.fuel_segments[&id]
+            .origin
+            .hex()
+            .unwrap()
+            .as_str(),
+        "C4020"
+    );
 }
 
 /// Cases: airlog:49.13, airlog:49.16
@@ -130,7 +138,14 @@ fn a_new_segment_resets_origin_and_does_not_reuse_old_credit() {
     spend_segment_fuel(content(), &mut state, &id, 2).unwrap();
     assert_eq!(state.logistics.dumps["later"].supplies.fuel, 0);
     assert_eq!(state.logistics.dumps["origin"].supplies.fuel, 2);
-    assert_eq!(state.logistics.fuel_segments[&id].origin.as_str(), "C4021");
+    assert_eq!(
+        state.logistics.fuel_segments[&id]
+            .origin
+            .hex()
+            .unwrap()
+            .as_str(),
+        "C4021"
+    );
     assert_eq!(
         state.logistics.fuel_segments[&id].draws[0].source,
         SupplySource::Dump("later".into())
@@ -591,4 +606,131 @@ fn funding_a_body_cannot_borrow_the_transferred_trucks_unused_account_credit() {
     assert_eq!(s.logistics.dumps["origin"].supplies.fuel, 0);
     assert_eq!(s.logistics.fuel_accounts[&a].paid_cost.get(), 10);
     assert_eq!(s.logistics.fuel_accounts[&b].paid_cost.get(), 2);
+}
+
+/// Cases: land:8.83, land:8.84, airlog:49.13, airlog:49.16
+#[test]
+fn box_origin_preserves_source_credit_and_physical_cohorts_across_checkpoint() {
+    let mut limited_content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    limited_content.scenario.supply.unlimited_supply = None;
+    let (mut state, id, _) = truck_game();
+    state.logistics.dumps.retain(|key, _| key == "origin");
+    let box_location = Location::OffMap {
+        id: "box_tripoli".into(),
+    };
+    state.land.units.get_mut(&id).unwrap().location = box_location.clone();
+    state.logistics.dumps.get_mut("origin").unwrap().location = DumpLocation::OffMap {
+        id: "box_tripoli".into(),
+    };
+    spend_segment_fuel(&limited_content, &mut state, &id, 2).unwrap();
+    let cohort = state.logistics.fuel_segments[&id].cohorts[0].id.clone();
+    let mut restored: State =
+        serde_json::from_value(serde_json::to_value(&state).unwrap()).unwrap();
+    spend_segment_fuel(&limited_content, &mut state, &id, 12).unwrap();
+    spend_segment_fuel(&limited_content, &mut restored, &id, 12).unwrap();
+    assert_eq!(
+        serde_json::to_value(&state.logistics).unwrap(),
+        serde_json::to_value(&restored.logistics).unwrap()
+    );
+    assert_eq!(restored.logistics.fuel_segments[&id].origin, box_location);
+    assert_eq!(restored.logistics.fuel_segments[&id].cohorts[0].id, cohort);
+    assert_eq!(restored.logistics.dumps["origin"].supplies.fuel, 2);
+    assert_eq!(restored.logistics.fuel_segments[&id].paid_cost.get(), 6);
+}
+
+/// Cases: land:8.83, land:8.84, airlog:49.15, airlog:49.16
+#[test]
+fn next_transit_stage_uses_own_tank_and_group_cargo_without_departed_box_supply() {
+    let mut limited_content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    limited_content.scenario.supply.unlimited_supply = None;
+    let (mut state, id, companion) = truck_game();
+    state.logistics.dumps.retain(|key, _| key == "origin");
+    state.land.units.get_mut(&id).unwrap().location = Location::OffMap {
+        id: "box_tripoli".into(),
+    };
+    state.logistics.dumps.get_mut("origin").unwrap().location = DumpLocation::OffMap {
+        id: "box_tripoli".into(),
+    };
+    spend_segment_fuel(&limited_content, &mut state, &id, 2).unwrap();
+    let cohort = state.logistics.fuel_segments[&id].cohorts[0].id.clone();
+    let group = Location::OffMap {
+        id: "travel-group-1".into(),
+    };
+    state.land.units.get_mut(&id).unwrap().location = group.clone();
+    state.land.units.get_mut(&companion).unwrap().location = Location::OffMap {
+        id: "travel-group-2".into(),
+    };
+    state.land.units.get_mut(&companion).unwrap().trucks.light = 1;
+    state
+        .logistics
+        .unit_supply
+        .entry(companion.clone())
+        .or_default()
+        .carried
+        .fuel = 2;
+    state.cursor.op_stage = Some(2);
+    let mut impossible_dump = state.logistics.dumps["origin"].clone();
+    impossible_dump.id = "not-a-transit-base".into();
+    impossible_dump.location = DumpLocation::OffMap {
+        id: "travel-group-1".into(),
+    };
+    impossible_dump.supplies.fuel = 100;
+    state
+        .logistics
+        .dumps
+        .insert(impossible_dump.id.clone(), impossible_dump);
+    let before = serde_json::to_value(&state).unwrap();
+    assert_eq!(
+        spend_segment_fuel(&limited_content, &mut state, &id, 24),
+        Err(SupplyError::Insufficient)
+    );
+    assert_eq!(serde_json::to_value(&state).unwrap(), before);
+    state.land.units.get_mut(&companion).unwrap().location = group.clone();
+    state
+        .logistics
+        .unit_supply
+        .entry(id.clone())
+        .or_default()
+        .tank_fuel = FuelTenths::new(2);
+    spend_segment_fuel(&limited_content, &mut state, &id, 24).unwrap();
+    assert_eq!(state.logistics.fuel_segments[&id].origin, group);
+    assert_eq!(state.logistics.fuel_segments[&id].paid_cost.get(), 20);
+    assert_eq!(state.logistics.fuel_segments[&id].cohorts[0].id, cohort);
+    assert_eq!(state.logistics.unit_supply[&id].tank_fuel.get(), 0);
+    assert_eq!(state.logistics.unit_supply[&companion].carried.fuel, 0);
+    assert_eq!(state.logistics.dumps["origin"].supplies.fuel, 2);
+    assert!(
+        state.logistics.fuel_segments[&id]
+            .draws
+            .iter()
+            .all(|d| !matches!(d.source, SupplySource::Dump(_) | SupplySource::Unlimited))
+    );
+}
+
+/// Cases: airlog:49.16, land:3.6
+#[test]
+fn hex_string_account_checkpoint_retains_rounded_credit_and_rejects_invalid_origins() {
+    let (mut state, id) = game();
+    spend_segment_fuel(content(), &mut state, &id, 2).unwrap();
+    let mut encoded = serde_json::to_value(&state).unwrap();
+    for key in ["fuel_accounts", "fuel_segments"] {
+        encoded["logistics"][key][id.as_str()]["origin"] = serde_json::json!("C4020");
+    }
+    let mut legacy: State = serde_json::from_value(encoded.clone()).unwrap();
+    spend_segment_fuel(content(), &mut state, &id, 12).unwrap();
+    spend_segment_fuel(content(), &mut legacy, &id, 12).unwrap();
+    assert_eq!(
+        serde_json::to_value(&state.logistics).unwrap(),
+        serde_json::to_value(&legacy.logistics).unwrap()
+    );
+    crate::testkit::assert_indistinguishable(
+        &crate::Cna::dev(),
+        content(),
+        &state,
+        &legacy,
+        Side::Commonwealth,
+    );
+    encoded["logistics"]["fuel_accounts"][id.as_str()]["origin"] =
+        serde_json::json!({"at":"eliminated"});
+    assert!(serde_json::from_value::<State>(encoded).is_err());
 }

@@ -7,6 +7,11 @@
 //! chosen allocation before moving or resolving fire. Repeated movement answers
 //! use [`plan_segment_fuel`] and [`spend_segment_fuel`] with cumulative segment CP;
 //! these preserve physical movement history and one shared source-rounding account.
+//! Fuel origins are actual Locations; legacy hex-string checkpoints are migrated.
+//! Named off-map boxes retain their source-bound stocks. Transit uses a distinct
+//! opaque traveling-group location: own tanks and same-group first-line cargo,
+//! with no box dumps or unlimited fuel after departure. New segments capture the
+//! current location without resetting physical cohort identities.
 //! Truck division calls transfer_selected_segment_fuel_cohorts before physical
 //! counts change; removals/recovery use the matching cohort helpers. Store removed
 //! cohorts with broken vehicles. Unit-body CP stays independent, and lost vehicle
