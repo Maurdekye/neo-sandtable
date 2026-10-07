@@ -4,6 +4,7 @@ pub mod baseline;
 pub mod cohorts;
 pub mod losses;
 pub mod markers;
+mod packing;
 pub mod window;
 use crate::{CnaContent, State};
 pub use allocation::{balanced_allocation, valid_group_allocation};

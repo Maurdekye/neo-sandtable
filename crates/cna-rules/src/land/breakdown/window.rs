@@ -254,7 +254,13 @@ pub(crate) fn finish(
             cx.events.extend(events);
         }
         loop {
-            if !s.land.breakdown.window.outcomes.is_empty() {
+            if let Some(outcome) = s.land.breakdown.window.outcomes.front() {
+                if super::baseline::plan(c, s, outcome).is_none() {
+                    return Err(EngineError::Unsupported {
+                        case:"land:21.43".into(),
+                        detail:"no conserved integral passenger/cargo allocation exists for the represented holdings".into(),
+                    });
+                }
                 open_losses(c, s, cx);
                 return Ok(());
             }
