@@ -212,7 +212,8 @@ fn open_operation(
             asset: a,
             operation: operation.into(),
         },
-        ActionSpace::new(ActionSchema::Record { fields }),
+        ActionSpace::new(ActionSchema::Record { fields })
+            .with_pass("Cancel this operation and keep the current initial assignment"),
     );
     Ok(())
 }
@@ -242,6 +243,9 @@ pub(super) fn answer(
             }
             _ => Err(illegal("choose an offered initial truck operation")),
         };
+    }
+    if action.is_null() && pending.space.pass.is_some() {
+        return menu(content, state, a, cx).map_err(Rejection::Engine);
     }
     if operation == "load" {
         let packing: CargoPacking = serde_json::from_value(action.clone())
