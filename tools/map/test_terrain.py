@@ -30,10 +30,16 @@ class TerrainTests(unittest.TestCase):
             self.load(MAP / "reviews", "0" * 64)
 
     def test_deferred_coastline_stays_unknown(self):
+        # Replay the immutable deferral, independently of later reinspection.
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            for name in ["graziani-0001.toml", "graziani-0002.toml"]:
+                (folder / name).write_bytes((MAP / "reviews" / name).read_bytes())
+            deferred = self.load(folder)["C4026"]
+            self.assertEqual(deferred["status"], "deferred")
+            self.assertEqual(deferred["terrain"], "unclassified")
+            self.assertEqual(deferred["flags"], ["coastal"])
         decisions = self.load(MAP / "reviews")
-        deferred = [decisions["C4026"]]
-        self.assertEqual(deferred[0]["status"], "deferred")
-        self.assertTrue(all(h["terrain"] == "unclassified" and h["flags"] == ["coastal"] for h in deferred))
         self.assertEqual(decisions["C4221"]["terrain"], "rough")
         self.assertEqual(decisions["C4022"]["flags"], ["land", "coastal"])
 
