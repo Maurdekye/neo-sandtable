@@ -61,7 +61,8 @@ Replay dispatches either campaign kind and serves it for thirty seconds without 
 CLI or paid opt-in. Complete engine/content fingerprints reject incompatible saved
 databases; this command does not migrate them.
 
-Shutdown waits at most five seconds for transcript delivery. A failed writer causes
+Shutdown waits at most five seconds for transcript delivery. A failed writer or a
+backlog from a fast seat that exceeds this deadline causes
 delivery to stop and unconfirmed captures to be saved to
 `<campaign-id>.unconfirmed.jsonl`. These have no assigned transcript sequence; an
 in-flight append may have committed without confirmation. Inspect stored entries
@@ -135,3 +136,19 @@ are marked slow and run in the CI slow-test job. Offline tests cover original-se
 windows, hard-crash reservations, persisted tool caps, lease exclusion, corrupt
 journals and stale bindings. Live checks remain opt-in and bounded. Codex and
 Antigravity still await confinement proofs and drivers.
+
+The measured durable proof used one Claude Code 2.1.289 / Haiku 4.5 session,
+restarted the launcher, and resumed the same CLI session. It accepted two nonempty
+Maletti unit-movement orders in GT1:OpStage1, with 15 paired MCP calls and 54
+transcript entries. The notebook survived restart. One missing revision was
+rejected, then corrected before acceptance. Only the nine scoped MCP tools were
+exposed. Recorded context occupancy was 23357 tokens; no native compaction was
+needed in this short check.
+
+The reported cumulative estimate was $0.1009509: $0.0550391 for the first response
+and $0.0459118 after resume, about $0.05048 per answered movement window. This is
+a partial OpStage sample, with nine scripted seats passing and units subject to
+ration/water restrictions. It does not measure a full supplied OpStage or a
+subscription invoice. Accounting records three reserved attempts, two completed
+model turns and one canceled inert attempt; that third reservation made no paid
+CLI call. Sanitized transcript and accounting fixtures preserve this evidence.

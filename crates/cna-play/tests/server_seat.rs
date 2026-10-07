@@ -1301,3 +1301,86 @@ async fn bounded_scripted_cna_progress_recovers_without_any_cli_endpoint() {
     );
     recovered.shutdown().await.unwrap();
 }
+
+#[test]
+fn measured_durable_haiku_fixture_preserves_resume_and_corrected_movement() {
+    use std::collections::BTreeSet;
+    let fixture = include_str!("fixtures/claude_durable_transcript.jsonl");
+    for secret in ["@gmail.com", "/mcp/", "#cap=", "Bearer "] {
+        assert!(!fixture.contains(secret));
+    }
+    let mut pending = BTreeSet::new();
+    let (mut calls, mut decisions, mut failures, mut notes) = (0, 0, 0, 0);
+    let (mut started, mut resumed) = (false, false);
+    let mut last_seq = 0;
+    for (index, line) in fixture.lines().enumerate() {
+        let ServerMessage::Transcript {
+            seat,
+            tseq,
+            game_seq,
+            entry,
+            ..
+        } = serde_json::from_str(line).unwrap()
+        else {
+            panic!("not a transcript")
+        };
+        assert_eq!(seat, "axis.front_line");
+        assert_eq!(tseq, index as u64 + 1);
+        assert!(game_seq >= last_seq);
+        last_seq = game_seq;
+        match entry {
+            TranscriptEntry::ToolCall { call_id, tool, .. } => {
+                assert!(pending.insert(call_id));
+                calls += 1;
+                notes += usize::from(tool == "notebook_write");
+            }
+            TranscriptEntry::ToolResult {
+                call_id,
+                ok,
+                summary,
+                ..
+            } => {
+                assert!(pending.remove(&call_id));
+                if !ok {
+                    failures += 1;
+                    assert!(summary.contains("only the requested decision revision"));
+                }
+            }
+            TranscriptEntry::DecisionSubmitted {
+                decision_id,
+                summary,
+            } => {
+                decisions += 1;
+                assert_eq!(decision_id, format!("axis.front_line-{decisions}"));
+                assert!(summary.contains("C3318"));
+                assert!(summary.contains("it.gruppo_maletti."));
+            }
+            TranscriptEntry::System { text } => {
+                started |= text.starts_with("started session <session>");
+                resumed |= text.starts_with("resumed session <session>");
+            }
+            _ => {}
+        }
+    }
+    assert!(pending.is_empty());
+    assert_eq!(
+        (fixture.lines().count(), calls, decisions, failures, notes),
+        (54, 15, 2, 1, 2)
+    );
+    assert!(started && resumed);
+    let accounting: Value =
+        serde_json::from_str(include_str!("fixtures/claude_durable_accounting.json")).unwrap();
+    assert_eq!(accounting["callsCharged"], calls);
+    assert_eq!(accounting["incompleteTurns"], 1);
+    assert_eq!(accounting["stages"]["GT1:OpStage1"]["completed"], decisions);
+    assert_eq!(accounting["contextTokens"], 23357);
+    assert!(
+        accounting["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|tool| tool.as_str().unwrap().starts_with("mcp__cna__"))
+    );
+    let cost = accounting["reportedCostUsd"].as_f64().unwrap();
+    assert!((cost - (0.0550391 + 0.0459118)).abs() < 0.0000001);
+}

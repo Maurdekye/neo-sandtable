@@ -1,0 +1,33 @@
+{
+  "entries": 54,
+  "decisions": 2,
+  "calls": 15,
+  "turns": 3,
+  "callsCharged": 15,
+  "incompleteTurns": 1,
+  "reportedCostUsd": 0.1009509,
+  "model": "claude-haiku-4-5-20251001",
+  "cliVersion": "2.1.289",
+  "tools": [
+    "mcp__cna__describe_actions",
+    "mcp__cna__inspect",
+    "mcp__cna__message_team",
+    "mcp__cna__notebook_read",
+    "mcp__cna__notebook_write",
+    "mcp__cna__observe",
+    "mcp__cna__read_messages",
+    "mcp__cna__submit",
+    "mcp__cna__validate"
+  ],
+  "contextTokens": 23357,
+  "compactions": 0,
+  "stages": {
+    "GT1:OpStage1": {
+      "attempts": 3,
+      "completed": 2,
+      "reported_cost_usd": 0.1009509,
+      "input_tokens": 6225,
+      "output_tokens": 6400
+    }
+  }
+}

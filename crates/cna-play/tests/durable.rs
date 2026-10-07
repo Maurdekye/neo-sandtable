@@ -478,3 +478,92 @@ async fn context_headroom_failure_stops_durable_siblings_without_failed_replacem
     );
     demo.shutdown().await.unwrap();
 }
+
+// Current scripted supply may restrict unit motion; these are explicit offered passes,
+// exercising real movement windows rather than inventing a legal unit move.
+#[tokio::test]
+async fn bounded_real_cna_windows_keep_one_session_and_stage_accounting() {
+    let root = tempfile::tempdir().unwrap();
+    let repo = repo();
+    let demo = Demo::with_config(
+        root.path(),
+        &repo.join("data"),
+        &repo.join("web/dist"),
+        config("axis.front_line"),
+    )
+    .await
+    .unwrap();
+    let mut windows = demo.handle.watch_seat(demo.seat);
+    let prepared = async {
+        demo.handle.pause(false).await.map_err(|e| e.to_string())?;
+        tokio::time::timeout(Duration::from_secs(40), async {
+            loop {
+                if !windows.borrow_and_update().pending.is_empty() {
+                    break;
+                }
+                windows.changed().await.map_err(|e| e.to_string())?;
+            }
+            Ok::<(), String>(())
+        })
+        .await
+        .map_err(|_| "bounded movement preparation timed out".to_string())??;
+        demo.handle.pause(true).await.map_err(|e| e.to_string())
+    }
+    .await;
+    if let Err(error) = prepared {
+        let cleanup = demo.shutdown().await;
+        cna_play::combine_results(Err(error), cleanup).unwrap();
+        unreachable!();
+    }
+    assert!(
+        demo.handle
+            .seat(demo.seat)
+            .pending
+            .iter()
+            .any(|p| p.kind == "cna.movement.orders")
+    );
+    let trace = Arc::new(Mutex::new(Trace::default()));
+    let (stop, rx) = watch::channel(false);
+    let mut inert = driver(&demo, trace.clone());
+    inert.stop = Some(stop.clone());
+    inert.stop_after = 2;
+    let journal = demo.journal.as_ref().unwrap().clone();
+    let seat = demo.seat;
+    let checkpoint = tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+            if journal.snapshot().is_ok_and(|s| {
+                s.seats[&seat]
+                    .stages
+                    .values()
+                    .map(|s| s.completed)
+                    .sum::<u64>()
+                    >= 2
+            }) {
+                let _ = stop.send(true);
+                break;
+            }
+        }
+    });
+    let result = tokio::time::timeout(
+        Duration::from_secs(15),
+        demo.play_durable(&mut [(seat, Box::new(inert))], rx),
+    )
+    .await
+    .map_err(|_| "bounded movement run timed out".to_string())
+    .and_then(|r| r);
+    checkpoint.abort();
+    let _ = checkpoint.await;
+    let record = demo.journal.as_ref().unwrap().snapshot().unwrap().seats[&seat].clone();
+    let cleanup = demo.shutdown().await;
+    cna_play::combine_results(result, cleanup).unwrap();
+    let trace = trace.lock().unwrap();
+    assert_eq!(trace.starts.len(), 1);
+    assert_eq!(trace.kinds.len(), 2);
+    assert_eq!(trace.kinds[0], "cna.movement.orders");
+    assert!(trace.kinds.iter().all(|kind| kind.starts_with("cna.")));
+    assert_eq!(record.stages.values().map(|s| s.completed).sum::<u64>(), 2);
+    assert!(record.stages.keys().all(|s| s.contains("OpStage")));
+    assert!((2..=3).contains(&record.turns));
+    assert!(record.session.is_some());
+}

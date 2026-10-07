@@ -79,6 +79,64 @@ fn driver(
         turns: 0,
     }
 }
+async fn run_one(
+    demo: &Demo,
+    root: &std::path::Path,
+    profile: &std::path::Path,
+    email: &str,
+) -> Result<(), String> {
+    let (stop, rx) = watch::channel(false);
+    let fake = driver(demo, root, profile, email, stop.clone());
+    let journal = demo.journal.as_ref().unwrap().clone();
+    let seat = demo.seat;
+    let completed = journal.snapshot()?.seats[&seat]
+        .stages
+        .values()
+        .map(|s| s.completed)
+        .sum::<u64>();
+    // Cancel only after the supervisor has durably confirmed the model result.
+    // This avoids spending the paid wall budget waiting for a later OpStage.
+    let checkpoint = tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+            if journal.snapshot().is_ok_and(|s| {
+                s.seats[&seat]
+                    .stages
+                    .values()
+                    .map(|s| s.completed)
+                    .sum::<u64>()
+                    > completed
+            }) {
+                let _ = stop.send(true);
+                break;
+            }
+        }
+    });
+    let result = demo.play_durable(&mut [(seat, Box::new(fake))], rx).await;
+    checkpoint.abort();
+    let _ = checkpoint.await;
+    result
+}
+fn save(demo: &Demo, root: &std::path::Path) {
+    let state = demo.journal.as_ref().unwrap().snapshot().unwrap();
+    let text = demo
+        .transcript()
+        .iter()
+        .map(serde_json::to_string)
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap()
+        .join("\n")
+        + "\n";
+    std::fs::write(root.join("transcript.jsonl"), text).unwrap();
+    std::fs::write(
+        root.join("accounting.json"),
+        serde_json::to_string_pretty(&state).unwrap(),
+    )
+    .unwrap();
+    println!("D8 proof directory: {}", root.display());
+    println!("Board: {}", demo.board_url());
+    println!("D8 accounting: {:?}", state.seats[&demo.seat].stages);
+}
 #[tokio::test]
 async fn live_haiku_durable_resume_is_opt_in() {
     if std::env::var("CNA_LIVE_CLI_TESTS").as_deref() != Ok("1") {
@@ -151,55 +209,31 @@ async fn live_haiku_durable_resume_is_opt_in() {
             .iter()
             .any(|p| p.kind.contains("movement"))
     );
-    let (stop, rx) = watch::channel(false);
-    let fake = driver(&demo, &root, &profile, &email, stop);
-    let first_result = demo
-        .play_durable(&mut [(demo.seat, Box::new(fake))], rx)
-        .await;
+    let first_result = run_one(&demo, &root, &profile, &email).await;
+    save(&demo, &root);
     let first = demo.journal.as_ref().unwrap().snapshot().unwrap().seats[&demo.seat].clone();
     let first_cleanup = demo.shutdown().await;
     cna_play::combine_results(first_result, first_cleanup).expect("first short turn");
-    assert_eq!(first.turns, 2);
+    assert!((1..=2).contains(&first.turns));
     assert_eq!(first.stages.values().map(|s| s.completed).sum::<u64>(), 1);
     let id = first.session.unwrap().session_id;
     let demo = Demo::resume(&path, &repo.join("data"), &repo.join("web/dist"))
         .await
         .unwrap();
-    let (_stop, rx) = watch::channel(false);
-    let (fake_stop, _) = watch::channel(false);
-    let fake = driver(&demo, &root, &profile, &email, fake_stop);
-    let second_result = demo
-        .play_durable(&mut [(demo.seat, Box::new(fake))], rx)
-        .await;
+    let second_result = run_one(&demo, &root, &profile, &email).await;
     let state = demo.journal.as_ref().unwrap().snapshot().unwrap();
     let record = state.seats[&demo.seat].clone();
-    let transcript = demo.transcript();
-    let text = transcript
-        .iter()
-        .map(serde_json::to_string)
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap()
-        .join("\n")
-        + "\n";
-    std::fs::write(root.join("transcript.jsonl"), text).unwrap();
-    std::fs::write(
-        root.join("accounting.json"),
-        serde_json::to_string_pretty(&state).unwrap(),
-    )
-    .unwrap();
-    println!("D8 proof directory: {}", root.display());
-    println!("Board: {}", demo.board_url());
-    println!("D8 accounting: {:?}", record.stages);
+    save(&demo, &root);
     let cleanup = demo.shutdown().await;
     assert!(
         second_result
             .as_ref()
-            .is_err_and(|e| e.contains("turn budget exhausted")),
+            .map_or_else(|e| e.contains("turn budget exhausted"), |_| true),
         "{second_result:?}"
     );
     cleanup.unwrap();
     assert_eq!(record.session.unwrap().session_id, id);
-    assert_eq!(record.turns, 3);
+    assert!((2..=3).contains(&record.turns));
     assert_eq!(record.stages.values().map(|s| s.completed).sum::<u64>(), 2);
     assert!(record.calls <= 16);
     assert!(
