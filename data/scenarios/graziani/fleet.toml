@@ -16,6 +16,7 @@ note = "Axis strategic attacks on Malta are limited to forces called for by Avai
 src = ["scen:60.36"]
 
 [axis_convoys]
+pre_game_plan_remaining_start_month = true
 pre_game_planning = "The Italian player must plan convoy runs for the rest of September 1940 before starting."
 lanes_allowed = [2, 3, 6]
 reinforcements = "All reinforcements as per the Reinforcement Track; consult the Convoy Availability Charts for available shipping."

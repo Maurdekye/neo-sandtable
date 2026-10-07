@@ -6,6 +6,8 @@
 //! engine does not model yet (construction, fleet, arrivals) are kept as raw TOML tables until
 //! their owners type them.
 
+pub mod fleet;
+use fleet::FleetLogistics;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -32,6 +34,7 @@ pub struct ScenarioContent {
     pub facilities: FacilitiesSetup,
     pub construction: toml::Table,
     pub fleet: toml::Table,
+    pub fleet_logistics: FleetLogistics,
     pub arrivals: toml::Table,
 }
 
@@ -478,6 +481,10 @@ impl ScenarioContent {
                 None => Ok(toml::Table::new()),
             }
         };
+        let fleet_logistics = match optional("fleet.toml")? {
+            Some(p) => read_toml(&p)?,
+            None => FleetLogistics::default(),
+        };
         Ok(ScenarioContent {
             dir: dir.to_path_buf(),
             meta: main.scenario,
@@ -490,6 +497,7 @@ impl ScenarioContent {
             facilities,
             construction: raw("construction.toml")?,
             fleet: raw("fleet.toml")?,
+            fleet_logistics,
             arrivals: raw("arrivals.toml")?,
         })
     }
@@ -500,19 +508,26 @@ impl ScenarioContent {
             path: self.dir.clone(),
             message,
         };
-        if let Some(value) = self
-            .fleet
-            .get("axis_coastal_shipping")
-            .and_then(|r| r.get("roster"))
-        {
-            let reference = value
-                .as_str()
-                .ok_or_else(|| invalid("coastal roster reference must be a string".into()))?;
-            if !units.coastal_rosters.contains_key(reference) {
-                return Err(invalid(format!(
-                    "unknown coastal roster under data/units: {reference}"
-                )));
+        if let Some(setup) = &self.fleet_logistics.axis_convoys {
+            let lanes: std::collections::BTreeSet<_> =
+                setup.lanes_allowed.iter().copied().collect();
+            if lanes.is_empty()
+                || lanes.len() != setup.lanes_allowed.len()
+                || lanes.iter().any(|n| !(1..=6).contains(n))
+                || setup.src.is_empty()
+            {
+                return Err(invalid(
+                    "Axis convoy lanes need unique values1-6 and a citation".into(),
+                ));
             }
+        }
+        if let Some(setup) = &self.fleet_logistics.axis_coastal_shipping
+            && (!units.coastal_rosters.contains_key(&setup.roster) || setup.src.is_empty())
+        {
+            return Err(invalid(format!(
+                "unknown or uncited coastal roster under data/units: {}",
+                setup.roster
+            )));
         }
         for file in &self.land {
             for group in &file.groups {

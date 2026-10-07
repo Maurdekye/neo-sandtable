@@ -1,6 +1,6 @@
 //! Truck characteristics, equivalent weights and port capacity (sections 54-55).
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::supply::SupplyType;
 use crate::units::Ratio;
@@ -307,7 +307,7 @@ impl EquivalentWeights {
 // ---------------------------------------------------------------------------------------------
 
 /// A port row of the capacity chart (`airlog:55.3`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PortName {
     Tripoli,

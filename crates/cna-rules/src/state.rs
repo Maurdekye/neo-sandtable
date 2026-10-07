@@ -189,6 +189,10 @@ pub struct LogisticsState {
     #[serde(default)]
     pub unit_supply: BTreeMap<UnitId, UnitSupply>,
     pub dumps: BTreeMap<String, Dump>,
+    #[serde(default)]
+    pub ports: BTreeMap<String, crate::logistics::ports::PortState>,
+    #[serde(default)]
+    pub bizerta_open: bool,
     /// Supplies freely distributable among a side's airfields (`scen:60.34`, `scen:60.44`).
     pub air_supply_pool: BTreeMap<Side, Supplies>,
     /// Second- and third-line truck pools at set-up, by side, with their placement.

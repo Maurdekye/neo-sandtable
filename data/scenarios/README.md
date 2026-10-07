@@ -280,3 +280,5 @@ Every record carries `src`. Values read from tables that were checked twice carr
 in `data/scenarios/GAPS.md`; nothing is guessed. Struck-through text in the printed booklet
 (for example the Alexandria fleet roster in `scen:60.45`) is recorded as superseded text in
 `GAPS.md` rather than as data.
+
+Fleet logistics loaders retain raw fleet data and expose the typed Axis convoy lanes and coastal roster. axis_convoys.pre_game_plan_remaining_start_month is a boolean: when true, the initial convoy decisions cover every remaining Game-Turn in the starting calendar month before play begins (scen:60.37).
