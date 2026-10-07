@@ -85,7 +85,11 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    (dice, losses, reveals, and `Unsupported` for anything not yet implemented) runs in
    `finish_step`, where a failure stops the campaign for everyone instead of rejecting one seat.
    Under `full`, refuse an unimplemented procedure at the point it would begin, the same way
-   whatever the enemy holds.
+   whatever the enemy holds. Every answer is first checked against the decision's advertised
+   `ActionSpace` (`Cna::resolve` → `ActionSpace::check`), so handlers only ever see answers of
+   the advertised shape: declare exactly the fields, bounds and lists the handler accepts, derive
+   them from the seat's own knowledge, and in tests open windows with the module's real space,
+   never a placeholder.
 8. **Randomness** comes only from `cx.rng` (`d6()`, `two_dice_reading()`). Emit a `DiceRolled`
    event citing the rule for every roll.
 9. **Events and secrecy** (`land:3.6`). Board state-sync events (`UnitUpdated`, `UnitRemoved`
