@@ -318,3 +318,36 @@ sides and four controls, with no published lake masks. The full corridor
 candidate count remains unmeasured until the paced candidate inventory.
 The rule's water subtype remains unsourced unless printed, and Land's
 compatible consumer belongs to a later atomic slot.
+
+
+### Graziani gap reinspection, 2026-10-08
+
+This entry supersedes the earlier 33-cell and missing-pilot-slot inventories.
+Fresh terrain amendments resolve C4026 as clear coastal land, D2223 and D2332
+as clear land with minor rough and mountain substrates, and D3332 as coastal
+salt marsh with minor clear substrate. The following 29 corridor cells remain
+unclassified after fresh full-cell source review:
+
+C3024, C3124, C3832, D2030, D2120, D2132, D2319, D2516, D2523, D2530, D2730, D2824, D2830, D2917, D3319, D3414, D3421, E2301, E2405, E3210, E3214, E3311, E3312, E3412, E3413, E3414, E3514, E3614, E3713.
+
+E3413, E3414, E3514 and E3614 retain unknown coastal domains and empty flags;
+they supply neither terrain nor coastal masks. Mixed substrates, ambiguous
+water, contour interference and city graphic spillover remain documented in
+the new `zz-map-terrain-gap-0001` through `0011` reviews. Outside-corridor
+unknowns remain unchanged. Edge observations do not classify these cells.
+
+Fresh partial-kind review `map-lines-0015` records all 142 previously missing
+supported-kind slots on thirteen western historic pilot pairs and separately
+reviews the historic C4320/C4419 pilot-track abstention. It resolves 118
+identities and retains 25 explicit Unknowns: thirteen legacy pipeline slots,
+four railroad and four unfinished-railroad identities, two border identities,
+and slope/ridge at C4020/C4021. Every exact unresolved identity remains in the
+new raw record with no mask. The fresh C4320/C4419 track decision is absent;
+the old unresolved pilot input remains unchanged as historical evidence.
+
+The corridor has no never-observed supported-kind slots left. It still has
+1,110 unresolved static-kind identities when legacy pipeline slots are
+excluded according to the lead's game-state ruling. Historical pipeline
+records remain unchanged; consumer and required-layer compatibility changes
+are a later atomic task. No lake absence, complete Bardia-Matruh strip,
+control halo or unit action legality follows from this inventory.

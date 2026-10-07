@@ -634,3 +634,42 @@ The inland worker's 728 initially fresh pairs have 10,192 current-kind records: 
 The combined data contains 856 classified cells, 6,167 unclassified cells, 1,743 cell masks, 31,850 edge-kind masks, 390 lines and 404 side features. Corridor terrain remains 801 known and 33 unknown. No terrain, place, national selector, strip or schema change is introduced in this cycle. Outside-corridor unclassified endpoint surfaces also remain unknown. Source-observed tracks do not establish cell substrate or coastal status.
 
 Reviews use the native 2021 source against the TEC. Source population error, independent whole-batch accuracy and original 1979 equivalence remain unmeasured. Pipeline abstentions, unsupported future lake coverage, adjacent control halos and unit action legality remain unknown or unverified. Previously validated strips certify their stated current movement layers only, with no additional whole-corridor legality claim.
+
+
+### Combined terrain and historic-pilot gap review, 2026-10-08
+
+The new eleven terrain amendment batches reinspect exactly the assigned 33
+unknown corridor cells, grouped by their prior controlling batch. Four are
+accepted and 29 remain deferred with fresh reasons. The earlier raw reviews
+remain byte-identical. Four terrain masks are added; no coastal mask is added.
+Existing coastal-mask citations for 29 assigned cells advance to the fresh
+controlling review without changing their coverage identities or domains.
+The four ambiguous water cells still have no terrain or coastal mask.
+
+The assembler independently compared complete native 8x cell views and the
+actual TEC for the four accepted cells only. These bounded checks agree with
+the classifications. The 29 deferrals are the worker's direct observations;
+no second-observer agreement or measured population error is claimed for them.
+The review date is the worker's local 2026-10-08 date. Native 2021 review does
+not establish equivalence to the original 1979 sheets.
+
+The separate `map-lines-0015` partial survey contains 143 explicit decisions:
+eight present, 110 absent and 25 unresolved. It adds 118 per-kind masks,
+three line features and five sides. Mandatory slope high endpoints and all
+citations match the raw records. Earlier inputs and feature rows are preserved.
+The pilot-track deferral remains historical evidence alongside its fresh
+direct absence; it is not counted as a second active Unknown.
+
+All 2,541 corridor pairs now have explicit records for every supported kind:
+35,574 slots comprise 31,923 resolved masks and 3,651 active abstentions.
+The 2,541 legacy pipeline abstentions retain their bytes and are excluded
+from future static survey requirements; 1,110 other kind identities remain
+unresolved. This accounting supplies no missing lake evidence or action proof.
+
+The combined union has 860 classified cells and 6,163 unclassified cells.
+Corridor terrain is 805 known and 29 unknown. It has 1,747 cell masks,
+31,968 edge-kind masks, 393 line features and 409 side features. Outside-scope
+cells, places and existing strips remain unchanged. The 159 tracked map files
+reproduce byte-identically across two terrain-then-layer replays. Worker
+initial checks, assembler final gates and actual remote publication are
+separate receipts; no source error rate is inferred from passing software tests.
