@@ -76,7 +76,7 @@ class LayerTests(unittest.TestCase):
         self.assertNotIn(("terrain","C4026",""),data.coverage)
         self.assertEqual(sum(layer=="terrain" for layer,a,b in data.coverage),297)
         self.assertEqual(sum(layer=="coastal" for layer,a,b in data.coverage),298)
-        self.assertFalse(any(layer.startswith("side:") for layer,a,b in data.coverage))
+        with self.assertRaises(UnknownCoverage): data.feature("side","escarpment","C4026","C4025")
         with self.assertRaises(UnknownCoverage): data.feature("line","road","C4026","C4025")
 
     def test_work_window_is_approved_not_a_scenario_restriction(self):

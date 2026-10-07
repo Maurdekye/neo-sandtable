@@ -7,4 +7,4 @@ hexside_kinds = ["all_sea", "border", "escarpment", "major_river", "minor_river"
 cell_layers = ["terrain", "coastal"]
 edge_coverage = "per_feature_kind"
 unknown_policy = "outside_mask_unknown"
-verification = "surface_single_observer_lines_pilot_only_hexsides_unreviewed"
+verification = "visual_single_observer_partial_edge_strips"

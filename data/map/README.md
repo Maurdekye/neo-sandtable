@@ -398,3 +398,40 @@ roughly ten rows inland through Matruh, then include the road/rail approach to
 Alexandria. The manifest has 834 cells, 2,326 internal edges and 215 crossing
 edges. Border, road, railroad and escarpment identities cannot be inferred
 from membership; consult each feature's coverage mask.
+
+
+### Direct movement-edge reviews and connected strips
+
+`edge-reviews/*.toml` stores direct observations independently of the older
+line-proposal audit bundles. Each `[batch]` pins the map image, grid build and
+`TEC.png` key hashes, profile, observer, date and visual basis. Each `[[survey]]`
+names sorted canonical adjacent `from_hex`/`to_hex`, an individual `layer`
+(`line:<kind>` or `side:<kind>`), `observed` (`present`, `absent`, `unresolved`),
+`src` case list, and an inspection note. `high_side` is one endpoint for a
+present slope/escarpment and empty otherwise. Directions are derived from
+canonical geometry. Unresolved observations create no coverage or feature.
+Published review batches are immutable: overlapping reviews or changes to
+previous positive/negative evidence need explicit amendment support, not an
+edited old record. The replay currently rejects such changes.
+
+`publish_layer_schema.py` verifies the source hashes, merges nonoverlapping
+manual and pilot evidence, and refuses to erase or alter existing masks or
+features. Runtime CSV schema1 and its per-kind absence rules are unchanged.
+
+`strips.toml` is a generated map-completeness index for named routes, not a
+legal-move oracle. Its `route_hex_ids` and `surveyed_route_edges` name the exact
+cell/edge sets. `complete_line_kinds`/`complete_side_kinds` state which kinds
+are resolved on those route edges. The generator refuses unknown terrain,
+coastal domain, or any queried movement-edge kind. `control_halo_complete`,
+`pipeline_complete` and `unit_action_legality_verified` remain false for the
+first strip: control, supply, unit allowances and other rules still apply.
+Run `py -3.12 tools/map/generate_strips.py` to replay this index and our own
+regular-hex SVG previews, entirely from the data. Source-local images are
+never used to draw public previews.
+
+The first strip, `road-spine-0001`, completes existing clear-terrain cells
+**C4220, C4120, C4020** for its two route edges **C4120/C4220** and
+**C4020/C4120**. Both have finished roads. The other four queried line kinds
+and all eight side kinds are individually checked absent. Pipeline remains
+unsurveyed. No completeness is claimed for adjoining edges, the rest of the
+coast-road spine, or unit action legality.

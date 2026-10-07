@@ -338,3 +338,35 @@ not review throughput. The existing terrain and line samples do not justify
 accepting unsampled predictions. A future sampled release must record its
 sampling frame, seed, class-specific errors and confidence bounds, and
 inspect abstentions and mixed-coast cells individually.
+
+
+## First directly reviewed movement segment (2026-10-07)
+
+`edge-reviews/road-spine-0001.toml` records 28 observations on two sides:
+C4120/C4220 and C4020/C4120. Two roads are present, 24 other movement-kind
+observations are absent, and two pipeline observations remain unresolved.
+Thus it adds 26 per-kind masks: ten line-kind and sixteen side-kind masks.
+Source-native overview, whole shared-side crops and surrounding-cell detail
+were compared with the actual `vassal/extracted/images/TEC.png` key. The road
+crosses both sides away from the corner. A preliminary C4121 descent was
+rejected; the road descends through C4120. The nearby gray escarpment is on
+other sides; the tied railroad by Fort Capuzzo lies southwest of these
+crossings. The ordinary grid does not establish a printed border feature.
+The full sides are land; all_sea absence is checked directly.
+
+Every emitted observation was visually reviewed, with no classifier labels
+accepted. No independent observer or random error bound is claimed; true
+post-review error is unmeasured. Source-profile limitations remain. Three
+route cell terrains were already individually accepted in graziani-0001.
+The generated `strips.toml` names those cells and only the two completed
+route edges. Both five-kind line and eight-kind side movement queries now
+resolve on these pairs. Pipeline, adjoining sides and the enemy-control halo
+remain unknown; supply, stacking, unit capability and actual action legality
+are not certified by this map review.
+
+Tests exercise unresolved evidence, source/key hash mismatch, canonical
+adjacency, duplicate/overlapping reviews, positive direction/high side,
+missing citations, preservation of old masks/features and old negatives,
+and refusal to emit completeness with any route kind unknown. The public
+SVG is new regular-hex art generated from canonical IDs and endpoints,
+never a source-image tracing or recoloring.

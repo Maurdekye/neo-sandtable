@@ -118,3 +118,13 @@ wadis or railway/track/road absence masks. Connected playable strips need
 both accepted terrain and every movement-relevant edge layer; even visually
 clear terrain must not imply no escarpment. Full-corridor completeness and
 population accuracy remain unverified.
+
+
+First map-complete route segment: C4220-C4120-C4020 only (road-spine-0001).
+No directional escarpment positives have yet been published. The adjacent
+control halo and pipeline layer remain unknown, as do the next coast-road
+edges. Do not infer full-spine completeness or legal unit moves from this
+two-edge strip. Printed blue interrupted/tied lines match the unfinished
+railroad family in TEC.png; they do not establish country membership.
+Paired dashed Via Balbia strokes east of Sollum match unfinished road.
+Specific crossing IDs and their other layers still require review.

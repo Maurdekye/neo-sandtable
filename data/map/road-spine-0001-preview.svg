@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4134.78 846.00 96.25 156.00">
+<title>Source-reviewed map strip: map-layer completeness only</title>
+<desc>Original regular hexagons and center links generated from canonical map data. No source artwork. Unit move legality and the neighboring control halo are unverified.</desc>
+<polygon points="4219.28,896.00 4195.03,910.00 4170.78,896.00 4170.78,868.00 4195.03,854.00 4219.28,868.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4195.03,938.00 4170.78,952.00 4146.53,938.00 4146.53,910.00 4170.78,896.00 4195.03,910.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<polygon points="4219.28,980.00 4195.03,994.00 4170.78,980.00 4170.78,952.00 4195.03,938.00 4219.28,952.00" fill="#ead8ab" stroke="#637683" stroke-width="1"/>
+<line x1="4195.03" y1="882.00" x2="4170.78" y2="924.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<line x1="4170.78" y1="924.00" x2="4195.03" y2="966.00" stroke="#84522c" stroke-width="2.5" stroke-dasharray=""><title>road</title></line>
+<text x="4195.03" y="897.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4220</text>
+<text x="4170.78" y="939.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4120</text>
+<text x="4195.03" y="981.00" text-anchor="middle" font-family="sans-serif" font-size="8">C4020</text>
+</svg>

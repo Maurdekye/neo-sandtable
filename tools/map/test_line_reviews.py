@@ -1,4 +1,4 @@
-﻿"""Source-bound review replay must not certify unaudited or unresolved edges."""
+"""Source-bound review replay must not certify unaudited or unresolved edges."""
 import csv
 import hashlib
 import json
@@ -56,9 +56,9 @@ class LineReviewTests(unittest.TestCase):
 
     def test_replay_equals_public_files_and_kind_queries(self):
         features,masks=self.load()
-        with (MAP/'line_features.csv').open(newline='') as f: self.assertEqual(features,list(csv.DictReader(f)))
+        with (MAP/'line_features.csv').open(newline='') as f: self.assertEqual(features,[r for r in csv.DictReader(f) if r["review_batch"]==self.meta["review_id"]])
         with (MAP/'coverage.csv').open(newline='') as f:
-            actual=[r for r in csv.DictReader(f) if r['layer'].startswith('line:')]
+            actual=[r for r in csv.DictReader(f) if r['layer'].startswith('line:') and r['review_batch']==self.meta['review_id']]
         self.assertEqual(masks,actual)
         data=Layers(MAP)
         self.assertIsNotNone(data.feature('line','road','C4419','C4320'))
