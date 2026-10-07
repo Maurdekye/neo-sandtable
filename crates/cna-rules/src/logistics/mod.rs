@@ -13,6 +13,8 @@
 //! its CPA, enemy-ZOC, movement and offensive-assault flags. Call
 //! [`spend_activity_water`] once immediately before the first CPA use; it retains
 //! idle vehicle reserves and does not recharge activity water on repeated moves.
+//! CPA actions allowed while dry use [`consume_activity_water_forced`]: a shortage
+//! consumes available water and preserves the unpaid balance without rejecting the action.
 //! The same water call is needed by other CPA-consuming procedures, and combat
 //! uses the restrictions' defense divisor and offensive-assault flag.
 //!
@@ -22,9 +24,18 @@
 //! refuelling into tanks, captured stocks and unit carrying capacities are separate
 //! procedures; this API spends existing holdings and cannot bypass those decisions.
 //!
+//! Answer acceptance uses only the answering side's units, stocks and known conditions,
+//! plus public facts. Hidden opposing state belongs to adjudication after closed windows;
+//! a failed well result remains an accepted attempt with its rules-required disclosure.
+//!
 //! Cases: airlog:49.13, airlog:49.15, airlog:49.16, airlog:50.13, airlog:50.15
 //! Interpretations: interp:airlog-0001
 
+pub mod activity;
+pub use activity::{
+    ActivityWaterLedger, ActivityWaterPayment, TruckWater, activity_water_due,
+    consume_activity_water_forced, transfer_activity_water_credit,
+};
 pub mod attrition;
 pub mod baseline;
 pub mod capacity;

@@ -379,7 +379,8 @@ pub fn draw(
     .map_err(|_| illegal("requested water cannot be carried after supplying this unit"))?;
     let mut next = state.clone();
     next.land.units.insert(id.clone(), charged);
-    pay_if_available(content, &mut next, id)?;
+    super::consume_activity_water_forced(content, &mut next, id)
+        .map_err(|e| Rejection::Engine(engine(e)))?;
     let mut actual = requested;
     if source.finite() {
         let hex = location.hex().expect("finite well").clone();
@@ -594,7 +595,8 @@ pub fn attempt(
     let charged = charge_plan(content, state, id, if sweeten { 20 } else { 4 }, sweeten)?;
     let mut next = state.clone();
     next.land.units.insert(id.clone(), charged);
-    pay_if_available(content, &mut next, id)?;
+    super::consume_activity_water_forced(content, &mut next, id)
+        .map_err(|e| Rejection::Engine(engine(e)))?;
     let die = private_die(
         cx,
         side,

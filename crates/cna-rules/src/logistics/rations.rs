@@ -61,6 +61,8 @@ pub struct Rations {
     #[serde(skip_serializing_if = "is_default")]
     pub activity_used_stage: Option<WaterStage>,
     #[serde(skip_serializing_if = "is_default")]
+    pub activity_water_ledger: Option<super::activity::ActivityWaterLedger>,
+    #[serde(skip_serializing_if = "is_default")]
     pub attrition_stage: Option<WaterStage>,
 }
 
@@ -229,15 +231,16 @@ pub fn movement_restrictions(
     let foot = infantry(content, id)?;
     let infantry_dry = foot
         && !(history.water_stage == Some(stage) && history.infantry_water_received >= multiplier);
-    let need = activity_points(content, state, id)?
-        .checked_mul(multiplier)
-        .ok_or(SupplyError::Invalid)?;
+    let need = super::activity::activity_water_due(content, state, id)?;
     let reserve = state
         .logistics
         .unit_supply
         .get(id)
         .map_or(0, |s| s.activity_water.get());
-    let activity_dry = need > 0 && history.activity_used_stage != Some(stage) && reserve < need;
+    if reserve < 0 {
+        return Err(SupplyError::Invalid);
+    }
+    let activity_dry = reserve < need;
     let half = history.issued_gt == Some(stage.game_turn) && history.half;
     let pasta_missing = pasta(content, id) && history.pasta_gt != Some(stage.game_turn);
     let dry = infantry_dry || activity_dry;
@@ -261,36 +264,7 @@ pub fn spend_activity_water(
     state: &mut State,
     id: &UnitId,
 ) -> Result<(), SupplyError> {
-    let stage = WaterStage::current(state);
-    if state
-        .logistics
-        .rations
-        .get(id)
-        .is_some_and(|r| r.activity_used_stage == Some(stage))
-    {
-        return Ok(());
-    }
-    let need = activity_points(content, state, id)?
-        .checked_mul(hot_multiplier(content, state, id)?)
-        .ok_or(SupplyError::Invalid)?;
-    if need > 0 {
-        let holding = state
-            .logistics
-            .unit_supply
-            .get_mut(id)
-            .ok_or(SupplyError::Insufficient)?;
-        if holding.activity_water.get() < need {
-            return Err(SupplyError::Insufficient);
-        }
-        holding.activity_water -= cna_core::quantity::WaterPoints::new(need);
-    }
-    state
-        .logistics
-        .rations
-        .entry(id.clone())
-        .or_default()
-        .activity_used_stage = Some(stage);
-    Ok(())
+    super::activity::spend_activity_water(content, state, id)
 }
 
 /// Record pasta and restore the exact cohesion displaced by the pasta rule.

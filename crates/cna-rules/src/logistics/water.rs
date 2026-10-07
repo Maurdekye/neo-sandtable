@@ -48,9 +48,7 @@ pub fn requirements(
     if held < 0 {
         return Err(SupplyError::Invalid);
     }
-    let total = rations::activity_points(content, state, id)?
-        .checked_mul(multiplier)
-        .ok_or(SupplyError::Invalid)?;
+    let total = super::activity::activity_water_due(content, state, id)?;
     let infantry = if rations::infantry(content, id)? {
         (multiplier
             - if history.water_stage == Some(stage) {
@@ -62,11 +60,7 @@ pub fn requirements(
     } else {
         0
     };
-    let activity = if history.activity_used_stage == Some(stage) {
-        0
-    } else {
-        (total - held).max(0)
-    };
+    let activity = (total - held).max(0);
     let pasta = i32::from(
         rations::pasta(content, id)
             && history.issued_gt == Some(stage.game_turn)
