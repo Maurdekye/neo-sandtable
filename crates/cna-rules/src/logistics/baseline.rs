@@ -12,15 +12,7 @@ use cna_core::{
     ids::UnitId,
     visibility::Perspective,
 };
-use cna_tables::airlog::{supply::SupplyType, trucks::TruckType};
 use serde_json::{Value, json};
-const TYPES: [TruckType; 3] = [TruckType::Heavy, TruckType::Medium, TruckType::Light];
-const GOODS: [SupplyType; 4] = [
-    SupplyType::Ammo,
-    SupplyType::Fuel,
-    SupplyType::Stores,
-    SupplyType::Water,
-];
 
 fn sources(content: &CnaContent, state: &State, id: &UnitId) -> Vec<SupplyDraw> {
     let mut sources = available_sources_with_content(content, state, id).unwrap_or_default();
@@ -94,53 +86,7 @@ fn packing(
     stock: Supplies,
 ) -> Option<CargoPacking> {
     let unit = state.land.units.get(id)?;
-    let mut result = CargoPacking::default();
-    let mut remaining = stock;
-    for kind in TYPES {
-        let total =
-            capacity::trucks(&unit.trucks, kind) - capacity::trucks(&unit.transport_trucks, kind);
-        if total < 0 {
-            return None;
-        }
-        let chart = content.tables.airlog.truck_characteristics.truck(kind);
-        let den = GOODS.iter().try_fold(1i64, |d, s| {
-            d.checked_mul(i64::from(chart.supply_capacity(*s)))
-        })?;
-        if den <= 0 {
-            return None;
-        }
-        let mut room = i64::from(total) * den;
-        let out = match kind {
-            TruckType::Light => &mut result.light,
-            TruckType::Medium => &mut result.medium,
-            TruckType::Heavy => &mut result.heavy,
-        };
-        for s in GOODS {
-            let cap = i64::from(chart.supply_capacity(s));
-            let cost = den / cap;
-            let take = i64::from(capacity::points(&remaining, s)).min(room / cost);
-            if take < 0 {
-                return None;
-            }
-            let n = i32::try_from(take).ok()?;
-            capacity::set_points(out, s, n);
-            let left = capacity::points(&remaining, s) - n;
-            capacity::set_points(&mut remaining, s, left);
-            room -= take * cost;
-        }
-    }
-    if remaining != Supplies::default() {
-        return None;
-    }
-    capacity::validate_packing(
-        content,
-        &unit.trucks,
-        &unit.transport_trucks,
-        &stock,
-        &result,
-    )
-    .ok()?;
-    Some(result)
+    capacity::find_packing(content, &unit.trucks, &unit.transport_trucks, stock)
 }
 fn stored(state: &State, id: &UnitId) -> Supplies {
     state

@@ -227,8 +227,80 @@ pub fn cargo_bound(
     i32::try_from(capacity).map_err(|_| SupplyError::Invalid)
 }
 
+/// Find a deterministic packing for the exact given stocks. Failure is allowed;
+/// success always passes the same capacity validator as an explicit owner allocation.
+/// Cases: airlog:53.11, airlog:54.2
+/// Interpretations: interp:airlog-0008
+pub fn find_packing(
+    content: &CnaContent,
+    attached: &Trucks,
+    transport: &Trucks,
+    stock: Supplies,
+) -> Option<CargoPacking> {
+    let mut result = CargoPacking::default();
+    let mut remaining = stock;
+    for kind in [TruckType::Heavy, TruckType::Medium, TruckType::Light] {
+        let total = trucks(attached, kind) - trucks(transport, kind);
+        if total < 0 {
+            return None;
+        }
+        let chart = content.tables.airlog.truck_characteristics.truck(kind);
+        let den = SUPPLIES.iter().try_fold(1i64, |d, s| {
+            d.checked_mul(i64::from(chart.supply_capacity(*s)))
+        })?;
+        if den <= 0 {
+            return None;
+        }
+        let mut room = i64::from(total) * den;
+        let out = match kind {
+            TruckType::Light => &mut result.light,
+            TruckType::Medium => &mut result.medium,
+            TruckType::Heavy => &mut result.heavy,
+        };
+        for s in SUPPLIES {
+            let cap = i64::from(chart.supply_capacity(s));
+            let cost = den / cap;
+            let take = i64::from(points(&remaining, s)).min(room / cost);
+            if take < 0 {
+                return None;
+            }
+            let n = i32::try_from(take).ok()?;
+            set_points(out, s, n);
+            let left = points(&remaining, s) - n;
+            set_points(&mut remaining, s, left);
+            room -= take * cost;
+        }
+    }
+    if remaining != Supplies::default() {
+        return None;
+    }
+    validate_packing(content, attached, transport, &stock, &result).ok()?;
+    Some(result)
+}
+
 #[cfg(test)]
 mod tests {
+    /// Cases: airlog:53.11, airlog:54.2
+    #[test]
+    fn pure_packing_helper_preserves_each_good_and_excludes_transport_capacity() {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let cargo = Supplies {
+            ammo: 1,
+            fuel: 1,
+            stores: 1,
+            water: 1,
+        };
+        let attached = Trucks {
+            heavy: 1,
+            ..Trucks::default()
+        };
+        let packing = find_packing(&c, &attached, &Trucks::default(), cargo).unwrap();
+        assert_eq!(packing.heavy, cargo);
+        validate_packing(&c, &attached, &Trucks::default(), &cargo, &packing).unwrap();
+        assert!(find_packing(&c, &attached, &attached, cargo).is_none());
+        assert!(find_packing(&c, &Trucks::default(), &Trucks::default(), cargo).is_none());
+    }
+
     use super::*;
     /// Cases: airlog:53.11, airlog:54.2
     /// Interpretations: interp:airlog-0008
