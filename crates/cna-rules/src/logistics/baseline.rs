@@ -345,6 +345,11 @@ pub fn logistics_orders(
     request: &DecisionRequest,
     rng: &mut CampaignRng,
 ) -> Option<Value> {
+    if request.space.pass.is_some()
+        && matches!(&request.space.schema, ActionSchema::Choice { options } if options.is_empty())
+    {
+        return Some(Value::Null);
+    }
     if request.kind == super::arrivals::KIND {
         return Some(super::arrivals::baseline(
             content,
@@ -476,10 +481,7 @@ pub fn logistics_orders(
         });
     }
     if kind == attrition::KIND {
-        let ActionSchema::Choice { options } = &request.space.schema else {
-            return None;
-        };
-        return options.first().map(|o| json!(o.id));
+        return attrition::baseline(content, state, request.seat.side);
     }
     if kind == distribution::KIND
         || kind.starts_with(distribution::PREFIX)
@@ -570,6 +572,50 @@ mod tests {
         seen: &mut std::collections::BTreeSet<String>,
     ) {
         for _ in 0..256 {
+            if s.decisions.pending.is_empty() {
+                if s.logistics
+                    .allocation_batches
+                    .submitted
+                    .keys()
+                    .any(|k| k.starts_with(crate::logistics::batches::STORES))
+                {
+                    crate::logistics::batches::finish_stores(
+                        content(),
+                        s,
+                        &mut Cx {
+                            rng: dice,
+                            events: &mut vec![],
+                        },
+                    )
+                    .unwrap();
+                }
+                if s.logistics
+                    .allocation_batches
+                    .submitted
+                    .keys()
+                    .any(|k| k.starts_with(crate::logistics::batches::DISTRIBUTION))
+                {
+                    crate::logistics::batches::finish_distribution(
+                        content(),
+                        s,
+                        &mut Cx {
+                            rng: dice,
+                            events: &mut vec![],
+                        },
+                    )
+                    .unwrap();
+                }
+                crate::logistics::batches::finish_water(
+                    content(),
+                    s,
+                    &mut Cx {
+                        rng: dice,
+                        events: &mut vec![],
+                    },
+                    false,
+                )
+                .unwrap();
+            }
             let Some(p) = s.decisions.pending.first().cloned() else {
                 return;
             };
@@ -587,13 +633,7 @@ mod tests {
                 rng: dice,
                 events: &mut events,
             };
-            let result = if p.kind == stores::KIND || p.kind.starts_with(stores::ISSUE_PREFIX) {
-                stores::answer(content(), s, &p, &action, &mut cx)
-            } else if p.kind == water::KIND || p.kind.starts_with(water::ISSUE_PREFIX) {
-                water::answer(content(), s, &p, &action, &mut cx, false)
-            } else {
-                wells::answer(content(), s, &p, &action, &mut cx, false)
-            };
+            let result = Cna::dev().respond_to(content(), s, &p, &action, &mut cx);
             result.unwrap_or_else(|e| panic!("{} generated {action}: {e:?}", p.kind));
         }
         panic!("baseline did not finish the logistics window")
@@ -650,10 +690,10 @@ mod tests {
                     .may_move
             );
         }
-        assert!(seen.iter().any(|k| k.starts_with(stores::ISSUE_PREFIX)));
-        assert!(seen.iter().any(|k| k.starts_with(water::ISSUE_PREFIX)));
-        assert!(seen.iter().any(|k| k.starts_with(wells::REQUEST_PREFIX)));
-        assert!(seen.iter().any(|k| k.starts_with(wells::ALLOCATE_PREFIX)));
+        assert!(seen.contains(crate::logistics::batches::STORES));
+        assert!(seen.contains(crate::logistics::batches::WATER));
+
+        assert!(seen.contains(crate::logistics::batches::WELL_ALLOCATION));
     }
     /// Cases: land:3.6, airlog:52.14, airlog:52.16
     #[test]

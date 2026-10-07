@@ -88,6 +88,10 @@ fn play_until(
         }
         let request = ruleset.pending(content, &game.state).remove(0);
         let action = match &request.space.schema {
+            _ if request.kind == crate::logistics::attrition::KIND => {
+                crate::logistics::attrition::baseline(content, &game.state, request.seat.side)
+                    .expect("complete attrition allocation")
+            }
             ActionSchema::Choice { options } if !options.is_empty() => json!(options[0].id),
             _ if request.space.pass.is_some() => Value::Null,
             other => first_answer(other),

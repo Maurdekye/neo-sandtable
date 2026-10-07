@@ -9,14 +9,14 @@ use super::{
 use crate::{
     CnaContent,
     state::{Location, Pending, State},
-    steps::{illegal, open},
+    steps::illegal,
 };
 use cna_content::scenario::Supplies;
 use cna_core::{
-    decision::{ActionSchema, ActionSpace, Secrecy, Trigger},
+    decision::ActionSchema,
     engine::{Cx, EngineError, Rejection},
     event::EngineEvent,
-    ids::{HexId, SeatId, UnitId},
+    ids::{HexId, UnitId},
     quantity::WaterPoints,
     visibility::{Audience, Perspective},
 };
@@ -288,41 +288,7 @@ fn required(content: &CnaContent, state: &State, id: &UnitId) -> Result<i32, Rej
 
 /// Private operation menu; hidden enemy conditions do not remove the draw option.
 /// Cases: airlog:52.13, airlog:52.14, airlog:52.16, airlog:52.17, land:3.6
-pub(super) fn select(
-    content: &CnaContent,
-    state: &mut State,
-    id: &UnitId,
-    seat: SeatId,
-    cx: &mut Cx<'_>,
-) -> Result<(), Rejection> {
-    if !candidates(content, state, seat.side).contains(id) {
-        return Err(illegal("unit has no verified usable water source"));
-    }
-    let options = operation_options(content, state, id, seat.side);
-    if options.is_empty() {
-        return Err(illegal("no well operation fits remaining CPA"));
-    }
-    open(
-        state,
-        cx,
-        seat,
-        &format!("{PREFIX}{id}"),
-        format!("{id}: choose a well operation. Quantities and rolls stay private."),
-        &["airlog:52.13", "airlog:52.16", "airlog:52.17", "land:3.6"],
-        Trigger::Scheduled,
-        Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Choice { options })
-            .with_pass("Return to water distribution"),
-    );
-    Ok(())
-}
 
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Request {
-    requested: i32,
-    packing: CargoPacking,
-}
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Allocation {
@@ -757,190 +723,19 @@ pub(super) fn packing_schema(content: &CnaContent, state: &State, id: &UnitId) -
     .collect();
     ActionSchema::Record { fields }
 }
-fn open_request(
-    content: &CnaContent,
-    state: &mut State,
-    id: &UnitId,
-    seat: SeatId,
-    cx: &mut Cx<'_>,
-) -> Result<(), Rejection> {
-    let cap = cargo_bound(content, state, id, SupplyType::Water)
-        .map_err(|e| Rejection::Engine(engine(e)))?;
-    let held = state
-        .logistics
-        .unit_supply
-        .get(id)
-        .map_or(0, |h| h.carried.water);
-    let max = required(content, state, id)?
-        .checked_add((cap - held).max(0))
-        .ok_or_else(|| illegal("water capacity overflow"))?;
-    if max < 1 {
-        return Err(illegal(
-            "this unit needs no water and has no water cargo space",
-        ));
-    }
-    let fields = vec![
-        field(
-            "requested",
-            "Water to draw; limited wells can produce less",
-            ActionSchema::Integer {
-                min: 1,
-                max: max.into(),
-            },
-        ),
-        field(
-            "packing",
-            "Packing after meeting immediate needs; unused requested water must fit",
-            packing_schema(content, state, id),
-        ),
-    ];
-    open(
-        state,
-        cx,
-        seat,
-        &format!("{REQUEST_PREFIX}{id}"),
-        format!(
-            "{id}: request water after a 1 CP draw. Provide room for any amount beyond this unit's immediate needs."
-        ),
-        &["airlog:52.13", "airlog:54.2", "land:3.6"],
-        Trigger::Scheduled,
-        Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Record { fields }).with_pass("Return without drawing"),
-    );
-    Ok(())
-}
-fn open_allocation(
-    content: &CnaContent,
-    state: &mut State,
-    id: &UnitId,
-    seat: SeatId,
-    cx: &mut Cx<'_>,
-) -> Result<(), Rejection> {
-    let points = state.logistics.drawn_water[id].points;
-    let r = water::requirements(content, state, id).map_err(|e| Rejection::Engine(engine(e)))?;
-    let fields = vec![
-        field(
-            "infantry",
-            "Water drunk immediately",
-            ActionSchema::Integer {
-                min: 0,
-                max: i64::from(r.infantry.min(points)),
-            },
-        ),
-        field(
-            "activity",
-            "Water reserved for vehicle CPA use",
-            ActionSchema::Integer {
-                min: 0,
-                max: i64::from(r.activity.min(points)),
-            },
-        ),
-        field(
-            "pasta",
-            "Supply one missing weekly pasta point",
-            ActionSchema::Bool,
-        ),
-        field(
-            "cargo",
-            "Water to carry on first-line trucks",
-            ActionSchema::Integer {
-                min: 0,
-                max: i64::from(points),
-            },
-        ),
-        field(
-            "packing",
-            "Final carried supplies by truck type",
-            packing_schema(content, state, id),
-        ),
-    ];
-    open(
-        state,
-        cx,
-        seat,
-        &format!("{ALLOCATE_PREFIX}{id}"),
-        format!(
-            "{id}: allocate the recorded {points} water. Total allocation must fit; unused water is discarded."
-        ),
-        &[
-            "airlog:52.13",
-            "airlog:52.41",
-            "airlog:52.42",
-            "airlog:52.6",
-            "land:3.6",
-        ],
-        Trigger::Scheduled,
-        Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Record { fields }).with_pass("Discard this drawn water"),
-    );
-    Ok(())
-}
+
 /// Cases: airlog:52.13, airlog:52.14, airlog:52.16, airlog:52.17, land:3.6
 pub fn answer(
-    content: &CnaContent,
-    state: &mut State,
-    pending: &Pending,
-    action: &Value,
-    cx: &mut Cx<'_>,
-    strict: bool,
+    _content: &CnaContent,
+    _state: &mut State,
+    _pending: &Pending,
+    _action: &Value,
+    _cx: &mut Cx<'_>,
+    _strict: bool,
 ) -> Result<String, Rejection> {
-    let kind = &pending.kind;
-    let (id, operation) = if let Some(id) = kind.strip_prefix(ALLOCATE_PREFIX) {
-        (UnitId::new(id), "allocate")
-    } else if let Some(id) = kind.strip_prefix(REQUEST_PREFIX) {
-        (UnitId::new(id), "request")
-    } else {
-        (
-            UnitId::new(
-                kind.strip_prefix(PREFIX)
-                    .ok_or_else(|| illegal("unknown well decision"))?,
-            ),
-            "select",
-        )
-    };
-    if state
-        .land
-        .units
-        .get(&id)
-        .is_none_or(|u| u.side != pending.seat.side)
-    {
-        return Err(illegal("unit is not owned by this side"));
-    }
-    if action.is_null() {
-        if operation == "allocate" {
-            state.logistics.drawn_water.remove(&id);
-        }
-    } else {
-        match operation {
-            "select" => match action
-                .as_str()
-                .ok_or_else(|| illegal("choose a well operation"))?
-            {
-                "draw" => {
-                    open_request(content, state, &id, pending.seat, cx)?;
-                    return Ok("Preparing a private water draw.".into());
-                }
-                "poison" => attempt(content, state, &id, false, cx)?,
-                "sweeten" => attempt(content, state, &id, true, cx)?,
-                _ => return Err(illegal("unknown well operation")),
-            },
-            "request" => {
-                let request: Request = serde_json::from_value(action.clone())
-                    .map_err(|_| illegal("invalid draw request"))?;
-                draw(content, state, &id, request.requested, &request.packing, cx)?;
-                open_allocation(content, state, &id, pending.seat, cx)?;
-                return Ok("Water drawn; choose its private allocation.".into());
-            }
-            "allocate" => {
-                let allocation: Allocation = serde_json::from_value(action.clone())
-                    .map_err(|_| illegal("invalid water allocation"))?;
-                allocate(content, state, &id, &allocation)?;
-            }
-            _ => unreachable!(),
-        }
-    }
-    water::open_menu(content, state, pending.seat.side, cx, strict).map_err(Rejection::Engine)?;
-    Ok("Well operation recorded privately.".into())
+    Err(illegal(
+        "single-unit well windows are retired; use the fixed batched water step",
+    ))
 }
 #[cfg(test)]
 mod tests;

@@ -3,6 +3,7 @@ use super::*;
 use crate::Cna;
 use crate::state::{Dump, DumpLocation, Location, WeatherState};
 use cna_content::scenario::Supplies;
+use cna_core::decision::Secrecy;
 use cna_core::dice::CampaignRng;
 use cna_core::engine::Ruleset;
 use cna_core::visibility::Perspective;
@@ -240,7 +241,7 @@ fn unknown_hq_composition_blocks_full_but_dev_reports_privately_and_continues() 
             .decisions
             .pending
             .iter()
-            .all(|p| p.secrecy == Secrecy::Secret)
+            .all(|p| p.secrecy == Secrecy::SecretSimultaneous)
     );
 }
 

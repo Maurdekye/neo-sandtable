@@ -35,6 +35,37 @@ fn run(state: &mut State) -> Vec<EngineEvent> {
         },
     )
     .unwrap();
+    // Forced empty windows are real requests but need no allocation or model turn.
+    let empty: Vec<_> = state
+        .decisions
+        .pending
+        .iter()
+        .filter(|p| p.space.pass.is_some())
+        .cloned()
+        .collect();
+    for p in empty {
+        state.decisions.pending.retain(|x| x.id != p.id);
+        answer(
+            content(),
+            state,
+            &p,
+            &Value::Null,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        )
+        .unwrap();
+    }
+    finish(
+        content(),
+        state,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
     events
 }
 /// Cases: airlog:52.53, land:3.6
@@ -50,6 +81,7 @@ fn first_dry_stage_loses_nothing_then_each_consecutive_stage_loses_one_infantry_
         assert!(
             events
                 .iter()
+                .filter(|e|matches!(&e.event,GameEvent::Note{text} if text.contains("lost one infantry")))
                 .all(|e| e.audience == Audience::Side(Side::Axis))
         );
     }
@@ -127,47 +159,53 @@ fn food_loss_rounds_the_hex_total_once_and_owner_selects_the_casualties() {
             .decisions
             .pending
             .iter()
-            .all(|p| p.secrecy == Secrecy::Secret)
+            .all(|p| p.secrecy == Secrecy::SecretSimultaneous)
     );
-    let mut remaining = expected;
-    while remaining > 0 {
-        let pending = state.decisions.pending.remove(0);
-        let ActionSchema::Choice { options } = &pending.space.schema else {
-            panic!("expected infantry choices")
-        };
-        let action = serde_json::json!(options[0].id);
-        let mut rng = CampaignRng::from_seed([5; 32]);
-        let mut events = vec![];
-        if remaining == expected {
-            let before = serde_json::to_value(&state).unwrap();
-            assert!(
-                answer(
-                    content(),
-                    &mut state,
-                    &pending,
-                    &serde_json::json!("not-an-infantry-unit"),
-                    &mut Cx {
-                        rng: &mut rng,
-                        events: &mut events
-                    }
-                )
-                .is_err()
-            );
-            assert_eq!(serde_json::to_value(&state).unwrap(), before);
-        }
+    let pending = state.decisions.pending.remove(0);
+    let action = baseline(content(), &state, Side::Axis).unwrap();
+    let mut rng = CampaignRng::from_seed([5; 32]);
+    let mut events = vec![];
+    let before = serde_json::to_value(&state).unwrap();
+    assert!(
         answer(
             content(),
             &mut state,
             &pending,
-            &action,
+            &serde_json::json!([{"unit":"not-an-infantry-unit","points":1}]),
             &mut Cx {
                 rng: &mut rng,
-                events: &mut events,
-            },
+                events: &mut events
+            }
         )
-        .unwrap();
-        remaining -= 1;
-    }
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&state).unwrap(), before);
+    answer(
+        content(),
+        &mut state,
+        &pending,
+        &action,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        ids.iter()
+            .map(|id| strength(content(), &state, id).unwrap())
+            .sum::<i32>(),
+        total
+    );
+    finish(
+        content(),
+        &mut state,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
     let after: i32 = ids
         .iter()
         .map(|id| strength(content(), &state, id).unwrap())

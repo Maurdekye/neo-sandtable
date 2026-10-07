@@ -2,23 +2,21 @@
 //! This procedure handles the free Supply Distribution window only. Other windows must
 //! charge loading CP and preserve the no-leapfrogging cargo ledger before using this API.
 //! Cargo handling at the four off-map supply boxes stamps an OpStage movement ban.
-use super::stores::{engine, field, option};
+use super::stores::field;
 use super::{CargoPacking, SupplyError, capacity, fuel_capacity, validate_packing};
 use crate::{
     CnaContent,
     state::{DumpLocation, Location, Pending, State},
-    steps::{illegal, open},
+    steps::illegal,
 };
 use cna_content::{scenario::Supplies, units::Trucks};
 use cna_core::{
-    decision::{ActionSchema, ActionSpace, Secrecy, Trigger},
+    decision::ActionSchema,
     engine::{Cx, EngineError, Rejection},
-    event::EngineEvent,
-    ids::{SeatId, UnitId},
+    ids::UnitId,
     quantity::FuelTenths,
-    visibility::Audience,
 };
-use cna_protocol::{GameEvent, Side};
+use cna_protocol::Side;
 use cna_tables::airlog::supply::{DumpCapacity, DumpLocation as ChartLocation, SupplyType};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -470,62 +468,9 @@ pub fn transfer(
 
 /// Cases: airlog:48.0, airlog:53.24, land:3.6
 pub fn enter(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
-    for side in [Side::Axis, Side::Commonwealth] {
-        menu(content, state, side, cx)?;
-    }
-    Ok(())
+    super::batches::enter_distribution(content, state, cx)
 }
-fn menu(
-    content: &CnaContent,
-    state: &mut State,
-    side: Side,
-    cx: &mut Cx<'_>,
-) -> Result<(), EngineError> {
-    let mut choices = vec![option("done".into(), "Finish supply redistribution".into())];
-    choices.extend(
-        endpoints(state, side)
-            .into_iter()
-            .filter(|e| match e {
-                Endpoint::Ready(id) => {
-                    super::ready_ammo_capacity(content, state, id).is_ok_and(|cap| {
-                        state
-                            .logistics
-                            .unit_supply
-                            .get(id)
-                            .map_or(0, |h| h.ready_ammo.get())
-                            < cap.get()
-                    })
-                }
-                Endpoint::Tank(id) => fuel_capacity(content, state, id).is_ok_and(|cap| {
-                    state
-                        .logistics
-                        .unit_supply
-                        .get(id)
-                        .map_or(0, |h| h.tank_fuel.get())
-                        < cap.get()
-                }),
-                _ => true,
-            })
-            .filter(|e| !sources(state, side, e).is_empty())
-            .map(|e| option(serde_json::to_string(&e).unwrap(), format!("Load {e:?}"))),
-    );
-    if choices.len() == 1 {
-        return Ok(());
-    }
-    open(
-        state,
-        cx,
-        SeatId::new(side, cna_protocol::Role::Logistics),
-        KIND,
-        "Redistribute friendly supplies in the same location; unload before loading another truck."
-            .into(),
-        &["airlog:53.24", "airlog:54.13", "land:3.6"],
-        Trigger::Scheduled,
-        Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Choice { options: choices }).with_pass("Finish"),
-    );
-    Ok(())
-}
+
 pub(super) fn packing_schema(content: &CnaContent, state: &State, to: &Endpoint) -> ActionSchema {
     let attached = match to {
         Endpoint::Cargo(id) => state.land.units[id].trucks,
@@ -580,13 +525,6 @@ pub(super) fn packing_schema(content: &CnaContent, state: &State, to: &Endpoint)
         .collect(),
     }
 }
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Order {
-    source: String,
-    amount: Supplies,
-    packing: CargoPacking,
-}
 /// Cases: airlog:49.14, airlog:49.16, airlog:53.24, airlog:54.13, land:3.6
 /// Interpretations: interp:airlog-0001, interp:airlog-0008
 pub fn answer(
@@ -596,132 +534,12 @@ pub fn answer(
     action: &Value,
     cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
-    let side = pending.seat.side;
-    if action.is_null() {
-        if pending.kind != KIND {
-            menu(content, state, side, cx).map_err(Rejection::Engine)?;
-        }
-        return Ok("Finished redistribution".into());
+    if matches!(pending.kind.as_str(), super::batches::DISTRIBUTION) {
+        return super::batches::answer(content, state, pending, action, cx, false);
     }
-    if pending.kind == KIND {
-        if action.as_str() == Some("done") {
-            return Ok("Finished redistribution".into());
-        }
-        let to: Endpoint = serde_json::from_str(
-            action
-                .as_str()
-                .ok_or_else(|| illegal("select a receiver"))?,
-        )
-        .map_err(|_| illegal("unknown receiver"))?;
-        let sources = sources(state, side, &to);
-        if sources.is_empty() {
-            return Err(illegal("receiver has no accessible source"));
-        }
-        let max = |t| {
-            sources
-                .iter()
-                .filter_map(|e| stock(state, e).ok())
-                .map(|s| i64::from(capacity::points(&s, t)))
-                .max()
-                .unwrap_or(0)
-        };
-        let amount = ActionSchema::Record {
-            fields: TYPES
-                .into_iter()
-                .zip(["ammo", "fuel", "stores", "water"])
-                .map(|(t, name)| {
-                    field(
-                        name,
-                        if matches!(to, Endpoint::Tank(_)) && t == SupplyType::Fuel {
-                            "Fuel tenths to fill (cargo pays whole-point ceiling)"
-                        } else {
-                            "Whole points to transfer"
-                        },
-                        ActionSchema::Integer {
-                            min: 0,
-                            max: if matches!(to, Endpoint::Tank(_)) {
-                                if t == SupplyType::Fuel {
-                                    max(t) * 10
-                                } else {
-                                    0
-                                }
-                            } else {
-                                max(t)
-                            },
-                        },
-                    )
-                })
-                .collect(),
-        };
-        open(
-            state,
-            cx,
-            pending.seat,
-            &format!("{PREFIX}{}", serde_json::to_string(&to).unwrap()),
-            format!("Load {to:?}; choose one friendly source and final packing."),
-            &["airlog:53.24", "airlog:54.2", "land:3.6"],
-            Trigger::Scheduled,
-            Secrecy::Secret,
-            ActionSpace::new(ActionSchema::Record {
-                fields: vec![
-                    field(
-                        "source",
-                        "Same-location source",
-                        ActionSchema::Choice {
-                            options: sources
-                                .into_iter()
-                                .map(|e| {
-                                    option(serde_json::to_string(&e).unwrap(), format!("{e:?}"))
-                                })
-                                .collect(),
-                        },
-                    ),
-                    field("amount", "Supply transfer", amount),
-                    field(
-                        "packing",
-                        "Final cargo by truck type (zero for dumps/tanks)",
-                        packing_schema(content, state, &to),
-                    ),
-                ],
-            })
-            .with_pass("Return without transferring"),
-        );
-        return Ok("Selected receiver".into());
-    }
-    let to: Endpoint = serde_json::from_str(
-        pending
-            .kind
-            .strip_prefix(PREFIX)
-            .ok_or_else(|| illegal("unknown transfer"))?,
-    )
-    .map_err(|_| illegal("unknown receiver"))?;
-    let order: Order =
-        serde_json::from_value(action.clone()).map_err(|_| illegal("invalid transfer"))?;
-    let from: Endpoint =
-        serde_json::from_str(&order.source).map_err(|_| illegal("unknown source"))?;
-    transfer(
-        content,
-        state,
-        side,
-        &from,
-        &to,
-        order.amount,
-        &order.packing,
-    )
-    .map_err(|e| match e {
-        SupplyError::Unsupported { .. } | SupplyError::UnknownFuelRate => {
-            Rejection::Engine(engine(e))
-        }
-        _ => illegal("transfer exceeds available stock, capacity or same-location loading rules"),
-    })?;
-    cx.emit(EngineEvent::new(
-        Audience::Side(side),
-        GameEvent::Note {
-            text: format!("Transferred {:?} from {from:?} to {to:?}.", order.amount),
-        },
-    ));
-    menu(content, state, side, cx).map_err(Rejection::Engine)?;
-    Ok("Supplies redistributed".into())
+    Err(illegal(
+        "single-unit logistics windows are retired; use the fixed batched step",
+    ))
 }
 
 #[cfg(test)]

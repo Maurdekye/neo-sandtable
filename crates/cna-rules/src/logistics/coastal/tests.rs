@@ -231,6 +231,7 @@ fn batched_list_rolls_back_and_new_dump_uses_opaque_marker() {
     let order = json!({"ship":"axis.coastal.a","operation":"load","dump":"fixture","cargo":stores(1),"path":[]});
     let invalid = json!([order,{"ship":"axis.coastal.invalid","operation":"load","dump":"fixture","cargo":stores(1),"path":[]}]);
     let before = serde_json::to_value(&s).unwrap();
+    let rng_before = rng.state();
     events.clear();
     assert!(
         answer(
@@ -247,6 +248,7 @@ fn batched_list_rolls_back_and_new_dump_uses_opaque_marker() {
     );
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
     assert!(events.is_empty());
+    assert_eq!(rng.state(), rng_before);
     let action = json!([order,{"ship":"axis.coastal.a","operation":"unload","dump":"new:C4022","cargo":stores(1),"path":[]}]);
     answer(
         c,
@@ -259,6 +261,47 @@ fn batched_list_rolls_back_and_new_dump_uses_opaque_marker() {
         },
     )
     .unwrap();
+    assert!(!s.logistics.dumps.contains_key("axis.coastal.port.C4022"));
+    assert_eq!(
+        s.logistics.dumps["fixture"].supplies,
+        serde_json::from_value::<State>(before.clone())
+            .unwrap()
+            .logistics
+            .dumps["fixture"]
+            .supplies
+    );
+    let saved: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    finish(
+        c,
+        &mut s,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
+    let closed = serde_json::to_value(&s).unwrap();
+    finish(
+        c,
+        &mut s,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut vec![],
+        },
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), closed);
+    let mut recovered = saved;
+    finish(
+        c,
+        &mut recovered,
+        &mut Cx {
+            rng: &mut CampaignRng::from_seed([4; 32]),
+            events: &mut vec![],
+        },
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_value(&recovered).unwrap(), closed);
     let dump = &s.logistics.dumps["axis.coastal.port.C4022"];
     assert!(dump.marker.starts_with("dump-"));
     assert_eq!(dump.supplies.stores, 1);

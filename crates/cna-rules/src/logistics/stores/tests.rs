@@ -3,6 +3,7 @@ use super::*;
 use crate::Cna;
 use crate::state::{Dump, UnitSupply};
 use cna_content::scenario::Supplies;
+use cna_core::decision::Secrecy;
 use cna_core::dice::CampaignRng;
 use cna_core::engine::Ruleset;
 use cna_core::quantity::FuelTenths;
@@ -285,7 +286,7 @@ fn prisoners_are_aggregated_and_served_before_guards_and_units_without_enemy_lea
             .decisions
             .pending
             .iter()
-            .all(|p| p.secrecy == Secrecy::Secret)
+            .all(|p| p.secrecy == Secrecy::SecretSimultaneous)
     );
     let before = state.logistics.dumps["food"].supplies.stores;
     feed_prisoners(

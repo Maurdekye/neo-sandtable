@@ -668,6 +668,12 @@ mod tests {
             storm_sections: vec![],
         });
         state.cursor.op_stage = Some(1);
+        state.cursor.block = cna_rules::seq::Block::Pre;
+        state.cursor.index = cna_rules::seq::PRE
+            .iter()
+            .position(|s| s.anchor == "logistics.stores_expenditure")
+            .unwrap();
+        state.cursor.entered = true;
         state.logistics.dumps.clear();
         state.logistics.dumps.insert(
             "fixture-stock".into(),
@@ -705,12 +711,28 @@ mod tests {
             .unwrap();
         let before = serde_json::to_value(&state).unwrap();
         let rng_before = dice.state();
+        let stock_before = state.logistics.dumps["fixture-stock"].supplies;
         let policy = movement_policy();
         for epoch in 1..32 {
             let action = policy(&content, &state, &request, epoch).unwrap();
-            assert_eq!(action, serde_json::json!(id));
+            assert_eq!(
+                action,
+                serde_json::json!([{
+                    "unit": id,
+                    "stores": 20,
+                    "half": false,
+                    "pasta": true,
+                    "draws": [{
+                        "source": serde_json::to_string(
+                            &cna_rules::logistics::SupplySource::Dump("fixture-stock".into())
+                        ).unwrap(),
+                        "stores": 20,
+                        "water": 1
+                    }]
+                }])
+            );
             assert_eq!(action, policy(&content, &state, &request, epoch).unwrap());
-            evaluate(
+            let mut submitted = evaluate(
                 &Cna::dev(),
                 &content,
                 &Game {
@@ -727,7 +749,84 @@ mod tests {
                     public_explanation: None,
                 }),
             )
-            .unwrap();
+            .unwrap()
+            .game;
+            assert_eq!(submitted.rng, rng_before);
+            assert_eq!(
+                submitted.state.logistics.dumps["fixture-stock"]
+                    .supplies
+                    .stores,
+                40
+            );
+            assert_eq!(
+                submitted.state.logistics.dumps["fixture-stock"]
+                    .supplies
+                    .water,
+                stock_before.water
+            );
+            assert!(!submitted.state.logistics.rations.contains_key(&id));
+            while let Some(p) = submitted.state.decisions.pending.first().cloned() {
+                assert!(p.space.pass.is_some());
+                submitted = evaluate(
+                    &Cna::dev(),
+                    &content,
+                    &submitted,
+                    &Command::Respond(cna_core::decision::DecisionResponse {
+                        decision_id: p.id,
+                        seat: p.seat,
+                        controller_epoch: epoch,
+                        decision_revision: p.revision,
+                        idempotency_key: "other-stores-pass".into(),
+                        action: serde_json::Value::Null,
+                        public_explanation: None,
+                    }),
+                )
+                .unwrap()
+                .game;
+            }
+            assert_eq!(
+                submitted.state.logistics.dumps["fixture-stock"]
+                    .supplies
+                    .stores,
+                40
+            );
+            assert_eq!(
+                submitted.state.logistics.dumps["fixture-stock"]
+                    .supplies
+                    .water,
+                stock_before.water
+            );
+            let checkpoint: Game<Cna> =
+                serde_json::from_value(serde_json::to_value(&submitted).unwrap()).unwrap();
+            let closed = evaluate(&Cna::dev(), &content, &submitted, &Command::Advance).unwrap();
+            let replay = evaluate(&Cna::dev(), &content, &checkpoint, &Command::Advance).unwrap();
+            assert_eq!(
+                serde_json::to_value(&closed.game).unwrap(),
+                serde_json::to_value(&replay.game).unwrap()
+            );
+            assert_eq!(
+                serde_json::to_value(&closed.events).unwrap(),
+                serde_json::to_value(&replay.events).unwrap()
+            );
+            assert_eq!(submitted.rng, rng_before);
+            let h = &closed.game.state.logistics.rations[&id];
+            assert_eq!(h.stores_received, 20);
+            assert_eq!(h.stores_required, 20);
+            assert!(!h.half);
+            assert_eq!(h.finalized_gt, Some(1));
+            assert_eq!(h.pasta_gt, Some(1));
+            assert_eq!(
+                closed.game.state.logistics.dumps["fixture-stock"]
+                    .supplies
+                    .stores,
+                20
+            );
+            assert_eq!(
+                closed.game.state.logistics.dumps["fixture-stock"]
+                    .supplies
+                    .water,
+                stock_before.water - 1
+            );
         }
         assert_eq!(serde_json::to_value(&state).unwrap(), before);
         assert_eq!(dice.state(), rng_before);

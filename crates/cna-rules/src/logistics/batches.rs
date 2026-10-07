@@ -1,4 +1,5 @@
-//! Owner-private allocation lists. Validate the entire list on a draft before committing.
+//! Owner-private allocation lists. Answers validate drafts and record plans only.
+//! Stocks, rations and cargo effects commit once at the closed step.
 //! Well results are adjudicated only after both seats close their current lists.
 use super::{
     CargoPacking, SupplyDraw, SupplyError, available_sources_with_content, capacity, distribution,
@@ -37,14 +38,160 @@ const GOODS: [SupplyType; 4] = [
     SupplyType::Water,
 ];
 
+/// Plain owner orders and public-slot completion keys survive checkpoints.
+/// Effects are applied only after the fixed secret windows close.
+/// Cases: airlog:51.11, airlog:53.24, airlog:54.11, airlog:56.32, land:3.6
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AllocationBatches {
+    pub submitted: BTreeMap<String, BTreeMap<Side, Value>>,
+    pub completed: BTreeSet<String>,
+}
+type ApplyBatch =
+    fn(&CnaContent, &mut State, Side, &Value, &mut Cx<'_>) -> Result<String, Rejection>;
+pub(super) fn batch_key(state: &State, kind: &str) -> String {
+    format!(
+        "{kind}:{}:{}",
+        state.cursor.game_turn,
+        state.cursor.op_stage.unwrap_or(1)
+    )
+}
+/// Validation uses an isolated state and RNG. Only the submitted list is retained.
+/// Cases: airlog:51.11, airlog:53.24, airlog:54.11, airlog:56.32, land:3.6
+pub(super) fn record_batch(
+    content: &CnaContent,
+    state: &mut State,
+    pending: &Pending,
+    action: &Value,
+    cx: &mut Cx<'_>,
+    apply: ApplyBatch,
+) -> Result<String, Rejection> {
+    let key = batch_key(state, &pending.kind);
+    let window = &state.logistics.allocation_batches;
+    if window.completed.contains(&key)
+        || window
+            .submitted
+            .get(&key)
+            .is_some_and(|v| v.contains_key(&pending.seat.side))
+    {
+        return Err(illegal("allocation list already recorded"));
+    }
+    let mut preview = state.clone();
+    let mut rng = cna_core::dice::CampaignRng::from_state(&cx.rng.state());
+    apply(
+        content,
+        &mut preview,
+        pending.seat.side,
+        action,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut vec![],
+        },
+    )?;
+    state
+        .logistics
+        .allocation_batches
+        .submitted
+        .entry(key)
+        .or_default()
+        .insert(pending.seat.side, action.clone());
+    notice(
+        cx,
+        pending.seat.side,
+        "Allocation list recorded; effects await step closure.".into(),
+    );
+    Ok("Allocation list recorded".into())
+}
+/// Closed windows commit atomically and only once; old checkpoints without a
+/// retained list do not repeat stock effects that their earlier engine applied.
+/// Cases: airlog:51.11, airlog:53.24, airlog:54.11, airlog:56.32, land:3.6
+pub(super) fn finish_recorded(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut Cx<'_>,
+    kind: &str,
+    sides: &[Side],
+    apply: ApplyBatch,
+) -> Result<(), EngineError> {
+    let key = batch_key(state, kind);
+    if !state.decisions.pending.is_empty()
+        || state.logistics.allocation_batches.completed.contains(&key)
+    {
+        return Ok(());
+    }
+    let orders = state
+        .logistics
+        .allocation_batches
+        .submitted
+        .get(&key)
+        .cloned()
+        .unwrap_or_default();
+    let mut draft = state.clone();
+    let mut rng = cna_core::dice::CampaignRng::from_state(&cx.rng.state());
+    let mut events = vec![];
+    for side in sides {
+        if let Some(action) = orders.get(side) {
+            apply(
+                content,
+                &mut draft,
+                *side,
+                action,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut events,
+                },
+            )
+            .map_err(|e| match e {
+                Rejection::Engine(e) => e,
+                _ => EngineError::Invariant {
+                    detail: "accepted logistics allocation failed at closure".into(),
+                },
+            })?;
+        }
+    }
+    draft.logistics.allocation_batches.submitted.remove(&key);
+    draft.logistics.allocation_batches.completed.insert(key);
+    *state = draft;
+    *cx.rng = rng;
+    cx.events.extend(events);
+    Ok(())
+}
+/// Cases: airlog:51.11, airlog:51.23, land:3.6
+pub fn finish_stores(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    finish_recorded(content, state, cx, STORES, &SIDES, apply_stores)
+}
+/// Cases: airlog:53.24, airlog:54.11, airlog:54.12, land:3.6
+pub fn finish_distribution(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    finish_recorded(content, state, cx, DISTRIBUTION, &SIDES, apply_distribution)
+}
+
 /// Closed well order lists and completion flags persist through checkpoints.
 /// Cases: airlog:52.13, airlog:52.16, airlog:52.17, land:3.6
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct WaterWindow {
+    pub round: WaterRound,
+    pub submitted: BTreeMap<Side, Value>,
     pub stage: Option<water::WaterStage>,
     pub done: BTreeSet<Side>,
     pub waiting: BTreeMap<Side, Vec<WellOrder>>,
     pub completed_wells: BTreeSet<UnitId>,
+}
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WaterRound {
+    #[default]
+    Supply,
+    Allocation,
+    Complete,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -155,7 +302,7 @@ fn open_list(
         summary.into(),
         cases,
         Trigger::Scheduled,
-        Secrecy::Secret,
+        Secrecy::SecretSimultaneous,
         ActionSpace::new(schema).with_pass("Finish this step"),
     );
 }
@@ -165,6 +312,14 @@ pub fn enter_stores(
     state: &mut State,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    if state
+        .logistics
+        .allocation_batches
+        .completed
+        .contains(&batch_key(state, STORES))
+    {
+        return Ok(());
+    }
     if state.logistics.stores_started_gt != Some(state.cursor.game_turn) {
         stores::feed_prisoners(content, state, cx, true)?;
         stores::weekly_losses(content, state);
@@ -183,7 +338,16 @@ fn open_stores(
 ) -> Result<(), EngineError> {
     let ids = stores::eligible(content, state, side).map_err(engine)?;
     if ids.is_empty() {
-        return stores::finalize(content, state, side);
+        open_list(
+            state,
+            cx,
+            side,
+            STORES,
+            "No stores allocations; pass closes the fixed side window.",
+            &["airlog:51.11", "land:3.6"],
+            ActionSchema::Choice { options: vec![] },
+        );
+        return Ok(());
     }
     let max = ids
         .iter()
@@ -240,21 +404,21 @@ fn open_stores(
 }
 /// Atomic even when the last entry is invalid or earlier entries exhausted a shared source.
 /// Cases: airlog:51.11, airlog:51.15, airlog:51.23, land:3.6
-fn answer_stores(
+fn apply_stores(
     content: &CnaContent,
     state: &mut State,
-    p: &Pending,
+    side: Side,
     action: &Value,
     cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
     if action.is_null() || action.as_array().is_some_and(|a| a.is_empty()) {
-        stores::finalize(content, state, p.seat.side).map_err(Rejection::Engine)?;
+        stores::finalize(content, state, side).map_err(Rejection::Engine)?;
         return Ok("Finished stores distribution".into());
     }
     let orders: Vec<StoreOrder> = serde_json::from_value(action.clone())
         .map_err(|_| illegal("invalid stores allocation list"))?;
     let eligible =
-        stores::eligible(content, state, p.seat.side).map_err(|e| Rejection::Engine(engine(e)))?;
+        stores::eligible(content, state, side).map_err(|e| Rejection::Engine(engine(e)))?;
     let mut draft = state.clone();
     let mut used = BTreeSet::new();
     for o in &orders {
@@ -273,22 +437,11 @@ fn answer_stores(
             &draws(o.draws)?,
         )?;
     }
-    let mut emitted = Vec::new();
-    open_stores(
-        content,
-        &mut draft,
-        p.seat.side,
-        &mut Cx {
-            rng: cx.rng,
-            events: &mut emitted,
-        },
-    )
-    .map_err(Rejection::Engine)?;
+    stores::finalize(content, &mut draft, side).map_err(Rejection::Engine)?;
     *state = draft;
-    cx.events.extend(emitted);
     notice(
         cx,
-        p.seat.side,
+        side,
         format!("Recorded {} stores allocations.", used.len()),
     );
     Ok("Stores allocation list recorded".into())
@@ -308,8 +461,10 @@ pub fn enter_water(
             ..Default::default()
         };
     }
-    for side in SIDES {
-        open_water(content, state, side, cx, strict)?;
+    if state.logistics.water_window.round == WaterRound::Supply {
+        for side in SIDES {
+            open_water(content, state, side, cx, strict)?;
+        }
     }
     Ok(())
 }
@@ -326,7 +481,16 @@ fn open_water(
     let ids = water::candidates(content, state, side, strict)?;
     let well_ids = wells::candidates(content, state, side);
     if ids.is_empty() && well_ids.is_empty() {
-        return finish_side(content, state, side, strict);
+        open_list(
+            state,
+            cx,
+            side,
+            WATER,
+            "No water issues or well attempts; pass closes this fixed round.",
+            &["airlog:52.13", "airlog:52.41", "land:3.6"],
+            ActionSchema::Choice { options: vec![] },
+        );
+        return Ok(());
     }
     let mut infantry = 0;
     let mut activity = 0;
@@ -489,40 +653,43 @@ fn apply_water(
 }
 /// Validate private stocks and reserve CP, without consulting undiscovered well conditions or dice.
 /// Cases: airlog:52.13, airlog:52.16, airlog:52.17, airlog:52.41, airlog:52.42, land:3.6
-fn answer_water(
+fn apply_water_answer(
     content: &CnaContent,
     state: &mut State,
-    p: &Pending,
+    side: Side,
     action: &Value,
-    cx: &mut Cx<'_>,
     strict: bool,
-) -> Result<String, Rejection> {
+) -> Result<(), Rejection> {
     if action.is_null() {
-        finish_side(content, state, p.seat.side, strict).map_err(Rejection::Engine)?;
-        return Ok("Finished water distribution".into());
+        return Ok(());
     }
     let orders: WaterAnswer = serde_json::from_value(action.clone())
         .map_err(|_| illegal("invalid water allocation lists"))?;
     if orders.allocations.is_empty() && orders.wells.is_empty() {
-        finish_side(content, state, p.seat.side, strict).map_err(Rejection::Engine)?;
-        return Ok("Finished water distribution".into());
+        return Ok(());
     }
-    let mut draft = state.clone();
-    apply_water(content, &mut draft, p.seat.side, orders.allocations, strict)?;
+    let count = water::candidates(content, state, side, strict)
+        .map_err(Rejection::Engine)?
+        .len();
+    let wells_count = wells::candidates(content, state, side).len();
+    if orders.allocations.len() > count || orders.wells.len() > wells_count.saturating_mul(3) {
+        return Err(illegal("too many water allocations or well attempts"));
+    }
+    apply_water(content, state, side, orders.allocations, strict)?;
     let mut seen = BTreeSet::new();
     let mut attempts = BTreeSet::new();
     for o in &orders.wells {
         let (op, id) = operation(o)?;
-        let unit = draft
+        let unit = state
             .land
             .units
             .get(&id)
-            .filter(|u| u.side == p.seat.side)
+            .filter(|u| u.side == side)
             .ok_or_else(|| illegal("foreign well unit"))?;
         if !seen.insert((op.to_string(), id.clone())) {
             return Err(illegal("repeated well operation"));
         }
-        if !wells::operation_options(content, &draft, &id, p.seat.side)
+        if !wells::operation_options(content, state, &id, side)
             .iter()
             .any(|c| c.id == op)
         {
@@ -539,24 +706,50 @@ fn answer_water(
                     "non-draw operation must have zero quantity and packing",
                 ));
             }
-            wells::prepare_attempt(content, &mut draft, &id, op == "sweeten")?;
+            wells::prepare_attempt(content, state, &id, op == "sweeten")?;
         } else {
-            wells::prepare_draw(content, &mut draft, &id, o.requested, &o.packing)?;
+            wells::prepare_draw(content, state, &id, o.requested, &o.packing)?;
         }
     }
-    draft
+    state
         .logistics
         .water_window
         .waiting
-        .insert(p.seat.side, orders.wells);
-    *state = draft;
+        .insert(side, orders.wells);
+    Ok(())
+}
+fn answer_water(
+    content: &CnaContent,
+    state: &mut State,
+    p: &Pending,
+    action: &Value,
+    cx: &mut Cx<'_>,
+    strict: bool,
+) -> Result<String, Rejection> {
+    if state.logistics.water_window.round != WaterRound::Supply
+        || state
+            .logistics
+            .water_window
+            .submitted
+            .contains_key(&p.seat.side)
+    {
+        return Err(illegal("this water round is already closed"));
+    }
+    let mut draft = state.clone();
+    apply_water_answer(content, &mut draft, p.seat.side, action, strict)?;
+    state
+        .logistics
+        .water_window
+        .submitted
+        .insert(p.seat.side, action.clone());
     notice(
         cx,
         p.seat.side,
-        "Water allocation list accepted; well results await closure.".into(),
+        "Water list accepted; stock and well results await joint closure.".into(),
     );
     Ok("Water lists recorded".into())
 }
+
 fn packing_schema(content: &CnaContent, state: &State, ids: &[UnitId]) -> ActionSchema {
     let mut schema = ActionSchema::Record {
         fields: ["light", "medium", "heavy"]
@@ -604,11 +797,22 @@ fn open_allocations(
         .logistics
         .drawn_water
         .keys()
-        .filter(|id| state.land.units[*id].side == side)
+        .filter(|id| {
+            state.land.units[*id].side == side && state.logistics.drawn_water[*id].points > 0
+        })
         .cloned()
         .collect();
     if ids.is_empty() {
-        return Ok(false);
+        open_list(
+            state,
+            cx,
+            side,
+            WELL_ALLOCATION,
+            "No well water to allocate; pass closes the fixed second round.",
+            &["airlog:52.13", "land:3.6"],
+            ActionSchema::Choice { options: vec![] },
+        );
+        return Ok(true);
     }
     let max = ids
         .iter()
@@ -664,89 +868,136 @@ pub fn finish_water(
     cx: &mut Cx<'_>,
     strict: bool,
 ) -> Result<(), EngineError> {
-    if state.logistics.water_window.stage != Some(water::WaterStage::current(state)) {
+    if state.logistics.water_window.stage != Some(water::WaterStage::current(state))
+        || state.logistics.water_window.round == WaterRound::Complete
+        || !state.decisions.pending.is_empty()
+        || SIDES
+            .iter()
+            .any(|side| !state.logistics.water_window.submitted.contains_key(side))
+    {
         return Ok(());
     }
-    let mut order = SIDES;
-    let has_orders = state
-        .logistics
-        .water_window
-        .waiting
-        .values()
-        .any(|v| !v.is_empty());
-    if let Some(a) = state.turn.player_a {
-        if a == Side::Commonwealth {
-            order.reverse();
-        }
-    } else if has_orders {
-        let die = cx.rng.d6();
-        cx.emit(EngineEvent::new(
-            Audience::Operator,
-            GameEvent::DiceRolled {
-                purpose: "Well operation order without Player A".into(),
-                dice: vec![die.value()],
-                reading: None,
-                rule: Some("interp:airlog-0016".into()),
-            },
-        ));
-        if die.value() <= 3 {
-            order.reverse();
-        }
-    }
-    let mut waiting = std::mem::take(&mut state.logistics.water_window.waiting);
-    for side in order {
-        for o in waiting.remove(&side).unwrap_or_default() {
-            let (op, id) = operation(&o).map_err(|_| EngineError::Invariant {
-                detail: "invalid accepted well operation".into(),
-            })?;
-            if op == "draw" {
-                wells::resolve_draw(content, state, &id, o.requested, cx)?;
-            } else {
-                wells::resolve_attempt(content, state, &id, op == "sweeten", cx)?;
+    let mut draft = state.clone();
+    let submitted = std::mem::take(&mut draft.logistics.water_window.submitted);
+    match draft.logistics.water_window.round {
+        WaterRound::Supply => {
+            for side in SIDES {
+                apply_water_answer(content, &mut draft, side, &submitted[&side], strict).map_err(
+                    |_| EngineError::Invariant {
+                        detail: "accepted water list failed at closure".into(),
+                    },
+                )?;
             }
-            state.logistics.water_window.completed_wells.insert(id);
+            let mut order = SIDES;
+            let has_orders = draft
+                .logistics
+                .water_window
+                .waiting
+                .values()
+                .any(|v| !v.is_empty());
+            if let Some(a) = draft.turn.player_a {
+                if a == Side::Commonwealth {
+                    order.reverse();
+                }
+            } else if has_orders {
+                let die = cx.rng.d6();
+                cx.emit(EngineEvent::new(
+                    Audience::Operator,
+                    GameEvent::DiceRolled {
+                        purpose: "Well operation order without Player A".into(),
+                        dice: vec![die.value()],
+                        reading: None,
+                        rule: Some("interp:airlog-0016".into()),
+                    },
+                ));
+                if die.value() <= 3 {
+                    order.reverse();
+                }
+            }
+            let mut waiting = std::mem::take(&mut draft.logistics.water_window.waiting);
+            for side in order {
+                for o in waiting.remove(&side).unwrap_or_default() {
+                    let (op, id) = operation(&o).map_err(|_| EngineError::Invariant {
+                        detail: "invalid accepted well operation".into(),
+                    })?;
+                    if op == "draw" {
+                        wells::resolve_draw(content, &mut draft, &id, o.requested, cx)?;
+                    } else {
+                        wells::resolve_attempt(content, &mut draft, &id, op == "sweeten", cx)?;
+                    }
+                    draft.logistics.water_window.completed_wells.insert(id);
+                }
+            }
+
+            draft.logistics.water_window.round = WaterRound::Allocation;
+            for side in SIDES {
+                open_allocations(content, &mut draft, side, cx)?;
+            }
         }
-    }
-    for side in SIDES {
-        if !open_allocations(content, state, side, cx)? {
-            open_water(content, state, side, cx, strict)?;
+        WaterRound::Allocation => {
+            for side in SIDES {
+                apply_allocations_answer(content, &mut draft, side, &submitted[&side]).map_err(
+                    |_| EngineError::Invariant {
+                        detail: "accepted well allocation failed at closure".into(),
+                    },
+                )?;
+                draft
+                    .logistics
+                    .drawn_water
+                    .retain(|id, _| draft.land.units[id].side != side);
+                finish_side(content, &mut draft, side, strict)?;
+            }
+            draft.logistics.water_window.round = WaterRound::Complete;
         }
+        WaterRound::Complete => {}
     }
+    *state = draft;
     Ok(())
 }
 /// Cases: airlog:52.13, airlog:52.41, airlog:52.42, airlog:54.2, land:3.6
-fn answer_allocations(
+fn apply_allocations_answer(
     content: &CnaContent,
     state: &mut State,
-    p: &Pending,
+    side: Side,
     action: &Value,
-    cx: &mut Cx<'_>,
-    strict: bool,
-) -> Result<String, Rejection> {
-    let mut draft = state.clone();
+) -> Result<(), Rejection> {
     if action.is_null() || action.as_array().is_some_and(|a| a.is_empty()) {
-        draft
+        state
             .logistics
             .drawn_water
-            .retain(|id, _| draft.land.units[id].side != p.seat.side);
-        finish_side(content, &mut draft, p.seat.side, strict).map_err(Rejection::Engine)?;
+            .retain(|id, _| state.land.units[id].side != side);
     } else {
         let orders: Vec<WellAllocation> = serde_json::from_value(action.clone())
             .map_err(|_| illegal("invalid well allocation list"))?;
+        let own_ids: BTreeSet<_> = state
+            .logistics
+            .drawn_water
+            .iter()
+            .filter(|(id, d)| {
+                state.land.units.get(*id).is_some_and(|u| u.side == side) && d.points > 0
+            })
+            .map(|(id, _)| id.clone())
+            .collect();
+        if orders.len() > own_ids.len() {
+            return Err(illegal("too many well allocations"));
+        }
+        if orders.iter().any(|o| !own_ids.contains(&o.unit)) {
+            return Err(illegal("unknown own well allocation"));
+        }
         let mut seen = BTreeSet::new();
         for o in orders {
             if !seen.insert(o.unit.clone())
-                || !draft
+                || !state
                     .land
                     .units
                     .get(&o.unit)
-                    .is_some_and(|u| u.side == p.seat.side)
+                    .is_some_and(|u| u.side == side)
             {
                 return Err(illegal("foreign or repeated well allocation"));
             }
             wells::allocate(
                 content,
-                &mut draft,
+                state,
                 &o.unit,
                 &wells::Allocation {
                     infantry: o.infantry,
@@ -758,21 +1009,40 @@ fn answer_allocations(
             )?;
         }
     }
-    let mut events = vec![];
-    open_allocations(
-        content,
-        &mut draft,
+    Ok(())
+}
+fn answer_allocations(
+    content: &CnaContent,
+    state: &mut State,
+    p: &Pending,
+    action: &Value,
+    cx: &mut Cx<'_>,
+    _strict: bool,
+) -> Result<String, Rejection> {
+    if state.logistics.water_window.round != WaterRound::Allocation
+        || state
+            .logistics
+            .water_window
+            .submitted
+            .contains_key(&p.seat.side)
+    {
+        return Err(illegal("this well allocation round is already closed"));
+    }
+    let mut draft = state.clone();
+    apply_allocations_answer(content, &mut draft, p.seat.side, action)?;
+    state
+        .logistics
+        .water_window
+        .submitted
+        .insert(p.seat.side, action.clone());
+    notice(
+        cx,
         p.seat.side,
-        &mut Cx {
-            rng: cx.rng,
-            events: &mut events,
-        },
-    )
-    .map_err(Rejection::Engine)?;
-    *state = draft;
-    cx.events.extend(events);
+        "Well-water list accepted; allocation awaits joint closure.".into(),
+    );
     Ok("Recorded well allocation list".into())
 }
+
 /// Cases: airlog:49.16, airlog:53.24, airlog:54.13, land:3.6
 pub fn enter_distribution(
     content: &CnaContent,
@@ -788,6 +1058,17 @@ pub fn enter_distribution_with_policy(
     cx: &mut Cx<'_>,
     strict: bool,
 ) -> Result<(), EngineError> {
+    if state
+        .logistics
+        .allocation_batches
+        .completed
+        .contains(&batch_key(state, DISTRIBUTION))
+    {
+        return Ok(());
+    }
+    if strict {
+        super::ready::preflight(content).map_err(engine)?;
+    }
     for side in SIDES {
         open_distribution(content, state, side, cx, strict)?;
     }
@@ -851,6 +1132,15 @@ fn open_distribution(
         }
     }
     if receivers.is_empty() {
+        open_list(
+            state,
+            cx,
+            side,
+            DISTRIBUTION,
+            "No supply transfers; pass closes the fixed side window.",
+            &["airlog:54.13", "land:3.6"],
+            ActionSchema::Choice { options: vec![] },
+        );
         return Ok(());
     }
     let choice = |ends: &[distribution::Endpoint]| ActionSchema::Choice {
@@ -920,13 +1210,12 @@ fn open_distribution(
     Ok(())
 }
 /// Cases: airlog:49.16, airlog:53.24, airlog:54.13, airlog:54.2, land:3.6
-fn answer_distribution(
+fn apply_distribution(
     content: &CnaContent,
     state: &mut State,
-    p: &Pending,
+    side: Side,
     action: &Value,
     cx: &mut Cx<'_>,
-    strict: bool,
 ) -> Result<String, Rejection> {
     if action.is_null() || action.as_array().is_some_and(|a| a.is_empty()) {
         return Ok("Finished redistribution".into());
@@ -940,39 +1229,18 @@ fn answer_distribution(
     for o in &orders {
         let from = serde_json::from_str(&o.from).map_err(|_| illegal("unknown source"))?;
         let to = serde_json::from_str(&o.to).map_err(|_| illegal("unknown receiver"))?;
-        distribution::transfer(
-            content,
-            &mut draft,
-            p.seat.side,
-            &from,
-            &to,
-            o.amount,
-            &o.packing,
-        )
-        .map_err(|e| match e {
-            SupplyError::Unsupported { .. } | SupplyError::UnknownFuelRate => {
-                Rejection::Engine(engine(e))
-            }
-            _ => illegal("transfer exceeds stocks, capacity or same-location rules"),
-        })?;
+        distribution::transfer(content, &mut draft, side, &from, &to, o.amount, &o.packing)
+            .map_err(|e| match e {
+                SupplyError::Unsupported { .. } | SupplyError::UnknownFuelRate => {
+                    Rejection::Engine(engine(e))
+                }
+                _ => illegal("transfer exceeds stocks, capacity or same-location rules"),
+            })?;
     }
-    let mut events = vec![];
-    open_distribution(
-        content,
-        &mut draft,
-        p.seat.side,
-        &mut Cx {
-            rng: cx.rng,
-            events: &mut events,
-        },
-        strict,
-    )
-    .map_err(Rejection::Engine)?;
     *state = draft;
-    cx.events.extend(events);
     notice(
         cx,
-        p.seat.side,
+        side,
         format!("Recorded {} supply transfers.", orders.len()),
     );
     Ok("Supply transfer list recorded".into())
@@ -987,10 +1255,10 @@ pub fn answer(
     strict: bool,
 ) -> Result<String, Rejection> {
     match p.kind.as_str() {
-        STORES => answer_stores(content, state, p, action, cx),
+        STORES => record_batch(content, state, p, action, cx, apply_stores),
         WATER => answer_water(content, state, p, action, cx, strict),
         WELL_ALLOCATION => answer_allocations(content, state, p, action, cx, strict),
-        DISTRIBUTION => answer_distribution(content, state, p, action, cx, strict),
+        DISTRIBUTION => record_batch(content, state, p, action, cx, apply_distribution),
         _ => Err(illegal("unknown logistics batch")),
     }
 }
