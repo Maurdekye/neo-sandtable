@@ -126,5 +126,17 @@ pub fn ready_ammo_capacity(
     Ok(AmmoPoints::new(maximum))
 }
 
+/// Full-profile source availability is checked from public scenario content, not current holdings.
+/// Cases: airlog:50.17, land:3.6
+pub(super) fn preflight(content: &CnaContent) -> Result<(), SupplyError> {
+    // State::new supplies the immutable source TOE definitions, including scheduled counters.
+    // No private locations, losses, assignments, stocks or actor choices enter this check.
+    let printed = State::new(content).map_err(|_| SupplyError::Invalid)?;
+    for unit in printed.land.units.values().filter(|u| u.toe.is_some()) {
+        ready_ammo_capacity(content, &printed, &unit.id)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests;

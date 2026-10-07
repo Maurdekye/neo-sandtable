@@ -2,6 +2,7 @@ use super::*;
 use crate::seq::{Block, OPSTAGE};
 use cna_content::scenario::Placement;
 use cna_core::visibility::Perspective;
+use cna_core::{decision::Secrecy, visibility::Audience};
 fn setup() -> (CnaContent, State, UnitId, Endpoint) {
     let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
     let mut state = State::new(&content).unwrap();
@@ -296,25 +297,30 @@ fn dispatch_opens_owner_secret_transfer_and_commits_one_transaction() {
         .decisions
         .pending
         .iter()
-        .position(|p| p.seat.side == Side::Axis && p.kind == KIND)
+        .position(|p| p.seat.side == Side::Axis)
         .unwrap();
     let pending = s.decisions.pending.remove(pos);
-    assert_eq!(pending.secrecy, Secrecy::Secret);
+    assert_eq!(pending.kind, super::super::batches::DISTRIBUTION);
+    assert_eq!(pending.secrecy, Secrecy::SecretSimultaneous);
     let receiver = serde_json::to_string(&Endpoint::Ground(at)).unwrap();
-    crate::Cna::dev()
-        .respond_to(&c, &mut s, &pending, &Value::String(receiver), &mut cx)
-        .unwrap();
-    let pos = s
-        .decisions
-        .pending
-        .iter()
-        .position(|p| p.seat.side == Side::Axis && p.kind.starts_with(PREFIX))
-        .unwrap();
-    let pending = s.decisions.pending.remove(pos);
-    let request = serde_json::json!({"source":serde_json::to_string(&pool).unwrap(),"amount":{"ammo":0,"fuel":0,"stores":5,"water":0},"packing":CargoPacking::default()});
+    let request = serde_json::json!([{"from":serde_json::to_string(&pool).unwrap(),
+        "to":receiver,"amount":{"ammo":0,"fuel":0,"stores":5,"water":0},
+        "packing":CargoPacking::default()}]);
     crate::Cna::dev()
         .respond_to(&c, &mut s, &pending, &request, &mut cx)
         .unwrap();
+    assert!(
+        s.decisions
+            .pending
+            .iter()
+            .all(|p| p.seat.side != Side::Axis)
+    );
+    assert!(!s.logistics.dumps.contains_key("axis.dump-1"));
+    let other = s.decisions.pending.remove(0);
+    crate::Cna::dev()
+        .respond_to(&c, &mut s, &other, &serde_json::Value::Null, &mut cx)
+        .unwrap();
+    super::super::batches::finish_distribution(&c, &mut s, &mut cx).unwrap();
     assert_eq!(s.logistics.dumps["axis.dump-1"].supplies.stores, 5);
     assert!(events.iter().all(|e| e.audience != Audience::Public));
     assert!(

@@ -1,22 +1,19 @@
 //! OpStage water consumption and retained reserves for vehicle activity.
 pub use super::rations::WaterStage;
 use super::rations::{self};
-use super::stores::{RationDraw, draw_schema, draws, engine, field, option};
-use super::{
-    SupplyDemand, SupplyDraw, SupplyError, available_sources_with_content,
-    spend_for_unit_with_content,
-};
+use super::stores::engine;
+use super::{SupplyDemand, SupplyDraw, SupplyError, spend_for_unit_with_content};
 use crate::content::CnaContent;
 use crate::state::{Pending, State};
-use crate::steps::{illegal, open};
-use cna_core::decision::{ActionSchema, ActionSpace, Secrecy, Trigger};
+use crate::steps::illegal;
+
 use cna_core::engine::{Cx, EngineError, Rejection};
 use cna_core::event::EngineEvent;
-use cna_core::ids::{SeatId, UnitId};
+use cna_core::ids::UnitId;
 use cna_core::quantity::WaterPoints;
 use cna_core::visibility::Audience;
-use cna_protocol::{GameEvent, Role, Side};
-use serde::Deserialize;
+use cna_protocol::{GameEvent, Side};
+
 use serde_json::Value;
 
 pub const KIND: &str = "cna.logistics.water";
@@ -124,11 +121,7 @@ pub fn enter(
     cx: &mut Cx<'_>,
     strict: bool,
 ) -> Result<(), EngineError> {
-    prepare(content, state, cx, strict)?;
-    for side in [Side::Axis, Side::Commonwealth] {
-        open_menu(content, state, side, cx, strict)?;
-    }
-    Ok(())
+    super::batches::enter_water(content, state, cx, strict)
 }
 /// Validate composition and feed prisoners before opening private allocation lists.
 /// Cases: airlog:52.41, airlog:52.42, airlog:51.17, land:3.6
@@ -138,6 +131,22 @@ pub(super) fn prepare(
     cx: &mut Cx<'_>,
     strict: bool,
 ) -> Result<(), EngineError> {
+    // Full-profile source gaps are public-content preflights, independent of private inventory.
+    // Cases: airlog:52.42, land:3.6
+    if strict
+        && content.units.units.values().any(|row| {
+            row.class
+                .as_ref()
+                .and_then(|id| content.units.classes.get(id))
+                .is_some_and(|class| class.unit_type == "headquarters" && !class.max_toe_paren)
+                && row.toe.is_some()
+                && !matches!(row.toe, Some(cna_content::units::Toe::Weapons(_)))
+        })
+    {
+        return Err(engine(SupplyError::Unsupported {
+            case: "airlog:52.42",
+        }));
+    }
     // Validate both sides before any consumption or events.
     for side in [Side::Axis, Side::Commonwealth] {
         candidates(content, state, side, strict)?;
@@ -163,58 +172,6 @@ pub(super) fn prepare(
     }
     Ok(())
 }
-/// Cases: airlog:52.0, airlog:52.41, airlog:52.42, land:3.6
-pub(super) fn open_menu(
-    content: &CnaContent,
-    state: &mut State,
-    side: Side,
-    cx: &mut Cx<'_>,
-    strict: bool,
-) -> Result<(), EngineError> {
-    let ids = candidates(content, state, side, strict)?;
-    let wells = super::wells::candidates(content, state, side);
-    if ids.is_empty() && wells.is_empty() {
-        finalize(content, state, side, strict)?;
-        return Ok(());
-    }
-    let mut options = vec![option(
-        "done".into(),
-        "Finish; record water shortages and retain unused activity reserves".into(),
-    )];
-    options.extend(
-        ids.into_iter()
-            .map(|id| option(id.to_string(), format!("Distribute water to {id}"))),
-    );
-    options.extend(wells.into_iter().map(|id| {
-        option(
-            format!("well:{id}"),
-            format!("Operate the verified water source at {id}"),
-        )
-    }));
-    open(
-        state,
-        cx,
-        SeatId::new(side, Role::Logistics),
-        KIND,
-        "Distribute this OpStage's infantry water and reserve water for vehicles that will use CP."
-            .into(),
-        &["airlog:52.41", "airlog:52.42", "airlog:52.6", "land:3.6"],
-        Trigger::Scheduled,
-        Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Choice { options })
-            .with_pass("Finish water distribution and record remaining shortages"),
-    );
-    Ok(())
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Issue {
-    infantry: i32,
-    activity: i32,
-    pasta: bool,
-    draws: Vec<RationDraw>,
-}
-
 /// Cases: airlog:52.41, airlog:52.42, airlog:52.6, land:3.6
 pub fn answer(
     content: &CnaContent,
@@ -224,112 +181,15 @@ pub fn answer(
     cx: &mut Cx<'_>,
     strict: bool,
 ) -> Result<String, Rejection> {
-    let side = pending.seat.side;
-    if pending.kind == KIND {
-        let selected = if action.is_null() {
-            "done"
-        } else {
-            action
-                .as_str()
-                .ok_or_else(|| illegal("select a unit or done"))?
-        };
-        if selected == "done" {
-            finalize(content, state, side, strict).map_err(Rejection::Engine)?;
-            return Ok("Water distribution finished; shortages recorded privately.".into());
-        }
-        if let Some(well_id) = selected.strip_prefix("well:") {
-            super::wells::select(content, state, &UnitId::new(well_id), pending.seat, cx)?;
-            return Ok("Selected a private well operation.".into());
-        }
-        let id = UnitId::new(selected);
-        if !candidates(content, state, side, strict)
-            .map_err(Rejection::Engine)?
-            .contains(&id)
-        {
-            return Err(illegal("unit is not eligible for water"));
-        }
-        let r = requirements(content, state, &id).map_err(|e| Rejection::Engine(engine(e)))?;
-        let total = r
-            .infantry
-            .checked_add(r.activity)
-            .and_then(|n| n.checked_add(r.pasta))
-            .ok_or_else(|| illegal("water amount overflow"))?;
-        let sources = available_sources_with_content(content, state, &id)
-            .map_err(|e| Rejection::Engine(engine(e)))?;
-        let fields = vec![
-            field(
-                "infantry",
-                "Water consumed by infantry now",
-                ActionSchema::Integer {
-                    min: 0,
-                    max: r.infantry.into(),
-                },
-            ),
-            field(
-                "activity",
-                "Water reserved for future CPA use",
-                ActionSchema::Integer {
-                    min: 0,
-                    max: r.activity.into(),
-                },
-            ),
-            field(
-                "pasta",
-                "Supply a missing weekly pasta point",
-                ActionSchema::Bool,
-            ),
-            field(
-                "draws",
-                "Exact withdrawals; stores must be zero",
-                draw_schema(&sources, 0, total),
-            ),
-        ];
-        open(
-            state,
-            cx,
-            pending.seat,
-            &format!("{ISSUE_PREFIX}{id}"),
-            format!(
-                "{id}: {} infantry water; up to {} activity water; {} missing pasta water.",
-                r.infantry, r.activity, r.pasta
-            ),
-            &["airlog:52.41", "airlog:52.42", "airlog:52.6", "land:3.6"],
-            Trigger::Scheduled,
-            Secrecy::Secret,
-            ActionSpace::new(ActionSchema::Record { fields })
-                .with_pass("Leave this unit without additional water and return to unit selection"),
-        );
-        return Ok(format!("Selected {id} for water."));
+    if matches!(
+        pending.kind.as_str(),
+        super::batches::WATER | super::batches::WELL_ALLOCATION
+    ) {
+        return super::batches::answer(content, state, pending, action, cx, strict);
     }
-    let id = UnitId::new(
-        pending
-            .kind
-            .strip_prefix(ISSUE_PREFIX)
-            .ok_or_else(|| illegal("unknown water decision"))?,
-    );
-    if !candidates(content, state, side, strict)
-        .map_err(Rejection::Engine)?
-        .contains(&id)
-    {
-        return Err(illegal("unit is no longer eligible"));
-    }
-    if action.is_null() {
-        issue_unit(content, state, &id, 0, 0, false, &[])?;
-    } else {
-        let issue: Issue =
-            serde_json::from_value(action.clone()).map_err(|_| illegal("invalid water issue"))?;
-        issue_unit(
-            content,
-            state,
-            &id,
-            issue.infantry,
-            issue.activity,
-            issue.pasta,
-            &draws(issue.draws)?,
-        )?;
-    }
-    open_menu(content, state, side, cx, strict).map_err(Rejection::Engine)?;
-    Ok(format!("{id}: water allocation recorded privately."))
+    Err(illegal(
+        "single-unit logistics windows are retired; use the fixed batched step",
+    ))
 }
 /// Exact consumption/reservation is atomic and cannot be repeated in the same stage.
 /// Cases: airlog:52.41, airlog:52.42, airlog:52.43, airlog:52.6

@@ -210,6 +210,10 @@ pub struct LogisticsState {
     pub attrition_started_stage: Option<crate::logistics::water::WaterStage>,
     #[serde(default)]
     pub food_losses: Vec<crate::logistics::attrition::FoodLoss>,
+    #[serde(default)]
+    pub attrition_window: crate::logistics::attrition::AttritionWindow,
+    #[serde(default)]
+    pub allocation_batches: crate::logistics::batches::AllocationBatches,
     /// Captured infantry and their separately formed guard points.
     #[serde(default)]
     pub prisoners: BTreeMap<String, crate::logistics::PrisonerGroup>,

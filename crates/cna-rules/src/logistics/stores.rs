@@ -6,14 +6,14 @@ use super::{
 };
 use crate::content::CnaContent;
 use crate::state::{DumpLocation, Location, Pending, State};
-use crate::steps::{illegal, open};
-use cna_core::decision::{ActionSchema, ActionSpace, ChoiceOption, FieldSchema, Secrecy, Trigger};
+use crate::steps::illegal;
+use cna_core::decision::{ActionSchema, ChoiceOption, FieldSchema};
 use cna_core::engine::{Cx, EngineError, Rejection};
 use cna_core::event::EngineEvent;
-use cna_core::ids::{SeatId, UnitId};
+use cna_core::ids::UnitId;
 use cna_core::quantity::{StoresPoints, WaterPoints};
 use cna_core::visibility::Audience;
-use cna_protocol::{GameEvent, Role, Side};
+use cna_protocol::{GameEvent, Side};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -98,15 +98,7 @@ pub fn weekly_losses(content: &CnaContent, state: &mut State) {
 /// Quantity decisions and reports remain private under Limited Intelligence.
 /// Cases: airlog:48.0, airlog:51.11, airlog:51.12, airlog:51.13, airlog:51.17, land:3.6
 pub fn enter(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
-    if state.logistics.stores_started_gt != Some(state.cursor.game_turn) {
-        feed_prisoners(content, state, cx, true)?;
-        weekly_losses(content, state);
-        state.logistics.stores_started_gt = Some(state.cursor.game_turn);
-    }
-    for side in [Side::Axis, Side::Commonwealth] {
-        open_menu(content, state, side, cx)?;
-    }
-    Ok(())
+    super::batches::enter_stores(content, state, cx)
 }
 
 pub(super) fn eligible(
@@ -136,41 +128,6 @@ pub(super) fn eligible(
 
 /// The registry's open default is overridden by the quantity secrecy of land:3.6.
 /// Cases: airlog:51.0, airlog:51.23, land:3.6
-fn open_menu(
-    content: &CnaContent,
-    state: &mut State,
-    side: Side,
-    cx: &mut Cx<'_>,
-) -> Result<(), EngineError> {
-    let units = eligible(content, state, side).map_err(engine)?;
-    if units.is_empty() {
-        finalize(content, state, side)?;
-        return Ok(());
-    }
-    let mut options = vec![option(
-        "done".into(),
-        "Finish; record all remaining units as short of stores".into(),
-    )];
-    options.extend(
-        units
-            .into_iter()
-            .map(|id| option(id.to_string(), format!("Issue stores to {id}"))),
-    );
-    open(
-        state,
-        cx,
-        SeatId::new(side, Role::Logistics),
-        KIND,
-        "Issue this week's stores. Prisoners have been served first. Choose a unit or finish."
-            .into(),
-        &["airlog:51.0", "airlog:51.12", "airlog:51.23", "land:3.6"],
-        Trigger::Scheduled,
-        Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Choice { options })
-            .with_pass("Finish stores distribution and record remaining shortages"),
-    );
-    Ok(())
-}
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -178,14 +135,6 @@ pub(super) struct RationDraw {
     pub source: String,
     pub stores: i32,
     pub water: i32,
-}
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Issue {
-    stores: i32,
-    half: bool,
-    pasta: bool,
-    draws: Vec<RationDraw>,
 }
 
 /// Source identities and bounds are generated from this unit's friendly accessible stocks.
@@ -263,102 +212,12 @@ pub fn answer(
     action: &Value,
     cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
-    let side = pending.seat.side;
-    if pending.kind == KIND {
-        let selected = if action.is_null() {
-            "done"
-        } else {
-            action
-                .as_str()
-                .ok_or_else(|| illegal("select a unit or done"))?
-        };
-        if selected == "done" {
-            finalize(content, state, side).map_err(Rejection::Engine)?;
-            return Ok(
-                "Stores distribution finished; remaining shortages recorded privately.".into(),
-            );
-        }
-        let id = UnitId::new(selected);
-        if !eligible(content, state, side)
-            .map_err(|e| Rejection::Engine(engine(e)))?
-            .contains(&id)
-        {
-            return Err(illegal("unit is not eligible for this week's stores"));
-        }
-        let required = rations::stores_required(content, state, &id)
-            .map_err(|e| Rejection::Engine(engine(e)))?;
-        let sources = available_sources_with_content(content, state, &id)
-            .map_err(|e| Rejection::Engine(engine(e)))?;
-        let schema = ActionSchema::Record {
-            fields: vec![
-                field(
-                    "stores",
-                    "Total stores issued, up to the weekly requirement",
-                    ActionSchema::Integer {
-                        min: 0,
-                        max: required.into(),
-                    },
-                ),
-                field(
-                    "half",
-                    "Use legal half rations only when local stores cannot cover the full ration",
-                    ActionSchema::Bool,
-                ),
-                field(
-                    "pasta",
-                    "Include one extra water for an Italian battalion receiving stores",
-                    ActionSchema::Bool,
-                ),
-                field(
-                    "draws",
-                    "Explicit withdrawals must exactly match the issue",
-                    draw_schema(&sources, required, 1),
-                ),
-            ],
-        };
-        open(
-            state,
-            cx,
-            pending.seat,
-            &format!("{ISSUE_PREFIX}{id}"),
-            format!("{id} requires {required} stores. Choose its ration and the sources."),
-            &["airlog:51.11", "airlog:51.23", "airlog:52.6", "land:3.6"],
-            Trigger::Scheduled,
-            Secrecy::Secret,
-            ActionSpace::new(schema)
-                .with_pass("Leave this unit short of stores and return to unit selection"),
-        );
-        return Ok(format!("Selected {id} for stores."));
+    if matches!(pending.kind.as_str(), super::batches::STORES) {
+        return super::batches::answer(content, state, pending, action, cx, false);
     }
-    let id = UnitId::new(
-        pending
-            .kind
-            .strip_prefix(ISSUE_PREFIX)
-            .ok_or_else(|| illegal("unknown stores decision"))?,
-    );
-    if !eligible(content, state, side)
-        .map_err(|e| Rejection::Engine(engine(e)))?
-        .contains(&id)
-    {
-        return Err(illegal("unit is no longer eligible"));
-    }
-    if action.is_null() {
-        issue_unit(content, state, &id, 0, false, false, &[])?;
-    } else {
-        let issue: Issue =
-            serde_json::from_value(action.clone()).map_err(|_| illegal("invalid stores issue"))?;
-        issue_unit(
-            content,
-            state,
-            &id,
-            issue.stores,
-            issue.half,
-            issue.pasta,
-            &draws(issue.draws)?,
-        )?;
-    }
-    open_menu(content, state, side, cx).map_err(Rejection::Engine)?;
-    Ok(format!("{id}: stores allocation recorded privately."))
+    Err(illegal(
+        "single-unit logistics windows are retired; use the fixed batched step",
+    ))
 }
 
 /// Issue once per unit per week. Partial full rations are recorded as shortages;

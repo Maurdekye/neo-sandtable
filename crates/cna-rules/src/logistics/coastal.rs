@@ -486,6 +486,14 @@ pub fn enter_axis(
     state: &mut State,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    if state
+        .logistics
+        .allocation_batches
+        .completed
+        .contains(&super::batches::batch_key(state, AXIS))
+    {
+        return Ok(());
+    }
     if !active(state) {
         return Ok(());
     }
@@ -495,6 +503,18 @@ pub fn enter_axis(
         refresh(state, id).map_err(engine)?;
     }
     if ids.is_empty() {
+        open(
+            state,
+            cx,
+            SeatId::new(Side::Axis, Role::Logistics),
+            AXIS,
+            "No coastal orders; pass closes the fixed side window.".into(),
+            &["airlog:56.31", "land:3.6"],
+            Trigger::Scheduled,
+            Secrecy::Secret,
+            ActionSpace::new(ActionSchema::Choice { options: vec![] })
+                .with_pass("Finish coastal shipping"),
+        );
         return Ok(());
     }
     let fields = vec![
@@ -599,6 +619,14 @@ pub fn enter_cw(
     state: &mut State,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    if state
+        .logistics
+        .allocation_batches
+        .completed
+        .contains(&super::batches::batch_key(state, CW))
+    {
+        return Ok(());
+    }
     ports::initialize(content, state);
 
     let mut origins = state
@@ -642,6 +670,18 @@ pub fn enter_cw(
         }
     }
     if origins.is_empty() || destinations.is_empty() {
+        open(
+            state,
+            cx,
+            SeatId::new(Side::Commonwealth, Role::Logistics),
+            CW,
+            "No coastal orders; pass closes the fixed side window.".into(),
+            &["airlog:55.14", "land:3.6"],
+            Trigger::Scheduled,
+            Secrecy::Secret,
+            ActionSpace::new(ActionSchema::Choice { options: vec![] })
+                .with_pass("Finish coastal shipping"),
+        );
         return Ok(());
     }
     open(state,cx,SeatId::new(Side::Commonwealth,Role::Logistics),CW,"Coastal supply shipment between controlled African ports, within both remaining port budgets.".into(),&["airlog:48.0","airlog:55.14","land:3.6"],Trigger::Scheduled,Secrecy::Secret,ActionSpace::new(ActionSchema::List{item:Box::new(ActionSchema::Record{fields:vec![field("from","Origin port dump",ActionSchema::Choice{options:origins}),field("to","Destination port dump",ActionSchema::Choice{options:destinations}),field("cargo","Supplies to ship",cargo_schema())]}),min:0,max:1024}).with_pass("Finish coastal shipping"));
@@ -717,18 +757,14 @@ struct CwOrder {
 }
 /// Cases: airlog:55.14, airlog:56.31, airlog:56.32, airlog:56.34, land:3.6
 /// Interpretations: interp:airlog-0010, interp:airlog-0011
-pub fn answer(
+fn apply_orders(
     content: &CnaContent,
     state: &mut State,
-    pending: &Pending,
+    side: Side,
     action: &Value,
     cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
-    let axis = pending.kind == AXIS && pending.seat == SeatId::new(Side::Axis, Role::Logistics);
-    let cw = pending.kind == CW && pending.seat == SeatId::new(Side::Commonwealth, Role::Logistics);
-    if !axis && !cw {
-        return Err(illegal("not this seat's coastal window"));
-    }
+    let axis = side == Side::Axis;
     if action.is_null() || action.as_array().is_some_and(Vec::is_empty) {
         return Ok("Finished coastal shipping".into());
     }
@@ -765,18 +801,38 @@ pub fn answer(
     state.logistics = draft.logistics;
     publish_presence(state, &before, cx);
     cx.emit(EngineEvent::new(
-        Audience::Side(pending.seat.side),
+        Audience::Side(side),
         GameEvent::Note {
             text: format!("Accepted coastal shipping list: {action}"),
         },
     ));
-    if axis {
-        enter_axis(content, state, cx)
-    } else {
-        enter_cw(content, state, cx)
-    }
-    .map_err(Rejection::Engine)?;
     Ok("Coastal shipping list executed".into())
+}
+/// Secret answers retain the validated list without changing stocks or ships.
+/// Cases: airlog:55.14, airlog:56.31, airlog:56.32, land:3.6
+pub fn answer(
+    content: &CnaContent,
+    state: &mut State,
+    pending: &Pending,
+    action: &Value,
+    cx: &mut Cx<'_>,
+) -> Result<String, Rejection> {
+    if !((pending.kind == AXIS && pending.seat == SeatId::new(Side::Axis, Role::Logistics))
+        || (pending.kind == CW && pending.seat == SeatId::new(Side::Commonwealth, Role::Logistics)))
+    {
+        return Err(illegal("not this seat's coastal window"));
+    }
+    super::batches::record_batch(content, state, pending, action, cx, apply_orders)
+}
+/// Apply the publicly scheduled coastal side exactly once after its window closes.
+/// Cases: airlog:55.14, airlog:56.31, airlog:56.32, land:3.6
+pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
+    let (kind, side) = match state.cursor.anchor() {
+        "opstage.organization.tactical_shipping" => (CW, Side::Commonwealth),
+        "opstage.truck_convoy_movement" if active(state) => (AXIS, Side::Axis),
+        _ => return Ok(()),
+    };
+    super::batches::finish_recorded(content, state, cx, kind, &[side], apply_orders)
 }
 #[cfg(test)]
 mod tests;

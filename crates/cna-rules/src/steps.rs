@@ -39,6 +39,18 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<(), EngineError> {
         match state.cursor.anchor() {
+            "logistics.stores_expenditure" => {
+                crate::logistics::batches::finish_stores(content, state, cx)
+            }
+            "opstage.organization.supply_distribution" => {
+                crate::logistics::batches::finish_distribution(content, state, cx)
+            }
+            "opstage.organization.tactical_shipping" | "opstage.truck_convoy_movement" => {
+                crate::logistics::coastal::finish(content, state, cx)
+            }
+            "opstage.organization.attrition" => {
+                crate::logistics::attrition::finish(content, state, cx)
+            }
             "opstage.organization.water_distribution" => {
                 crate::logistics::batches::finish_water(content, state, cx, self.strict)
             }

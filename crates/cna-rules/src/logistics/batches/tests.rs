@@ -74,6 +74,38 @@ fn fixture() -> State {
 fn drain(s: &mut State, controller: &mut CampaignRng, dice: &mut CampaignRng) -> usize {
     for count in 0..30 {
         if s.decisions.pending.is_empty() {
+            if s.logistics
+                .allocation_batches
+                .submitted
+                .keys()
+                .any(|k| k.starts_with(super::STORES))
+            {
+                super::finish_stores(
+                    content(),
+                    s,
+                    &mut Cx {
+                        rng: dice,
+                        events: &mut vec![],
+                    },
+                )
+                .unwrap();
+            }
+            if s.logistics
+                .allocation_batches
+                .submitted
+                .keys()
+                .any(|k| k.starts_with(super::DISTRIBUTION))
+            {
+                super::finish_distribution(
+                    content(),
+                    s,
+                    &mut Cx {
+                        rng: dice,
+                        events: &mut vec![],
+                    },
+                )
+                .unwrap();
+            }
             if s.cursor.anchor() == "opstage.organization.water_distribution" {
                 finish_water(
                     content(),
@@ -554,6 +586,7 @@ fn failed_later_transfer_rolls_back_stock_and_new_public_marker() {
         })
     };
     let before = serde_json::to_value(&s).unwrap();
+    let rng_before = rng.state();
     let mut events = vec![];
     assert!(
         answer(
@@ -571,6 +604,7 @@ fn failed_later_transfer_rolls_back_stock_and_new_public_marker() {
     );
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
     assert!(events.is_empty());
+    assert_eq!(rng.state(), rng_before);
     answer(
         content(),
         &mut s,
@@ -581,6 +615,36 @@ fn failed_later_transfer_rolls_back_stock_and_new_public_marker() {
             events: &mut events,
         },
         false,
+    )
+    .unwrap();
+    assert_eq!(s.logistics.dumps["test-stock"].supplies.stores, 100);
+    let other = s
+        .decisions
+        .pending
+        .iter()
+        .find(|v| v.seat.side == Side::Commonwealth)
+        .unwrap()
+        .clone();
+    s.decisions.pending.clear();
+    answer(
+        content(),
+        &mut s,
+        &other,
+        &Value::Null,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+        false,
+    )
+    .unwrap();
+    finish_distribution(
+        content(),
+        &mut s,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
     )
     .unwrap();
     assert_eq!(s.logistics.dumps["test-stock"].supplies.stores, 88);

@@ -1,6 +1,6 @@
 //! Infantry losses from food and water shortages; weapons are never removed here.
 use super::rations::{self, WaterStage};
-use super::stores::{engine, option};
+use super::stores::{engine, field, option};
 use super::{SupplyError, toe_strength};
 use crate::content::CnaContent;
 use crate::state::{Location, Pending, State};
@@ -17,6 +17,21 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 
 pub const KIND: &str = "cna.logistics.attrition";
+/// A fixed private batch from each side is adjudicated only at joint closure.
+/// Cases: airlog:51.22, land:3.6
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AttritionWindow {
+    pub submitted: BTreeMap<Side, Value>,
+    pub completed_stage: Option<WaterStage>,
+}
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LossOrder {
+    unit: UnitId,
+    points: i32,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FoodLoss {
     pub owner: Side,
@@ -176,6 +191,7 @@ pub fn enter(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result
             .remaining
             .min(i32::try_from(remaining).unwrap_or(i32::MAX));
     }
+    state.logistics.attrition_window = AttritionWindow::default();
     state.logistics.food_losses = losses;
     state.logistics.attrition_started_stage = Some(stage);
     for side in [Side::Axis, Side::Commonwealth] {
@@ -183,7 +199,7 @@ pub fn enter(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result
     }
     Ok(())
 }
-/// Mandatory losses cannot be passed or allocated to immune weapons.
+/// Each scheduled side receives exactly one batch, including an empty forced pass.
 /// Cases: airlog:51.22, land:3.6
 fn open_menu(
     content: &CnaContent,
@@ -191,72 +207,232 @@ fn open_menu(
     side: Side,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
-    let Some(loss) = state
+    let own: Vec<_> = state
         .logistics
         .food_losses
         .iter()
-        .find(|l| l.owner == side && l.remaining > 0)
-    else {
-        return Ok(());
-    };
+        .filter(|l| l.owner == side && l.remaining > 0)
+        .collect();
     let mut options = Vec::new();
-    for id in &loss.units {
-        if strength(content, state, id).map_err(engine)? > 0 {
-            options.push(option(
-                id.to_string(),
-                format!("Remove one infantry TOE from {id}"),
-            ));
+    let mut maximum = 0;
+    for loss in &own {
+        for id in &loss.units {
+            let n = strength(content, state, id).map_err(engine)?;
+            if n > 0 {
+                maximum = maximum.max(n);
+                options.push(option(
+                    id.to_string(),
+                    format!(
+                        "{id}: up to {n} infantry TOE; allocate {} across [{}]",
+                        loss.remaining,
+                        loss.units
+                            .iter()
+                            .map(|u| u.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ),
+                ));
+            }
         }
     }
-    if options.is_empty() {
+    let empty = own.is_empty();
+    if !empty && options.is_empty() {
         return Err(engine(SupplyError::Invalid));
+    }
+    let count = options.len() as u32;
+    let schema = if empty {
+        ActionSchema::Choice { options: vec![] }
+    } else {
+        ActionSchema::List {
+            min: 1,
+            max: count,
+            item: Box::new(ActionSchema::Record {
+                fields: vec![
+                    field(
+                        "unit",
+                        "Own infantry casualty",
+                        ActionSchema::Choice { options },
+                    ),
+                    field(
+                        "points",
+                        "Infantry TOE lost",
+                        ActionSchema::Integer {
+                            min: 1,
+                            max: i64::from(maximum),
+                        },
+                    ),
+                ],
+            }),
+        }
+    };
+    let mut space = ActionSpace::new(schema);
+    if empty {
+        space = space.with_pass("No food casualties to allocate");
     }
     open(
         state,
         cx,
         SeatId::new(side, Role::Logistics),
         KIND,
-        format!(
-            "Allocate {} remaining infantry TOE losses from the food shortage at {:?}.",
-            loss.remaining, loss.location
-        ),
+        "Allocate all of this side's food-shortage casualties.".into(),
         &["airlog:51.22", "land:3.6"],
         Trigger::Scheduled,
-        Secrecy::Secret,
-        ActionSpace::new(ActionSchema::Choice { options }),
+        Secrecy::SecretSimultaneous,
+        space,
     );
     Ok(())
 }
+/// A complete list is checked against only the submitting owner's groups and strength.
+/// Cases: airlog:51.22, land:3.6
+fn validate(
+    content: &CnaContent,
+    state: &State,
+    side: Side,
+    action: &Value,
+) -> Result<Vec<LossOrder>, Rejection> {
+    let groups: Vec<_> = state
+        .logistics
+        .food_losses
+        .iter()
+        .filter(|l| l.owner == side && l.remaining > 0)
+        .collect();
+    if groups.is_empty() {
+        if action.is_null() {
+            return Ok(vec![]);
+        }
+        return Err(illegal("no own food casualties to allocate"));
+    }
+    let orders: Vec<LossOrder> = serde_json::from_value(action.clone())
+        .map_err(|_| illegal("provide a complete infantry-loss list"))?;
+    let count: usize = groups.iter().map(|g| g.units.len()).sum();
+    if orders.is_empty() || orders.len() > count {
+        return Err(illegal("invalid own food-loss list length"));
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut sums = vec![0i64; groups.len()];
+    for order in &orders {
+        if !seen.insert(&order.unit) {
+            return Err(illegal("repeated infantry casualty"));
+        }
+        let group = groups
+            .iter()
+            .position(|g| g.units.contains(&order.unit))
+            .ok_or_else(|| illegal("unit is not an own food-loss candidate"))?;
+        if order.points <= 0
+            || order.points
+                > strength(content, state, &order.unit).map_err(|e| Rejection::Engine(engine(e)))?
+        {
+            return Err(illegal("invalid infantry casualty amount"));
+        }
+        sums[group] += i64::from(order.points);
+    }
+    if groups
+        .iter()
+        .zip(sums)
+        .any(|(g, n)| i64::from(g.remaining) != n)
+    {
+        return Err(illegal("allocate every own food-loss group exactly"));
+    }
+    Ok(orders)
+}
+/// Answering buffers a validated owner-known plan without reducing strength.
 /// Cases: airlog:51.22, land:3.6
 pub fn answer(
     content: &CnaContent,
     state: &mut State,
     pending: &Pending,
     action: &Value,
-    cx: &mut Cx<'_>,
+    _cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
-    let id = UnitId::new(
-        action
-            .as_str()
-            .ok_or_else(|| illegal("select an infantry unit for the loss"))?,
-    );
-    let index = state
+    if state
+        .logistics
+        .attrition_window
+        .submitted
+        .contains_key(&pending.seat.side)
+        || state.logistics.attrition_window.completed_stage == Some(WaterStage::current(state))
+    {
+        return Err(illegal("food-loss batch already closed"));
+    }
+    validate(content, state, pending.seat.side, action)?;
+    state
+        .logistics
+        .attrition_window
+        .submitted
+        .insert(pending.seat.side, action.clone());
+    Ok("Food-loss allocation recorded for joint closure.".into())
+}
+/// Apply both complete casualty lists atomically after the fixed window closes.
+/// Cases: airlog:51.22, land:3.6
+pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
+    let stage = WaterStage::current(state);
+    if state.logistics.attrition_started_stage != Some(stage)
+        || state.logistics.attrition_window.completed_stage == Some(stage)
+        || !state.decisions.pending.is_empty()
+        || ![Side::Axis, Side::Commonwealth]
+            .iter()
+            .all(|s| state.logistics.attrition_window.submitted.contains_key(s))
+    {
+        return Ok(());
+    }
+    let mut draft = state.clone();
+    for side in [Side::Axis, Side::Commonwealth] {
+        let action = &state.logistics.attrition_window.submitted[&side];
+        let orders =
+            validate(content, state, side, action).map_err(|e| EngineError::Invariant {
+                detail: format!("closed food-loss plan: {e:?}"),
+            })?;
+        for order in orders {
+            lose(content, &mut draft, &order.unit, order.points).map_err(engine)?;
+        }
+        for group in draft
+            .logistics
+            .food_losses
+            .iter_mut()
+            .filter(|g| g.owner == side)
+        {
+            group.remaining = 0;
+        }
+    }
+    draft.logistics.attrition_window.submitted.clear();
+    draft.logistics.attrition_window.completed_stage = Some(stage);
+    *state = draft;
+    for side in [Side::Axis, Side::Commonwealth] {
+        cx.emit(EngineEvent::new(
+            Audience::Side(side),
+            GameEvent::Note {
+                text: "Food-shortage casualty allocation completed.".into(),
+            },
+        ));
+    }
+    Ok(())
+}
+/// Deterministic complete allocation over the owner's advertised casualty groups.
+/// Cases: airlog:51.22, land:3.6
+pub fn baseline(content: &CnaContent, state: &State, side: Side) -> Option<Value> {
+    let mut orders = Vec::new();
+    for group in state
         .logistics
         .food_losses
         .iter()
-        .position(|l| l.owner == pending.seat.side && l.remaining > 0)
-        .ok_or_else(|| illegal("no food losses remain"))?;
-    if !state.logistics.food_losses[index].units.contains(&id)
-        || strength(content, state, &id).map_err(|e| Rejection::Engine(engine(e)))? == 0
+        .filter(|g| g.owner == side && g.remaining > 0)
     {
-        return Err(illegal("unit cannot take this infantry loss"));
+        let mut left = group.remaining;
+        for id in &group.units {
+            let points = left.min(strength(content, state, id).ok()?);
+            if points > 0 {
+                orders.push(serde_json::json!({"unit":id,"points":points}));
+                left -= points;
+            }
+        }
+        if left != 0 {
+            return None;
+        }
     }
-    lose(content, state, &id, 1).map_err(|_| illegal("invalid infantry loss"))?;
-    state.logistics.food_losses[index].remaining -= 1;
-    open_menu(content, state, pending.seat.side, cx).map_err(Rejection::Engine)?;
-    Ok(format!(
-        "{id} lost one infantry TOE point to the food shortage."
-    ))
+    Some(if orders.is_empty() {
+        Value::Null
+    } else {
+        Value::Array(orders)
+    })
 }
 #[cfg(test)]
 mod tests;

@@ -49,6 +49,18 @@
 //! Answer acceptance uses only the answering side's units, stocks and known conditions,
 //! plus public facts. Hidden opposing state belongs to adjudication after closed windows;
 //! a failed well result remains an accepted attempt with its rules-required disclosure.
+//! Scheduling is fixed independently of hidden quantities and eligibility: stores,
+//! distribution and each scheduled coastal side take one complete list; water takes
+//! exactly two joint rounds (issue/draw, then actual-yield allocation); attrition takes
+//! one complete mandatory casualty list per side. Empty windows have a declared pass.
+//! Arrival supply uses the same fixed two-round pattern. Answers never reopen these
+//! windows; only joint closure adjudicates wells and food casualties. Naval planning's
+//! number of slots follows the public scenario calendar, not secret cargo or port stocks.
+//! Weather rolls and storm areas are public automatic procedures; ports, box handling,
+//! pool accounting and cargo-history helpers do not open decisions. Legacy single-unit
+//! menu entry points route to batches and their old response kinds are retired.
+//! This preserves the observer's ordered requests and phase stream under engine rule 7.
+
 //!
 //! Cases: airlog:49.13, airlog:49.15, airlog:49.16, airlog:50.13, airlog:50.15
 //! Interpretations: interp:airlog-0001
@@ -104,3 +116,6 @@ pub use rations::{
 
 #[cfg(test)]
 mod privacy;
+
+#[cfg(test)]
+mod scheduling_tests;

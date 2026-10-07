@@ -1,7 +1,7 @@
 use super::*;
 use crate::state::{UnitSupply, WeatherState, WellState};
 use cna_content::{places::Place, units::Trucks};
-use cna_core::{dice::CampaignRng, quantity::FuelTenths};
+use cna_core::{dice::CampaignRng, ids::SeatId, quantity::FuelTenths};
 use cna_protocol::Role;
 use cna_tables::land::weather::{MapSection, WeatherKind};
 
@@ -589,30 +589,45 @@ fn dispatcher_routes_draw_and_allocation_after_the_well_menu() {
         rng: &mut rng,
         events: &mut events,
     };
-    open_request(&content, &mut state, &id, seat, &mut cx).unwrap();
-    let pending = state.decisions.pending.pop().unwrap();
-    assert!(pending.kind.starts_with(REQUEST_PREFIX));
+    super::super::batches::enter_water(&content, &mut state, &mut cx, false).unwrap();
+    let own = state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.seat == seat)
+        .unwrap()
+        .clone();
+    assert_eq!(own.kind, super::super::batches::WATER);
+    let action = serde_json::json!({"allocations":[],"wells":[{"operation":format!("draw|{id}"),
+        "requested":1,"packing":CargoPacking::default()}]});
     crate::Cna::dev()
-        .respond_to(
-            &content,
-            &mut state,
-            &pending,
-            &serde_json::json!({"requested":1,"packing":CargoPacking::default()}),
-            &mut cx,
-        )
+        .respond_to(&content, &mut state, &own, &action, &mut cx)
         .unwrap();
-    let pending = state.decisions.pending.pop().unwrap();
-    assert!(pending.kind.starts_with(ALLOCATE_PREFIX));
+    state.decisions.pending.retain(|p| p.seat != seat);
+    let other = state.decisions.pending.pop().unwrap();
     crate::Cna::dev()
-        .respond_to(
-            &content,
-            &mut state,
-            &pending,
-            &serde_json::json!({"infantry":1,"activity":0,"pasta":false,"cargo":0,
-            "packing":CargoPacking::default()}),
-            &mut cx,
-        )
+        .respond_to(&content, &mut state, &other, &Value::Null, &mut cx)
         .unwrap();
+    super::super::batches::finish_water(&content, &mut state, &mut cx, false).unwrap();
+    let own = state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.seat == seat)
+        .unwrap()
+        .clone();
+    assert_eq!(own.kind, super::super::batches::WELL_ALLOCATION);
+    let action = serde_json::json!([{"unit":id,"infantry":1,"activity":0,"pasta":false,
+        "cargo":0,"packing":CargoPacking::default()}]);
+    crate::Cna::dev()
+        .respond_to(&content, &mut state, &own, &action, &mut cx)
+        .unwrap();
+    state.decisions.pending.retain(|p| p.seat != seat);
+    let other = state.decisions.pending.pop().unwrap();
+    crate::Cna::dev()
+        .respond_to(&content, &mut state, &other, &Value::Null, &mut cx)
+        .unwrap();
+    super::super::batches::finish_water(&content, &mut state, &mut cx, false).unwrap();
     assert!(!state.logistics.drawn_water.contains_key(&id));
     assert_eq!(state.logistics.rations[&id].infantry_water_received, 1);
     assert_eq!(state.land.units[&id].cp_spent_quarters, 4);
