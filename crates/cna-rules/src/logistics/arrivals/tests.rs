@@ -717,3 +717,138 @@ fn all_nine_real_classless_weapon_rows_price_composition_without_a_class_default
         );
     }
 }
+
+/// Malformed own lists must not disclose the enemy's privately placed arrival count.
+/// Cases: land:3.6, land:20.12, airlog:52.13
+#[test]
+fn rejected_arrival_lists_are_independent_of_hidden_enemy_rosters() {
+    let (c, mut base) = fixture();
+    let second: UnitId = base
+        .land
+        .units
+        .iter()
+        .find_map(|(id, u)| {
+            (u.side == Side::Axis
+                && id.as_str() != AX
+                && c.units.units[id]
+                    .class
+                    .as_ref()
+                    .is_some_and(|cl| c.units.classes[cl].unit_type == "infantry"))
+            .then(|| id.clone())
+        })
+        .unwrap();
+    for id in [UnitId::new(AX), second.clone()] {
+        let u = base.land.units.get_mut(&id).unwrap();
+        u.location = Location::OffMap {
+            id: "box_tripoli".into(),
+        };
+        u.trucks = Trucks::default();
+        u.transport_trucks = Trucks::default();
+    }
+    base.land.units.get_mut(&UnitId::new(CW)).unwrap().location = Location::NotArrived;
+    for list_name in ["allocations", "well_allocations", "wells"] {
+        let mut s = base.clone();
+        if list_name == "well_allocations" {
+            for id in [UnitId::new(AX), second.clone()] {
+                s.logistics
+                    .drawn_water
+                    .insert(id, wells::DrawnWater { points: 2 });
+            }
+        }
+        let mut rng = CampaignRng::from_seed([71; 32]);
+        start(&c, &mut s, [AX.into(), second.clone()].into(), &mut rng);
+        let p = s
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat.side == Side::Axis)
+            .unwrap()
+            .clone();
+        let a = Game::<Cna> {
+            state: s,
+            rng: rng.state(),
+        };
+        let mut b = a.clone();
+        b.state
+            .land
+            .units
+            .get_mut(&UnitId::new(CW))
+            .unwrap()
+            .location = Location::OffMap {
+            id: "box_tripoli".into(),
+        };
+        b.state.logistics.arrival_supply.units.insert(CW.into());
+        crate::testkit::assert_indistinguishable(&Cna::dev(), &c, &a.state, &b.state, Side::Axis);
+        let item = match list_name {
+            "allocations" => json!({"unit":AX,"stores":0,"half":false,"pasta":false,
+               "infantry":0,"activity":0,"fuel_tenths":0,"draws":[]}),
+            "well_allocations" => json!({"unit":AX,"infantry":0,"activity":0,"pasta":false,
+               "cargo":0,"packing":CargoPacking::default()}),
+            _ => json!({"unit":AX,"requested":1,"packing":CargoPacking::default()}),
+        };
+        let mut foreign = item.clone();
+        foreign["unit"] = json!(CW);
+        for (kind, values) in [
+            (
+                "oversized",
+                json!([item.clone(), item.clone(), item.clone()]),
+            ),
+            ("duplicate", json!([item.clone(), item.clone()])),
+            ("foreign", json!([foreign])),
+        ] {
+            let mut value = empty();
+            value[list_name] = values;
+            let cmd = command(&p, value.clone());
+            for rules in [Cna::dev(), Cna::full()] {
+                crate::testkit::assert_action_indistinguishable(
+                    &rules,
+                    &c,
+                    &a,
+                    &b,
+                    &cmd,
+                    Side::Axis,
+                );
+                assert!(
+                    evaluate(&rules, &c, &a, &cmd).is_err(),
+                    "{list_name}/{kind} accepted"
+                );
+                // Exercise the module directly too: the central action-space guard
+                // must not hide a regression in this independent validation layer.
+                let errors = [&a, &b].map(|g| {
+                    let mut s = g.state.clone();
+                    let before = serde_json::to_value(&s).unwrap();
+                    let mut rng = CampaignRng::from_state(&g.rng);
+                    let mut events = vec![];
+                    let error = answer(
+                        &c,
+                        &mut s,
+                        &p,
+                        &value,
+                        rules.strict,
+                        &mut Cx {
+                            rng: &mut rng,
+                            events: &mut events,
+                        },
+                    )
+                    .unwrap_err();
+                    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+                    assert_eq!(rng.state(), g.rng);
+                    assert!(events.is_empty());
+                    format!("{error:?}")
+                });
+                assert_eq!(errors[0], errors[1], "{list_name}/{kind}");
+                assert!(
+                    errors[0].contains(if kind == "oversized" {
+                        "too many arrival allocations"
+                    } else if kind == "duplicate" {
+                        "repeated"
+                    } else {
+                        "foreign"
+                    }),
+                    "{list_name}/{kind}: {}",
+                    errors[0]
+                );
+            }
+        }
+    }
+}

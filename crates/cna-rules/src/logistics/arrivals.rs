@@ -180,6 +180,41 @@ fn ids(
     }
     Ok(out)
 }
+/// Every answer domain is derived solely from this side's eligible arrivals.
+struct OwnerDomains {
+    units: Vec<UnitId>,
+    drawn: Vec<UnitId>,
+    wells: Vec<UnitId>,
+}
+fn owner_domains(
+    content: &CnaContent,
+    state: &State,
+    side: Side,
+    strict: bool,
+) -> Result<OwnerDomains, EngineError> {
+    let units = ids(content, state, side, strict)?;
+    let drawn: Vec<_> = units
+        .iter()
+        .filter(|id| state.logistics.drawn_water.contains_key(*id))
+        .cloned()
+        .collect();
+    let well_ids: Vec<_> = units
+        .iter()
+        .filter(|id| {
+            !state.logistics.arrival_supply.completed_wells.contains(*id)
+                && !state.logistics.drawn_water.contains_key(*id)
+                && wells::operation_options(content, state, id, side)
+                    .iter()
+                    .any(|o| o.id == "draw")
+        })
+        .cloned()
+        .collect();
+    Ok(OwnerDomains {
+        units,
+        drawn,
+        wells: well_ids,
+    })
+}
 fn widen(a: &mut ActionSchema, b: &ActionSchema) {
     match (a, b) {
         (ActionSchema::Integer { max: x, .. }, ActionSchema::Integer { max: y, .. }) => {
@@ -213,7 +248,11 @@ fn open_side(
     if state.logistics.arrival_supply.done.contains(&side) {
         return Ok(());
     }
-    let units = ids(content, state, side, strict)?;
+    let OwnerDomains {
+        units,
+        drawn,
+        wells: well_ids,
+    } = owner_domains(content, state, side, strict)?;
     if !strict {
         for id in &state.logistics.arrival_supply.units {
             if owned(state, side, id)
@@ -247,22 +286,6 @@ fn open_side(
             }
         }
     }
-    let drawn: Vec<_> = units
-        .iter()
-        .filter(|id| state.logistics.drawn_water.contains_key(*id))
-        .cloned()
-        .collect();
-    let well_ids: Vec<_> = units
-        .iter()
-        .filter(|id| {
-            !state.logistics.arrival_supply.completed_wells.contains(*id)
-                && !state.logistics.drawn_water.contains_key(*id)
-                && wells::operation_options(content, state, id, side)
-                    .iter()
-                    .any(|o| o.id == "draw")
-        })
-        .cloned()
-        .collect();
     let stage = water::WaterStage::current(state);
     let work = units.iter().any(|id| {
         let r = state.logistics.rations.get(id);
@@ -670,9 +693,11 @@ pub fn answer(
     } else {
         let a: Answer = serde_json::from_value(action.clone())
             .map_err(|_| illegal("invalid arrival supply lists"))?;
-        if a.allocations.len() > draft.logistics.arrival_supply.units.len()
-            || a.well_allocations.len() > draft.logistics.arrival_supply.units.len()
-            || a.wells.len() > draft.logistics.arrival_supply.units.len()
+        let domains =
+            owner_domains(content, state, p.seat.side, strict).map_err(Rejection::Engine)?;
+        if a.allocations.len() > domains.units.len()
+            || a.well_allocations.len() > domains.drawn.len()
+            || a.wells.len() > domains.wells.len()
         {
             return Err(illegal("too many arrival allocations"));
         }
@@ -681,6 +706,9 @@ pub fn answer(
         } else {
             let mut seen = BTreeSet::new();
             for o in a.allocations {
+                if !domains.units.contains(&o.unit) {
+                    return Err(illegal("foreign arrival issue"));
+                }
                 if !seen.insert(o.unit.clone()) {
                     return Err(illegal("repeated arrival issue"));
                 }
@@ -688,7 +716,7 @@ pub fn answer(
             }
             seen.clear();
             for o in a.well_allocations {
-                if !owned(&draft, p.seat.side, &o.unit) || !seen.insert(o.unit.clone()) {
+                if !domains.drawn.contains(&o.unit) || !seen.insert(o.unit.clone()) {
                     return Err(illegal("foreign or repeated arrival well allocation"));
                 }
                 wells::allocate(
@@ -706,14 +734,7 @@ pub fn answer(
             }
             seen.clear();
             for o in &a.wells {
-                if !owned(&draft, p.seat.side, &o.unit)
-                    || !seen.insert(o.unit.clone())
-                    || draft
-                        .logistics
-                        .arrival_supply
-                        .completed_wells
-                        .contains(&o.unit)
-                {
+                if !domains.wells.contains(&o.unit) || !seen.insert(o.unit.clone()) {
                     return Err(illegal("foreign or repeated arrival draw"));
                 }
                 wells::prepare_draw(content, &mut draft, &o.unit, o.requested, &o.packing)?;
