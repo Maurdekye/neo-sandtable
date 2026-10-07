@@ -139,7 +139,7 @@ describe('stream and replay invariants', () => {
     expect(view.units.u.hex).toBe('C4218')
     expect(view.stacks[0].unit_ids).toEqual(['u'])
   })
-  it('replaces and removes enemy stack presence without needing unit detail', () => {
+  it('preserves a legacy stack without synthesizing missing counter faces', () => {
     let v = applyEvent(view, {
       kind: 'stack_updated',
       stack: {
@@ -325,4 +325,47 @@ it('summary checkpoints retain exact evicted movement frames and clear on scope 
   }).state
   expect(other.stages).toEqual([])
   expect(other.archiveFrame).toBeNull()
+})
+
+it('introduces and moves received enemy faces without inventing attachments or private state', () => {
+  const face = {
+    id: 'enemy',
+    name: 'Visible face',
+    side: 'commonwealth' as const,
+    kind: 'infantry',
+    size: 'battalion',
+    nationality: 'british',
+    hex: 'C4219',
+    parent: null,
+    detail: { counter: 'E', stacking_points: 2 },
+  }
+  const introduced = applyEvent(view, { kind: 'unit_updated', unit: face })
+  const moved = applyEvent(introduced, {
+    kind: 'unit_moved',
+    unit_id: face.id,
+    path: ['C4220'],
+    cp_spent: null,
+  })
+  expect(moved.units.enemy).toEqual({ ...face, hex: 'C4220' })
+  expect(introduced.units.enemy.hex).toBe('C4219')
+  expect(view.units.enemy).toBeUndefined()
+  expect(moved.stacks.find((s) => s.side === 'commonwealth')).toEqual({
+    hex: 'C4220',
+    side: 'commonwealth',
+    unit_ids: ['enemy'],
+    visible_count: 1,
+  })
+  const synced = applyEvent(moved, {
+    kind: 'unit_updated',
+    unit: { ...face, hex: 'C4221' },
+  })
+  expect(Object.keys(synced.units).sort()).toEqual(['enemy', 'u'])
+  expect(synced.units.enemy.detail).toEqual(face.detail)
+  const removed = applyEvent(synced, {
+    kind: 'unit_removed',
+    unit_id: 'enemy',
+    reason: '',
+  })
+  expect(removed.units).toEqual(view.units)
+  expect(removed.stacks).toEqual(view.stacks)
 })

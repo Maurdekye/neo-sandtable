@@ -34,15 +34,17 @@ export function eventText(e: GameEvent): string {
     case 'note':
       return e.text
     case 'unit_removed':
-      return `${e.unit_id} removed · ${e.reason}`
+      return e.reason
+        ? `${e.unit_id} removed · ${e.reason}`
+        : `${e.unit_id} counter no longer visible`
     case 'dice_rolled':
       return `${e.purpose} · dice ${e.dice.join(', ')}${e.reading !== null ? ` · reading ${e.reading}` : ''}`
     case 'unit_updated':
       return `${e.unit.name} updated`
     case 'stack_updated':
-      return `${e.stack.side} presence at ${e.stack.hex}`
+      return `${e.stack.side} stack updated at ${e.stack.hex}`
     case 'stack_removed':
-      return `${e.side} presence left ${e.hex}`
+      return `${e.side} stack removed at ${e.hex}`
     case 'marker_placed':
       return `${e.marker.kind} placed${e.marker.label ? ` · ${e.marker.label}` : ''}`
     case 'marker_removed':
