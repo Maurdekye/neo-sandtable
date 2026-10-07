@@ -43,6 +43,7 @@ pub use activity::{
     consume_activity_water_forced, remove_activity_water_credit, restore_activity_water_credit,
     transfer_activity_water_credit,
 };
+pub mod arrivals;
 pub mod attrition;
 pub mod baseline;
 pub mod batches;

@@ -142,6 +142,9 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<String, Rejection> {
         match pending.kind.as_str() {
+            crate::logistics::arrivals::KIND => {
+                crate::logistics::arrivals::answer(content, state, pending, action, self.strict, cx)
+            }
             crate::logistics::batches::STORES
             | crate::logistics::batches::WATER
             | crate::logistics::batches::WELL_ALLOCATION

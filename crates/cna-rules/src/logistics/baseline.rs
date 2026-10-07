@@ -345,6 +345,14 @@ pub fn logistics_orders(
     request: &DecisionRequest,
     rng: &mut CampaignRng,
 ) -> Option<Value> {
+    if request.kind == super::arrivals::KIND {
+        return Some(super::arrivals::baseline(
+            content,
+            state,
+            request.seat.side,
+            rng,
+        ));
+    }
     if let Some(answer) = batch_orders(content, state, request, rng) {
         return Some(answer);
     }

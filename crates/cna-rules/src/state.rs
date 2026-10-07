@@ -174,6 +174,9 @@ pub enum DumpLocation {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LogisticsState {
+    /// Exact newly arrived units, closed batches and unresolved well operations.
+    #[serde(default)]
+    pub arrival_supply: crate::logistics::arrivals::ArrivalSupplyWindow,
     /// Private ration and water history; absent entries have not been supplied.
     #[serde(default)]
     pub rations: BTreeMap<UnitId, crate::logistics::Rations>,
