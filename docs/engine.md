@@ -88,11 +88,17 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    whatever the enemy holds.
 8. **Randomness** comes only from `cx.rng` (`d6()`, `two_dice_reading()`). Emit a `DiceRolled`
    event citing the rule for every roll.
-9. **Events and secrecy** (`land:3.6`): facts about a side's own units go to `Audience::Side(side)`.
-   Public facts (stack presence, weather, combat totals) go to `Audience::Public`. When the enemy
-   sees a redacted version of something the owner sees in full, emit the full version to
-   `Audience::Side(owner)` and the redacted copy to `Audience::SideOnly(enemy)`. That keeps the
-   operator from receiving both.
+9. **Events and secrecy** (`land:3.6`). Board state-sync events (`UnitUpdated`, `UnitRemoved`
+   without a reason, `StackUpdated`, `StackRemoved`, `MarkerPlaced`, `MarkerRemoved`) are derived
+   centrally: at the end of every engine call `view::sync_state_events` diffs each perspective's
+   view (each side, the operator) and emits exactly the difference to that perspective alone.
+   Don't hand-emit them; any you emit are dropped and re-derived, so the enemy never receives one
+   its view doesn't justify. A change appears in events if and only if it appears in the view, so
+   get the VIEW right (`view.rs`, owner-only detail via `sees_side`). Emit only semantic events
+   yourself: `UnitMoved` paths, `DiceRolled`, `CombatResolved`, decisions, `Note`s, and
+   `UnitRemoved` with a reason. Address them by who may know: own facts to `Audience::Side(side)`,
+   public facts to `Audience::Public`, and a redacted copy for the enemy to
+   `Audience::SideOnly(enemy)` beside the full one to `Audience::Side(owner)`.
 10. **Test it** in the module's `#[cfg(test)]` block, on the real Graziani content
     (`CnaContent::load(&cna_content::repo_data_dir(), "graziani")`; see `src/tests.rs` for a
     whole-campaign harness) or on a small hand-built state. Cite the cases on a `/// Cases:`
