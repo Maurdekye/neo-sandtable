@@ -90,6 +90,15 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    the advertised shape: declare exactly the fields, bounds and lists the handler accepts, derive
    them from the seat's own knowledge, and in tests open windows with the module's real space,
    never a placeholder.
+
+   **The schedule is public too.** Whether a window opens, how many windows open and how many
+   rounds a procedure takes may depend only on public facts (the clock, the printed schedule,
+   public presence). The clock, phase changes and each seat's own pending list are visible, so
+   a window that opens only when a side has eligible hidden units tells the enemy those units
+   exist. Where eligibility is hidden, open a fixed window for the owning role every time, with
+   a declared pass for "nothing to do" (seat drivers answer those locally, at no model cost),
+   and batch the side's choices into it. Test it with paired states through `Advance`,
+   comparing the observer's clock, phase events and pending, not only the answer paths.
 8. **Randomness** comes only from `cx.rng` (`d6()`, `two_dice_reading()`). Emit a `DiceRolled`
    event citing the rule for every roll.
 9. **Events and secrecy** (`land:3.6`). Board state-sync events (`UnitUpdated`, `UnitRemoved`
