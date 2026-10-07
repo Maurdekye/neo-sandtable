@@ -138,6 +138,9 @@ pub struct LandState {
     /// Symmetric truthful links; unit.engaged is the owner-facing derived status.
     #[serde(default)]
     pub engagements: BTreeMap<UnitId, BTreeSet<UnitId>>,
+    /// Applied schedule rows and owner decisions; supply delivery waits for this window.
+    #[serde(default)]
+    pub arrivals: crate::land::arrivals::ArrivalState,
     #[serde(default)]
     pub breakdown: crate::land::breakdown::BreakdownState,
     #[serde(default)]
