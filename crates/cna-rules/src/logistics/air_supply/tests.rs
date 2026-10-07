@@ -494,3 +494,66 @@ fn own_source_gap_retains_case_and_detail_after_owner_authorization() {
         );
     }
 }
+
+/// Cases: airlog:36.17, airlog:35.11, airlog:36.12
+#[test]
+fn own_malformed_canonical_site_retains_invariant_and_failed_spend_is_atomic() {
+    let (content, mut state, id) = fixture();
+    state
+        .air
+        .runtime
+        .facilities
+        .get_mut(&FacilityId("airfield_benina".into()))
+        .unwrap()
+        .current_capacity = crate::air::facilities::FacilityCapacity::Levels(7);
+    let original = state.air.runtime.sgsus[&id]
+        .location(&content, &state.air.runtime.facilities)
+        .unwrap_err();
+    assert!(matches!(&original, EngineError::Invariant { detail } if detail.contains("capacity")));
+    let prior = BTreeMap::new();
+    assert_eq!(
+        preview(
+            &content,
+            &state,
+            Side::Axis,
+            &id,
+            AirSupplyUse::AircraftServicing,
+            &prior
+        ),
+        Err(AirSupplyError::Canonical(original.clone()))
+    );
+    let before = bytes(&state);
+    let demand = SupplyDemand {
+        fuel: FuelTenths::new(1),
+        ..Default::default()
+    };
+    assert_eq!(
+        spend(
+            &content,
+            &mut state,
+            Side::Axis,
+            &id,
+            AirSupplyUse::AircraftServicing,
+            AirSupplyDebit {
+                demand,
+                draws: &draw(demand),
+                prior: &prior
+            }
+        ),
+        Err(AirSupplyError::Canonical(original))
+    );
+    assert_eq!(bytes(&state), before);
+    for candidate in [&id, &SgsuId("missing".into())] {
+        assert_eq!(
+            preview(
+                &content,
+                &state,
+                Side::Commonwealth,
+                candidate,
+                AirSupplyUse::AircraftServicing,
+                &prior
+            ),
+            Err(AirSupplyError::Supply(SupplyError::Invalid))
+        );
+    }
+}

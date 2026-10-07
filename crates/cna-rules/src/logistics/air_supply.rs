@@ -33,7 +33,7 @@ pub enum AirSupplyUse {
     AircraftServicing,
 }
 
-/// Foreign/missing consumers stay generic; own source gaps retain case/detail.
+/// Foreign/missing consumers stay generic; own canonical errors retain case/detail.
 #[derive(Debug, Clone, PartialEq)]
 pub enum AirSupplyError {
     Supply(SupplyError),
@@ -71,10 +71,7 @@ fn consumer_facility(
         return Err(SupplyError::Invalid.into());
     };
     sgsu.location(content, &state.air.runtime.facilities)
-        .map_err(|error| match error {
-            unsupported @ EngineError::Unsupported { .. } => AirSupplyError::Canonical(unsupported),
-            EngineError::Invariant { .. } => SupplyError::Invalid.into(),
-        })?;
+        .map_err(AirSupplyError::Canonical)?;
     Ok(id.clone())
 }
 
