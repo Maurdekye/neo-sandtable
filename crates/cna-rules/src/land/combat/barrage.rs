@@ -710,7 +710,7 @@ fn charge(
                                 payment.shortfall.get()
                             ),
                         },
-                    ));
+                    ).at(hex.clone()).about(id.clone()));
                 }
                 Ok(_) => {}
                 Err(logistics::SupplyError::Unsupported { case })
@@ -718,7 +718,7 @@ fn charge(
                 {
                     cx.emit(EngineEvent::new(Audience::Side(side), GameEvent::Note {
                         text: format!("Development gap {case}: own unit {id} activity water cannot be assessed."),
-                    }));
+                    }).at(hex.clone()).about(id.clone()));
                 }
                 Err(logistics::SupplyError::Unsupported { case }) => {
                     return Err(err(case, "combat activity-water requirement unavailable"));
@@ -754,14 +754,17 @@ fn shift(c: &CnaContent, hex: &HexId) -> Result<i32, Rejection> {
         )),
     }
 }
-fn roll(cx: &mut Cx<'_>, purpose: String) -> cna_core::dice::TwoDiceReading {
+fn roll(cx: &mut Cx<'_>, purpose: String, hex: &HexId) -> cna_core::dice::TwoDiceReading {
     let d = cx.rng.two_dice_reading();
-    cx.emit(EngineEvent::public(GameEvent::DiceRolled {
-        purpose,
-        dice: vec![d.tens.value(), d.units.value()],
-        reading: Some(d.value()),
-        rule: Some("land:12.42".into()),
-    }));
+    cx.emit(
+        EngineEvent::public(GameEvent::DiceRolled {
+            purpose,
+            dice: vec![d.tens.value(), d.units.value()],
+            reading: Some(d.value()),
+            rule: Some("land:12.42".into()),
+        })
+        .at(hex.clone()),
+    );
     d
 }
 /// Target and current parent trucks qualify only while co-located with the target.
@@ -850,7 +853,7 @@ fn resolve(c: &CnaContent, s: &mut State, paid: State, cx: &mut Cx<'_>) -> Resul
                 .combat_calculations
                 .actual_points(StrengthActivity::Barrage, raw)
                 .ok_or_else(|| illegal("barrage strength overflow"))?;
-            let d = roll(cx, format!("Barrage at {}", t.label));
+            let d = roll(cx, format!("Barrage at {}", t.label), &t.hex);
             let result = c
                 .tables
                 .land
@@ -867,7 +870,11 @@ fn resolve(c: &CnaContent, s: &mut State, paid: State, cx: &mut Cx<'_>) -> Resul
                 .iter()
                 .any(|id| s.land.units[id].trucks.total() > 0);
             let trucks = if has_trucks {
-                let td = roll(cx, format!("Concurrent truck barrage at {}", t.label));
+                let td = roll(
+                    cx,
+                    format!("Concurrent truck barrage at {}", t.label),
+                    &t.hex,
+                );
                 c.tables
                     .land
                     .barrage
@@ -878,7 +885,7 @@ fn resolve(c: &CnaContent, s: &mut State, paid: State, cx: &mut Cx<'_>) -> Resul
                 0
             };
             if trucks > 0 || result.transport_truck_points_lost > 0 {
-                cx.emit(EngineEvent::new(Audience::Side(seat.side.opponent()),GameEvent::Note{text:"Development gap land:12.46: truck and cargo losses have not been applied; allocation support is pending.".into()}));
+                cx.emit(EngineEvent::new(Audience::Side(seat.side.opponent()),GameEvent::Note{text:"Development gap land:12.46: truck and cargo losses have not been applied; allocation support is pending.".into()}).at(t.hex.clone()).about(t.unit.clone()));
             }
             s.land
                 .combat
@@ -897,19 +904,26 @@ fn resolve(c: &CnaContent, s: &mut State, paid: State, cx: &mut Cx<'_>) -> Resul
             }
             // Enemy designation, gun composition and exact TOE stay private; only the anonymous
             // target, pooled points and table result are disclosed for this attack.
-            cx.emit(EngineEvent::public(GameEvent::CombatResolved{hex:t.hex.to_string(),summary:format!("Barrage {}: {} actual points, {} TOE loss, pinned={}; concurrent truck loss {}.",t.label,actual,result.toe_points_lost,result.pinned,trucks),detail:None}));
-            cx.emit(EngineEvent::new(
-                Audience::Side(seat.side),
-                GameEvent::Note {
-                    text: format!("Own barrage plot: {}", json!(f)),
-                },
-            ));
-            cx.emit(EngineEvent::new(
-                Audience::Side(seat.side.opponent()),
-                GameEvent::Note {
-                    text: format!("Barrage result on own unit {}: {}", t.unit, json!(result)),
-                },
-            ));
+            cx.emit(EngineEvent::public(GameEvent::CombatResolved{hex:t.hex.to_string(),summary:format!("Barrage {}: {} actual points, {} TOE loss, pinned={}; concurrent truck loss {}.",t.label,actual,result.toe_points_lost,result.pinned,trucks),detail:None}).at(t.hex.clone()));
+            cx.emit(
+                EngineEvent::new(
+                    Audience::Side(seat.side),
+                    GameEvent::Note {
+                        text: format!("Own barrage plot: {}", json!(f)),
+                    },
+                )
+                .at(t.hex.clone()),
+            );
+            cx.emit(
+                EngineEvent::new(
+                    Audience::Side(seat.side.opponent()),
+                    GameEvent::Note {
+                        text: format!("Barrage result on own unit {}: {}", t.unit, json!(result)),
+                    },
+                )
+                .at(t.hex.clone())
+                .about(t.unit.clone()),
+            );
         }
     }
     for seat in seats() {

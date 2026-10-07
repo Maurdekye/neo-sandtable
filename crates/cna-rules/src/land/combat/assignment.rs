@@ -16,11 +16,12 @@ use cna_core::{
     },
     dice::CampaignRng,
     engine::{Cx, EngineError, Rejection},
+    event::EngineEvent,
     ids::{HexId, SeatId, UnitId},
     quantity::{AmmoPoints, ToeStrengthPoints},
-    visibility::Perspective,
+    visibility::{Audience, Perspective},
 };
-use cna_protocol::{Role, Side};
+use cna_protocol::{GameEvent, Role, Side};
 use cna_tables::airlog::supply::{AmmoAction, AmmoMode};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -590,7 +591,7 @@ pub fn answer(
 }
 /// Freeze the already validated plans without dice, spending, reveals or enemy-dependent stops.
 /// Cases: land:14.26, land:15.16, land:3.6
-pub fn finish(s: &mut State, strict: bool) -> Result<(), EngineError> {
+pub fn finish(s: &mut State, cx: &mut Cx<'_>, strict: bool) -> Result<(), EngineError> {
     if strict {
         return Err(EngineError::Unsupported {
             case: "land:14.3".into(),
@@ -604,6 +605,23 @@ pub fn finish(s: &mut State, strict: bool) -> Result<(), EngineError> {
         return Err(EngineError::Invariant {
             detail: "force assignment plans are not closed".into(),
         });
+    }
+    // Only the owner and operator receive identified unit annotations. This reveals no
+    // enemy composition, and canonical ordering does not depend on submission order.
+    for (side, plan) in &s.land.combat.assignment.plans {
+        let units: BTreeSet<_> = plan.iter().map(|a| &a.unit).collect();
+        for id in units {
+            let event = EngineEvent::new(
+                Audience::Side(*side),
+                GameEvent::Note {
+                    text: "Own force partition frozen for later combat adjudication.".into(),
+                },
+            )
+            .about(id.clone());
+            if let Some(hex) = s.land.units[id].location.hex() {
+                cx.emit(event.at(hex.clone()));
+            }
+        }
     }
     s.land.combat.assignment.frozen = true;
     Ok(())

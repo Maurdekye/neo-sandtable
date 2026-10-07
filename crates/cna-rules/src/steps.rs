@@ -47,7 +47,7 @@ impl Cna {
                 crate::land::breakdown::window::finish(content, state, self.strict, cx)
             }
             crate::land::combat::assignment::ANCHOR => {
-                crate::land::combat::assignment::finish(state, self.strict)
+                crate::land::combat::assignment::finish(state, cx, self.strict)
             }
             crate::land::combat::retreat::ANCHOR => {
                 crate::land::reaction::finish_adjudication(state)?;

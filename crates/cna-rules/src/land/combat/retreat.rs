@@ -359,7 +359,14 @@ pub fn finish(
                         detail: message,
                     });
                 }
-                cx.emit(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:format!("Accepted retreat cannot execute after earlier adjudication: {message}; no replacement move was invented (land:13.21).") }));
+                let event = EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:format!("Accepted retreat cannot execute after earlier adjudication: {message}; no replacement move was invented (land:13.21).") }).about(order.unit.clone());
+                cx.emit(
+                    if let Some(hex) = s.land.units[&order.unit].location.hex() {
+                        event.at(hex.clone())
+                    } else {
+                        event
+                    },
+                );
             }
             Err(_) => {
                 return Err(EngineError::Invariant {

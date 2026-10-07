@@ -128,7 +128,23 @@ fn finish_game(c: &CnaContent, g: &mut Game<Cna>) {
             },
         )
         .unwrap();
-    assert!(events.is_empty());
+    for event in events {
+        let id: UnitId = event
+            .unit_id
+            .as_ref()
+            .expect("identified own force unit")
+            .as_str()
+            .into();
+        assert_eq!(event.audience, Audience::Side(g.state.land.units[&id].side));
+        assert_eq!(
+            event.hex,
+            g.state.land.units[&id]
+                .location
+                .hex()
+                .map(ToString::to_string)
+        );
+        assert!(matches!(event.event, GameEvent::Note { .. }));
+    }
     g.rng = rng.state();
 }
 /// Cases: land:14.11,land:14.26,land:15.16,land:3.6,airlog:50.14

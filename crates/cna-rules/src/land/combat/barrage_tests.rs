@@ -162,6 +162,31 @@ fn simultaneous_real_guns_fire_before_any_losses_and_restore_checkpoint() {
     g = t.game;
     assert_eq!(g.state.decisions.pending.len(), 6);
     assert!(g.state.decisions.pending.iter().all(|r| r.kind == LOSSES));
+    for event in &all_events {
+        if matches!(
+            event.event,
+            GameEvent::DiceRolled { .. } | GameEvent::CombatResolved { .. }
+        ) {
+            assert!(event.hex.is_some(), "resolved public fire has a target hex");
+            assert!(
+                event.unit_id.is_none(),
+                "public fire cannot identify the hidden target"
+            );
+        }
+        if matches!(event.event, GameEvent::Note { .. })
+            && let Some(id) = &event.unit_id
+        {
+            let id: UnitId = id.as_str().into();
+            assert_eq!(event.audience, Audience::Side(g.state.land.units[&id].side));
+            assert_eq!(
+                event.hex,
+                g.state.land.units[&id]
+                    .location
+                    .hex()
+                    .map(ToString::to_string)
+            );
+        }
+    }
     let rolls: Vec<_> = all_events
         .iter()
         .filter_map(|e| match &e.event {
