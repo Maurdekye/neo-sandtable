@@ -1408,6 +1408,11 @@ fn either_phasing_side_repeats_without_resetting_cp_or_stage_water() {
             .game;
         assert_eq!(
             g.state.decisions.pending[0].kind,
+            crate::land::reserve::RELEASE
+        );
+        let g = respond(&c, &g, seat(&g), Value::Null, false).unwrap().game;
+        assert_eq!(
+            g.state.decisions.pending[0].kind,
             super::super::cycles::KIND
         );
         let t = respond(&c, &g, seat(&g), json!(true), false).unwrap();
