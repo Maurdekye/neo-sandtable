@@ -38,7 +38,6 @@ const PENDING_BINDINGS: &[&str] = &[
     "land.20.3.replacement_point_conversion",
     "land.20.66.axis_replacement_pool",
     "land.20.78.commonwealth_production",
-    "land.21.38.breakdown",
     "land.22.15.vehicle_repair_supply_costs",
     "land.22.44.destroyed_tanks_repair",
     "land.22.8.broken_down_vehicle_repair",

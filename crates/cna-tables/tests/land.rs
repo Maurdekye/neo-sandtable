@@ -420,3 +420,48 @@ fn weather_tables_reject_new_roll_gaps_and_duplicate_sections() {
     .unwrap_err();
     assert!(err.field.contains("map_sections"), "{err}");
 }
+
+/// Cases: land:21.31, land:21.33, land:21.34, land:21.35, land:21.38
+#[test]
+fn breakdown_chart_hand_checks_and_worked_stack_example() {
+    use cna_core::dice::{Die, TwoDiceReading};
+    let roll = |a, b| TwoDiceReading {
+        tens: Die::new(a).unwrap(),
+        units: Die::new(b).unwrap(),
+    };
+    let table = &tables().land.breakdown;
+    // Thirty trucks at 35 BP shift left once after their BAR and hot-weather adjustments.
+    assert_eq!(table.percent_quarters(35 * 4, -1, roll(3, 3)), Some(10));
+    assert_eq!(table.broken_points(30, 10), Some(3));
+    // Twenty Crusader points from that same stack shift two columns right.
+    assert_eq!(table.percent_quarters(35 * 4, 2, roll(6, 1)), Some(33));
+    assert_eq!(table.broken_points(20, 33), Some(7));
+    assert_eq!(table.percent_quarters(81, 0, roll(3, 1)), Some(10));
+    assert_eq!(table.percent_quarters(4 * 4, -1, roll(6, 6)), Some(0));
+    assert_eq!(table.percent_quarters(1000, 100, roll(6, 6)), Some(75));
+    assert_eq!(table.broken_points(1, 10), Some(0));
+    assert_eq!(table.broken_points(1, 25), Some(1));
+}
+/// Cases: land:21.38
+#[test]
+fn malformed_breakdown_bands_and_dice_report_the_field_and_file() {
+    use cna_tables::land::breakdown::BreakdownTable;
+    let err = bind_edited::<BreakdownTable>("land/21.38-", |s| {
+        replace_once(s, "breakdown_points_min = 11", "breakdown_points_min = 12")
+    })
+    .unwrap_err()
+    .to_string();
+    assert!(
+        err.contains("21.38") && err.contains("column[2].breakdown_points"),
+        "{err}"
+    );
+    let err = bind_edited::<BreakdownTable>("land/21.38-", |s| {
+        replace_once(s, "dice = [11, 42]", "dice = [11, 43]")
+    })
+    .unwrap_err()
+    .to_string();
+    assert!(
+        err.contains("21.38") && err.contains("row[1].cells.dice"),
+        "{err}"
+    );
+}

@@ -4,6 +4,7 @@ pub mod administration;
 pub mod anti_armor;
 pub mod assault;
 pub mod barrage;
+pub mod breakdown;
 pub mod capability;
 pub mod combat;
 mod grid;
@@ -21,6 +22,7 @@ crate::tables_group! {
         anti_armor: anti_armor::AntiArmorTable,
         close_assault: assault::CloseAssaultTable,
         morale: morale::MoraleTable,
+        breakdown: breakdown::BreakdownTable,
         capability_expenditure: capability::CapabilityExpenditure,
         initiative_ratings: administration::InitiativeRatings,
         terrain_effects: terrain::TerrainEffects,
