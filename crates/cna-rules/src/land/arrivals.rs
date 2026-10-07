@@ -92,6 +92,15 @@ fn note(cx: &mut Cx<'_>, side: Side, text: String) {
         GameEvent::Note { text },
     ));
 }
+/// Notes may identify only the owning side's counter and its known position.
+/// Cases: land:3.6, land:20.12, land:20.84
+fn unit_note(cx: &mut Cx<'_>, side: Side, id: &UnitId, location: &Location, text: String) {
+    let mut event = EngineEvent::new(Audience::Side(side), GameEvent::Note { text }).about(id);
+    if let Some(hex) = location.hex() {
+        event = event.at(hex);
+    }
+    cx.emit(event);
+}
 fn options(items: Vec<(String, String)>) -> ActionSpace {
     ActionSpace::new(ActionSchema::Choice {
         options: items
@@ -324,9 +333,11 @@ fn advance_arrivals(
                         detail: format!("no capacity-valid arrival location for {unit}"),
                     });
                 }
-                note(
+                unit_note(
                     cx,
                     b.side,
+                    unit,
+                    &state.land.units[unit].location,
                     format!(
                         "{unit} awaits arrival placement: no verified capacity-valid destination at {} (land:20.14).",
                         b.city
@@ -414,9 +425,11 @@ fn place(state: &mut State, id: &UnitId, destination: Location, cx: &mut Cx<'_>)
         .entry(arrival_stage)
         .or_default()
         .insert(id.clone());
-    note(
+    unit_note(
         cx,
         side,
+        id,
+        &state.land.units[id].location,
         format!("{id} has arrived without debarkation CP expenditure (land:20.12)."),
     );
 }
@@ -643,9 +656,11 @@ fn prepare_withdrawals(
                             detail: format!("{named} has no verified numerical TOE maximum"),
                         });
                     }
-                    note(
+                    unit_note(
                         cx,
                         schedule.file.side,
+                        &named,
+                        &state.land.units[&named].location,
                         format!(
                             "Withdrawal {named} is unassessed because its printed TOE maximum is missing (land:20.85); no strength or elimination is invented."
                         ),
@@ -737,6 +752,7 @@ fn prepare_withdrawals(
                 for unit in &w.selected {
                     accompanying += weights.value(state.land.units[unit].trucks);
                     let trucks = state.land.units[unit].trucks;
+                    let departure = state.land.units[unit].location.clone();
                     if trucks.total() > 0 {
                         crate::logistics::box_handling::prepare_division(
                             state,
@@ -754,14 +770,17 @@ fn prepare_withdrawals(
                     u.transport_trucks = Trucks::default();
                     state.logistics.unit_supply.remove(unit);
                     state.land.arrivals.withdrawn_units.insert(unit.clone());
-                    note(
+                    unit_note(
                         cx,
                         schedule.file.side,
+                        unit,
+                        &departure,
                         format!("{unit} has been withdrawn (land:20.84)."),
                     );
                 }
                 for unit in &w.eliminated {
                     let trucks = state.land.units[unit].trucks;
+                    let departure = state.land.units[unit].location.clone();
                     if trucks.total() > 0 {
                         crate::logistics::box_handling::prepare_division(
                             state,
@@ -779,9 +798,11 @@ fn prepare_withdrawals(
                     u.transport_trucks = Trucks::default();
                     state.logistics.unit_supply.remove(unit);
                     state.land.arrivals.withdrawn_units.remove(unit);
-                    note(
+                    unit_note(
                         cx,
                         schedule.file.side,
+                        unit,
+                        &departure,
                         format!(
                             "{unit} is permanently eliminated after missing the required withdrawal location or TOE (land:20.83)."
                         ),
@@ -1205,9 +1226,11 @@ pub(crate) fn answer(
                 .find(|l| crate::setup::placement::destination_id(l).as_deref() == Some(selected))
                 .ok_or_else(|| illegal("not a legal arrival destination"))?;
             if let Some(case) = valid_destination(content, state, &unit, &location, strict)? {
-                note(
+                unit_note(
                     cx,
                     b.side,
+                    &unit,
+                    &location,
                     format!("Arrival stacking at {selected} is unassessed ({case})."),
                 );
             }
@@ -1602,6 +1625,60 @@ mod tests {
         game
     }
 
+    /// Cases: land:3.6, land:20.12, land:20.84
+    #[test]
+    fn arrival_and_withdrawal_note_locators_are_owner_only_and_use_known_positions() {
+        let (mut c, mut game) = fixture();
+        let id = UnitId::new("cw.4_indian_div.5th_indian_bde_hq");
+        let cairo = city_domain(&c, "cairo").unwrap()[0].clone();
+        let hex = cairo.hex().unwrap().to_string();
+        let mut events = vec![];
+        let mut rng = CampaignRng::from_state(&game.rng);
+        place(
+            &mut game.state,
+            &id,
+            cairo,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        );
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].unit_id.as_deref(), Some(id.as_str()));
+        assert_eq!(events[0].hex.as_deref(), Some(hex.as_str()));
+        assert!(!events[0].visible_to(Perspective::Side(Side::Axis)));
+        for schedule in &mut c.units.schedules {
+            schedule.arrivals.clear();
+            for row in &mut schedule.withdrawals {
+                row.units.retain(|u| u.unit == id);
+                for unit in &mut row.units {
+                    unit.subtree = false;
+                }
+            }
+            schedule.withdrawals.retain(|r| !r.units.is_empty());
+        }
+        game.state.land.units.get_mut(&id).unwrap().trucks.medium = 10;
+        at(&mut game, 13, 3);
+        events.clear();
+        prepare_withdrawals(
+            &c,
+            &mut game.state,
+            false,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        )
+        .unwrap();
+        assert_eq!(game.state.land.units[&id].location, Location::NotArrived);
+        let departure = events
+            .iter()
+            .find(|e| e.unit_id.as_deref() == Some(id.as_str()))
+            .unwrap();
+        assert_eq!(departure.hex.as_deref(), Some(hex.as_str()));
+        assert_eq!(departure.audience, Audience::Side(Side::Commonwealth));
+        assert!(!departure.visible_to(Perspective::Side(Side::Axis)));
+    }
     /// Cases: land:4.43, land:20.11
     #[test]
     fn subtree_exact_stage_and_hq_only_are_distinct_and_less_removes_full_trees() {
