@@ -1,0 +1,17 @@
+# map-terrain-edges-0008: one hundred inland shared sides
+
+100 fresh physical pairs;1400 observations:8present1198absent194unresolved. Candidate masks1206; pipeline unknown100,slope47/ridge47.
+
+Eight directly observed single gray dashed tracks: D2731/D2831, D2732/D2733, D2733/D2833, D2831/D2931, D2833/E2901, D2931/D3031, D3015/D3115, D3016/D3117.
+
+No positive directional sides or high endpoints. Actual neighboring transport crossings are distinguished from selected side crossings.
+
+Exact pairs: D2717/D2718, D2718/D2817, D2726/D2727, D2727/D2728, D2727/D2826, D2727/D2827, D2728/D2729, D2728/D2827, D2728/D2828, D2729/D2730, D2729/D2828, D2729/D2829, D2730/D2731, D2730/D2829, D2730/D2830, D2731/D2732, D2731/D2830, D2731/D2831, D2732/D2733, D2732/D2831, D2732/D2832, D2733/D2832, D2733/D2833, D2733/E2701, D2817/D2818, D2817/D2918, D2826/D2827, D2826/D2927, D2827/D2828, D2827/D2927, D2827/D2928, D2828/D2829, D2828/D2928, D2828/D2929, D2829/D2830, D2829/D2929, D2829/D2930, D2830/D2831, D2830/D2930, D2830/D2931, D2831/D2832, D2831/D2931, D2831/D2932, D2832/D2833, D2832/D2932, D2832/D2933, D2833/D2933, D2833/E2701, D2833/E2801, D2833/E2901, D2911/D3010, D2917/D2918, D2918/D3017, D2926/D2927, D2927/D2928, D2927/D3026, D2927/D3027, D2928/D2929, D2928/D3027, D2928/D3028, D2929/D2930, D2929/D3028, D2929/D3029, D2930/D2931, D2930/D3029, D2930/D3030, D2931/D2932, D2931/D3030, D2931/D3031, D2932/D2933, D2932/D3031, D2932/D3032, D2933/D3032, D2933/D3033, D2933/E2901, D3011/D3111, D3011/D3112, D3012/D3112, D3012/D3113, D3013/D3113, D3013/D3114, D3014/D3114, D3014/D3115, D3015/D3115, D3015/D3116, D3016/D3017, D3016/D3116, D3016/D3117, D3017/D3018, D3017/D3117, D3017/D3118, D3018/D3118, D3018/D3119, D3019/D3119, D3019/D3120, D3020/D3120, D3020/D3121, D3021/D3121, D3021/D3122, D3022/D3122
+
+No gray escarpment band follows the selected actual segments. Neighboring contour incidence is not assigned to the selected side.
+
+Unresolved slope/ridge identities or incidence: D2729/D2730, D2729/D2828, D2729/D2829, D2730/D2829, D2733/D2832, D2733/D2833, D2733/E2701, D2817/D2818, D2817/D2918, D2826/D2827, D2826/D2927, D2827/D2828, D2827/D2927, D2827/D2928, D2828/D2829, D2828/D2928, D2828/D2929, D2829/D2929, D2829/D2930, D2832/D2833, D2833/D2933, D2833/E2701, D2833/E2801, D2833/E2901, D2917/D2918, D2918/D3017, D2927/D2928, D2931/D2932, D2931/D3031, D2932/D2933, D2932/D3031, D2932/D3032, D2933/D3032, D2933/D3033, D2933/E2901, D3014/D3114, D3014/D3115, D3015/D3115, D3016/D3017, D3016/D3116, D3016/D3117, D3017/D3117, D3018/D3118, D3018/D3119, D3019/D3119, D3019/D3120, D3020/D3120. Full or partial ochre bands, ambiguous fringes and junction contacts do not confidently establish exact TEC slope versus ridge; both remain unknown. No unresolved identity supplies a mask or high endpoint. Pipeline unkeyed in TEC remains unknown on100 sides.
+
+All actual sides and both vertices directly inspected on13 unmarked native4x sheets and separate locators against TEC, followed by57 selected native8x crops. No paired-road, blue tied-rail, blue river, wadi or border ink on these selected sides. Marine negatives derive from directly visible land along each actual side, not endpoint terrain labels.
+
+One observer; source error and1979equivalence unmeasured. No independent full-batch agreement, lake, inferred route, complete halo/action claim. Terrain/coastal unknowns remain separate. Source pixels and inspection evidence stay outside clone in runs/map-terrain-edges-0008/source-review-draft.json. Later source evidence excluded from snapshot.
