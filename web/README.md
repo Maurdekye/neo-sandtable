@@ -547,3 +547,36 @@ counts do not create duplicate forms. The capture checks every event sequence, p
 lag and resumes from durable replay, and writes a fixture only after reaching Finished with the
 complete event tail. The manual real-browser proof is separate from the default checks; its
 bounded guard is documented beside the test with the completed local measurement.
+
+
+## Printed enemy counter faces
+
+The board and seat console render the enemy UnitViews actually received, including their
+printed counter abbreviations and stacking points (`land:3.62`, `docs/engine.md` rule 9).
+These are visible counters, not their attached contents. Enemy rows show printed-face fields;
+no strength, stocks, capability, parent or private status is inferred. A breakdown counter
+shows its marker face without vehicle counts. Missing printed points remain unknown. Shared
+counter art is our generated SVG, with all received abbreviations escaped as literal text.
+
+Stack updates use the disclosed IDs and counts. Public UnitMoved paths animate a known
+counter; a later UnitUpdated can introduce or relocate a face without inventing a route.
+A UnitRemoved with no reason is a visibility update, not a combat loss. The event feed and
+stage overview distinguish counter/stack changes from reasoned losses and group an enemy
+move by its received counter when no formation parent is disclosed.
+
+`e2e/faces.spec.ts` is a receive-only real-browser proof with a fresh, paused Graziani campaign.
+The trusted harness binds one human seat outside the pages; the side board and seat console
+receive 16 enemy faces in the measured initial view. It checks the omission of attached and
+off-map enemies against the trusted harness's full view, then inspects 1 RTR at C3520 through
+the console's own seat endpoint. The page makes only authorized GET requests, uses no storage
+and receives no operator credential. The proof makes no paid calls. Live public-path and
+state-sync replacement behavior is covered separately by stream/timeline unit regressions.
+
+Measured on 2026-10-07, commit 89babc0, production build, 1,800 x 1,050 headless Chromium with
+SwiftShader, both pages open on this shared Windows machine: the 7,023-hex map has road/side
+layers, unknown-road hatching and terrain coverage enabled. Five one-second settled samples
+were board 31/27/40/29/20 FPS (median 29), console 29/22/12/29/22 FPS (median 22). These are
+software-renderer observations of this paused view, not a hardware or continuous-play guarantee.
+Startup/selection samples were lower (4 and 14 FPS). The proof and screenshots stay in the
+board agent's scratch folder: printed-faces-browser-verification.json,
+board-enemy-printed-faces.png and console-enemy-printed-faces.png.
