@@ -26,6 +26,7 @@
 //! Interpretations: interp:airlog-0001
 
 pub mod attrition;
+pub mod baseline;
 pub mod capacity;
 pub mod convoys;
 pub mod distribution;

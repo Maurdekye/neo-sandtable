@@ -1,5 +1,6 @@
 //! Scripted movement choices use only own reachability and public enemy stack positions.
 //! Pass a controller-local RNG, never the campaign's adjudication RNG.
+pub use crate::logistics::baseline::logistics_orders;
 use crate::{
     CnaContent, State,
     land::{movement, zoc},
