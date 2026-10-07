@@ -126,7 +126,9 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    `UnitRemoved` with a reason. Address them by who may know: own facts to `Audience::Side(side)`,
    public facts to `Audience::Public` (a map counter's move is public: the enemy watches it),
    and a redacted copy for the enemy to `Audience::SideOnly(enemy)` beside the full one to
-   `Audience::Side(owner)`. In tests, `testkit::assert_face` and `assert_face_only` check that an
+   `Audience::Side(owner)`. Judge a move's visibility over the whole move, not at its
+   destination alone: a counter that joins its parent's hex at the end, and so leaves the map,
+   still shows the enemy the path it travelled. In tests, `testkit::assert_face` and `assert_face_only` check that an
    enemy unit view or `inspect` answer carries a printed face and nothing else.
 10. **Test it** in the module's `#[cfg(test)]` block, on the real Graziani content
     (`CnaContent::load(&cna_content::repo_data_dir(), "graziani")`; see `src/tests.rs` for a
