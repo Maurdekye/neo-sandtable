@@ -1,0 +1,738 @@
+[batch]
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+id = "map-terrain-0009"
+observer = "map-terrain"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "E2805,E2806,E2807,E2808,E2809,E2810,E2811,E2812,E2813,E2814,E2901,E2902,E2903,E2904,E2905,E2906,E2907,E2908,E2909,E2910,E2911,E2912,E2913,E2914,E3001,E3002,E3003,E3004,E3005,E3006,E3007,E3008,E3009,E3010,E3011,E3012,E3013,E3014,E3101,E3102,E3103,E3104,E3105,E3106,E3107,E3108,E3109,E3110,E3111,E3112,E3113,E3114,E3201,E3205,E3206,E3207,E3208,E3209,E3210,E3211,E3212,E3213,E3214,E3301,E3307,E3308,E3309,E3310,E3311,E3312,E3313,E3314,E3408,E3409,E3410,E3411,E3412,E3413,E3414,E3510,E3511,E3512,E3513,E3514,E3611,E3612,E3614,E3713,E3813,E3814,E3914"
+notes = "Every complete cell directly inspected against native2021source and TEC.png; 91 inspected, 81 accepted, 10 deferred. Land predominance and explicit minor substrates follow map-0003; coastal domain follows map-0002. Contour ink is separate from substrate. Source crops remain outside repo. Single-observer acceptance; parent second looks cover only explicitly bounded family checks in individual notes, no population error or1979equivalence. No classifier, new place, city selector, edge or facility acceptance."
+
+[[hex]]
+hex_id = "E2805"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2806"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2807"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2808"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2809"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2810"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2811"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2812"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2813"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2814"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2901"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2902"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2903"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2904"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2905"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2906"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2907"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2908"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2909"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2910"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2911"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2912"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2913"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E2914"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3001"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3002"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3003"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3004"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3005"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3006"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3007"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3008"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3009"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3010"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3011"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3012"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3013"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3014"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3101"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3102"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Yellow angular network on beige land identifies salt marsh against TEC. Salt marsh clearly predominates among land; minor substrate: clear in the smaller broad cream portion. Sea area is excluded from the predominance decision. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3103"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3104"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3105"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed. A tiny readable cream land tip lies just inside the southeastern lower edge; direct enlargement prevents treating this majority-water cell as entirely sea."
+
+[[hex]]
+hex_id = "E3106"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3107"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Visible coastal land is predominantly cream clear, with minor rough in the smaller broad beige patch near the southeastern side. Blue water also lies inside the hex. Ragged edge and printed route ink remain separate from substrate. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3108"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the complete land hex against TEC. Minor substrate: clear in the smaller broad cream interior region. Ragged olive bands are contour graphics, not minor mountain terrain; no edge-kind conclusion."
+
+[[hex]]
+hex_id = "E3109"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the complete land hex against TEC. Minor substrate: clear in the smaller broad cream interior region. Ragged olive bands are contour graphics, not minor mountain terrain; no edge-kind conclusion."
+
+[[hex]]
+hex_id = "E3110"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3111"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3112"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3113"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3114"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3201"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3205"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3206"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3207"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed. Olive ragged bands follow the shared sides and have contour splashes; they do not establish mountain substrate or an edge feature kind."
+
+[[hex]]
+hex_id = "E3208"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed. Olive ragged bands follow the shared sides and have contour splashes; they do not establish mountain substrate or an edge feature kind."
+
+[[hex]]
+hex_id = "E3209"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the complete land hex against TEC. Minor substrate: clear in the smaller broad cream interior region. Ragged olive bands are contour graphics, not minor mountain terrain; no edge-kind conclusion."
+
+[[hex]]
+hex_id = "E3210"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough and cream clear substrate occupy comparable parts of the complete hex; no confidently predominant terrain. Known land, terrain deferred under map-0003. Contour and facility graphics remain separate."
+
+[[hex]]
+hex_id = "E3211"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3212"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Training-area figure graphics remain facilities, separate from terrain."
+
+[[hex]]
+hex_id = "E3213"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Training-area figure graphics remain facilities, separate from terrain."
+
+[[hex]]
+hex_id = "E3214"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad flat gray-green land patch is directly visible, with minor cream clear ground. This observer cannot confidently bind the flat patch to a TEC terrain class; color alone is insufficient. Terrain deferred. Parent independently left E3214 family unresolved only; no agreement claim for E3514/E3614."
+
+[[hex]]
+hex_id = "E3301"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3307"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3308"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3309"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed. Olive ragged bands follow the shared sides and have contour splashes; they do not establish mountain substrate or an edge feature kind."
+
+[[hex]]
+hex_id = "E3310"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed. Olive ragged bands follow the shared sides and have contour splashes; they do not establish mountain substrate or an edge feature kind."
+
+[[hex]]
+hex_id = "E3311"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Green parallel short strokes and grass-like icons occupy the land interior. Swamp is a visual hypothesis, but the TEC key has a different stroke structure and no binding has been established. Terrain deferred. Parent bounded unresolved second look covers E3311/E3312 only; no agreement claim for E3412..14."
+
+[[hex]]
+hex_id = "E3312"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Green parallel short strokes and grass-like icons occupy the land interior. Swamp is a visual hypothesis, but the TEC key has a different stroke structure and no binding has been established. Terrain deferred. Parent bounded unresolved second look covers E3311/E3312 only; no agreement claim for E3412..14."
+
+[[hex]]
+hex_id = "E3313"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed."
+
+[[hex]]
+hex_id = "E3314"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Direct native4x check shows the upper blue channel on or outside the printed top side, without a discernible open-water region inside this cell. Parent bounded crop likewise reports chiefly outside; no coastal flag inferred from channel ink touching a side."
+
+[[hex]]
+hex_id = "E3408"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3409"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3410"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed. Olive ragged bands follow the shared sides and have contour splashes; they do not establish mountain substrate or an edge feature kind."
+
+[[hex]]
+hex_id = "E3411"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed. Olive ragged bands follow the shared sides and have contour splashes; they do not establish mountain substrate or an edge feature kind."
+
+[[hex]]
+hex_id = "E3412"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Green parallel short strokes and grass-like icons occupy the land interior. Swamp is a visual hypothesis, but the TEC key has a different stroke structure and no binding has been established. Terrain deferred. Parent bounded unresolved second look covers E3311/E3312 only; no agreement claim for E3412..14."
+
+[[hex]]
+hex_id = "E3413"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Green parallel short strokes and grass-like icons occupy the land interior. Swamp is a visual hypothesis, but the TEC key has a different stroke structure and no binding has been established. Terrain deferred. Parent bounded unresolved second look covers E3311/E3312 only; no agreement claim for E3412..14. Land and blue water are directly visible inside the full printed boundary. A later direct full-cell and unmarked regional native-source re-view shows a broad shore basin and branching blue channels toward the Delta, but does not bind the water inside this cell to sea rather than lake or river. Known land is observed here; coastal domain remains unknown, so flags are empty to withhold its mask under the current schema. Mediterranean connectivity alone is insufficient. Terrain class, water-body identity, naval permission and all hexsides remain unresolved; no lake record or mask is introduced."
+
+[[hex]]
+hex_id = "E3414"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Green parallel short strokes and grass-like icons occupy the land interior. Swamp is a visual hypothesis, but the TEC key has a different stroke structure and no binding has been established. Terrain deferred. Parent bounded unresolved second look covers E3311/E3312 only; no agreement claim for E3412..14. Land and blue water are directly visible inside the full printed boundary. A later direct full-cell and unmarked regional native-source re-view shows a broad shore basin and branching blue channels toward the Delta, but does not bind the water inside this cell to sea rather than lake or river. Known land is observed here; coastal domain remains unknown, so flags are empty to withhold its mask under the current schema. Mediterranean connectivity alone is insufficient. Terrain class, water-body identity, naval permission and all hexsides remain unresolved; no lake record or mask is introduced."
+
+[[hex]]
+hex_id = "E3510"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3511"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3512"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed. Training-area figure graphics remain facilities, separate from terrain."
+
+[[hex]]
+hex_id = "E3513"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3514"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Broad flat gray-green land patch is directly visible, with minor cream clear ground. This observer cannot confidently bind the flat patch to a TEC terrain class; color alone is insufficient. Terrain deferred. Parent independently left E3214 family unresolved only; no agreement claim for E3514/E3614. Land and blue water are directly visible inside the full printed boundary. A later direct full-cell and unmarked regional native-source re-view shows a broad shore basin and branching blue channels toward the Delta, but does not bind the water inside this cell to sea rather than lake or river. Known land is observed here; coastal domain remains unknown, so flags are empty to withhold its mask under the current schema. Mediterranean connectivity alone is insufficient. Terrain class, water-body identity, naval permission and all hexsides remain unresolved; no lake record or mask is introduced."
+
+[[hex]]
+hex_id = "E3611"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3612"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3614"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Broad flat gray-green land patch is directly visible, with minor cream clear ground. This observer cannot confidently bind the flat patch to a TEC terrain class; color alone is insufficient. Terrain deferred. Parent independently left E3214 family unresolved only; no agreement claim for E3514/E3614. Land and blue water are directly visible inside the full printed boundary. A later direct full-cell and unmarked regional native-source re-view shows a broad shore basin and branching blue channels toward the Delta, but does not bind the water inside this cell to sea rather than lake or river. Known land is observed here; coastal domain remains unknown, so flags are empty to withhold its mask under the current schema. Mediterranean connectivity alone is insufficient. Terrain class, water-body identity, naval permission and all hexsides remain unresolved; no lake record or mask is introduced."
+
+[[hex]]
+hex_id = "E3713"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Visible land fragment contains blue building-block graphics matching the TEC city family. Exact city extent and matching facilities are reserved to cartographer; no new city selector or place record is established by this review. Terrain deferred pending that extent review; other layers unreviewed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3813"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
+
+[[hex]]
+hex_id = "E3814"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct complete-cell review against TEC: cream clear substrate predominates in the visible land interior. Printed routes, contours, names and facility markers remain separate; no distinct minor substrate observed. Land and broad blue water are both visible inside the full printed boundary; land/coastal recorded without majority-water classification. Water-body identity, naval permission and all hexsides remain unreviewed."
+
+[[hex]]
+hex_id = "E3914"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water occupies the full cell. Nearby land, shore or facility graphics lie outside the printed sides. No visible land fragment inside; other layers unreviewed."
