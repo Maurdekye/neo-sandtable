@@ -175,8 +175,10 @@ uses `state: "OFFLINE_PRESET_GT1_BOUNDARY"`, `complete: true`, `final_clock` and
 transcripts, synthetic usage and the paused boundary. Create the release file only
 after capturing evidence; its contents are ignored. A separate 120-second browser
 acknowledgement guard then shuts the helper down and fails if acknowledgement was
-missing. Omit both variables for a pure server measurement. Remove the private
-capability file in the browser helper's `finally` cleanup.
+missing. Omit both variables for a pure server measurement. The Rust producer removes
+both fresh handoff files after server shutdown on success, failure or missing
+acknowledgement, and reports cleanup errors. An unwinding guard also attempts removal.
+The browser helper retains its own `finally` cleanup as a second cleanup path.
 
 The new ignored-test hang guard is provisional, based on the measured local run;
 recalibrate it to about twice its first completed CI duration. Default tests and

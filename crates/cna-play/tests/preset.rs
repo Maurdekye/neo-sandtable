@@ -29,6 +29,117 @@ use std::{
 };
 use tokio::sync::watch;
 
+// The producer owns these fresh, private handoff paths even if no browser starts.
+struct PrivateHandoff {
+    ready: Option<PathBuf>,
+    release: Option<PathBuf>,
+}
+impl PrivateHandoff {
+    fn new(ready: Option<PathBuf>, release: Option<PathBuf>) -> Result<Self, String> {
+        if ready.is_some() != release.is_some() || (ready.is_some() && ready == release) {
+            return Err("private handoff needs two distinct fresh paths".into());
+        }
+        for path in ready.iter().chain(release.iter()) {
+            if !path.is_absolute() {
+                return Err("private handoff paths must be absolute".into());
+            }
+            match std::fs::symlink_metadata(path) {
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                _ => return Err("private handoff paths must be fresh".into()),
+            }
+        }
+        Ok(Self { ready, release })
+    }
+    fn write(&self, value: &Value) -> Result<(), String> {
+        if let Some(path) = &self.ready {
+            std::fs::write(path, serde_json::to_vec(value).map_err(|e| e.to_string())?)
+                .map_err(|e| format!("private ready write failed: {e}"))?;
+        }
+        Ok(())
+    }
+    fn cleanup(&self) -> Result<(), String> {
+        let mut errors = Vec::new();
+        for (name, path) in [("ready", &self.ready), ("release", &self.release)] {
+            if let Some(path) = path {
+                match std::fs::remove_file(path) {
+                    Ok(()) => {}
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(e) => errors.push(format!("private {name} cleanup failed: {e}")),
+                }
+            }
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors.join("; "))
+        }
+    }
+}
+impl Drop for PrivateHandoff {
+    fn drop(&mut self) {
+        // Normal completion checks cleanup errors after server shutdown. Also
+        // remove artifacts during unwinding, without logging their contents.
+        let _ = self.cleanup();
+    }
+}
+
+#[test]
+fn private_handoff_removes_success_no_ack_and_unwind_artifacts() {
+    for outcome in ["success", "no_ack", "unwind"] {
+        let root = tempfile::tempdir().unwrap();
+        let ready = root.path().join("ready.json");
+        let release = root.path().join("release");
+        let handoff = PrivateHandoff::new(Some(ready.clone()), Some(release.clone())).unwrap();
+        handoff
+            .write(&json!({"board_url":"private synthetic capability"}))
+            .unwrap();
+        if outcome == "success" {
+            std::fs::write(&release, []).unwrap();
+        }
+        if outcome == "unwind" {
+            assert!(
+                std::panic::catch_unwind(move || {
+                    let _handoff = handoff;
+                    panic!("synthetic helper failure");
+                })
+                .is_err()
+            );
+        } else {
+            handoff.cleanup().unwrap();
+            drop(handoff);
+        }
+        assert!(!ready.exists() && !release.exists(), "{outcome}");
+    }
+}
+
+#[test]
+fn private_handoff_reports_failures_and_never_owns_existing_files() {
+    let root = tempfile::tempdir().unwrap();
+    let ready = root.path().join("ready.json");
+    let release = root.path().join("release");
+    std::fs::write(&ready, b"existing").unwrap();
+    assert!(PrivateHandoff::new(Some(ready.clone()), Some(release.clone())).is_err());
+    assert_eq!(std::fs::read(&ready).unwrap(), b"existing");
+    std::fs::remove_file(&ready).unwrap();
+    let handoff = PrivateHandoff::new(Some(ready.clone()), Some(release.clone())).unwrap();
+    handoff.write(&json!({"state":"incomplete"})).unwrap();
+    // A filesystem error must remain a failure while cleanup still removes READY.
+    std::fs::create_dir(&release).unwrap();
+    assert!(
+        handoff
+            .cleanup()
+            .unwrap_err()
+            .contains("release cleanup failed")
+    );
+    assert!(!ready.exists());
+    std::fs::remove_dir(&release).unwrap();
+    handoff.cleanup().unwrap();
+    let failed =
+        PrivateHandoff::new(Some(root.path().join("absent/ready")), Some(release)).unwrap();
+    assert!(failed.write(&json!({"state":"ready"})).is_err());
+    failed.cleanup().unwrap();
+}
+
 #[derive(Default)]
 struct Trace {
     active: usize,
@@ -375,6 +486,11 @@ fn preset() -> cna_play::config::LaunchConfig {
 #[ignore = "slow: complete ten-seat inert preset game-turn; no provider calls"]
 async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
     use cna_core::visibility::Perspective;
+    let handoff = PrivateHandoff::new(
+        std::env::var_os("CNA_PRESET_BOARD_READY").map(PathBuf::from),
+        std::env::var_os("CNA_PRESET_BOARD_RELEASE").map(PathBuf::from),
+    )
+    .unwrap();
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
     let Command::Play(config) = parse_args(
@@ -404,17 +520,10 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
     let (stop, rx) = watch::channel(false);
     // Optional trusted browser handoff. The operator URL never enters a driver,
     // transcript, public report or stdout; the helper consumes this private file in memory.
-    let ready = std::env::var_os("CNA_PRESET_BOARD_READY").map(PathBuf::from);
-    let release = std::env::var_os("CNA_PRESET_BOARD_RELEASE").map(PathBuf::from);
-    if ready.is_some() {
-        assert!(release.is_some(), "browser release path required");
-    }
-    if let Some(path) = &ready {
-        std::fs::write(path, serde_json::to_vec(&json!({
+    let initial_handoff = handoff.write(&json!({
             "state":"ready","board_url":demo.board_url(),"campaign_id":demo.campaign_id(),
             "usage_basis":"synthetic inert usage: 10 input/5 output/0.01 USD per completed fake window; provider/native calls zero"
-        })).unwrap()).unwrap();
-    }
+        }));
     for seat in SeatId::all() {
         demo.sink.system(seat, "OFFLINE PRESET: all driver usage is synthetic; no provider or native model process is running.");
     }
@@ -425,7 +534,9 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
     // 174.86 s (preset-full-third-measurement-fixed.log, 2026-10-07). Recalibrate
     // to about 2x the first completed CI duration; no CI duration exists yet.
     // Send graceful stop and join supervisors, rather than canceling cleanup.
-    let result = {
+    let result = if let Err(error) = initial_handoff {
+        Err(error)
+    } else {
         let play = demo.play_durable(&mut seats, rx);
         tokio::pin!(play);
         tokio::select! {
@@ -542,16 +653,16 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
     };
     let complete = candidate && fence_repreview;
     let mut browser_acknowledged = None;
-    if let Some(path) = &ready {
-        std::fs::write(path, serde_json::to_vec(&json!({
+    let final_handoff = handoff.write(&json!({
             "state":if complete { "OFFLINE_PRESET_GT1_BOUNDARY" } else { "incomplete" },
             "board_url":demo.board_url(),"campaign_id":demo.campaign_id(),"complete":complete,
             "final_clock":clock,"fence_repreview":fence_repreview,
             "usage_basis":"synthetic inert usage: 10 input/5 output/0.01 USD per completed fake window; provider/native calls zero"
-        })).unwrap()).unwrap();
+        }));
+    if handoff.ready.is_some() && final_handoff.is_ok() {
         // Browser acknowledgement is independent of game/model deadlines. This
         // optional 120 s cleanup guard applies only to the local evidence helper.
-        let release = release.as_ref().unwrap();
+        let release = handoff.release.as_ref().unwrap();
         let acknowledged = tokio::time::timeout(Duration::from_secs(120), async {
             while !release.exists() {
                 tokio::time::sleep(Duration::from_millis(100)).await;
@@ -572,7 +683,10 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
         })
         .collect();
     let cleanup = demo.shutdown().await;
-    let combined = cna_play::combine_results(result, cleanup);
+    let combined = cna_play::combine_results(
+        cna_play::combine_results(result, cleanup),
+        cna_play::combine_results(final_handoff, handoff.cleanup()),
+    );
     let t = trace.lock().unwrap();
     let rows: Vec<_> = SeatId::all().map(|seat| {
         let record = &accounting.seats[&seat];
