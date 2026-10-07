@@ -28,15 +28,13 @@ fn request(profile: &str, mode: &str, paused: bool) -> CreateRequest {
         paused,
     }
 }
-// CI78445da/run37558346523 completed pre-logistics-policy legal_random237.185s,
-// pass_when_possible104.634s and HTTP/legal_random240.639s. The new policy resolved
-// 5241 commands locally in392.027s (direct) and384.578s (HTTP). Per the lead ruling,
-// mover ceilings temporarily use2x expected CI time: local completion x observed
-// 1.4 CI/local ratio, rounded up. Recalibrate after logistics batching and the next
-// completed CI report. Pass keeps2x its own completed CI measurement. Defaults unchanged.
-const SLOW_RANDOM_LIMIT: Duration = Duration::from_secs(1100);
-const SLOW_PASS_LIMIT: Duration = Duration::from_secs(210);
-const SLOW_HTTP_LIMIT: Duration = Duration::from_secs(1080);
+// Completed CI f16f459/run37564332764: legal_random397.550s, pass_when_possible191.842s,
+// HTTP/legal_random423.796s. Ignored-only ceilings are about twice each completed time,
+// rounded up. This measurement predates force-assignment and mandatory breakdown windows;
+// recalibrate against their next completed CI report. Default limits are unchanged.
+const SLOW_RANDOM_LIMIT: Duration = Duration::from_secs(800);
+const SLOW_PASS_LIMIT: Duration = Duration::from_secs(400);
+const SLOW_HTTP_LIMIT: Duration = Duration::from_secs(850);
 // Whole-roster benchmarks calibrate one campaign at a time on small hosted runners.
 static SLOW_CAMPAIGN_SLOT: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 

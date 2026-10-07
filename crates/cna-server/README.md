@@ -166,15 +166,12 @@ mixed sandbox/CNA recovery. No provider invocation is needed for these tests.
 Default CNA checks use bounded decision windows, including an accepted real-unit move and
 mid-run recovery of all perspective views, counters, transcripts and adjudication RNG. Whole
 Graziani campaigns are marked `slow: whole campaign`; run them with
-`cargo test -p cna-server -- --ignored`. Completed server CI on commit78445da
-(run37558346523) measured legal-random237.185 seconds, pass-when-possible104.634
-seconds and HTTP legal-random240.639 seconds before the logistics baseline route.
-With feeding and watering policies, local legal-random completed5241 commands in
-392.027 seconds directly and384.578 seconds through HTTP. Temporary ignored-only
-ceilings use twice the expected CI duration (local time multiplied by the observed
-1.4 CI/local ratio), rounded up to1100 seconds directly and1080 through HTTP. The
-pass policy keeps210 seconds, twice its completed CI measurement. Recalibrate after
-logistics batching and the next completed CI report; default limits stay unchanged.
+`cargo test -p cna-server -- --ignored`. Completed server CI on commitf16f459
+(run37564332764) measured legal-random397.550 seconds for3407commands,
+pass-when-possible191.842 seconds for1735commands, and HTTP legal-random423.796 seconds.
+Ignored-only ceilings are800,400 and850 seconds respectively, about twice each completed
+measurement. Those runs predate force-assignment and mandatory breakdown windows; recalibrate
+from their next completed CI report. Default and paid-driver limits stay unchanged.
 The bounded mover test prints engine, writer (including engine and SQLite), and all-perspective
 projection timings; it uses real unit data with a small test map rather than a full-roster benchmark.
 
@@ -194,9 +191,12 @@ These cumulative diagnostics reset on recovery and are available only through th
 in-process handle, with no HTTP, WebSocket or MCP tool exposure. They do not alter game state,
 RNG, input pins, or the requirement to commit accepted commands before acknowledgment.
 
-The completed CI campaigns spent about57–64% of wall time in projections and
-27–29% in the durable writer. Legal-random used2936 accepted commands, with durable
-writes averaging21.6–22.6 ms per command; its739 logistics decisions preceded the
-logistics baseline and batching changes. Reusing unchanged perspective and seat
-projections is the leading performance follow-up, subject to privacy and
-invalidation tests. This is deferred; durability and per-command acknowledgment stay unchanged.
+Completed CI f16f459 spent about60% of wall time in projections and32% in the durable
+writer. Legal-random averaged37.0ms of durable writer work and70.1ms of projection work
+per accepted command (3407 total). Engine evaluation was20.336s, writer126.057s,
+projections238.672s and controller selection12.562s over397.550s wall time.
+The pass campaign measured12.064/61.042/117.679/1.141s in those categories;
+HTTP legal-random measured21.569/133.191/255.733/13.347s. Reusing unchanged
+perspective and seat projections remains the leading performance follow-up, subject
+to privacy and invalidation tests. This is deferred; durability and per-command
+acknowledgment stay unchanged.
