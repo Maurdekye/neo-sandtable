@@ -919,6 +919,150 @@ mod tests {
         assert!(recovered.stop_delivery().await.is_empty());
     }
     #[test]
+    fn fully_measured_refusal_is_not_completion_and_reset_cost_is_retained() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let journal =
+            SessionJournal::create(root.path(), &id, config(), &BTreeMap::from([(seat(), 7)]))
+                .unwrap();
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        let mut refused = outcome(0.10);
+        refused.ok = false;
+        refused.error = Some("measured refusal".into());
+        journal
+            .complete(seat(), 10, Some(&refused), &SessionTelemetry::default())
+            .unwrap();
+        let first = journal.usage_outbox(seat()).unwrap()[0].clone();
+        assert_eq!(
+            (first.attempts, first.completed, first.incomplete_turns),
+            (1, 0, 0)
+        );
+        assert_eq!(
+            (first.input_tokens, first.output_tokens),
+            (Some(10), Some(5))
+        );
+        assert_eq!(first.reported_cost_usd, Some(0.10));
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        journal
+            .complete(
+                seat(),
+                10,
+                Some(&outcome(0.05)),
+                &SessionTelemetry::default(),
+            )
+            .unwrap();
+        let second = journal.usage_outbox(seat()).unwrap()[1].clone();
+        assert_eq!(
+            (
+                second.revision,
+                second.attempts,
+                second.completed,
+                second.incomplete_turns
+            ),
+            (2, 2, 1, 1)
+        );
+        assert_eq!(
+            (second.input_tokens, second.output_tokens),
+            (Some(20), Some(10))
+        );
+        assert!((second.reported_cost_usd.unwrap() - 0.15).abs() < 1e-10);
+        drop(journal);
+        let recovered = SessionJournal::recover(root.path(), &id).unwrap();
+        assert_eq!(recovered.usage_outbox(seat()).unwrap(), vec![first, second]);
+    }
+
+    #[tokio::test]
+    async fn cancelled_delivery_after_transcript_commit_replays_identical_usage() {
+        use cna_seats::transcript::{
+            LocalTranscript, TranscriptEntry, TranscriptSink, TranscriptStore,
+        };
+        use std::sync::Arc;
+        use tokio::sync::Notify;
+        struct CommitBeforeConfirmation {
+            stored: Arc<LocalTranscript>,
+            committed: Notify,
+            confirmation: Notify,
+        }
+        #[async_trait::async_trait]
+        impl TranscriptStore for CommitBeforeConfirmation {
+            async fn append(
+                &self,
+                seat: SeatId,
+                at: String,
+                entry: TranscriptEntry,
+            ) -> Result<u64, String> {
+                let seq = self.stored.append(seat, at, entry).await?;
+                self.committed.notify_one();
+                self.confirmation.notified().await;
+                Ok(seq)
+            }
+        }
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let journal = Arc::new(
+            SessionJournal::create(root.path(), &id, config(), &BTreeMap::from([(seat(), 7)]))
+                .unwrap(),
+        );
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        journal
+            .complete(
+                seat(),
+                10,
+                Some(&outcome(0.01)),
+                &SessionTelemetry::default(),
+            )
+            .unwrap();
+        let committed = journal.usage_outbox(seat()).unwrap();
+        let rows = LocalTranscript::detached();
+        let store = Arc::new(CommitBeforeConfirmation {
+            stored: rows.clone(),
+            committed: Notify::new(),
+            confirmation: Notify::new(),
+        });
+        let sink = TranscriptSink::new(store.clone());
+        let task = {
+            let journal = journal.clone();
+            let sink = sink.clone();
+            tokio::spawn(async move { journal.deliver_usage(seat(), &sink).await })
+        };
+        // Wait for the actual commit, not a delay. The timeout is only a hang guard.
+        tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            store.committed.notified(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(rows.seat_log(seat()).len(), 1);
+        assert_eq!(journal.usage_outbox(seat()).unwrap(), committed);
+        task.abort();
+        assert!(task.await.unwrap_err().is_cancelled());
+        assert_eq!(sink.stop_delivery().await.len(), 1);
+        drop(journal);
+        let recovered = SessionJournal::recover(root.path(), &id).unwrap();
+        let replay = TranscriptSink::new(rows.clone());
+        recovered.deliver_usage(seat(), &replay).await.unwrap();
+        assert!(recovered.usage_outbox(seat()).unwrap().is_empty());
+        let rows = rows.seat_log(seat());
+        assert_eq!(rows.len(), 2);
+        for row in rows {
+            let TranscriptEntry::UsageSnapshot(snapshot) = row.entry else {
+                panic!("missing usage");
+            };
+            assert_eq!(snapshot.as_ref(), &committed[0]);
+        }
+        assert_eq!(
+            recovered.snapshot().unwrap().seats[&seat()].reported_cost_usd,
+            0.01
+        );
+        assert!(replay.stop_delivery().await.is_empty());
+    }
+    #[test]
     fn old_journals_do_not_invent_auxiliary_or_missing_token_totals() {
         let root = tempfile::tempdir().unwrap();
         let id = uuid::Uuid::new_v4().to_string();
