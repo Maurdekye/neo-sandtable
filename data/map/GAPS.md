@@ -182,3 +182,29 @@ extent. Giarabub's named oasis complex is not enumerated from its single dot;
 Fort Maddalena's name does not establish fortification geometry or level.
 Derna's visible port anchor remains withheld pending explicit coastal-cell
 review. These records do not establish garrison placement or movement bounds.
+
+
+## Corridor terrain abstentions after the map-team source review
+
+The terrain worker retains these 27 original-share deferrals with individual
+reasons in reviews/map-terrain-0002,0004..0009.toml and matching notes:
+D2030,D2120,D2132,D2223,D2319,D2332,D2516,D2523,D2530,D2730,D2824,D2830,
+D3319,D3332,D3421,E2301,E2405,E3210,E3214,E3311,E3312,E3412,E3413,E3414,
+E3514,E3614,E3713. No balanced mixed substrate or unmatched gray/green symbol
+family is resolved by RGB or regional plausibility. E3713's city-drawing
+spillover does not establish a city selector.
+
+E3413/E3414/E3514/E3614 are also unresolved in coastal domain. Their in-cell blue
+water has no confidently established marine, lake or river identity; visible
+land and apparent water connectivity do not prove a coastal flag. Empty flags
+plus known-land notes retain this uncertainty without either a terrain or a
+coastal-domain mask. No lake geometry or evidence is inferred. Separate lake
+schema/consumer support must land atomically before any lake observations.
+
+Previously recorded parent mixed-substrate and C4026 coastal-fragment gaps are
+unchanged. All line/side abstentions remain indexed by their exact batch records.
+Pipeline is unsurveyed on the new worker edges; gray tied rail families, contour
+terminations/high endpoints and ambiguous marine/road endpoints retain unknown
+kind masks. Source observations do not certify a complete control halo or an
+engine action. Six Village/Bir dots still do not determine water subtypes or
+place extents; Derna and Tobruk port-anchor gaps remain unchanged.

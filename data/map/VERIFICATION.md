@@ -484,3 +484,59 @@ closed extent, fortified area or garrison permission is asserted. No source
 terrain or coastal classification was added by these place records. Single
 observer on the 2021 re-render; independent error rate and 1979 equivalence are
 unmeasured. Source pixels remain local outside the repository.
+
+
+## Map-team direct-review batches (2026-10-07)
+
+The corridor uses direct review of every accepted full cell or physical shared
+side on the native 2021 module image against TEC.png (land:8.37). Inspection
+crops and registered locator twins remain outside the repository. No classifier
+supplies accepted labels. Each immutable raw batch records its source hashes,
+observer, exact selection, citations and abstentions; explicit amendments retain
+older decisions. Generated outputs are replayed from the union of those inputs.
+
+Map-terrain's current 516-cell assignment excludes the two Alexandria cells
+transferred to cartographer. Its 460 initially unknown cells have exactly one
+original review each: 433 classified and 27 deferred. Eight first-batch records
+also have an explicit later amendment retaining their classes. Earlier parent
+D2917/D3414 deferrals remain unknown, so the completed source scope projects
+487 known and 29 unknown cells within this assignment. These counts distinguish
+source scope from publication: the raw files and the current coverage masks
+establish what is actually available in a given checkout.
+
+The three assembler snapshots add the following evidence to the cd4c187 base:
+
+| Snapshot | Terrain cells reviewed | Classified | Deferred | Edge pairs reviewed | Resolved edge-kind observations | Unresolved edge-kind observations |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| map-terrain-0006/0007 + map-lines-0005 | 100 | 95 | 5 | 60 | 773 | 67 |
+| map-terrain-0008 + map-lines-2-0003 | 94 | 91 | 3 | 54 | 667 | 89 |
+| map-terrain-0009 + map-lines-2-0004 | 91 | 81 | 10 | 68 | 844 | 108 |
+
+Every unresolved edge-kind observation supplies no mask. These edge reviews use
+the existing six line and eight side kinds. No lake presence or absence is
+established, and old thirteen-kind movement completeness does not imply future
+lake completeness. Route, control-halo and unit-action legality require their
+own evidence and consumers.
+
+Map-0003 is adopted by the owner: the clearly predominant LAND substrate decides
+mixed-land cells, while unclear predominance remains unknown. Minor substrates
+stay explicit in the evidence. Map-0002 still governs mixed land and marine sea.
+E3413/E3414/E3514/E3614 have visible land but unresolved water identity; their
+empty flags and notes retain unknown coastal status, with neither terrain nor
+coastal-domain masks. The E3713 city-drawing spillover remains deferred.
+
+Review throughput is an elapsed-time measurement, not an accuracy estimate.
+The terrain worker inspected 462 original cells (including the two transferred
+Alexandria cells) in about 116 minutes, approximately 239 cells/hour. A western
+60-pair batch measured 288.4 source-reviewed pairs/hour and 55.9 published
+pairs/hour including queue and checks; another bounded 60-pair batch measured
+345.05 source-reviewed pairs/hour. These mostly clear batches do not establish
+population throughput. Single-assembler publication rates are measured only
+from actual verified main publication, separately for cells and physical pairs.
+
+Per-layer post-review error rates and independent population agreement remain
+unmeasured. Parent audits prove exact assignment coverage, canonical identities,
+source provenance, immutable raw bytes and preservation of prior records; they
+do not independently validate every worker source decision. Bounded second looks
+are restricted to the examples explicitly recorded. No original-1979 map audit
+or equivalence claim is supplied by these 2021 reviews.
