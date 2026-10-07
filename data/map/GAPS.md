@@ -246,3 +246,8 @@ The union leaves 1,077 corridor pairs wholly unobserved. All 33 terrain gaps and
 ### Fifth assembled edge-cycle abstentions, 2026-10-07
 
 The three immutable inputs retain 431 unresolved observations without masks: pipeline on all 300 pairs, 42 slope and 42 ridge decisions, 22 escarpment identity or direction decisions, 24 rail-kind identities and one track endpoint. Partial contour incidence and high-side ambiguity remain in the raw records. No lake absence is inferred from the current fourteen-kind survey. The 33 corridor terrain gaps, including four cells with unknown coastal domain, remain unchanged; source-reviewed edges do not classify those cells or certify a route, control halo or action.
+
+
+### Sixth assembled edge-cycle abstentions, 2026-10-07
+
+The three inputs retain 320 unresolved observations without masks: pipeline on all 260 pairs, 22 slope and 22 ridge decisions, eleven escarpment decisions, two rail-kind identities and three marine endpoints. Exact unresolved identities and reasons remain in each immutable raw review. C3226/C3227 rail-family uncertainty and the authoritative C3124 terrain deferral on C3124/C3223 and C3124/C3224 remain explicit. No missing lake evidence becomes an absence mask, and source-reviewed edges do not resolve any of the 33 corridor terrain gaps or certify routes, halos or actions.
