@@ -91,14 +91,17 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    them from the seat's own knowledge, and in tests open windows with the module's real space,
    never a placeholder.
 
-   **The schedule is public too.** Whether a window opens, how many windows open and how many
-   rounds a procedure takes may depend only on public facts (the clock, the printed schedule,
-   public presence). The clock, phase changes and each seat's own pending list are visible, so
-   a window that opens only when a side has eligible hidden units tells the enemy those units
-   exist. Where eligibility is hidden, open a fixed window for the owning role every time, with
-   a declared pass for "nothing to do" (seat drivers answer those locally, at no model cost),
-   and batch the side's choices into it. Test it with paired states through `Advance`,
-   comparing the observer's clock, phase events and pending, not only the answer paths.
+   **The schedule is public too.** An observer's ordered stream (the phase changes and other
+   events it receives, and its own pending requests, in order) must not depend on facts it may
+   not know. A window that opens, or a procedure that takes extra rounds, only when a side has
+   eligible hidden units changes that stream whenever it moves a phase change or interleaves
+   with the observer's own requests, and so tells the enemy those units exist. Where
+   eligibility is hidden, open a fixed window for the owning role every time, with a declared
+   pass for "nothing to do" (seat drivers answer those locally, at no model cost), and batch the
+   side's choices into it. Extra private decisions that the other side takes while the observer
+   has nothing pending, inside one phase, change only how long the observer waits: that timing
+   channel is accepted, as at a table. Test it with paired states through `Advance`, comparing
+   the observer's ordered stream and pending, not snapshots after a fixed number of commands.
 8. **Randomness** comes only from `cx.rng` (`d6()`, `two_dice_reading()`). Emit a `DiceRolled`
    event citing the rule for every roll.
 9. **Events and secrecy** (`land:3.6`). Board state-sync events (`UnitUpdated`, `UnitRemoved`
