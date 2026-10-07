@@ -478,12 +478,90 @@ pub fn commonwealth_transfer(
     state.logistics = draft.logistics;
     Ok(())
 }
+/// A menu may omit an unassessed port only with an explicit owner-private source note.
+/// The last accepted owner is read solely to address that note, never as usable capacity.
+fn menu_port(
+    content: &CnaContent,
+    state: &State,
+    port: &ports::Port,
+    side: Side,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<Option<ports::PortState>, EngineError> {
+    match ports::state(content, state, port) {
+        Ok(p) => Ok(Some(p.clone())),
+        // A verified but unoccupied port has no last accepted controller. It is
+        // not a legal controlled endpoint; no numeric ownership is invented.
+        Err(PortOperationError::Supply(SupplyError::Unsupported {
+            case: "airlog:55.11",
+        })) => Ok(None),
+        Err(error) if !strict && error.is_unknown() => {
+            let last_owner = state
+                .logistics
+                .unknown_ports
+                .get(&port.id)
+                .copied()
+                .or_else(|| state.logistics.ports.get(&port.id).map(|p| p.owner));
+            if last_owner == Some(side) {
+                let source = match error {
+                    PortOperationError::Policy(source) => source.to_string(),
+                    PortOperationError::Supply(source) => format!("{source:?}"),
+                };
+                let mut note = EngineEvent::new(
+                    Audience::Side(side),
+                    GameEvent::Note {
+                        text: format!(
+                            "Port {} is unavailable for coastal supply: unknown efficiency. {source}",
+                            port.id
+                        ),
+                    },
+                );
+                if let Some(hex) = port.location.hex() {
+                    note = note.at(hex.clone());
+                }
+                cx.emit(note);
+            }
+            Ok(None)
+        }
+        Err(error) => Err(engine(error)),
+    }
+}
+fn registered_ports(content: &CnaContent, state: &State) -> Result<Vec<ports::Port>, EngineError> {
+    let ids = state
+        .logistics
+        .ports
+        .keys()
+        .chain(state.logistics.unknown_ports.keys())
+        .cloned()
+        .collect::<std::collections::BTreeSet<_>>();
+    let mut out = vec![];
+    for id in ids {
+        let location = if matches!(id.as_str(), "box_tripoli" | "box_tunis") {
+            Location::OffMap { id }
+        } else {
+            Location::Hex {
+                hex: HexId::new(id),
+            }
+        };
+        match ports::at(content, &location) {
+            Ok(port) => out.push(port),
+            // A saved id cannot fabricate a missing port icon.
+            Err(SupplyError::Unsupported {
+                case: "airlog:55.11",
+            }) => {}
+            Err(error) => return Err(engine(error)),
+        }
+    }
+    Ok(out)
+}
 /// Cases: airlog:48.0, airlog:56.32, land:3.6
 pub fn enter_axis(
     content: &CnaContent,
     state: &mut State,
+    strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    ports::preflight(content, strict)?;
     if state
         .logistics
         .allocation_batches
@@ -515,6 +593,42 @@ pub fn enter_axis(
         );
         return Ok(());
     }
+    let mut dump_options = vec![option("".into(), "No dump when sailing".into())];
+    for dump in state.logistics.dumps.values().filter(|d| {
+        d.side == Side::Axis
+            && d.active
+            && !d.dummy
+            && matches!(
+                d.location,
+                DumpLocation::Hex { .. } | DumpLocation::OffMap { .. }
+            )
+    }) {
+        let location = dump_at(state, Side::Axis, &dump.id).map_err(engine)?;
+        let port = match ports::at(content, &location) {
+            Ok(port) => port,
+            Err(SupplyError::Unsupported {
+                case: "airlog:55.11",
+            }) => continue,
+            Err(error) => return Err(engine(error)),
+        };
+        if let Some(ps) = menu_port(content, state, &port, Side::Axis, strict, cx)?
+            && ps.owner == Side::Axis
+            && ps.efficiency > 0
+        {
+            dump_options.push(option(dump.id.clone(), dump.id.clone()));
+        }
+    }
+    for port in registered_ports(content, state)? {
+        if let Some(ps) = menu_port(content, state, &port, Side::Axis, strict, cx)?
+            && ps.owner == Side::Axis
+            && ps.efficiency > 0
+        {
+            dump_options.push(option(
+                format!("new:{}", port.id),
+                format!("Create a receiving dump at {}", port.id),
+            ));
+        }
+    }
     let fields = vec![
         field(
             "ship",
@@ -537,29 +651,7 @@ pub fn enter_axis(
             "dump",
             "Owned port dump id (empty when sailing)",
             ActionSchema::Choice {
-                options: std::iter::once(option("".into(), "No dump when sailing".into()))
-                    .chain(
-                        state
-                            .logistics
-                            .dumps
-                            .values()
-                            .filter(|d| d.side == Side::Axis && d.active && !d.dummy)
-                            .map(|d| option(d.id.clone(), d.id.clone())),
-                    )
-                    .chain(
-                        state
-                            .logistics
-                            .ports
-                            .iter()
-                            .filter(|(_, p)| p.owner == Side::Axis && p.efficiency > 0)
-                            .map(|(id, _)| {
-                                option(
-                                    format!("new:{id}"),
-                                    format!("Create a receiving dump at {id}"),
-                                )
-                            }),
-                    )
-                    .collect(),
+                options: dump_options,
             },
         ),
         field(
@@ -615,8 +707,10 @@ fn cargo_schema() -> ActionSchema {
 pub fn enter_cw(
     content: &CnaContent,
     state: &mut State,
+    strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    ports::preflight(content, strict)?;
     if state
         .logistics
         .allocation_batches
@@ -627,44 +721,67 @@ pub fn enter_cw(
     }
     ports::initialize(content, state);
 
-    let mut origins = state
-        .logistics
-        .dumps
-        .values()
-        .filter(|d| {
-            dump_at(state, Side::Commonwealth, &d.id).is_ok_and(|at| {
-                matches!(at, Location::Hex { .. })
-                    && ports::at(content, &at).is_ok_and(|p| {
-                        state
-                            .logistics
-                            .ports
-                            .get(&p.id)
-                            .is_some_and(|s| s.owner == Side::Commonwealth && s.efficiency > 0)
-                    })
-            })
-        })
-        .map(|d| option(d.id.clone(), d.id.clone()))
-        .collect::<Vec<_>>();
+    let mut origins = vec![];
+    for dump in state.logistics.dumps.values().filter(|d| {
+        d.side == Side::Commonwealth
+            && d.active
+            && !d.dummy
+            && matches!(
+                d.location,
+                DumpLocation::Hex { .. } | DumpLocation::OffMap { .. }
+            )
+    }) {
+        let location = dump_at(state, Side::Commonwealth, &dump.id).map_err(engine)?;
+        if location.hex().is_none() {
+            continue;
+        }
+        let port = match ports::at(content, &location) {
+            Ok(port) => port,
+            Err(SupplyError::Unsupported {
+                case: "airlog:55.11",
+            }) => continue,
+            Err(error) => return Err(engine(error)),
+        };
+        if let Some(ps) = menu_port(content, state, &port, Side::Commonwealth, strict, cx)?
+            && ps.owner == Side::Commonwealth
+            && ps.efficiency > 0
+        {
+            origins.push(option(dump.id.clone(), dump.id.clone()));
+        }
+    }
     let mut destinations = origins.clone();
-    for (id, ps) in &state.logistics.ports {
+    for port in registered_ports(content, state)? {
+        let Some(hex) = port.location.hex() else {
+            continue;
+        };
+        let Some(ps) = menu_port(content, state, &port, Side::Commonwealth, strict, cx)? else {
+            continue;
+        };
         if ps.owner != Side::Commonwealth || ps.efficiency == 0 {
             continue;
         }
-        let at = Location::Hex {
-            hex: HexId::new(id),
-        };
-        if ports::at(content, &at).is_err() {
-            continue;
-        }
         destinations.push(option(
-            format!("new:{id}"),
-            format!("Receive into a port dump at {id}"),
+            format!("new:{}", port.id),
+            format!("Receive into a port dump at {}", port.id),
         ));
-        if unlimited_location(content, &HexId::new(id)).is_ok() {
-            origins.push(option(
-                format!("base:{id}"),
-                format!("Scenario supply at {id}"),
-            ));
+        match unlimited_location(content, hex) {
+            Ok(_) => origins.push(option(
+                format!("base:{}", port.id),
+                format!("Scenario supply at {}", port.id),
+            )),
+            Err(PortOperationError::Supply(SupplyError::Invalid)) => {}
+            Err(error @ PortOperationError::Supply(SupplyError::Unsupported { .. })) if !strict => {
+                cx.emit(
+                    EngineEvent::new(
+                        Audience::Side(Side::Commonwealth),
+                        GameEvent::Note {
+                            text: format!("No unlimited coastal source at {}: {error:?}", port.id),
+                        },
+                    )
+                    .at(hex.clone()),
+                );
+            }
+            Err(error) => return Err(engine(error)),
         }
     }
     if origins.is_empty() || destinations.is_empty() {

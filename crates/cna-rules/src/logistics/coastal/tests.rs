@@ -221,6 +221,7 @@ fn batched_list_rolls_back_and_new_dump_uses_opaque_marker() {
     enter_axis(
         c,
         &mut s,
+        false,
         &mut Cx {
             rng: &mut rng,
             events: &mut events,

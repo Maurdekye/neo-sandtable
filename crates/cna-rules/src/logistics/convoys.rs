@@ -126,6 +126,7 @@ pub fn initialize(
     strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    ports::preflight(content, strict)?;
     if state.logistics.convoys_initialized {
         return Ok(());
     }
@@ -158,6 +159,7 @@ pub fn schedule(
     strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
+    ports::preflight(content, strict)?;
     if !state.logistics.convoys_initialized
         && content
             .scenario

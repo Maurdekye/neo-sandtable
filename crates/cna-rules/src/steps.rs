@@ -122,10 +122,10 @@ impl Cna {
                 crate::land::movement::enter(content, state, self.strict, cx)
             }
             "opstage.organization.tactical_shipping" => {
-                crate::logistics::coastal::enter_cw(content, state, cx)
+                crate::logistics::coastal::enter_cw(content, state, self.strict, cx)
             }
             "opstage.truck_convoy_movement" => {
-                crate::logistics::coastal::enter_axis(content, state, cx)
+                crate::logistics::coastal::enter_axis(content, state, self.strict, cx)
             }
             "naval_convoy.schedule" => {
                 crate::logistics::convoys::schedule(content, state, self.strict, cx)
