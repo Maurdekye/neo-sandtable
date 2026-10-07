@@ -2163,6 +2163,24 @@ fn organized_and_disorganized_adjacent_tanks_do_not_change_preflight_acceptance(
         &disorganized.state,
         Side::Axis,
     );
+    let pending = &g.state.decisions.pending[0];
+    let command = Command::Respond(DecisionResponse {
+        decision_id: pending.id.clone(),
+        seat: pending.seat,
+        controller_epoch: 1,
+        decision_revision: pending.revision,
+        idempotency_key: "audit-pair".into(),
+        action: json!([{"unit":TANK,"path":["C4021"]}]),
+        public_explanation: None,
+    });
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::full(),
+        &c,
+        &g,
+        &disorganized,
+        &command,
+        Side::Axis,
+    );
     for initial in [&g, &disorganized] {
         assert!(
             respond(
