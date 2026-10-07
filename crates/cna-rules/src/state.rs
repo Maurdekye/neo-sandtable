@@ -132,6 +132,9 @@ pub struct LandUnit {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LandState {
+    /// Applied schedule rows and owner decisions; supply delivery waits for this window.
+    #[serde(default)]
+    pub arrivals: crate::land::arrivals::ArrivalState,
     #[serde(default)]
     pub reaction: crate::land::reaction::ReactionState,
     /// Public target-hex assault announcements, retained until the OpStage ends.

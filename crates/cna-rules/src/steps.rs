@@ -53,6 +53,9 @@ impl Cna {
                 crate::land::combat::barrage::finish(content, state, cx, self.strict)
             }
             "setup" => crate::setup::finish(content, state, cx, self.strict),
+            "opstage.convoy_arrival" => {
+                crate::land::arrivals::finish(content, state, self.strict, cx)
+            }
             _ => Ok(()),
         }
     }
@@ -86,7 +89,9 @@ impl Cna {
             "naval_convoy.schedule" => {
                 crate::logistics::convoys::schedule(content, state, self.strict, cx)
             }
-            "opstage.convoy_arrival" => crate::logistics::convoys::arrive(content, state, cx),
+            "opstage.convoy_arrival" => {
+                crate::land::arrivals::enter(content, state, self.strict, cx)
+            }
             "opstage.movement_and_combat.combat.barrage" => {
                 crate::land::combat::barrage::enter(content, state, cx, self.strict)
             }
@@ -171,6 +176,13 @@ impl Cna {
             ),
             crate::land::movement::KIND => {
                 crate::land::movement::answer(content, state, pending, action, self.strict, cx)
+            }
+            crate::land::arrivals::PLACE
+            | crate::land::arrivals::TRUCKS
+            | crate::land::arrivals::SUBSTITUTE
+            | crate::land::arrivals::TRANSPORT
+            | crate::land::arrivals::AIR => {
+                crate::land::arrivals::answer(content, state, pending, action, self.strict, cx)
             }
             crate::setup::KIND_UNIT
             | crate::setup::KIND_DUMP
