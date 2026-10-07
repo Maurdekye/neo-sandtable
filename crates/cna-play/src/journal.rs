@@ -76,6 +76,13 @@ fn migrate_usage(s: &mut SeatJournal) -> bool {
     });
     true
 }
+fn uncertain_budget(s: &SeatJournal, budget: Option<&SpendBudget>) -> bool {
+    match budget {
+        Some(SpendBudget::ReportedUsd { .. }) => s.incomplete_turns > 0 || s.uncertain_budget_spend,
+        Some(SpendBudget::Tokens { .. }) => s.incomplete_token_turns > 0,
+        None => s.incomplete_turns > 0,
+    }
+}
 fn queue_usage(s: &mut SeatJournal) -> Result<(), String> {
     let completed = s
         .stages
@@ -328,7 +335,7 @@ impl SessionJournal {
                 s.incomplete_token_turns += 1;
                 s.uncertain_budget_spend = true;
                 queue_usage(s)?;
-            } else if !s.uncertain_budget_spend && s.incomplete_turns == 0 {
+            } else if !uncertain_budget(s, state.config.run.as_ref().map(|r| &r.budget)) {
                 // stop() has confirmed cleanup before model input was sent.
                 s.admitted_estimate_usd = None;
                 s.admitted_tokens = None;
@@ -530,7 +537,7 @@ impl SessionJournal {
     pub fn release_admission(&self, seat: SeatId) -> Result<(), String> {
         self.update(|state| {
             let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
-            if s.uncertain_budget_spend || s.incomplete_turns > 0 || s.incomplete_token_turns > 0 {
+            if uncertain_budget(s, state.config.run.as_ref().map(|r| &r.budget)) {
                 return Ok(()); // Never free uncertain headroom after interrupted model work.
             }
             if s.inflight.as_ref().is_some_and(|r| r.kind == "turn") {
@@ -560,10 +567,11 @@ impl SessionJournal {
             ));
         }
         let ceiling = bound.ceiling_usd().map_err(|e| e.to_string())?;
-        if state.seats.values().any(|s| match &run.budget {
-            SpendBudget::ReportedUsd { .. } => s.incomplete_turns > 0 || s.uncertain_budget_spend,
-            SpendBudget::Tokens { .. } => s.incomplete_token_turns > 0,
-        }) {
+        if state
+            .seats
+            .values()
+            .any(|s| uncertain_budget(s, Some(&run.budget)))
+        {
             return Ok(Admission::Stop(
                 "unknown telemetry; committed accounting retained".into(),
             ));
@@ -987,6 +995,54 @@ mod tests {
             max_input_or_cache_write_usd_per_token: 0.001,
             output_usd_per_token: 0.001,
             evidence: "inert unit fixture; not native proof".into(),
+        }
+    }
+    #[test]
+    fn no_model_cleanup_uses_the_selected_budget_unit_not_optional_other_telemetry() {
+        for usd in [true, false] {
+            let root = tempfile::tempdir().unwrap();
+            let id = uuid::Uuid::new_v4().to_string();
+            let mut c = config();
+            c.run = Some(RunControl {
+                boundary: cna_server::RunBoundary {
+                    game_turn: 1,
+                    op_stage: None,
+                },
+                budget: if usd {
+                    SpendBudget::usd(2., &[seat()], BTreeMap::from([(seat(), 1.)])).unwrap()
+                } else {
+                    SpendBudget::tokens(1000, &[seat()], BTreeMap::from([(seat(), 500)])).unwrap()
+                },
+            });
+            let j = SessionJournal::create(root.path(), &id, c, &BTreeMap::from([(seat(), 2)]))
+                .unwrap();
+            j.admit(seat(), Some(&bound())).unwrap();
+            j.reserve_decision(seat(), "GT1:OpStage1", 1000, "d", 0)
+                .unwrap();
+            let mut report = outcome(0.01);
+            report.usage.cost_basis_known = Some(true);
+            if !usd {
+                report.usage.cost_usd = None;
+                report.usage.cached_input_tokens = Some(0);
+                report.usage.cache_creation_tokens = Some(0);
+            }
+            j.complete(seat(), 1, Some(&report), &SessionTelemetry::default())
+                .unwrap();
+            let record = j.snapshot().unwrap().seats[&seat()].clone();
+            assert_eq!(record.incomplete_token_turns, u64::from(usd));
+            assert_eq!(record.incomplete_turns, u64::from(!usd));
+            assert!(matches!(
+                j.admit(seat(), Some(&bound())).unwrap(),
+                Admission::Ready { .. }
+            ));
+            j.release_admission(seat()).unwrap();
+            assert!(matches!(
+                j.admit(seat(), Some(&bound())).unwrap(),
+                Admission::Ready { .. }
+            ));
+            j.interrupt(seat()).unwrap();
+            let record = j.snapshot().unwrap().seats[&seat()].clone();
+            assert!(record.admitted_estimate_usd.is_none() && record.admitted_tokens.is_none());
         }
     }
     #[test]
