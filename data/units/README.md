@@ -449,3 +449,10 @@ is infantry: 179 are classified (156 ordinary, 19 machine-gun, 4 heavy-weapons),
 explicit gaps. See U-026 and U-027. `tools/units/coverage.py` reports the counts for each
 scenario and rejects an additional unlogged omission. Later arrivals outside GT1–20 are not
 covered by this audit.
+
+
+Scenario plane setup rows may give `composition_exception_with` as aircraft ids. The paired
+Free French MS406/Potez63/11 rows use symmetric references for their scenario-specific mixed
+squadron permission (`scen:60.42`, `airlog:35.21`). Squadron composition otherwise follows
+the printed class restrictions. Refitted reserves remain part of the ready-plane count; the
+flight-ready limit does not cap all refitted planes stored at the squadron (`airlog:35.26`).

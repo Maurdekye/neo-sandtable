@@ -59,6 +59,7 @@ src = ["scen:60.42"]
 
 [[plane]]
 type = "cw.ms406"
+composition_exception_with = ["cw.potez_63_11"]
 total = 4
 ready = 2
 squadron_note = "May be in the same squadron as the Potez 63/11 (Free French)."
@@ -66,6 +67,7 @@ src = ["scen:60.42"]
 
 [[plane]]
 type = "cw.potez_63_11"
+composition_exception_with = ["cw.ms406"]
 total = 2
 ready = 2
 squadron_note = "May be in the same squadron as the Morane 406 (Free French)."

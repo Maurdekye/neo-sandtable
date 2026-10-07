@@ -1,6 +1,7 @@
 //! Scenario setup decisions and their private simultaneous window.
 mod decisions;
 pub mod placement;
+mod stacking;
 pub(crate) use decisions::{KIND_DUMP, KIND_TRUCKS, KIND_UNIT, answer, enter};
 
 use crate::state::Location;

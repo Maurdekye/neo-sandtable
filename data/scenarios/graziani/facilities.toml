@@ -494,3 +494,14 @@ side = "commonwealth"
 class = "temporary"
 location = { kind = "hex", hex = "D3714", name = "Mersa Matruh" }
 src = ["scen:60.44"]
+
+# The scenario states one total for Malta; this record represents that aggregate.
+[[facility]]
+id = "malta.initial"
+kind = "airfield"
+off_map = true
+location_area = "malta"
+theatre = "malta"
+owner = "commonwealth"
+note = "Aggregate initial Malta facilities; capacity is the scenario Malta force total. No individual airfields are specified here."
+src = ["scen:60.46"]

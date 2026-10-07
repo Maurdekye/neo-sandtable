@@ -253,6 +253,8 @@ pub struct PlaneSetup {
     pub note: Option<String>,
     pub squadron_note: Option<String>,
     #[serde(default)]
+    pub composition_exception_with: Vec<String>,
+    #[serde(default)]
     pub src: Vec<String>,
 }
 
@@ -386,6 +388,9 @@ pub struct FacilitySetup {
     pub off_map: bool,
     pub printed_location: Option<String>,
     pub location: Option<String>,
+    pub location_area: Option<String>,
+    /// A separate off-map theatre, e.g. Malta; absent means the main force.
+    pub theatre: Option<String>,
     pub note: Option<String>,
     #[serde(default)]
     pub src: Vec<String>,
