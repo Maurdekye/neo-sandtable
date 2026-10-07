@@ -65,3 +65,6 @@ pub use supply::{
 pub use rations::{
     MovementRestrictions, PrisonerGroup, Rations, movement_restrictions, spend_activity_water,
 };
+
+#[cfg(test)]
+mod privacy;
