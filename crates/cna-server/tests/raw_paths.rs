@@ -29,9 +29,22 @@ const ATTACHED: &str = "cw.2_nz_div.22nd_nz_bn";
 const PARENT: &str = "cw.2_nz_div.5th_new_zealand_bde_hq";
 const RBA: &str = "opstage.movement_and_combat.combat.retreat_before_assault";
 
+fn retain_fixture_port_geometry(content: &mut CnaContent) {
+    // Keep port metadata within this synthetic fixture's geometry; not production normalization.
+    content
+        .scenario
+        .construction
+        .port_overrides
+        .retain(|record| content.map.canonical(&record.hex) == Some(&record.hex));
+    content.places.places.retain(|_, place| {
+        place.kind != "port" || content.map.canonical(&place.hex_id) == Some(&place.hex_id)
+    });
+}
+
 fn copy_content(content: &CnaContent) -> CnaContent {
     let mut copy = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
     copy.map = content.map.clone();
+    retain_fixture_port_geometry(&mut copy);
     copy
 }
 fn game_hash(game: &Game<Cna>) -> String {
@@ -167,6 +180,7 @@ fn fixture(retreat: bool) -> (CnaContent, Game<Cna>, Option<Game<Cna>>) {
             None,
         )
     };
+    retain_fixture_port_geometry(&mut content);
     if retreat {
         game.state.decisions.pending.clear();
         game.state.turn.player_a = Some(Side::Axis);
