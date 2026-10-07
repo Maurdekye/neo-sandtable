@@ -6,11 +6,14 @@
 //! each of its seats, `inspect` of every unit, truck pool, dump and occupied hex either state
 //! knows, and the decisions pending for its seats. Build the pair by cloning a state and changing
 //! only a hidden enemy fact (strength, supply, a dummy flag, a plot), then call it for the side
-//! that must not learn it.
+//! that must not learn it. `assert_action_indistinguishable` does the same for an action: the
+//! same command evaluated on both states must be accepted or rejected alike (a server preflight
+//! is exactly this evaluation, rule 7), deliver the same events to every perspective of the side,
+//! and leave states that still look identical.
 
 use std::collections::BTreeSet;
 
-use cna_core::engine::Ruleset;
+use cna_core::engine::{Command, Game, Rejection, Ruleset, Transition, evaluate};
 use cna_core::ids::SeatId;
 use cna_core::visibility::Perspective;
 use cna_protocol::{Role, Side};
@@ -27,12 +30,7 @@ pub(crate) fn visible_to(
     targets: &BTreeSet<String>,
 ) -> Value {
     let mut out = Map::new();
-    let mut perspectives = vec![("side".to_owned(), Perspective::Side(side))];
-    for role in Role::ALL {
-        let seat = SeatId::new(side, role);
-        perspectives.push((seat.to_string(), Perspective::Seat(seat)));
-    }
-    for (name, perspective) in perspectives {
+    for (name, perspective) in perspectives(side) {
         let view = serde_json::to_value(ruleset.view(content, state, perspective))
             .expect("views serialize");
         let observe = ruleset.observe(content, state, perspective);
@@ -59,6 +57,72 @@ pub(crate) fn visible_to(
         .collect();
     out.insert("pending".to_owned(), Value::Array(pending));
     Value::Object(out)
+}
+
+/// The side's own perspective and each of its five seats, with stable names.
+fn perspectives(side: Side) -> Vec<(String, Perspective)> {
+    let mut out = vec![("side".to_owned(), Perspective::Side(side))];
+    for role in Role::ALL {
+        let seat = SeatId::new(side, role);
+        out.push((seat.to_string(), Perspective::Seat(seat)));
+    }
+    out
+}
+
+/// What `side` learns from one evaluated command: acceptance or the rejection, every event each
+/// of its perspectives receives (in order), and the progress report.
+fn learned_from(result: &Result<Transition<Cna>, Rejection>, side: Side) -> Value {
+    match result {
+        Err(e) => json!({ "rejected": format!("{e:?}") }),
+        Ok(t) => {
+            let events: Map<String, Value> = perspectives(side)
+                .into_iter()
+                .map(|(name, p)| {
+                    let seen: Vec<Value> = t
+                        .events
+                        .iter()
+                        .filter(|e| p.can_see(&e.audience))
+                        .map(|e| serde_json::to_value(&e.event).expect("events serialize"))
+                        .collect();
+                    (name, Value::Array(seen))
+                })
+                .collect();
+            json!({
+                "accepted": true,
+                "events": events,
+                "progress": t.progress.as_ref().map(|p| format!("{p:?}")),
+            })
+        }
+    }
+}
+
+/// Assert that `command` evaluated on `a` and on `b` teaches `side` nothing: the same
+/// acceptance or rejection, the same events per perspective, and resulting states that are
+/// still indistinguishable. Use it for paired hidden facts at decision points (rule 7).
+pub(crate) fn assert_action_indistinguishable(
+    ruleset: &Cna,
+    content: &CnaContent,
+    a: &Game<Cna>,
+    b: &Game<Cna>,
+    command: &Command,
+    side: Side,
+) {
+    let ra = evaluate(ruleset, content, a, command);
+    let rb = evaluate(ruleset, content, b, command);
+    if let Some((path, x, y)) = first_difference(
+        &learned_from(&ra, side),
+        &learned_from(&rb, side),
+        String::new(),
+    ) {
+        panic!(
+            "{side:?} can tell the actions apart at {path}:
+  a: {x}
+  b: {y}"
+        );
+    }
+    if let (Ok(ta), Ok(tb)) = (&ra, &rb) {
+        assert_indistinguishable(ruleset, content, &ta.game.state, &tb.game.state, side);
+    }
 }
 
 /// Every id either state could be asked to inspect: units, truck pools, dumps and occupied hexes.

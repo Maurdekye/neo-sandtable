@@ -514,3 +514,56 @@ fn indistinguishability_harness_catches_visible_differences() {
     };
     crate::testkit::assert_indistinguishable(&ruleset, content, &game.state, &other, Side::Axis);
 }
+
+/// Advancing the game teaches the enemy nothing about hidden unit facts: same events per seat,
+/// same resulting views (set-up opens the same windows either way).
+/// Cases: land:3.61, land:3.62
+#[test]
+fn advancing_reveals_no_hidden_unit_facts() {
+    let ruleset = Cna::dev();
+    let content = content();
+    let game = new_game(9);
+    for (hidden, observer) in [
+        (Side::Commonwealth, Side::Axis),
+        (Side::Axis, Side::Commonwealth),
+    ] {
+        let mut other = game.clone();
+        perturb_hidden(&mut other.state, hidden);
+        crate::testkit::assert_action_indistinguishable(
+            &ruleset,
+            content,
+            &game,
+            &other,
+            &Command::Advance,
+            observer,
+        );
+    }
+}
+
+/// The action harness itself: an action outcome the enemy may see differently is caught.
+#[test]
+#[should_panic(expected = "can tell the")]
+fn action_harness_catches_visible_differences() {
+    let ruleset = Cna::dev();
+    let content = content();
+    let game = new_game(9);
+    let mut other = game.clone();
+    let unit = other
+        .state
+        .land
+        .units
+        .values_mut()
+        .find(|u| u.side == Side::Commonwealth && u.location.hex().is_some())
+        .unwrap();
+    unit.location = Location::Hex {
+        hex: cna_core::ids::HexId::new("C4119"),
+    };
+    crate::testkit::assert_action_indistinguishable(
+        &ruleset,
+        content,
+        &game,
+        &other,
+        &Command::Advance,
+        Side::Axis,
+    );
+}
