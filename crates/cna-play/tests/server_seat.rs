@@ -64,6 +64,20 @@ impl SeatDriver for FakeCli {
             let Some(id) = observed["pending_decisions"][0]["decision_id"].as_str() else {
                 break;
             };
+            if self.drain_pending {
+                // The actual observation remains complete even above the capture detail cap.
+                assert!(
+                    observed["pending_decisions"]
+                        .as_array()
+                        .is_some_and(|pending| {
+                            pending.iter().any(|p| {
+                                p["kind"]
+                                    .as_str()
+                                    .is_some_and(|kind| kind.starts_with("cna."))
+                            })
+                        })
+                );
+            }
             let described = self
                 .call(
                     "describe_actions",
@@ -89,6 +103,11 @@ impl SeatDriver for FakeCli {
             if !self.drain_pending {
                 break;
             }
+            // The inert setup fixture can outpace the serialized transcript writer.
+            // Confirm each decision batch before generating the next one.
+            tokio::time::timeout(Duration::from_secs(5), self.sink.flush())
+                .await
+                .expect("fixture transcript batch did not persist within five seconds");
             assert!(
                 step < 4095,
                 "inert fixture exceeded its decision safety bound"
@@ -911,13 +930,9 @@ async fn cna_binding_uses_real_observation_and_current_action_schema() {
                         ..
                     },
                 ..
-            } => value["pending_decisions"].as_array().is_some_and(|p| {
-                p.iter().any(|d| {
-                    d["kind"]
-                        .as_str()
-                        .is_some_and(|kind| kind.starts_with("cna."))
-                })
-            }),
+            } => value["request"]["kind"]
+                .as_str()
+                .is_some_and(|kind| kind.starts_with("cna.")),
             _ => false,
         }
     }));
