@@ -76,6 +76,10 @@ impl CnaContent {
         let scenario = ScenarioContent::load(&data_dir.join("scenarios").join(scenario_id))
             .map_err(|e| e.to_string())?;
         scenario.check(&units).map_err(|e| e.to_string())?;
+        scenario
+            .construction
+            .check_map(&map)
+            .map_err(|e| e.to_string())?;
         let raw = cna_tables::RawSet::new(
             cna_tables::raw::read_all(data_dir).map_err(|e| e.to_string())?,
         )

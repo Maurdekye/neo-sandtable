@@ -3,10 +3,12 @@
 //!
 //! Schema: `data/scenarios/README.md` (owned by the `oob` area). Unit ids refer to
 //! [`crate::units`]; [`ScenarioContent::check`] verifies those references. Files whose systems the
-//! engine does not model yet (construction, fleet, arrivals) are kept as raw TOML tables until
+//! engine does not model yet (fleet, arrivals) are kept as raw TOML tables until
 //! their owners type them.
 
+pub mod construction;
 pub mod fleet;
+use construction::ScenarioConstruction;
 use fleet::FleetLogistics;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -32,7 +34,7 @@ pub struct ScenarioContent {
     pub air: Vec<AirForce>,
     pub supply: SupplySetup,
     pub facilities: FacilitiesSetup,
-    pub construction: toml::Table,
+    pub construction: ScenarioConstruction,
     pub fleet: toml::Table,
     pub fleet_logistics: FleetLogistics,
     pub arrivals: toml::Table,
@@ -480,6 +482,10 @@ impl ScenarioContent {
             Some(p) => read_toml(&p)?,
             None => FacilitiesSetup::default(),
         };
+        let construction = match optional("construction.toml")? {
+            Some(p) => ScenarioConstruction::load(&p)?,
+            None => ScenarioConstruction::default(),
+        };
         let raw = |name: &str| -> Result<toml::Table, ContentError> {
             match optional(name)? {
                 Some(p) => read_toml(&p),
@@ -500,7 +506,7 @@ impl ScenarioContent {
             air,
             supply,
             facilities,
-            construction: raw("construction.toml")?,
+            construction,
             fleet: raw("fleet.toml")?,
             fleet_logistics,
             arrivals: raw("arrivals.toml")?,
