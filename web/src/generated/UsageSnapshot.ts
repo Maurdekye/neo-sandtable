@@ -13,9 +13,14 @@ export type UsageSnapshot = { controller_epoch: number,
  */
 revision: number, provider: string | null, model: string | null, 
 /**
- * Model turns started and completed in this epoch.
+ * Model turns started in this epoch, including ones that failed.
  */
-attempts: number, completed: number, input_tokens: number | null, output_tokens: number | null, cache_read_tokens: number | null, cache_creation_tokens: number | null, reasoning_tokens: number | null, 
+attempts: number, 
+/**
+ * Of those, turns that ended with a successful outcome; an error or refusal
+ * is an attempt, not a completion.
+ */
+completed: number, input_tokens: number | null, output_tokens: number | null, cache_read_tokens: number | null, cache_creation_tokens: number | null, reasoning_tokens: number | null, 
 /**
  * Cost in US dollars as the provider reported it, cumulative for the epoch.
  */

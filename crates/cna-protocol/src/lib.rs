@@ -454,9 +454,11 @@ pub struct UsageSnapshot {
     pub revision: u64,
     pub provider: Option<String>,
     pub model: Option<String>,
-    /// Model turns started and completed in this epoch.
+    /// Model turns started in this epoch, including ones that failed.
     #[ts(type = "number")]
     pub attempts: u64,
+    /// Of those, turns that ended with a successful outcome; an error or refusal
+    /// is an attempt, not a completion.
     #[ts(type = "number")]
     pub completed: u64,
     #[ts(type = "number | null")]

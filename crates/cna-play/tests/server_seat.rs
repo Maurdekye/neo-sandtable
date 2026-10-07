@@ -998,8 +998,8 @@ async fn cna_scripted_only_runs_and_recovers_without_any_driver_endpoint() {
     let (root, demo) = configured(config).await;
     assert!(demo.epochs.is_empty());
     assert!(demo.mcp.url(demo.seat).is_none());
-    // PROVISIONAL: CI run37570418901 censored at 600 s, local 335 s;
-    // recalibrate to ~2x the first completed CI duration.
+    // Completed green CI run37584278878 measured184.100s (4868commands).
+    // Test-only370s hang guard is about2x that standalone campaign duration.
     // Production scripted and paid limits remain unchanged.
     let mut seats: Vec<_> = cna_core::ids::SeatId::all()
         .map(|seat| (seat, demo.handle.watch_seat(seat)))
@@ -1007,7 +1007,7 @@ async fn cna_scripted_only_runs_and_recovers_without_any_driver_endpoint() {
     demo.handle.pause(false).await.unwrap();
     let started = tokio::time::Instant::now();
     let mut status = demo.handle.watch_status();
-    let result = tokio::time::timeout(Duration::from_secs(1200), async {
+    let result = tokio::time::timeout(Duration::from_secs(370), async {
         loop {
             match status.borrow_and_update().clone() {
                 cna_server::CampaignStatus::Running => {}
