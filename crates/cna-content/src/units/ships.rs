@@ -120,15 +120,11 @@ mod tests {
         scenario.check(&units).unwrap();
         assert_eq!(units.coastal_rosters["ships/axis_coastal.toml"].len(), 4);
         scenario
-            .fleet
-            .get_mut("axis_coastal_shipping")
+            .fleet_logistics
+            .axis_coastal_shipping
+            .as_mut()
             .unwrap()
-            .as_table_mut()
-            .unwrap()
-            .insert(
-                "roster".into(),
-                toml::Value::String("../outside.toml".into()),
-            );
+            .roster = "../outside.toml".into();
         assert!(scenario.check(&units).is_err());
     }
 }

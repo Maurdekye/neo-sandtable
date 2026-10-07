@@ -243,7 +243,7 @@ pub fn capacity_tons(
     )
 }
 /// Arrival and coastal departure share this budget. Level G overflow at Tripoli cannot
-/// bypass damage, neutralization or enemy ownership.
+/// bypass neutralization or enemy ownership. Bombing alone does not remove this exception.
 /// Cases: airlog:55.14, airlog:55.17, airlog:55.3, airlog:56.27
 /// Interpretations: interp:airlog-0010
 pub fn charge(
@@ -270,15 +270,7 @@ pub fn charge(
         .used_tons24
         .checked_add(weight24)
         .ok_or(SupplyError::Invalid)?;
-    let overflow = level_g_tripoli
-        && port.name == PortName::Tripoli
-        && p.efficiency
-            == content
-                .tables
-                .airlog
-                .port_capacity
-                .port(port.name)
-                .max_efficiency_level;
+    let overflow = level_g_tripoli && port.name == PortName::Tripoli;
     if !overflow && total > capacity_tons(content, p, port.name)? * 24 {
         return Err(SupplyError::Insufficient);
     }
@@ -366,6 +358,16 @@ mod tests {
         s.cursor.op_stage = Some(1);
         advance(&c, &mut s, &p).unwrap();
         assert_eq!(s.logistics.ports[&p.id].efficiency, 7);
+    }
+
+    /// Cases: airlog:55.3
+    #[test]
+    fn level_g_tripoli_overflow_survives_bombing_but_not_neutralization() {
+        let (c, mut s, p) = setup();
+        s.logistics.ports.get_mut(&p.id).unwrap().efficiency = 1;
+        charge(&c, &mut s, Side::Axis, &p, 40000 * 24, true).unwrap();
+        s.logistics.ports.get_mut(&p.id).unwrap().efficiency = 0;
+        assert!(charge(&c, &mut s, Side::Axis, &p, 24, true).is_err());
     }
     /// Cases: airlog:55.11, airlog:56.11, land:30.58
     #[test]
