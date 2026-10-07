@@ -37,6 +37,8 @@ pub enum SupplySource {
     UnitStock(UnitId),
     /// An active, real, friendly dump in the same hex.
     Dump(String),
+    /// Only the canonical Air facade grants exact facility access.
+    AirDump(String),
     /// One specific pool's vehicle tanks.
     PoolTank(String),
     /// Own second-/third-line fuel cargo; other pools must unload before use.
@@ -560,6 +562,11 @@ pub(super) fn withdraw_into(
                     .ready_ammo -= amount.ammo
             }
             source => {
+                if let SupplySource::AirDump(id) = &source
+                    && !next.air_dumps.get(id).is_some_and(|d| &d.id == id)
+                {
+                    return Err(SupplyError::Invalid);
+                }
                 let before = prior.get(&source).copied().unwrap_or_default();
                 let after = FuelTenths::new(
                     before
@@ -585,6 +592,9 @@ pub(super) fn withdraw_into(
                         super::cargo_history::CargoSite::Pool(id.clone())
                     }
                     SupplySource::Dump(id) => super::cargo_history::CargoSite::Dump(id.clone()),
+                    SupplySource::AirDump(id) => {
+                        super::cargo_history::CargoSite::AirDump(id.clone())
+                    }
                     _ => return Err(SupplyError::Invalid),
                 };
                 super::cargo_history::retire_debit(
@@ -616,6 +626,13 @@ pub(super) fn withdraw_into(
                     SupplySource::Dump(id) => {
                         &mut next
                             .dumps
+                            .get_mut(&id)
+                            .ok_or(SupplyError::Invalid)?
+                            .supplies
+                    }
+                    SupplySource::AirDump(id) => {
+                        &mut next
+                            .air_dumps
                             .get_mut(&id)
                             .ok_or(SupplyError::Invalid)?
                             .supplies

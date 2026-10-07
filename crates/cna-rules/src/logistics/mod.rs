@@ -66,6 +66,7 @@
 //! Interpretations: interp:airlog-0001
 
 pub mod activity;
+pub mod air_supply;
 pub use activity::{
     ActivityWaterLedger, ActivityWaterPayment, TruckWater, activity_water_due,
     consume_activity_water_forced, remove_activity_water_credit, restore_activity_water_credit,

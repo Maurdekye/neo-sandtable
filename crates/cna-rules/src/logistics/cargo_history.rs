@@ -15,6 +15,7 @@ pub enum CargoSite {
     Unit(UnitId),
     Pool(String),
     Dump(String),
+    AirDump(String),
     Ship(String),
     BrokenMarker(String),
 }
@@ -179,6 +180,12 @@ pub fn owner(state: &State, site: &CargoSite) -> Option<Side> {
             .find(|p| &p.id == id)
             .map(|p| p.side),
         CargoSite::Dump(id) => state.logistics.dumps.get(id).map(|d| d.side),
+        CargoSite::AirDump(id) => state
+            .logistics
+            .air_dumps
+            .get(id)
+            .filter(|d| &d.id == id)
+            .map(|d| d.side),
         CargoSite::BrokenMarker(id) => state.land.breakdown.markers.get(id).map(|m| m.side),
         CargoSite::Ship(id) => state
             .logistics
@@ -207,6 +214,14 @@ fn stock(state: &State, site: &CargoSite) -> Result<Supplies, CargoError> {
                 .cargo
         }
         CargoSite::Dump(id) => state.logistics.dumps[id].supplies,
+        CargoSite::AirDump(id) => {
+            state
+                .logistics
+                .air_dumps
+                .get(id)
+                .ok_or(CargoError::Invalid)?
+                .supplies
+        }
         CargoSite::Ship(id) => state.logistics.coastal_ships[id].cargo,
         CargoSite::BrokenMarker(id) => state.land.breakdown.markers[id]
             .cargo

@@ -253,6 +253,9 @@ pub struct LogisticsState {
     /// Absent entries mean empty holdings; ratings remain in content.
     #[serde(default)]
     pub unit_supply: BTreeMap<UnitId, UnitSupply>,
+    /// Finite facility air stocks, separate from Land dumps and scenario pools.
+    #[serde(default)]
+    pub air_dumps: BTreeMap<String, crate::logistics::air_supply::AirDump>,
     pub dumps: BTreeMap<String, Dump>,
     #[serde(default)]
     pub next_dump_marker: u64,
