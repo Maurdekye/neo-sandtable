@@ -194,8 +194,17 @@ class EdgeReviewTests(unittest.TestCase):
             neighbor = data.grid.neighbour("C3921", direction)
             for kind in ("all_sea", "major_river", "escarpment"):
                 data.feature("side",kind,"C3921",neighbor)
+        # Keep the uncovered-approach check independent of later source surveys.
+        import shutil
+        fixture = self.folder / "uncovered-layers"
+        fixture.mkdir()
+        for name in ("sections.toml", "hexes.csv", "aliases.csv", "layers.toml"):
+            shutil.copyfile(MAP / name, fixture / name)
+        write_csv(fixture / "coverage.csv", COVERAGE_FIELDS, [])
+        write_csv(fixture / "line_features.csv", LINE_FIELDS, [])
+        write_csv(fixture / "hexsides.csv", SIDE_FIELDS, [])
         with self.assertRaises(UnknownCoverage):
-            data.feature("line","road","C3921","C3820")
+            Layers(fixture).feature("line","road","C3921","C3820")
         import tomllib
         strip = next(s for s in tomllib.loads((MAP/"strips.toml").read_text(encoding="utf-8"))["strips"] if s["id"]=="sollum-control-0001")
         self.assertEqual(strip["route_hex_ids"], ["C3922", "C3921", "C4021"])

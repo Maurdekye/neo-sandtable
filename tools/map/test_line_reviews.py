@@ -7,7 +7,8 @@ import shutil
 import tempfile
 import unittest
 from geometry import Grid
-from layers import Layers, UnknownCoverage
+from layers import COVERAGE_FIELDS, LINE_FIELDS, SIDE_FIELDS, Layers, UnknownCoverage
+from generate_grid import write_csv
 from line_reviews import load_line_reviews
 
 MAP=Path(__file__).resolve().parents[2]/'data/map'
@@ -60,7 +61,15 @@ class LineReviewTests(unittest.TestCase):
         with (MAP/'coverage.csv').open(newline='') as f:
             actual=[r for r in csv.DictReader(f) if r['layer'].startswith('line:') and r['review_batch']==self.meta['review_id']]
         self.assertEqual(masks,actual)
-        data=Layers(MAP)
+        # Query the immutable pilot replay, independently of later direct reviews.
+        fixture = self.folder / "pilot-layers"
+        fixture.mkdir()
+        for name in ("sections.toml", "hexes.csv", "aliases.csv", "layers.toml"):
+            shutil.copyfile(MAP / name, fixture / name)
+        write_csv(fixture / "coverage.csv", COVERAGE_FIELDS, masks)
+        write_csv(fixture / "line_features.csv", LINE_FIELDS, features)
+        write_csv(fixture / "hexsides.csv", SIDE_FIELDS, [])
+        data=Layers(fixture)
         self.assertIsNotNone(data.feature('line','road','C4419','C4320'))
         with self.assertRaises(UnknownCoverage): data.feature('line','track','C4419','C4320')
         self.assertIsNone(data.feature('line','road','C4416','C4417'))
