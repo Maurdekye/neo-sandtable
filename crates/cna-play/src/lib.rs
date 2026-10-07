@@ -191,7 +191,7 @@ impl Demo {
         let router = Arc::new(router);
         let prompts = DefaultPrompts { game_description: match config.kind {
             GameKind::Sandbox => "This is sandbox-v1, a synthetic integration game. Call observe for its complete rules summary.",
-            GameKind::Cna => "This is The Campaign for North Africa, Graziani's Offensive, under the development rules profile. Only implemented procedures are offered. Read the current observation, decision context and legal action schema through your tools. Future windows may ask for different orders; never assume initiative is the only kind. Unimplemented procedures are skipped by this profile; this is not a complete rules simulation.",
+            GameKind::Cna => "This is The Campaign for North Africa, Graziani's Offensive, under the development rules profile. Only implemented procedures are offered. Read the current observation, decision context and legal action schema through your tools. Future windows may ask for different orders; never assume initiative is the only kind. Unimplemented procedures are skipped by this profile; this is not a complete rules simulation. observe.enemy_counters groups enemy map counters by printed type and size per hex; inspect a disclosed counter or hex for its printed face. These are counters, not strength or a complete enemy inventory: attached units, contents and off-map units are not disclosed. logistics.rations gives problem unit lists to logistics and counts to other seats; counts are not unit IDs. Inspect an own unit for its current record.",
         }.into() };
         let endpoints = epochs
             .iter()

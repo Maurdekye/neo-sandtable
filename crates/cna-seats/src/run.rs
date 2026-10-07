@@ -190,7 +190,9 @@ impl PromptBuilder for DefaultPrompts {
         let notes = if notebook.trim().is_empty() {
             "Your notebook is empty.".to_string()
         } else {
-            format!("Your notebook (written by you earlier):\n{notebook}")
+            format!(
+                "Your notebook (written by you earlier):\n{notebook}\nThese notes are historical. Separate tool-disclosed facts from hypotheses; recheck the current tools after a restart instead of treating old notes as a current observation."
+            )
         };
         format!(
             "The game begins for you as {seat}. {notes}\n\nPending decisions:\n{}\n\nCall observe, then \

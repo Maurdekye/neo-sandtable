@@ -60,6 +60,14 @@ specific decision kind or encode an initiative answer. Each model turn requests 
 its listed window IDs; later windows belong to later turns. The notebook, team tools
 and engine-filtered observation work the same way for sandbox and CNA.
 
+CNA observations summarize enemy map counters by printed type and size per hex in
+`enemy_counters`; `inspect` reveals their printed faces. Counter totals do not reveal
+strength, attached units, contents or off-map inventory. Ration problems are unit
+lists for logistics, counts for other seats; inspect an own unit for its record.
+Recovered notebook notes remain historical claims and plans, to be checked against
+current tools. This updated startup wording changes the provider cache prefix for
+processes that receive it on resume or reseed; no live cache hit or cost is asserted.
+
 SQLite assigns transcript numbering/alignment. Live HTTP/WebSocket streams feed the
 board panel. Every CLI seat's protocol transcript is exported to a named JSONL file
 in the fresh, persistent temporary directory printed at startup. The viewer stays
