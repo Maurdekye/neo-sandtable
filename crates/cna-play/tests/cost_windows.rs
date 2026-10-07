@@ -73,6 +73,7 @@ async fn wait_answered(
 struct Fake {
     handle: cna_server::actor::CampaignHandle,
     router: Arc<ToolRouter>,
+    sink: cna_seats::transcript::TranscriptSink,
     seat: SeatId,
     epoch: u64,
     turns: u64,
@@ -84,6 +85,41 @@ struct Fake {
     destinations: BTreeMap<String, String>,
 }
 impl Fake {
+    // Ordered lists can wait for other seats' reaction answers after their receipt.
+    // Confirm the actual submitted members and the next movement window before
+    // the bounded launcher pauses; an accepted list is not a completed list.
+    async fn wait_moves(&self, expected: &BTreeMap<String, String>) -> Result<(), DriverError> {
+        tokio::time::timeout(Duration::from_secs(30), async {
+            let mut windows = self.handle.watch_seat(self.seat);
+            loop {
+                let pending = windows.borrow_and_update().pending.clone();
+                let view = self.handle.projection(cna_core::visibility::Perspective::Seat(self.seat));
+                let arrived = expected.iter().all(|(id, hex)| {
+                    view.view.units.get(id).is_some_and(|unit| unit.hex.as_deref() == Some(hex.as_str()))
+                });
+                if pending.iter().any(|p| p.kind == "cna.movement.orders") {
+                    if arrived { return Ok(()); }
+                    return Err(DriverError::Cli(format!(
+                        "movement window reopened before planned members arrived: expected {expected:?}; actual {:?}",
+                        expected.keys().map(|id| (id, view.view.units.get(id).and_then(|u| u.hex.clone()))).collect::<Vec<_>>()
+                    )));
+                }
+                if let Some(request) = pending.first() {
+                    if !automatic::forced_pass(&request.space) {
+                        return Err(DriverError::Cli(format!(
+                            "batch cost fixture needs another model-visible answer: {}; expected {expected:?}",
+                            request.kind
+                        )));
+                    }
+                    automatic::answer(&self.handle, self.seat, self.epoch, request, &self.sink)
+                        .await.map_err(|e| DriverError::Cli(e.to_string()))?;
+                    wait_answered(&self.handle, self.seat, request).await?;
+                } else {
+                    windows.changed().await.map_err(|e| DriverError::Cli(e.to_string()))?;
+                }
+            }
+        }).await.map_err(|_| DriverError::Timeout)?
+    }
     async fn call(&self, tool: &str, args: Value) -> Result<Value, DriverError> {
         self.router
             .call(self.seat, self.epoch, tool, &args)
@@ -235,13 +271,19 @@ impl SeatDriver for Fake {
                 .await?;
             self.choose_moves = false;
         }
+        let mut expected = BTreeMap::new();
         let action = if !self.moves.is_empty() {
             assert_eq!(request.kind, "cna.movement.orders");
             let count = self.batch.min(self.moves.len());
             let moves: Vec<_> = self.moves.drain(..count).collect();
             for order in &moves {
-                self.call("inspect", json!({"target":order["unit"]}))
+                let inspected = self
+                    .call("inspect", json!({"target":order["unit"]}))
                     .await?;
+                for member in inspected["movement_restrictions"].as_array().unwrap() {
+                    let id = member["unit"].as_str().unwrap();
+                    expected.insert(id.to_owned(), self.destinations[id].clone());
+                }
             }
             let action = Value::Array(moves);
             self.call(
@@ -266,6 +308,9 @@ impl SeatDriver for Fake {
             self.answer_sizes.push(items.len() as u64);
         }
         wait_answered(&self.handle, self.seat, &request).await?;
+        if !expected.is_empty() {
+            self.wait_moves(&expected).await?;
+        }
         self.turns += 1;
         Ok(TurnOutcome {
             ok: true,
@@ -312,6 +357,7 @@ async fn first_opstage_model_visible_windows_before_and_after_forced_answers_exc
         .map(|seat| Fake {
             handle: demo.handle.clone(),
             router: router.clone(),
+            sink: demo.sink.clone(),
             seat: *seat,
             epoch: demo.handle.seat(*seat).binding.controller_epoch,
             turns: 0,
@@ -461,6 +507,7 @@ async fn move_batch(batch: usize) -> (u64, Vec<u64>, BTreeMap<String, Value>) {
             )
             .with_call_cap(Some(512)),
         ),
+        sink: demo.sink.clone(),
         seat: demo.seat,
         epoch: demo.epoch,
         turns: 0,
@@ -484,7 +531,11 @@ async fn move_batch(batch: usize) -> (u64, Vec<u64>, BTreeMap<String, Value>) {
     let mut final_units = BTreeMap::new();
     for (id, destination) in &fake.destinations {
         let unit = &view.view.units[id];
-        assert_eq!(unit.hex.as_deref(), Some(destination.as_str()));
+        assert_eq!(
+            unit.hex.as_deref(),
+            Some(destination.as_str()),
+            "planned unit {id}"
+        );
         final_units.insert(id.clone(), serde_json::to_value(unit).unwrap());
     }
     assert!(!final_units.is_empty());
