@@ -1,6 +1,6 @@
 # cna-play
 
-A bounded campaign launcher with a production spectator board and per-seat controllers.
+A campaign launcher with a production spectator board and per-seat controllers.
 `--kind sandbox` selects the synthetic integration game. `--kind cna` selects Graziani's
 Offensive under `cna-2021-dev`: implemented procedures produce real decisions; the
 profile skips unfinished procedures and is not a complete CNA rules simulation.
@@ -40,7 +40,7 @@ Haiku seat. When any session completes its bounded allocation or fails, peers st
 and the campaign pauses; unfinished decisions stay unanswered. A timeout, missing
 answer or CLI refusal records failure for its bound epoch. No fallback orders are
 submitted. A handover cancels the old session without marking its replacement failed.
-Human/scripted-only runs wait for completion up to the same campaign wall limit.
+Human/scripted-only runs have a separate unpaid scheduling limit; paid limits stay unchanged.
 
 Prompts consume the actual pending decision IDs and the seat notebook, and direct the
 CLI to `observe`, `describe_actions`, `validate`, and `submit`. They do not assume a
@@ -81,6 +81,57 @@ order through five paired tools, including a standing-plan notebook write. Its
 was \$0.022854. The production board displayed all 18 entries without page errors.
 The campaign paused at the next OpStage decision, leaving it unanswered.
 
-Known limits: this remains a bounded launcher, with no durable launcher session ID
-or restart/resume scheduler. Campaign-long sessions, compaction/context budgets and
-notebook-based recovery are the next milestone, followed by Codex and Antigravity.
+For a campaign session, use explicit lifetime budgets:
+
+```sh
+cargo run -p cna-play -- --kind cna --seat axis.front_line=claude:haiku --seat '*=scripted:pass_when_possible' --long-lived --turns 2048 --tool-calls 16000 --wall-seconds 21600 --turn-timeout 120 --context-tokens 100000 --recoveries 3
+cargo run -p cna-play -- --resume /path/to/campaign.sqlite
+```
+
+`--long-lived` keeps one CLI session across decision windows. Its defaults remain
+small: two model turns, forty calls, 150 seconds total and sixty per turn. Explicit
+bounds may extend to 8192 turns, 100000 calls, six hours, twenty minutes per turn,
+and eight recoveries, with at most two concurrent Claude seats. Resume accepts only
+the database path and reuses the original limits, controller epochs and models;
+it cannot replace limits or reset counters. A changed or failed binding refuses
+resume. Ctrl-C stops the current run, pauses the campaign and preserves the journal.
+Budget exhaustion or CLI failure pauses the original binding without fallback orders.
+
+The trusted SQLite journal lives in `session-journals/<campaign-id>.sqlite` under
+the campaign directory. An exclusive SQLite lease prevents duplicate launchers and
+releases on process exit, including a hard kill. The journal commits a turn/time
+reservation before each operation and charges each MCP call before dispatch. A hard
+crash retains the whole unfinished time reservation; offline downtime is excluded.
+Idle time, authentication and model turns count toward the lifetime wall limit.
+Unconfirmed result-less turns are marked as incomplete telemetry. Preserve the
+campaign, journal and original per-seat sandbox paths together for resume. Campaign
+fingerprints still reject incompatible engine/content versions; no migration is implied.
+
+Each turn authorizes exactly one decision ID and revision. If a group reopens with
+another revision, the next model turn handles it. A process death resumes the same
+CLI session; an explicitly unavailable resume starts a new session from the game's
+durable notebook, preserving all budgets. Authentication, quota, isolation and turn
+errors pause instead of triggering a notebook fallback. The first prompt after a
+restart includes the durable notebook, and notebook failures stop model work.
+
+Claude owns automatic compaction. The launcher sets the effective context window
+(`--context-tokens`, 16000..200000) and an 80% native compaction trigger. It captures
+`compact_boundary` events and current API-request context occupancy separately from
+aggregate turn usage. If occupancy still reaches 95% of the configured window at a
+turn boundary, the session pauses. An idle Claude process gets at most two seconds
+of stdin EOF grace to persist resumable totals; a canceled active turn is killed.
+See [Claude environment variables](https://code.claude.com/docs/en/env-vars).
+
+Journal stage entries count requested decision attempts/completions and reported
+input/output tokens. Cost uses differences of Claude's cumulative session estimates,
+including restored resume totals; it does not sum successive cumulative values.
+A reset/reseed preserves earlier spend and uses a new baseline. Stage totals describe
+only this seat's requested windows, including partial stages. Missing results can
+omit spend, so these are estimates and incomplete telemetry is explicit; the CLI
+report is not an authoritative bill. See [Claude cost tracking](https://code.claude.com/docs/en/agent-sdk/cost-tracking).
+
+Bounded default tests complete a few requests and verify recovery. Whole-CNA runs
+are marked slow and run in the CI slow-test job. Offline tests cover original-session resume, notebook reseed, repeated real CNA
+windows, hard-crash reservations, persisted tool caps, lease exclusion, corrupt
+journals and stale bindings. Live checks remain opt-in and bounded. Codex and
+Antigravity still await confinement proofs and drivers.

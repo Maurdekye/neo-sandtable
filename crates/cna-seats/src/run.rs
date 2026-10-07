@@ -162,8 +162,8 @@ impl PromptBuilder for DefaultPrompts {
              message_team / read_messages (your own side only), and notebook_read / notebook_write \
              (durable notes that survive restarts; keep standing plans and lessons there). You have \
              no other tools: no files, no shell, no web. Never invent decision ids or answers: take \
-             them from the tools. When you have answered every pending decision, stop calling tools \
-             and reply with a one-line summary.",
+             them from the tools. When you have answered the decision IDs and revisions requested for this model turn, stop calling tools \
+             and reply with a one-line summary. Leave newer revisions and later windows for the next turn.",
             self.game_description
         )
     }
@@ -254,9 +254,20 @@ impl SeatRunner {
 
     /// Run until the game ends, the seat pauses or fails, or a stop is requested.
     pub async fn run(&mut self) -> SeatEnd {
-        let end = self.run_inner().await;
+        let mut end = self.run_inner().await;
         self.driver.stop().await;
-        self.sink.flush().await;
+        let drained = tokio::time::timeout(Duration::from_secs(5), self.sink.flush()).await;
+        if drained.is_err() || self.sink.pending_count() != 0 {
+            self.sink.stop_delivery().await;
+            let original = match &end {
+                SeatEnd::Paused(r) | SeatEnd::Failed(r) => format!("{r}; "),
+                _ => String::new(),
+            };
+            end = SeatEnd::Failed(PauseReason::CliError(format!(
+                "{original}transcript persistence did not drain; {} unconfirmed captures retained in the sink",
+                self.sink.pending_count()
+            )));
+        }
         match &end {
             SeatEnd::Paused(r) => self.set(SeatStatus::Paused, Some(r.clone())),
             SeatEnd::Failed(r) => self.set(SeatStatus::Failed, Some(r.clone())),
@@ -704,5 +715,39 @@ mod tests {
         // Each window after the first resumed the parked session instead of starting a new one.
         assert_eq!(h.starts.load(Ordering::SeqCst), 2);
         assert!(h.resumes.load(Ordering::SeqCst) >= 4);
+    }
+    #[tokio::test]
+    async fn dead_transcript_store_cannot_hold_runner_cleanup_forever() {
+        struct Dead;
+        #[async_trait]
+        impl crate::transcript::TranscriptStore for Dead {
+            async fn append(
+                &self,
+                _: SeatId,
+                _: String,
+                _: cna_protocol::TranscriptEntry,
+            ) -> Result<u64, String> {
+                std::future::pending().await
+            }
+        }
+        let mut h = harness();
+        h.sink = TranscriptSink::new(Arc::new(Dead));
+        h.sink.system(AXIS, "unconfirmed");
+        let mut run = runner(
+            &h,
+            AXIS,
+            Script::Silent,
+            RunLimits {
+                max_nudges: 0,
+                ..RunLimits::default()
+            },
+        );
+        let end = tokio::time::timeout(Duration::from_secs(7), run.run())
+            .await
+            .expect("bounded flush");
+        assert!(
+            matches!(end,SeatEnd::Failed(PauseReason::CliError(ref s)) if s.contains("pending decisions") && s.contains("unconfirmed"))
+        );
+        assert_eq!(h.sink.pending_count(), 1);
     }
 }

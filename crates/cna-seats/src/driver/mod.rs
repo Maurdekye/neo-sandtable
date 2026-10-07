@@ -52,6 +52,7 @@ pub struct Usage {
     pub output_tokens: Option<u64>,
     pub cached_input_tokens: Option<u64>,
     pub reasoning_tokens: Option<u64>,
+    /// CLI estimate; Claude streaming reports cumulative session cost.
     pub cost_usd: Option<f64>,
 }
 
@@ -89,6 +90,11 @@ pub enum StreamEvent {
         mcp_connected: Option<bool>,
     },
     Entry(TranscriptEntry),
+    Context(u64),
+    Compacted {
+        trigger: String,
+        pre_tokens: Option<u64>,
+    },
     Quota(QuotaReading),
     TurnDone(TurnOutcome),
 }
@@ -128,10 +134,23 @@ pub struct SessionInfo {
     pub resumed: bool,
 }
 
+/// Driver-reported context occupancy and compaction events, never inferred from
+/// aggregate turn token usage. Counts restart at zero for each process.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SessionTelemetry {
+    pub model: Option<String>,
+    pub cli_version: Option<String>,
+    pub tools: Vec<String>,
+    pub context_tokens: Option<u64>,
+    pub compactions: u64,
+}
 /// One seat's CLI session.
 #[async_trait]
 pub trait SeatDriver: Send + Sync {
     fn kind(&self) -> CliKind;
+    fn telemetry(&self) -> SessionTelemetry {
+        SessionTelemetry::default()
+    }
     /// Start (or resume, if `resume_session` is given) the CLI session.
     async fn start(&mut self, resume_session: Option<&str>) -> Result<SessionInfo, DriverError>;
     /// Send one user turn and stream the CLI's work into the transcript until the turn ends.
@@ -206,6 +225,17 @@ impl ChildProc {
         })
     }
 
+    /// Close input and give an idle CLI time to persist resumable session totals.
+    /// Active/canceled turns use kill instead; this grace is bounded.
+    pub async fn finish(&mut self, grace: Duration) {
+        self.close_stdin();
+        if !matches!(
+            tokio::time::timeout(grace, self.child.wait()).await,
+            Ok(Ok(_))
+        ) {
+            self.kill().await;
+        }
+    }
     pub async fn send_line(&mut self, line: &str) -> std::io::Result<()> {
         let stdin = self
             .stdin
@@ -250,9 +280,10 @@ impl ChildProc {
 /// Environment variable name prefixes that never reach a seat's CLI: the operator's own agent
 /// identity, other providers' credentials and any parent CLI session markers. What a seat needs
 /// (its account's config dir) is set explicitly afterwards.
-const SCRUBBED_PREFIXES: [&str; 13] = [
+const SCRUBBED_PREFIXES: [&str; 14] = [
     "CNA_",
     "ORGTREE_",
+    "DISABLE_AUTO_COMPACT",
     "CLAUDE",
     "ANTHROPIC_",
     "OPENAI_",

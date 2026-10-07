@@ -62,6 +62,21 @@ pub struct SeatCounters {
     pub calls: AtomicU64,
 }
 
+/// A trusted supervisor can require durable quota charging before every game call.
+/// Failure refuses the call; it never runs an action whose charge was not committed.
+pub trait ToolBudget: Send + Sync {
+    fn charge(&self, seat: SeatId) -> Result<(), String>;
+    fn authorize(
+        &self,
+        _seat: SeatId,
+        _epoch: u64,
+        _tool: &str,
+        _args: &Value,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+}
+
 /// Dispatches tool calls for seats. Holds no transport state.
 pub struct ToolRouter {
     game: SharedGame,
@@ -69,6 +84,7 @@ pub struct ToolRouter {
     counters: BTreeMap<SeatId, Arc<SeatCounters>>,
     /// Hard refusal threshold per seat (calls). `None` = unlimited.
     call_cap: Option<u64>,
+    budget: Option<Arc<dyn ToolBudget>>,
     events: Mutex<Option<mpsc::UnboundedSender<ToolEvent>>>,
 }
 
@@ -86,8 +102,14 @@ impl ToolRouter {
             memory,
             counters: seats.iter().map(|s| (*s, Arc::default())).collect(),
             call_cap: None,
+            budget: None,
             events: Mutex::new(None),
         }
+    }
+
+    pub fn with_budget(mut self, budget: Arc<dyn ToolBudget>) -> Self {
+        self.budget = Some(budget);
+        self
     }
 
     pub fn with_call_cap(mut self, cap: Option<u64>) -> Self {
@@ -163,6 +185,10 @@ impl ToolRouter {
         tool: &str,
         args: &Value,
     ) -> Result<Value, String> {
+        if let Some(budget) = &self.budget {
+            budget.charge(seat)?;
+            budget.authorize(seat, epoch, tool, args)?;
+        }
         if let Some(c) = self.counters.get(&seat) {
             let n = c.calls.fetch_add(1, Ordering::SeqCst) + 1;
             if self.call_cap.is_some_and(|cap| n > cap) {
@@ -248,9 +274,15 @@ impl ToolRouter {
                     .and_then(Value::as_u64)
                     .map(|r| u32::try_from(r).map_err(|_| "revision out of range".to_string()))
                     .transpose()?;
-                // Same decision + same answer = same key, so a retry after a crash or a repeated
-                // call is applied once.
-                let key = format!("{id}|{:016x}", fnv(&action.to_string()));
+                // Exact-revision retries are idempotent. A reopened revision or new controller
+                // is a different command even when it chooses the same action.
+                let key = match revision {
+                    Some(revision) => format!(
+                        "{id}|e{epoch}|r{revision}|{:016x}",
+                        fnv(&action.to_string())
+                    ),
+                    None => format!("{id}|{:016x}", fnv(&action.to_string())),
+                };
                 let receipt = self
                     .game
                     .submit(
@@ -650,5 +682,89 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(nomethod["error"]["code"], -32601);
+    }
+    #[tokio::test]
+    async fn identical_actions_at_reopened_revisions_are_distinct_but_retries_are_idempotent() {
+        use crate::game::{GameBackend, SubmitReceipt, ToolError};
+        // The serialized writer rejects a key reused for a different command. This backend
+        // isolates that contract so reopened ids need no particular game's setup sequence.
+        type RecordedCommand = (u64, Option<u32>, Value);
+        #[derive(Default)]
+        struct Reopened(Mutex<BTreeMap<String, RecordedCommand>>);
+        #[async_trait::async_trait]
+        impl GameBackend for Reopened {
+            async fn seats(&self) -> Vec<SeatId> {
+                vec![AXIS]
+            }
+            async fn game_seq(&self) -> u64 {
+                0
+            }
+            async fn pending(&self, _: SeatId) -> Vec<cna_core::decision::DecisionRequest> {
+                vec![]
+            }
+            async fn observe(&self, _: SeatId) -> Value {
+                json!({})
+            }
+            async fn inspect(&self, _: SeatId, _: &str) -> Result<Value, ToolError> {
+                Ok(json!({}))
+            }
+            async fn describe_actions(&self, _: SeatId, _: &str) -> Result<Value, ToolError> {
+                Ok(json!({}))
+            }
+            async fn validate(&self, _: SeatId, _: &str, _: &Value) -> Result<Value, ToolError> {
+                Ok(json!({}))
+            }
+            async fn epoch(&self, _: SeatId) -> u64 {
+                1
+            }
+            async fn outcome(&self) -> Option<Value> {
+                None
+            }
+            async fn submit(
+                &self,
+                _: SeatId,
+                r: SubmitRequest,
+            ) -> Result<SubmitReceipt, ToolError> {
+                let mut commands = self.0.lock().unwrap();
+                let command = (r.epoch, r.revision, r.action);
+                let duplicate = if let Some(old) = commands.get(&r.idempotency_key) {
+                    if old != &command {
+                        return Err(ToolError::Other("idempotency conflict".into()));
+                    }
+                    true
+                } else {
+                    commands.insert(r.idempotency_key, command);
+                    false
+                };
+                Ok(SubmitReceipt {
+                    decision_id: r.decision_id,
+                    duplicate,
+                    summary: "accepted".into(),
+                    result: json!({"duplicate":duplicate}),
+                })
+            }
+        }
+        let game = Arc::new(Reopened::default());
+        let memory = Arc::new(InMemorySeatMemory::new(vec![AXIS]));
+        let router = ToolRouter::new(game.clone(), memory, &[AXIS]);
+        for (epoch, revision, duplicate) in [
+            (1, 1, false),
+            (1, 1, true),
+            (1, 2, false),
+            (1, 2, true),
+            (2, 2, false),
+        ] {
+            let result = router
+                .call(
+                    AXIS,
+                    epoch,
+                    "submit",
+                    &json!({"decision_id":"reopened","revision":revision,"action":null}),
+                )
+                .await
+                .unwrap();
+            assert_eq!(result["duplicate"], duplicate);
+        }
+        assert_eq!(game.0.lock().unwrap().len(), 3);
     }
 }

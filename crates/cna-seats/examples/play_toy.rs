@@ -29,6 +29,7 @@ async fn main() {
             mcp_url: url,
             system_prompt: system,
             effort: None,
+            context_window: None,
         };
         Box::new(ClaudeDriver::new(cfg, sink))
     })

@@ -79,6 +79,8 @@ pub struct ClaudeConfig {
     /// Replaces Claude Code's default system prompt.
     pub system_prompt: String,
     pub effort: Option<String>,
+    /// Effective window for native automatic compaction; None keeps CLI defaults.
+    pub context_window: Option<u64>,
 }
 
 /// Whether to start a new session with a chosen id or resume an existing one.
@@ -196,6 +198,15 @@ impl StreamParser for ClaudeParser {
                         });
                     }
                 }
+                Some("compact_boundary") => {
+                    out.push(StreamEvent::Compacted {
+                        trigger: v["compact_metadata"]["trigger"]
+                            .as_str()
+                            .unwrap_or("unknown")
+                            .into(),
+                        pre_tokens: v["compact_metadata"]["pre_tokens"].as_u64(),
+                    });
+                }
                 Some("permission_denied") => {
                     out.push(StreamEvent::Entry(TranscriptEntry::System {
                         text: format!(
@@ -207,6 +218,19 @@ impl StreamParser for ClaudeParser {
                 _ => {}
             },
             Some("assistant") => {
+                let usage = &v["message"]["usage"];
+                if usage.is_object() {
+                    let context = [
+                        "input_tokens",
+                        "cache_read_input_tokens",
+                        "cache_creation_input_tokens",
+                        "output_tokens",
+                    ]
+                    .iter()
+                    .map(|key| usage[*key].as_u64().unwrap_or(0))
+                    .fold(0u64, u64::saturating_add);
+                    out.push(StreamEvent::Context(context));
+                }
                 for block in v["message"]["content"].as_array().into_iter().flatten() {
                     match block["type"].as_str() {
                         Some("text") => {
@@ -318,6 +342,8 @@ pub struct ClaudeDriver {
     proc: Option<ChildProc>,
     parser: ClaudeParser,
     session_id: Option<String>,
+    telemetry: super::SessionTelemetry,
+    idle: bool,
 }
 
 impl ClaudeDriver {
@@ -328,6 +354,8 @@ impl ClaudeDriver {
             proc: None,
             parser: ClaudeParser::default(),
             session_id: None,
+            telemetry: super::SessionTelemetry::default(),
+            idle: true,
         }
     }
 
@@ -346,10 +374,15 @@ impl ClaudeDriver {
     }
 
     fn env(&self) -> Vec<(&'static str, std::ffi::OsString)> {
-        match &self.cfg.config_dir {
+        let mut env = match &self.cfg.config_dir {
             Some(d) => vec![("CLAUDE_CONFIG_DIR", d.clone().into_os_string())],
             None => Vec::new(),
+        };
+        if let Some(window) = self.cfg.context_window {
+            env.push(("CLAUDE_CODE_AUTO_COMPACT_WINDOW", window.to_string().into()));
+            env.push(("CLAUDE_AUTOCOMPACT_PCT_OVERRIDE", "80".into()));
         }
+        env
     }
 
     /// Check that the configured login is the expected account (`claude auth status`).
@@ -411,11 +444,22 @@ impl SeatDriver for ClaudeDriver {
         }
         self.proc = None;
         self.parser = ClaudeParser::default();
+        self.telemetry = super::SessionTelemetry::default();
+        self.idle = true;
         let io = |e| DriverError::Spawn {
             cli: "claude",
             source: e,
         };
         std::fs::create_dir_all(&self.cfg.sandbox).map_err(io)?;
+        if std::fs::read_dir(&self.cfg.sandbox)
+            .map_err(io)?
+            .next()
+            .is_some()
+        {
+            return Err(DriverError::Isolation(
+                "seat working directory must be empty".into(),
+            ));
+        }
         std::fs::create_dir_all(&self.cfg.run_dir).map_err(io)?;
         let mcp_path = self.cfg.run_dir.join(format!("{}.mcp.json", self.cfg.seat));
         std::fs::write(&mcp_path, mcp_config_json(&self.cfg.mcp_url).to_string()).map_err(io)?;
@@ -455,11 +499,16 @@ impl SeatDriver for ClaudeDriver {
         })
     }
 
+    fn telemetry(&self) -> super::SessionTelemetry {
+        self.telemetry.clone()
+    }
+
     async fn run_turn(
         &mut self,
         prompt: &str,
         limit: Duration,
     ) -> Result<TurnOutcome, DriverError> {
+        self.idle = false;
         let mut emitter = EntryEmitter::new(self.cfg.seat, self.sink.clone());
         let proc = self
             .proc
@@ -480,6 +529,9 @@ impl SeatDriver for ClaudeDriver {
                     cli_version,
                 } => {
                     check_isolation(tools, *mcp_connected)?;
+                    self.telemetry.model = model.clone();
+                    self.telemetry.cli_version = cli_version.clone();
+                    self.telemetry.tools = tools.clone();
                     self.sink.system(
                         self.cfg.seat,
                         format!(
@@ -490,6 +542,18 @@ impl SeatDriver for ClaudeDriver {
                     );
                     real_session = Some(session_id.clone());
                 }
+                StreamEvent::Context(tokens) => self.telemetry.context_tokens = Some(*tokens),
+                StreamEvent::Compacted {
+                    trigger,
+                    pre_tokens,
+                } => {
+                    self.telemetry.compactions += 1;
+                    self.telemetry.context_tokens = None;
+                    self.sink.system(
+                        self.cfg.seat,
+                        format!("CLI compacted context ({trigger}, pre_tokens {pre_tokens:?})"),
+                    );
+                }
                 StreamEvent::Entry(entry) => emitter.emit(entry.clone()),
                 _ => {}
             }
@@ -499,6 +563,7 @@ impl SeatDriver for ClaudeDriver {
         if let Some(id) = real_session.filter(|s| !s.is_empty()) {
             self.session_id = Some(id);
         }
+        self.idle = true;
         Ok(outcome)
     }
 
@@ -512,7 +577,11 @@ impl SeatDriver for ClaudeDriver {
 
     async fn stop(&mut self) {
         if let Some(p) = &mut self.proc {
-            p.kill().await;
+            if self.idle {
+                p.finish(Duration::from_secs(2)).await;
+            } else {
+                p.kill().await;
+            }
         }
         self.proc = None;
     }
@@ -687,6 +756,7 @@ mod tests {
             mcp_url: "http://127.0.0.1:1/mcp/t".into(),
             system_prompt: "play".into(),
             effort: None,
+            context_window: None,
         };
         let args = claude_args(
             &cfg,
@@ -714,5 +784,21 @@ mod tests {
         );
         assert!(resumed.contains(&"--resume".to_string()));
         assert!(!resumed.contains(&"--session-id".to_string()));
+    }
+    #[test]
+    fn compaction_and_current_request_context_are_observed_separately_from_turn_usage() {
+        let mut p = ClaudeParser::default();
+        let events=p.feed(r#"{"type":"assistant","message":{"usage":{"input_tokens":20,"cache_read_input_tokens":100,"cache_creation_input_tokens":30,"output_tokens":5},"content":[]}}"#);
+        assert_eq!(events, [StreamEvent::Context(155)]);
+        let events=p.feed(r#"{"type":"system","subtype":"compact_boundary","compact_metadata":{"trigger":"auto","pre_tokens":10000}}"#);
+        assert_eq!(
+            events,
+            [StreamEvent::Compacted {
+                trigger: "auto".into(),
+                pre_tokens: Some(10000)
+            }]
+        );
+        let events=p.feed(r#"{"type":"result","subtype":"success","usage":{"input_tokens":99999},"total_cost_usd":0.02}"#);
+        assert!(!events.iter().any(|e| matches!(e, StreamEvent::Context(_))));
     }
 }

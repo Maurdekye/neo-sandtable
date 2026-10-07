@@ -1,5 +1,7 @@
-//! Bounded integration probe, not the production campaign scheduler.
+//! Server-backed seat launcher with opt-in durable campaign sessions.
+mod campaign;
 pub mod config;
+pub mod journal;
 use cna_core::{ids::SeatId, visibility::Perspective};
 use cna_protocol::{ControllerInfo, ControllerKind, ServerMessage};
 use cna_seats::{
@@ -42,6 +44,7 @@ pub struct Demo {
     pub mcp: McpServer,
     pub base_url: String,
     pub outbox: PathBuf,
+    pub journal: Option<Arc<journal::SessionJournal>>,
     app: App,
     http: JoinHandle<()>,
 }
@@ -85,7 +88,7 @@ impl Demo {
                         label: format!("Claude Code / {model}"),
                     },
                     json!({"model":model,"max_turns":config.max_turns,"max_tool_calls":config.tool_calls,
-                        "max_wall_s":WALL_LIMIT.as_secs(),"turn_timeout_s":TURN_LIMIT.as_secs()}),
+                        "max_wall_s":config.session.as_ref().map_or(WALL_LIMIT.as_secs(),|s|s.wall_seconds),"turn_timeout_s":config.session.as_ref().map_or(TURN_LIMIT.as_secs(),|s|s.turn_seconds),"session_limits":config.session}),
                 ),
                 Controller::Scripted(mode) => (
                     ControllerInfo {
@@ -110,6 +113,67 @@ impl Demo {
                 epochs.insert(*seat, binding.controller_epoch);
             }
         }
+        let id = handle.projection(Perspective::Operator).meta.id;
+        let journal = if config.session.is_some() {
+            Some(Arc::new(journal::SessionJournal::create(
+                directory,
+                &id,
+                config.clone(),
+                &epochs,
+            )?))
+        } else {
+            None
+        };
+        Self::serve(directory, data, dist, config, handle, epochs, journal).await
+    }
+
+    pub async fn resume(path: &Path, data: &Path, dist: &Path) -> Result<Self, String> {
+        let directory = path.parent().ok_or("campaign path needs a directory")?;
+        let id = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or("invalid campaign database name")?;
+        // Acquire lease before starting the recovered campaign writer.
+        let journal = Arc::new(journal::SessionJournal::recover(directory, id)?);
+        let saved = journal.snapshot()?;
+        let handle = campaigns::recover(path, data).map_err(|e| e.to_string())?;
+        let checked = async {
+            if handle.projection(Perspective::Operator).meta.id != id {return Err("campaign identity differs from journal".to_string());}
+            if matches!(handle.status(), CampaignStatus::Running) {handle.pause(true).await.map_err(|e|e.to_string())?;}
+            for (seat, record) in &saved.seats {
+                let binding=handle.seat(*seat).binding;
+                if binding.controller_epoch!=record.epoch || binding.paused || binding.failure.is_some() || binding.controller.as_ref().map(|c|c.kind)!=Some(ControllerKind::LlmCli) || binding.config.get("model").and_then(|s|s.as_str())!=Some(record.model.as_str()) {
+                    return Err(format!("{seat}: journal binding was replaced or failed; explicit operator action required"));
+                }
+            }
+            Ok(())
+        }.await;
+        if let Err(error) = checked {
+            let cleanup = handle.shutdown().await.map_err(|e| e.to_string());
+            return combine_results(Err(error), cleanup).map(|_| unreachable!());
+        }
+        let epochs = saved.seats.iter().map(|(s, r)| (*s, r.epoch)).collect();
+        Self::serve(
+            directory,
+            data,
+            dist,
+            saved.config,
+            handle,
+            epochs,
+            Some(journal),
+        )
+        .await
+    }
+
+    async fn serve(
+        directory: &Path,
+        data: &Path,
+        dist: &Path,
+        config: LaunchConfig,
+        handle: CampaignHandle,
+        epochs: BTreeMap<SeatId, u64>,
+        journal: Option<Arc<journal::SessionJournal>>,
+    ) -> Result<Self, String> {
         let seat = epochs
             .keys()
             .next()
@@ -118,10 +182,13 @@ impl Demo {
         let epoch = handle.seat(seat).binding.controller_epoch;
         let shared = Arc::new(handle.clone());
         let seats: Vec<_> = epochs.keys().copied().collect();
-        let router = Arc::new(
-            ToolRouter::new(shared.clone(), shared.clone(), &seats)
-                .with_call_cap(Some(config.tool_calls)),
-        );
+        let mut router = ToolRouter::new(shared.clone(), shared.clone(), &seats);
+        if let Some(journal) = &journal {
+            router = router.with_budget(journal.clone());
+        } else {
+            router = router.with_call_cap(Some(config.tool_calls));
+        }
+        let router = Arc::new(router);
         let prompts = DefaultPrompts { game_description: match config.kind {
             GameKind::Sandbox => "This is sandbox-v1, a synthetic integration game. Call observe for its complete rules summary.",
             GameKind::Cna => "This is The Campaign for North Africa, Graziani's Offensive, under the development rules profile. Only implemented procedures are offered. Read the current observation, decision context and legal action schema through your tools. Future windows may ask for different orders; never assume initiative is the only kind. Unimplemented procedures are skipped by this profile; this is not a complete rules simulation.",
@@ -166,6 +233,7 @@ impl Demo {
             mcp,
             base_url: format!("http://127.0.0.1:{port}"),
             outbox: directory.join(format!("{campaign_id}.unconfirmed.jsonl")),
+            journal,
             app,
             http,
         })
@@ -336,10 +404,11 @@ impl Demo {
                     return Err(outcome.error.unwrap_or_else(|| "CLI refused turn".into()));
                 }
                 let now = self.handle.seat(seat);
-                if pending
-                    .iter()
-                    .any(|old| now.pending.iter().any(|new| new.id == old.id))
-                {
+                if pending.iter().any(|old| {
+                    now.pending
+                        .iter()
+                        .any(|new| new.id == old.id && new.revision == old.revision)
+                }) {
                     return Err("CLI ended without answering its pending decisions".into());
                 }
                 self.sink.system(

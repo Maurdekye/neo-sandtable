@@ -189,10 +189,13 @@ dependencies = [
  "cna-server",
  "futures-util",
  "reqwest",
+ "rusqlite",
+ "serde",
  "serde_json",
  "tempfile",
  "tokio",
  "tokio-tungstenite",
+ "uuid",
 ]
 
 [[package]]

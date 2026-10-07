@@ -296,6 +296,7 @@ async fn live_haiku_server_probe_is_opt_in() {
             mcp_url: demo.mcp.url(demo.seat).unwrap(),
             system_prompt: demo.prompts.system_prompt(demo.seat),
             effort: None,
+            context_window: None,
         },
         demo.sink.clone(),
     );
@@ -611,6 +612,7 @@ async fn handover_during_authentication_kills_the_probe_child() {
             mcp_url: demo.mcp.url(demo.seat).unwrap(),
             system_prompt: demo.prompts.system_prompt(demo.seat),
             effort: None,
+            context_window: None,
         },
         demo.sink.clone(),
     );
@@ -1233,4 +1235,69 @@ fn measured_cna_haiku_fixture_keeps_real_decision_and_notebook_tools_paired() {
     assert_eq!((count, calls, decisions), (18, 5, 1));
     assert!(notebook_written && cna_window);
     assert!(last_seq > 0);
+}
+
+#[tokio::test]
+async fn bounded_scripted_cna_progress_recovers_without_any_cli_endpoint() {
+    use cna_play::config::{GameKind, LaunchConfig};
+    let config =
+        LaunchConfig::resolve(GameKind::Cna, &["*=scripted:pass_when_possible".into()]).unwrap();
+    let (root, demo) = configured(config).await;
+    assert!(demo.epochs.is_empty());
+    assert!(demo.mcp.url(demo.seat).is_none());
+    let accepted = || {
+        demo.transcript()
+            .iter()
+            .filter(|row| {
+                matches!(
+                    row,
+                    ServerMessage::Transcript {
+                        entry: TranscriptEntry::DecisionSubmitted { .. },
+                        ..
+                    }
+                )
+            })
+            .count()
+    };
+    demo.handle.pause(false).await.unwrap();
+    let progress = tokio::time::timeout(Duration::from_secs(50), async {
+        loop {
+            if accepted() >= 2
+                || matches!(
+                    demo.handle.status(),
+                    cna_server::CampaignStatus::Finished { .. }
+                )
+            {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await;
+    let pause = if matches!(demo.handle.status(), cna_server::CampaignStatus::Running) {
+        demo.handle.pause(true).await
+    } else {
+        Ok(())
+    };
+    let accepted_count = accepted();
+    let id = demo.campaign_id();
+    let expected = demo
+        .handle
+        .projection(cna_core::visibility::Perspective::Operator);
+    let cleanup = demo.shutdown().await;
+    progress.expect("bounded scripted progress");
+    pause.unwrap();
+    cleanup.unwrap();
+    assert!(accepted_count >= 2, "no substantive scripted decisions");
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let recovered = cna_server::campaigns::recover(
+        &root.path().join(format!("{id}.sqlite")),
+        &repo.join("data"),
+    )
+    .unwrap();
+    assert_eq!(
+        recovered.projection(cna_core::visibility::Perspective::Operator),
+        expected
+    );
+    recovered.shutdown().await.unwrap();
 }
