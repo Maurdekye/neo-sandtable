@@ -497,3 +497,15 @@ The no-paid-call browser proof in `e2e/monitoring.spec.ts` covers a fresh script
 Graziani campaign and ten synthetic seats with waiting, errors, paused status, observed
 handover and escaped hostile commentary. Screenshots and a JSON proof are written to
 the board agent's scratch folder; this is a short observation, not a paid ten-model run.
+
+
+Typed `usage_snapshot` reports replace totals by increasing revision within a controller
+epoch; later epochs replace earlier ones and replay never adds totals. A snapshot rebuild
+recovers the highest report from retained authorized transcripts. The operator card hides
+old-epoch usage after a polled handover. Input and output, cache read and creation, and
+reasoning remain separate provider-reported channels. They are never universally added.
+Reported dollars use the provider's cumulative figure, without price estimates. Nullable
+channels remain `not reported`, including missing USD; known zero remains zero. Reports
+with incomplete turns carry an explicit incomplete label. A transcript usage filter exposes
+all reported fields, provider/model, epoch/revision and attempt/completion counts to each
+authorized perspective. Fixture reports are synthetic and make no paid-call claim.

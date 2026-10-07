@@ -129,6 +129,30 @@ function transcript(value: unknown) {
           typeof value.explanation === 'string') &&
         typeof value.summary === 'string'
       )
+    case 'usage_snapshot':
+      return (
+        [
+          'controller_epoch',
+          'revision',
+          'attempts',
+          'completed',
+          'incomplete_turns',
+        ].every((key) => sequence(value[key])) &&
+        ['provider', 'model'].every(
+          (key) => value[key] === null || typeof value[key] === 'string',
+        ) &&
+        [
+          'input_tokens',
+          'output_tokens',
+          'cache_read_tokens',
+          'cache_creation_tokens',
+          'reasoning_tokens',
+        ].every((key) => value[key] === null || sequence(value[key])) &&
+        (value.reported_cost_usd === null ||
+          (typeof value.reported_cost_usd === 'number' &&
+            Number.isFinite(value.reported_cost_usd) &&
+            value.reported_cost_usd >= 0))
+      )
     case 'system1_query':
       return (
         typeof value.question === 'string' &&

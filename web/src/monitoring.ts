@@ -1,9 +1,11 @@
-﻿import type { ServerMessage } from './protocol'
+import type { UsageSnapshot } from './generated/UsageSnapshot'
+import type { ServerMessage } from './protocol'
 import type { PendingDecision } from './generated/PendingDecision'
 export interface MonitorState {
   started: number | null
   answered: number
   recent: number[]
+  usage: Record<string, UsageSnapshot>
   pendingSince: Record<string, number>
   seats: Record<
     string,
@@ -21,6 +23,7 @@ export const emptyMonitor = (): MonitorState => ({
   started: null,
   answered: 0,
   recent: [],
+  usage: {},
   pendingSince: {},
   seats: {},
 })
@@ -65,6 +68,18 @@ export function recordMonitor(
     }
   } else if (message.type === 'transcript') {
     const e = message.entry
+    if (e.kind === 'usage_snapshot') {
+      const prior = old.usage[message.seat]
+      if (
+        !prior ||
+        e.controller_epoch > prior.controller_epoch ||
+        (e.controller_epoch === prior.controller_epoch &&
+          e.revision > prior.revision)
+      )
+        next.usage = Object.fromEntries(
+          Object.entries({ ...old.usage, [message.seat]: e }).slice(-128),
+        )
+    }
     const activity = e.kind.replaceAll('_', ' ')
     const seat = { ...old.seats[message.seat], activity }
     if (
@@ -119,4 +134,15 @@ export function decodeObservation(value: unknown): SeatObservation {
   )
     throw new Error('Invalid seat status')
   return { paused: v.paused, failure: v.failure, epoch: v.controller_epoch }
+}
+
+export function reportedNumber(value: number | null | undefined): string {
+  return value === null || value === undefined
+    ? 'not reported'
+    : value.toLocaleString('en-US', { maximumFractionDigits: 6 })
+}
+export function usageLabel(usage: UsageSnapshot | undefined): string {
+  return usage
+    ? `Input ${reportedNumber(usage.input_tokens)} / output ${reportedNumber(usage.output_tokens)} / USD ${usage.reported_cost_usd === null ? 'not reported' : '$' + reportedNumber(usage.reported_cost_usd)}${usage.incomplete_turns ? ' / incomplete' : ''}`
+    : 'Tokens: not reported / USD: not reported'
 }

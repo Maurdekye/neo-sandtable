@@ -258,7 +258,12 @@ export function receive(
     return {
       state: {
         ...state,
-        monitoring: startMonitor(message.view.pending, now),
+        monitoring: state.transcripts
+          .filter((m) => m.game_seq <= message.seq)
+          .reduce(
+            (monitor, m) => recordMonitor(monitor, m, now),
+            startMonitor(message.view.pending, now),
+          ),
         frames: [snapshot],
         stages: recordStage([], snapshot),
         commentaries: [],

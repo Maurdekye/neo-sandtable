@@ -135,3 +135,57 @@ describe('operator monitoring', () => {
     ).toThrow()
   })
 })
+
+it('replaces cumulative usage by epoch/revision without summing replay or cache channels', () => {
+  let s = connected()
+  const entry = {
+    kind: 'usage_snapshot' as const,
+    controller_epoch: 1,
+    revision: 1,
+    provider: 'fixture',
+    model: 'fixture model',
+    attempts: 2,
+    completed: 1,
+    input_tokens: 100,
+    output_tokens: 20,
+    cache_read_tokens: 50,
+    cache_creation_tokens: null,
+    reasoning_tokens: null,
+    reported_cost_usd: 0.003,
+    incomplete_turns: 1,
+  }
+  const packet = (tseq: number, usage = entry): ServerMessage => ({
+    type: 'transcript',
+    seat: pending.seat,
+    tseq,
+    game_seq: 1,
+    at: '2026-10-07T00:00:00Z',
+    entry: usage,
+  })
+  s = receive(s, packet(1), 2000).state
+  s = receive(
+    s,
+    packet(2, { ...entry, revision: 2, input_tokens: 200 }),
+    3000,
+  ).state
+  s = receive(s, packet(3), 4000).state
+  expect(s.monitoring.usage[pending.seat].input_tokens).toBe(200)
+  expect(s.monitoring.usage[pending.seat].reported_cost_usd).toBe(0.003)
+  s = receive(
+    s,
+    { type: 'snapshot', seq: 1, view: s.frames[0].view },
+    5000,
+  ).state
+  expect(s.monitoring.usage[pending.seat].revision).toBe(2)
+  s = receive(
+    s,
+    packet(4, { ...entry, controller_epoch: 2, input_tokens: 0 }),
+    6000,
+  ).state
+  s = receive(s, packet(5, { ...entry, revision: 99 }), 7000).state
+  expect(s.monitoring.usage[pending.seat].controller_epoch).toBe(2)
+  expect(s.monitoring.usage[pending.seat].input_tokens).toBe(0)
+  expect(receive(s, { type: 'resync' }, 8000).state.monitoring.usage).toEqual(
+    {},
+  )
+})

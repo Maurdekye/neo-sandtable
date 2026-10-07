@@ -1,3 +1,4 @@
+import { usageLabel, reportedNumber } from './monitoring'
 import { decisionCommentary, type AcceptedCommentary } from './commentary'
 import { useEffect, useRef, useState } from 'react'
 import type { SeatInfo, TranscriptMessage } from './protocol'
@@ -10,6 +11,7 @@ const filters: Record<string, string[]> = {
   decisions: ['decision_submitted'],
   'System 1': ['system1_query', 'system1_answer'],
   system: ['system'],
+  usage: ['usage_snapshot'],
 }
 function body(m: TranscriptMessage) {
   const e = m.entry
@@ -24,6 +26,8 @@ function body(m: TranscriptMessage) {
       return `${e.ok ? 'OK' : 'FAILED'} · ${e.summary}`
     case 'decision_submitted':
       return `${e.decision_id} · ${e.summary}`
+    case 'usage_snapshot':
+      return `${e.provider ?? 'Provider not reported'} / ${e.model ?? 'model not reported'} / epoch ${e.controller_epoch} / revision ${e.revision}\n${usageLabel(e)}\nCache read ${reportedNumber(e.cache_read_tokens)} / cache creation ${reportedNumber(e.cache_creation_tokens)} / reasoning ${reportedNumber(e.reasoning_tokens)}\n${e.completed} completed of ${e.attempts} attempts; ${e.incomplete_turns} incomplete turns`
     case 'system1_query':
       return `${e.question}
 ${e.options.join(' / ')}`

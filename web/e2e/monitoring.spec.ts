@@ -26,6 +26,22 @@ test('shows ten fixture seats, waiting, literal explanation, errors and polled h
     },
     status: i === 1 ? 'paused' : 'deciding',
   }))
+  const usage = {
+    kind: 'usage_snapshot' as const,
+    controller_epoch: 1,
+    revision: 1,
+    provider: 'Synthetic Claude',
+    model: 'haiku fixture',
+    attempts: 3,
+    completed: 2,
+    input_tokens: 100,
+    output_tokens: 20,
+    cache_read_tokens: 50,
+    cache_creation_tokens: null,
+    reasoning_tokens: null,
+    reported_cost_usd: 0.003,
+    incomplete_turns: 1,
+  }
   let epoch = 1
   await page.route('**/api/session', (r) =>
     r.fulfill({
@@ -113,6 +129,32 @@ test('shows ten fixture seats, waiting, literal explanation, errors and polled h
             summary: 'Synthetic accepted coast order',
           },
         })
+        for (const [i, revision] of [1, 2, 1].entries())
+          send({
+            type: 'transcript',
+            seat: 'axis.seat0',
+            tseq: i + 2,
+            game_seq: 1,
+            at: '2026-10-07T06:00:02Z',
+            entry: {
+              ...usage,
+              revision,
+              input_tokens: revision === 2 ? 200 : 100,
+            },
+          })
+        send({
+          type: 'transcript',
+          seat: 'axis.seat4',
+          tseq: 1,
+          game_seq: 1,
+          at: '2026-10-07T06:00:02Z',
+          entry: {
+            ...usage,
+            input_tokens: null,
+            output_tokens: 0,
+            reported_cost_usd: null,
+          },
+        })
         send({
           type: 'transcript',
           seat: 'axis.seat3',
@@ -141,6 +183,18 @@ test('shows ten fixture seats, waiting, literal explanation, errors and polled h
     '<img src=x onerror=alert(1)> **literal** https://example.test',
   )
   expect(await card.locator('img,a').count()).toBe(0)
+  await expect(card).toContainText(
+    'Input 200 / output 20 / USD $0.003 / incomplete',
+  )
+  await expect(card).toContainText(
+    'Cache read: 50 / cache creation: not reported',
+  )
+  await expect(
+    page.locator('.seat-card[data-seat="axis.seat4"]'),
+  ).toContainText(
+    'Input not reported / output 0 / USD not reported / incomplete',
+  )
+  await page.screenshot({ path: '../../board-ten-seat-usage-fixture.png' })
   await expect(
     page.locator('.seat-card[data-seat="axis.seat2"]'),
   ).toContainText('observed')
@@ -152,6 +206,7 @@ test('shows ten fixture seats, waiting, literal explanation, errors and polled h
   ).toContainText('scripted, no usage')
   epoch = 2
   await expect(paused).toContainText('handover observed', { timeout: 20000 })
+  await expect(card).toContainText('Tokens: not reported / USD: not reported')
   await page.screenshot({ path: '../../board-ten-seat-monitor-fixture.png' })
   await page
     .getByLabel('Perspective', { exact: true })

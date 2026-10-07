@@ -88,3 +88,42 @@ it('rejects missing monitored seat status and missing resolution seat', () => {
     ),
   ).toThrow()
 })
+
+it('validates flat nullable measured usage and rejects negative, missing or imprecise fields', () => {
+  const entry = {
+    kind: 'usage_snapshot',
+    controller_epoch: 1,
+    revision: 1,
+    provider: null,
+    model: null,
+    attempts: 1,
+    completed: 0,
+    input_tokens: null,
+    output_tokens: 0,
+    cache_read_tokens: null,
+    cache_creation_tokens: null,
+    reasoning_tokens: null,
+    reported_cost_usd: null,
+    incomplete_turns: 1,
+  }
+  const packet = (e: unknown) =>
+    JSON.stringify({
+      type: 'transcript',
+      seat: 'axis.commander',
+      tseq: 1,
+      game_seq: 1,
+      at: '2026-10-07T00:00:00Z',
+      entry: e,
+    })
+  expect(decodeMessage(packet(entry))).toBeTruthy()
+  for (const bad of [
+    { input_tokens: -1 },
+    { input_tokens: 1.5 },
+    { output_tokens: undefined },
+    { reported_cost_usd: -0.01 },
+    { reported_cost_usd: '0.003' },
+    { revision: Number.MAX_SAFE_INTEGER + 1 },
+    { model: 42 },
+  ])
+    expect(() => decodeMessage(packet({ ...entry, ...bad }))).toThrow()
+})

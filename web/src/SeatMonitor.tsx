@@ -8,6 +8,8 @@ import {
   decodeObservation,
   observedWait,
   receivedRate,
+  usageLabel,
+  reportedNumber,
   type SeatObservation,
 } from './monitoring'
 interface Polled {
@@ -148,6 +150,13 @@ export function SeatMonitor({
               ?.view.pending.filter((d) => d.seat === seat.id) ?? []
           const obs = polled.observations[seat.id]
           const record = state.monitoring.seats[seat.id]
+          const candidate = state.monitoring.usage[seat.id]
+          // Never attribute a previous controller's measured totals to its replacement.
+          const usage =
+            seat.controller?.kind !== 'scripted' &&
+            (!obs || candidate?.controller_epoch === obs.epoch)
+              ? candidate
+              : undefined
           const status =
             obs?.paused || seat.status === 'paused'
               ? 'paused'
@@ -169,7 +178,10 @@ export function SeatMonitor({
               <p className="seat-controller">
                 {seat.controller?.label ?? 'No controller reported'}
               </p>
-              <small>Provider / model: not separately reported</small>
+              <small>
+                Provider: {usage?.provider ?? 'not reported'} / model:{' '}
+                {usage?.model ?? 'not reported'}
+              </small>
               {pending.length ? (
                 <p className="seat-wait">
                   {pending[0].kind} /{' '}
@@ -185,7 +197,7 @@ export function SeatMonitor({
               <small>
                 {seat.controller?.kind === 'scripted'
                   ? 'scripted, no usage'
-                  : 'Tokens: not reported / USD: not reported'}
+                  : usageLabel(usage)}
               </small>
               {record?.summary && (
                 <p className="seat-answer" title={record.summary}>
@@ -216,6 +228,21 @@ export function SeatMonitor({
                     </>
                   ) : (
                     <p>Accepted answer not received</p>
+                  )}
+                  {usage && (
+                    <>
+                      <p>
+                        Cache read: {reportedNumber(usage.cache_read_tokens)} /
+                        cache creation:{' '}
+                        {reportedNumber(usage.cache_creation_tokens)} /
+                        reasoning: {reportedNumber(usage.reasoning_tokens)}
+                      </p>
+                      <p>
+                        {usage.completed} completed / {usage.attempts} attempts;{' '}
+                        {usage.incomplete_turns} incomplete turns. Epoch{' '}
+                        {usage.controller_epoch}, revision {usage.revision}.
+                      </p>
+                    </>
                   )}
                   {pending.map((d) => (
                     <p key={d.id}>{d.summary}</p>
