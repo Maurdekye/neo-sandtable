@@ -433,6 +433,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
         },
         "your_forces": forces,
         "logistics": {
+            "truck_pool_destinations": state.setup.pool_locations.iter().filter(|(id,_)|state.logistics.truck_pools.iter().any(|p|&p.id==*id&&sees_side(perspective,p.side))).collect::<BTreeMap<_,_>>(),
             "truck_pools": state.logistics.truck_pools.iter().filter(|p|sees_side(perspective,p.side)).collect::<Vec<_>>(),
             "well_conditions": state.logistics.wells.keys().filter_map(|hex| {
                 let condition=crate::logistics::wells::condition(state,hex,perspective);
@@ -524,7 +525,9 @@ pub(crate) fn inspect(
         if !sees_side(perspective, pool.side) {
             return Err(hidden());
         }
-        return Ok(json!({"truck_pool":pool}));
+        return Ok(
+            json!({"truck_pool":pool,"setup_destination":state.setup.pool_locations.get(&pool.id)}),
+        );
     }
     if let Some(dump) = state
         .logistics
