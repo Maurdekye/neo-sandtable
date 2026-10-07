@@ -134,7 +134,14 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
       (
         await request.post(
           `${base}/seats/${decision.seat}/decisions/${decision.id}/validate`,
-          { headers, data: { action: destination } },
+          {
+            headers,
+            data: {
+              action: destination,
+              controller_epoch: observation.controller_epoch,
+              decision_revision: core.revision,
+            },
+          },
         )
       ).ok(),
     ).toBeTruthy()
