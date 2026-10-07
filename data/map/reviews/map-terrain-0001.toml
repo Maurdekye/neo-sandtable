@@ -1,0 +1,202 @@
+[batch]
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+id = "map-terrain-0001"
+observer = "map-terrain"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "24 previously unknown corridor cells: D4011,D3911..16,D3811..16,D3711..14,D3716,D3611..16"
+notes = "Each complete cell inspected directly in unmarked native-source crops enlarged nearest-neighbor4x against TEC.png. Seven sea, seven rough, nine clear and one salt marsh; eight coastal land cells. D3715 inspected but excluded pending mixed-substrate clarification. No classifier, independent observer, population error estimate or original1979 equivalence claim. Other layers and facilities unreviewed."
+
+[[hex]]
+hex_id = "D3611"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream interior bordered by an ochre contour splash band; band follows left/lower hexsides rather than mountain interior fill. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3612"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream interior with village and transport marks; ochre splashes lie along lower-left boundary and remain separate. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3613"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream interior crossed by transport marks; ochre contour band is in neighboring upper cells. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3614"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige rough interior patch enclosed by marginal ochre contour splashes. No mountain fill inferred from the contour band. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3615"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige rough interior crossed by transport marks; ochre contour splashes and neighboring salt-marsh strokes remain separate. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3616"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Small beige rough land wedge survives inside the southwest side; cream shoreline border and water do not erase that land fragment. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3711"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream interior; ochre contour band lies along upper sides. Crossing transport marks remain separate layers. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3712"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream interior; upper contour splashes and transport marks at lower margin do not identify mountain terrain. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3713"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige rough patch occupies interior; ochre contour band along lower-left sides remains a separate feature. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3714"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream interior with village point and transport marks; ochre lower-left contour splashes remain separate. Water is outside upper sides. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3716"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Yellow angular salt-marsh strokes on the visible land fragment match the TEC key; water and land both occur inside full boundary. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3811"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige rough interior and water both present; ochre band along the lower sides remains a separate contour feature. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3812"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Beige rough land fragment in lower-left interior; water occupies upper interior. Lower marginal contour band remains separate. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3813"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream land along lower interior and water above; neighboring rough patch and contour color remain outside this cell. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3814"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream land surrounds the water inlet inside the cell. Port symbol is a separate facility and is not published by this batch. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3815"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Cream land lobe lies within lower-left interior; the beige patch at the bottom corner lies beyond the drawn shared side. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3816"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Complete drawn cell contains only water; neighboring land remains outside its left and lower shared sides. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3911"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Shoreline crosses the lower interior; beige rough land remains inside the lower-left portion. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3912"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Complete drawn cell is water; the visible shoreline and beige land lie outside the southwest shared side. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3913"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Complete drawn cell contains only water. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3914"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Complete drawn cell contains only water. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3915"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Complete drawn cell contains only water. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D3916"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Complete drawn cell contains only water. Edge kinds and facility attributes remain unreviewed."
+
+[[hex]]
+hex_id = "D4011"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Complete drawn cell contains only water. Edge kinds and facility attributes remain unreviewed."
