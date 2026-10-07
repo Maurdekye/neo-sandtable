@@ -68,6 +68,19 @@ impl FormationIndex {
         }
         Self { children }
     }
+    pub(super) fn members(&self, root: &UnitId) -> Vec<UnitId> {
+        let mut todo = vec![root.clone()];
+        let mut seen = BTreeSet::new();
+        while let Some(id) = todo.pop() {
+            if !seen.insert(id.clone()) {
+                continue;
+            }
+            if let Some(children) = self.children.get(&id) {
+                todo.extend(children.iter().rev().cloned());
+            }
+        }
+        seen.into_iter().collect()
+    }
     pub(super) fn allowance(
         &self,
         content: &CnaContent,

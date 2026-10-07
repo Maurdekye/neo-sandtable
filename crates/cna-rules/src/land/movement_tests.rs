@@ -11,7 +11,7 @@ use cna_core::{
     decision::DecisionResponse,
     dice::CampaignRng,
     engine::{Command, Game, Progress, Ruleset, evaluate},
-    quantity::FuelTenths,
+    quantity::{FuelTenths, WaterPoints},
     visibility::Perspective,
 };
 use serde_json::json;
@@ -152,10 +152,23 @@ fn place(s: &mut State, id: &str, hex: &str) {
     u.detached = true;
     u.attached_to = None;
     s.logistics.unit_supply.insert(
-        id,
+        id.clone(),
         UnitSupply {
+            activity_water: WaterPoints::new(10000),
+            ready_ammo: cna_core::quantity::AmmoPoints::new(10000),
             tank_fuel: FuelTenths::new(10000),
             ..UnitSupply::default()
+        },
+    );
+    // Terrain/CP fixtures begin fully supplied; shortage tests explicitly remove the relevant stock.
+    s.logistics.rations.insert(
+        id,
+        logistics::Rations {
+            water_stage: Some(logistics::water::WaterStage::current(s)),
+            infantry_water_received: 2,
+            issued_gt: Some(s.cursor.game_turn),
+            pasta_gt: Some(s.cursor.game_turn),
+            ..logistics::Rations::default()
         },
     );
 }
@@ -789,7 +802,7 @@ fn inspect_includes_a_legal_destination_beyond_an_overfull_transit_hex() {
 }
 /// Cases: land:8.11, land:8.13, land:19.44
 #[test]
-#[ignore = "manual movement profiling on the full Graziani roster"]
+#[ignore = "slow: benchmark"]
 fn profile_real_roster_movement() {
     use std::time::Instant;
     let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
@@ -836,8 +849,16 @@ fn profile_real_roster_movement() {
 }
 /// Cases: land:8.11, land:8.13, land:19.44
 #[test]
-#[ignore = "manual full-roster campaign timing"]
+#[ignore = "slow: benchmark"]
 fn profile_movers_full_graziani_campaign() {
+    real_roster_movers(10000, true);
+}
+/// Cases: land:8.11, land:8.13, land:19.44
+#[test]
+fn real_roster_baseline_executes_a_bounded_movement_window() {
+    real_roster_movers(40, false);
+}
+fn real_roster_movers(answer_limit: usize, must_finish: bool) {
     let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
     let mut g: Game<Cna> = Game {
         state: State::new(&c).unwrap(),
@@ -847,7 +868,11 @@ fn profile_movers_full_graziani_campaign() {
     let mut rng = CampaignRng::from_seed([19; 32]);
     let begin = std::time::Instant::now();
     let mut moves = 0;
-    for n in 0..10000 {
+    let mut after_setup = 0;
+    for n in 0..answer_limit + 4096 {
+        if after_setup == answer_limit {
+            break;
+        }
         if n % 100 == 0 {
             eprintln!(
                 "answer {n}, GT{}, Op{:?}, {:?}, {} moves",
@@ -858,8 +883,8 @@ fn profile_movers_full_graziani_campaign() {
             );
         }
         assert!(
-            begin.elapsed().as_secs() < 180,
-            "movement campaign benchmark exceeded three minutes"
+            begin.elapsed().as_secs() < if must_finish { 180 } else { 60 },
+            "movement campaign exceeded its bounded test budget"
         );
         let t = evaluate(&rules, &c, &g, &Command::Advance).unwrap();
         g = t.game;
@@ -872,12 +897,17 @@ fn profile_movers_full_graziani_campaign() {
             return;
         }
         let request = rules.pending(&c, &g.state).remove(0);
+        if !request.kind.starts_with("cna.setup.") {
+            after_setup += 1;
+        }
         let action = if request.kind == KIND {
             let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng);
             moves += action.as_array().unwrap().len();
             action
-        } else if let ActionSchema::Choice { options } = &request.space.schema {
-            json!(options[0].id)
+        } else if matches!(request.space.schema, ActionSchema::Choice { .. })
+            || request.space.pass.is_none()
+        {
+            mandatory_profile_answer(&request.space.schema)
         } else {
             Value::Null
         };
@@ -898,7 +928,26 @@ fn profile_movers_full_graziani_campaign() {
         .unwrap()
         .game;
     }
-    panic!("profile campaign did not finish");
+    assert!(
+        moves > 0,
+        "bounded campaign must execute a real movement order"
+    );
+    assert_eq!(after_setup, answer_limit);
+    assert!(!must_finish, "profile campaign did not finish");
+}
+fn mandatory_profile_answer(schema: &ActionSchema) -> Value {
+    match schema {
+        ActionSchema::Choice { options } => json!(options[0].id),
+        ActionSchema::Unit { among } => json!(among[0]),
+        ActionSchema::Integer { max, .. } => json!(max),
+        ActionSchema::Record { fields } => Value::Object(
+            fields
+                .iter()
+                .map(|field| (field.name.clone(), mandatory_profile_answer(&field.schema)))
+                .collect(),
+        ),
+        other => panic!("no profiling answer for {other:?}"),
+    }
 }
 /// Cases: land:8.13, land:9.31, land:9.33
 #[test]
@@ -1006,6 +1055,225 @@ fn indexed_allowances_preserve_real_attachments_and_remote_children() {
             formation::allowance(&c, &s, &u.id),
             "{}",
             u.id
+        );
+    }
+}
+/// Cases: land:6.15, airlog:51.23, airlog:52.52, airlog:52.6
+#[test]
+fn restricted_infantry_members_set_the_whole_formations_cpa_ceiling() {
+    let parent = "it.1_libyan_div.1st_libyan_regt_hq";
+    let child = "it.1_libyan_div.viii_libyan_bn";
+    for shortage in ["half", "water", "pasta"] {
+        let (c, mut s, _o) = setup(parent, Some("road"), false, None);
+        place(&mut s, child, "C4020");
+        s.land.units.get_mut(&child.into()).unwrap().detached = false;
+        let a = formation::allowance(&c, &s, &parent.into()).unwrap();
+        for member in formation::members(&c, &s, &parent.into()) {
+            let u = s.land.units.get_mut(&member).unwrap();
+            u.cp_spent_quarters = a.cpa * 4 - 4;
+            u.voluntary_cp_quarters = u.cp_spent_quarters;
+        }
+        let history = s.logistics.rations.get_mut(&child.into()).unwrap();
+        match shortage {
+            "half" => history.half = true,
+            "water" => history.infantry_water_received = 0,
+            "pasta" => history.pasta_gt = None,
+            _ => unreachable!(),
+        }
+        let g = start(&c, s, true);
+        let owner = seat(&g);
+        let before = serde_json::to_value(&g.state).unwrap();
+        let err = respond(
+            &c,
+            &g,
+            owner,
+            json!([{"unit":parent,"path":["C4021","C4022"]}]),
+            true,
+        )
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("limits movement to CPA"),
+            "{shortage}: {err}"
+        );
+        assert_eq!(serde_json::to_value(&g.state).unwrap(), before);
+        let accepted = respond(
+            &c,
+            &g,
+            owner,
+            json!([{"unit":parent,"path":["C4021"]}]),
+            true,
+        )
+        .unwrap();
+        assert_eq!(
+            accepted.game.state.land.units[&child.into()].cp_spent_quarters,
+            a.cpa * 4
+        );
+        assert_eq!(
+            accepted.game.state.land.units[&parent.into()].cp_spent_quarters,
+            a.cpa * 4
+        );
+        let paths = reachable(&c, &g.state, &parent.into(), true);
+        assert!(!paths.is_empty());
+        assert!(paths.iter().all(|p| p.cp_quarters <= 4));
+    }
+}
+/// Cases: airlog:52.42, airlog:52.51, land:8.13
+#[test]
+fn dry_vehicle_stops_its_entire_stack_without_spending_fuel_cp_or_water() {
+    let other = "it.libyan_tank_command.lxii_l_tank_bn";
+    let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
+    place(&mut s, other, "C4020");
+    let mut g = start(&c, s, true);
+    g.state
+        .logistics
+        .unit_supply
+        .get_mut(&TANK.into())
+        .unwrap()
+        .activity_water = WaterPoints::ZERO;
+    let owner = seat(&g);
+    assert!(!available(&c, &g.state, owner).contains(&TANK.into()));
+    assert!(reachable(&c, &g.state, &TANK.into(), true).is_empty());
+    let before = serde_json::to_value(&g.state).unwrap();
+    let err = respond(
+        &c,
+        &g,
+        owner,
+        json!([{"unit":other,"path":["C4021"],"with_stack":true}]),
+        true,
+    )
+    .unwrap_err();
+    assert!(err.to_string().contains("water restrictions"));
+    assert_eq!(serde_json::to_value(&g.state).unwrap(), before);
+}
+/// Cases: airlog:51.23, land:10.6, land:10.24
+#[test]
+fn half_rations_forbid_disclosed_zoc_and_stop_before_new_control() {
+    let (c, mut s, _o) = setup(LEG, Some("road"), false, None);
+    place(&mut s, TANK, "C4022");
+    place(&mut s, "it.libyan_tank_command.lxii_l_tank_bn", "C4022");
+    s.logistics.rations.get_mut(&LEG.into()).unwrap().half = true;
+    let mut g = start(&c, s, true);
+    let owner = seat(&g);
+    g.state.land.movement.controls.insert("C4021".into(), true);
+    let err = respond(&c, &g, owner, json!([{"unit":LEG,"path":["C4021"]}]), true).unwrap_err();
+    assert!(err.to_string().contains("half-ration"));
+    g.state.land.movement.controls.remove(&"C4021".into());
+    let t = respond(&c, &g, owner, json!([{"unit":LEG,"path":["C4021"]}]), true).unwrap();
+    assert_eq!(
+        t.game.state.land.units[&LEG.into()].location.hex(),
+        Some(&"C4020".into())
+    );
+    assert_eq!(t.game.state.land.units[&LEG.into()].cp_spent_quarters, 0);
+    assert_eq!(
+        t.game.state.land.movement.controls.get(&"C4021".into()),
+        Some(&true)
+    );
+    assert!(
+        t.events
+            .iter()
+            .any(|e| matches!(e.event, GameEvent::Note { .. }))
+    );
+}
+/// Cases: airlog:52.42, airlog:52.43
+#[test]
+fn activity_water_covers_all_attached_trucks_once_per_stage_even_after_recovery() {
+    let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
+    s.land.units.get_mut(&TANK.into()).unwrap().trucks = cna_content::units::Trucks {
+        light: 2,
+        medium: 1,
+        heavy: 0,
+    };
+    let need = logistics::toe_strength(&c, &s.land.units[&TANK.into()])
+        .unwrap()
+        .get()
+        + 3;
+    s.logistics
+        .unit_supply
+        .get_mut(&TANK.into())
+        .unwrap()
+        .activity_water = WaterPoints::new(need);
+    let g = start(&c, s, true);
+    let t = respond(
+        &c,
+        &g,
+        seat(&g),
+        json!([{"unit":TANK,"path":["C4021"]}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(
+        t.game.state.logistics.unit_supply[&TANK.into()].activity_water,
+        WaterPoints::ZERO
+    );
+    assert_eq!(
+        t.game.state.logistics.rations[&TANK.into()].activity_used_stage,
+        Some(logistics::water::WaterStage::current(&t.game.state))
+    );
+    let mut recovered: State =
+        serde_json::from_value(serde_json::to_value(&t.game.state).unwrap()).unwrap();
+    recovered.cursor.cycle += 1;
+    recovered.cursor.entered = false;
+    let second = start(&c, recovered, true);
+    let t = respond(
+        &c,
+        &second,
+        seat(&second),
+        json!([{"unit":TANK,"path":["C4022"]}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(
+        t.game.state.logistics.unit_supply[&TANK.into()].activity_water,
+        WaterPoints::ZERO
+    );
+    let mut next_stage = t.game.state;
+    next_stage.cursor.op_stage = Some(2);
+    next_stage.land.movement.moved.clear();
+    assert!(reachable(&c, &next_stage, &TANK.into(), true).is_empty());
+}
+/// Cases: land:3.62, airlog:51.23, airlog:52.51, airlog:52.52
+#[test]
+fn supplied_baseline_remains_legal_with_half_rations_and_a_dry_candidate() {
+    for strict in [false, true] {
+        let other = "it.libyan_tank_command.lxii_l_tank_bn";
+        let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
+        place(&mut s, other, "C4020");
+        let mut g = start(&c, s, strict);
+        let request = Cna { strict }.pending(&c, &g.state)[0].clone();
+        g.state
+            .logistics
+            .unit_supply
+            .get_mut(&TANK.into())
+            .unwrap()
+            .activity_water = WaterPoints::ZERO;
+        g.state
+            .logistics
+            .rations
+            .get_mut(&other.into())
+            .unwrap()
+            .half = true;
+        for seed in 0..16u8 {
+            let action = crate::baseline::random_orders(
+                &c,
+                &g.state,
+                &request,
+                &mut CampaignRng::from_seed([seed; 32]),
+            );
+            assert!(!action.as_array().unwrap().is_empty());
+            assert_eq!(action[0]["unit"], other);
+            respond(&c, &g, request.seat, action, strict).unwrap();
+        }
+        let report = Cna { strict }
+            .inspect(&c, &g.state, Perspective::Seat(request.seat), TANK)
+            .unwrap();
+        assert_eq!(
+            report["movement_restrictions"][0]["restrictions"]["may_move"],
+            false
+        );
+        assert!(
+            Cna { strict }
+                .inspect(&c, &g.state, Perspective::Side(Side::Commonwealth), TANK)
+                .is_err()
         );
     }
 }

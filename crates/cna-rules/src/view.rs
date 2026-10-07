@@ -498,6 +498,15 @@ pub(crate) fn inspect(
             "movement_allowance": crate::land::formation::allowance(content,state,&unit.id).map(|a| json!({"cpa":a.cpa,"motorized":a.motorized})),
             "command_role": crate::ownership::seat_for_unit(content,state,&unit.id),
             "moved_this_segment": state.land.movement.moved.contains(&unit.id),
+            "movement_restrictions": crate::land::formation::members(content,state,&unit.id).into_iter().map(|id| {
+                let assessment=crate::logistics::movement_restrictions(content,state,&id).map(|r|json!({
+                    "may_move":r.may_move,"may_exceed_cpa":r.may_exceed_cpa,"may_enter_enemy_zoc":r.may_enter_enemy_zoc,
+                })).unwrap_or_else(|e|match e {
+                    crate::logistics::SupplyError::Unsupported {case}=>json!({"assessment_error":"Water requirement is unknown.","case":case}),
+                    _=>json!({"assessment_error":"Water requirement could not be assessed."}),
+                });
+                json!({"unit":id,"restrictions":assessment})
+            }).collect::<Vec<_>>(),
             "location": unit.location,
             "setup_destination": state.setup.unit_locations.get(&unit.id),
             "attached_to": unit.attached_to,

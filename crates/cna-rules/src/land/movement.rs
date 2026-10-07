@@ -71,6 +71,63 @@ fn supply_error(error: SupplyError, strict: bool) -> Rejection {
         SupplyError::Invalid => illegal("invalid movement supply allocation"),
     }
 }
+fn activity_error(error: SupplyError, strict: bool) -> Rejection {
+    match error {
+        SupplyError::Unsupported { case } if !strict => {
+            illegal(format!("unit water requirement is unknown ({case})"))
+        }
+        SupplyError::Unsupported { case } => {
+            unsupported(case, "unit water requirement is not supported")
+        }
+        SupplyError::Insufficient => illegal("insufficient activity water for movement"),
+        other => supply_error(other, strict),
+    }
+}
+/// Positive movement CP establishes the fuel rate before a separate water-composition query.
+/// Cases: airlog:49.12, airlog:51.23, airlog:52.51, airlog:52.52, airlog:52.6
+/// Interpretations: interp:units-0005
+fn moving_limits(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Result<logistics::MovementRestrictions, Rejection> {
+    logistics::movement_fuel_cost(content, state, id, 1).map_err(|e| supply_error(e, strict))?;
+    logistics::movement_restrictions(content, state, id).map_err(|e| activity_error(e, strict))
+}
+/// Every represented member uses the formation CPA; a restricted member sets its own ceiling.
+/// Cases: land:6.15, airlog:51.23, airlog:52.51, airlog:52.52, airlog:52.6
+fn validate_supplied_cp(
+    unit: &crate::state::LandUnit,
+    allowance: capability::Allowance,
+    quarters: i32,
+    limits: logistics::MovementRestrictions,
+) -> Result<(), Rejection> {
+    capability::validate_move(unit, allowance, quarters)?;
+    if !limits.may_move {
+        return Err(illegal(
+            "unit cannot move under its ration or water restrictions",
+        ));
+    }
+    if !limits.may_exceed_cpa
+        && i64::from(unit.cp_spent_quarters) + i64::from(quarters) > i64::from(allowance.cpa) * 4
+    {
+        return Err(illegal(
+            "ration or water restriction limits movement to CPA",
+        ));
+    }
+    Ok(())
+}
+/// Activity water is consumed once per OpStage, before the first CPA expenditure.
+/// Cases: airlog:52.42, airlog:52.43
+fn spend_activity(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    strict: bool,
+) -> Result<(), Rejection> {
+    logistics::spend_activity_water(content, state, id).map_err(|e| activity_error(e, strict))
+}
 /// Units represented by a parent may be selected to detach; convoy trucks have their own phase.
 /// Cases: land:6.26, land:8.11, land:8.17, land:8.18, land:19.44
 fn eligible_base(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId) -> bool {
@@ -93,13 +150,27 @@ fn eligible(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId) -> b
 }
 fn available(content: &CnaContent, state: &State, seat: SeatId) -> Vec<UnitId> {
     let formations = formation::FormationIndex::new(content, state);
+    let mut limits: BTreeMap<UnitId, Option<logistics::MovementRestrictions>> = BTreeMap::new();
     state
         .units_of(seat.side)
         .filter(|u| {
             eligible_base(content, state, &u.id, seat)
                 && formations
                     .allowance(content, state, &u.id)
-                    .is_some_and(|a| capability::validate_move(u, a, 1).is_ok())
+                    .is_some_and(|a| {
+                        formations.members(&u.id).iter().all(|id| {
+                            if capability::validate_move(&state.land.units[id], a, 1).is_err() {
+                                return false;
+                            }
+                            let limit = limits.entry(id.clone()).or_insert_with(|| {
+                                logistics::movement_restrictions(content, state, id).ok()
+                            });
+                            // Unknown composition remains an explicit response error, not an assumed rate.
+                            limit.is_none_or(|limit| {
+                                validate_supplied_cp(&state.land.units[id], a, 1, limit).is_ok()
+                            })
+                        })
+                    })
         })
         .map(|u| u.id.clone())
         .collect()
@@ -167,6 +238,7 @@ fn unit_stack(
     state: &mut State,
     order: &Order,
     seat: SeatId,
+    strict: bool,
 ) -> Result<Vec<UnitId>, Rejection> {
     if !eligible(content, state, &order.unit, seat) {
         return Err(illegal(
@@ -193,6 +265,11 @@ fn unit_stack(
         }
         members.extend(formation::members(content, state, root));
     }
+    // Validate all moving fuel rates before querying water, including unknown-rate HQs.
+    for id in &members {
+        logistics::movement_fuel_cost(content, state, id, 1)
+            .map_err(|e| supply_error(e, strict))?;
+    }
     // Selecting an attached component detaches it and its complete represented subtree.
     if !order.with_stack
         && let Some(parent) = ownership::parent_for_unit(content, state, &order.unit).cloned()
@@ -204,11 +281,16 @@ fn unit_stack(
     {
         let a = formation::individual_allowance(content, state, &parent)
             .ok_or_else(|| illegal("parent movement rating is unresolved"))?;
-        capability::validate_move(&state.land.units[&parent], a, 4)?;
+        let limits = logistics::movement_restrictions(content, state, &parent)
+            .map_err(|e| activity_error(e, strict))?;
+        validate_supplied_cp(&state.land.units[&parent], a, 4, limits)?;
+        spend_activity(content, state, &parent, strict)?;
         capability::charge(state.land.units.get_mut(&parent).unwrap(), a, 4, true)?;
         let a = formation::individual_allowance(content, state, &order.unit)
             .ok_or_else(|| illegal("movement rating is unresolved"))?;
-        capability::validate_move(&state.land.units[&order.unit], a, 4)?;
+        let limits = moving_limits(content, state, &order.unit, strict)?;
+        validate_supplied_cp(&state.land.units[&order.unit], a, 4, limits)?;
+        spend_activity(content, state, &order.unit, strict)?;
         capability::charge(state.land.units.get_mut(&order.unit).unwrap(), a, 4, true)?;
         state.land.units.get_mut(&order.unit).unwrap().detached = true;
         state.land.units.get_mut(&order.unit).unwrap().attached_to = None;
@@ -241,7 +323,7 @@ fn run(
     }
     let moving = match planning_group {
         Some(group) => group.members.to_vec(),
-        None => unit_stack(content, state, order, seat)?,
+        None => unit_stack(content, state, order, seat, strict)?,
     };
     let mut from = state.land.units[&order.unit]
         .location
@@ -264,6 +346,14 @@ fn run(
             .min_by_key(|a| a.cpa)
             .ok_or_else(|| illegal("movement rating is unresolved"))?
     };
+    let limits = if let Some(group) = planning_group {
+        group.limits.clone()
+    } else {
+        moving
+            .iter()
+            .map(|id| moving_limits(content, state, id, strict))
+            .collect::<Result<Vec<_>, _>>()?
+    };
     let start_control = state
         .land
         .movement
@@ -273,8 +363,9 @@ fn run(
         .unwrap_or(false);
     let start_contact = effective_control(content, state, seat.side, &from, &moving, start_control);
     if start_contact {
-        for id in &moving {
-            capability::validate_move(&state.land.units[id], group_allowance, 8)?;
+        for (id, limit) in moving.iter().zip(&limits) {
+            validate_supplied_cp(&state.land.units[id], group_allowance, 8, *limit)?;
+            spend_activity(content, state, id, strict)?;
             capability::charge(
                 state.land.units.get_mut(id).unwrap(),
                 group_allowance,
@@ -371,6 +462,7 @@ fn run(
         }
         let cannot_enter = controlled
             && (start_contact && path.is_empty()
+                || limits.iter().any(|limit| !limit.may_enter_enemy_zoc)
                 || !moving.iter().any(|id| {
                     formation::combat_unit(content, id)
                         && formation::strength(content, state, id) > 0
@@ -380,10 +472,17 @@ fn run(
                 events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:"Move stops before a newly disclosed controlled destination (land:10.24/10.29).".into()}));
                 break;
             }
-            return Err(illegal("destination is prohibited by disclosed control"));
+            return Err(illegal(
+                if limits.iter().any(|limit| !limit.may_enter_enemy_zoc) {
+                    "half-ration unit may not enter an enemy zone of control"
+                } else {
+                    "destination is prohibited by disclosed control"
+                },
+            ));
         }
-        for id in &moving {
-            capability::validate_move(&state.land.units[id], group_allowance, cp)?;
+        for (id, limit) in moving.iter().zip(&limits) {
+            validate_supplied_cp(&state.land.units[id], group_allowance, cp, *limit)?;
+            spend_activity(content, state, id, strict)?;
             let previous = state
                 .logistics
                 .fuel_segments
@@ -666,6 +765,7 @@ struct PlanningGroup<'a> {
     allowance: capability::Allowance,
     stacks: stacking::PlanningStacks<'a>,
     enemy_positions: BTreeSet<HexId>,
+    limits: Vec<logistics::MovementRestrictions>,
 }
 impl PlanningGroup<'_> {
     fn enemy_adjacent(&self, content: &CnaContent, hex: &HexId) -> bool {
@@ -757,7 +857,10 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
     // Every entered edge costs at least one quarter CP. Do not search a graph when even
     // that lower bound is impossible for a represented member or its fuel holdings.
     for member in &moving {
-        if capability::validate_move(&state.land.units[member], allowance, 1).is_err() {
+        if moving_limits(content, state, member, strict)
+            .and_then(|limit| validate_supplied_cp(&state.land.units[member], allowance, 1, limit))
+            .is_err()
+        {
             return vec![];
         }
         let previous = state
@@ -796,7 +899,15 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
             with_stack: false,
         },
         seat,
+        strict,
     ) else {
+        return vec![];
+    };
+    let Ok(limits) = members
+        .iter()
+        .map(|id| moving_limits(content, &draft, id, strict))
+        .collect::<Result<Vec<_>, _>>()
+    else {
         return vec![];
     };
     let base = draft.clone();
@@ -804,6 +915,7 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
         members: &members,
         allowance,
         stacks: stacking::PlanningStacks::new(content, &base, seat.side, &members, &origin),
+        limits,
         enemy_positions: state
             .units_of(seat.side.opponent())
             .filter_map(|u| u.location.hex().cloned())
@@ -818,9 +930,14 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
             continue;
         };
         node.restore(&mut draft);
-        if group.members.iter().any(|member| {
-            capability::validate_move(&draft.land.units[member], group.allowance, 1).is_err()
-        }) {
+        if group
+            .members
+            .iter()
+            .zip(&group.limits)
+            .any(|(member, limit)| {
+                validate_supplied_cp(&draft.land.units[member], group.allowance, 1, *limit).is_err()
+            })
+        {
             continue;
         }
         let prior = best.get(&hex).cloned();
