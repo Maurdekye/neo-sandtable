@@ -11,6 +11,7 @@
 //! `EngineError::Unsupported` at the first applicable case it cannot play. How to add rules:
 //! `docs/engine.md`.
 
+pub mod air;
 pub mod baseline;
 pub mod content;
 pub mod land;

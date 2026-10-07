@@ -338,6 +338,9 @@ pub struct PlaneCount {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AirState {
+    /// Imported individual records; see air::inventory for the mirror invariant.
+    #[serde(default)]
+    pub runtime: crate::air::state::AirRuntime,
     /// Keyed by `axis`, `commonwealth`, or `malta`.
     pub forces: BTreeMap<String, AirForce>,
     #[serde(default)]
