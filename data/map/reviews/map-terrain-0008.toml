@@ -1,0 +1,762 @@
+[batch]
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+id = "map-terrain-0008"
+observer = "map-terrain"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+selection = "D3232,D3233,D3326,D3327,D3328,D3329,D3330,D3331,D3332,D3333,D3426,D3427,D3428,D3429,D3430,D3431,D3432,D3520,D3521,D3522,D3523,D3524,D3525,D3526,D3527,D3528,D3529,D3530,D3617,D3618,D3619,D3620,D3621,D3622,E2301,E2302,E2303,E2304,E2305,E2306,E2307,E2401,E2402,E2403,E2404,E2405,E2406,E2407,E2501,E2502,E2503,E2504,E2505,E2506,E2507,E2508,E2509,E2510,E2511,E2512,E2513,E2514,E2601,E2602,E2603,E2604,E2605,E2606,E2607,E2608,E2609,E2610,E2611,E2612,E2613,E2614,E2701,E2702,E2703,E2704,E2705,E2706,E2707,E2708,E2709,E2710,E2711,E2712,E2713,E2714,E2801,E2802,E2803,E2804"
+notes = "Every complete cell directly inspected against native2021source and TEC.png; 94 inspected, 91 accepted, 3 deferred. Land predominance and explicit minor substrates follow map-0003; coastal domain follows map-0002. Contour ink is separate from substrate. Source crops remain outside repo. Single-observer acceptance; parent second looks cover only explicitly bounded family checks in individual notes, no population error or1979equivalence. No classifier, new place, city selector, edge or facility acceptance."
+
+[[hex]]
+hex_id = "D3232"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3233"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Yellow angular network over the beige land patch identifies salt marsh against TEC.png; salt marsh clearly predominates among the visible land. Shoreline and contour fringes are not automatically separate clear substrate. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3326"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3327"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct native and4x boundary check: shoreline graphics meet the upper vertex; no open-water region is discernible inside the printed sides."
+
+[[hex]]
+hex_id = "D3328"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct native and4x boundary check: shoreline graphics meet the upper vertex; no open-water region is discernible inside the printed sides."
+
+[[hex]]
+hex_id = "D3329"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3330"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3331"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Yellow angular network over the beige land patch identifies salt marsh against TEC.png; salt marsh clearly predominates among the visible land. Shoreline and contour fringes are not automatically separate clear substrate. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3332"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The cell contains blue sea and a small readable land fragment with broad clear and yellow-patterned salt-marsh portions. Neither land substrate confidently predominates. Terrain deferred, land/coastal known; majority sea does not decide land substrate."
+
+[[hex]]
+hex_id = "D3333"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3426"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3427"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3428"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3429"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Yellow angular network over the beige land patch identifies salt marsh against TEC.png; salt marsh clearly predominates among the visible land. Shoreline and contour fringes are not automatically separate clear substrate. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision. No distinct broad minor clear region confidently observed; the pale shore fringe is graphic decoration."
+
+[[hex]]
+hex_id = "D3430"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3431"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3432"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3520"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3521"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision."
+
+[[hex]]
+hex_id = "D3522"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision. Ragged olive band follows the western shared side and matches TEC contour-graphic structure, not mountain substrate. Parent source-family check was bounded to this cell plus E2503/E2504/E2604; it supplies no terrain predominance or edge classification."
+
+[[hex]]
+hex_id = "D3523"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3524"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3525"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3526"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3527"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3528"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3529"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3530"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3617"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3618"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3619"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3620"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "D3621"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Blue sea also lies inside the full boundary; classify the land substrate without using sea area in the predominance decision. The small cream peninsula enters the cell near its southeastern side and is readable; no majority-water inference."
+
+[[hex]]
+hex_id = "D3622"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+note = "Direct complete-boundary review: blue water fills the entire cell. Any nearby cream land is outside the printed shared sides. No land fragment observed inside the cell; other layers unreviewed."
+
+[[hex]]
+hex_id = "E2301"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad cream clear and beige rough land occupy comparable parts of the complete hex. No confidently predominant substrate; terrain deferred under map-0003. Contour graphics remain separate; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2302"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Minor substrate: rough in the narrow beige interior sliver along the western side. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2303"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2304"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2305"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2306"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2307"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2401"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2402"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2403"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2404"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2405"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad cream clear and beige rough land occupy comparable parts of the complete hex. No confidently predominant substrate; terrain deferred under map-0003. Contour graphics remain separate; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2406"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2407"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2501"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2502"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2503"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2504"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2505"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2506"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2507"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2508"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2509"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2510"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2511"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2512"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2513"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2514"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2601"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2602"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2603"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2604"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2605"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Broad beige rough substrate clearly predominates inside the complete cell, compared directly against TEC.png. Contour splashes remain separate from substrate; no edge-kind decision is supplied. Minor substrate: clear in the smaller broad cream interior region, distinct from narrow contour or shoreline margins. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2606"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2607"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2608"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2609"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2610"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2611"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2612"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2613"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2614"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2701"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2702"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2703"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2704"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2705"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2706"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2707"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2708"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2709"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2710"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2711"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2712"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2713"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2714"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2801"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2802"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2803"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
+
+[[hex]]
+hex_id = "E2804"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete cell. Printed contour, route and facility graphics remain separate. No distinct minor substrate observed; other layers unreviewed. Direct re-view of this full cell against TEC distinguishes ragged olive bands following sides and wrapping rough islands as contour-graphic family; no minor mountain inferred from that ink. Parent independently checked only E2503/E2504/E2604 and D3522 for symbol family, not all eastern cells or their predominant class."
