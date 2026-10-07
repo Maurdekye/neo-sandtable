@@ -12,7 +12,6 @@ const cells = readFileSync('../data/map/hexes.csv', 'utf8')
     return { id: fields[0], q: Number(fields[4]), r: Number(fields[5]) }
   })
 const cell = new Map(cells.map((c) => [c.id, c]))
-const start = cells.find((c) => c.q === 66 && c.r === 20) ?? cells[0]
 const center = (h: { q: number; r: number }) => ({
   x: 26 * Math.sqrt(3) * (h.q + h.r / 2),
   y: 39 * h.r,
@@ -160,7 +159,10 @@ test('production board and isolated console receive and inspect real printed ene
         ).toBe(true)
       }
     }
-    const origin = center(start)
+    const initial = snapshots[1][0].stacks.find(
+      (s) => s.side === 'axis' && cell.has(s.hex),
+    )!
+    const origin = center(cell.get(initial.hex)!)
     const target = Object.values(snapshots[1][0].units)
       .filter(
         (u) =>
@@ -195,6 +197,7 @@ test('production board and isolated console receive and inspect real printed ene
       fullPage: true,
     })
     await expect(consolePage.locator('canvas')).toBeVisible()
+    await expect(consolePage.getByTestId('fps')).toContainText(/^[1-9]\d* FPS/)
     const box = (await consolePage.locator('canvas').boundingBox())!
     const destination = center(cell.get(target.hex!)!)
     const dx = -(destination.x - origin.x) * 1.25,
