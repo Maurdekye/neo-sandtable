@@ -1107,6 +1107,9 @@ impl Ruleset for BatchOnly {
     fn observe(&self, c: &(), s: &State, p: Perspective) -> Value {
         rules().observe(c, s, p)
     }
+    fn clock(&self, _: &(), s: &State) -> cna_protocol::Clock {
+        clock(s)
+    }
     fn view(&self, c: &(), s: &State, p: Perspective) -> ViewState {
         self.single_calls
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -1159,6 +1162,11 @@ async fn real_publisher_builds_no_views_until_snapshot_reads_and_caches_each_roo
     )
     .unwrap();
     game.advance().unwrap();
+    assert_eq!(
+        single_calls.load(Ordering::SeqCst),
+        0,
+        "committing a transition must use the clock hook without building a view"
+    );
     game.set_paused(true).unwrap();
     let expected = game.views(&Perspective::all().collect::<Vec<_>>()).unwrap();
     calls.store(0, Ordering::SeqCst);

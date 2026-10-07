@@ -683,10 +683,7 @@ impl<R: Ruleset> Campaign<R> {
             self.status = stopped;
             return Err(Rejection::Engine(error).into());
         }
-        let clock = self
-            .ruleset
-            .view(&self.content, &self.game.state, Perspective::Operator)
-            .clock;
+        let clock = self.ruleset.clock(&self.content, &self.game.state);
         let scripted_transcript = match &command {
             Command::Respond(response)
                 if self
