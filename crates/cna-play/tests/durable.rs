@@ -1,3 +1,4 @@
+mod support;
 use async_trait::async_trait;
 use cna_core::{decision::ActionSchema, ids::SeatId};
 use cna_play::{
@@ -192,7 +193,8 @@ fn config(seat: &str) -> LaunchConfig {
     .unwrap();
     c.session = Some(SessionLimits {
         wall_seconds: 600,
-        turn_seconds: 5,
+        // Inert MCP work is count-bounded; this is a hang guard, not a speed assertion.
+        turn_seconds: 30,
         context_tokens: 100_000,
         recoveries: 3,
     });
@@ -217,7 +219,6 @@ fn driver(demo: &Demo, trace: Arc<Mutex<Trace>>) -> Inert {
     }
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn real_cna_windows_resume_same_session_and_recover_notebook() {
     cna_resume(false).await;
 }
@@ -299,7 +300,6 @@ async fn cna_resume(full: bool) {
     demo.shutdown().await.unwrap();
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn death_after_committed_order_resumes_without_repeating_old_revision() {
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
@@ -328,7 +328,6 @@ async fn death_after_committed_order_resumes_without_repeating_old_revision() {
     demo.shutdown().await.unwrap();
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn replaced_binding_cannot_resume_from_the_old_journal() {
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
@@ -354,7 +353,6 @@ async fn replaced_binding_cannot_resume_from_the_old_journal() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn unavailable_resume_reseeds_from_notebook_without_resetting_attempts() {
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
@@ -411,7 +409,6 @@ async fn unavailable_resume_reseeds_from_notebook_without_resetting_attempts() {
     demo.shutdown().await.unwrap();
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn durable_call_budget_refuses_submit_and_pauses_without_a_fallback() {
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
@@ -447,7 +444,6 @@ async fn durable_call_budget_refuses_submit_and_pauses_without_a_fallback() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn context_headroom_failure_stops_durable_siblings_without_failed_replacement() {
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
@@ -488,40 +484,10 @@ async fn context_headroom_failure_stops_durable_siblings_without_failed_replacem
 // Current scripted supply may restrict unit motion; these are explicit offered passes,
 // exercising real movement windows rather than inventing a legal unit move.
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn bounded_real_cna_windows_keep_one_session_and_stage_accounting() {
     let root = tempfile::tempdir().unwrap();
     let repo = repo();
-    let demo = Demo::with_config(
-        root.path(),
-        &repo.join("data"),
-        &repo.join("web/dist"),
-        config("axis.front_line"),
-    )
-    .await
-    .unwrap();
-    let mut windows = demo.handle.watch_seat(demo.seat);
-    let prepared = async {
-        demo.handle.pause(false).await.map_err(|e| e.to_string())?;
-        tokio::time::timeout(Duration::from_secs(40), async {
-            loop {
-                if !windows.borrow_and_update().pending.is_empty() {
-                    break;
-                }
-                windows.changed().await.map_err(|e| e.to_string())?;
-            }
-            Ok::<(), String>(())
-        })
-        .await
-        .map_err(|_| "bounded movement preparation timed out".to_string())??;
-        demo.handle.pause(true).await.map_err(|e| e.to_string())
-    }
-    .await;
-    if let Err(error) = prepared {
-        let cleanup = demo.shutdown().await;
-        cna_play::combine_results(Err(error), cleanup).unwrap();
-        unreachable!();
-    }
+    let demo = support::movement_demo(root.path(), &repo, config("axis.front_line")).await;
     assert!(
         demo.handle
             .seat(demo.seat)
@@ -553,11 +519,11 @@ async fn bounded_real_cna_windows_keep_one_session_and_stage_accounting() {
         }
     });
     let result = tokio::time::timeout(
-        Duration::from_secs(15),
+        Duration::from_secs(60),
         demo.play_durable(&mut [(seat, Box::new(inert))], rx),
     )
     .await
-    .map_err(|_| "bounded movement run timed out".to_string())
+    .map_err(|_| "bounded movement run hang guard elapsed".to_string())
     .and_then(|r| r);
     checkpoint.abort();
     let _ = checkpoint.await;

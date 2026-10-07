@@ -1,3 +1,4 @@
+mod support;
 use async_trait::async_trait;
 use cna_play::Demo;
 use cna_protocol::{ClientMessage, ServerMessage, TranscriptEntry};
@@ -23,6 +24,12 @@ struct FakeCli {
     drain_pending: bool,
 }
 impl FakeCli {
+    async fn confirm_captures(&self) {
+        tokio::time::timeout(Duration::from_secs(30), self.sink.flush_confirmed())
+            .await
+            .expect("fixture transcript confirmation hang guard elapsed")
+            .expect("fixture transcript worker stopped before confirming its batch");
+    }
     async fn call(&self, tool: &str, args: Value, emitter: &mut EntryEmitter, id: &str) -> Value {
         emitter.emit(TranscriptEntry::ToolCall {
             call_id: id.into(),
@@ -105,9 +112,7 @@ impl SeatDriver for FakeCli {
             }
             // The inert setup fixture can outpace the serialized transcript writer.
             // Confirm each decision batch before generating the next one.
-            tokio::time::timeout(Duration::from_secs(5), self.sink.flush())
-                .await
-                .expect("fixture transcript batch did not persist within five seconds");
+            self.confirm_captures().await;
             assert!(
                 step < 4095,
                 "inert fixture exceeded its decision safety bound"
@@ -116,6 +121,9 @@ impl SeatDriver for FakeCli {
         e.emit(TranscriptEntry::AssistantText {
             text: "Offered decisions submitted.".into(),
         });
+        // The fake turn ends when its emitted captures are confirmed, independently
+        // of the production final drain. Writer-loss tests inject failure afterward.
+        self.confirm_captures().await;
         Ok(TurnOutcome {
             ok: true,
             error: None,
@@ -169,7 +177,6 @@ async fn setup() -> (tempfile::TempDir, Demo) {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn mcp_answer_reaches_persistent_websocket_transcript() {
     let (_root, demo) = setup().await;
     let url = format!(
@@ -227,7 +234,7 @@ async fn mcp_answer_reaches_persistent_websocket_transcript() {
             _ => unreachable!(),
         })
         .collect();
-    let actual = tokio::time::timeout(Duration::from_secs(5), async {
+    let actual = tokio::time::timeout(Duration::from_secs(30), async {
         let mut found = vec![];
         while found.len() < expected.len() {
             if let Message::Text(t) = socket.next().await.unwrap().unwrap()
@@ -249,7 +256,6 @@ async fn mcp_answer_reaches_persistent_websocket_transcript() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn timeout_pauses_without_substituting_an_order() {
     let (_root, demo) = setup().await;
     let mut driver = FakeCli {
@@ -275,7 +281,6 @@ async fn timeout_pauses_without_substituting_an_order() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn live_haiku_server_probe_is_opt_in() {
     if std::env::var("CNA_LIVE_CLI_TESTS").as_deref() != Ok("1") {
         return;
@@ -365,7 +370,6 @@ impl SeatDriver for FinishCli {
     }
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn finishing_inside_one_cli_turn_is_success() {
     let (_root, demo) = setup().await;
     let mut driver = FinishCli {
@@ -460,7 +464,6 @@ impl SeatDriver for HangingCli {
     }
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn handover_stops_old_cli_without_pausing_replacement_binding() {
     let (_root, demo) = setup().await;
     let started = std::sync::Arc::new(tokio::sync::Notify::new());
@@ -501,13 +504,12 @@ async fn handover_stops_old_cli_without_pausing_replacement_binding() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn stopped_writer_cleanup_is_bounded_and_saves_unconfirmed_captures() {
     let (_root, demo) = setup().await;
     let outbox = demo.outbox.clone();
     demo.handle.shutdown().await.unwrap();
     demo.sink.system(demo.seat, "capture after writer loss");
-    let error = tokio::time::timeout(Duration::from_secs(8), demo.shutdown())
+    let error = tokio::time::timeout(Duration::from_secs(30), demo.shutdown())
         .await
         .expect("shutdown must be bounded")
         .expect_err("persistence must report failure");
@@ -569,7 +571,6 @@ async fn process_exists(pid: u32) -> bool {
     }
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn handover_during_authentication_kills_the_probe_child() {
     use cna_seats::{
         driver::claude::{ClaudeConfig, ClaudeDriver},
@@ -626,7 +627,7 @@ async fn handover_during_authentication_kills_the_probe_child() {
     let handle = demo.handle.clone();
     let seat = demo.seat;
     let (result, ()) = tokio::join!(demo.play(&mut driver, 1), async {
-        let pid = tokio::time::timeout(Duration::from_secs(5), async {
+        let pid = tokio::time::timeout(Duration::from_secs(30), async {
             loop {
                 if let Ok(text) = tokio::fs::read_to_string(&pid_file).await
                     && let Ok(pid) = text.parse::<u32>()
@@ -653,7 +654,8 @@ async fn handover_during_authentication_kills_the_probe_child() {
             )
             .await
             .unwrap();
-        tokio::time::timeout(Duration::from_secs(3), async {
+        // Less than the child's 30-second natural lifetime: this must prove cancellation.
+        tokio::time::timeout(Duration::from_secs(10), async {
             while process_exists(pid).await {
                 tokio::time::sleep(Duration::from_millis(20)).await;
             }
@@ -667,14 +669,13 @@ async fn handover_during_authentication_kills_the_probe_child() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn recovery_write_error_survives_an_existing_cli_failure() {
     let (root, mut demo) = setup().await;
     // An existing directory is unwritable as a file even under elevated test permissions.
     demo.outbox = root.path().into();
     demo.handle.shutdown().await.unwrap();
     demo.sink.system(demo.seat, "unconfirmed capture");
-    let cleanup = tokio::time::timeout(Duration::from_secs(8), demo.shutdown())
+    let cleanup = tokio::time::timeout(Duration::from_secs(30), demo.shutdown())
         .await
         .expect("bounded cleanup");
     let error = cna_play::combine_results(Err("CLI timed out".into()), cleanup).unwrap_err();
@@ -693,7 +694,6 @@ async fn recovery_write_error_survives_an_existing_cli_failure() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn campaigns_in_one_directory_keep_separate_recovery_outboxes() {
     let (root, first) = setup().await;
     let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -717,7 +717,6 @@ async fn campaigns_in_one_directory_keep_separate_recovery_outboxes() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn trusted_viewer_capability_is_separate_from_the_driver_mcp_endpoint() {
     let (_root, demo) = setup().await;
     let board_url = demo.board_url();
@@ -812,7 +811,6 @@ impl SeatDriver for WriterLossOnStopCli {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn writer_loss_during_control_preserves_cli_error_and_drains_captures() {
     for fail in [true, false] {
         let (_root, demo) = setup().await;
@@ -828,7 +826,7 @@ async fn writer_loss_during_control_preserves_cli_error_and_drains_captures() {
             },
             handle: demo.handle.clone(),
         };
-        let error = tokio::time::timeout(Duration::from_secs(8), demo.play(&mut driver, 1))
+        let error = tokio::time::timeout(Duration::from_secs(30), demo.play(&mut driver, 1))
             .await
             .expect("control loss must not prevent bounded drain")
             .unwrap_err();
@@ -865,18 +863,49 @@ async fn configured(config: cna_play::config::LaunchConfig) -> (tempfile::TempDi
     (root, demo)
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn cna_binding_uses_real_observation_and_current_action_schema() {
+    cna_binding_fixture(true).await;
+}
+#[tokio::test]
+#[ignore = "slow: drain complete commander setup through the real scoped MCP bridge"]
+async fn cna_commander_setup_uses_real_observation_and_current_action_schema() {
+    cna_binding_fixture(false).await;
+}
+async fn cna_binding_fixture(movement: bool) {
     use cna_play::config::{GameKind, LaunchConfig};
     let config = LaunchConfig::resolve(
         GameKind::Cna,
         &[
-            "axis.commander=claude:haiku".into(),
-            "*=scripted:legal_random".into(),
+            if movement {
+                "axis.front_line=claude:haiku"
+            } else {
+                "axis.commander=claude:haiku"
+            }
+            .into(),
+            if movement {
+                "*=scripted:pass_when_possible"
+            } else {
+                "*=scripted:legal_random"
+            }
+            .into(),
+            "axis.logistics=scripted:legal_random".into(),
         ],
     )
     .unwrap();
-    let (_root, demo) = configured(config).await;
+    let root = tempfile::tempdir().unwrap();
+    let repo = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let demo = if movement {
+        support::movement_demo(root.path(), &repo, config).await
+    } else {
+        Demo::with_config(
+            root.path(),
+            &repo.join("data"),
+            &repo.join("web/dist"),
+            config,
+        )
+        .await
+        .unwrap()
+    };
     let meta = demo
         .handle
         .projection(cna_core::visibility::Perspective::Operator)
@@ -919,7 +948,7 @@ async fn cna_binding_uses_real_observation_and_current_action_schema() {
             seat: demo.seat,
             fail: false,
             stopped: false,
-            drain_pending: true,
+            drain_pending: !movement,
         },
         hang: false,
         stopped: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -1025,7 +1054,6 @@ impl SeatDriver for TrackedCli {
     }
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn bounded_peer_completion_or_failure_stops_all_sessions_without_fallbacks() {
     use cna_play::config::{GameKind, LaunchConfig};
     use std::sync::{
@@ -1071,7 +1099,7 @@ async fn bounded_peer_completion_or_failure_stops_all_sessions_without_fallbacks
             })
             .collect();
         let result =
-            tokio::time::timeout(Duration::from_secs(8), demo.play_sessions(&mut drivers, 1))
+            tokio::time::timeout(Duration::from_secs(30), demo.play_sessions(&mut drivers, 1))
                 .await
                 .expect("bounded peer must not idle until wall timeout");
         assert_eq!(result.is_err(), fail);
@@ -1127,7 +1155,6 @@ impl SeatDriver for PairedCli {
     }
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn two_active_seats_submit_through_separate_scoped_endpoints() {
     use cna_play::config::{GameKind, LaunchConfig};
     let config = LaunchConfig::resolve(
@@ -1160,7 +1187,7 @@ async fn two_active_seats_submit_through_separate_scoped_endpoints() {
             )
         })
         .collect();
-    tokio::time::timeout(Duration::from_secs(8), demo.play_sessions(&mut drivers, 1))
+    tokio::time::timeout(Duration::from_secs(30), demo.play_sessions(&mut drivers, 1))
         .await
         .unwrap()
         .unwrap();
@@ -1252,7 +1279,6 @@ fn measured_cna_haiku_fixture_keeps_real_decision_and_notebook_tools_paired() {
 }
 
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn bounded_scripted_cna_progress_recovers_without_any_cli_endpoint() {
     use cna_play::config::{GameKind, LaunchConfig};
     let config =
@@ -1275,7 +1301,7 @@ async fn bounded_scripted_cna_progress_recovers_without_any_cli_endpoint() {
             .count()
     };
     demo.handle.pause(false).await.unwrap();
-    let progress = tokio::time::timeout(Duration::from_secs(50), async {
+    let progress = tokio::time::timeout(Duration::from_secs(90), async {
         loop {
             if accepted() >= 2
                 || matches!(

@@ -1,4 +1,5 @@
 //! Offline exposure counts and real multi-order acceptance; never invokes a paid CLI.
+mod support;
 use async_trait::async_trait;
 use cna_core::{
     decision::{ActionSchema, DecisionRequest},
@@ -241,7 +242,7 @@ impl SeatDriver for Fake {
         }
         // The actor reply may precede watch publication. Wait for the exact
         // answered revision to disappear before sampling another model window.
-        tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::time::timeout(Duration::from_secs(30), async {
             let mut windows = self.handle.watch_seat(self.seat);
             while windows
                 .borrow_and_update()
@@ -421,14 +422,7 @@ async fn move_batch(batch: usize) -> (u64, Vec<u64>, BTreeMap<String, Value>) {
     .unwrap();
     config.max_turns = if batch == 1 { 2 } else { 1 };
     config.tool_calls = 32;
-    let demo = Demo::with_config(
-        root.path(),
-        &repo.join("data"),
-        &repo.join("web/dist"),
-        config,
-    )
-    .await
-    .unwrap();
+    let demo = support::movement_demo(root.path(), &repo, config).await;
     let mut fake = Fake {
         handle: demo.handle.clone(),
         // Inert planner may inspect the entire disclosed unit domain; this
@@ -472,19 +466,18 @@ async fn move_batch(batch: usize) -> (u64, Vec<u64>, BTreeMap<String, Value>) {
     (turns, sizes, final_units)
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
 async fn one_list_answer_moves_two_real_units() {
     let (turns, sizes, _) = move_batch(2).await;
     assert_eq!((turns, sizes), (1, vec![2]));
 }
 #[tokio::test]
-#[ignore = "slow: load-sensitive wall-clock bound, fix in progress"]
+#[ignore = "slow: two separate model windows; the batched movement proof remains default"]
 async fn two_single_item_answers_move_the_same_real_units() {
     let (turns, sizes, _) = move_batch(1).await;
     assert_eq!((turns, sizes), (2, vec![1, 1]));
 }
 #[tokio::test]
-#[ignore = "slow: compare two complete setup preparations and identical mover state"]
+#[ignore = "slow: compare both restored branches and identical mover state"]
 async fn batched_and_single_answers_have_identical_real_unit_state() {
     let batch = move_batch(2).await;
     let singles = move_batch(1).await;

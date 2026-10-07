@@ -174,8 +174,9 @@ turns, MCP calls or reported model cost. Interrupted reservations stay charged o
 For list-shaped actions, the seat prompt asks for a segment plan, inspection of key
 units or targets, and several compatible ordered items in one validated answer.
 Observation metadata includes list bounds; full domains still come from describe_actions.
-Two inert real-Graziani tests move the same two Maletti units to C3518: a two-item
-answer takes one model window, while two single-item answers take two. No paid CLI
+Two inert real-Graziani tests select movers from the seat's offered unit domain,
+inspect their movement permissions, and validate their paths: a two-item answer
+takes one model window, while two single-item answers take two. No paid CLI
 is used, and larger plans can still consume more tokens or inspection calls.
 
 The recorded offline GT1/OpStage1 trace compares identical fake-controller choices
@@ -199,4 +200,15 @@ can restrict units. These are model-visible window counts, not a paid cost forec
 The pinned sample is `tests/fixtures/offline_window_accounting.json`. Future rules and
 baseline changes can alter counts; the slow offline test generates a fresh report and
 asserts reconciliation rather than fixing the engine to this sample. Default tests keep
-the bounded two-unit batching proof, while the complete stage trace runs in slow CI.
+the bounded two-unit batching proof; separate single-item windows, their exact state
+comparison, and the complete stage trace run in slow CI.
+
+
+The default movement fixtures evaluate pass-policy setup once per integration-test
+process, then cache a saved movement-window database. Each test restores its own
+campaign and fresh session journal through ordinary recovery, with factory-derived
+content and engine pins. The cache retains bytes only; it shares no live writer,
+MCP endpoint or session counters. Setup choices and preparation commands have count
+limits, with generous hang guards. Transcript fixtures await delivery confirmation.
+The complete commander setup bridge remains in slow CI. These fixture guards do
+not change paid CLI limits or the production five-second final transcript drain.

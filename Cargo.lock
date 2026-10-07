@@ -185,6 +185,7 @@ dependencies = [
  "axum",
  "cna-core",
  "cna-protocol",
+ "cna-rules",
  "cna-seats",
  "cna-server",
  "futures-util",
