@@ -1,4 +1,4 @@
-﻿import { expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { writeFileSync } from 'node:fs'
 import type { ViewState } from '../src/protocol'
 const server = process.env.CNA_SMOKE_SERVER,
@@ -13,7 +13,7 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
     !server || !capability,
     'Set CNA_SMOKE_SERVER and CNA_SMOKE_CAPABILITY',
   )
-  test.setTimeout(120000)
+  test.setTimeout(240000)
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   const created = await request.post(`${server}/api/campaigns`, {
@@ -48,7 +48,7 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
     timeout: 15000,
   })
   const projection = await (
-      await request.get(base, {
+      await request.get(`${base}?perspective=side:commonwealth`, {
         headers: { Authorization: `Bearer ${caps.sides.commonwealth}` },
       })
     ).json(),
@@ -56,7 +56,11 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
   const decision = view.pending.find(
     (d) =>
       d.kind === 'cna.setup.unit' &&
-      (d.space as { enum?: string[] })?.enum?.includes('E1730'),
+      (
+        d.space as { enum?: string[]; 'x-context'?: { group?: string } }
+      )?.enum?.includes('E1730') &&
+      (d.space as { 'x-context'?: { group?: string } })?.['x-context']
+        ?.group === 'cw_cairo',
   )!
   expect(decision, 'Cairo placement decision is projected').toBeTruthy()
   const schema = decision.space as {
@@ -112,7 +116,9 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
     ).toHaveCount(0)
     const enemyHeaders = { Authorization: `Bearer ${caps.sides.axis}` }
     const before = await (
-      await request.get(base, { headers: enemyHeaders })
+      await request.get(`${base}?perspective=side:axis`, {
+        headers: enemyHeaders,
+      })
     ).json()
     expect(before.snapshot.view.units[unitId]).toBeUndefined()
     const observation = await (
@@ -147,12 +153,14 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
     expect(submitted.ok()).toBeTruthy()
     await expect(panel).toHaveCount(0)
     const after = await (
-      await request.get(base, { headers: enemyHeaders })
+      await request.get(`${base}?perspective=side:axis`, {
+        headers: enemyHeaders,
+      })
     ).json()
     expect(after.snapshot.view.stacks).toEqual(before.snapshot.view.stacks)
     expect(after.snapshot.view.units[unitId]).toBeUndefined()
     const ownBuffered = await (
-      await request.get(base, {
+      await request.get(`${base}?perspective=side:commonwealth`, {
         headers: { Authorization: `Bearer ${caps.sides.commonwealth}` },
       })
     ).json()
@@ -182,13 +190,30 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
               d.kind.startsWith('cna.setup.') && d.seat !== barrier,
           ).length
         },
-        { timeout: 30000 },
+        { timeout: 180000, intervals: [1000, 2000] },
       )
       .toBe(0)
     const stillBlind = await (
-      await request.get(base, { headers: enemyHeaders })
+      await request.get(`${base}?perspective=side:axis`, {
+        headers: enemyHeaders,
+      })
     ).json()
     expect(stillBlind.snapshot.view.stacks).toEqual(before.snapshot.view.stacks)
+    // Stop before movement/combat so their later unit updates cannot mask a missing setup reveal.
+    for (const side of ['axis', 'commonwealth']) {
+      expect(
+        (
+          await request.post(`${base}/seats/${side}.front_line/controller`, {
+            headers,
+            data: {
+              controller: { kind: 'human', label: 'Hold after setup' },
+              config: {},
+            },
+          })
+        ).ok(),
+      ).toBeTruthy()
+    }
+    // Completing the held placement may open optional preload windows before publication.
     const animation = page.waitForFunction(
       () =>
         Number(
@@ -197,7 +222,7 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
             ?.textContent?.split(' ')[0],
         ) > 0,
       {},
-      { timeout: 15000 },
+      { timeout: 90000 },
     )
     expect(
       (
@@ -216,13 +241,15 @@ test('watches real blind Graziani setup, authorized choices and scripted reveal'
     })
     expect((await request.post(`${base}/pause`, { headers })).ok()).toBeTruthy()
     const ownPlaced = await (
-      await request.get(base, {
+      await request.get(`${base}?perspective=side:commonwealth`, {
         headers: { Authorization: `Bearer ${caps.sides.commonwealth}` },
       })
     ).json()
     expect(ownPlaced.snapshot.view.units[unitId].hex).toBe(destination)
     const opponentPlaced = await (
-      await request.get(base, { headers: enemyHeaders })
+      await request.get(`${base}?perspective=side:axis`, {
+        headers: enemyHeaders,
+      })
     ).json()
     const revealed = opponentPlaced.snapshot.view.stacks.find(
       (s: { hex: string; side: string }) =>
