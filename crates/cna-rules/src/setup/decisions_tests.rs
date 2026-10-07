@@ -615,3 +615,132 @@ fn starting_pool_splits_keep_identity_counts_and_private_locations_across_recove
     );
     assert!(complete.state.setup.pool_locations.is_empty());
 }
+
+/// Cases: scen:59.45, airlog:53.11, airlog:54.2
+#[test]
+fn optional_initial_cargo_shares_capacity_with_troops_and_never_spends_dump_supplies() {
+    use cna_tables::airlog::{supply::SupplyType, trucks::TruckType};
+    let c = content();
+    let mut initial = State::new(&c).unwrap();
+    let unit = initial
+        .land
+        .units
+        .values()
+        .find(|u| {
+            u.setup_group.is_some()
+                && c.units.units[&u.id]
+                    .class
+                    .as_ref()
+                    .is_some_and(|id| c.units.classes[id].unit_type == "infantry")
+        })
+        .unwrap()
+        .id
+        .clone();
+    for u in initial.land.units.values_mut() {
+        u.location = Location::NotArrived;
+    }
+    let target = initial.land.units.get_mut(&unit).unwrap();
+    target.location = Location::Hex {
+        hex: "A0101".into(),
+    };
+    target.trucks = Trucks {
+        light: 2,
+        medium: 0,
+        heavy: 0,
+    };
+    initial.land.undistributed_trucks.clear();
+    initial.logistics.dumps.clear();
+    initial.logistics.truck_pools.clear();
+    initial.air.forces.clear();
+    let side = target_side(&initial, &unit);
+    let mut game = evaluate(
+        &Cna::dev(),
+        &c,
+        &Game {
+            state: initial,
+            rng: CampaignRng::from_seed([5; 32]).state(),
+        },
+        &Command::Advance,
+    )
+    .unwrap()
+    .game;
+    let p = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == crate::setup::KIND_PRELOAD)
+        .unwrap()
+        .clone();
+    assert!(p.space.pass.is_some());
+    game = submit(&c, &game, &p, json!("load")).unwrap();
+    let p = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == crate::setup::KIND_PRELOAD)
+        .unwrap()
+        .clone();
+    let cap = c
+        .tables
+        .airlog
+        .truck_characteristics
+        .truck(TruckType::Light);
+    let before = serde_json::to_value(&game).unwrap();
+    assert!(submit(&c,&game,&p,json!({"light":{"stores":2*cap.supply_capacity(SupplyType::Stores),"fuel":2*cap.supply_capacity(SupplyType::Fuel)}})).is_err());
+    assert_eq!(serde_json::to_value(&game).unwrap(), before);
+    let enemy_before = Cna::dev().observe(&c, &game.state, Perspective::Side(side.opponent()));
+    game = submit(
+        &c,
+        &game,
+        &p,
+        json!({"light":{"stores":2*cap.supply_capacity(SupplyType::Stores)}}),
+    )
+    .unwrap();
+    assert_eq!(
+        game.state.logistics.unit_supply[&unit].carried.stores,
+        2 * cap.supply_capacity(SupplyType::Stores)
+    );
+    assert_eq!(
+        Cna::dev().observe(&c, &game.state, Perspective::Side(side.opponent())),
+        enemy_before
+    );
+    let p = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == crate::setup::KIND_PRELOAD)
+        .unwrap()
+        .clone();
+    game = submit(&c, &game, &p, json!("motorize")).unwrap();
+    let p = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == crate::setup::KIND_PRELOAD)
+        .unwrap()
+        .clone();
+    assert!(submit(&c, &game, &p, json!({"light":1,"medium":0,"heavy":0})).is_err());
+    assert_eq!(
+        game.state.land.units[&unit].transport_trucks,
+        Trucks::default()
+    );
+    game = submit(&c, &game, &p, json!({"light":0,"medium":0,"heavy":0})).unwrap();
+    let p = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == crate::setup::KIND_PRELOAD)
+        .unwrap()
+        .clone();
+    game = submit(&c, &game, &p, Value::Null).unwrap();
+    assert!(game.state.setup.closed);
+    assert!(game.state.logistics.dumps.is_empty());
+}
+fn target_side(state: &State, id: &UnitId) -> Side {
+    state.land.units[id].side
+}
