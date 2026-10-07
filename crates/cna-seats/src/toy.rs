@@ -231,6 +231,7 @@ impl Ruleset for NumberDuel {
                 decision_id: response.decision_id.to_string(),
                 seat: response.seat.to_string(),
                 summary: format!("you locked in card {card}"),
+                explanation: None,
             },
         ));
         cx.emit(EngineEvent::new(

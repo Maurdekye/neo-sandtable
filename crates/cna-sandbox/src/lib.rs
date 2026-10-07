@@ -1562,6 +1562,7 @@ impl Ruleset for Sandbox {
                 decision_id: pending.id.to_string(),
                 seat: pending.seat.to_string(),
                 summary,
+                explanation: response.public_explanation.clone(),
             },
         ));
         Ok(())

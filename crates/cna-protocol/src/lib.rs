@@ -379,6 +379,13 @@ pub enum GameEvent {
         decision_id: String,
         seat: SeatId,
         summary: String,
+        /// The answering seat's own commentary on its accepted answer
+        /// (`DecisionResponse::public_explanation`), trimmed and bounded. It travels with this
+        /// event, so it reaches exactly the seat, its side and the operator, never the enemy;
+        /// it is never executable and never read by the rules.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        explanation: Option<String>,
     },
     MarkerPlaced {
         marker: Marker,

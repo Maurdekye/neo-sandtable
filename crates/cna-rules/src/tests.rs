@@ -418,6 +418,69 @@ fn source_files_lists_exactly_what_the_loaders_read() {
     );
 }
 
+/// A seat's commentary on its accepted answer reaches its side and the operator with the
+/// resolution, trimmed and bounded, and never the enemy; an answer without one carries none.
+#[test]
+fn seat_commentary_travels_with_its_own_resolution_only() {
+    let ruleset = Cna::dev();
+    let content = content();
+    let mut game = new_game(4);
+    loop {
+        let t = evaluate(&ruleset, content, &game, &Command::Advance).expect("advance");
+        game = t.game;
+        if !ruleset.pending(content, &game.state).is_empty() {
+            break;
+        }
+    }
+    let request = ruleset.pending(content, &game.state).remove(0);
+    let respond = |explanation: Option<String>| {
+        let action = match &request.space.schema {
+            ActionSchema::Choice { options } => json!(options[0].id),
+            _ if request.space.pass.is_some() => Value::Null,
+            other => first_answer(other),
+        };
+        evaluate(
+            &ruleset,
+            content,
+            &game,
+            &Command::Respond(DecisionResponse {
+                decision_id: request.id.clone(),
+                seat: request.seat,
+                controller_epoch: 1,
+                decision_revision: request.revision,
+                idempotency_key: "c1".into(),
+                action,
+                public_explanation: explanation,
+            }),
+        )
+        .expect("legal answer")
+    };
+    let said = format!("  {}  ", "x".repeat(2_500));
+    let t = respond(Some(said));
+    let resolved: Vec<&EngineEvent> = t
+        .events
+        .iter()
+        .filter(|e| matches!(e.event, GameEvent::DecisionResolved { .. }))
+        .collect();
+    assert_eq!(resolved.len(), 1);
+    let GameEvent::DecisionResolved { explanation, .. } = &resolved[0].event else {
+        unreachable!()
+    };
+    assert_eq!(explanation.as_deref(), Some("x".repeat(2_000).as_str()));
+    let side = request.seat.side;
+    assert!(Perspective::Side(side).can_see(&resolved[0].audience));
+    assert!(Perspective::Operator.can_see(&resolved[0].audience));
+    assert!(!Perspective::Side(side.opponent()).can_see(&resolved[0].audience));
+    let t = respond(Some("   ".into()));
+    assert!(t.events.iter().any(|e| matches!(
+        &e.event,
+        GameEvent::DecisionResolved {
+            explanation: None,
+            ..
+        }
+    )));
+}
+
 /// Live unit updates carry `moved_this_segment` like snapshots, a new Movement Segment sends the
 /// reset, and decision ids count per seat so they reveal nothing about other seats.
 #[test]

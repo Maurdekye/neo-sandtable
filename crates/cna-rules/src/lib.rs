@@ -59,6 +59,15 @@ impl Cna {
     }
 }
 
+/// The longest seat commentary kept with an accepted answer, in characters.
+const MAX_COMMENTARY: usize = 2_000;
+
+/// A seat's own commentary on its answer, trimmed and bounded, or None when it gave none.
+fn commentary(response: &DecisionResponse) -> Option<String> {
+    let text = response.public_explanation.as_deref()?.trim();
+    (!text.is_empty()).then(|| text.chars().take(MAX_COMMENTARY).collect())
+}
+
 impl Ruleset for Cna {
     type State = State;
     type Content = CnaContent;
@@ -247,6 +256,7 @@ impl Cna {
                 decision_id: pending.id.to_string(),
                 seat: pending.seat.to_string(),
                 summary,
+                explanation: commentary(response),
             },
         ));
         Ok(())

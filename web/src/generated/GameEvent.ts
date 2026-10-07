@@ -10,4 +10,11 @@ import type { JsonValue } from "./serde_json/JsonValue";
 /**
  * Game events as seen by a perspective. Viewers must ignore kinds they do not know.
  */
-export type GameEvent = { "kind": "phase_changed", clock: Clock, } | { "kind": "unit_moved", unit_id: string, path: Array<string>, cp_spent: number | null, } | { "kind": "unit_updated", unit: UnitView, } | { "kind": "stack_updated", stack: Stack, } | { "kind": "stack_removed", hex: string, side: Side, } | { "kind": "unit_removed", unit_id: string, reason: string, } | { "kind": "dice_rolled", purpose: string, dice: Array<number>, reading: number | null, rule: string | null, } | { "kind": "combat_resolved", hex: string, summary: string, detail: { [key in string]: JsonValue } | null, } | { "kind": "decision_opened", decision: PendingDecision, } | { "kind": "decision_resolved", decision_id: string, seat: string, summary: string, } | { "kind": "marker_placed", marker: Marker, } | { "kind": "marker_removed", marker_id: string, } | { "kind": "note", text: string, };
+export type GameEvent = { "kind": "phase_changed", clock: Clock, } | { "kind": "unit_moved", unit_id: string, path: Array<string>, cp_spent: number | null, } | { "kind": "unit_updated", unit: UnitView, } | { "kind": "stack_updated", stack: Stack, } | { "kind": "stack_removed", hex: string, side: Side, } | { "kind": "unit_removed", unit_id: string, reason: string, } | { "kind": "dice_rolled", purpose: string, dice: Array<number>, reading: number | null, rule: string | null, } | { "kind": "combat_resolved", hex: string, summary: string, detail: { [key in string]: JsonValue } | null, } | { "kind": "decision_opened", decision: PendingDecision, } | { "kind": "decision_resolved", decision_id: string, seat: string, summary: string, 
+/**
+ * The answering seat's own commentary on its accepted answer
+ * (`DecisionResponse::public_explanation`), trimmed and bounded. It travels with this
+ * event, so it reaches exactly the seat, its side and the operator, never the enemy;
+ * it is never executable and never read by the rules.
+ */
+explanation?: string, } | { "kind": "marker_placed", marker: Marker, } | { "kind": "marker_removed", marker_id: string, } | { "kind": "note", text: string, };

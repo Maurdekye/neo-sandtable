@@ -138,6 +138,7 @@ impl Ruleset for Tiny {
                 decision_id: response.decision_id.to_string(),
                 seat: response.seat.to_string(),
                 summary: format!("secret {value}"),
+                explanation: None,
             },
         ));
         cx.emit(EngineEvent::new(
