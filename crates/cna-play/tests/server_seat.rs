@@ -164,7 +164,7 @@ fn first_fixture_action(schema: &cna_core::decision::ActionSchema) -> Value {
         ActionSchema::List { item, min, .. } => {
             Value::Array((0..*min).map(|_| first_fixture_action(item)).collect())
         }
-        ActionSchema::Hex { among: None } => {
+        ActionSchema::Hex { among: None } | ActionSchema::Text { .. } => {
             panic!("fixture needs an enumerated domain or an offered pass")
         }
     }

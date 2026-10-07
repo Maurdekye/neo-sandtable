@@ -449,10 +449,10 @@ fn dummy_dump_domain_excludes_facilities_and_forged_choice_is_atomic() {
         vec!["A0102"]
     );
     let before = serde_json::to_string(&game).unwrap();
-    assert_eq!(
+    assert!(matches!(
         submit(&c, &game, &p, json!("A4829")).unwrap_err(),
-        illegal("not a legal setup destination")
-    );
+        Rejection::Illegal { message } if message.contains("expected one of the listed option ids")
+    ));
     assert_eq!(serde_json::to_string(&game).unwrap(), before);
     let game = submit(&c, &game, &p, json!("A0102")).unwrap();
     assert_eq!(game.state.setup.dump_locations.len(), 1);

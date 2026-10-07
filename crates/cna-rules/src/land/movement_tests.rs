@@ -2683,7 +2683,7 @@ fn authoritative_patrol_boundary_expires_engagement_before_the_next_stage() {
 #[test]
 fn terminal_barrage_loss_reconciles_engagement_before_the_same_advance_opens_retreat() {
     use super::super::combat::barrage;
-    use cna_core::decision::{ActionSchema, ActionSpace, Secrecy, Trigger};
+    use cna_core::decision::{ActionSpace, Secrecy, Trigger};
     let (c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
     place(&mut s, LEG, "C4021");
     place(&mut s, TANK, "C4020");
@@ -2711,6 +2711,7 @@ fn terminal_barrage_loss_reconciles_engagement_before_the_same_advance_opens_ret
     let seat = SeatId::new(Side::Commonwealth, Role::FrontLine);
     let mut rng = CampaignRng::from_seed([82; 32]);
     let mut events = vec![];
+    let (losses, _) = barrage::loss_space(&c, &s, seat).unwrap();
     crate::steps::open(
         &mut s,
         &mut Cx {
@@ -2723,11 +2724,7 @@ fn terminal_barrage_loss_reconciles_engagement_before_the_same_advance_opens_ret
         &["land:12.45"],
         Trigger::Triggered,
         Secrecy::Secret,
-        ActionSpace::new(ActionSchema::List {
-            min: 1,
-            max: 1,
-            item: Box::new(ActionSchema::Record { fields: vec![] }),
-        }),
+        ActionSpace::new(losses),
     );
     let g = Game {
         state: s,

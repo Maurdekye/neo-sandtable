@@ -231,6 +231,13 @@ impl Cna {
         if response.action.is_null() && pending.space.pass.is_none() {
             return Err(steps::illegal("passing is not allowed for this decision"));
         }
+        // Only an answer of the advertised shape reaches a module, so no module's own bounds can
+        // ever be probed with a malformed one (rule 7); the error speaks only of that shape.
+        pending.space.check(&response.action).map_err(|e| {
+            steps::illegal(format!(
+                "the answer does not fit this decision's action space: {e}"
+            ))
+        })?;
         state.decisions.pending.remove(idx);
         let summary = self.respond_to(content, state, &pending, &response.action, cx)?;
         land::breakdown::window::park(state, None);

@@ -108,6 +108,16 @@ impl ActionSpace {
         self
     }
 
+    /// Whether `action` has a legal shape for this space: `null` exactly when passing is
+    /// allowed, otherwise a value matching the schema ([`ActionSchema::check`]).
+    pub fn check(&self, action: &Value) -> Result<(), String> {
+        match (action, &self.pass) {
+            (Value::Null, Some(_)) => Ok(()),
+            (Value::Null, None) => Err("action: passing is not allowed for this decision".into()),
+            _ => self.schema.check(action),
+        }
+    }
+
     /// A JSON Schema (draft 2020-12 subset) for the `action` field, for LLM tools. Context, if
     /// any, rides along as the `x-context` annotation.
     pub fn to_json_schema(&self) -> Value {
@@ -144,6 +154,9 @@ pub enum ActionSchema {
     Hex { among: Option<Vec<HexId>> },
     /// A sequence of adjacent hexes beginning next to `from`, at most `max_steps` long.
     Path { from: HexId, max_steps: u32 },
+    /// Text of `min_length..=max_length` characters, for ids an answer itself creates (e.g. the
+    /// cohorts a division splits off); the ruleset validates what it names.
+    Text { min_length: u32, max_length: u32 },
     /// An object with named fields.
     Record { fields: Vec<FieldSchema> },
     /// A list of items, `min..=max` long.
@@ -170,6 +183,94 @@ pub struct FieldSchema {
 }
 
 impl ActionSchema {
+    /// Whether `value` has the shape this schema advertises: its JSON type, enum membership,
+    /// integer range, text and list lengths, path length, and record fields (no unknown field,
+    /// every required one present, `null` allowed for an optional one). Hex syntax, adjacency and
+    /// meaning stay the ruleset's to judge. The error names the first offending path and speaks
+    /// only of the schema, which the answering seat already has, so it can never disclose
+    /// anything else (docs/engine.md §3 rule 7).
+    pub fn check(&self, value: &Value) -> Result<(), String> {
+        self.check_at(value, "action")
+    }
+
+    fn check_at(&self, value: &Value, path: &str) -> Result<(), String> {
+        let fail = |what: String| Err(format!("{path}: {what}"));
+        match self {
+            ActionSchema::Choice { options } => match value.as_str() {
+                Some(s) if options.iter().any(|o| o.id == s) => Ok(()),
+                _ => fail("expected one of the listed option ids".into()),
+            },
+            ActionSchema::Integer { min, max } => match value.as_i64() {
+                Some(n) if (*min..=*max).contains(&n) => Ok(()),
+                _ => fail(format!("expected an integer in {min}..={max}")),
+            },
+            ActionSchema::Bool => match value {
+                Value::Bool(_) => Ok(()),
+                _ => fail("expected true or false".into()),
+            },
+            ActionSchema::Unit { among } => match value.as_str() {
+                Some(s) if among.iter().any(|u| u.as_str() == s) => Ok(()),
+                _ => fail("expected one of the listed unit ids".into()),
+            },
+            ActionSchema::Hex { among } => match (value.as_str(), among) {
+                (Some(s), Some(hexes)) if hexes.iter().any(|h| h.as_str() == s) => Ok(()),
+                (Some(_), None) => Ok(()),
+                (_, Some(_)) => fail("expected one of the listed hex ids".into()),
+                (None, None) => fail("expected a hex id".into()),
+            },
+            ActionSchema::Path { max_steps, .. } => match value.as_array() {
+                Some(steps)
+                    if steps.len() <= *max_steps as usize && steps.iter().all(Value::is_string) =>
+                {
+                    Ok(())
+                }
+                _ => fail(format!("expected a list of at most {max_steps} hex ids")),
+            },
+            ActionSchema::Text {
+                min_length,
+                max_length,
+            } => match value.as_str() {
+                Some(s)
+                    if (*min_length as usize..=*max_length as usize)
+                        .contains(&s.chars().count()) =>
+                {
+                    Ok(())
+                }
+                _ => fail(format!(
+                    "expected text of {min_length}..={max_length} characters"
+                )),
+            },
+            ActionSchema::Record { fields } => {
+                let Some(map) = value.as_object() else {
+                    return fail("expected an object".into());
+                };
+                if let Some(extra) = map.keys().find(|k| fields.iter().all(|f| &f.name != *k)) {
+                    return fail(format!("unknown field `{extra}`"));
+                }
+                for f in fields {
+                    match map.get(&f.name) {
+                        None | Some(Value::Null) if f.optional => {}
+                        None => return fail(format!("missing field `{}`", f.name)),
+                        Some(v) => f.schema.check_at(v, &format!("{path}.{}", f.name))?,
+                    }
+                }
+                Ok(())
+            }
+            ActionSchema::List { item, min, max } => {
+                let Some(items) = value.as_array() else {
+                    return fail("expected a list".into());
+                };
+                if !(*min as usize..=*max as usize).contains(&items.len()) {
+                    return fail(format!("expected {min}..={max} items"));
+                }
+                items
+                    .iter()
+                    .enumerate()
+                    .try_for_each(|(i, v)| item.check_at(v, &format!("{path}[{i}]")))
+            }
+        }
+    }
+
     pub fn to_json_schema(&self) -> Value {
         match self {
             ActionSchema::Choice { options } => json!({
@@ -213,6 +314,10 @@ impl ActionSchema {
                     "hexes entered in order, each adjacent to the previous, starting next to {from}"
                 ),
             }),
+            ActionSchema::Text {
+                min_length,
+                max_length,
+            } => json!({ "type": "string", "minLength": min_length, "maxLength": max_length }),
             ActionSchema::Record { fields } => {
                 let mut props = Map::new();
                 let mut required = Vec::new();
@@ -249,6 +354,85 @@ impl ActionSchema {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn answers_must_fit_the_advertised_space() {
+        use super::*;
+        let field = |name: &str, schema: ActionSchema, optional: bool| FieldSchema {
+            name: name.into(),
+            doc: String::new(),
+            schema,
+            optional,
+        };
+        let unit = ActionSchema::Unit {
+            among: vec!["it.a".into()],
+        };
+        let text = ActionSchema::Text {
+            min_length: 1,
+            max_length: 4,
+        };
+        let space = ActionSpace::new(ActionSchema::List {
+            item: Box::new(ActionSchema::Record {
+                fields: vec![
+                    field("unit", unit, false),
+                    field("n", ActionSchema::Integer { min: 0, max: 3 }, false),
+                    field("label", text, true),
+                ],
+            }),
+            min: 0,
+            max: 1,
+        });
+        assert!(space.check(&json!([{"unit": "it.a", "n": 3}])).is_ok());
+        assert!(
+            space
+                .check(&json!([{"unit": "it.a", "n": 0, "label": null}]))
+                .is_ok()
+        );
+        assert!(
+            space
+                .check(&json!([{"unit": "it.a", "n": 0, "label": "c1"}]))
+                .is_ok()
+        );
+        let two = json!([{"unit": "it.a", "n": 0}, {"unit": "it.a", "n": 0}]);
+        for (bad, says) in [
+            (json!(null), "passing is not allowed"),
+            (json!({}), "action: expected a list"),
+            (two, "0..=1 items"),
+            (
+                json!([{"unit": "it.b", "n": 0}]),
+                "action[0].unit: expected one of the listed unit",
+            ),
+            (
+                json!([{"unit": "it.a", "n": 4}]),
+                "action[0].n: expected an integer in 0..=3",
+            ),
+            (json!([{"unit": "it.a"}]), "missing field `n`"),
+            (
+                json!([{"unit": "it.a", "n": 0, "x": 1}]),
+                "unknown field `x`",
+            ),
+            (
+                json!([{"unit": "it.a", "n": 0, "label": "toolong"}]),
+                "1..=4 characters",
+            ),
+        ] {
+            let err = space.check(&bad).unwrap_err();
+            assert!(err.contains(says), "{bad} -> {err}");
+        }
+        assert!(space.clone().with_pass("skip").check(&json!(null)).is_ok());
+        let path = ActionSchema::Path {
+            from: "C4218".into(),
+            max_steps: 2,
+        };
+        assert!(path.check(&json!(["C4219", "C4220"])).is_ok());
+        assert!(path.check(&json!(["C4219", "C4220", "C4221"])).is_err());
+        assert!(
+            ActionSchema::Hex { among: None }
+                .check(&json!("C4219"))
+                .is_ok()
+        );
+        assert!(ActionSchema::Bool.check(&json!(1)).is_err());
+    }
+
     #[test]
     fn context_rides_along_as_an_annotation() {
         let space = ActionSpace::new(ActionSchema::Bool)

@@ -162,8 +162,9 @@ fn supplies_schema(content: &CnaContent, trucks: i32, kind: TruckType) -> Action
         .into_iter()
         .map(|(name, t)| FieldSchema {
             name: name.into(),
-            doc: "Initial supply points; all types share this truck capacity".into(),
-            optional: false,
+            doc: "Initial supply points (omit for none); all types share this truck capacity"
+                .into(),
+            optional: true,
             schema: ActionSchema::Integer {
                 min: 0,
                 max: i64::from(trucks) * i64::from(chart.supply_capacity(t)),
@@ -188,8 +189,8 @@ fn open_operation(
     .into_iter()
     .map(|(name, kind, total, used)| FieldSchema {
         name: name.into(),
-        doc: format!("{name} truck allocation"),
-        optional: false,
+        doc: format!("{name} truck allocation (omit for none)"),
+        optional: true,
         schema: if operation == "load" {
             supplies_schema(content, total - used, kind)
         } else {

@@ -23,7 +23,9 @@ fn random_value(schema: &ActionSchema, rng: &mut CampaignRng) -> Value {
         ActionSchema::Bool => json!(rng.d6().value() > 3),
         ActionSchema::Unit { among } => json!(among[pick(rng, among.len())].as_str()),
         ActionSchema::Hex { among: Some(h) } => json!(h[pick(rng, h.len())].as_str()),
-        ActionSchema::Hex { among: None } | ActionSchema::Path { .. } => Value::Null,
+        ActionSchema::Hex { among: None }
+        | ActionSchema::Path { .. }
+        | ActionSchema::Text { .. } => Value::Null,
         ActionSchema::Record { fields } => {
             let mut o = serde_json::Map::new();
             for f in fields {

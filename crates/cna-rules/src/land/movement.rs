@@ -66,7 +66,7 @@ pub struct Order {
     pub path: Vec<HexId>,
     #[serde(default)]
     pub with_stack: bool,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub close_assault: Vec<HexId>,
 }
 #[derive(Debug, Clone, Serialize)]

@@ -97,7 +97,9 @@ impl Generator<'_> {
                 [sample(&mut self.rng, among.len() as u128)? as usize]
                 .as_str()
                 .into(),
-            ActionSchema::Hex { among: None } | ActionSchema::Path { .. } => self
+            ActionSchema::Hex { among: None }
+            | ActionSchema::Path { .. }
+            | ActionSchema::Text { .. } => self
                 .candidates
                 .candidate(self.request, schema, self.attempt)
                 .ok_or_else(|| {
@@ -132,7 +134,9 @@ impl Generator<'_> {
 
 fn requires_candidates(schema: &ActionSchema) -> bool {
     match schema {
-        ActionSchema::Hex { among: None } | ActionSchema::Path { .. } => true,
+        ActionSchema::Hex { among: None }
+        | ActionSchema::Path { .. }
+        | ActionSchema::Text { .. } => true,
         ActionSchema::Record { fields } => fields
             .iter()
             .any(|field| requires_candidates(&field.schema)),

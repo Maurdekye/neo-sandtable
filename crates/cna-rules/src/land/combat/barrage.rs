@@ -974,7 +974,11 @@ fn obligations(
     }
     Ok(out)
 }
-fn loss_space(c: &CnaContent, s: &State, seat: SeatId) -> Result<(ActionSchema, bool), Rejection> {
+pub(crate) fn loss_space(
+    c: &CnaContent,
+    s: &State,
+    seat: SeatId,
+) -> Result<(ActionSchema, bool), Rejection> {
     let os = obligations(c, s, seat)?;
     let ids = os
         .iter()

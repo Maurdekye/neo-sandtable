@@ -86,7 +86,7 @@ fn record(names: &[&str], schema: ActionSchema) -> ActionSchema {
         fields: names.iter().map(|n| field(n, schema.clone())).collect(),
     }
 }
-fn space(outcome: &RolledCheck) -> ActionSpace {
+pub(crate) fn space(outcome: &RolledCheck) -> ActionSpace {
     let count = ActionSchema::Integer {
         min: 0,
         max: i64::from(i32::MAX),

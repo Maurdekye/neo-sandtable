@@ -925,7 +925,7 @@ mod tests {
             &["land:21.45"],
             Trigger::Triggered,
             Secrecy::Secret,
-            ActionSpace::new(ActionSchema::Bool),
+            super::super::window::space(&outcome),
         );
         s.land.breakdown.window.parked = true;
         s.land.breakdown.window.outcomes.push_back(outcome);
