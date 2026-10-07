@@ -1,10 +1,10 @@
 # air-0004 - AA casualties use uniform sampling without replacement
 
 - **Cases:** airlog:46.0, airlog:46.25, airlog:46.26
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-air, 2026-10-07
-- **Owner review:** pending (consequential)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 AA results specify a count but leave the consistent mutually agreed method for selecting affected individual planes to the players. The digital edition needs one pinned deterministic RNG procedure.

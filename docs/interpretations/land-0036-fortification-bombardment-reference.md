@@ -1,11 +1,11 @@
 # land-0036 - Fortification bombardment cross-reference
 
 - **Cases:** land:25.14, land:12.51, land:12.53, airlog:39.37, airlog:41.37, airlog:41.5
-- **Status:** proposed
+- **Status:** adopted
 - **Classification:** minor
 - **Profile version:** v1
 - **Decided by:** neo-sandtable via rules-mgr, 2026-10-07
-- **Owner review:** pending batch3
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 - **Lead approval:** approved as written by neo-sandtable via rules-mgr, 2026-10-07
 
 ## Question

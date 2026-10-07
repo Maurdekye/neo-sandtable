@@ -1,10 +1,10 @@
 # airlog-0020 - Cargo CP history across carriers
 
 - **Cases:** airlog:53.22, airlog:53.24, airlog:53.25
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full
 - **Decided by:** rules-airlog, 2026-10-07, per lead ruling
-- **Owner review:** pending batch 3; consequential
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 How does a carried load retain its used CP when it changes truck, and which parcels disappear when fungible stocks are consumed?

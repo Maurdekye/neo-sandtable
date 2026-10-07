@@ -1,10 +1,10 @@
 # airlog-0019 - Cargo handling at off-map supply boxes
 
 - **Cases:** land:8.83, land:8.87, land:8.88, airlog:53.24
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full
 - **Decided by:** rules-airlog, 2026-10-07, per lead ruling
-- **Owner review:** pending batch 2; consequential
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 Does the off-map cargo-handling movement ban apply everywhere, and how does it survive the division of a carrier whose trucks have handled supplies?

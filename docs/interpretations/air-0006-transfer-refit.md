@@ -1,10 +1,10 @@
 # air-0006 — Refit after transfer flight
 
 - **Cases:** airlog:38.31, airlog:42.14, airlog:37.15, airlog:37.32
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full (proposed; no operational implementation yet)
 - **Decided by:** rules-air-bases, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 

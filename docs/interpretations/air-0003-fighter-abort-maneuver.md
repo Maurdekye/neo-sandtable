@@ -1,10 +1,10 @@
 # air-0003 - Fighter abort uses a ten-point maneuver deficit allowance
 
 - **Cases:** airlog:39.35, airlog:39.37, airlog:40.26
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-air, 2026-10-07
-- **Owner review:** pending (consequential)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 The verbal condition permits a maneuver deficit of at most ten, but the printed subtraction instruction and sign examples do not consistently express that condition.

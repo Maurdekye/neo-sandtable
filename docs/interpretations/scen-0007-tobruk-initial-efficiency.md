@@ -1,11 +1,11 @@
 # scen-0007 - Tobruk initial efficiency and the San Giorgio
 
 - **Cases:** scen:60.7, airlog:55.12, airlog:55.18, airlog:55.25, airlog:55.3
-- **Status:** proposed
+- **Status:** adopted
 - **Classification:** consequential
 - **Profile version:** v1
 - **Decided by:** neo-sandtable via rules-mgr, 2026-10-07
-- **Owner review:** pending batch3
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 

@@ -1,10 +1,10 @@
 # land-0033 - Minefield clearance requires an idle engineering unit
 
 - **Cases:** land:23.22, land:24.38, land:26.13
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-engineers, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 Can an engineering unit clear a minefield during a stage in which it remains stationary but spends CP on an action other than movement?

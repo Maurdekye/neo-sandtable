@@ -1,10 +1,10 @@
 # air-0002 - Suppression planes are excluded from AA target groups
 
 - **Cases:** airlog:40.72, airlog:40.74, airlog:40.75, airlog:46.24
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-air, 2026-10-07
-- **Owner review:** pending (consequential)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 One flak-suppression clause permits remaining AA to attack suppression fighters, but the later AA restrictions explicitly exclude those fighters.

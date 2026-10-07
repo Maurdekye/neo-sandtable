@@ -1,10 +1,10 @@
 # air-0007 — Intrinsic AA while upgrading an air facility
 
 - **Cases:** airlog:36.18, airlog:36.2, airlog:36.3, airlog:36.4, land:24.79
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-full (provisional reading; live AA integration pending)
 - **Decided by:** neo-sandtable (lead), 2026-10-07; relayed through rules-mgr
-- **Owner review:** pending, batch 3
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 

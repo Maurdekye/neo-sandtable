@@ -1,10 +1,10 @@
 # air-0001 - Night air combat follows the specific search procedure
 
 - **Cases:** airlog:39.44, airlog:40.91, airlog:41.46, airlog:41.47
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-air, 2026-10-07
-- **Owner review:** pending (consequential)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 General night-flight text excludes air combat, while the detailed night-bombing cases describe search, night-fighter scramble and air combat after a successful search.

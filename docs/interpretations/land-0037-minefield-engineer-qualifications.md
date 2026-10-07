@@ -1,11 +1,11 @@
 # land-0037 - Minefield companion engineering qualifications
 
 - **Cases:** land:23.13, land:23.14, land:23.15, land:23.21, land:26.24, land:26.25, land:6.3
-- **Status:** proposed
+- **Status:** adopted
 - **Classification:** consequential
 - **Profile version:** v1
 - **Decided by:** neo-sandtable via rules-mgr, 2026-10-07
-- **Owner review:** pending batch3
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 - **Lead approval:** approved as written by neo-sandtable via rules-mgr, 2026-10-07
 
 ## Question

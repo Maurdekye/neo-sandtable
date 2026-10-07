@@ -1,10 +1,10 @@
 ﻿# map-0003 - Predominant substrate in mixed land terrain
 
 - **Cases:** land:8.37
-- **Status:** proposed (implemented provisionally)
+- **Status:** adopted
 - **Profile version:** geometry `vassal-2021`, map schema1; no schema change
 - **Decided by:** neo-sandtable, 2026-10-07
-- **Owner review:** pending, owner batch3
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 

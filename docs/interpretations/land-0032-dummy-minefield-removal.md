@@ -1,10 +1,10 @@
 # land-0032 - Revealed dummy minefield removal boundary
 
 - **Cases:** land:26.14, land:26.15, land:26.23, land:24.38, land:24.18, land:8.22
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v1
 - **Decided by:** rules-engineers, 2026-10-07
-- **Owner review:** pending
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 Does a revealed dummy disappear immediately, after the current Movement Segment, or after the Movement Phase containing subsequent repeated movement-and-combat cycles in the same Operations Stage?

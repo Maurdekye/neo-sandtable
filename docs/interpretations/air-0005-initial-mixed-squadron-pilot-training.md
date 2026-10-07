@@ -1,10 +1,10 @@
 # air-0005 - Initial mixed-squadron pilots require an explicit training type
 
 - **Cases:** airlog:35.21, airlog:35.24, airlog:40.12, airlog:40.14, scen:59.34
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** rules-air, 2026-10-07
-- **Owner review:** pending (consequential)
+- **Owner review:** reviewed 2026-10-07 by the owner (batch review 3)
 
 ## Question
 Initial pilots are assigned to squadrons and trained by aircraft type. A legal mixed-type squadron does not identify which type its starting rated pilots know.
