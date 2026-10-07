@@ -562,3 +562,11 @@ citations. The parent's TEC/source comparison for this first inland batch is
 bounded to sixteen sides in two inspection sheets, not all forty sides.
 Independent source accuracy remains unmeasured. Lake is still unsurveyed;
 historical thirteen-kind movement completeness does not certify that layer.
+
+### Second three-worker edge assembly, 2026-10-07
+
+The checked `map-lines-2-0006`, `map-lines-0007` and `map-terrain-edges-0002` inputs add 225 distinct physical pairs and 3,150 source observations: 75 present, 2,787 absent and 288 unresolved. Their resolved observations add 2,862 per-kind masks, 22 line features and 53 side features (35 marine sides, 14 oriented slopes and four oriented escarpments). Pipeline remains unsurveyed on all 225 pairs; unresolved exact rail, river, marine endpoint, contour orientation, road and track identities receive no masks. No lake survey, new strip, complete control halo or unit-action legality follows from this assembly.
+
+Each worker inspected its own whole sides against the native 2021 source and TEC and passed its initial map, Rust and web gates. The assembler preserves raw files, notes and original authorship, regenerates generated conflicts from the raw union, checks disjoint ownership and skips every prior physical pair including abstentions and pilots. Final joint gates and remote publication are recorded separately from source review. These checks establish transport, replay and inclusion, not an independent population source-error estimate or equivalence to the original 1979 sheets.
+
+The resulting raw union has 856 classified terrain cells, 1,743 cell masks, 10,800 edge-kind masks, 160 line features and 210 side features. The corridor has observations of at least one kind on 868 of its 2,541 physical pairs; 1,673 pairs remain entirely unobserved. Counts of any observation are not completeness certificates. The 33 explicit corridor terrain gaps remain unchanged. No SVG file changed in the inland input; no reason for that unchanged output is asserted from the delta alone.

@@ -223,3 +223,9 @@ C3832 and C4026 terrain remain unknown. Reviewed marine sides incident to
 C4026 do not classify that cell's land substrate. All 33 corridor terrain gaps
 and the four unknown coastal domains listed above are unchanged; no new route,
 control halo or unit-action certification is supplied by this edge cycle.
+
+### Second assembled edge cycle, 2026-10-07
+
+The next three immutable worker inputs cover 225 fresh corridor pairs while retaining 288 unresolved kind observations without masks. Pipeline is unknown on all 225; unresolved records also retain exact rail, river, marine endpoint, contour/high-side, road and track uncertainty. After these inputs the raw union records some evidence on 868 corridor pairs and leaves 1,673 entirely untouched. Western/inland/eastern assigned inventories are respectively 344/969, 104/732 and 420/840 observed pairs; these are geographic coverage counts, not full movement-kind acceptance.
+
+All 33 terrain gaps and the unknown lake layer remain open. The new marine sides do not resolve endpoint substrate, inland water identity, city extent, complete control halos or action legality. Previously published abstentions remain immutable; no negative lake coverage is inferred.
