@@ -436,6 +436,45 @@ pub enum TranscriptEntry {
         choice: String,
         scores: Option<BTreeMap<String, f64>>,
     },
+    /// The seat's cumulative model usage in its current controller epoch ([`UsageSnapshot`]).
+    UsageSnapshot(Box<UsageSnapshot>),
+}
+
+/// A seat's cumulative model usage in its current controller epoch, as its driver measured
+/// it. Each snapshot replaces the previous one: keep only the highest `revision` per (seat,
+/// `controller_epoch`) and never add snapshots together, including on replay or reconnect. A
+/// measured value the driver could not obtain is null, never 0. Travels with the seat's
+/// transcript (the seat, its side and the operator; never the enemy).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+pub struct UsageSnapshot {
+    #[ts(type = "number")]
+    pub controller_epoch: u64,
+    /// Strictly increasing within an epoch.
+    #[ts(type = "number")]
+    pub revision: u64,
+    pub provider: Option<String>,
+    pub model: Option<String>,
+    /// Model turns started and completed in this epoch.
+    #[ts(type = "number")]
+    pub attempts: u64,
+    #[ts(type = "number")]
+    pub completed: u64,
+    #[ts(type = "number | null")]
+    pub input_tokens: Option<u64>,
+    #[ts(type = "number | null")]
+    pub output_tokens: Option<u64>,
+    #[ts(type = "number | null")]
+    pub cache_read_tokens: Option<u64>,
+    #[ts(type = "number | null")]
+    pub cache_creation_tokens: Option<u64>,
+    #[ts(type = "number | null")]
+    pub reasoning_tokens: Option<u64>,
+    /// Cost in US dollars as the provider reported it, cumulative for the epoch.
+    pub reported_cost_usd: Option<f64>,
+    /// Turns whose usage or cost could not be measured (a crash, a missing report, a
+    /// provider-side reset), so the totals above are known to be incomplete.
+    #[ts(type = "number")]
+    pub incomplete_turns: u64,
 }
 
 #[cfg(test)]
@@ -468,6 +507,29 @@ mod tests {
         let json = serde_json::to_value(&msg).unwrap();
         assert_eq!(json["type"], "transcript");
         assert_eq!(json["entry"]["kind"], "tool_call");
+        let entry = TranscriptEntry::UsageSnapshot(Box::new(UsageSnapshot {
+            controller_epoch: 2,
+            revision: 7,
+            provider: Some("anthropic".into()),
+            model: Some("claude-haiku-4-5".into()),
+            attempts: 3,
+            completed: 3,
+            input_tokens: Some(9000),
+            output_tokens: Some(1200),
+            cache_read_tokens: None,
+            cache_creation_tokens: None,
+            reasoning_tokens: None,
+            reported_cost_usd: Some(0.15),
+            incomplete_turns: 0,
+        }));
+        let usage = serde_json::to_value(&entry).unwrap();
+        assert_eq!(usage["kind"], "usage_snapshot");
+        assert_eq!(usage["revision"], 7);
+        assert_eq!(usage["cache_read_tokens"], serde_json::Value::Null);
+        assert_eq!(
+            serde_json::from_value::<TranscriptEntry>(usage).unwrap(),
+            entry
+        );
 
         let sub: ClientMessage = serde_json::from_str(
             r#"{"type":"subscribe","perspective":"side:axis","from_seq":null}"#,
