@@ -625,3 +625,197 @@ fn strict_arrival_preflight_precedes_absent_turn_and_legacy_port_state() {
     }
     assert_eq!(errors[0], errors[1]);
 }
+
+/// Cases: airlog:55.18, airlog:56.25, land:3.6
+#[test]
+fn planning_menu_never_uses_unknown_numeric_state_and_nominal_ceiling_stays_printed() {
+    let (c, mut s, affected) = unknown_port_arrivals_fixture();
+    let mut notes = vec![];
+    let before = serde_json::to_value(&s).unwrap();
+    assert_eq!(lanes(&c, &s, 1, false, &mut notes).unwrap(), vec![2]);
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    assert!(
+        notes
+            .iter()
+            .all(|e| !Perspective::Side(Side::Commonwealth).can_see(&e.audience))
+    );
+    assert!(
+        serde_json::to_value(&notes)
+            .unwrap()
+            .to_string()
+            .contains("scen:61.1")
+    );
+    let expected = ports::planning_capacity_tons(&c, &s, &affected).unwrap_err();
+    s.logistics.ports.get_mut(&affected.id).unwrap().efficiency = 0;
+    assert_eq!(
+        ports::planning_capacity_tons(&c, &s, &affected),
+        Err(expected)
+    );
+    assert_eq!(lanes(&c, &s, 1, false, &mut vec![]).unwrap(), vec![2]);
+    let healthy = ports::lane_destination(&c, 2).unwrap();
+    s.logistics.ports.get_mut(&healthy.id).unwrap().efficiency = 1;
+    assert!(
+        ports::capacity_tons(&c, &s, &healthy).unwrap()
+            < ports::planning_capacity_tons(&c, &s, &healthy).unwrap()
+    );
+    assert_eq!(
+        ports::planning_capacity_tons(&c, &s, &healthy).unwrap(),
+        i64::from(c.tables.airlog.port_capacity.port(healthy.name).max_tonnage)
+    );
+}
+
+fn planning_game() -> (CnaContent, cna_core::engine::Game<crate::Cna>) {
+    let (c, mut s, _) = unknown_port_arrivals_fixture();
+    s.cursor.block = Block::Setup;
+    s.cursor.index = 0;
+    s.cursor.entered = true;
+    s.logistics
+        .convoy_turns
+        .get_mut(&1)
+        .unwrap()
+        .planning_complete = false;
+    s.logistics
+        .convoy_turns
+        .get_mut(&1)
+        .unwrap()
+        .convoys
+        .clear();
+    s.logistics.convoy_planning_queue = vec![1];
+    s.decisions.pending.clear();
+    let mut rng = CampaignRng::from_seed([29; 32]);
+    let before = rng.state();
+    next(
+        &c,
+        &mut s,
+        false,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut vec![],
+        },
+    )
+    .unwrap();
+    assert_eq!(rng.state(), before); // Existing capacity is not rerolled.
+    (
+        c,
+        cna_core::engine::Game {
+            state: s,
+            rng: before,
+        },
+    )
+}
+
+/// Cases: airlog:55.18, airlog:56.12, land:3.6
+#[test]
+fn real_convoy_respond_preserves_profile_errors_and_rejected_action_surfaces() {
+    use cna_core::{
+        decision::DecisionResponse,
+        engine::{Command, evaluate},
+    };
+    let (c, a) = planning_game();
+    let mut b = a.clone();
+    b.state.logistics.ports.get_mut("A4827").unwrap().efficiency = 0;
+    b.state
+        .logistics
+        .convoy_turns
+        .get_mut(&1)
+        .unwrap()
+        .capacity_tons += 100;
+    let p = &a.state.decisions.pending[0];
+    let rejected = Command::Respond(DecisionResponse {
+        seat: p.seat,
+        decision_id: p.id.clone(),
+        controller_epoch: 1,
+        decision_revision: p.revision,
+        idempotency_key: "convoy-policy-proof".into(),
+        public_explanation: None,
+        action: json!({"convoys":[{"lane":"3","arrival_opstage":1,"ammo":0,"fuel":0,"stores":1}]}),
+    });
+    crate::testkit::assert_action_indistinguishable(
+        &crate::Cna::dev(),
+        &c,
+        &a,
+        &b,
+        &rejected,
+        Side::Commonwealth,
+    );
+    for g in [&a, &b] {
+        let saved = serde_json::to_value(g).unwrap();
+        assert!(evaluate(&crate::Cna::dev(), &c, g, &rejected).is_err());
+        assert_eq!(serde_json::to_value(g).unwrap(), saved);
+    }
+    let pass = Command::Respond(DecisionResponse {
+        seat: p.seat,
+        decision_id: p.id.clone(),
+        controller_epoch: 1,
+        decision_revision: p.revision,
+        idempotency_key: "convoy-policy-proof".into(),
+        public_explanation: None,
+        action: Value::Null,
+    });
+    crate::testkit::assert_action_indistinguishable(
+        &crate::Cna::full(),
+        &c,
+        &a,
+        &b,
+        &pass,
+        Side::Commonwealth,
+    );
+    for mut g in [a, b] {
+        g.state.logistics.ports.clear();
+        let saved = serde_json::to_value(&g).unwrap();
+        assert!(matches!(evaluate(&crate::Cna::full(), &c, &g, &pass),
+            Err(Rejection::Engine(EngineError::Unsupported { case, detail }))
+            if case == "scen:61.1" && detail.contains("A4827")));
+        assert_eq!(serde_json::to_value(&g).unwrap(), saved);
+    }
+}
+
+/// Cases: airlog:56.12, airlog:56.21, land:3.6
+#[test]
+fn dev_compatibility_answer_is_identical_to_explicit_profile_with_checkpoint_replay() {
+    let (c, g) = planning_game();
+    let mut a = g.state;
+    let mut b: State = serde_json::from_value(serde_json::to_value(&a).unwrap()).unwrap();
+    let pa = pending(&mut a);
+    let pb = pending(&mut b);
+    let mut ra = CampaignRng::from_seed([30; 32]);
+    let mut rb = ra.clone();
+    let mut ea = vec![];
+    let mut eb = vec![];
+    let before = a.logistics.dumps.clone();
+    assert_eq!(
+        answer(
+            &c,
+            &mut a,
+            &pa,
+            &Value::Null,
+            &mut Cx {
+                rng: &mut ra,
+                events: &mut ea
+            }
+        )
+        .unwrap(),
+        answer_with_profile(
+            &c,
+            &mut b,
+            &pb,
+            &Value::Null,
+            false,
+            &mut Cx {
+                rng: &mut rb,
+                events: &mut eb
+            }
+        )
+        .unwrap()
+    );
+    assert_eq!(
+        serde_json::to_value(&a).unwrap(),
+        serde_json::to_value(&b).unwrap()
+    );
+    assert_eq!(a.logistics.dumps, before);
+    assert_eq!(ra.state(), rb.state());
+    assert_eq!(
+        serde_json::to_value(ea).unwrap(),
+        serde_json::to_value(eb).unwrap()
+    );
+}

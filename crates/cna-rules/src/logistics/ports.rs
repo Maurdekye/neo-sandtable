@@ -257,6 +257,26 @@ pub fn capacity_tons(
     capacity_for_known(content, state(content, state_, port)?, port.name).map_err(Into::into)
 }
 
+/// The nominal planning ceiling is the printed maximum, not this stage's
+/// remaining budget. It is usable only after the canonical source policy and
+/// current numeric condition have been validated.
+/// Cases: airlog:55.18, airlog:55.3, airlog:56.25
+pub(super) fn planning_capacity_tons(
+    content: &CnaContent,
+    state_: &State,
+    port: &Port,
+) -> Result<i64, PortOperationError> {
+    capacity_tons(content, state_, port)?;
+    Ok(i64::from(
+        content
+            .tables
+            .airlog
+            .port_capacity
+            .port(port.name)
+            .max_tonnage,
+    ))
+}
+
 fn ordinal(stage: WaterStage) -> i32 {
     i32::from(stage.game_turn) * 3 + i32::from(stage.op_stage)
 }

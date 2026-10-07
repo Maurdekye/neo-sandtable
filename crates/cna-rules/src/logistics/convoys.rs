@@ -103,6 +103,7 @@ fn queue(
     content: &CnaContent,
     state: &mut State,
     turns: Vec<u16>,
+    strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
     state.logistics.convoy_planning_queue = turns
@@ -115,7 +116,7 @@ fn queue(
                 .is_some_and(|t| t.planning_complete)
         })
         .collect();
-    next(content, state, cx)
+    next(content, state, strict, cx)
 }
 /// Called exactly once when placement closes, before GT1 can leave setup. Idempotent state
 /// prevents rerolling capacities or reopening completed plans after checkpoint recovery.
@@ -149,7 +150,7 @@ pub fn initialize(
         vec![]
     };
     state.logistics.convoys_initialized = true;
-    queue(content, state, turns, cx)
+    queue(content, state, turns, strict, cx)
 }
 /// Normal plans concern next Game-Turn; scenario pre-game plans take precedence.
 /// Cases: airlog:48.0, airlog:56.0, airlog:56.21, airlog:55.17
@@ -201,37 +202,103 @@ pub fn schedule(
         ));
     }
     if content.scenario.fleet_logistics.axis_convoys.is_some() && gt < content.bounds.end_gt {
-        queue(content, state, vec![gt + 1], cx)?;
+        queue(content, state, vec![gt + 1], strict, cx)?;
     }
     Ok(())
 }
-fn lanes(content: &CnaContent, state: &State, gt: u16) -> Vec<u8> {
+/// Enumerate only canonically assessed controlled destinations. A source gap
+/// remains an error under full; dev excludes the affected lane with a private
+/// diagnostic rather than accepting a legacy numeric efficiency.
+fn lanes(
+    content: &CnaContent,
+    state: &State,
+    gt: u16,
+    strict: bool,
+    events: &mut Vec<EngineEvent>,
+) -> Result<Vec<u8>, EngineError> {
+    ports::preflight(content, strict)?;
     let Some(setup) = &content.scenario.fleet_logistics.axis_convoys else {
-        return vec![];
+        return Ok(vec![]);
     };
-    let when = date(content, state, gt).unwrap_or_default();
-    setup
-        .lanes_allowed
-        .iter()
-        .copied()
-        .filter(|lane| !matches!(lane, 4 | 5) || when.as_str() >= "1941-05-08")
-        .filter(|lane| {
-            ports::lane_destination(content, *lane).is_ok_and(|p| {
-                state
+    let when = date(content, state, gt).map_err(engine)?;
+    let mut allowed = vec![];
+    for &lane in &setup.lanes_allowed {
+        if matches!(lane, 4 | 5) && when.as_str() < "1941-05-08" {
+            continue;
+        }
+        let port = match ports::lane_destination(content, lane) {
+            Ok(port) => port,
+            Err(error @ SupplyError::Unsupported { .. }) if !strict => {
+                events.push(EngineEvent::new(
+                    Audience::Side(Side::Axis),
+                    GameEvent::Note {
+                        text: format!("Convoy lane {lane} is unavailable: {error:?}"),
+                    },
+                ));
+                continue;
+            }
+            Err(error) => return Err(engine(error)),
+        };
+        let condition = match ports::state(content, state, &port) {
+            Ok(condition) => condition,
+            // No accepted entry means there is no controlled endpoint to offer.
+            Err(ports::PortOperationError::Supply(SupplyError::Unsupported {
+                case: "airlog:55.11",
+            })) => continue,
+            Err(error) if !strict && error.is_unknown() => {
+                let last_owner = state
                     .logistics
-                    .ports
-                    .get(&p.id)
-                    .is_some_and(|s| s.owner == Side::Axis && s.efficiency > 0)
-                    && (p.name != cna_tables::airlog::trucks::PortName::Bizerta
-                        || state.logistics.bizerta_open)
-            })
-        })
-        .collect()
+                    .unknown_ports
+                    .get(&port.id)
+                    .copied()
+                    .or_else(|| state.logistics.ports.get(&port.id).map(|p| p.owner));
+                if last_owner == Some(Side::Axis) {
+                    let source = match error {
+                        ports::PortOperationError::Policy(source) => source.to_string(),
+                        ports::PortOperationError::Supply(source) => format!("{source:?}"),
+                    };
+                    let mut note = EngineEvent::new(
+                        Audience::Side(Side::Axis),
+                        GameEvent::Note {
+                            text: format!(
+                                "Convoy lane {lane} at port {} is unavailable: unknown efficiency. {source}",
+                                port.id
+                            ),
+                        },
+                    );
+                    if let Some(hex) = port.location.hex() {
+                        note = note.at(hex.clone());
+                    }
+                    events.push(note);
+                }
+                continue;
+            }
+            Err(error) => return Err(engine(error)),
+        };
+        if condition.owner == Side::Axis
+            && condition.efficiency > 0
+            && (port.name != cna_tables::airlog::trucks::PortName::Bizerta
+                || state.logistics.bizerta_open)
+        {
+            // Validate the numeric condition as well as the source policy.
+            ports::planning_capacity_tons(content, state, &port).map_err(engine)?;
+            allowed.push(lane);
+        }
+    }
+    Ok(allowed)
 }
-fn next(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
+fn next(
+    content: &CnaContent,
+    state: &mut State,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    ports::preflight(content, strict)?;
     let Some(gt) = state.logistics.convoy_planning_queue.first().copied() else {
         return Ok(());
     };
+    let mut menu_events = vec![];
+    let allowed = lanes(content, state, gt, strict, &mut menu_events)?;
     if !state.logistics.convoy_turns.contains_key(&gt) {
         let level = level(content, state, gt).map_err(engine)?;
         let die = cx.rng.d6();
@@ -263,7 +330,7 @@ fn next(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), 
     }
     let turn = &state.logistics.convoy_turns[&gt];
     let cap = i64::from(turn.capacity_tons - turn.replacement_tons);
-    let options = lanes(content, state, gt)
+    let options = allowed
         .into_iter()
         .map(|n| {
             option(
@@ -328,6 +395,7 @@ fn next(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), 
             },
         )],
     };
+    cx.events.extend(menu_events);
     open(
         state,
         cx,
@@ -375,6 +443,19 @@ pub fn answer(
     action: &Value,
     cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
+    answer_with_profile(content, state, pending, action, false, cx)
+}
+/// The dispatcher supplies the actual profile, including when an accepted plan
+/// opens the next pre-game turn. The compatibility helper above uses dev.
+pub fn answer_with_profile(
+    content: &CnaContent,
+    state: &mut State,
+    pending: &Pending,
+    action: &Value,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<String, Rejection> {
+    ports::preflight(content, strict).map_err(Rejection::Engine)?;
     if pending.seat != SeatId::new(Side::Axis, Role::Logistics) {
         return Err(illegal("Axis Logistics plans these convoys"));
     }
@@ -396,7 +477,7 @@ pub fn answer(
     } else {
         serde_json::from_value(action.clone()).map_err(|_| illegal("invalid convoy plan"))?
     };
-    let allowed = lanes(content, state, gt);
+    let allowed = lanes(content, state, gt, strict, &mut vec![]).map_err(Rejection::Engine)?;
     let mut convoys = BTreeMap::new();
     let mut total24 = i64::from(old.replacement_tons) * 24;
     let mut by_stage = BTreeMap::<(String, u8), i64>::new();
@@ -438,14 +519,9 @@ pub fn answer(
         *w = w
             .checked_add(weight)
             .ok_or_else(|| illegal("cargo overflow"))?;
-        let capacity = i64::from(
-            content
-                .tables
-                .airlog
-                .port_capacity
-                .port(port.name)
-                .max_tonnage,
-        ) * 24;
+        let capacity = ports::planning_capacity_tons(content, state, &port)
+            .map_err(|error| Rejection::Engine(engine(error)))?
+            * 24;
         if *w > capacity
             && !(old.level == ConvoyLevel::G
                 && port.name == cna_tables::airlog::trucks::PortName::Tripoli)
@@ -481,7 +557,7 @@ pub fn answer(
             ),
         },
     ));
-    next(content, state, cx).map_err(Rejection::Engine)?;
+    next(content, state, strict, cx).map_err(Rejection::Engine)?;
     Ok(format!("Convoys planned for GT{gt}"))
 }
 /// OOB invokes land arrivals first, then this supply handler. Mandatory reinforcements are

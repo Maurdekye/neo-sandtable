@@ -288,7 +288,14 @@ impl Cna {
                 crate::logistics::coastal::answer(content, state, pending, action, cx)
             }
             kind if kind.starts_with(crate::logistics::convoys::PREFIX) => {
-                crate::logistics::convoys::answer(content, state, pending, action, cx)
+                crate::logistics::convoys::answer_with_profile(
+                    content,
+                    state,
+                    pending,
+                    action,
+                    self.strict,
+                    cx,
+                )
             }
             crate::logistics::attrition::KIND => {
                 crate::logistics::attrition::answer(content, state, pending, action, cx)
