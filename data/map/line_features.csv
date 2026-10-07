@@ -1,4 +1,6 @@
 from_hex,to_hex,kind,src,review_batch
+C3524,C3623,track,land:8.33;land:8.37,map-lines-0007
+C3620,C3721,track,land:8.33;land:8.37,map-lines-0007
 C3623,C3723,track,land:8.33;land:8.37,map-lines-0005
 C3721,C3821,track,land:8.33;land:8.37,map-lines-0005
 C3722,C3723,track,land:8.33;land:8.37,map-lines-0005
@@ -97,6 +99,7 @@ D3708,D3709,road,land:8.33;land:8.37,map-lines-0002
 D3709,D3710,road,land:8.33;land:8.37,map-lines-0002
 D3710,D3711,road,land:8.33;land:8.37,map-lines-0002
 D3714,D3715,road,land:8.33;land:8.37,map-lines-2-0001
+D3801,D3901,track,land:8.33;land:8.37,map-lines-0007
 D3804,D3805,road,land:8.33;land:8.37,map-lines-0002
 D3804,D3904,road,land:8.33;land:8.37,map-lines-0002
 D3805,D3806,road,land:8.33;land:8.37,map-lines-0002
