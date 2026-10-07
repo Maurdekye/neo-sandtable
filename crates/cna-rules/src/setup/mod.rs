@@ -1,6 +1,8 @@
 //! Scenario setup decisions and their private simultaneous window.
 mod decisions;
+mod facilities;
 pub mod placement;
+mod pools;
 mod stacking;
 pub(crate) use decisions::{KIND_DUMP, KIND_TRUCKS, KIND_UNIT, answer, enter};
 
@@ -17,6 +19,10 @@ pub struct SetupState {
     pub tasks: BTreeMap<DecisionId, SetupTask>,
     pub unit_locations: BTreeMap<UnitId, Location>,
     pub dump_locations: BTreeMap<String, Location>,
+    #[serde(default)]
+    pub pools_started: bool,
+    #[serde(default)]
+    pub pool_locations: BTreeMap<String, Location>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,4 +31,7 @@ pub enum SetupTask {
     Unit { unit: UnitId, case: String },
     Dump { dump: String, case: String },
     Trucks { group: String },
+    Pool { pool: String, source: usize },
 }
+
+pub(crate) const KIND_POOL: &str = pools::KIND;

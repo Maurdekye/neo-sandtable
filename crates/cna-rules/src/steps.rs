@@ -170,7 +170,10 @@ impl Cna {
             crate::land::movement::KIND => {
                 crate::land::movement::answer(content, state, pending, action, self.strict, cx)
             }
-            crate::setup::KIND_UNIT | crate::setup::KIND_DUMP | crate::setup::KIND_TRUCKS => {
+            crate::setup::KIND_UNIT
+            | crate::setup::KIND_DUMP
+            | crate::setup::KIND_TRUCKS
+            | crate::setup::KIND_POOL => {
                 crate::setup::answer(content, state, pending, action, cx, self.strict)
             }
             crate::land::reserve::DESIGNATE | crate::land::reserve::RELEASE => {

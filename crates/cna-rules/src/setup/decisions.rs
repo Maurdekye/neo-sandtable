@@ -1,5 +1,5 @@
 //! Placement and first-line distribution in the shared blind setup window.
-use super::{SetupTask, placement, stacking};
+use super::{SetupTask, placement, pools, stacking};
 use crate::state::{DumpLocation, Location, Pending};
 use crate::steps::{illegal, open};
 use crate::{CnaContent, State};
@@ -62,7 +62,7 @@ fn group_placement(
         .ok_or_else(|| invariant("setup group absent from content"))?;
     Ok((g.placement.clone(), source_case(&g.src, "scen:59.2")))
 }
-fn option_space(domain: &[Location]) -> ActionSpace {
+pub(super) fn option_space(domain: &[Location]) -> ActionSpace {
     ActionSpace::new(ActionSchema::Choice {
         options: domain
             .iter()
@@ -78,7 +78,7 @@ fn option_space(domain: &[Location]) -> ActionSpace {
     })
 }
 #[allow(clippy::too_many_arguments)]
-fn open_task(
+pub(super) fn open_task(
     state: &mut State,
     cx: &mut Cx<'_>,
     seat: SeatId,
@@ -136,7 +136,10 @@ fn facility_hexes(content: &CnaContent) -> BTreeSet<cna_core::ids::HexId> {
         .filter_map(|h| content.map.canonical(h).cloned())
         .collect()
 }
-fn resolved_destination(domain: &[Location], action: &Value) -> Result<Location, Rejection> {
+pub(super) fn resolved_destination(
+    domain: &[Location],
+    action: &Value,
+) -> Result<Location, Rejection> {
     let chosen = action
         .as_str()
         .ok_or_else(|| illegal("choose a destination id"))?;
@@ -287,8 +290,6 @@ fn refresh_stacking(
 /// Open the owning seats' choices without publishing free destinations.
 /// Cases: land:8.37, land:9.12, land:9.16, land:9.21, land:9.25, land:9.31, land:9.32
 /// Unsupported: scen:59.33 - squadron setup is still being implemented.
-/// Unsupported: scen:59.43 - air convoy setup is still being implemented.
-/// Unsupported: scen:59.44 - supply convoy setup is still being implemented.
 /// Cases: scen:59.2, scen:59.42, scen:59.53, scen:60.31, scen:60.34, scen:60.41, scen:60.44, land:8.13
 /// Interpretations: interp:scen-0005
 pub(crate) fn enter(
@@ -399,20 +400,6 @@ pub(crate) fn enter(
             );
         }
     }
-    for (index, pool) in state.logistics.truck_pools.iter().enumerate() {
-        if pool.trucks.total() > 0 {
-            let case = if content.scenario.supply.second_third_line_trucks[index]
-                .purpose
-                .as_deref()
-                == Some("air_facilities")
-            {
-                "scen:59.43"
-            } else {
-                "scen:59.44"
-            };
-            unfinished.insert((pool.side, case), Role::Logistics);
-        }
-    }
     for ((side, case), role) in unfinished {
         let detail = "air or convoy setup assets remain awaiting their placement procedure";
         if strict {
@@ -428,6 +415,7 @@ pub(crate) fn enter(
             },
         ));
     }
+    pools::start(content, state, strict, cx)?;
     close_if_ready(state, cx)?;
     if state.setup.closed {
         crate::logistics::convoys::initialize(content, state, strict, cx)?;
@@ -595,6 +583,9 @@ pub(crate) fn answer(
             }
             state.setup.dump_locations.insert(dump, destination);
         }
+        SetupTask::Pool { pool, source } => {
+            pools::answer(content, state, pending, &pool, source, action, strict, cx)?
+        }
         SetupTask::Trucks { group } => {
             let fields = action
                 .as_object()
@@ -664,6 +655,7 @@ pub(crate) fn answer(
         }
     }
     state.setup.tasks.remove(&pending.id);
+    pools::start(content, state, strict, cx).map_err(Rejection::Engine)?;
     close_if_ready(state, cx).map_err(Rejection::Engine)?;
     if state.setup.closed {
         crate::logistics::convoys::initialize(content, state, strict, cx)
@@ -705,6 +697,15 @@ fn close_if_ready(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError>
             Location::OffMap { id } => DumpLocation::OffMap { id },
             _ => return Err(invariant("invalid buffered dump destination")),
         };
+    }
+    for (id, location) in std::mem::take(&mut state.setup.pool_locations) {
+        state
+            .logistics
+            .truck_pools
+            .iter_mut()
+            .find(|p| p.id == id)
+            .ok_or_else(|| invariant("buffered truck pool disappeared"))?
+            .location = Some(location);
     }
     state.setup.closed = true;
     cx.emit(EngineEvent::public(GameEvent::Note {
