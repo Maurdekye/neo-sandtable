@@ -109,7 +109,93 @@ fn invalid(detail: &str) -> EngineError {
     }
 }
 
+fn source_kind(kind: &str) -> Result<FacilityKind, EngineError> {
+    match kind {
+        "airfield" => Ok(FacilityKind::Airfield),
+        "air_landing_strip" | "landing_strip" => Ok(FacilityKind::LandingStrip),
+        "flying_boat_basin" => Ok(FacilityKind::FlyingBoatBasin),
+        "flying_boat_alighting_area" | "alighting_area" => {
+            Ok(FacilityKind::FlyingBoatAlightingArea)
+        }
+        _ => Err(invalid("unknown source facility kind")),
+    }
+}
+
 impl FacilityState {
+    /// Resolve a canonical site without copying its immutable catalog into state.
+    /// The legacy Malta aggregate is grouping metadata, not an individual site.
+    /// A completed upgrade derives its new ceiling from the target kind.
+    /// Cases: airlog:36.0, airlog:36.5, airlog:44.14, land:24.79
+    pub fn properties(
+        &self,
+        content: &CnaContent,
+        id: &FacilityId,
+    ) -> Result<FacilityProperties, EngineError> {
+        if id.0.is_empty() {
+            return Err(invalid("empty facility identity"));
+        }
+        let mut properties = match &self.origin {
+            FacilityOrigin::Scenario => {
+                let source = catalog(content)?
+                    .facilities
+                    .into_iter()
+                    .find(|f| f.id == id.0)
+                    .ok_or_else(|| invalid("unknown source facility identity"))?;
+                if source.force == "malta" {
+                    return Err(EngineError::Unsupported {
+                        case: "airlog:44.14".into(),
+                        detail: "Initial Malta aggregate is not an individual facility".into(),
+                    });
+                }
+                FacilityProperties {
+                    kind: source_kind(&source.kind)?,
+                    theatre: if source.side == Side::Commonwealth
+                        && matches!(source.location, Location::OffMap { .. })
+                    {
+                        FacilityTheatre::CommonwealthOffMap
+                    } else {
+                        // Axis Mediterranean exceptions need their exact source
+                        // site; an arbitrary Axis off-map box does not qualify.
+                        FacilityTheatre::Africa
+                    },
+                    location: source.location,
+                    printed_capacity: source
+                        .limit
+                        .map_or(FacilityCapacity::Unlimited, FacilityCapacity::Levels),
+                }
+            }
+            FacilityOrigin::Constructed { kind, location } => {
+                if catalog(content)?
+                    .facilities
+                    .iter()
+                    .any(|source| source.id == id.0)
+                {
+                    return Err(invalid("constructed facility masks a source identity"));
+                }
+                let Location::Hex { hex } = location else {
+                    return Err(invalid("constructed facility needs an on-map hex"));
+                };
+                if content.map.canonical(hex) != Some(hex) {
+                    return Err(invalid("constructed facility hex is not canonical"));
+                }
+                FacilityProperties {
+                    kind: *kind,
+                    location: location.clone(),
+                    printed_capacity: FacilityCapacity::Levels(kind.standard_levels()),
+                    theatre: FacilityTheatre::Africa,
+                }
+            }
+        };
+        if let Some(kind) = self.upgraded_kind {
+            if properties.kind.upgrade_to() != Some(kind) {
+                return Err(invalid("upgrade kind disagrees with source facility"));
+            }
+            properties.kind = kind;
+            properties.printed_capacity = FacilityCapacity::Levels(kind.standard_levels());
+        }
+        self.check(&properties)?;
+        Ok(properties)
+    }
     /// Checks dynamic capacity against the resolved printed ceiling. It does
     /// not infer ownership access or source properties from a caller's flags.
     pub fn check(&self, properties: &FacilityProperties) -> Result<(), EngineError> {
