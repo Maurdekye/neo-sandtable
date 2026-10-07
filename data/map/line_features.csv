@@ -61,6 +61,14 @@ C4517,C4617,track,land:8.37;land:8.33,validation-0001
 C4518,C4519,road,land:8.37;land:8.33,validation-0001
 C4616,C4717,track,land:8.37;land:8.33,validation-0001
 C4716,C4717,track,land:8.37;land:8.33,validation-0001
+D1929,D2028,track,land:8.33;land:8.37,map-terrain-edges-0004
+D1932,D2032,track,land:8.33;land:8.37,map-terrain-edges-0004
+D2016,D2017,track,land:8.33;land:8.37,map-terrain-edges-0004
+D2017,D2118,track,land:8.33;land:8.37,map-terrain-edges-0004
+D2028,D2129,track,land:8.33;land:8.37,map-terrain-edges-0004
+D2032,D2033,track,land:8.33;land:8.37,map-terrain-edges-0004
+D2033,E2001,track,land:8.33;land:8.37,map-terrain-edges-0004
+D2118,D2218,track,land:8.33;land:8.37,map-terrain-edges-0004
 D2513,D2613,track,land:8.33;land:8.37,map-terrain-edges-0003
 D2515,D2614,track,land:8.33;land:8.37,map-terrain-edges-0003
 D2515,D2615,track,land:8.33;land:8.37,map-terrain-edges-0003
