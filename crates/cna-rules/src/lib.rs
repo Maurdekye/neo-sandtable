@@ -164,7 +164,12 @@ impl Cna {
                 self.enter_step(content, state, cx)?;
                 continue;
             }
-            // Entered and nothing left to decide: the step is complete.
+            // Entered and nothing left to decide: let the step resolve what its answers closed,
+            // which may open further decisions; otherwise the step is complete.
+            self.finish_step(content, state, cx)?;
+            if !state.decisions.pending.is_empty() {
+                continue;
+            }
             let new_op_stage = state.cursor.block == seq::Block::PlayerHalf
                 && state.cursor.index + 1 == seq::PLAYER_HALF.len()
                 && state.cursor.half == Some(seq::Half::B);

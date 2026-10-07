@@ -24,12 +24,17 @@ each step the engine:
 2. Waits while decisions are pending. Each answer goes through `Cna::respond`, which checks
    the id, seat and revision, then calls `Cna::respond_to`, which dispatches on the decision
    `kind`. A handler may open further decisions, for example the next unit to move.
-3. Moves to the next step when the step has been entered and nothing is pending. Steps belonging
-   to a system the scenario doesn't use (Air, Logistics) are skipped.
+3. **Finishes** the step once nothing is pending: `Cna::finish_step` dispatches on the anchor so
+   the procedure can resolve what its answers closed (a simultaneous window's dice and losses,
+   section 3, rule 7). It may open further decisions; it runs again each time the step has
+   nothing pending, so it must remember what it has already resolved.
+4. Moves to the next step when finishing opened nothing. Steps belonging to a system the scenario
+   doesn't use (Air, Logistics) are skipped.
 
-Player A runs phases G–M, then Player B (`seq::PLAYER_HALF`). The phasing player may repeat the
-Movement-and-Combat segments (`land:8.2`): call `state.cursor.repeat_movement_and_combat()` from
-the reserve-release handler when the player asks for another cycle.
+Player A runs phases G–M, then Player B (`seq::PLAYER_HALF`). The phasing player of either half
+may repeat its Movement-and-Combat segments (`land:8.22`): call
+`state.cursor.repeat_movement_and_combat()` from the reserve-release handler when the player
+asks for another cycle.
 
 **Profiles.** `Cna::dev()` (`cna-2021-dev`) skips steps that have no procedure yet, so a
 campaign can be watched end to end while rules are filled in. `Cna::full()` (`cna-2021-full`)
@@ -43,8 +48,8 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    registry (`data/rules/<book>/NN-*.toml`) and in the rules text.
 2. **Write the procedure** in the module of its rules area: `src/land/<topic>.rs`,
    `src/logistics/<topic>.rs`, `src/air/<topic>.rs`. Create the module if needed. Keep
-   `steps.rs` as the dispatcher: one match arm per anchor in `enter_step`, one per decision kind
-   in `respond_to`.
+   `steps.rs` as the dispatcher: one match arm per anchor in `enter_step` (and in `finish_step`
+   when the step resolves closed windows), one per decision kind in `respond_to`.
 3. **Cite the cases.** Every procedure's doc comment ends with a line
    `/// Cases: land:8.31, land:8.32` (several lines are fine). The coverage tool counts a case as
    implemented when it is cited there, and as tested when a test in a `#[cfg(test)]` module also
@@ -71,6 +76,16 @@ cases are not implemented. Write every procedure so that it is correct under `fu
 7. **Reject illegal answers** with `steps::illegal(message)` before changing anything. `respond`
    runs on a cloned state, so an error leaves no trace, but keep the habit. A message must never
    reveal hidden information: say "not a legal destination", not "enemy unit at C4020".
+   **Answering is not adjudicating.** Whether an answer is accepted may depend only on what the
+   answering seat knows: its own units and stocks and the public state. The server lets seats
+   validate an answer before submitting it by evaluating it, so any answer-time outcome
+   (acceptance, rejection, an `Unsupported` stop) that depends on hidden enemy state is an oracle
+   a seat can probe. So a handler only records the answer. When the last answer of a
+   simultaneous or secret window arrives, it marks the window closed and returns; the resolution
+   (dice, losses, reveals, and `Unsupported` for anything not yet implemented) runs in
+   `finish_step`, where a failure stops the campaign for everyone instead of rejecting one seat.
+   Under `full`, refuse an unimplemented procedure at the point it would begin, the same way
+   whatever the enemy holds.
 8. **Randomness** comes only from `cx.rng` (`d6()`, `two_dice_reading()`). Emit a `DiceRolled`
    event citing the rule for every roll.
 9. **Events and secrecy** (`land:3.6`): facts about a side's own units go to `Audience::Side(side)`.
