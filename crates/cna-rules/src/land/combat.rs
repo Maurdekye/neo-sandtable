@@ -549,4 +549,41 @@ mod tests {
             assert!(game.state.land.combat.positions_locked);
         }
     }
+
+    /// Cases: land:3.6,land:12.11,land:12.12
+    #[test]
+    fn position_advance_opens_fixed_roles_with_or_without_hidden_gun_toe() {
+        let a = game();
+        let mut b = a.clone();
+        for u in b
+            .state
+            .land
+            .units
+            .values_mut()
+            .filter(|u| u.side == Side::Axis)
+        {
+            u.toe = Some(Toe::Under { under: 0 });
+        }
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::dev(),
+            content(),
+            &a,
+            &b,
+            &Command::Advance,
+            Side::Commonwealth,
+        );
+        for g in [a, b] {
+            let opened = evaluate(&Cna::dev(), content(), &g, &Command::Advance).unwrap();
+            assert_eq!(opened.game.state.decisions.pending.len(), 6);
+            assert!(
+                opened
+                    .game
+                    .state
+                    .decisions
+                    .pending
+                    .iter()
+                    .all(|p| p.kind == POSITION_KIND)
+            );
+        }
+    }
 }

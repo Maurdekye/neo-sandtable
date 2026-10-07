@@ -697,3 +697,31 @@ fn reserve_assault_limits_are_checked_without_recording_an_attack() {
         .status = reserve::Status::Second;
     assert!(validate(&c, &waiting.state, Side::Axis, &[a]).is_err());
 }
+
+/// Cases: land:3.6,land:14.11,land:15.16
+#[test]
+fn assignment_advance_keeps_both_windows_without_enemy_eligible_forces() {
+    let (c, a) = fixture();
+    let mut b = a.clone();
+    b.state.land.combat.pinned.insert(INF.into());
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::dev(),
+        &c,
+        &a,
+        &b,
+        &Command::Advance,
+        Side::Axis,
+    );
+    for g in [a, b] {
+        let t = evaluate(&Cna::dev(), &c, &g, &Command::Advance).unwrap();
+        assert_eq!(t.game.state.decisions.pending.len(), 2);
+        assert!(
+            t.game
+                .state
+                .decisions
+                .pending
+                .iter()
+                .all(|p| p.kind == KIND)
+        );
+    }
+}

@@ -756,3 +756,166 @@ fn mandatory_breakdown_parks_later_retreats_and_checkpoint_resumes_the_saved_ord
     };
     assert_eq!(run(g), run(serde_json::from_value(serialized).unwrap()));
 }
+
+/// Private breakdown paperwork may stutter, but never changes the other side's ordered stream.
+/// Cases: land:3.6,land:13.21,land:21.22,land:21.24,land:21.25
+#[test]
+fn rba_private_breakdown_rounds_preserve_observer_sequence_through_assignment() {
+    let (c, mut a, _overlay) = fixture();
+    let anchors: Vec<_> = a
+        .state
+        .units_of(Side::Commonwealth)
+        .filter(|u| {
+            u.id.as_str() != LEG
+                && formation::class(&c, &u.id).is_some_and(|cl| cl.unit_type == "infantry")
+        })
+        .take(2)
+        .map(|u| u.id.clone())
+        .collect();
+    assert_eq!(anchors.len(), 2);
+    // Existing public stacks at both endpoints hide no newly disclosed movement/marker presence.
+    place(&mut a.state, anchors[0].as_str(), "C4020");
+    place(&mut a.state, anchors[1].as_str(), "C4021");
+    a.state
+        .land
+        .units
+        .get_mut(&LEG.into())
+        .unwrap()
+        .trucks
+        .medium = 10;
+    let cap = crate::logistics::fuel_capacity(&c, &a.state, &LEG.into()).unwrap();
+    a.state
+        .logistics
+        .unit_supply
+        .get_mut(&LEG.into())
+        .unwrap()
+        .tank_fuel = cap;
+    let mut b = a.clone();
+    // Only hidden prior exposure differs. One world needs real mandatory loss allocations.
+    crate::land::breakdown::record_edge(
+        &mut b.state,
+        &LEG.into(),
+        &"C4020".into(),
+        280,
+        8,
+        cna_tables::land::weather::WeatherKind::Normal,
+    )
+    .unwrap();
+    crate::testkit::assert_indistinguishable(&Cna::dev(), &c, &a.state, &b.state, Side::Axis);
+    let run = |mut g: Game<Cna>| {
+        let mut streams: BTreeMap<String, Vec<Value>> =
+            std::iter::once(Perspective::Side(Side::Axis))
+                .chain(
+                    Role::ALL
+                        .into_iter()
+                        .map(|r| Perspective::Seat(SeatId::new(Side::Axis, r))),
+                )
+                .map(|p| (p.to_string(), vec![]))
+                .collect();
+        let mut requests = vec![];
+        let mut record = |events: &[EngineEvent]| {
+            for (p, rows) in &mut streams {
+                let p: Perspective = p.parse().unwrap();
+                rows.extend(
+                    events
+                        .iter()
+                        .filter(|e| p.can_see(&e.audience))
+                        .map(|e| serde_json::to_value(e).unwrap()),
+                );
+            }
+        };
+        let opened = evaluate(&Cna::dev(), &c, &g, &Command::Advance).unwrap();
+        record(&opened.events);
+        g = opened.game;
+        let cmd = command(&c, &g, seat(), plan(&["C4021"]));
+        let answer = evaluate(&Cna::dev(), &c, &g, &cmd).unwrap();
+        record(&answer.events);
+        g = answer.game;
+        while let Some(p) = g.state.decisions.pending.first() {
+            let cmd = command(&c, &g, p.seat, Value::Null);
+            let answer = evaluate(&Cna::dev(), &c, &g, &cmd).unwrap();
+            record(&answer.events);
+            g = answer.game;
+        }
+        let mut loss_rounds = 0;
+        let mut rng = CampaignRng::from_seed([9; 32]);
+        for _ in 0..32 {
+            let advanced = evaluate(&Cna::dev(), &c, &g, &Command::Advance).unwrap();
+            record(&advanced.events);
+            g = advanced.game;
+            let pending = Cna::dev().pending(&c, &g.state);
+            requests.extend(
+                pending
+                    .iter()
+                    .filter(|r| r.seat.side == Side::Axis)
+                    .map(|r| serde_json::to_value(r).unwrap()),
+            );
+            if pending
+                .iter()
+                .any(|r| r.kind == crate::land::combat::assignment::KIND)
+            {
+                return (streams, requests, loss_rounds);
+            }
+            assert!(!pending.is_empty());
+            for r in pending {
+                assert_eq!(r.kind, crate::land::breakdown::window::KIND);
+                let action = crate::baseline::random_breakdown(&c, &g.state, &r, &mut rng);
+                assert!(!action.is_null());
+                let command = Command::Respond(DecisionResponse {
+                    decision_id: r.id.clone(),
+                    seat: r.seat,
+                    controller_epoch: 1,
+                    decision_revision: r.revision,
+                    idempotency_key: r.id.to_string(),
+                    action,
+                    public_explanation: None,
+                });
+                let answer = evaluate(&Cna::dev(), &c, &g, &command).unwrap();
+                record(&answer.events);
+                g = answer.game;
+                loss_rounds += 1;
+            }
+        }
+        panic!("retreat loss rounds did not finish");
+    };
+    let (stream_a, pending_a, rounds_a) = run(a);
+    let (stream_b, pending_b, rounds_b) = run(b);
+    assert_eq!(rounds_a, 0);
+    assert!(rounds_b > 0);
+    assert_eq!(
+        stream_a, stream_b,
+        "private paperwork changed observer event sequence"
+    );
+    assert_eq!(
+        pending_a, pending_b,
+        "private paperwork changed observer own requests"
+    );
+}
+
+/// Cases: land:3.6,land:13.21,land:13.24
+#[test]
+fn retreat_advance_keeps_all_roles_when_private_pinning_removes_all_eligibility() {
+    let (c, a, _overlay) = fixture();
+    let mut b = a.clone();
+    b.state.land.combat.pinned.insert(LEG.into());
+    crate::testkit::assert_action_indistinguishable(
+        &Cna::dev(),
+        &c,
+        &a,
+        &b,
+        &Command::Advance,
+        Side::Axis,
+    );
+    for g in [a, b] {
+        let t = evaluate(&Cna::dev(), &c, &g, &Command::Advance).unwrap();
+        assert_eq!(t.game.state.decisions.pending.len(), 3);
+        assert!(
+            t.game
+                .state
+                .decisions
+                .pending
+                .iter()
+                .all(|p| p.kind == KIND)
+        );
+    }
+}

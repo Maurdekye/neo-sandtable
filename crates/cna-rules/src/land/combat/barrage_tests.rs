@@ -749,3 +749,53 @@ fn empty_role_plot_space_explicitly_has_no_orders() {
         }
     }
 }
+
+/// Empty declarations and no-fire plots still traverse all fixed private role windows.
+/// Cases: land:3.6,land:12.23,land:12.24,land:12.44,land:12.45
+#[test]
+fn barrage_advances_keep_declaration_plot_and_loss_windows_when_hidden_guns_are_empty() {
+    let mut a = game(1);
+    // Begin directly at barrage with positions already finalized.
+    a.state.cursor.index = crate::seq::PLAYER_HALF
+        .iter()
+        .position(|s| s.anchor == "opstage.movement_and_combat.combat.barrage")
+        .unwrap();
+    a.state.land.combat.positions_locked = true;
+    let mut b = a.clone();
+    for u in b
+        .state
+        .land
+        .units
+        .values_mut()
+        .filter(|u| u.side == Side::Axis)
+    {
+        u.toe = Some(Toe::Under { under: 0 });
+    }
+    for kind in [DECLARE, PLOT, LOSSES] {
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::dev(),
+            content(),
+            &a,
+            &b,
+            &Command::Advance,
+            Side::Commonwealth,
+        );
+        a = evaluate(&Cna::dev(), content(), &a, &Command::Advance)
+            .unwrap()
+            .game;
+        b = evaluate(&Cna::dev(), content(), &b, &Command::Advance)
+            .unwrap()
+            .game;
+        for g in [&a, &b] {
+            assert_eq!(g.state.decisions.pending.len(), 6);
+            assert!(g.state.decisions.pending.iter().all(|p| p.kind == kind));
+        }
+        if kind == LOSSES {
+            break;
+        }
+        for seat in seats() {
+            a = answer(a, seat, kind, Value::Null);
+            b = answer(b, seat, kind, Value::Null);
+        }
+    }
+}
