@@ -10,6 +10,9 @@ use cna_core::{ids::UnitId, quantity::FuelTenths};
 use cna_tables::airlog::{supply::SupplyType, trucks::TruckType};
 use serde::{Deserialize, Serialize};
 
+mod loss;
+pub use loss::{TruckCargoLossReport, UnitTruckCargoLoss, apply_truck_cargo_loss};
+
 const TYPES: [TruckType; 3] = [TruckType::Light, TruckType::Medium, TruckType::Heavy];
 const SUPPLIES: [SupplyType; 4] = [
     SupplyType::Ammo,
