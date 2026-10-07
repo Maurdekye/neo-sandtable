@@ -199,6 +199,15 @@ D4101,NE,D4201,all_sea,,land:10.21;interp:map-0002,map-lines-0007
 D4102,E,D4103,all_sea,,land:10.21;interp:map-0002,map-lines-0007
 D4102,NW,D4201,all_sea,,land:10.21;interp:map-0002,map-lines-0007
 D4103,E,D4104,all_sea,,land:10.21;interp:map-0002,map-lines-0007
+E2201,NW,E2301,escarpment,E2301,land:8.35;land:8.37,map-lines-2-0008
+E2201,NE,E2302,escarpment,E2302,land:8.35;land:8.37,map-lines-2-0008
+E2202,NW,E2302,ridge,,land:8.35;land:8.37,map-lines-2-0008
+E2202,NE,E2303,ridge,,land:8.35;land:8.37,map-lines-2-0008
+E2203,NW,E2303,ridge,,land:8.35;land:8.37,map-lines-2-0008
+E2203,NE,E2304,ridge,,land:8.35;land:8.37,map-lines-2-0008
+E2204,NW,E2304,ridge,,land:8.35;land:8.37,map-lines-2-0008
+E2402,NE,E2503,slope,E2503,land:8.35;land:8.37,map-lines-2-0008
+E2403,NW,E2503,slope,E2503,land:8.35;land:8.37,map-lines-2-0008
 E2502,E,E2503,slope,E2503,land:8.35;land:8.37,map-lines-2-0007
 E2503,E,E2504,slope,E2503,land:8.35;land:8.37,map-lines-2-0007
 E2503,NW,E2602,slope,E2503,land:8.35;land:8.37,map-lines-2-0007

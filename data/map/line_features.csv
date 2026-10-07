@@ -130,6 +130,18 @@ D3805,D3806,road,land:8.33;land:8.37,map-lines-0002
 D3903,D3904,road,land:8.33;land:8.37,map-lines-0002
 D3903,D4002,road,land:8.33;land:8.37,map-lines-0002
 D4001,D4002,road,land:8.33;land:8.37,map-lines-0002
+E2207,E2307,track,land:8.33;land:8.37,map-lines-2-0008
+E2301,E2401,track,land:8.33;land:8.37,map-lines-2-0008
+E2305,E2306,track,land:8.33;land:8.37,map-lines-2-0008
+E2305,E2405,track,land:8.33;land:8.37,map-lines-2-0008
+E2306,E2307,track,land:8.33;land:8.37,map-lines-2-0008
+E2401,E2402,track,land:8.33;land:8.37,map-lines-2-0008
+E2401,E2501,track,land:8.33;land:8.37,map-lines-2-0008
+E2402,E2403,track,land:8.33;land:8.37,map-lines-2-0008
+E2403,E2404,track,land:8.33;land:8.37,map-lines-2-0008
+E2403,E2504,track,land:8.33;land:8.37,map-lines-2-0008
+E2404,E2504,track,land:8.33;land:8.37,map-lines-2-0008
+E2404,E2505,track,land:8.33;land:8.37,map-lines-2-0008
 E2501,E2601,track,land:8.33;land:8.37,map-lines-2-0007
 E2505,E2506,track,land:8.33;land:8.37,map-lines-2-0007
 E2506,E2605,track,land:8.33;land:8.37,map-lines-2-0007
@@ -148,6 +160,8 @@ E2703,E2704,track,land:8.33;land:8.37,map-lines-2-0007
 E2704,E2705,track,land:8.33;land:8.37,map-lines-2-0007
 E2705,E2805,track,land:8.33;land:8.37,map-lines-2-0007
 E2706,E2805,track,land:8.33;land:8.37,map-lines-2-0007
+E2710,E2809,track,land:8.33;land:8.37,map-lines-2-0008
+E2801,E2902,track,land:8.33;land:8.37,map-lines-2-0008
 E2901,E3001,track,land:8.33;land:8.37,map-lines-2-0004
 E2902,E3001,track,land:8.33;land:8.37,map-lines-2-0004
 E2905,E3004,track,land:8.33;land:8.37,map-lines-2-0004
