@@ -744,3 +744,55 @@ fn optional_initial_cargo_shares_capacity_with_troops_and_never_spends_dump_supp
 fn target_side(state: &State, id: &UnitId) -> Side {
     state.land.units[id].side
 }
+
+/// Cases: scen:59.2, scen:59.42, scen:59.43, scen:59.44, scen:59.45, land:3.62
+#[test]
+fn setup_context_identifies_each_owner_asset_and_survives_checkpointing() {
+    let c = content();
+    let mut game = opened(&c);
+    let mut seen = BTreeSet::new();
+    for _ in 0..500 {
+        if game.state.setup.closed {
+            break;
+        }
+        let p = game.state.decisions.pending[0].clone();
+        let context = p.space.to_json_schema()["x-context"].clone();
+        assert!(context.is_object(), "missing context for {}", p.kind);
+        match &game.state.setup.tasks[&p.id] {
+            SetupTask::Unit { unit, .. } => {
+                assert_eq!(context["unit"], json!(unit));
+                assert_eq!(
+                    context["group"],
+                    json!(game.state.land.units[unit].setup_group)
+                );
+            }
+            SetupTask::Dump { dump, .. } => assert_eq!(context["dump"], json!(dump)),
+            SetupTask::Trucks { group } => {
+                assert_eq!(context["group"], json!(group));
+                assert_eq!(context["pool"], json!(format!("first-line:{group}")));
+            }
+            SetupTask::Pool { pool, .. } => assert_eq!(context["pool"], json!(pool)),
+            SetupTask::Preload { asset, .. } => match asset {
+                super::super::preload::Asset::Unit { unit } => {
+                    assert_eq!(context["unit"], json!(unit))
+                }
+                super::super::preload::Asset::Pool { pool } => {
+                    assert_eq!(context["pool"], json!(pool))
+                }
+            },
+        }
+        let enemy = Cna::dev().view(&c, &game.state, Perspective::Side(p.seat.side.opponent()));
+        assert!(enemy.pending.iter().all(|q| q.id != p.id.to_string()));
+        let restored: Game<Cna> =
+            serde_json::from_value(serde_json::to_value(&game).unwrap()).unwrap();
+        assert_eq!(
+            restored.state.decisions.pending[0].space.to_json_schema()["x-context"],
+            context
+        );
+        seen.insert(p.kind.clone());
+        game = submit(&c, &game, &p, first(&p.space.schema)).unwrap();
+    }
+    assert!(game.state.setup.closed);
+    assert!(seen.contains(crate::setup::KIND_POOL));
+    assert!(seen.contains(crate::setup::KIND_PRELOAD));
+}

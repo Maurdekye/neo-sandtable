@@ -88,6 +88,25 @@ pub(super) fn open_task(
     task: SetupTask,
     space: ActionSpace,
 ) {
+    let context = match &task {
+        SetupTask::Unit { unit, .. } => {
+            serde_json::json!({"unit":unit,"group":state.land.units[unit].setup_group})
+        }
+        SetupTask::Dump { dump, .. } => serde_json::json!({"dump":dump}),
+        SetupTask::Trucks { group } => {
+            serde_json::json!({"group":group,"pool":format!("first-line:{group}")})
+        }
+        SetupTask::Pool { pool, .. } => serde_json::json!({"pool":pool}),
+        SetupTask::Preload { asset, operation } => match asset {
+            super::preload::Asset::Unit { unit } => {
+                serde_json::json!({"unit":unit,"group":state.land.units[unit].setup_group,"operation":operation})
+            }
+            super::preload::Asset::Pool { pool } => {
+                serde_json::json!({"pool":pool,"operation":operation})
+            }
+        },
+    };
+    let space = space.with_context(context);
     open(
         state,
         cx,
