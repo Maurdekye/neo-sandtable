@@ -20,6 +20,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod batched;
+pub use batched::baseline as arrival_orders;
+pub(crate) const BATCH: &str = "cna.arrivals.batch";
+
 pub(crate) const PLACE: &str = "cna.arrivals.place";
 pub(crate) const TRUCKS: &str = "cna.arrivals.trucks";
 pub(crate) const SUBSTITUTE: &str = "cna.withdrawals.substitute";
@@ -27,6 +31,8 @@ pub(crate) const TRANSPORT: &str = "cna.withdrawals.transport";
 pub(crate) const AIR: &str = "cna.arrivals.air";
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ArrivalState {
+    #[serde(default)]
+    window: Option<batched::Window>,
     pub entered: BTreeSet<String>,
     pub supply_finished: BTreeSet<String>,
     /// Exact unit ids placed during each stage, for the subsequent actual-stock supply window.
@@ -292,8 +298,7 @@ pub(crate) fn enter(
             );
         }
     }
-    advance_arrivals(content, state, strict, cx)?;
-    air_start(content, state, cx)
+    batched::enter(content, state, strict, cx)
 }
 fn waiting_at_arrival(location: &Location) -> bool {
     matches!(location, Location::NotArrived)
@@ -1207,6 +1212,11 @@ fn report_air_withdrawals(
     }
     Ok(())
 }
+/// The fixed land barrier has closed and its convoy handoff is recorded for this stage.
+/// Cases: land:20.12, airlog:48.0
+pub(crate) fn ready_for_supply(state: &State) -> bool {
+    state.land.arrivals.supply_finished.contains(&stage(state))
+}
 /// Supply convoy delivery follows all recorded land decisions and deadline adjudication.
 /// Cases: land:20.12, land:20.83, airlog:48.0
 pub(crate) fn finish(
@@ -1215,15 +1225,9 @@ pub(crate) fn finish(
     strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<(), EngineError> {
-    if !state.land.arrivals.tasks.is_empty() {
+    if !batched::finish(content, state, strict, cx)? {
         return Ok(());
     }
-    advance_arrivals(content, state, strict, cx)?;
-    if !state.land.arrivals.tasks.is_empty() {
-        return Ok(());
-    }
-    prepare_withdrawals(content, state, strict, cx)?;
-    report_air_withdrawals(content, state, strict, cx)?;
     if !state.land.arrivals.tasks.is_empty() {
         return Ok(());
     }
@@ -1242,6 +1246,9 @@ pub(crate) fn answer(
     strict: bool,
     cx: &mut Cx<'_>,
 ) -> Result<String, Rejection> {
+    if pending.kind == BATCH {
+        return batched::answer(content, state, pending, action, strict);
+    }
     let task = state
         .land
         .arrivals
@@ -1533,20 +1540,6 @@ mod tests {
         game.state.decisions.pending.clear();
         game.state.land.arrivals.tasks.clear();
     }
-    fn first(schema: &ActionSchema) -> Value {
-        match schema {
-            ActionSchema::Choice { options } => json!(options[0].id),
-            ActionSchema::Unit { among } => json!(among[0]),
-            ActionSchema::Integer { max, .. } => json!(max),
-            ActionSchema::Record { fields } => Value::Object(
-                fields
-                    .iter()
-                    .map(|f| (f.name.clone(), first(&f.schema)))
-                    .collect(),
-            ),
-            _ => panic!("unexpected schedule schema"),
-        }
-    }
     fn response(
         c: &CnaContent,
         game: &Game<Cna>,
@@ -1569,49 +1562,47 @@ mod tests {
         )
         .map(|t| t.game)
     }
+    fn plan(c: &CnaContent, game: &Game<Cna>, p: &Pending) -> Value {
+        let r = Cna::dev()
+            .pending(c, &game.state)
+            .into_iter()
+            .find(|r| r.id == p.id)
+            .unwrap();
+        arrival_orders(c, &game.state, &r).expect("source-conserving arrival policy")
+    }
     fn drain(c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
-        for _ in 0..300 {
+        for _ in 0..20 {
             if let Some(p) = game
                 .state
                 .decisions
                 .pending
                 .iter()
-                .find(|p| game.state.land.arrivals.tasks.contains_key(&p.id))
+                .find(|p| p.kind == BATCH)
                 .cloned()
             {
-                let recovered: Game<Cna> =
-                    serde_json::from_value(serde_json::to_value(&game).unwrap()).unwrap();
-                let action = if let Some(Task::Transport {
-                    row,
-                    source: Some(source),
-                }) = game.state.land.arrivals.tasks.get(&p.id)
-                {
-                    let t = empty_trucks(c, &game.state)[source];
-                    if t.light == 0 && t.heavy == 0 {
-                        json!({"light":0,"medium":((game.state.land.arrivals.withdrawals[row].needed_halves+1)/2).min(i64::from(t.medium)),"heavy":0})
-                    } else {
-                        first(&p.space.schema)
-                    }
-                } else {
-                    first(&p.space.schema)
-                };
+                let recovered: Game<Cna> = serde_json::from_value(json!(game)).unwrap();
+                let action = plan(c, &game, &p);
                 let a = response(c, &game, &p, action.clone()).unwrap();
                 let b = response(c, &recovered, &p, action).unwrap();
-                assert_eq!(
-                    serde_json::to_value(&a).unwrap(),
-                    serde_json::to_value(&b).unwrap()
-                );
+                assert_eq!(json!(a), json!(b));
                 game = a;
                 continue;
             }
             game = evaluate(&Cna::dev(), c, &game, &Command::Advance)
                 .unwrap()
                 .game;
-            if game.state.land.arrivals.tasks.is_empty() {
+            if game
+                .state
+                .land
+                .arrivals
+                .window
+                .as_ref()
+                .is_some_and(|w| w.is_resolved())
+            {
                 return game;
             }
         }
-        panic!("schedule decisions did not finish")
+        panic!("fixed arrival barrier did not finish");
     }
     fn finish_supply(c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
         let mut controller = CampaignRng::from_seed([91; 32]);
@@ -1773,7 +1764,7 @@ mod tests {
         game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
             .unwrap()
             .game;
-        assert!(game.state.decisions.pending.iter().any(|p| p.kind == PLACE));
+        assert!(game.state.decisions.pending.iter().any(|p| p.kind == BATCH));
         let game = drain(&c, game);
         let u = &game.state.land.units[&id];
         assert!(in_withdrawal_city(&c, &u.location));
@@ -1908,17 +1899,24 @@ mod tests {
             .decisions
             .pending
             .iter()
-            .find(|p| p.kind == SUBSTITUTE)
+            .find(|p| p.kind == BATCH && p.seat == SeatId::new(Side::Commonwealth, Role::Commander))
             .unwrap()
             .clone();
-        assert!(
-            matches!(&p.space.schema,ActionSchema::Choice{options}if options.iter().any(|o|o.id==candidate.as_str()))
-        );
+        let mut action = plan(&c, &game, &p);
+        let key = action
+            .as_object()
+            .unwrap()
+            .keys()
+            .find(|k| k.starts_with("substitute:") && k.ends_with(weak.as_str()))
+            .unwrap()
+            .clone();
+        action[&key] = json!(candidate);
+        assert!(p.space.check(&action).is_ok());
         let mut below = game.clone();
         below.state.land.units.get_mut(&candidate).unwrap().toe =
             Some(cna_content::units::Toe::Under { under: 4 });
-        assert!(response(&c, &below, &p, json!(candidate)).is_err());
-        game = response(&c, &game, &p, json!(candidate)).unwrap();
+        assert!(response(&c, &below, &p, action.clone()).is_err());
+        game = response(&c, &game, &p, action).unwrap();
         let game = drain(&c, game);
         assert!(in_withdrawal_city(
             &c,
@@ -1981,7 +1979,29 @@ mod tests {
             game.state.logistics.truck_pools[0].trucks,
             Trucks::default()
         );
-        let error = evaluate(&Cna::full(), &c, &before, &Command::Advance).unwrap_err();
+        let mut full = evaluate(&Cna::full(), &c, &before, &Command::Advance)
+            .unwrap()
+            .game;
+        for p in full.state.decisions.pending.clone() {
+            let a = plan(&c, &full, &p);
+            full = evaluate(
+                &Cna::full(),
+                &c,
+                &full,
+                &Command::Respond(DecisionResponse {
+                    decision_id: p.id.clone(),
+                    seat: p.seat,
+                    controller_epoch: 1,
+                    decision_revision: p.revision,
+                    idempotency_key: p.id.to_string(),
+                    action: a,
+                    public_explanation: None,
+                }),
+            )
+            .unwrap()
+            .game;
+        }
+        let error = evaluate(&Cna::full(), &c, &full, &Command::Advance).unwrap_err();
         assert!(
             matches!(&error,Rejection::Engine(EngineError::Unsupported{case,..})if case=="land:20.83"),
             "{error:?}"
@@ -2024,26 +2044,24 @@ mod tests {
             game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
                 .unwrap()
                 .game;
-            // On the first week, the owner may fill the entire quota with Hurricanes.
             if gt == 15 {
                 let p = game
                     .state
                     .decisions
                     .pending
                     .iter()
-                    .find(|p| p.kind == AIR)
+                    .find(|p| {
+                        p.kind == BATCH && p.seat == SeatId::new(Side::Commonwealth, Role::Air)
+                    })
                     .unwrap()
                     .clone();
-                game = response(&c, &game, &p, first(&p.space.schema)).unwrap();
-                let p = game
-                    .state
-                    .decisions
-                    .pending
-                    .iter()
-                    .find(|p| p.kind == AIR)
-                    .unwrap()
-                    .clone();
-                game = response(&c, &game, &p, json!("cw.hurricane_i:15")).unwrap();
+                let mut action = plan(&c, &game, &p);
+                let row = action.as_object_mut().unwrap().values_mut().next().unwrap();
+                for n in row["planes"].as_object_mut().unwrap().values_mut() {
+                    *n = json!(0);
+                }
+                row["planes"]["cw.hurricane_i"] = json!(15);
+                game = response(&c, &game, &p, action).unwrap();
             }
             game = drain(&c, game);
             let new: i32 = game
@@ -2244,31 +2262,28 @@ mod tests {
             game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
                 .unwrap()
                 .game;
-            if op == 1 {
-                let p = game
-                    .state
-                    .decisions
-                    .pending
-                    .iter()
-                    .find(|p| p.kind == AIR)
-                    .unwrap()
-                    .clone();
-                game = response(&c, &game, &p, first(&p.space.schema)).unwrap();
-            }
             let p = game
                 .state
                 .decisions
                 .pending
                 .iter()
-                .find(|p| p.kind == AIR)
+                .find(|p| p.kind == BATCH && p.seat == SeatId::new(Side::Commonwealth, Role::Air))
                 .unwrap()
                 .clone();
+            let mut action = plan(&c, &game, &p);
+            let mut defer = action.clone();
+            for row in defer.as_object_mut().unwrap().values_mut() {
+                for n in row["planes"].as_object_mut().unwrap().values_mut() {
+                    *n = json!(0);
+                }
+            }
             if op < 3 {
-                game = response(&c, &game, &p, json!("defer")).unwrap();
+                action = defer;
+                game = response(&c, &game, &p, action).unwrap();
                 game = drain(&c, game);
                 assert!(game.state.air.forces.is_empty());
             } else {
-                assert!(response(&c, &game, &p, json!("defer")).is_err());
+                assert!(response(&c, &game, &p, defer).is_err());
                 game = drain(&c, game);
             }
         }
@@ -2356,7 +2371,7 @@ mod tests {
         game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
             .unwrap()
             .game;
-        assert!(game.state.decisions.pending.iter().any(|p| p.kind == PLACE));
+        assert!(game.state.decisions.pending.iter().any(|p| p.kind == BATCH));
         game = drain(&c, game);
         assert_eq!(
             game.state.land.units[&id].location,
@@ -2374,45 +2389,46 @@ mod tests {
         game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
             .unwrap()
             .game;
-        for _ in 0..80 {
-            if game
-                .state
-                .decisions
-                .pending
-                .iter()
-                .any(|p| p.kind == TRUCKS)
-            {
-                break;
-            }
-            if let Some(p) = game.state.decisions.pending.first().cloned() {
-                game = response(&c, &game, &p, first(&p.space.schema)).unwrap();
-            } else {
-                game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
-                    .unwrap()
-                    .game;
-            }
-        }
         let p = game
             .state
             .decisions
             .pending
             .iter()
-            .find(|p| p.kind == TRUCKS)
+            .find(|p| p.kind == BATCH && p.seat == SeatId::new(Side::Commonwealth, Role::Logistics))
             .unwrap()
             .clone();
-        let row = match &game.state.land.arrivals.tasks[&p.id] {
-            Task::Trucks { row } => row,
-            _ => unreachable!(),
-        };
-        let unit = game.state.land.arrivals.batches[row].units[0].clone();
-        let before = serde_json::to_value(&game).unwrap();
-        for action in [
-            json!({"unit":"cw.polish_bde.polish_brigade_hq","light":1,"medium":0,"heavy":0}),
-            json!({"unit":unit,"light":0,"medium":0,"heavy":0}),
-            json!({"unit":unit,"light":i64::MAX,"medium":0,"heavy":0}),
-        ] {
+        let good = plan(&c, &game, &p);
+        let key = good
+            .as_object()
+            .unwrap()
+            .keys()
+            .find(|k| k.starts_with("trucks:"))
+            .unwrap()
+            .clone();
+        let unit = good[&key]
+            .as_object()
+            .unwrap()
+            .keys()
+            .next()
+            .unwrap()
+            .clone();
+        let mut foreign = good.clone();
+        let allocation = foreign[&key]
+            .as_object_mut()
+            .unwrap()
+            .remove(&unit)
+            .unwrap();
+        foreign[&key]["cw.polish_bde.polish_brigade_hq"] = allocation;
+        let mut zero = good.clone();
+        for t in zero[&key].as_object_mut().unwrap().values_mut() {
+            *t = json!({"light":0,"medium":0,"heavy":0});
+        }
+        let mut wide = good.clone();
+        wide[&key][&unit]["light"] = json!(i64::MAX);
+        let before = json!(game);
+        for action in [foreign, zero, wide] {
             assert!(response(&c, &game, &p, action).is_err());
-            assert_eq!(serde_json::to_value(&game).unwrap(), before);
+            assert_eq!(json!(game), before);
         }
     }
     /// Cases: land:20.83, airlog:49.13, airlog:49.16, airlog:52.42
@@ -2781,7 +2797,7 @@ mod tests {
         game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
             .unwrap()
             .game;
-        assert!(game.state.decisions.pending.iter().any(|p| p.kind == PLACE));
+        assert!(game.state.decisions.pending.iter().any(|p| p.kind == BATCH));
         assert!(game.state.logistics.arrival_supply.stage.is_none());
         game = drain(&c, game);
         let arrived = game.state.land.arrivals.newly_arrived["1:3"].clone();
@@ -2936,6 +2952,360 @@ mod tests {
         assert_eq!(
             game.state.logistics.convoy_turns[&13].convoys[&2].delivered,
             Some(cargo)
+        );
+    }
+    fn command_for(c: &CnaContent, g: &Game<Cna>, seat: SeatId) -> Command {
+        let p = g
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.kind == BATCH && p.seat == seat)
+            .unwrap();
+        Command::Respond(DecisionResponse {
+            decision_id: p.id.clone(),
+            seat,
+            controller_epoch: 1,
+            decision_revision: p.revision,
+            idempotency_key: p.id.to_string(),
+            action: plan(c, g, p),
+            public_explanation: None,
+        })
+    }
+    fn open_pair(
+        c: &CnaContent,
+        a: &Game<Cna>,
+        b: &Game<Cna>,
+        observer: Side,
+    ) -> (Game<Cna>, Game<Cna>) {
+        crate::testkit::assert_indistinguishable(&Cna::dev(), c, &a.state, &b.state, observer);
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::dev(),
+            c,
+            a,
+            b,
+            &Command::Advance,
+            observer,
+        );
+        let a = evaluate(&Cna::dev(), c, a, &Command::Advance).unwrap().game;
+        let b = evaluate(&Cna::dev(), c, b, &Command::Advance).unwrap().game;
+        for g in [&a, &b] {
+            assert_eq!(
+                g.state
+                    .decisions
+                    .pending
+                    .iter()
+                    .filter(|p| p.kind == BATCH)
+                    .count(),
+                6
+            );
+            assert_eq!(g.state.cursor.anchor(), "opstage.convoy_arrival");
+            assert!(
+                Cna::dev()
+                    .pending(c, &g.state)
+                    .iter()
+                    .filter(|r| r.kind == BATCH)
+                    .all(|r| r.secrecy == Secrecy::SecretSimultaneous)
+            );
+        }
+        (a, b)
+    }
+    fn prepare_pair(
+        c: &CnaContent,
+        mut a: Game<Cna>,
+        mut b: Game<Cna>,
+        observer: Side,
+    ) -> (Game<Cna>, Game<Cna>) {
+        for seat in Side::ALL.into_iter().flat_map(|s| {
+            [Role::Commander, Role::Logistics, Role::Air].map(move |r| SeatId::new(s, r))
+        }) {
+            let ca = command_for(c, &a, seat);
+            let cb = command_for(c, &b, seat);
+            crate::testkit::assert_actions_indistinguishable(
+                &Cna::dev(),
+                c,
+                (&a, &ca),
+                (&b, &cb),
+                observer,
+            );
+            let recovered: Game<Cna> = serde_json::from_value(json!(a)).unwrap();
+            let ta = evaluate(&Cna::dev(), c, &a, &ca).unwrap();
+            let tr = evaluate(&Cna::dev(), c, &recovered, &ca).unwrap();
+            assert_eq!(json!(ta.game), json!(tr.game));
+            assert_eq!(json!(ta.events), json!(tr.events));
+            a = ta.game;
+            b = evaluate(&Cna::dev(), c, &b, &cb).unwrap().game;
+            assert_eq!(a.state.cursor.anchor(), "opstage.convoy_arrival");
+            assert_eq!(b.state.cursor.anchor(), "opstage.convoy_arrival");
+        }
+        (a, b)
+    }
+    /// Cases: land:3.6, land:20.12, airlog:48.0
+    #[test]
+    fn hidden_offmap_arrival_preserves_fixed_requests_clock_streams_and_recovery() {
+        let (c, mut a) = fixture();
+        for u in a.state.land.units.values_mut() {
+            u.location = Location::Eliminated;
+        }
+        at(&mut a, 13, 3);
+        let mut b = a.clone();
+        let id: UnitId = "it.unassigned_blackshirt.140th_ccnn_bn".into();
+        b.state.land.units.get_mut(&id).unwrap().location = Location::NotArrived;
+        let (a, b) = open_pair(&c, &a, &b, Side::Commonwealth);
+        let (a, b) = prepare_pair(&c, a, b, Side::Commonwealth);
+        assert_eq!(b.state.land.units[&id].location, Location::NotArrived);
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::dev(),
+            &c,
+            &a,
+            &b,
+            &Command::Advance,
+            Side::Commonwealth,
+        );
+        let after = evaluate(&Cna::dev(), &c, &b, &Command::Advance)
+            .unwrap()
+            .game;
+        assert!(matches!(
+            after.state.land.units[&id].location,
+            Location::OffMap { .. }
+        ));
+    }
+    /// Cases: land:3.6, land:20.14, airlog:48.0
+    #[test]
+    fn hidden_enemy_city_arrival_cannot_suppress_own_arrival_supply_window() {
+        let (c, mut a) = fixture();
+        for u in a.state.land.units.values_mut() {
+            u.location = Location::Eliminated;
+        }
+        at(&mut a, 11, 1);
+        for u in c
+            .units
+            .units
+            .values()
+            .filter(|u| u.side == Side::Axis && u.arrives == Arrival::At { gt: 11, opstage: 1 })
+        {
+            a.state.land.units.get_mut(&u.id).unwrap().location = Location::NotArrived;
+        }
+        let mut b = a.clone();
+        let id: UnitId = "cw.7_armd_div.1st_rha_bn".into();
+        // Use the actual Commonwealth row at the reviewed 11/1 arrival point.
+        let cw = c
+            .units
+            .schedules
+            .iter()
+            .filter(|s| s.file.side == Side::Commonwealth)
+            .flat_map(|s| s.arrivals.iter())
+            .filter(|r| r.gt == Some(11) && r.opstage == Some(1))
+            .flat_map(|r| expand(&c, &r.units, Some((11, 1))))
+            .next()
+            .unwrap_or(id);
+        b.state.land.units.get_mut(&cw).unwrap().location = Location::NotArrived;
+        let (a, b) = open_pair(&c, &a, &b, Side::Axis);
+        let (a, b) = prepare_pair(&c, a, b, Side::Axis);
+        let ta = evaluate(&Cna::dev(), &c, &a, &Command::Advance).unwrap();
+        let tb = evaluate(&Cna::dev(), &c, &b, &Command::Advance).unwrap();
+        let own = |g: &Game<Cna>| {
+            Cna::dev()
+                .pending(&c, &g.state)
+                .into_iter()
+                .filter(|r| r.seat.side == Side::Axis)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(own(&ta.game), own(&tb.game));
+        assert!(
+            own(&ta.game)
+                .iter()
+                .any(|r| r.kind == crate::logistics::arrivals::KIND)
+        );
+        assert_eq!(ta.game.state.cursor.anchor(), tb.game.state.cursor.anchor());
+    }
+    /// Cases: land:3.6, airlog:34.84
+    #[test]
+    fn empty_versus_hidden_aircraft_interval_keeps_all_six_role_windows_and_streams() {
+        let (mut c, mut a) = fixture();
+        let all = CnaContent::load(&cna_content::repo_data_dir(), "italian_campaign").unwrap();
+        c.units.schedules = all
+            .units
+            .schedules
+            .into_iter()
+            .filter(|s| {
+                s.file.side == Side::Commonwealth
+                    && s.arrivals.iter().any(|r| r.gt_from == Some(15))
+            })
+            .collect();
+        for s in &mut c.units.schedules {
+            s.arrivals.retain(|r| r.gt_from == Some(15));
+            s.withdrawals.clear();
+        }
+        at(&mut a, 15, 1);
+        let mut b = a.clone();
+        for s in &c.units.schedules {
+            for (i, _) in s.arrivals.iter().enumerate() {
+                a.state
+                    .land
+                    .arrivals
+                    .applied
+                    .insert(row_id(&s.path, "air", i));
+            }
+        }
+        b.state.air.forces.clear();
+        let (a, b) = open_pair(&c, &a, &b, Side::Axis);
+        let (a, b) = prepare_pair(&c, a, b, Side::Axis);
+        assert!(b.state.air.forces.is_empty());
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::dev(),
+            &c,
+            &a,
+            &b,
+            &Command::Advance,
+            Side::Axis,
+        );
+    }
+    /// Cases: land:3.6, land:20.83, land:20.85
+    #[test]
+    fn hidden_withdrawal_substitution_choice_has_a_fixed_barrier_and_private_stream() {
+        let (mut c, mut a) = fixture();
+        for s in &mut c.units.schedules {
+            s.arrivals.clear();
+        }
+        let named: UnitId = "cw.4_indian_div.1st_royal_fusiliers".into();
+        let candidate: UnitId = "cw.2_nz_div.18th_nz_bn".into();
+        let location = city_domain(&c, "cairo").unwrap()[0].clone();
+        for id in [&named, &candidate] {
+            let u = a.state.land.units.get_mut(id).unwrap();
+            u.location = location.clone();
+            u.toe = Some(cna_content::units::Toe::Normal(
+                cna_content::units::NormalToe::N,
+            ));
+        }
+        at(&mut a, 13, 3);
+        let mut b = a.clone();
+        b.state.land.units.get_mut(&named).unwrap().toe =
+            Some(cna_content::units::Toe::Under { under: 4 });
+        let (a, b) = open_pair(&c, &a, &b, Side::Axis);
+        let (a, b) = prepare_pair(&c, a, b, Side::Axis);
+        assert_eq!(b.state.land.units[&named].location, location);
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::dev(),
+            &c,
+            &a,
+            &b,
+            &Command::Advance,
+            Side::Axis,
+        );
+    }
+    /// Cases: land:20.83, land:20.85, land:4.43a
+    #[test]
+    fn withdrawal_ranking_skips_a_source_removed_by_private_substitution_and_replays_exactly() {
+        let (mut c, mut g) = fixture();
+        let named: UnitId = "cw.4_indian_div.1st_royal_fusiliers".into();
+        let substitute: UnitId = "cw.2_nz_div.18th_nz_bn".into();
+        let location = city_domain(&c, "cairo").unwrap()[0].clone();
+        for s in &mut c.units.schedules {
+            s.arrivals.clear();
+            s.withdrawals
+                .retain(|r| r.gt == Some(13) && r.opstage == Some(3));
+        }
+        let schedule = c
+            .units
+            .schedules
+            .iter_mut()
+            .find(|s| s.file.side == Side::Commonwealth && !s.withdrawals.is_empty())
+            .unwrap();
+        schedule.withdrawals.truncate(1);
+        let minimum = schedule.withdrawals[0]
+            .transport
+            .unwrap()
+            .truck_value_points;
+        schedule.withdrawals[0].units = vec![ScheduledUnit {
+            unit: named.clone(),
+            hq_only: false,
+            subtree: false,
+            less: vec![],
+        }];
+        for id in [&named, &substitute] {
+            let u = g.state.land.units.get_mut(id).unwrap();
+            u.location = location.clone();
+            u.toe = Some(cna_content::units::Toe::Normal(
+                cna_content::units::NormalToe::N,
+            ));
+        }
+        g.state.land.units.get_mut(&named).unwrap().toe =
+            Some(cna_content::units::Toe::Under { under: 4 });
+        g.state
+            .land
+            .units
+            .get_mut(&substitute)
+            .unwrap()
+            .trucks
+            .medium = 3;
+        let pool = crate::logistics::pools::add_truck_pool(
+            &mut g.state.logistics,
+            None,
+            Side::Commonwealth,
+            Placement::City {
+                city: "cairo".into(),
+            },
+            Some(location),
+            Trucks {
+                medium: 20,
+                ..Default::default()
+            },
+            Supplies::default(),
+        )
+        .unwrap();
+        at(&mut g, 13, 3);
+        g = evaluate(&Cna::dev(), &c, &g, &Command::Advance)
+            .unwrap()
+            .game;
+        let commander = g
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat == SeatId::new(Side::Commonwealth, Role::Commander))
+            .unwrap()
+            .clone();
+        let mut order = plan(&c, &g, &commander);
+        let key = order
+            .as_object()
+            .unwrap()
+            .keys()
+            .find(|k| k.starts_with("substitute:"))
+            .unwrap()
+            .clone();
+        order[&key] = json!(substitute);
+        g = response(&c, &g, &commander, order).unwrap();
+        let logistics = g
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat == SeatId::new(Side::Commonwealth, Role::Logistics))
+            .unwrap()
+            .clone();
+        let mut order = plan(&c, &g, &logistics);
+        let key = order
+            .as_object()
+            .unwrap()
+            .keys()
+            .find(|k| k.starts_with("transport:"))
+            .unwrap()
+            .clone();
+        order[&key]["priority"] = json!([
+            format!("unit:{substitute}|medium"),
+            format!("pool:{pool}|medium")
+        ]);
+        g = response(&c, &g, &logistics, order).unwrap();
+        assert_eq!(g.state.logistics.truck_pools[0].trucks.medium, 20);
+        let recovered: Game<Cna> = serde_json::from_value(json!(g)).unwrap();
+        let a = drain(&c, g);
+        let b = drain(&c, recovered);
+        assert_eq!(json!(a), json!(b));
+        assert!(a.state.land.arrivals.withdrawn_units.contains(&substitute));
+        assert_eq!(
+            a.state.logistics.truck_pools[0].trucks.medium,
+            20 - (minimum - 3).max(0)
         );
     }
 }
