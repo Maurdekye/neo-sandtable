@@ -787,3 +787,225 @@ fn inspect_includes_a_legal_destination_beyond_an_overfull_transit_hex() {
     )
     .unwrap();
 }
+/// Cases: land:8.11, land:8.13, land:19.44
+#[test]
+#[ignore = "manual movement profiling on the full Graziani roster"]
+fn profile_real_roster_movement() {
+    use std::time::Instant;
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let mut s = State::new(&c).unwrap();
+    s.turn.weather = Some(crate::state::WeatherState {
+        kind: WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    s.turn.player_a = Some(Side::Axis);
+    s.cursor.block = Block::PlayerHalf;
+    s.cursor.half = Some(Half::A);
+    s.cursor.op_stage = Some(1);
+    s.cursor.index = 1;
+    let owner = SeatId::new(Side::Axis, Role::FrontLine);
+    let t = Instant::now();
+    for _ in 0..20 {
+        std::hint::black_box(available(&c, &s, owner));
+    }
+    eprintln!(
+        "available 20 windows: {:?}; roster {}",
+        t.elapsed(),
+        s.land.units.len()
+    );
+    let g = start(&c, s, false);
+    let request = Cna::dev()
+        .pending(&c, &g.state)
+        .into_iter()
+        .find(|p| p.seat == owner)
+        .unwrap();
+    for seed in 0..3 {
+        let t = Instant::now();
+        let action = crate::baseline::random_orders(
+            &c,
+            &g.state,
+            &request,
+            &mut CampaignRng::from_seed([seed; 32]),
+        );
+        eprintln!(
+            "baseline seed{seed}: {:?}, {} orders",
+            t.elapsed(),
+            action.as_array().unwrap().len()
+        );
+    }
+}
+/// Cases: land:8.11, land:8.13, land:19.44
+#[test]
+#[ignore = "manual full-roster campaign timing"]
+fn profile_movers_full_graziani_campaign() {
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let mut g: Game<Cna> = Game {
+        state: State::new(&c).unwrap(),
+        rng: CampaignRng::from_seed([8; 32]).state(),
+    };
+    let rules = Cna::dev();
+    let mut rng = CampaignRng::from_seed([19; 32]);
+    let begin = std::time::Instant::now();
+    let mut moves = 0;
+    for n in 0..10000 {
+        if n % 100 == 0 {
+            eprintln!(
+                "answer {n}, GT{}, Op{:?}, {:?}, {} moves",
+                g.state.cursor.game_turn,
+                g.state.cursor.op_stage,
+                begin.elapsed(),
+                moves
+            );
+        }
+        assert!(
+            begin.elapsed().as_secs() < 180,
+            "movement campaign benchmark exceeded three minutes"
+        );
+        let t = evaluate(&rules, &c, &g, &Command::Advance).unwrap();
+        g = t.game;
+        if matches!(t.progress, Some(Progress::Finished { .. })) {
+            eprintln!(
+                "full Graziani: {:?}, {n} answers, {moves} movement orders",
+                begin.elapsed()
+            );
+            assert!(moves > 0);
+            return;
+        }
+        let request = rules.pending(&c, &g.state).remove(0);
+        let action = if request.kind == KIND {
+            let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng);
+            moves += action.as_array().unwrap().len();
+            action
+        } else if let ActionSchema::Choice { options } = &request.space.schema {
+            json!(options[0].id)
+        } else {
+            Value::Null
+        };
+        g = evaluate(
+            &rules,
+            &c,
+            &g,
+            &Command::Respond(DecisionResponse {
+                decision_id: request.id,
+                seat: request.seat,
+                controller_epoch: 1,
+                decision_revision: request.revision,
+                idempotency_key: format!("profile{n}"),
+                action,
+                public_explanation: None,
+            }),
+        )
+        .unwrap()
+        .game;
+    }
+    panic!("profile campaign did not finish");
+}
+/// Cases: land:8.13, land:9.31, land:9.33
+#[test]
+fn planning_rebuilds_occupancy_after_a_nearby_move_and_checkpoint() {
+    let (c, s, _o) = setup(TANK, Some("road"), false, None);
+    let g = start(&c, s, true);
+    let id: UnitId = TANK.into();
+    let original = serde_json::to_value(reachable(&c, &g.state, &id, true)).unwrap();
+    let mut congested = g.state.clone();
+    let others: Vec<_> = congested
+        .units_of(Side::Axis)
+        .filter(|u| {
+            u.id != id
+                && c.units.units[&u.id].stacking_points == Some(1)
+                && formation::combat_unit(&c, &u.id)
+        })
+        .take(5)
+        .map(|u| u.id.to_string())
+        .collect();
+    assert_eq!(others.len(), 5);
+    for other in &others {
+        place(&mut congested, other, "C4021");
+    }
+    let paths = reachable(&c, &congested, &id, true);
+    let dest = paths.iter().find(|r| r.hex.as_str() == "C4021").unwrap();
+    assert_eq!(dest.cp_quarters, 8);
+    let encoded = serde_json::to_value(&congested).unwrap();
+    let recovered: State = serde_json::from_value(encoded).unwrap();
+    assert_eq!(
+        serde_json::to_value(reachable(&c, &recovered, &id, true)).unwrap(),
+        serde_json::to_value(&paths).unwrap()
+    );
+    assert_eq!(
+        serde_json::to_value(reachable(&c, &g.state, &id, true)).unwrap(),
+        original
+    );
+    let changed = Game::<Cna> {
+        state: congested,
+        rng: g.rng.clone(),
+    };
+    let t = respond(
+        &c,
+        &changed,
+        seat(&changed),
+        json!([{"unit":TANK,"path":dest.path}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(
+        t.game.state.land.units[&id].cp_spent_quarters,
+        dest.cp_quarters
+    );
+}
+/// Cases: land:6.15, land:8.13, land:8.17, land:19.43, land:19.44
+#[test]
+fn planning_detaches_once_for_a_complete_path_and_stops_at_remaining_cp() {
+    let child = "it.1_libyan_div.viii_libyan_bn";
+    let parent = "it.1_libyan_div.1st_libyan_regt_hq";
+    let (c, mut s, _o) = setup(child, Some("road"), false, None);
+    place(&mut s, parent, "C4020");
+    s.land.units.get_mut(&child.into()).unwrap().detached = false;
+    let g = start(&c, s, true);
+    let before = serde_json::to_value(&g.state).unwrap();
+    let paths = reachable(&c, &g.state, &child.into(), true);
+    let dest = paths.iter().find(|r| r.hex.as_str() == "C4023").unwrap();
+    assert_eq!(dest.cp_quarters, 16); // one CP detach, three one-CP road entries
+    let t = respond(
+        &c,
+        &g,
+        seat(&g),
+        json!([{"unit":child,"path":dest.path}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(t.game.state.land.units[&child.into()].cp_spent_quarters, 16);
+    assert_eq!(t.game.state.land.units[&parent.into()].cp_spent_quarters, 4);
+    assert_eq!(serde_json::to_value(&g.state).unwrap(), before);
+    let mut exhausted = g.state.clone();
+    let ceiling = formation::allowance(&c, &exhausted, &child.into())
+        .unwrap()
+        .cpa
+        * 6;
+    exhausted
+        .land
+        .units
+        .get_mut(&child.into())
+        .unwrap()
+        .voluntary_cp_quarters = ceiling - 5;
+    assert!(reachable(&c, &exhausted, &child.into(), true).is_empty());
+}
+/// Cases: land:6.15, land:9.21, land:19.46
+#[test]
+fn indexed_allowances_preserve_real_attachments_and_remote_children() {
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let mut s = State::new(&c).unwrap();
+    let child: UnitId = "it.1_libyan_div.viii_libyan_bn".into();
+    s.land.units.get_mut(&child).unwrap().attached_to = Some("it.1ccnn_div.1st_ccnn_div_hq".into());
+    s.land.units.get_mut(&child).unwrap().location = Location::Hex {
+        hex: "C4021".into(),
+    };
+    let index = formation::FormationIndex::new(&c, &s);
+    for u in s.land.units.values().filter(|u| u.location.hex().is_some()) {
+        assert_eq!(
+            index.allowance(&c, &s, &u.id),
+            formation::allowance(&c, &s, &u.id),
+            "{}",
+            u.id
+        );
+    }
+}

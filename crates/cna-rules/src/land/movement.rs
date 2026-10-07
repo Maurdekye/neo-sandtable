@@ -73,7 +73,7 @@ fn supply_error(error: SupplyError, strict: bool) -> Rejection {
 }
 /// Units represented by a parent may be selected to detach; convoy trucks have their own phase.
 /// Cases: land:6.26, land:8.11, land:8.17, land:8.18, land:19.44
-fn eligible(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId) -> bool {
+fn eligible_base(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId) -> bool {
     let Some(u) = state.land.units.get(id) else {
         return false;
     };
@@ -85,13 +85,22 @@ fn eligible(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId) -> b
             content.units.units[id].kind.as_deref(),
             Some("convoy" | "second_line_truck" | "third_line_truck")
         )
+}
+fn eligible(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId) -> bool {
+    eligible_base(content, state, id, seat)
         && formation::allowance(content, state, id)
-            .is_some_and(|a| capability::validate_move(u, a, 1).is_ok())
+            .is_some_and(|a| capability::validate_move(&state.land.units[id], a, 1).is_ok())
 }
 fn available(content: &CnaContent, state: &State, seat: SeatId) -> Vec<UnitId> {
+    let formations = formation::FormationIndex::new(content, state);
     state
         .units_of(seat.side)
-        .filter(|u| eligible(content, state, &u.id, seat))
+        .filter(|u| {
+            eligible_base(content, state, &u.id, seat)
+                && formations
+                    .allowance(content, state, &u.id)
+                    .is_some_and(|a| capability::validate_move(u, a, 1).is_ok())
+        })
         .map(|u| u.id.clone())
         .collect()
 }
@@ -225,11 +234,15 @@ fn run(
     truth: bool,
     check_end: bool,
     events: &mut Vec<EngineEvent>,
+    planning_group: Option<&PlanningGroup<'_>>,
 ) -> Result<Reachable, Rejection> {
     if order.path.is_empty() || order.path.len() > PATH_LIMIT as usize {
         return Err(illegal("path length is invalid"));
     }
-    let moving = unit_stack(content, state, order, seat)?;
+    let moving = match planning_group {
+        Some(group) => group.members.to_vec(),
+        None => unit_stack(content, state, order, seat)?,
+    };
     let mut from = state.land.units[&order.unit]
         .location
         .hex()
@@ -239,14 +252,18 @@ fn run(
     let mut total = 0i32;
     let mut fuel = 0i32;
     let mut uncertain = false;
-    let group_allowance = moving
-        .iter()
-        .map(|id| formation::individual_allowance(content, state, id))
-        .collect::<Option<Vec<_>>>()
-        .ok_or_else(|| illegal("movement rating is unresolved"))?
-        .into_iter()
-        .min_by_key(|a| a.cpa)
-        .ok_or_else(|| illegal("movement rating is unresolved"))?;
+    let group_allowance = if let Some(group) = planning_group {
+        group.allowance
+    } else {
+        moving
+            .iter()
+            .map(|id| formation::individual_allowance(content, state, id))
+            .collect::<Option<Vec<_>>>()
+            .ok_or_else(|| illegal("movement rating is unresolved"))?
+            .into_iter()
+            .min_by_key(|a| a.cpa)
+            .ok_or_else(|| illegal("movement rating is unresolved"))?
+    };
     let start_control = state
         .land
         .movement
@@ -267,24 +284,30 @@ fn run(
         }
         total += 8;
     }
-    let mut last_legal = (
-        state.clone(),
-        from.clone(),
-        path.clone(),
-        total,
-        fuel,
-        events.len(),
-    );
+    // Only authoritative execution needs a rollback snapshot for newly disclosed control.
+    let mut last_legal = truth.then(|| {
+        (
+            state.clone(),
+            from.clone(),
+            path.clone(),
+            total,
+            fuel,
+            events.len(),
+        )
+    });
     for requested in &order.path {
         let to = content
             .map
             .canonical(requested)
             .ok_or_else(|| illegal("not a legal destination"))?
             .clone();
-        if state
-            .units_of(seat.side.opponent())
-            .any(|u| u.location.hex() == Some(&to))
-        {
+        let occupied = match planning_group {
+            Some(group) => group.enemy_positions.contains(&to),
+            None => state
+                .units_of(seat.side.opponent())
+                .any(|u| u.location.hex() == Some(&to)),
+        };
+        if occupied {
             return Err(illegal("not a legal destination"));
         }
         map::terrain(content, &to, strict)?;
@@ -297,16 +320,23 @@ fn run(
                 content, state, id, &from, &to, strict, rain,
             )?);
         }
-        let moving_sp: i32 = formation::roots(content, state, &from, seat.side)
-            .iter()
-            .filter(|id| moving.contains(id))
-            .map(|id| formation::stacking_halves(content, state, id))
-            .sum();
-        let congested = costs.iter().any(|c| c.on_network)
+        let congested = if costs.iter().any(|c| c.on_network)
             && moving.iter().any(|id| {
                 formation::individual_allowance(content, state, id).is_some_and(|a| a.motorized)
-            })
-            && stacking::road_halves(content, state, &to, seat.side, &moving) + moving_sp > 10;
+            }) {
+            if let Some(group) = planning_group {
+                group.stacks.road_halves(&to) + group.stacks.moving_halves() > 10
+            } else {
+                let moving_sp: i32 = formation::roots(content, state, &from, seat.side)
+                    .iter()
+                    .filter(|id| moving.contains(id))
+                    .map(|id| formation::stacking_halves(content, state, id))
+                    .sum();
+                stacking::road_halves(content, state, &to, seat.side, &moving) + moving_sp > 10
+            }
+        } else {
+            false
+        };
         if congested {
             costs.clear();
             for id in &moving {
@@ -328,8 +358,12 @@ fn run(
         } else {
             known.unwrap_or(false)
         };
+        let adjacent_presence = match planning_group {
+            Some(group) => group.enemy_adjacent(content, &to),
+            None => zoc::possibly_controlled(content, state, seat.side.opponent(), &to),
+        };
         uncertain |= known.is_none()
-            && zoc::possibly_controlled(content, state, seat.side.opponent(), &to)
+            && adjacent_presence
             && effective_control(content, state, seat.side, &to, &moving, true);
         let controlled = effective_control(content, state, seat.side, &to, &moving, control);
         if truth {
@@ -400,6 +434,7 @@ fn run(
             }
             if controlled && end.is_err() {
                 let disclosed = state.land.movement.controls.clone();
+                let last_legal = last_legal.take().unwrap();
                 *state = last_legal.0;
                 state.land.movement.controls = disclosed;
                 from = last_legal.1;
@@ -440,14 +475,14 @@ fn run(
             emit_stacks(content, state, seat.side, &from, events);
             emit_stacks(content, state, seat.side, &to, events);
             if stacking::validate_end(content, state, &to, seat.side, strict).is_ok() {
-                last_legal = (
+                last_legal = Some((
                     state.clone(),
                     to.clone(),
                     path.clone(),
                     total,
                     fuel,
                     events.len(),
-                );
+                ));
             }
         }
         from = to;
@@ -460,7 +495,10 @@ fn run(
             break;
         }
     }
-    let end = stacking::validate_end(content, state, &from, seat.side, strict);
+    let end = match planning_group {
+        Some(group) => group.stacks.validate_end(&from, strict),
+        None => stacking::validate_end(content, state, &from, seat.side, strict),
+    };
     let end_valid = end.is_ok();
     if check_end && !path.is_empty() {
         end?;
@@ -575,6 +613,7 @@ pub fn answer(
             false,
             true,
             &mut Vec::new(),
+            None,
         )?;
     }
     let mut draft = state.clone();
@@ -589,6 +628,7 @@ pub fn answer(
             true,
             true,
             &mut events,
+            None,
         )?;
     }
     let updated: BTreeSet<_> = events
@@ -619,6 +659,83 @@ pub fn answer(
         orders.len()
     ))
 }
+// Search nodes contain only the fields `run(..., truth=false)` can change. One working
+// world is reused across edges; unrelated units, air state and decision schemas are not copied.
+struct PlanningGroup<'a> {
+    members: &'a [UnitId],
+    allowance: capability::Allowance,
+    stacks: stacking::PlanningStacks<'a>,
+    enemy_positions: BTreeSet<HexId>,
+}
+impl PlanningGroup<'_> {
+    fn enemy_adjacent(&self, content: &CnaContent, hex: &HexId) -> bool {
+        content
+            .map
+            .neighbors(hex)
+            .iter()
+            .any(|h| self.enemy_positions.contains(&h.id))
+    }
+}
+struct PlanningNode {
+    units: Vec<crate::state::LandUnit>,
+    unit_supply: BTreeMap<UnitId, crate::state::UnitSupply>,
+    dumps: BTreeMap<String, crate::state::Dump>,
+    fuel_segments: Vec<(UnitId, Option<logistics::FuelSegmentLedger>)>,
+    rations: Vec<(UnitId, Option<logistics::Rations>)>,
+    movement: MovementState,
+}
+impl PlanningNode {
+    fn capture(state: &State, changed: &[UnitId]) -> Self {
+        Self {
+            units: changed
+                .iter()
+                .filter_map(|id| state.land.units.get(id).cloned())
+                .collect(),
+            unit_supply: state.logistics.unit_supply.clone(),
+            dumps: state.logistics.dumps.clone(),
+            fuel_segments: changed
+                .iter()
+                .map(|id| (id.clone(), state.logistics.fuel_segments.get(id).cloned()))
+                .collect(),
+            rations: changed
+                .iter()
+                .map(|id| (id.clone(), state.logistics.rations.get(id).cloned()))
+                .collect(),
+            movement: state.land.movement.clone(),
+        }
+    }
+    fn restore(&self, state: &mut State) {
+        for unit in &self.units {
+            state.land.units.insert(unit.id.clone(), unit.clone());
+        }
+        state.logistics.unit_supply.clone_from(&self.unit_supply);
+        state.logistics.dumps.clone_from(&self.dumps);
+        for (id, ledger) in &self.fuel_segments {
+            match ledger {
+                Some(ledger) => {
+                    state
+                        .logistics
+                        .fuel_segments
+                        .insert(id.clone(), ledger.clone());
+                }
+                None => {
+                    state.logistics.fuel_segments.remove(id);
+                }
+            }
+        }
+        for (id, rations) in &self.rations {
+            match rations {
+                Some(rations) => {
+                    state.logistics.rations.insert(id.clone(), rations.clone());
+                }
+                None => {
+                    state.logistics.rations.remove(id);
+                }
+            }
+        }
+        state.land.movement.clone_from(&self.movement);
+    }
+}
 /// Paths are priced using only the side's disclosed control answers. An unknown future control
 /// is labelled; inspect never asks authoritative enemy strength at a hypothetical destination.
 /// Cases: land:3.62, land:8.13, land:8.17, land:10.6
@@ -633,11 +750,66 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
     {
         return vec![];
     }
+    let moving = formation::members(content, state, id);
+    let Some(allowance) = formation::allowance(content, state, id) else {
+        return vec![];
+    };
+    // Every entered edge costs at least one quarter CP. Do not search a graph when even
+    // that lower bound is impossible for a represented member or its fuel holdings.
+    for member in &moving {
+        if capability::validate_move(&state.land.units[member], allowance, 1).is_err() {
+            return vec![];
+        }
+        let previous = state
+            .logistics
+            .fuel_segments
+            .get(member)
+            .filter(|ledger| {
+                ledger.segment.game_turn == state.cursor.game_turn
+                    && ledger.segment.op_stage == state.cursor.op_stage
+                    && ledger.segment.half == state.cursor.half
+                    && ledger.segment.cycle == state.cursor.cycle
+            })
+            .map_or(0, |ledger| ledger.cp_quarters);
+        if previous
+            .checked_add(1)
+            .is_none_or(|next| logistics::plan_segment_fuel(content, state, member, next).is_err())
+        {
+            return vec![];
+        }
+    }
     let origin = unit.location.hex().unwrap().clone();
     let initial_cp = unit.cp_spent_quarters;
     let mut best: BTreeMap<HexId, Reachable> = BTreeMap::new();
     let mut queue = BTreeSet::from([(0i32, origin.clone())]);
-    let mut frontier = BTreeMap::from([(origin.clone(), state.clone())]);
+    let mut changed = moving;
+    if let Some(parent) = ownership::parent_for_unit(content, state, id) {
+        changed.push(parent.clone());
+    }
+    let mut draft = state.clone();
+    let Ok(members) = unit_stack(
+        content,
+        &mut draft,
+        &Order {
+            unit: id.clone(),
+            path: vec![],
+            with_stack: false,
+        },
+        seat,
+    ) else {
+        return vec![];
+    };
+    let base = draft.clone();
+    let group = PlanningGroup {
+        members: &members,
+        allowance,
+        stacks: stacking::PlanningStacks::new(content, &base, seat.side, &members, &origin),
+        enemy_positions: state
+            .units_of(seat.side.opponent())
+            .filter_map(|u| u.location.hex().cloned())
+            .collect(),
+    };
+    let mut frontier = BTreeMap::from([(origin.clone(), PlanningNode::capture(&draft, &changed))]);
     while let Some((cost, hex)) = queue.pop_first() {
         if hex != origin && best.get(&hex).is_none_or(|r| r.cp_quarters != cost) {
             continue;
@@ -645,26 +817,37 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
         let Some(node) = frontier.remove(&hex) else {
             continue;
         };
+        node.restore(&mut draft);
+        if group.members.iter().any(|member| {
+            capability::validate_move(&draft.land.units[member], group.allowance, 1).is_err()
+        }) {
+            continue;
+        }
         let prior = best.get(&hex).cloned();
         if prior.as_ref().is_some_and(|r| {
             r.control_unknown
                 || (state.land.movement.controls.get(&hex) == Some(&true)
                     && effective_control(
                         content,
-                        &node,
+                        &draft,
                         seat.side,
                         &hex,
-                        &formation::members(content, &node, id),
+                        &formation::members(content, &draft, id),
                         true,
                     ))
         }) {
             continue;
         }
         for to in content.map.neighbors(&hex) {
-            if to.id == origin {
+            if to.id == origin
+                || best
+                    .get(&to.id)
+                    .is_some_and(|r| r.cp_quarters <= cost.saturating_add(1))
+                || map::terrain(content, &to.id, strict).is_err()
+            {
                 continue;
             }
-            let mut draft = node.clone();
+            node.restore(&mut draft);
             if let Ok(mut r) = run(
                 content,
                 &mut draft,
@@ -678,6 +861,7 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
                 false,
                 false,
                 &mut Vec::new(),
+                Some(&group),
             ) {
                 let mut path = prior.as_ref().map_or_else(Vec::new, |p| p.path.clone());
                 path.extend(r.path);
@@ -693,7 +877,7 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
                         draft.land.movement.moved.remove(&member);
                     }
                     queue.insert((r.cp_quarters, to.id.clone()));
-                    frontier.insert(to.id.clone(), draft);
+                    frontier.insert(to.id.clone(), PlanningNode::capture(&draft, &changed));
                     best.insert(to.id.clone(), r);
                 }
             }

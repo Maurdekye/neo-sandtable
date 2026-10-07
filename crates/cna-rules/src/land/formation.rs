@@ -6,7 +6,7 @@ use cna_content::units::{Toe, UnitClass};
 use cna_core::ids::{HexId, UnitId};
 use cna_protocol::Side;
 use cna_tables::land::administration::{OrganizationLevel as Level, ShellOf};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub fn class<'a>(content: &'a CnaContent, id: &UnitId) -> Option<&'a UnitClass> {
     content
@@ -43,6 +43,54 @@ pub fn members(content: &CnaContent, state: &State, root: &UnitId) -> Vec<UnitId
         ids.extend(add);
     }
     ids.into_iter().collect()
+}
+/// A window-local attachment index. It is rebuilt from current state, never persisted.
+/// Cases: land:6.15, land:9.21, land:19.46
+pub(super) struct FormationIndex {
+    children: BTreeMap<UnitId, Vec<UnitId>>,
+}
+impl FormationIndex {
+    pub(super) fn new(content: &CnaContent, state: &State) -> Self {
+        let mut children: BTreeMap<UnitId, Vec<UnitId>> = BTreeMap::new();
+        for unit in state.land.units.values() {
+            if let Some(parent) = parent_for_unit(content, state, &unit.id)
+                && state
+                    .land
+                    .units
+                    .get(parent)
+                    .is_some_and(|p| p.side == unit.side && p.location == unit.location)
+            {
+                children
+                    .entry(parent.clone())
+                    .or_default()
+                    .push(unit.id.clone());
+            }
+        }
+        Self { children }
+    }
+    pub(super) fn allowance(
+        &self,
+        content: &CnaContent,
+        state: &State,
+        root: &UnitId,
+    ) -> Option<Allowance> {
+        let mut todo = vec![root.clone()];
+        let mut seen = BTreeSet::new();
+        let mut lowest: Option<Allowance> = None;
+        while let Some(id) = todo.pop() {
+            if !seen.insert(id.clone()) {
+                continue;
+            }
+            let next = individual_allowance(content, state, &id)?;
+            if lowest.is_none_or(|old| next.cpa < old.cpa) {
+                lowest = Some(next);
+            }
+            if let Some(children) = self.children.get(&id) {
+                todo.extend(children.iter().rev().cloned());
+            }
+        }
+        lowest
+    }
 }
 /// Only represented counters count. Independently stacked units are separate counters.
 /// Cases: land:9.12, land:9.13, land:9.21
