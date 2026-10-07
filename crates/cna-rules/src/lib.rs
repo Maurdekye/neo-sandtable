@@ -87,9 +87,9 @@ impl Ruleset for Cna {
         state: &mut State,
         cx: &mut Cx<'_>,
     ) -> Result<Progress, EngineError> {
-        let before = state.clone();
-        let progress = self.run_steps(content, state, cx);
-        view::sync_state_events(content, &before, state, cx);
+        let mut sync = view::Sync::new(state, cx);
+        let progress = self.run_steps(content, state, cx, &mut sync);
+        sync.point(content, state, cx);
         progress
     }
 
@@ -100,9 +100,9 @@ impl Ruleset for Cna {
         response: &DecisionResponse,
         cx: &mut Cx<'_>,
     ) -> Result<(), Rejection> {
-        let before = state.clone();
+        let mut sync = view::Sync::new(state, cx);
         let outcome = self.resolve(content, state, response, cx);
-        view::sync_state_events(content, &before, state, cx);
+        sync.point(content, state, cx);
         outcome
     }
 
@@ -171,6 +171,7 @@ impl Cna {
         content: &CnaContent,
         state: &mut State,
         cx: &mut Cx<'_>,
+        sync: &mut view::Sync,
     ) -> Result<Progress, EngineError> {
         for _ in 0..100_000 {
             if state.cursor.is_finished() {
@@ -182,6 +183,8 @@ impl Cna {
                 return Ok(Progress::AwaitingDecisions);
             }
             if !state.cursor.entered {
+                // What the previous step changed is announced before the next phase change.
+                sync.point(content, state, cx);
                 state.cursor.entered = true;
                 cx.emit(EngineEvent::public(GameEvent::PhaseChanged {
                     clock: view::wire_clock(content, state),

@@ -192,16 +192,12 @@ fn rejected_draw_is_atomic_and_checkpoint_and_enemy_views_keep_quantities_privat
             .unwrap()
             .is_empty()
     );
-    assert!(
-        Cna::dev()
-            .inspect(
-                content(),
-                &state,
-                Perspective::Side(Side::Commonwealth),
-                id.as_str()
-            )
-            .is_err()
-    );
+    crate::testkit::assert_face_only(&Cna::dev().inspect(
+        content(),
+        &state,
+        Perspective::Side(Side::Commonwealth),
+        id.as_str(),
+    ));
 }
 /// Cases: airlog:52.42, land:3.6
 /// Interpretations: interp:units-0005

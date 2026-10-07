@@ -104,10 +104,19 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    the observer's ordered stream and pending, not snapshots after a fixed number of commands.
 8. **Randomness** comes only from `cx.rng` (`d6()`, `two_dice_reading()`). Emit a `DiceRolled`
    event citing the rule for every roll.
-9. **Events and secrecy** (`land:3.6`). Board state-sync events (`UnitUpdated`, `UnitRemoved`
-   without a reason, `StackUpdated`, `StackRemoved`, `MarkerPlaced`, `MarkerRemoved`) are derived
-   centrally: at the end of every engine call `view::sync_state_events` diffs each perspective's
-   view (each side, the operator) and emits exactly the difference to that perspective alone.
+9. **Events and secrecy** (`land:3.6`). What the other side sees is the rules as written
+   (`land:3.62`, owner ruling 2026-10-07): every counter on the game map by its printed face
+   (designation, type, size, nationality, printed stacking points) and nothing it contains
+   (attached units, strength, TOE, capability, cohesion, supply, status). A unit attached to a
+   parent in its hex is represented by the parent's counter and is not there to see
+   (`land:4.25`, `land:19.12`). Off-map boxes are not on the map. Rules that depend on what a player
+   can see of enemy units use `view::is_map_counter` and `view::printed_combat_face`, never their
+   own reading of attachments. Board state-sync events (`UnitUpdated`, `UnitRemoved` without a
+   reason, `StackUpdated`, `StackRemoved`, `MarkerPlaced`, `MarkerRemoved`) are derived centrally:
+   `view::Sync` diffs each perspective's board (each side, the operator) before every phase
+   change and at the end of every engine call, and emits exactly the difference to that
+   perspective alone, right there in the event order. A change made during a step is therefore
+   announced before the next step's phase change, however the step's work split into calls.
    Don't hand-emit them; any you emit are dropped and re-derived, so the enemy never receives one
    its view doesn't justify. A change appears in events if and only if it appears in the view, so
    get the VIEW right (`view.rs`, owner-only detail via `sees_side`). Every board view is a
@@ -115,8 +124,10 @@ cases are not implemented. Write every procedure so that it is correct under `fu
    who looks; `Ruleset::views` shares that board across perspectives. Emit only semantic events
    yourself: `UnitMoved` paths, `DiceRolled`, `CombatResolved`, decisions, `Note`s, and
    `UnitRemoved` with a reason. Address them by who may know: own facts to `Audience::Side(side)`,
-   public facts to `Audience::Public`, and a redacted copy for the enemy to
-   `Audience::SideOnly(enemy)` beside the full one to `Audience::Side(owner)`.
+   public facts to `Audience::Public` (a map counter's move is public: the enemy watches it),
+   and a redacted copy for the enemy to `Audience::SideOnly(enemy)` beside the full one to
+   `Audience::Side(owner)`. In tests, `testkit::assert_face` and `assert_face_only` check that an
+   enemy unit view or `inspect` answer carries a printed face and nothing else.
 10. **Test it** in the module's `#[cfg(test)]` block, on the real Graziani content
     (`CnaContent::load(&cna_content::repo_data_dir(), "graziani")`; see `src/tests.rs` for a
     whole-campaign harness) or on a small hand-built state. Cite the cases on a `/// Cases:`

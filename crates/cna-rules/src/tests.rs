@@ -8,7 +8,7 @@ use cna_core::dice::CampaignRng;
 use cna_core::engine::{Command, Game, Progress, Rejection, evaluate};
 use cna_core::event::EngineEvent;
 use cna_core::ids::SeatId;
-use cna_core::visibility::Perspective;
+use cna_core::visibility::{Audience, Perspective};
 use cna_protocol::{GameEvent, Role, Side};
 use serde_json::{Value, json};
 
@@ -255,11 +255,37 @@ fn whole_campaigns_are_deterministic_per_seed() {
     );
 }
 
+/// Rules as written: every enemy counter on the map shows its printed face and nothing else, and
+/// a unit attached to a counter is not there to see, in views, stacks or inspect.
+/// Cases: land:3.61, land:3.62, land:4.25, land:19.12
 #[test]
-fn limited_intelligence_hides_enemy_stack_contents() {
+fn limited_intelligence_shows_enemy_counter_faces_only() {
     let content = content();
-    let state = State::new(content).unwrap();
+    let mut state = State::new(content).unwrap();
     let ruleset = Cna::dev();
+    // Attach one Commonwealth counter to another in its hex, so a represented unit exists.
+    let (child, parent) = {
+        let mut by_hex = std::collections::BTreeMap::<String, Vec<&crate::state::LandUnit>>::new();
+        for u in state.units_of(Side::Commonwealth) {
+            if let Some(hex) = u.location.hex() {
+                by_hex.entry(hex.to_string()).or_default().push(u);
+            }
+        }
+        by_hex
+            .values()
+            .find_map(|units| {
+                let counters: Vec<_> = units
+                    .iter()
+                    .filter(|u| view::is_map_counter(content, &state, u))
+                    .collect();
+                (counters.len() >= 2).then(|| (counters[0].id.clone(), counters[1].id.clone()))
+            })
+            .expect("a Commonwealth hex with two counters")
+    };
+    let unit = state.land.units.get_mut(&child).unwrap();
+    unit.attached_to = Some(parent.clone());
+    unit.detached = false;
+
     let axis = ruleset.view(content, &state, Perspective::Side(Side::Axis));
     let enemy: Vec<_> = axis
         .stacks
@@ -267,15 +293,46 @@ fn limited_intelligence_hides_enemy_stack_contents() {
         .filter(|s| s.side == Side::Commonwealth)
         .collect();
     assert!(!enemy.is_empty());
+    let mut listed = 0;
     for s in &enemy {
-        assert!(s.unit_ids.is_empty() && s.visible_count.is_none(), "{s:?}");
+        assert!(!s.unit_ids.is_empty(), "{s:?}");
+        assert_eq!(s.visible_count, Some(s.unit_ids.len() as u32));
+        for id in &s.unit_ids {
+            let face = &axis.units[id];
+            assert_eq!(face.side, Side::Commonwealth);
+            assert_eq!(face.hex.as_deref(), Some(s.hex.as_str()));
+            assert!(face.parent.is_none(), "{face:?}");
+            for key in face.detail.iter().flat_map(|d| d.keys()) {
+                assert!(
+                    ["counter", "stacking_points"].contains(&key.as_str()),
+                    "{face:?}"
+                );
+            }
+            listed += 1;
+        }
     }
-    assert!(axis.units.values().all(|u| u.side == Side::Axis));
+    let enemy_units = axis
+        .units
+        .values()
+        .filter(|u| u.side == Side::Commonwealth)
+        .count();
+    assert_eq!(
+        enemy_units, listed,
+        "enemy units are seen only as listed counters"
+    );
+    assert!(
+        !axis.units.contains_key(child.as_str()),
+        "the attached unit"
+    );
+    assert!(
+        axis.units.contains_key(parent.as_str()),
+        "its parent's counter"
+    );
     // Own units off the map (e.g. the Tripoli box) are listed with their location.
     let off_map = axis
         .units
         .values()
-        .filter(|u| u.hex.is_none())
+        .filter(|u| u.side == Side::Axis && u.hex.is_none())
         .filter_map(|u| u.detail.as_ref()?.get("location"))
         .count();
     assert!(
@@ -283,7 +340,11 @@ fn limited_intelligence_hides_enemy_stack_contents() {
         "axis units in off-map boxes or awaiting set-up are listed"
     );
     // Own units on the map say whether they have used their move this segment.
-    let on_map = axis.units.values().find(|u| u.hex.is_some()).unwrap();
+    let on_map = axis
+        .units
+        .values()
+        .find(|u| u.side == Side::Axis && u.hex.is_some())
+        .unwrap();
     assert_eq!(
         on_map.detail.as_ref().unwrap().get("moved_this_segment"),
         Some(&serde_json::json!(false))
@@ -296,25 +357,49 @@ fn limited_intelligence_hides_enemy_stack_contents() {
     );
     // The operator sees both sides in full.
     let op = ruleset.view(content, &state, Perspective::Operator);
-    assert!(op.units.values().any(|u| u.side == Side::Commonwealth));
-    // inspect refuses an enemy unit without saying whether it exists.
-    let cw_unit = state
+    assert!(
+        op.units
+            .values()
+            .any(|u| u.side == Side::Commonwealth && u.detail.as_ref().unwrap().contains_key("cpa"))
+    );
+    // inspect shows an enemy counter's face, and answers an attached enemy unit (or one not on
+    // the map) exactly like an id that does not exist.
+    let seat = Perspective::Seat(SeatId::new(Side::Axis, Role::Commander));
+    let face = ruleset
+        .inspect(content, &state, seat, parent.as_str())
+        .unwrap();
+    assert_eq!(
+        face["unit"],
+        serde_json::to_value(&axis.units[parent.as_str()]).unwrap()
+    );
+    let off_map_enemy = state
         .units_of(Side::Commonwealth)
-        .next()
+        .find(|u| u.location.hex().is_none())
         .unwrap()
         .id
         .to_string();
-    let seat = Perspective::Seat(SeatId::new(Side::Axis, Role::Commander));
-    let refused = ruleset
-        .inspect(content, &state, seat, &cw_unit)
-        .unwrap_err();
     let unknown = ruleset
         .inspect(content, &state, seat, "no.such.unit")
         .unwrap_err();
-    assert_eq!(
-        refused.to_string().replace(&cw_unit, "X"),
-        unknown.to_string().replace("no.such.unit", "X")
-    );
+    for hidden in [child.to_string(), off_map_enemy] {
+        let refused = ruleset.inspect(content, &state, seat, &hidden).unwrap_err();
+        assert_eq!(
+            refused.to_string().replace(&hidden, "X"),
+            unknown.to_string().replace("no.such.unit", "X")
+        );
+    }
+    // Inspecting the hex lists the counters' faces, never the attached unit.
+    let hex = axis.units[parent.as_str()].hex.clone().unwrap();
+    let at = ruleset.inspect(content, &state, seat, &hex).unwrap();
+    let shown: Vec<_> = at["stacks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|s| s["side"] == json!(Side::Commonwealth))
+        .flat_map(|s| s["counters"].as_array().unwrap().iter())
+        .map(|c| c["id"].as_str().unwrap().to_owned())
+        .collect();
+    assert!(shown.contains(&parent.to_string()) && !shown.contains(&child.to_string()));
 }
 
 #[test]
@@ -577,7 +662,9 @@ fn moved_flags_stay_live_and_decision_ids_count_per_seat() {
                  opened: &mut std::collections::BTreeMap<String, u32>| {
         for e in events {
             match &e.event {
-                GameEvent::UnitUpdated { unit } => {
+                // The other side's copies carry only a counter's printed face (land:3.62).
+                GameEvent::UnitUpdated { unit } if !matches!(e.audience, Audience::SideOnly(s) if s != unit.side) =>
+                {
                     let flag = unit
                         .detail
                         .as_ref()

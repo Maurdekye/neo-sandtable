@@ -651,12 +651,25 @@ async fn check_http_real_profile(whole: bool) {
         .json()
         .await
         .unwrap();
+    // Own units in full; Commonwealth counters on the map only by their printed face (land:3.62).
     for unit in side["snapshot"]["view"]["units"]
         .as_object()
         .unwrap()
         .values()
     {
-        assert_eq!(unit["side"], "axis");
+        if unit["side"] != "axis" {
+            assert!(unit["parent"].is_null(), "{unit}");
+            for key in unit["detail"]
+                .as_object()
+                .into_iter()
+                .flat_map(|d| d.keys())
+            {
+                assert!(
+                    ["counter", "stacking_points"].contains(&key.as_str()),
+                    "an enemy face carries {key}: {unit}"
+                );
+            }
+        }
     }
     assert_eq!(
         client

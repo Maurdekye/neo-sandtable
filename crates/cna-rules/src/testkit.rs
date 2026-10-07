@@ -314,3 +314,32 @@ pub(crate) fn events_explain_view_changes(
     }
     Ok(())
 }
+
+/// A unit view carrying nothing but a counter's printed face (`land:3.62`): no parent, and at most
+/// the printed abbreviation and stacking points as detail.
+/// Cases: land:3.62
+pub(crate) fn assert_face(unit: &serde_json::Value) {
+    assert!(
+        unit["parent"].is_null(),
+        "an enemy face names a parent: {unit}"
+    );
+    if let Some(detail) = unit["detail"].as_object() {
+        for key in detail.keys() {
+            assert!(
+                ["counter", "stacking_points"].contains(&key.as_str()),
+                "an enemy face carries {key}: {unit}"
+            );
+        }
+    }
+}
+
+/// What `inspect` tells the other side about one of its units: nothing (refused like an unknown
+/// id), or a map counter's printed face and the note that its contents are not visible.
+/// Cases: land:3.62
+pub(crate) fn assert_face_only(result: &Result<serde_json::Value, cna_core::engine::Rejection>) {
+    if let Ok(answer) = result {
+        let keys: Vec<_> = answer.as_object().expect("an object").keys().collect();
+        assert_eq!(keys, ["unit", "visibility"], "{answer}");
+        assert_face(&answer["unit"]);
+    }
+}

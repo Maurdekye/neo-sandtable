@@ -365,7 +365,21 @@ fn fixed_empty_windows_accept_pass_and_exclude_pinned_or_exhausted_units() {
 #[test]
 fn hidden_adjacent_class_does_not_change_allowance_or_acceptance() {
     let (c, mut a, _o) = fixture();
+    // The same printed HQ face in both worlds; only the combat unit attached to it differs.
     place(&mut a.state, "it.1_libyan_div.viii_libyan_bn", "C4019");
+    place(
+        &mut a.state,
+        "it.1_libyan_div.1st_libyan_infantry_hq",
+        "C4019",
+    );
+    let bn = a
+        .state
+        .land
+        .units
+        .get_mut(&"it.1_libyan_div.viii_libyan_bn".into())
+        .unwrap();
+    bn.attached_to = Some("it.1_libyan_div.1st_libyan_infantry_hq".into());
+    bn.detached = false;
     let mut b = a.clone();
     b.state
         .land
@@ -373,11 +387,6 @@ fn hidden_adjacent_class_does_not_change_allowance_or_acceptance() {
         .get_mut(&"it.1_libyan_div.viii_libyan_bn".into())
         .unwrap()
         .location = Location::Eliminated;
-    place(
-        &mut b.state,
-        "it.1_libyan_div.1st_libyan_infantry_hq",
-        "C4019",
-    );
     let a = open_game(&c, &a);
     let b = open_game(&c, &b);
     assert!(a.state.land.combat.retreat.units[&LEG.into()].adjacent);
@@ -757,8 +766,9 @@ fn mandatory_breakdown_parks_later_retreats_and_checkpoint_resumes_the_saved_ord
     assert_eq!(run(g), run(serde_json::from_value(serialized).unwrap()));
 }
 
-/// Private breakdown paperwork may stutter, but never changes the other side's ordered stream.
-/// Cases: land:3.6,land:13.21,land:21.22,land:21.24,land:21.25
+/// Private breakdown paperwork may stutter, but never changes the other side's ordered stream
+/// beyond the broken-down vehicle marker it may leave on the map.
+/// Cases: land:3.6,land:3.62,land:13.21,land:21.22,land:21.24,land:21.25
 #[test]
 fn rba_private_breakdown_rounds_preserve_observer_sequence_through_assignment() {
     let (c, mut a, _overlay) = fixture();
@@ -882,9 +892,53 @@ fn rba_private_breakdown_rounds_preserve_observer_sequence_through_assignment() 
     let (stream_b, pending_b, rounds_b) = run(b);
     assert_eq!(rounds_a, 0);
     assert!(rounds_b > 0);
+    // Rules as written, a broken-down vehicle marker is a counter on the map (land:3.62): the
+    // observer sees one appear, never what it holds. Apart from that the ordered stream is the
+    // same.
+    let markers_seen = std::cell::Cell::new(0);
+    let without_markers = |stream: &BTreeMap<String, Vec<Value>>| -> BTreeMap<String, Vec<Value>> {
+        stream
+            .iter()
+            .map(|(p, rows)| {
+                let mut out: Vec<Value> = vec![];
+                for row in rows {
+                    let mut row = row.clone();
+                    let event = &mut row["event"];
+                    if event["kind"] == "unit_updated" && event["unit"]["kind"] == "broken_vehicle"
+                    {
+                        assert!(event["unit"]["detail"].is_null(), "marker contents: {row}");
+                        markers_seen.set(markers_seen.get() + 1);
+                        continue;
+                    }
+                    if event["kind"] == "stack_updated" {
+                        let ids = event["stack"]["unit_ids"].as_array_mut().unwrap();
+                        ids.retain(|id| !id.as_str().unwrap().starts_with("broken-"));
+                        let n = ids.len();
+                        event["stack"]["visible_count"] = json!(n);
+                        // Drop a stack update that, without the marker, repeats the last one.
+                        let hex = event["stack"]["hex"].clone();
+                        let previous = out.iter().rev().find(|r| {
+                            r["event"]["kind"] == "stack_updated"
+                                && r["event"]["stack"]["hex"] == hex
+                        });
+                        if previous == Some(&row) {
+                            continue;
+                        }
+                    }
+                    out.push(row);
+                }
+                (p.clone(), out)
+            })
+            .collect()
+    };
     assert_eq!(
-        stream_a, stream_b,
+        without_markers(&stream_a),
+        without_markers(&stream_b),
         "private paperwork changed observer event sequence"
+    );
+    assert!(
+        markers_seen.get() > 0,
+        "world B's broken-down marker is visible"
     );
     assert_eq!(
         pending_a, pending_b,

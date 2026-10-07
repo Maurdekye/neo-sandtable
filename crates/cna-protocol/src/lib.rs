@@ -269,8 +269,10 @@ pub struct ViewState {
     pub pending: Vec<PendingDecision>,
 }
 
-/// A stack on the map. Under `land:3.6` the presence of an enemy stack is public but its
-/// contents are not, so `unit_ids` may be empty and `visible_count` absent.
+/// A stack on the map. Under `land:3.62` a player may examine any stack, but not what its
+/// counters contain: for the other side's stacks `unit_ids` lists only the counters on the map
+/// (units attached to a counter are not there to see), each described in `ViewState.units` by its
+/// printed face; for one's own stacks it lists every member.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 pub struct Stack {
     /// Printed hex id, e.g. "C4218".

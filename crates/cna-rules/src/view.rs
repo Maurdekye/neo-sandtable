@@ -1,9 +1,13 @@
 //! What each perspective may see: the board view, the seats' `observe` report and `inspect`
 //! details, filtered by Limited Intelligence (`land:3.6`).
 //!
-//! Baseline (`land:3.61`, `land:3.62`): the presence of every stack on the map is public; the
-//! composition, status and attributes of enemy units are not. Own-side seats see everything their
-//! side knows; the operator sees everything and is labelled as omniscient by the board.
+//! Rules as written (`land:3.61`, `land:3.62`, the owner's ruling of 2026-10-07): a player may
+//! examine any stack of counters on the game map, so every counter on the map is visible to the
+//! other side by its printed face (designation, type, size, nationality, printed stacking points).
+//! What a counter contains is not: units attached to it (`land:4.25`, `land:19.12`), strength,
+//! TOE, capability, cohesion, supply and status. Off-map boxes are not on the game map. Own-side
+//! seats see everything their side knows; the operator sees everything and is labelled as
+//! omniscient by the board.
 
 use std::collections::BTreeMap;
 
@@ -143,6 +147,79 @@ fn board_size(echelon: Option<&str>) -> String {
     }
 }
 
+/// Whether `unit` is a counter on the game map, which the other side sees by its printed face:
+/// it is in a map hex and not attached to a parent formation in that hex, whose counter
+/// represents it instead (`land:4.25`, `land:19.12`, `land:19.13`). Rules that depend on what a
+/// player can see of enemy units use this, never their own reading of attachments.
+/// Cases: land:3.62, land:4.25, land:19.12, land:19.13
+pub(crate) fn is_map_counter(content: &CnaContent, state: &State, unit: &LandUnit) -> bool {
+    unit.location.hex().is_some()
+        && !crate::ownership::parent_for_land_unit(content, unit).is_some_and(|parent| {
+            state
+                .land
+                .units
+                .get(parent)
+                .is_some_and(|p| p.location == unit.location && p.side == unit.side)
+        })
+}
+
+/// Whether a counter's printed face shows a combat unit: its type symbol (infantry, armor,
+/// recce, artillery, anti-tank, anti-air). A headquarters counter shows a headquarters, whatever
+/// is attached to it.
+/// Cases: land:3.62
+#[allow(dead_code)] // for land-0023 and land-0030, which switch to the visible counter type
+pub(crate) fn printed_combat_face(content: &CnaContent, id: &UnitId) -> bool {
+    crate::land::formation::combat_unit(content, id)
+}
+
+/// A map counter as the other side sees it: its printed face and where it is (`land:3.62`).
+/// Cases: land:3.62, land:9.22
+pub(crate) fn counter_face(content: &CnaContent, unit: &LandUnit) -> wire::UnitView {
+    let oa = content.units.units.get(&unit.id);
+    let class = oa
+        .and_then(|o| o.class.as_ref())
+        .and_then(|c| content.units.classes.get(c));
+    let mut detail = BTreeMap::new();
+    if let Some(oa) = oa {
+        detail.insert("counter".to_owned(), json!(oa.counter));
+        // The printed stacking point value, not the current one (an HQ with nothing attached
+        // counts zero, 9.25, but its counter still shows the printed value).
+        if let Some(sp) = oa.stacking_points {
+            detail.insert("stacking_points".to_owned(), json!(sp));
+        }
+    }
+    wire::UnitView {
+        id: unit.id.to_string(),
+        side: unit.side,
+        name: oa.map_or_else(|| unit.id.to_string(), |o| o.name.clone()),
+        kind: class
+            .map_or("unknown", |c| board_kind(&c.unit_type))
+            .to_owned(),
+        size: board_size(oa.and_then(|o| o.echelon.as_deref())),
+        nationality: oa.map_or_else(String::new, |o| o.nationality.clone()),
+        hex: unit.location.hex().map(|h| h.to_string()),
+        parent: None,
+        detail: Some(detail),
+    }
+}
+
+/// A broken-down vehicle marker as the other side sees it: the marker, not its contents
+/// (`land:3.62`).
+/// Cases: land:3.62, land:21.42
+fn marker_face(marker: &crate::land::breakdown::markers::BrokenMarker) -> wire::UnitView {
+    wire::UnitView {
+        id: marker.id.clone(),
+        side: marker.side,
+        name: "Broken-down vehicles".to_owned(),
+        kind: "broken_vehicle".to_owned(),
+        size: "marker".to_owned(),
+        nationality: String::new(),
+        hex: Some(marker.hex.to_string()),
+        parent: None,
+        detail: None,
+    }
+}
+
 /// TOE strength points a unit holds now (`land:3.5`).
 pub(crate) fn toe_points(content: &CnaContent, unit: &LandUnit) -> Option<i32> {
     crate::logistics::toe_strength(content, unit)
@@ -179,7 +256,7 @@ fn stamp_moved(state: &State, id: &UnitId, view: &mut wire::UnitView) {
 }
 
 /// Whether `event` only re-states what a perspective's board view now shows. Those are derived
-/// centrally by [`sync_state_events`]; procedures may emit them, but the central pass replaces
+/// centrally by [`Sync`]; procedures may emit them, but the central pass replaces
 /// them.
 fn is_state_sync(event: &wire::GameEvent) -> bool {
     matches!(
@@ -214,26 +291,30 @@ fn board_index(perspective: Perspective) -> usize {
 
 /// One state's board, built once and shared by every perspective that looks at it: the full view
 /// of each unit of the built sides (on the map, in an off-map box or awaiting set-up placement)
-/// and of each broken-down vehicle marker, every stack's members, and the markers each side and
-/// the operator see. A perspective's board view is a filter of it, so [`view`], [`views`] and
-/// [`sync_state_events`] cannot disagree, and unit views are built once per state rather than
-/// once per perspective.
+/// and of each broken-down vehicle marker, the printed face of every counter on the map, every
+/// stack's members, and the markers each side and the operator see. A perspective's board view is
+/// a filter of it, so [`view`], [`views`] and [`Sync`] cannot disagree, and unit
+/// views are built once per state rather than once per perspective.
 #[cfg_attr(test, derive(Debug, PartialEq))]
 pub(crate) struct Board {
     /// Unit or broken-down vehicle marker id -> (owning side, full view), for the built sides.
     units: BTreeMap<String, (Side, wire::UnitView)>,
-    /// Every occupied (hex, side) with its sorted member ids. Presence is public, the ids are
-    /// the owner's (`land:3.62`).
-    stacks: BTreeMap<(HexId, Side), Vec<String>>,
+    /// Every counter and broken-down vehicle marker on the map, of every side -> (side, printed
+    /// face): what the other side sees of it (`land:3.62`).
+    faces: BTreeMap<String, (Side, wire::UnitView)>,
+    /// Every occupied (hex, side) with its sorted member ids (the owner's) and the sorted ids of
+    /// its counters and markers (what the other side sees, `land:3.62`).
+    stacks: BTreeMap<(HexId, Side), (Vec<String>, Vec<String>)>,
     /// The markers each board perspective sees, in [`BOARDS`] order, each sorted by id.
     markers: [Vec<wire::Marker>; 3],
 }
 
 impl Board {
-    /// The board of `state`, with full unit views for `sides`. Other sides' stacks count only for
-    /// their presence.
+    /// The board of `state`, with full unit views for `sides`. Other sides' units are seen only
+    /// by the faces of their counters on the map.
     pub(crate) fn new(content: &CnaContent, state: &State, sides: &[Side]) -> Self {
         let mut units = BTreeMap::new();
+        let mut faces = BTreeMap::new();
         let mut stacks = BTreeMap::new();
         for ((hex, side), members) in state.stacks() {
             let markers: Vec<_> = state
@@ -246,6 +327,16 @@ impl Board {
             let mut ids: Vec<_> = members.iter().map(|u| u.id.to_string()).collect();
             ids.extend(markers.iter().map(|m| m.id.clone()));
             ids.sort();
+            let mut counters = Vec::new();
+            for u in members.iter().filter(|u| is_map_counter(content, state, u)) {
+                counters.push(u.id.to_string());
+                faces.insert(u.id.to_string(), (side, counter_face(content, u)));
+            }
+            for m in &markers {
+                counters.push(m.id.clone());
+                faces.insert(m.id.clone(), (side, marker_face(m)));
+            }
+            counters.sort();
             if sides.contains(&side) {
                 for m in markers {
                     let view = crate::land::breakdown::markers::unit_view(m);
@@ -258,7 +349,7 @@ impl Board {
                     units.insert(u.id.to_string(), (side, view));
                 }
             }
-            stacks.insert((hex, side), ids);
+            stacks.insert((hex, side), (ids, counters));
         }
         // Own units in play but not on a map hex: in an off-map box, or deployed and awaiting the
         // owner's set-up placement. `hex` is null and `detail.location` says which.
@@ -282,20 +373,27 @@ impl Board {
         }
         Board {
             units,
+            faces,
             stacks,
             markers: BOARDS.map(|p| markers(state, p)),
         }
     }
 
-    /// The units `perspective` sees, by id.
+    /// The units `perspective` sees, by id: its own side's in full, then the other side's
+    /// counters on the map by their faces.
     fn units_for(
         &self,
         perspective: Perspective,
     ) -> impl Iterator<Item = (&String, &wire::UnitView)> {
-        self.units
+        let own = self
+            .units
             .iter()
-            .filter(move |(_, (side, _))| sees_side(perspective, *side))
-            .map(|(id, (_, view))| (id, view))
+            .filter(move |(_, (side, _))| sees_side(perspective, *side));
+        let enemy = self
+            .faces
+            .iter()
+            .filter(move |(_, (side, _))| !sees_side(perspective, *side));
+        own.chain(enemy).map(|(id, (_, view))| (id, view))
     }
 
     /// Unit `id` as `perspective` sees it, if it does.
@@ -303,30 +401,31 @@ impl Board {
         self.units
             .get(id)
             .filter(|(side, _)| sees_side(perspective, *side))
+            .or_else(|| {
+                self.faces
+                    .get(id)
+                    .filter(|(side, _)| !sees_side(perspective, *side))
+            })
             .map(|(_, view)| view)
     }
 
-    /// The stack at (`hex`, `side`) as `perspective` sees it.
+    /// The stack at (`hex`, `side`) as `perspective` sees it: every member for its owner, the
+    /// counters and markers for anyone else (`land:3.62`).
     fn stack_for(
         perspective: Perspective,
         (hex, side): &(HexId, Side),
-        ids: &[String],
+        (members, counters): &(Vec<String>, Vec<String>),
     ) -> wire::Stack {
-        if sees_side(perspective, *side) {
-            wire::Stack {
-                hex: hex.to_string(),
-                side: *side,
-                visible_count: Some(ids.len() as u32),
-                unit_ids: ids.to_vec(),
-            }
+        let ids = if sees_side(perspective, *side) {
+            members
         } else {
-            // land:3.62: the stack's presence is public, its contents are not.
-            wire::Stack {
-                hex: hex.to_string(),
-                side: *side,
-                unit_ids: Vec::new(),
-                visible_count: None,
-            }
+            counters
+        };
+        wire::Stack {
+            hex: hex.to_string(),
+            side: *side,
+            visible_count: Some(ids.len() as u32),
+            unit_ids: ids.clone(),
         }
     }
 
@@ -372,6 +471,11 @@ impl Board {
                 .units
                 .into_iter()
                 .filter(|(_, (side, _))| sees_side(perspective, *side))
+                .chain(
+                    self.faces
+                        .into_iter()
+                        .filter(|(_, (side, _))| !sees_side(perspective, *side)),
+                )
                 .map(|(id, (_, view))| (id, view))
                 .collect(),
             markers: std::mem::take(&mut self.markers[board_index(perspective)]),
@@ -415,16 +519,17 @@ fn markers(state: &State, perspective: Perspective) -> Vec<wire::Marker> {
 
 /// Whether every state input [`Board::new`] reads is equal in `a` and `b`, so both states have
 /// the same board and every perspective the same units, stacks and markers: the units
-/// themselves (their views depend only on the unit and the content), the cursor (stamps such as
-/// the 8.88 movement ban expire with the Operations Stage), the movement and combat stamps,
-/// broken-down vehicle markers, and each board perspective's markers. Most engine calls only
-/// record answers, and this lets them skip building two boards. It must be exact, not merely
-/// usually right: a missed input would announce an own change only when some unrelated hidden
-/// enemy input also changed, which is a channel. So anything new that `Board::new` reads
-/// (directly or through a stamp) must be compared here, and in this crate's tests every skip
-/// is verified against both boards.
+/// themselves (their views and faces depend only on the units and the content), the Game-Turn
+/// and Operations Stage (stamps such as the 8.88 movement ban expire with the stage; nothing on
+/// the board depends on the step within it), the movement and combat stamps, broken-down vehicle
+/// markers, and each board perspective's markers. Most engine calls only record answers, and
+/// most step changes touch nothing on the board, and this lets them skip building two boards. It
+/// must be exact, not merely usually right: a missed input would announce an own change only when
+/// some unrelated hidden enemy input also changed, which is a channel. So anything new that
+/// `Board::new` reads (directly or through a stamp) must be compared here, and in this crate's
+/// tests every skip is verified against both boards.
 fn board_unchanged(a: &State, b: &State) -> bool {
-    a.cursor == b.cursor
+    (a.cursor.game_turn, a.cursor.op_stage) == (b.cursor.game_turn, b.cursor.op_stage)
         && a.land.units == b.land.units
         && a.land.movement.moved == b.land.movement.moved
         && a.land.combat.positions == b.land.combat.positions
@@ -434,103 +539,142 @@ fn board_unchanged(a: &State, b: &State) -> bool {
         && BOARDS.into_iter().all(|p| markers(a, p) == markers(b, p))
 }
 
-/// Keep every viewer's live board equal to its snapshot, by construction. Runs at the end of
-/// every engine call (`advance`, `respond`) with the state as it was at its start. For each of
-/// the three board perspectives (each side and the operator) it compares the board before and
-/// after the call and emits exactly the difference, addressed to that perspective alone
-/// (`SideOnly(side)`, `Operator`): a `UnitUpdated` per unit whose view changed or appeared, a
-/// `UnitRemoved` per unit that left it (unless a procedure already said why),
-/// `StackUpdated`/`StackRemoved` per changed stack, and `MarkerPlaced`/`MarkerRemoved` per
-/// changed marker. State-sync events that procedures emitted are dropped first, so an enemy can
-/// never receive one its view does not justify (the presence-only contract, `land:3.6`).
-/// Semantic events (moves along paths, dice, decisions, notes, reasoned removals) are kept in
-/// order; the derived events follow them.
-pub(crate) fn sync_state_events(
-    content: &CnaContent,
-    before: &State,
-    after: &State,
-    cx: &mut Cx<'_>,
-) {
-    cx.events.retain(|e| !is_state_sync(&e.event));
-    if board_unchanged(before, after) {
-        #[cfg(test)]
-        assert_eq!(
-            Board::new(content, before, &Side::ALL),
-            Board::new(content, after, &Side::ALL),
-            "board_unchanged missed an input that Board::new reads"
-        );
-        return;
+/// Keeps every viewer's live board equal to its snapshot, by construction. An engine call opens
+/// one with the state as it was at its start ([`Sync::new`]) and calls [`Sync::point`] before
+/// each phase change and at its end. At each point, for each of the three board perspectives
+/// (each side and the operator), it compares the board at the previous point with the board now
+/// and emits exactly the difference, addressed to that perspective alone (`SideOnly(side)`,
+/// `Operator`): a `UnitUpdated` per unit whose view changed or appeared, a `UnitRemoved` per unit
+/// that left it (unless a procedure already said why), `StackUpdated`/`StackRemoved` per changed
+/// stack, and `MarkerPlaced`/`MarkerRemoved` per changed marker. State-sync events that
+/// procedures emitted since the previous point are dropped first, so an enemy can never receive
+/// one its view does not justify (faces of counters only, `land:3.62`). Semantic events (moves
+/// along paths, dice, decisions, notes, reasoned removals) are kept in order; the derived events
+/// follow them.
+///
+/// The points before phase changes keep the observer's ordered stream independent of how a
+/// step's work splits into engine calls: a change made during a step is announced before the
+/// next step's phase change, whether the step ran in one call or waited on private decisions in
+/// between (docs/engine.md §3 rules 7 and 9).
+pub(crate) struct Sync {
+    /// The state at the previous point, or an earlier one with the same board.
+    last: State,
+    /// Where the events emitted since the previous point begin.
+    mark: usize,
+}
+
+impl Sync {
+    pub(crate) fn new(state: &State, cx: &Cx<'_>) -> Self {
+        Sync {
+            last: state.clone(),
+            mark: cx.events.len(),
+        }
     }
-    let before = &Board::new(content, before, &Side::ALL);
-    let after = Board::new(content, after, &Side::ALL);
-    for (index, perspective) in BOARDS.into_iter().enumerate() {
-        let audience = match perspective {
-            Perspective::Side(side) => Audience::SideOnly(side),
-            _ => Audience::Operator,
-        };
+
+    /// Announce, here in the event order, the board changes since the previous point.
+    pub(crate) fn point(&mut self, content: &CnaContent, state: &State, cx: &mut Cx<'_>) {
+        let since: Vec<EngineEvent> = cx.events.drain(self.mark..).collect();
+        cx.events
+            .extend(since.into_iter().filter(|e| !is_state_sync(&e.event)));
+        if board_unchanged(&self.last, state) {
+            #[cfg(test)]
+            assert_eq!(
+                Board::new(content, &self.last, &Side::ALL),
+                Board::new(content, state, &Side::ALL),
+                "board_unchanged missed an input that Board::new reads"
+            );
+            self.mark = cx.events.len();
+            return;
+        }
+        let before = &Board::new(content, &self.last, &Side::ALL);
+        let after = Board::new(content, state, &Side::ALL);
         let mut derived = Vec::new();
-        for (id, unit) in after.units_for(perspective) {
-            if before.unit_for(perspective, id) != Some(unit) {
-                derived.push(wire::GameEvent::UnitUpdated { unit: unit.clone() });
-            }
-        }
-        for (id, _) in before.units_for(perspective) {
-            let explained = cx.events.iter().any(|e| {
-                perspective.can_see(&e.audience)
-                    && matches!(&e.event, wire::GameEvent::UnitRemoved { unit_id, .. } if unit_id == id)
-            });
-            if after.unit_for(perspective, id).is_none() && !explained {
-                derived.push(wire::GameEvent::UnitRemoved {
-                    unit_id: id.clone(),
-                    reason: "no longer in view".to_owned(),
-                });
-            }
-        }
-        // An enemy stack changes for this perspective only by appearing or vanishing.
-        for (key, ids) in &after.stacks {
-            let changed = before
-                .stacks
-                .get(key)
-                .is_none_or(|old| sees_side(perspective, key.1) && old != ids);
-            if changed {
-                derived.push(wire::GameEvent::StackUpdated {
-                    stack: Board::stack_for(perspective, key, ids),
-                });
-            }
-        }
-        for (hex, side) in before.stacks.keys() {
-            if !after.stacks.contains_key(&(hex.clone(), *side)) {
-                derived.push(wire::GameEvent::StackRemoved {
-                    hex: hex.to_string(),
-                    side: *side,
-                });
-            }
-        }
-        let markers = |board: &Board| -> BTreeMap<String, wire::Marker> {
-            board.markers[index]
-                .iter()
-                .map(|m| (m.id.clone(), m.clone()))
-                .collect()
-        };
-        let (m0, m1) = (markers(before), markers(&after));
-        for (id, marker) in &m1 {
-            if m0.get(id) != Some(marker) {
-                derived.push(wire::GameEvent::MarkerPlaced {
-                    marker: marker.clone(),
-                });
-            }
-        }
-        for id in m0.keys() {
-            if !m1.contains_key(id) {
-                derived.push(wire::GameEvent::MarkerRemoved {
-                    marker_id: id.clone(),
-                });
+        for (index, perspective) in BOARDS.into_iter().enumerate() {
+            let audience = match perspective {
+                Perspective::Side(side) => Audience::SideOnly(side),
+                _ => Audience::Operator,
+            };
+            for event in diff(before, &after, index, perspective, &cx.events[self.mark..]) {
+                derived.push(EngineEvent::new(audience.clone(), event));
             }
         }
         for event in derived {
-            cx.emit(EngineEvent::new(audience.clone(), event));
+            cx.emit(event);
+        }
+        self.last = state.clone();
+        self.mark = cx.events.len();
+    }
+}
+
+/// What changed between two boards for one board perspective (`index` in [`BOARDS`]), given the
+/// events emitted in between.
+fn diff(
+    before: &Board,
+    after: &Board,
+    index: usize,
+    perspective: Perspective,
+    since: &[EngineEvent],
+) -> Vec<wire::GameEvent> {
+    let mut derived = Vec::new();
+    for (id, unit) in after.units_for(perspective) {
+        if before.unit_for(perspective, id) != Some(unit) {
+            derived.push(wire::GameEvent::UnitUpdated { unit: unit.clone() });
         }
     }
+    for (id, _) in before.units_for(perspective) {
+        let explained = since.iter().any(|e| {
+            perspective.can_see(&e.audience)
+                && matches!(&e.event, wire::GameEvent::UnitRemoved { unit_id, .. } if unit_id == id)
+        });
+        if after.unit_for(perspective, id).is_none() && !explained {
+            derived.push(wire::GameEvent::UnitRemoved {
+                unit_id: id.clone(),
+                reason: "no longer in view".to_owned(),
+            });
+        }
+    }
+    // A stack changes for this perspective when what it sees of it changes: an enemy stack only
+    // when its counters do, never when something attaches inside one.
+    for (key, ids) in &after.stacks {
+        let stack = Board::stack_for(perspective, key, ids);
+        let changed = before
+            .stacks
+            .get(key)
+            .is_none_or(|old| Board::stack_for(perspective, key, old) != stack);
+        if changed {
+            derived.push(wire::GameEvent::StackUpdated { stack });
+        }
+    }
+    for (hex, side) in before.stacks.keys() {
+        if !after.stacks.contains_key(&(hex.clone(), *side)) {
+            derived.push(wire::GameEvent::StackRemoved {
+                hex: hex.to_string(),
+                side: *side,
+            });
+        }
+    }
+    let markers = |board: &Board| -> BTreeMap<String, wire::Marker> {
+        board.markers[index]
+            .iter()
+            .map(|m| (m.id.clone(), m.clone()))
+            .collect()
+    };
+    let (m0, m1) = (markers(before), markers(after));
+    for (id, marker) in &m1 {
+        if m0.get(id) != Some(marker) {
+            derived.push(wire::GameEvent::MarkerPlaced {
+                marker: marker.clone(),
+            });
+        }
+    }
+    for id in m0.keys() {
+        if !m1.contains_key(id) {
+            derived.push(wire::GameEvent::MarkerRemoved {
+                marker_id: id.clone(),
+            });
+        }
+    }
+    derived
 }
 
 /// A unit's full board view (own side or operator only).
@@ -675,9 +819,10 @@ reorganization, attrition, construction, training, supply distribution, coastal 
 convoy arrivals, the Commonwealth fleet and land-support air missions; then Player A runs \
 reserve designation, movement and combat (repeatable), truck convoys, rail, repair and patrols, \
 and Player B does the same. Every action costs capability points; supplies (fuel, ammunition, \
-stores, water) must reach units by truck from dumps and ports. You see the presence of enemy \
-stacks but not their contents. Steps the engine does not implement yet are skipped and reported \
-as such.";
+stores, water) must reach units by truck from dumps and ports. You see every enemy counter on the \
+map by its printed face (designation, type, size) and watch it move, but not what it contains: \
+attached units, strength, supplies or status. Steps the engine does not implement yet are skipped \
+and reported as such.";
 
 /// The `observe` report for a perspective.
 pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspective) -> Value {
@@ -721,12 +866,30 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             }),
         );
     }
-    let enemy_stacks: Vec<String> = state
-        .stacks()
-        .keys()
-        .filter(|(_, side)| !sees_side(perspective, *side))
-        .map(|(hex, _)| hex.to_string())
-        .collect();
+    // The enemy counters on the map by printed face, counted by type and size per hex; inspecting
+    // a hex lists each counter's face with its id (land:3.62).
+    let mut enemy_counters: BTreeMap<String, BTreeMap<String, u32>> = BTreeMap::new();
+    for ((hex, side), members) in state.stacks() {
+        if sees_side(perspective, side) {
+            continue;
+        }
+        let faces = enemy_counters.entry(hex.to_string()).or_default();
+        for u in members.iter().filter(|u| is_map_counter(content, state, u)) {
+            let face = counter_face(content, u);
+            *faces
+                .entry(format!("{} {}", face.kind, face.size).trim().to_owned())
+                .or_default() += 1;
+        }
+        for _ in state
+            .land
+            .breakdown
+            .markers
+            .values()
+            .filter(|m| m.side == side && m.hex == hex)
+        {
+            *faces.entry("broken_vehicle marker".to_owned()).or_default() += 1;
+        }
+    }
     json!({
         "game": "The Campaign for North Africa",
         "scenario": content.scenario.meta.name,
@@ -780,7 +943,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "positions": state.land.combat.positions.iter().filter(|(id,_)| state.land.units.get(*id).is_some_and(|u| sees_side(perspective,u.side))).collect::<BTreeMap<_,_>>(),
             "position_orders": state.land.combat.position_orders.iter().filter(|(seat,_)| sees_side(perspective,seat.side)).collect::<BTreeMap<_,_>>(),
         },
-        "enemy_stack_hexes": enemy_stacks,
+        "enemy_counters": enemy_counters,
         "pending_decisions": pending_for(state, perspective),
         "result": state.result,
     })
@@ -795,10 +958,21 @@ fn flies_air(perspective: Perspective) -> bool {
     }
 }
 
+/// Whether `perspective` gets ration problems as unit lists in `observe`: the logistics seat that
+/// feeds the units, and the side and operator views. Other seats get the counts.
+fn feeds_units(perspective: Perspective) -> bool {
+    match perspective {
+        Perspective::Seat(seat) => seat.role == Role::Logistics,
+        Perspective::Side(_) | Perspective::Operator => true,
+    }
+}
+
 /// Own units with a current ration or water problem, grouped by problem as lists of unit ids:
 /// on half rations, by consecutive short weeks, by consecutive short water stages. Each unit's
 /// full record is in `inspect`; listing every unit's bookkeeping here was three quarters of a
-/// seat's observation, paid in model tokens on every decision. Empty when nothing is wrong.
+/// seat's observation, paid in model tokens on every decision. Seats other than logistics get
+/// each list's length instead (late in a turn the lists alone were 12 KB). Empty when nothing is
+/// wrong.
 fn ration_problems(state: &State, perspective: Perspective) -> serde_json::Map<String, Value> {
     let mut half = Vec::new();
     let mut weeks: BTreeMap<String, Vec<String>> = BTreeMap::new();
@@ -829,6 +1003,33 @@ fn ration_problems(state: &State, perspective: Perspective) -> serde_json::Map<S
         }
     }
     let mut out = serde_json::Map::new();
+    if !feeds_units(perspective) {
+        let count = |groups: &BTreeMap<String, Vec<String>>| -> BTreeMap<String, usize> {
+            groups.iter().map(|(k, v)| (k.clone(), v.len())).collect()
+        };
+        if !half.is_empty() {
+            out.insert("half_rations_units".into(), json!(half.len()));
+        }
+        if !weeks.is_empty() {
+            out.insert(
+                "short_of_stores_units_by_consecutive_weeks".into(),
+                json!(count(&weeks)),
+            );
+        }
+        if !water.is_empty() {
+            out.insert(
+                "short_of_water_units_by_consecutive_stages".into(),
+                json!(count(&water)),
+            );
+        }
+        if !out.is_empty() {
+            out.insert(
+                "detail".into(),
+                json!("the logistics seat sees the unit lists; inspect a unit for its record"),
+            );
+        }
+        return out;
+    }
     if !half.is_empty() {
         out.insert("half_rations".into(), json!(half));
     }
@@ -850,8 +1051,14 @@ pub(crate) fn inspect(
     strict: bool,
 ) -> Result<Value, Rejection> {
     let hidden = || illegal(format!("{target}: unknown or not visible"));
+    let face_only = "printed face only: what the counter contains is not visible (land:3.62)";
     if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
         if !sees_side(perspective, unit.side) {
+            // An enemy counter on the map shows its face; anything else about enemy units,
+            // including whether an attached unit exists, is answered like an unknown id.
+            if is_map_counter(content, state, unit) {
+                return Ok(json!({ "unit": counter_face(content, unit), "visibility": face_only }));
+            }
             return Err(hidden());
         }
         let view = unit_view(content, unit);
@@ -912,7 +1119,7 @@ pub(crate) fn inspect(
     }
     if let Some(marker) = state.land.breakdown.markers.get(target) {
         if !sees_side(perspective, marker.side) {
-            return Err(hidden());
+            return Ok(json!({ "unit": marker_face(marker), "visibility": face_only }));
         }
         return Ok(json!({"broken_vehicles":marker}));
     }
@@ -963,7 +1170,22 @@ pub(crate) fn inspect(
                     "units": members.iter().map(|u| unit_view(content, u)).collect::<Vec<_>>(),
                 }));
             } else {
-                stacks.push(json!({ "side": side, "units": "hidden (land:3.6)" }));
+                let mut counters: Vec<wire::UnitView> = members
+                    .iter()
+                    .filter(|u| is_map_counter(content, state, u))
+                    .map(|u| counter_face(content, u))
+                    .collect();
+                counters.extend(
+                    state
+                        .land
+                        .breakdown
+                        .markers
+                        .values()
+                        .filter(|m| m.side == side && &m.hex == canonical)
+                        .map(marker_face),
+                );
+                counters.sort_by(|a, b| a.id.cmp(&b.id));
+                stacks.push(json!({ "side": side, "counters": counters, "visibility": face_only }));
             }
         }
         return Ok(json!({

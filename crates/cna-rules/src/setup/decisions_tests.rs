@@ -75,7 +75,7 @@ fn finish(c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
 /// Cases: scen:59.2, scen:59.42, land:3.62
 /// Interpretations: interp:scen-0005
 #[test]
-fn private_choices_publish_presence_only_after_the_entire_window_and_preserve_trucks() {
+fn private_choices_publish_faces_only_after_the_entire_window_and_preserve_trucks() {
     let c = content();
     let initial = State::new(&c).unwrap();
     let expected =
@@ -190,8 +190,14 @@ fn private_choices_publish_presence_only_after_the_entire_window_and_preserve_tr
         .iter()
         .find(|s| s.side == Side::Axis && s.hex == hex.as_str())
         .unwrap();
-    assert!(stack.unit_ids.is_empty() && stack.visible_count.is_none());
-    assert!(!enemy.units.contains_key(unit.as_str()));
+    // Rules as written, the placed counters show the other side their faces only.
+    assert_eq!(stack.visible_count, Some(stack.unit_ids.len() as u32));
+    for id in &stack.unit_ids {
+        crate::testkit::assert_face(&serde_json::to_value(&enemy.units[id]).unwrap());
+    }
+    if let Some(face) = enemy.units.get(unit.as_str()) {
+        crate::testkit::assert_face(&serde_json::to_value(face).unwrap());
+    }
 }
 
 /// Cases: scen:59.2, land:8.13
@@ -1088,19 +1094,25 @@ fn every_placement_at_real_setup_closure_has_an_owner_unit_update() {
             vec![&expected],
             "missing or duplicate operator closure update for {id}"
         );
-        assert!(
-            !t.events
-                .iter()
-                .any(|e| Perspective::Side(side.opponent()).can_see(&e.audience)
-                    && matches!(&e.event, GameEvent::UnitUpdated {unit} if unit.id == id.as_str()))
-        );
+        // The other side gets the placed counter's face, nothing more (land:3.62).
+        for e in t
+            .events
+            .iter()
+            .filter(|e| Perspective::Side(side.opponent()).can_see(&e.audience))
+        {
+            if let GameEvent::UnitUpdated { unit } = &e.event
+                && unit.id == id.as_str()
+            {
+                crate::testkit::assert_face(&serde_json::to_value(unit).unwrap());
+            }
+        }
     }
 }
 
 /// Cases: scen:59.2, land:3.6, land:3.62, airlog:54.11
 /// Interpretations: interp:scen-0005
 #[test]
-fn closure_events_disclose_presence_only_and_sort_dump_markers_by_public_id() {
+fn closure_events_disclose_faces_only_and_sort_dump_markers_by_public_id() {
     let c = content();
     let mut state = State::new(&c).unwrap();
     state.setup.started = true;
@@ -1166,6 +1178,10 @@ fn closure_events_disclose_presence_only_and_sort_dump_markers_by_public_id() {
         },
     );
     b.state.setup.placement_order.insert(ids[1].clone(), 2);
+    // The second unit is attached to the first, so its counter is not on the map (land:4.25).
+    let second = b.state.land.units.get_mut(&ids[1]).unwrap();
+    second.attached_to = Some(ids[0].clone());
+    second.detached = false;
     b.state.land.units.get_mut(&ids[0]).unwrap().toe =
         Some(cna_content::units::Toe::Under { under: 1 });
     for dump in b.state.logistics.dumps.values_mut() {
@@ -1195,13 +1211,16 @@ fn closure_events_disclose_presence_only_and_sort_dump_markers_by_public_id() {
         .collect();
     assert_eq!(stacks.len(), 1);
     assert_eq!(stacks[0].hex, "A0101");
-    assert_eq!(stacks[0].visible_count, None);
-    assert!(stacks[0].unit_ids.is_empty());
-    assert!(
-        !seen
-            .iter()
-            .any(|e| matches!(&e.event, GameEvent::UnitUpdated {unit} if unit.side == Side::Axis))
-    );
+    assert_eq!(stacks[0].unit_ids, vec![ids[0].to_string()]);
+    assert_eq!(stacks[0].visible_count, Some(1));
+    for e in &seen {
+        if let GameEvent::UnitUpdated { unit } = &e.event
+            && unit.side == Side::Axis
+        {
+            assert_eq!(unit.id, ids[0].as_str());
+            crate::testkit::assert_face(&serde_json::to_value(unit).unwrap());
+        }
+    }
     let markers: Vec<_> = seen
         .iter()
         .filter_map(|e| match &e.event {

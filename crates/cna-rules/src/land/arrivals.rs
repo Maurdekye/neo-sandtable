@@ -1778,11 +1778,16 @@ mod tests {
         let u = &game.state.land.units[&id];
         assert!(in_withdrawal_city(&c, &u.location));
         assert_eq!(u.cp_spent_quarters, 0);
+        // Rules as written, counters on the map show the other side their faces only.
         let enemy = Cna::dev().view(&c, &game.state, Perspective::Side(Side::Axis));
-        assert!(!enemy.units.contains_key(id.as_str()));
         for stack in enemy.stacks.iter().filter(|s| s.side == Side::Commonwealth) {
-            assert!(stack.unit_ids.is_empty());
-            assert_eq!(stack.visible_count, None);
+            assert_eq!(stack.visible_count, Some(stack.unit_ids.len() as u32));
+            for unit in &stack.unit_ids {
+                crate::testkit::assert_face(&serde_json::to_value(&enemy.units[unit]).unwrap());
+            }
+        }
+        if let Some(face) = enemy.units.get(id.as_str()) {
+            crate::testkit::assert_face(&serde_json::to_value(face).unwrap());
         }
         assert!(game.state.land.arrivals.supply_finished.contains("1:3"));
     }

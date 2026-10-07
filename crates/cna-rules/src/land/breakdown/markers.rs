@@ -215,11 +215,10 @@ mod tests {
             1
         );
         let id = a.land.breakdown.markers.keys().next().unwrap().clone();
-        assert!(
-            Cna::dev()
-                .inspect(&c, &a, Perspective::Side(Side::Commonwealth), &id)
-                .is_err()
-        );
+        // The marker is a counter on the map: the other side sees it, never its contents.
+        let seen = Cna::dev().inspect(&c, &a, Perspective::Side(Side::Commonwealth), &id);
+        crate::testkit::assert_face_only(&seen);
+        assert_eq!(seen.unwrap()["unit"]["kind"], "broken_vehicle");
         assert_eq!(
             Cna::dev()
                 .inspect(&c, &a, Perspective::Side(Side::Axis), &id)

@@ -443,7 +443,7 @@ fn undisclosed_zone_stops_on_entry_without_hypothetical_strength_leak() {
 }
 /// Cases: land:3.61, land:3.62, land:19.44
 #[test]
-fn complete_move_reopens_for_other_units_and_enemy_receives_only_presence() {
+fn complete_move_reopens_for_other_units_and_enemy_receives_only_faces() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
     let other = "it.libyan_tank_command.lxii_l_tank_bn";
     place(&mut s, other, "C4020");
@@ -473,9 +473,21 @@ fn complete_move_reopens_for_other_units_and_enemy_receives_only_presence() {
         .iter()
         .filter(|e| enemy.can_see(&e.audience))
         .collect();
-    assert!(observed.iter().all(|e|matches!(&e.event,GameEvent::StackUpdated {stack} if stack.unit_ids.is_empty() && stack.visible_count.is_none()) || matches!(&e.event,GameEvent::StackRemoved {..})));
+    // Rules as written, the enemy watches the counter move by its printed face (land:3.62).
+    for e in &observed {
+        match &e.event {
+            GameEvent::StackUpdated { stack } => {
+                assert_eq!(stack.visible_count, Some(stack.unit_ids.len() as u32))
+            }
+            GameEvent::UnitUpdated { unit } => {
+                crate::testkit::assert_face(&serde_json::to_value(unit).unwrap())
+            }
+            GameEvent::StackRemoved { .. } | GameEvent::UnitMoved { .. } => {}
+            other => panic!("the enemy saw {other:?}"),
+        }
+    }
     assert!(!observed.is_empty());
-    assert!(Cna::dev().inspect(&c, &t.game.state, enemy, TANK).is_err());
+    crate::testkit::assert_face_only(&Cna::dev().inspect(&c, &t.game.state, enemy, TANK));
     let t = respond(&c, &t.game, seat(&t.game), Value::Null, true).unwrap();
     assert!(t.game.state.decisions.pending.is_empty());
 }
@@ -1352,11 +1364,12 @@ fn supplied_baseline_remains_legal_with_half_rations_and_a_dry_candidate() {
             report["movement_restrictions"][0]["restrictions"]["may_move"],
             false
         );
-        assert!(
-            Cna { strict }
-                .inspect(&c, &g.state, Perspective::Side(Side::Commonwealth), TANK)
-                .is_err()
-        );
+        crate::testkit::assert_face_only(&Cna { strict }.inspect(
+            &c,
+            &g.state,
+            Perspective::Side(Side::Commonwealth),
+            TANK,
+        ));
     }
 }
 
@@ -1663,7 +1676,7 @@ fn reaction_interrupt_replans_and_survives_checkpoint_without_breaking_off_cost(
     );
     assert!(t.game.state.land.reaction.continuation.is_none());
     let enemy = Cna::full().inspect(&c, &t.game.state, Perspective::Seat(defender_seat), TANK);
-    assert!(enemy.is_err());
+    crate::testkit::assert_face_only(&enemy);
 }
 /// Cases: land:8.51, land:8.52, land:8.55, land:10.6
 #[test]
@@ -2167,9 +2180,13 @@ fn repeated_movement_does_not_disclose_combat_contents_of_nearby_enemy_stack() {
         .unwrap()
         .id
         .clone();
+    // The same printed HQ face in both worlds; only what is attached to it differs.
+    place(&mut a, hq.as_str(), "C4022");
+    let leg = a.land.units.get_mut(&LEG.into()).unwrap();
+    leg.attached_to = Some(hq.clone());
+    leg.detached = false;
     let mut b = a.clone();
     b.land.units.get_mut(&LEG.into()).unwrap().location = Location::Eliminated;
-    place(&mut b, hq.as_str(), "C4022");
     for s in [&mut a, &mut b] {
         super::super::cycles::finish_movement(&c, s);
         s.cursor.cycle = 2;
@@ -2178,9 +2195,11 @@ fn repeated_movement_does_not_disclose_combat_contents_of_nearby_enemy_stack() {
     assert!(!a.land.movement.cycle_blocked.contains(&TANK.into()));
     assert!(!b.land.movement.cycle_blocked.contains(&TANK.into()));
 }
+/// Rules as written, the enemy watches a counter move between occupied hexes by its printed
+/// face; a pass tells it nothing, and neither does anything hidden about the mover.
 /// Cases: land:3.61, land:3.62, land:8.13
 #[test]
-fn occupied_to_occupied_counter_traffic_and_private_pass_emit_no_enemy_events() {
+fn counter_traffic_shows_only_faces_and_private_pass_emits_no_enemy_events() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
     place(&mut s, "it.libyan_tank_command.lxii_l_tank_bn", "C4020");
     place(&mut s, "it.libyan_tank_command.lxiii_l_tank_bn", "C4021");
@@ -2204,26 +2223,37 @@ fn occupied_to_occupied_counter_traffic_and_private_pass_emit_no_enemy_events() 
             public_explanation: None,
         })
     };
-    let pass_command = command(Value::Null);
     let move_command = command(json!([{"unit":TANK,"path":["C4021"]}]));
+    let mut tired = g.clone();
+    tired
+        .state
+        .land
+        .units
+        .get_mut(&TANK.into())
+        .unwrap()
+        .cohesion_quarters -= 8;
     crate::testkit::assert_actions_indistinguishable(
         &Cna::full(),
         &c,
-        (&g, &pass_command),
         (&g, &move_command),
+        (&tired, &move_command),
         Side::Commonwealth,
     );
     let enemy = Perspective::Side(Side::Commonwealth);
     let pass = respond(&c, &g, own, Value::Null, true).unwrap();
     let moved = respond(&c, &g, own, json!([{"unit":TANK,"path":["C4021"]}]), true).unwrap();
-    for t in [&pass, &moved] {
-        assert_eq!(
-            t.events
-                .iter()
-                .filter(|e| enemy.can_see(&e.audience))
-                .count(),
-            0
-        );
+    assert_eq!(
+        pass.events
+            .iter()
+            .filter(|e| enemy.can_see(&e.audience))
+            .count(),
+        0
+    );
+    for e in moved.events.iter().filter(|e| enemy.can_see(&e.audience)) {
+        if let GameEvent::UnitUpdated { unit } = &e.event {
+            assert_eq!(unit.hex.as_deref(), Some("C4021"));
+            crate::testkit::assert_face(&serde_json::to_value(unit).unwrap());
+        }
     }
     assert!(
         moved
@@ -2231,11 +2261,18 @@ fn occupied_to_occupied_counter_traffic_and_private_pass_emit_no_enemy_events() 
             .iter()
             .any(|e| matches!(e.event, GameEvent::UnitMoved { .. }))
     );
+    let mut moved_tired = moved.game.state.clone();
+    moved_tired
+        .land
+        .units
+        .get_mut(&TANK.into())
+        .unwrap()
+        .cohesion_quarters -= 8;
     crate::testkit::assert_indistinguishable(
         &Cna::full(),
         &c,
-        &pass.game.state,
         &moved.game.state,
+        &moved_tired,
         Side::Commonwealth,
     );
 }
@@ -3100,13 +3137,16 @@ fn reaction_divides_trucks_then_moves_component_with_checkpoint_and_rollback() {
         serde_json::to_value(respond(&c, &t.game, seat, answer, true).unwrap().game).unwrap(),
         serde_json::to_value(&moved.game).unwrap()
     );
-    assert!(
-        moved
-            .events
-            .iter()
-            .filter(|e| matches!(e.event, GameEvent::UnitUpdated { .. }))
-            .all(|e| e.audience != Audience::SideOnly(Side::Axis))
-    );
+    // The split-off component is a new counter on the map: the other side sees its face only.
+    for e in moved
+        .events
+        .iter()
+        .filter(|e| e.audience == Audience::SideOnly(Side::Axis))
+    {
+        if let GameEvent::UnitUpdated { unit } = &e.event {
+            crate::testkit::assert_face(&serde_json::to_value(unit).unwrap());
+        }
+    }
 }
 /// The scripted reactor uses a declared, physically motorized option; it never probes the mover.
 /// Cases: land:8.53, land:8.55, land:8.56
