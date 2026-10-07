@@ -9,7 +9,8 @@
 //! that must not learn it. `assert_action_indistinguishable` does the same for an action: the
 //! same command evaluated on both states must be accepted or rejected alike (a server preflight
 //! is exactly this evaluation, rule 7), deliver the same events to every perspective of the side,
-//! and leave states that still look identical.
+//! and leave states that still look identical; `assert_actions_indistinguishable` compares two
+//! different hidden actions (a pass against counter traffic the enemy must not notice).
 
 use std::collections::BTreeSet;
 
@@ -107,8 +108,21 @@ pub(crate) fn assert_action_indistinguishable(
     command: &Command,
     side: Side,
 ) {
-    let ra = evaluate(ruleset, content, a, command);
-    let rb = evaluate(ruleset, content, b, command);
+    assert_actions_indistinguishable(ruleset, content, (a, command), (b, command), side);
+}
+
+/// Assert that two different hidden actions teach `side` nothing: e.g. the enemy passing versus
+/// moving counters between hexes it already occupies. Same comparison as
+/// `assert_action_indistinguishable`, with each game evaluated under its own command.
+pub(crate) fn assert_actions_indistinguishable(
+    ruleset: &Cna,
+    content: &CnaContent,
+    (a, command_a): (&Game<Cna>, &Command),
+    (b, command_b): (&Game<Cna>, &Command),
+    side: Side,
+) {
+    let ra = evaluate(ruleset, content, a, command_a);
+    let rb = evaluate(ruleset, content, b, command_b);
     if let Some((path, x, y)) = first_difference(
         &learned_from(&ra, side),
         &learned_from(&rb, side),
