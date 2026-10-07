@@ -249,3 +249,7 @@ and revision, including a possible duplicate when delivery committed just before
 crash. Old journals retain their existing lifetime cost deltas, but token channels
 that were discarded cannot be reconstructed. Graceful cancellation records the
 incomplete turn immediately and preserves its full reservation.
+
+The preparation checkpoint for the ten-seat Graziani preset is documented in
+[PRESET.md](PRESET.md). Native admission remains closed until its estimate bound
+and installed enforcement are verified; the current evidence is offline only.

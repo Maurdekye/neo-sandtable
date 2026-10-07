@@ -1,5 +1,5 @@
 //! Durable per-seat supervisor. The CLI owns compaction; the game owns notebooks.
-use crate::{Demo, combine_results};
+use crate::{Demo, budget::Admission, combine_results};
 use cna_core::ids::SeatId;
 use cna_seats::{
     driver::{CliKind, DriverError, SeatDriver},
@@ -7,8 +7,11 @@ use cna_seats::{
 };
 use cna_server::CampaignStatus;
 use futures_util::{StreamExt, stream::FuturesUnordered};
-use std::{collections::BTreeSet, time::Duration};
-use tokio::{sync::watch, time::Instant};
+use std::{collections::BTreeSet, sync::Arc, time::Duration};
+use tokio::{
+    sync::{OwnedSemaphorePermit, Semaphore, watch},
+    time::Instant,
+};
 
 fn elapsed(start: Instant) -> u64 {
     u64::try_from(start.elapsed().as_millis())
@@ -69,19 +72,24 @@ impl Demo {
         if result.is_ok() {
             let (cancel, peer) = watch::channel(false);
             let mut tasks = FuturesUnordered::new();
+            let slots = Arc::new(Semaphore::new(2));
             for (seat, driver) in drivers.iter_mut() {
                 let seat = *seat;
                 let stop = stop.clone();
                 let peer = peer.clone();
+                let slots = slots.clone();
                 tasks.push(async move {
                     (
                         seat,
-                        self.durable_seat(seat, driver.as_mut(), stop, peer).await,
+                        self.durable_seat(seat, driver.as_mut(), stop, peer, slots)
+                            .await,
                     )
                 });
             }
             while let Some((seat, outcome)) = tasks.next().await {
-                let _ = cancel.send(true);
+                if self.config.run.is_none() || outcome.is_err() {
+                    let _ = cancel.send(true);
+                }
                 result = combine_results(result, outcome.map_err(|e| format!("{seat}: {e}")));
             }
         } else {
@@ -105,6 +113,7 @@ impl Demo {
         driver: &mut dyn SeatDriver,
         mut stop: watch::Receiver<bool>,
         mut peer: watch::Receiver<bool>,
+        slots: Arc<Semaphore>,
     ) -> Result<(), String> {
         let epoch = self.epochs[&seat];
         let mut binding = self.handle.watch_seat(seat);
@@ -139,15 +148,34 @@ impl Demo {
             .wall_seconds
             .saturating_mul(1000)
             .saturating_sub(used);
+        let mut permit: Option<OwnedSemaphorePermit> = None;
         let mut result = tokio::select! {
             _=invalidated=>Err("controller binding changed or paused; old session stopped".into()),
             _=cancelled=>{self.sink.system(seat,"campaign session stopped; journal retained for resume");Ok(())},
-            r=tokio::time::timeout(Duration::from_millis(remaining),self.durable_work(seat,driver))=>r.unwrap_or_else(|_|Err("durable wall-clock budget exhausted".into())),
+            r=tokio::time::timeout(Duration::from_millis(remaining),self.durable_work(seat,driver,slots,&mut permit))=>r.unwrap_or_else(|_|Err("durable wall-clock budget exhausted".into())),
         };
         let stopped = tokio::time::timeout(Duration::from_secs(5), driver.stop())
             .await
             .map_err(|_| "CLI stop exceeded five seconds".to_string());
         result = combine_results(result, stopped);
+        drop(permit);
+        if self.config.run.is_some()
+            && result.as_ref().is_err_and(|e| {
+                matches!(
+                    e.as_str(),
+                    "durable turn budget exhausted"
+                        | "durable tool budget exhausted"
+                        | "durable wall-clock budget exhausted"
+                )
+            })
+        {
+            let reason = result.as_ref().unwrap_err().clone();
+            self.sink.system(
+                seat,
+                format!("automatic budget stop: {reason}; lifetime journal retained"),
+            );
+            result = self.handle.pause(true).await.map_err(|e| e.to_string());
+        }
         result = combine_results(
             result,
             self.journal
@@ -172,7 +200,13 @@ impl Demo {
         }
         result
     }
-    async fn durable_work(&self, seat: SeatId, driver: &mut dyn SeatDriver) -> Result<(), String> {
+    async fn durable_work(
+        &self,
+        seat: SeatId,
+        driver: &mut dyn SeatDriver,
+        slots: Arc<Semaphore>,
+        permit: &mut Option<OwnedSemaphorePermit>,
+    ) -> Result<(), String> {
         let journal = self.journal.as_ref().ok_or("missing journal")?;
         let limits = self.config.session.as_ref().ok_or("missing limits")?;
         let mut windows = self.handle.watch_seat(seat);
@@ -184,6 +218,7 @@ impl Demo {
                 match self.handle.status() {
                     CampaignStatus::Finished { .. } => return Ok(()),
                     CampaignStatus::Running => {}
+                    CampaignStatus::Paused if self.config.run.is_some() => return Ok(()),
                     other => return Err(format!("campaign stopped: {other:?}")),
                 }
                 let p = windows.borrow_and_update().pending.first().cloned();
@@ -225,6 +260,59 @@ impl Demo {
                 result?;
                 continue;
             }
+            if self.config.run.is_some() {
+                *permit = Some(
+                    slots
+                        .clone()
+                        .acquire_owned()
+                        .await
+                        .map_err(|e| e.to_string())?,
+                );
+                if !matches!(self.handle.status(), CampaignStatus::Running) {
+                    return Ok(());
+                }
+                let current = self.handle.seat(seat);
+                if current.binding.controller_epoch != self.epochs[&seat] {
+                    return Err("binding changed while waiting for model slot".into());
+                }
+                if !current
+                    .pending
+                    .iter()
+                    .any(|p| p.id == pending.id && p.revision == pending.revision)
+                {
+                    permit.take();
+                    continue;
+                }
+                let bound = driver.estimate_bound();
+                let admission = journal.admit(seat, bound.as_ref())?;
+                let applied = match admission {
+                    Admission::Stop(reason) => {
+                        self.sink.system(
+                            seat,
+                            format!("automatic budget stop: {reason}; no new model turn"),
+                        );
+                        self.handle.pause(true).await.map_err(|e| e.to_string())?;
+                        return Ok(());
+                    }
+                    Admission::Ready {
+                        remaining_usd: Some(usd),
+                        ..
+                    } => driver.set_reported_cost_limit(usd),
+                    Admission::Ready {
+                        remaining_tokens: Some(tokens),
+                        ..
+                    } => driver.set_token_limit(tokens),
+                    _ => return Err("missing enforced budget".into()),
+                };
+                if let Err(error) = applied {
+                    self.sink.system(
+                        seat,
+                        format!("budget enforcement unavailable: {error}; no model turn"),
+                    );
+                    self.handle.pause(true).await.map_err(|e| e.to_string())?;
+                    return Ok(());
+                }
+            }
             if !started {
                 let saved = journal.snapshot()?.seats[&seat].session.clone();
                 let resume = saved.as_ref().map(|s| s.session_id.as_str());
@@ -245,6 +333,8 @@ impl Demo {
                         journal.recover_process(seat, true)?;
                         driver.stop().await;
                         reseed = true;
+                        journal.release_admission(seat)?;
+                        permit.take();
                         continue;
                     }
                     Err(error) => return Err(error),
@@ -319,6 +409,16 @@ impl Demo {
                 Err(ref e) => Some(e.to_string()),
             };
             if let Some(error) = error {
+                if self.config.run.is_some()
+                    && error.to_ascii_lowercase().contains("max_budget_usd")
+                {
+                    self.sink.system(
+                        seat,
+                        "provider reported-cost limit reached; campaign paused",
+                    );
+                    self.handle.pause(true).await.map_err(|e| e.to_string())?;
+                    return Ok(());
+                }
                 let saved = journal.snapshot()?.seats[&seat].session.clone();
                 let reseed_now =
                     first && saved.as_ref().is_some_and(|s| s.resumed) && unavailable(&error);
@@ -326,6 +426,8 @@ impl Demo {
                     journal.recover_process(seat, reseed_now)?;
                     driver.stop().await;
                     started = false;
+                    journal.release_admission(seat)?;
+                    permit.take();
                     reseed = reseed_now;
                     self.sink.system(
                         seat,
@@ -339,8 +441,13 @@ impl Demo {
                 }
                 return Err(error);
             }
-            first = false;
-            reseed = false;
+            if self.config.run.is_some() {
+                tokio::time::timeout(Duration::from_secs(5), driver.stop())
+                    .await
+                    .map_err(|_| "CLI parking exceeded five seconds")?;
+                permit.take();
+                started = false;
+            }
             if self
                 .handle
                 .seat(seat)
@@ -350,6 +457,19 @@ impl Demo {
             {
                 return Err("CLI ended without answering the requested decision revision".into());
             }
+            if self.config.run.is_some()
+                && let Admission::Stop(reason) =
+                    journal.admission(seat, driver.estimate_bound().as_ref())?
+            {
+                self.sink.system(
+                    seat,
+                    format!("automatic budget stop: {reason}; journal retained"),
+                );
+                self.handle.pause(true).await.map_err(|e| e.to_string())?;
+                return Ok(());
+            }
+            first = false;
+            reseed = false;
             let record = journal.snapshot()?.seats[&seat].clone();
             self.sink.system(seat,format!("durable turn {} complete ({stage}); calls {}, reported cumulative cost ${:.6}, compactions {}, incomplete telemetry turns {}",record.turns,record.calls,record.reported_cost_usd,record.compactions,record.incomplete_turns));
         }

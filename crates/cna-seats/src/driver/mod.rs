@@ -56,6 +56,9 @@ pub struct Usage {
     pub reasoning_tokens: Option<u64>,
     /// CLI estimate; Claude streaming reports cumulative session cost.
     pub cost_usd: Option<f64>,
+    /// Whether every reported model price basis is list or managed (not unknown/missing).
+    #[serde(default)]
+    pub cost_basis_known: Option<bool>,
 }
 
 /// A quota reading the CLI volunteered (Claude Code emits these on every turn).
@@ -146,12 +149,61 @@ pub struct SessionTelemetry {
     pub context_tokens: Option<u64>,
     pub compactions: u64,
 }
+/// Verified upper bound on one request's client-side estimate, never a billing claim.
+#[derive(Clone, Debug)]
+pub struct EstimateBound {
+    pub pinned_model: String,
+    pub context_tokens: u64,
+    pub output_tokens: u64,
+    pub max_input_or_cache_write_usd_per_token: f64,
+    pub output_usd_per_token: f64,
+    pub evidence: String,
+}
+impl EstimateBound {
+    #[allow(clippy::float_arithmetic)]
+    pub fn ceiling_usd(&self) -> Result<f64, DriverError> {
+        if self.pinned_model.is_empty()
+            || self.evidence.is_empty()
+            || self.context_tokens == 0
+            || self.output_tokens == 0
+            || !self.max_input_or_cache_write_usd_per_token.is_finite()
+            || self.max_input_or_cache_write_usd_per_token <= 0.
+            || !self.output_usd_per_token.is_finite()
+            || self.output_usd_per_token <= 0.
+        {
+            return Err(DriverError::Isolation("unproved estimate bound".into()));
+        }
+        let ceiling = self.context_tokens as f64 * self.max_input_or_cache_write_usd_per_token
+            + self.output_tokens as f64 * self.output_usd_per_token;
+        if !ceiling.is_finite() || ceiling <= 0. {
+            return Err(DriverError::Isolation("invalid estimate ceiling".into()));
+        }
+        Ok(ceiling)
+    }
+}
 /// One seat's CLI session.
 #[async_trait]
 pub trait SeatDriver: Send + Sync {
     fn kind(&self) -> CliKind;
     fn telemetry(&self) -> SessionTelemetry {
         SessionTelemetry::default()
+    }
+    /// None means real admission must fail closed; fake drivers may inject explicit bounds.
+    fn estimate_bound(&self) -> Option<EstimateBound> {
+        None
+    }
+    /// Apply only this seat's remaining provider-reported cost allocation before spawn/resume.
+    /// Drivers without a verified provider enforcement mechanism fail closed.
+    fn set_reported_cost_limit(&mut self, _remaining_usd: f64) -> Result<(), DriverError> {
+        Err(DriverError::Isolation(
+            "driver cannot enforce reported-cost limit".into(),
+        ))
+    }
+    /// Token-budget fallback requires native enforcement, not a guessed USD conversion.
+    fn set_token_limit(&mut self, _remaining: u64) -> Result<(), DriverError> {
+        Err(DriverError::Isolation(
+            "driver cannot enforce token limit".into(),
+        ))
     }
     /// Start (or resume, if `resume_session` is given) the CLI session.
     async fn start(&mut self, resume_session: Option<&str>) -> Result<SessionInfo, DriverError>;

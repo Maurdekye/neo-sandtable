@@ -1,4 +1,5 @@
 //! Server-backed seat launcher with opt-in durable campaign sessions.
+pub mod budget;
 mod campaign;
 pub mod config;
 pub mod journal;
@@ -113,6 +114,12 @@ impl Demo {
                 epochs.insert(*seat, binding.controller_epoch);
             }
         }
+        if let Some(run) = &config.run {
+            handle
+                .set_run_boundary(Some(run.boundary))
+                .await
+                .map_err(|e| e.to_string())?;
+        }
         let id = handle.header(Perspective::Operator).meta.id;
         let journal = if config.session.is_some() {
             Some(Arc::new(journal::SessionJournal::create(
@@ -146,6 +153,7 @@ impl Demo {
                     return Err(format!("{seat}: journal binding was replaced or failed; explicit operator action required"));
                 }
             }
+            if let Some(run)=&saved.config.run {handle.set_run_boundary(Some(run.boundary)).await.map_err(|e|e.to_string())?;}
             Ok(())
         }.await;
         if let Err(error) = checked {
@@ -237,6 +245,20 @@ impl Demo {
             app,
             http,
         })
+    }
+    /// Persist an explicit operator rebalance/boundary change while paused, without resuming.
+    pub async fn reconfigure_run(&mut self, run: budget::RunControl) -> Result<(), String> {
+        self.handle.pause(true).await.map_err(|e| e.to_string())?;
+        self.journal
+            .as_ref()
+            .ok_or("missing journal")?
+            .reconfigure_run(run.clone())?;
+        self.handle
+            .set_run_boundary(Some(run.boundary))
+            .await
+            .map_err(|e| e.to_string())?;
+        self.config.run = Some(run);
+        Ok(())
     }
     pub fn campaign_id(&self) -> String {
         self.handle.header(Perspective::Operator).meta.id
