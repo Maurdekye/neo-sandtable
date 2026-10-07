@@ -69,6 +69,13 @@ pub trait Ruleset {
         perspective: Perspective,
     ) -> cna_protocol::ViewState;
 
+    /// The clock the board shows for `state`. Every perspective sees the same clock, so the
+    /// default takes it from the operator's view; rulesets override it to avoid building a
+    /// whole view just to read the clock.
+    fn clock(&self, content: &Self::Content, state: &Self::State) -> cna_protocol::Clock {
+        self.view(content, state, Perspective::Operator).clock
+    }
+
     /// The board views of several perspectives of one state, in order. Rulesets override it to
     /// share work between perspectives; the result must equal calling `view` for each.
     fn views(

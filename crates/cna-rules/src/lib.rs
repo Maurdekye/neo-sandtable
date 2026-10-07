@@ -148,6 +148,10 @@ impl Ruleset for Cna {
         view::views(content, state, perspectives)
     }
 
+    fn clock(&self, content: &CnaContent, state: &State) -> cna_protocol::Clock {
+        view::wire_clock(content, state)
+    }
+
     fn inspect(
         &self,
         content: &CnaContent,

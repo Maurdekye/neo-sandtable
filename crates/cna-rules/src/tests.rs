@@ -710,6 +710,7 @@ fn shared_views_equal_each_perspectives_own_view() {
                     &ruleset.view(content, &game.state, *p),
                     "{p:?} at {answered}"
                 );
+                assert_eq!(view.clock, ruleset.clock(content, &game.state));
             }
             checked += 1;
         }
