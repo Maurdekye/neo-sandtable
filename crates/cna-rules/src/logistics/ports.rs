@@ -169,6 +169,82 @@ pub fn record_entry(content: &CnaContent, state: &mut State, side: Side, locatio
         });
     entry.owner = side;
 }
+/// A policy refusal retains the authored source context; ordinary supply errors
+/// keep their original category. Consumers must not turn a policy error into a
+/// numeric capacity, omit it during full-profile enumeration, or erase its case.
+/// Cases: airlog:55.11, airlog:55.14, airlog:55.18, scen:60.7
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PortOperationError {
+    Policy(super::port_initialization::PortInitializationError),
+    Supply(SupplyError),
+}
+impl From<SupplyError> for PortOperationError {
+    fn from(value: SupplyError) -> Self {
+        Self::Supply(value)
+    }
+}
+impl From<super::port_initialization::PortInitializationError> for PortOperationError {
+    fn from(value: super::port_initialization::PortInitializationError) -> Self {
+        Self::Policy(value)
+    }
+}
+impl PortOperationError {
+    pub fn into_engine(self) -> cna_core::engine::EngineError {
+        match self {
+            Self::Policy(error) => error.into_engine(),
+            Self::Supply(error) => super::stores::engine(error),
+        }
+    }
+}
+/// Uniform public-content stop before any runtime port or inventory branch.
+/// The dev profile preserves diagnostics for the affected port's operation query.
+/// Cases: airlog:55.18, scen:60.7
+pub fn preflight(content: &CnaContent, strict: bool) -> Result<(), cna_core::engine::EngineError> {
+    let diagnostics = super::port_initialization::unsupported_port_policies(content)
+        .map_err(|error| error.into_engine())?;
+    if strict && let Some(error) = diagnostics.into_iter().next() {
+        return Err(error.into_engine());
+    }
+    Ok(())
+}
+/// Read only through a trusted Port returned by at/lane_destination. Source
+/// policy is checked before old checkpoint state, even if its capacity is zero.
+/// Unknown ownership never supplies an efficiency or shipment budget.
+/// Cases: airlog:55.11, airlog:55.14, airlog:55.18, scen:60.7
+pub fn state<'a>(
+    content: &CnaContent,
+    state: &'a State,
+    port: &Port,
+) -> Result<&'a PortState, PortOperationError> {
+    if let super::port_initialization::InitialPortPolicy::Unknown(error) =
+        super::port_initialization::initial_port_policy(content, port)?
+    {
+        return Err(PortOperationError::Policy(error));
+    }
+    if state.logistics.unknown_ports.contains_key(&port.id) {
+        return Err(SupplyError::Unsupported {
+            case: "airlog:55.18",
+        }
+        .into());
+    }
+    state.logistics.ports.get(&port.id).ok_or_else(|| {
+        SupplyError::Unsupported {
+            case: "airlog:55.11",
+        }
+        .into()
+    })
+}
+/// Canonical capacity query, preserving source errors before looking at any
+/// numeric efficiency. Runtime consumers migrate to this identity-aware path.
+/// Cases: airlog:55.14, airlog:55.18, airlog:55.3
+pub fn capacity_at(
+    content: &CnaContent,
+    state_: &State,
+    port: &Port,
+) -> Result<i64, PortOperationError> {
+    capacity_tons(content, state(content, state_, port)?, port.name).map_err(Into::into)
+}
+
 fn ordinal(stage: WaterStage) -> i32 {
     i32::from(stage.game_turn) * 3 + i32::from(stage.op_stage)
 }
@@ -490,3 +566,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "ports_runtime_tests.rs"]
+mod runtime_tests;

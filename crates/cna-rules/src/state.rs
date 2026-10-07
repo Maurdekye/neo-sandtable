@@ -260,6 +260,10 @@ pub struct LogisticsState {
     pub dump_markers_initialized: bool,
     #[serde(default)]
     pub ports: BTreeMap<String, crate::logistics::ports::PortState>,
+    /// Accepted ownership only for a verified port whose authored efficiency is unknown.
+    /// There is deliberately no numeric capacity, budget or damage fallback here.
+    #[serde(default)]
+    pub unknown_ports: BTreeMap<String, Side>,
     #[serde(default)]
     pub bizerta_open: bool,
     #[serde(default)]
