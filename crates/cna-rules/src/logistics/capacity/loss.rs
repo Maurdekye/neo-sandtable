@@ -396,8 +396,19 @@ pub fn apply_truck_cargo_loss(
         let unit = draft.land.units.get_mut(&id).expect("validated unit");
         unit.trucks = attached;
         unit.transport_trucks = transport;
-        if let Some(stock) = draft.logistics.unit_supply.get_mut(&id) {
-            stock.carried = carried;
+        if let Some(stock) = draft.logistics.unit_supply.get(&id) {
+            let lost = Supplies {
+                ammo: stock.carried.ammo - carried.ammo,
+                fuel: stock.carried.fuel - carried.fuel,
+                stores: stock.carried.stores - carried.stores,
+                water: stock.carried.water - carried.water,
+            };
+            crate::logistics::cargo_history::retire_debit(
+                &mut draft.logistics,
+                &crate::logistics::cargo_history::CargoSite::Unit(id.clone()),
+                lost,
+            )?;
+            draft.logistics.unit_supply.get_mut(&id).unwrap().carried = carried;
         }
     }
     *state = draft;

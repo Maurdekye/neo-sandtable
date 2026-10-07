@@ -40,6 +40,11 @@
 //! carrier (49.18), while other pools still unload before supplying it. Tank fuel
 //! stays exact in tenths; shared pure pricing preserves cumulative source credit.
 //! Breakdown retires/restores explicit pool cohorts before changing truck counts.
+//! Cargo history uses explicit Unit/Pool/Dump/Ship sites and side-local lot identities.
+//! advance charges trusted carrier CP; transfer moves selected histories before physical
+//! inventory changes on the same draft. retire_debit retires automatic stock losses;
+//! supply withdrawals already call it. Planning snapshots the carrier and source sites.
+//! These primitives do not make transfer decisions or authorize cargo movement.
 //!
 //! Answer acceptance uses only the answering side's units, stocks and known conditions,
 //! plus public facts. Hidden opposing state belongs to adjudication after closed windows;
@@ -60,6 +65,7 @@ pub mod baseline;
 pub mod batches;
 pub mod box_handling;
 pub mod capacity;
+pub mod cargo_history;
 pub mod coastal;
 pub mod convoys;
 pub mod distribution;

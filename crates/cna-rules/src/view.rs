@@ -711,6 +711,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
             "squadrons": state.air.squadrons.iter().filter(|(_,s)|sees_side(perspective,s.side)).collect::<BTreeMap<_,_>>(),
         },
         "logistics": {
+            "cargo_history": crate::logistics::cargo_history::disclosed(state,perspective),
             "truck_pool_destinations": state.setup.pool_locations.iter().filter(|(id,_)|state.logistics.truck_pools.iter().any(|p|&p.id==*id&&sees_side(perspective,p.side))).collect::<BTreeMap<_,_>>(),
             "truck_pools": state.logistics.truck_pools.iter().filter(|p|sees_side(perspective,p.side)).collect::<Vec<_>>(),
             "well_conditions": state.logistics.wells.keys().filter_map(|hex| {

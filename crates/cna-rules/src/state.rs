@@ -209,6 +209,9 @@ pub struct LogisticsState {
     pub pool_fuel_segments: BTreeMap<String, crate::logistics::FuelSegmentLedger<String>>,
     #[serde(default)]
     pub pool_fuel_accounts: BTreeMap<String, crate::logistics::FuelFundingAccount>,
+    /// Owner-private loads retain their first carrier's CP allowance across handling.
+    #[serde(default)]
+    pub cargo_history: crate::logistics::cargo_history::CargoHistoryState,
     #[serde(default)]
     pub wells: BTreeMap<HexId, WellState>,
     /// Pipeline connectivity and destroyed status; construction procedures own updates.

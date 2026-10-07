@@ -523,6 +523,26 @@ pub(super) fn withdraw_draws(
                 {
                     continue;
                 }
+                let site = match &source {
+                    SupplySource::UnitStock(id) => {
+                        super::cargo_history::CargoSite::Unit(id.clone())
+                    }
+                    SupplySource::PoolStock(id) => {
+                        super::cargo_history::CargoSite::Pool(id.clone())
+                    }
+                    SupplySource::Dump(id) => super::cargo_history::CargoSite::Dump(id.clone()),
+                    _ => return Err(SupplyError::Invalid),
+                };
+                super::cargo_history::retire_debit(
+                    &mut next,
+                    &site,
+                    Supplies {
+                        fuel: withdrawal.get(),
+                        ammo: amount.ammo.get(),
+                        stores: amount.stores.get(),
+                        water: amount.water.get(),
+                    },
+                )?;
                 let stock = match source {
                     SupplySource::UnitStock(id) => {
                         &mut next
