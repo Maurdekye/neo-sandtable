@@ -418,6 +418,85 @@ fn source_files_lists_exactly_what_the_loaders_read() {
     );
 }
 
+/// A board change that touches no unit (an 8.88 box movement ban expiring with its Operations
+/// Stage) is announced to its owner, and whether the enemy had CP to reset at the same moment
+/// changes nothing the owner receives (server-review: the emitter's no-change shortcut once
+/// missed the cursor, so the expiry was announced only when hidden enemy CP also changed).
+#[test]
+fn stage_end_board_changes_reach_the_owner_whatever_the_enemy_spent() {
+    use crate::logistics::box_handling::{Carrier, record_goods};
+    use crate::seq::{Block, Half};
+    let content = content();
+    let mut s = State::new(content).expect("initial state");
+    for u in s.land.units.values_mut() {
+        u.location = Location::NotArrived;
+        u.detached = true;
+        u.attached_to = None;
+    }
+    s.turn.weather = Some(crate::state::WeatherState {
+        kind: cna_tables::land::weather::WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    s.turn.player_a = Some(Side::Commonwealth);
+    s.cursor.block = Block::PlayerHalf;
+    s.cursor.half = Some(Half::B);
+    s.cursor.index = crate::seq::PLAYER_HALF.len() - 1;
+    s.cursor.entered = true;
+    s.cursor.op_stage = Some(1);
+    let own: cna_core::ids::UnitId = "cw.unassigned_inf.1st_rnf_mg_bn".into();
+    s.land.units.get_mut(&own).unwrap().location = Location::OffMap {
+        id: "box_tripoli".into(),
+    };
+    let water = cna_content::scenario::Supplies {
+        water: 1,
+        ..Default::default()
+    };
+    record_goods(&mut s, &Carrier::Unit(own.clone()), water, true).expect("box loading");
+    let enemy: cna_core::ids::UnitId = "it.1_libyan_div.viii_libyan_bn".into();
+    s.land.units.get_mut(&enemy).unwrap().location = Location::Hex {
+        hex: "C4020".into(),
+    };
+    let quiet: Game<Cna> = Game {
+        state: s,
+        rng: CampaignRng::from_seed([7; 32]).state(),
+    };
+    let mut spent = quiet.clone();
+    spent
+        .state
+        .land
+        .units
+        .get_mut(&enemy)
+        .unwrap()
+        .cp_spent_quarters = 4;
+    let ruleset = Cna::dev();
+    crate::testkit::assert_indistinguishable(
+        &ruleset,
+        content,
+        &quiet.state,
+        &spent.state,
+        Side::Commonwealth,
+    );
+    let p = Perspective::Side(Side::Commonwealth);
+    let ban = |view: &cna_protocol::ViewState| {
+        view.units[own.as_str()].detail.as_ref().unwrap()["box_movement_block"].clone()
+    };
+    assert!(ban(&ruleset.view(content, &quiet.state, p)).is_string());
+    let readable = |game: &Game<Cna>| {
+        let t = evaluate(&ruleset, content, game, &Command::Advance).expect("advance");
+        assert_eq!(t.game.state.cursor.op_stage, Some(2));
+        assert!(ban(&ruleset.view(content, &t.game.state, p)).is_null());
+        assert!(t.events.iter().any(|e| p.can_see(&e.audience)
+            && matches!(&e.event, GameEvent::UnitUpdated { unit } if unit.id == own.as_str())));
+        json!(
+            t.events
+                .iter()
+                .filter(|e| p.can_see(&e.audience))
+                .collect::<Vec<_>>()
+        )
+    };
+    assert_eq!(readable(&quiet), readable(&spent));
+}
+
 /// A seat's commentary on its accepted answer reaches its side and the operator with the
 /// resolution, trimmed and bounded, and never the enemy; an answer without one carries none.
 #[test]

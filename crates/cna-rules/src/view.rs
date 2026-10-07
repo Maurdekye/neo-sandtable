@@ -218,6 +218,7 @@ fn board_index(perspective: Perspective) -> usize {
 /// the operator see. A perspective's board view is a filter of it, so [`view`], [`views`] and
 /// [`sync_state_events`] cannot disagree, and unit views are built once per state rather than
 /// once per perspective.
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub(crate) struct Board {
     /// Unit or broken-down vehicle marker id -> (owning side, full view), for the built sides.
     units: BTreeMap<String, (Side, wire::UnitView)>,
@@ -414,13 +415,17 @@ fn markers(state: &State, perspective: Perspective) -> Vec<wire::Marker> {
 
 /// Whether every state input [`Board::new`] reads is equal in `a` and `b`, so both states have
 /// the same board and every perspective the same units, stacks and markers: the units
-/// themselves (their views depend only on the unit and the content), the movement and combat
-/// stamps, broken-down vehicle markers, and each board perspective's markers. Most engine calls
-/// only record answers, and this lets them skip building two boards. Anything new that
-/// `Board::new` reads (directly or through a stamp) must be compared here too;
-/// `every_visible_change_in_game_turn_one_is_announced` fails if a change slips past.
+/// themselves (their views depend only on the unit and the content), the cursor (stamps such as
+/// the 8.88 movement ban expire with the Operations Stage), the movement and combat stamps,
+/// broken-down vehicle markers, and each board perspective's markers. Most engine calls only
+/// record answers, and this lets them skip building two boards. It must be exact, not merely
+/// usually right: a missed input would announce an own change only when some unrelated hidden
+/// enemy input also changed, which is a channel. So anything new that `Board::new` reads
+/// (directly or through a stamp) must be compared here, and in this crate's tests every skip
+/// is verified against both boards.
 fn board_unchanged(a: &State, b: &State) -> bool {
-    a.land.units == b.land.units
+    a.cursor == b.cursor
+        && a.land.units == b.land.units
         && a.land.movement.moved == b.land.movement.moved
         && a.land.combat.positions == b.land.combat.positions
         && a.land.combat.pinned == b.land.combat.pinned
@@ -448,6 +453,12 @@ pub(crate) fn sync_state_events(
 ) {
     cx.events.retain(|e| !is_state_sync(&e.event));
     if board_unchanged(before, after) {
+        #[cfg(test)]
+        assert_eq!(
+            Board::new(content, before, &Side::ALL),
+            Board::new(content, after, &Side::ALL),
+            "board_unchanged missed an input that Board::new reads"
+        );
         return;
     }
     let before = &Board::new(content, before, &Side::ALL);
