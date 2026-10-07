@@ -491,10 +491,10 @@ fn complete_move_reopens_for_other_units_and_enemy_receives_only_faces() {
     let t = respond(&c, &t.game, seat(&t.game), Value::Null, true).unwrap();
     assert!(t.game.state.decisions.pending.is_empty());
 }
-/// Cases: land:8.37, airlog:49.12
+/// Cases: land:8.37, airlog:49.12, airlog:52.42
 /// Interpretations: interp:units-0005
 #[test]
-fn unknown_surface_and_unknown_hq_rates_follow_profiles() {
+fn unknown_surface_and_numeric_hq_water_gaps_follow_profiles() {
     let (mut c, s, _o) = setup(LEG, None, false, None);
     let original = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
     c.map = original.map;
@@ -535,10 +535,10 @@ fn unknown_surface_and_unknown_hq_rates_follow_profiles() {
         respond(&c, &g, seat(&g), action.clone(), false)
             .expect_err("expected rejection")
             .to_string()
-            .contains("units-0005")
+            .contains("airlog:52.42")
     );
     assert!(
-        matches!(respond(&c,&g,seat(&g),action,true),Err(Rejection::Engine(EngineError::Unsupported {case,..})) if case=="airlog:49.12")
+        matches!(respond(&c,&g,seat(&g),action,true),Err(Rejection::Engine(EngineError::Unsupported {case,..})) if case=="airlog:52.42")
     );
 }
 /// Cases: land:8.11, land:19.44

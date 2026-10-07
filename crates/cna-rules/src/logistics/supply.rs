@@ -148,13 +148,50 @@ pub fn toe_strength(
     Ok(ToeStrengthPoints::new(strength))
 }
 
+/// The adopted house rate covers only numeric, unparenthesized HQ points without equipment.
+/// Explicit weapons and attached trucks retain their independent printed rates.
+/// Cases: airlog:49.12, airlog:49.13
+/// Interpretations: interp:units-0005
+pub(super) fn house_rule_hq_strength(
+    content: &CnaContent,
+    unit: &LandUnit,
+) -> Result<Option<i32>, SupplyError> {
+    let class = content
+        .units
+        .units
+        .get(&unit.id)
+        .and_then(|row| row.class.as_ref())
+        .and_then(|id| content.units.classes.get(id));
+    if class.is_some_and(|c| c.unit_type == "headquarters" && !c.max_toe_paren)
+        && matches!(
+            unit.toe,
+            Some(
+                Toe::Normal(cna_content::units::NormalToe::N)
+                    | Toe::Under { .. }
+                    | Toe::Over { .. }
+            )
+        )
+    {
+        return toe_strength(content, unit)
+            .map(|n| Some(n.get()))
+            .map_err(|error| {
+                if error == (SupplyError::Unsupported { case: "land:4.46" }) {
+                    SupplyError::UnknownFuelRate
+                } else {
+                    error
+                }
+            });
+    }
+    Ok(None)
+}
+
 /// Fuel for one movement segment, including the unit's first-line trucks.
 /// Quarter CP are rounded up to whole CP before looking up the chart; all vehicle
 /// costs are added exactly before a source draw is rounded. Non-movement CP must
 /// be excluded by the movement caller. Special patrols need their own procedure.
 /// Cases: airlog:49.12, airlog:49.13, land:4.48
 /// Interpretations: interp:airlog-0001, interp:units-0005
-/// Unsupported: airlog:49.12 - HQ equipment without a known fuel rate (units gap U-025).
+/// Numeric HQ points use the adopted factor-one house rate; other unidentified equipment stays unresolved.
 pub fn movement_fuel_cost(
     content: &CnaContent,
     state: &State,
@@ -195,6 +232,7 @@ pub fn movement_fuel_cost(
             .ok_or(SupplyError::Invalid)
     };
     let mut total = 0i32;
+    let house = house_rule_hq_strength(content, unit)?;
     match &unit.toe {
         Some(Toe::Weapons(weapons)) => {
             for point in weapons {
@@ -216,6 +254,9 @@ pub fn movement_fuel_cost(
         }
         _ if class.is_some_and(|c| matches!(c.unit_type.as_str(), "infantry" | "engineer")) => {}
         _ if class.is_some_and(|c| c.unit_type == "headquarters" && c.max_toe_paren) => {}
+        _ if house.is_some() => {
+            total = cost(1, house.ok_or(SupplyError::Invalid)?)?;
+        }
         _ if class.is_some_and(|c| c.unit_type == "headquarters") => {
             return Err(SupplyError::UnknownFuelRate);
         }

@@ -1,6 +1,6 @@
 //! Exact packing by truck type and innate vehicle fuel capacity.
-use super::rations;
 use super::{SupplyError, toe_strength};
+use super::{rations, supply::house_rule_hq_strength};
 use crate::{CnaContent, state::State};
 use cna_content::{
     scenario::Supplies,
@@ -129,8 +129,8 @@ pub fn validate_packing(
 }
 
 /// Innate tank space follows each identified component's own CPA and fuel rate,
-/// plus the trucks' printed tank ratings. An unresolved HQ composition stays unknown.
-/// Cases: airlog:49.12, airlog:49.14, airlog:54.2, land:4.48
+/// plus the trucks' printed tank ratings. Numeric HQ points use the adopted house rate.
+/// Cases: airlog:49.12, airlog:49.13, airlog:49.14, airlog:54.2, land:4.48
 /// Interpretations: interp:units-0005
 pub fn fuel_capacity(
     content: &CnaContent,
@@ -139,6 +139,7 @@ pub fn fuel_capacity(
 ) -> Result<FuelTenths, SupplyError> {
     let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
     let class = rations::class(content, id).ok();
+    let house = house_rule_hq_strength(content, unit)?;
     let mut tenths = 0i64;
     let mut add = |n: i32, cpa: i32, rate: i32| -> Result<(), SupplyError> {
         if n < 0 || cpa < 0 || rate < 0 {
@@ -172,6 +173,13 @@ pub fn fuel_capacity(
         }
         _ if class.is_some_and(|c| matches!(c.unit_type.as_str(), "infantry" | "engineer")) => {}
         _ if class.is_some_and(|c| c.unit_type == "headquarters" && c.max_toe_paren) => {}
+        _ if house.is_some() => {
+            add(
+                house.ok_or(SupplyError::Invalid)?,
+                class.ok_or(SupplyError::Invalid)?.cpa,
+                1,
+            )?;
+        }
         _ if class.is_some_and(|c| c.unit_type == "headquarters") => {
             return Err(SupplyError::UnknownFuelRate);
         }
@@ -385,9 +393,32 @@ mod tests {
                         .is_ok_and(|c| c.unit_type == "headquarters" && !c.max_toe_paren)
             })
             .unwrap();
+        let class = rations::class(&content, &hq.id).unwrap();
+        let body = toe_strength(&content, hq).unwrap().get() * class.cpa * 2;
+        let truck_tanks = hq.trucks.light
+            * content
+                .tables
+                .airlog
+                .truck_characteristics
+                .truck(TruckType::Light)
+                .fuel_capacity_points
+            + hq.trucks.medium
+                * content
+                    .tables
+                    .airlog
+                    .truck_characteristics
+                    .truck(TruckType::Medium)
+                    .fuel_capacity_points
+            + hq.trucks.heavy
+                * content
+                    .tables
+                    .airlog
+                    .truck_characteristics
+                    .truck(TruckType::Heavy)
+                    .fuel_capacity_points;
         assert_eq!(
-            fuel_capacity(&content, &state, &hq.id),
-            Err(SupplyError::UnknownFuelRate)
+            fuel_capacity(&content, &state, &hq.id).unwrap().get(),
+            body + truck_tanks * 10
         );
     }
 }

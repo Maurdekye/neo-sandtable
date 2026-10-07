@@ -434,27 +434,200 @@ fn owner_only_holdings_and_dump_inspection_do_not_leak_to_enemy() {
     );
 }
 
-/// Cases: airlog:49.12
-/// Interpretations: interp:units-0005
+/// Cases: airlog:49.12, airlog:49.13, airlog:49.14
+/// Interpretations: interp:units-0005, interp:airlog-0001
 #[test]
-fn unknown_hq_fuel_rate_is_distinct_and_never_free() {
-    let (state, _) = state();
-    let hq = state
+fn numeric_headquarters_use_exact_truck_factor_one_pricing_and_funding() {
+    let (mut state, foot) = state();
+    state.land.units.get_mut(&foot).unwrap().trucks = Trucks {
+        light: 1,
+        ..Default::default()
+    };
+    let ids: Vec<_> = state
+        .land
+        .units
+        .values()
+        .filter(|u| house_rule_hq_strength(content(), u).is_ok_and(|n| n.is_some()))
+        .map(|u| u.id.clone())
+        .collect();
+    assert_eq!(ids.len(), 9);
+    for id in ids {
+        state.land.units.get_mut(&id).unwrap().trucks = Trucks::default();
+        state.land.units.get_mut(&id).unwrap().location = Location::Hex {
+            hex: "C4020".into(),
+        };
+        let n = toe_strength(content(), &state.land.units[&id])
+            .unwrap()
+            .get();
+        for quarters in [1, 4, 8, 12, 16, 20, 28, 39, 201] {
+            let one = movement_fuel_cost(content(), &state, &foot, quarters)
+                .unwrap()
+                .get();
+            assert_eq!(
+                movement_fuel_cost(content(), &state, &id, quarters)
+                    .unwrap()
+                    .get(),
+                one * n
+            );
+        }
+        let original = state.land.units[&id].toe.clone();
+        let max = content().units.classes[content().units.units[&id].class.as_ref().unwrap()]
+            .max_toe
+            .unwrap();
+        for (toe, strength) in [
+            (Toe::Under { under: max - 1 }, max - 1),
+            (Toe::Over { over: max + 1 }, max + 1),
+        ] {
+            state.land.units.get_mut(&id).unwrap().toe = Some(toe);
+            assert_eq!(
+                movement_fuel_cost(content(), &state, &id, 28)
+                    .unwrap()
+                    .get(),
+                20 * strength
+            );
+        }
+        state.land.units.get_mut(&id).unwrap().toe = original;
+        let at_seven = movement_fuel_cost(content(), &state, &foot, 28)
+            .unwrap()
+            .get();
+        assert_eq!(at_seven, 20);
+        assert_eq!(
+            movement_fuel_cost(content(), &state, &id, 28)
+                .unwrap()
+                .get(),
+            at_seven * n
+        );
+        let cap = crate::logistics::fuel_capacity(content(), &state, &id).unwrap();
+        state
+            .logistics
+            .unit_supply
+            .entry(id.clone())
+            .or_default()
+            .tank_fuel = cap;
+        let plan = crate::logistics::plan_segment_fuel(content(), &state, &id, 28).unwrap();
+        assert_eq!(plan.increment.get(), at_seven * n);
+        let result =
+            crate::logistics::spend_segment_fuel_report(content(), &mut state, &id, 28).unwrap();
+        assert_eq!(result.increment, plan.increment);
+        assert_eq!(
+            state.logistics.unit_supply[&id].tank_fuel.get(),
+            cap.get() - at_seven * n
+        );
+        let checkpoint: State =
+            serde_json::from_value(serde_json::to_value(&state).unwrap()).unwrap();
+        assert_eq!(
+            crate::logistics::plan_segment_fuel(content(), &checkpoint, &id, 28)
+                .unwrap()
+                .increment,
+            FuelTenths::ZERO
+        );
+    }
+}
+
+/// House billing never replaces explicit equipment or adds a second troop body charge.
+/// Cases: airlog:49.12, airlog:49.13
+/// Interpretations: interp:units-0005, interp:airlog-0001
+#[test]
+fn headquarters_identified_weapons_parenthesized_toe_and_absent_composition_keep_their_rules() {
+    let (mut state, foot) = state();
+    state.land.units.get_mut(&foot).unwrap().trucks = Trucks {
+        light: 1,
+        ..Default::default()
+    };
+    let id = state
+        .land
+        .units
+        .values()
+        .find(|u| content().units.units[&u.id].class.as_deref() == Some("it.g"))
+        .unwrap()
+        .id
+        .clone();
+    let weapon = content()
+        .units
+        .weapons
+        .values()
+        .find(|w| w.nation == "it" && w.kind == "gun" && w.fuel_rate.is_some_and(|r| r > 0))
+        .unwrap();
+    let point = content()
+        .tables
+        .airlog
+        .fuel_consumption
+        .fuel_for(weapon.fuel_rate.unwrap(), 7)
+        .unwrap()
+        .get();
+    let u = state.land.units.get_mut(&id).unwrap();
+    u.toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: weapon.id.clone(),
+        n: 1,
+    }]));
+    u.trucks = Trucks {
+        medium: 1,
+        ..Default::default()
+    };
+    assert_eq!(
+        house_rule_hq_strength(content(), &state.land.units[&id]),
+        Ok(None)
+    );
+    let truck = movement_fuel_cost(content(), &state, &foot, 28)
+        .unwrap()
+        .get();
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &id, 28)
+            .unwrap()
+            .get(),
+        point + truck
+    );
+    state.land.units.get_mut(&id).unwrap().toe = None;
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &id, 28),
+        Err(SupplyError::UnknownFuelRate)
+    );
+    let missing_strength = state
+        .land
+        .units
+        .values()
+        .find(|u| content().units.units[&u.id].class.as_deref() == Some("cw.a"))
+        .unwrap()
+        .id
+        .clone();
+    state.land.units.get_mut(&missing_strength).unwrap().toe =
+        Some(Toe::Normal(cna_content::units::NormalToe::N));
+    assert_eq!(
+        house_rule_hq_strength(content(), &state.land.units[&missing_strength]),
+        Err(SupplyError::UnknownFuelRate)
+    );
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &missing_strength, 28),
+        Err(SupplyError::UnknownFuelRate)
+    );
+    assert_eq!(
+        crate::logistics::fuel_capacity(content(), &state, &missing_strength),
+        Err(SupplyError::UnknownFuelRate)
+    );
+    let paren = state
         .land
         .units
         .values()
         .find(|u| {
-            matches!(u.toe, Some(Toe::Normal(_)))
-                && content().units.units[&u.id]
-                    .class
-                    .as_ref()
-                    .and_then(|c| content().units.classes.get(c))
-                    .is_some_and(|c| c.unit_type == "headquarters" && !c.max_toe_paren)
+            content().units.units[&u.id]
+                .class
+                .as_ref()
+                .and_then(|id| content().units.classes.get(id))
+                .is_some_and(|c| c.unit_type == "headquarters" && c.max_toe_paren)
         })
-        .unwrap();
+        .unwrap()
+        .id
+        .clone();
+    state.land.units.get_mut(&paren).unwrap().trucks = Trucks::default();
+    state.land.units.get_mut(&paren).unwrap().toe =
+        Some(Toe::Normal(cna_content::units::NormalToe::N));
     assert_eq!(
-        movement_fuel_cost(content(), &state, &hq.id, 4),
-        Err(SupplyError::UnknownFuelRate)
+        house_rule_hq_strength(content(), &state.land.units[&paren]),
+        Ok(None)
+    );
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &paren, 28).unwrap(),
+        FuelTenths::ZERO
     );
 }
 
