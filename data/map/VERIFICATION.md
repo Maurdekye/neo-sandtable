@@ -307,3 +307,34 @@ No coordinate, port anchor, distance or per-field capacity is inferred. The
 scenario owner retains the aggregate setup value in scenario data. Specific
 Maltese airfield/mission targets remain unverified. Area generation now produces
 33 selectors and 14 symbolic locations; terrain and feature coverage are unchanged.
+
+
+## GT1-6 corridor and next terrain strip (2026-10-07)
+
+The proposed source-contained, alias-resolved corridor has 834 cells and
+2,541 touching edges (2,326 internal, 215 crossing). Before this batch,
+176 corridor cells were classified and 658 unknown. Its manifest is a work
+priority, not a legal scenario boundary or a surveyed layer mask.
+
+`corridor-d-0001` inspects every one of the 75 source-contained cells in
+D first34..43/second01..10 at native scale; four shoreline boundary crops
+were enlarged. Six cells already in graziani-0004 agree with that review.
+The 69 new decisions are 51 clear, eight rough and ten all-sea. Twelve new
+cells are coastal. D3910 contains a small rough land fragment; D4004 has
+cream land with contour splashes. Neither is classified from majority water.
+Of the new proposals, 47 nonabstaining labels agree with visual review and
+22 abstentions are resolved. These are conditional prediction disagreements,
+not a random-population or independently reviewed error bound. All cells
+were inspected by the same observer on the 2021 profile. Hexside and line
+masks do not expand with this surface batch.
+
+Retrospective proposal-output to local-commit intervals were 4m43s for the
+70-cell inland batch (about 890 cells/hour), and 6m33s for the 80-cell D batch
+plus Cairo work (at most 733 D cells/hour). These combine visual review,
+record writing and tooling; no review-only timer or category split was kept.
+A conservative planning allowance is 250-400 individually reviewed
+cells/hour, with additional publication/check time. Classifier runtime is
+not review throughput. The existing terrain and line samples do not justify
+accepting unsampled predictions. A future sampled release must record its
+sampling frame, seed, class-specific errors and confidence bounds, and
+inspect abstentions and mixed-coast cells individually.

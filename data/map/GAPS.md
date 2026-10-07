@@ -110,3 +110,11 @@ African axial grid (airlog:44.11; scen:60.46). Individual airfield identities,
 inset target hexes, Valetta port anchoring and transfer distances remain
 unverified. The aggregate scenario facility allowance does not resolve those
 geographic details or assign capacity to individual fields.
+
+
+GT1-6 corridor narrowing does not resolve unknown movement edges. The
+corridor-d-0001 surface batch adds no escarpment/slope high-side evidence,
+wadis or railway/track/road absence masks. Connected playable strips need
+both accepted terrain and every movement-relevant edge layer; even visually
+clear terrain must not imply no escarpment. Full-corridor completeness and
+population accuracy remain unverified.

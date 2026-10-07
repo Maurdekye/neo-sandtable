@@ -1,0 +1,632 @@
+[batch]
+id = "corridor-d-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer"
+observed_on = "2026-10-07"
+verification = "visual_single_pass"
+proposal_algorithm = "palette-v0.1"
+selection = "D first34..43/second01..10, source-contained;75 inspected,69 new and6 previously accepted"
+notes = "75 cells individually inspected on native contact sheet; four coastal boundary cells enlarged.69 new decisions:51clear8rough10sea.47 new nonabstaining proposals match;22 abstentions resolved. Six existing clear cells agree and remain in original batch. No random holdout, independent observer or original1979map accuracy claim."
+
+[[hex]]
+hex_id = "D4201"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4101"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D4102"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4103"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4104"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4001"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D4002"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D4003"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D4004"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Enlarged bottom-corner check identifies a cream land fragment and contour splashes; clear and coastal. Hexside identity/orientation unreviewed."
+
+[[hex]]
+hex_id = "D4005"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4006"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4007"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4008"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4009"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D4010"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "sea"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3901"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3902"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3903"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3904"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D3905"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "rough"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D3906"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "rough"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D3907"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "rough"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D3908"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "rough"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D3909"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "rough"
+note = "Individual shoreline review: visible land substrate retained with coastal flag; no majority-water inference. Feature layers unreviewed."
+
+[[hex]]
+hex_id = "D3910"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Enlarged boundary check identifies a small tan rough land fragment in an otherwise mostly-water hex; rough and coastal."
+
+[[hex]]
+hex_id = "D3801"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3802"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3803"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3804"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3805"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3806"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3807"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3808"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3809"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "rough"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3810"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "rough"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3701"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3702"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3703"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3704"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3705"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3706"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3707"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3708"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3709"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3710"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3601"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3602"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3603"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3604"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3605"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3606"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3607"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3608"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3609"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3610"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3501"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3502"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3503"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3504"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3505"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3506"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3507"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3401"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3402"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3403"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3404"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3405"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3406"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "clear"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."
+
+[[hex]]
+hex_id = "D3407"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002"]
+proposed_terrain = "unclassified"
+note = "Individual native-scale base-terrain review; contour splashes remain separate from terrain. Hexside and line layers unreviewed."

@@ -34,7 +34,7 @@ class TerrainTests(unittest.TestCase):
         deferred = [h for h in decisions.values() if h["status"] == "deferred"]
         self.assertEqual([h["hex_id"] for h in deferred], ["C4026"])
         self.assertTrue(all(h["terrain"] == "unclassified" and h["flags"] == ["coastal"] for h in deferred))
-        self.assertEqual(sum(h["status"] == "accepted" for h in decisions.values()), 228)
+        self.assertEqual(sum(h["status"] == "accepted" for h in decisions.values()), 297)
         self.assertEqual(decisions["C4221"]["terrain"], "rough")
         self.assertEqual(decisions["C4022"]["flags"], ["land", "coastal"])
 
@@ -103,7 +103,7 @@ class TerrainTests(unittest.TestCase):
         with (MAP / "hexes.csv").open(newline="") as f:
             rows = list(csv.DictReader(f))
         classified = [r for r in rows if r["terrain"] != "unclassified"]
-        self.assertEqual(len(classified), 228)
+        self.assertEqual(len(classified), 297)
         for row in classified:
             entry = decisions[row["hex_id"]]
             self.assertEqual(entry["status"], "accepted")

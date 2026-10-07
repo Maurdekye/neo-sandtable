@@ -385,3 +385,16 @@ stale sources, altered CSVs, noncanonical/nonadjacent endpoints and removal of
 existing surveyed edges fail. Hexside replay is still pending; the publisher
 refuses to erase future hexside evidence. Schema1 and consumer query semantics
 are unchanged.
+
+
+### GT1-6 digitization corridor
+
+`graziani-corridor.toml` is a proposed, narrower work envelope inside the
+approved Graziani window. It is not a movement restriction or an assertion
+that any layer is complete. Regenerate with
+`py -3.12 tools/map/generate_corridor.py`; canonical membership includes source
+section aliases. The stepped printed bounds follow the coastal latitude and
+roughly ten rows inland through Matruh, then include the road/rail approach to
+Alexandria. The manifest has 834 cells, 2,326 internal edges and 215 crossing
+edges. Border, road, railroad and escarpment identities cannot be inferred
+from membership; consult each feature's coverage mask.
