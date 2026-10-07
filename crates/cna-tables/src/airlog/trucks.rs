@@ -90,6 +90,23 @@ impl Bound for TruckTable {
 }
 
 impl TruckTable {
+    /// Light trucks off road gain one additional BP per entered hex and crossed feature.
+    /// The extra is not halved on a track; rain does not erase a physical road.
+    /// Cases: airlog:54.2
+    pub fn light_breakdown_extra_quarters(
+        &self,
+        on_road: bool,
+        hexside_features: i32,
+    ) -> Option<i32> {
+        if hexside_features < 0 {
+            return None;
+        }
+        if on_road {
+            return Some(0);
+        }
+        hexside_features.checked_add(1)?.checked_mul(4)
+    }
+
     /// The characteristics of one Truck Point of `truck_type`. `airlog:54.2`.
     pub fn truck(&self, truck_type: TruckType) -> &TruckCharacteristics {
         self.rows
@@ -383,5 +400,53 @@ impl PortCapacityTable {
             .iter()
             .find(|x| x.port == port)
             .expect("validated: every port present")
+    }
+}
+
+#[cfg(test)]
+mod breakdown_tests {
+    /// Cases: airlog:54.2
+    #[test]
+    fn light_truck_printed_extra_is_one_bp_for_hex_and_each_feature() {
+        let t = crate::Tables::load(&cna_content_data()).unwrap();
+        assert_eq!(
+            t.airlog
+                .truck_characteristics
+                .light_breakdown_extra_quarters(true, 2),
+            Some(0)
+        );
+        assert_eq!(
+            t.airlog
+                .truck_characteristics
+                .light_breakdown_extra_quarters(false, 0),
+            Some(4)
+        );
+        assert_eq!(
+            t.airlog
+                .truck_characteristics
+                .light_breakdown_extra_quarters(false, 1),
+            Some(8)
+        );
+        assert_eq!(
+            t.airlog
+                .truck_characteristics
+                .light_breakdown_extra_quarters(false, 2),
+            Some(12)
+        );
+        assert_eq!(
+            t.airlog
+                .truck_characteristics
+                .light_breakdown_extra_quarters(false, -1),
+            None
+        );
+        assert_eq!(
+            t.airlog
+                .truck_characteristics
+                .light_breakdown_extra_quarters(false, i32::MAX),
+            None
+        );
+    }
+    fn cna_content_data() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data")
     }
 }

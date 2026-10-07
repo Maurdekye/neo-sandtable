@@ -576,6 +576,16 @@ impl State {
         self.land.units.values().filter(move |u| u.side == side)
     }
 
+    /// All land counter presence, including broken vehicles, without disclosing contents.
+    pub fn stack_presence(&self, hex: &HexId, side: Side) -> bool {
+        self.units_of(side).any(|u| u.location.hex() == Some(hex))
+            || self
+                .land
+                .breakdown
+                .markers
+                .values()
+                .any(|m| m.side == side && &m.hex == hex)
+    }
     /// Units on the map, grouped by hex and side, in id order.
     pub fn stacks(&self) -> BTreeMap<(HexId, Side), Vec<&LandUnit>> {
         let mut out: BTreeMap<(HexId, Side), Vec<&LandUnit>> = BTreeMap::new();
@@ -583,6 +593,9 @@ impl State {
             if let Some(hex) = u.location.hex() {
                 out.entry((hex.clone(), u.side)).or_default().push(u);
             }
+        }
+        for m in self.land.breakdown.markers.values() {
+            out.entry((m.hex.clone(), m.side)).or_default();
         }
         out
     }

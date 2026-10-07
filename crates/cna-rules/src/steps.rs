@@ -43,7 +43,8 @@ impl Cna {
                 crate::logistics::batches::finish_water(content, state, cx, self.strict)
             }
             "opstage.movement_and_combat.movement" => {
-                crate::land::reaction::finish_adjudication(state)
+                crate::land::reaction::finish_adjudication(state)?;
+                crate::land::breakdown::window::finish(content, state, self.strict, cx)
             }
             crate::land::combat::retreat::ANCHOR => {
                 crate::land::reaction::finish_adjudication(state)?;
@@ -148,6 +149,9 @@ impl Cna {
                 crate::logistics::batches::answer(content, state, pending, action, cx, self.strict)
             }
 
+            crate::land::breakdown::window::KIND => {
+                crate::land::breakdown::window::answer(content, state, pending, action)
+            }
             crate::land::combat::barrage::DECLARE => {
                 crate::land::combat::barrage::declare(content, state, pending, action, cx)
             }

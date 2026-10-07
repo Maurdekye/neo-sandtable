@@ -1,5 +1,8 @@
 //! Breakdown exposure and proportional allocation; all rolls belong to adjudication.
 mod allocation;
+pub mod losses;
+pub mod markers;
+pub mod window;
 use crate::{CnaContent, State};
 pub use allocation::{balanced_allocation, valid_group_allocation};
 use cna_core::{
@@ -14,10 +17,14 @@ use std::collections::BTreeMap;
 #[serde(default)]
 pub struct BreakdownState {
     pub accumulated_quarters: BTreeMap<UnitId, i32>,
+    pub light_extra_quarters: BTreeMap<UnitId, i32>,
     pub moving: BTreeMap<UnitId, Motion>,
     /// A completed check does not discharge exposure; the unadjusted band is remembered.
     pub checked: BTreeMap<UnitId, BTreeMap<String, usize>>,
     pub stopped: Vec<StoppedMove>,
+    pub markers: BTreeMap<String, markers::BrokenMarker>,
+    pub next_marker: u64,
+    pub window: window::Window,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Motion {
@@ -205,13 +212,20 @@ pub fn weather_shift(motion: &Motion, hot: bool) -> i32 {
 /// Negative BAR shifts may remove a roll without erasing the accumulated points.
 /// Cases: land:21.26, land:21.27, land:21.31, land:21.33
 pub fn needs_check(c: &CnaContent, s: &State, id: &UnitId, category: &str) -> bool {
-    let n = s
-        .land
-        .breakdown
-        .accumulated_quarters
-        .get(id)
-        .copied()
-        .unwrap_or(0);
+    needs_check_bp(
+        c,
+        s,
+        id,
+        category,
+        s.land
+            .breakdown
+            .accumulated_quarters
+            .get(id)
+            .copied()
+            .unwrap_or(0),
+    )
+}
+fn needs_check_bp(c: &CnaContent, s: &State, id: &UnitId, category: &str, n: i32) -> bool {
     n > 12
         && c.tables
             .land
@@ -226,6 +240,46 @@ pub fn needs_check(c: &CnaContent, s: &State, id: &UnitId, category: &str) -> bo
                     .is_none_or(|old| band > *old)
             })
 }
+/// Light trucks add one BP for each entered off-road hex and each crossed feature.
+/// Counts remain separate from medium/heavy trucks and the unit's fighting vehicles.
+/// Cases: airlog:54.2, land:21.29
+pub fn record_light_extra(s: &mut State, id: &UnitId, quarters: i32) -> Result<(), EngineError> {
+    if quarters < 0 {
+        return Err(overflow());
+    }
+    let n = s
+        .land
+        .breakdown
+        .light_extra_quarters
+        .get(id)
+        .copied()
+        .unwrap_or(0)
+        .checked_add(quarters)
+        .ok_or_else(overflow)?;
+    s.land.breakdown.light_extra_quarters.insert(id.clone(), n);
+    Ok(())
+}
+fn asset_bp(s: &State, id: &UnitId, equipment: &Equipment) -> Result<i32, EngineError> {
+    let base = s
+        .land
+        .breakdown
+        .accumulated_quarters
+        .get(id)
+        .copied()
+        .unwrap_or(0);
+    base.checked_add(if *equipment == Equipment::LightTruck {
+        s.land
+            .breakdown
+            .light_extra_quarters
+            .get(id)
+            .copied()
+            .unwrap_or(0)
+    } else {
+        0
+    })
+    .ok_or_else(overflow)
+}
+
 /// An allocation uses each member's proportional quota, with all integer remainders conserved.
 /// Players may choose ties; the baseline uses largest remainder then stable input order.
 /// Cases: land:21.35, land:21.36
@@ -312,7 +366,7 @@ fn gap(case: &str, detail: &str) -> EngineError {
         detail: detail.into(),
     }
 }
-/// The examples establish truck BAR -2. Weapon BARs remain source data; HQ TOE is exempt.
+/// Truck and weapon BARs come from typed characteristics data; HQ TOE is exempt.
 /// Generic armored recce has no invented BAR when the summary chart is missing.
 /// Cases: land:21.11, land:21.12, land:21.13, land:21.28
 /// Interpretations: interp:land-0016
@@ -320,15 +374,17 @@ fn assets(
     c: &CnaContent,
     s: &State,
     id: &UnitId,
+    body: bool,
 ) -> Result<Vec<(Category, i32, Asset)>, EngineError> {
     use super::formation;
     use cna_content::units::Toe;
     let u = &s.land.units[id];
     let mut out = vec![];
-    for (equipment, n) in [
-        (Equipment::LightTruck, u.trucks.light),
-        (Equipment::MediumTruck, u.trucks.medium),
-        (Equipment::HeavyTruck, u.trucks.heavy),
+    use cna_tables::airlog::trucks::TruckType;
+    for (equipment, n, kind) in [
+        (Equipment::LightTruck, u.trucks.light, TruckType::Light),
+        (Equipment::MediumTruck, u.trucks.medium, TruckType::Medium),
+        (Equipment::HeavyTruck, u.trucks.heavy, TruckType::Heavy),
     ] {
         if n < 0 {
             return Err(overflow());
@@ -336,7 +392,11 @@ fn assets(
         if n > 0 {
             out.push((
                 Category::Truck,
-                -2,
+                -c.tables
+                    .airlog
+                    .truck_characteristics
+                    .truck(kind)
+                    .bar_shift_left,
                 Asset {
                     unit: id.clone(),
                     equipment,
@@ -344,6 +404,9 @@ fn assets(
                 },
             ));
         }
+    }
+    if !body {
+        return Ok(out);
     }
     let Some(class) = formation::class(c, id) else {
         return Ok(out);
@@ -402,6 +465,15 @@ pub fn check_groups(
     s: &State,
     stopped: &StoppedMove,
 ) -> Result<Vec<CheckGroup>, EngineError> {
+    check_groups_profile(c, s, stopped, true).map(|(groups, _)| groups)
+}
+fn check_groups_profile(
+    c: &CnaContent,
+    s: &State,
+    stopped: &StoppedMove,
+    strict: bool,
+) -> Result<(Vec<CheckGroup>, Vec<(UnitId, EngineError)>), EngineError> {
+    let mut gaps = vec![];
     let mut groups: BTreeMap<(Category, i32, usize, i32), Vec<Asset>> = BTreeMap::new();
     let hot = s
         .turn
@@ -409,26 +481,36 @@ pub fn check_groups(
         .as_ref()
         .is_some_and(|w| w.kind == WeatherKind::Hot);
     for id in &stopped.members {
-        let bp = s
-            .land
-            .breakdown
-            .accumulated_quarters
-            .get(id)
-            .copied()
-            .unwrap_or(0);
-        if bp <= 12 {
-            continue;
-        }
-        let column = c
-            .tables
-            .land
-            .breakdown
-            .column_quarters(bp)
-            .ok_or_else(overflow)?;
         let weather = weather_shift(&stopped.exposures[id], hot);
-        for (category, bar, asset) in assets(c, s, id)? {
-            let key = format!("{category:?}:{bar}");
-            if needs_check(c, s, id, &key) {
+        let available = match assets(
+            c,
+            s,
+            id,
+            s.land
+                .breakdown
+                .accumulated_quarters
+                .get(id)
+                .copied()
+                .unwrap_or(0)
+                > 12,
+        ) {
+            Ok(a) => a,
+            Err(e) if !strict => {
+                gaps.push((id.clone(), e));
+                assets(c, s, id, false)?
+            }
+            Err(e) => return Err(e),
+        };
+        for (category, bar, asset) in available {
+            let bp = asset_bp(s, id, &asset.equipment)?;
+            let column = c
+                .tables
+                .land
+                .breakdown
+                .column_quarters(bp)
+                .ok_or_else(overflow)?;
+            let key = format!("{category:?}:{bar}:{:?}", asset.equipment);
+            if needs_check_bp(c, s, id, &key, bp) {
                 groups
                     .entry((category, bar, column, bar + weather))
                     .or_default()
@@ -436,16 +518,128 @@ pub fn check_groups(
             }
         }
     }
-    Ok(groups
-        .into_iter()
-        .map(|((category, bar, column, shift), assets)| CheckGroup {
-            category,
-            bar,
-            column,
-            shift,
-            assets,
-        })
-        .collect())
+    Ok((
+        groups
+            .into_iter()
+            .map(|((category, bar, column, shift), assets)| CheckGroup {
+                category,
+                bar,
+                column,
+                shift,
+                assets,
+            })
+            .collect(),
+        gaps,
+    ))
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RolledCheck {
+    pub group: CheckGroup,
+    pub percent: i32,
+    pub broken: i32,
+    pub destination: HexId,
+    pub origins: BTreeMap<UnitId, HexId>,
+    pub require_origin: std::collections::BTreeSet<UnitId>,
+}
+/// Record every checked group's band, including a BAR-adjusted zero-loss check.
+/// The dice event is private: breakdown may reveal only an actual presence transition.
+/// Cases: land:21.26, land:21.31, land:21.32, land:21.33, land:21.34, land:21.35, land:3.62
+pub fn roll_checks(
+    c: &CnaContent,
+    s: &mut State,
+    stopped: &StoppedMove,
+    strict: bool,
+    cx: &mut cna_core::engine::Cx<'_>,
+) -> Result<Vec<RolledCheck>, EngineError> {
+    use cna_core::{event::EngineEvent, visibility::Audience};
+    use cna_protocol::GameEvent;
+    let (groups, gaps) = check_groups_profile(c, s, stopped, strict)?;
+    for (id, gap) in gaps {
+        cx.emit(EngineEvent::new(
+            Audience::Side(s.land.units[&id].side),
+            GameEvent::Note {
+                text: format!("Own vehicle breakdown unassessed for {id}: {gap:?}"),
+            },
+        ));
+    }
+    let mut outcomes = vec![];
+    for group in groups {
+        for a in &group.assets {
+            let key = format!("{:?}:{}:{:?}", group.category, group.bar, a.equipment);
+            s.land
+                .breakdown
+                .checked
+                .entry(a.unit.clone())
+                .or_default()
+                .insert(key.clone(), group.column);
+        }
+        if (group.column as i64) + i64::from(group.shift) < 1 {
+            continue;
+        }
+        let d = cx.rng.two_dice_reading();
+        let side = s.land.units[&group.assets[0].unit].side;
+        cx.emit(EngineEvent::new(
+            Audience::Side(side),
+            GameEvent::DiceRolled {
+                purpose: format!(
+                    "Own {:?} breakdown, BP band {}, shift {}",
+                    group.category, group.column, group.shift
+                ),
+                dice: vec![d.tens.value(), d.units.value()],
+                reading: Some(d.value()),
+                rule: Some("land:21.34".into()),
+            },
+        ));
+        let bp = asset_bp(s, &group.assets[0].unit, &group.assets[0].equipment)?;
+        let percent = c
+            .tables
+            .land
+            .breakdown
+            .percent_quarters(bp, group.shift, d)
+            .ok_or_else(overflow)?;
+        let points = i32::try_from(
+            group
+                .assets
+                .iter()
+                .map(|a| i64::from(a.points))
+                .sum::<i64>(),
+        )
+        .map_err(|_| overflow())?;
+        let broken = c
+            .tables
+            .land
+            .breakdown
+            .broken_points(points, percent)
+            .ok_or_else(overflow)?;
+        if broken == 0 {
+            continue;
+        }
+        let mut require_origin = std::collections::BTreeSet::new();
+        let mut origins = BTreeMap::new();
+        for a in &group.assets {
+            let m = &stopped.exposures[&a.unit];
+            origins.insert(a.unit.clone(), m.origin.clone());
+            if m.origin_required {
+                require_origin.insert(a.unit.clone());
+            }
+            if let Some(e) = &m.origin_gap {
+                if strict {
+                    return Err(e.clone());
+                }
+                cx.emit(EngineEvent::new(Audience::Side(side),GameEvent::Note{text:"Breakdown origin-placement constraint is unassessed because its map data is incomplete (land:21.41).".into()}));
+            }
+        }
+        outcomes.push(RolledCheck {
+            group,
+            percent,
+            broken,
+            destination: stopped.destination.clone(),
+            origins,
+            require_origin,
+        });
+    }
+    Ok(outcomes)
 }
 
 #[cfg(test)]
@@ -520,13 +714,79 @@ mod tests {
             Some(Toe::Weapons(vec![WeaponPoints { weapon, n: 5 }]));
         s.land.units.get_mut(&hq).unwrap().trucks.medium = 2;
         assert_eq!(
-            assets(&c, &s, &hq)
+            assets(&c, &s, &hq, true)
                 .unwrap()
                 .iter()
                 .map(|a| a.0)
                 .collect::<Vec<_>>(),
             vec![Category::Truck]
         );
+    }
+    /// Cases: airlog:54.2, land:21.29
+    #[test]
+    fn light_extra_reaches_a_different_band_from_other_trucks() {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut s = State::new(&c).unwrap();
+        let id = UnitId::new("it.libyan_tank_command.xxi_l_tank_bn");
+        s.land.units.get_mut(&id).unwrap().toe = None;
+        s.land.units.get_mut(&id).unwrap().trucks = cna_content::units::Trucks {
+            light: 4,
+            medium: 4,
+            heavy: 0,
+        };
+        record_edge(&mut s, &id, &"C4020".into(), 40, 8, WeatherKind::Normal).unwrap();
+        record_light_extra(&mut s, &id, 8).unwrap();
+        stop(&mut s, std::slice::from_ref(&id), &"C4021".into());
+        let g = check_groups(&c, &s, &s.land.breakdown.stopped[0]).unwrap();
+        assert_eq!(g.len(), 2);
+        assert_eq!(g[0].column, 1);
+        assert_eq!(g[0].assets[0].equipment, Equipment::MediumTruck);
+        assert_eq!(g[1].column, 2);
+        assert_eq!(g[1].assets[0].equipment, Equipment::LightTruck);
+    }
+    /// Cases: land:21.24, land:21.26, land:21.34, land:3.62
+    #[test]
+    fn adjudication_rolls_once_per_group_privately_and_checkpoint_preserves_exposure() {
+        use cna_core::{dice::CampaignRng, engine::Cx, visibility::Perspective};
+        use cna_protocol::Side;
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut s = State::new(&c).unwrap();
+        let id = UnitId::new("it.libyan_tank_command.xxi_l_tank_bn");
+        s.land.units.get_mut(&id).unwrap().trucks.light = 30;
+        record_edge(&mut s, &id, &"C4020".into(), 140, 8, WeatherKind::Normal).unwrap();
+        stop(&mut s, std::slice::from_ref(&id), &"C4021".into());
+        let mut s: State = serde_json::from_value(serde_json::to_value(s).unwrap()).unwrap();
+        let stopped = s.land.breakdown.stopped[0].clone();
+        let mut rng = CampaignRng::from_seed([7; 32]);
+        let mut events = vec![];
+        roll_checks(
+            &c,
+            &mut s,
+            &stopped,
+            true,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            events
+                .iter()
+                .filter(|e| matches!(e.event, cna_protocol::GameEvent::DiceRolled { .. }))
+                .count(),
+            2
+        );
+        assert!(
+            events
+                .iter()
+                .all(|e| !Perspective::Side(Side::Commonwealth).can_see(&e.audience))
+        );
+        assert_eq!(s.land.breakdown.accumulated_quarters[&id], 140);
+        assert!(check_groups(&c, &s, &stopped).unwrap().is_empty());
+        super::super::capability::finish_opstage(&mut s);
+        assert!(s.land.breakdown.accumulated_quarters.is_empty());
+        assert!(s.land.breakdown.checked.is_empty());
     }
     /// Cases: land:21.37, land:29.45
     /// Interpretations: interp:land-0027

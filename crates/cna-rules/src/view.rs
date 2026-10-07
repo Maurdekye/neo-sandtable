@@ -269,12 +269,25 @@ pub(crate) fn view(
     let mut units = BTreeMap::new();
     for ((hex, side), members) in state.stacks() {
         if sees_side(perspective, side) {
+            let markers: Vec<_> = state
+                .land
+                .breakdown
+                .markers
+                .values()
+                .filter(|m| m.side == side && m.hex == hex)
+                .collect();
+            let mut ids: Vec<_> = members.iter().map(|u| u.id.to_string()).collect();
+            ids.extend(markers.iter().map(|m| m.id.clone()));
+            ids.sort();
             stacks.push(wire::Stack {
                 hex: hex.to_string(),
                 side,
-                unit_ids: members.iter().map(|u| u.id.to_string()).collect(),
-                visible_count: Some(u32::try_from(members.len()).unwrap_or(u32::MAX)),
+                visible_count: Some(ids.len() as u32),
+                unit_ids: ids,
             });
+            for m in markers {
+                units.insert(m.id.clone(), crate::land::breakdown::markers::unit_view(m));
+            }
             for u in members {
                 let mut view = unit_view(content, u);
                 // Own units only: whether the unit has already used its move this segment.
@@ -500,6 +513,7 @@ pub(crate) fn inspect(
             "reserve": unit.reserve,
             "engaged": unit.engaged,
             "breakdown_points_quarters":state.land.breakdown.accumulated_quarters.get(&unit.id).copied().unwrap_or(0),
+            "light_truck_extra_breakdown_quarters":state.land.breakdown.light_extra_quarters.get(&unit.id).copied().unwrap_or(0),
             "assault_intentions": state.land.assault_intentions.get(&unit.id),
             "movement_restrictions": crate::land::formation::members(content,state,&unit.id).into_iter().map(|id| {
                 let assessment=crate::logistics::movement_restrictions(content,state,&id).map(|r|json!({
@@ -531,6 +545,12 @@ pub(crate) fn inspect(
             return Err(hidden());
         }
         return Ok(json!({"squadron":squadron}));
+    }
+    if let Some(marker) = state.land.breakdown.markers.get(target) {
+        if !sees_side(perspective, marker.side) {
+            return Err(hidden());
+        }
+        return Ok(json!({"broken_vehicles":marker}));
     }
     if let Some(pool) = state.logistics.truck_pools.iter().find(|p| p.id == target) {
         if !sees_side(perspective, pool.side) {
@@ -575,6 +595,7 @@ pub(crate) fn inspect(
             if sees_side(perspective, side) {
                 stacks.push(json!({
                     "side": side,
+                    "broken_vehicles":state.land.breakdown.markers.values().filter(|m|m.side==side&&&m.hex==canonical).collect::<Vec<_>>(),
                     "units": members.iter().map(|u| unit_view(content, u)).collect::<Vec<_>>(),
                 }));
             } else {

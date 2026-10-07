@@ -296,6 +296,12 @@ pub fn answer(
         if s.land.reaction.adjudication_stop.is_some() {
             return Ok("Reaction choice complete.".into());
         }
+        if super::breakdown::window::park(
+            s,
+            Some(super::breakdown::window::Resume::Reaction { seat: p.seat }),
+        ) {
+            return Ok("Reaction choice complete.".into());
+        }
         open_role(c, s, p.seat, cx);
     } else {
         s.land
@@ -314,6 +320,22 @@ pub fn answer(
         open_continuation(c, s, strict, cx)?;
     }
     Ok("Reaction choice complete.".into())
+}
+/// Continue the reaction window only after the selected reactor's breakdown allocation ends.
+/// Cases: land:8.51, land:21.24
+pub(super) fn resume_after_breakdown(
+    c: &CnaContent,
+    s: &mut State,
+    seat: SeatId,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), Rejection> {
+    open_role(c, s, seat, cx);
+    if !s.decisions.pending.iter().any(|p| p.kind == KIND) {
+        s.land.reaction.window = None;
+        open_continuation(c, s, strict, cx)?;
+    }
+    Ok(())
 }
 /// The original remaining path is a revisable plan. Stop is offered only at a legal endpoint.
 /// Cases: land:8.13, land:8.51, land:9.31, land:9.32

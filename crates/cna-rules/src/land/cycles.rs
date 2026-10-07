@@ -32,13 +32,10 @@ pub fn finish_movement(content: &CnaContent, state: &mut State) {
         return;
     };
     let enemy: Vec<_> = state
-        .units_of(side.opponent())
-        .filter_map(|u| {
-            u.location
-                .hex()
-                .and_then(|h| content.map.get(h))
-                .map(|h| h.axial)
-        })
+        .stacks()
+        .into_keys()
+        .filter(|(_, s)| *s == side.opponent())
+        .filter_map(|(h, _)| content.map.get(&h).map(|h| h.axial))
         .collect();
     let blocked: Vec<_> = state
         .units_of(side)

@@ -494,9 +494,7 @@ fn run(
             .clone();
         let occupied = match planning_group {
             Some(group) => group.enemy_positions.contains(&to),
-            None => state
-                .units_of(seat.side.opponent())
-                .any(|u| u.location.hex() == Some(&to)),
+            None => state.stack_presence(&to, seat.side.opponent()),
         };
         if occupied {
             return Err(illegal("not a legal destination"));
@@ -620,15 +618,15 @@ fn run(
                 own_half,
             )?;
         }
-        let before_from = state
-            .units_of(seat.side)
-            .any(|u| u.location.hex() == Some(&from));
-        let before_to = state
-            .units_of(seat.side)
-            .any(|u| u.location.hex() == Some(&to));
+        let before_from = state.stack_presence(&from, seat.side);
+        let before_to = state.stack_presence(&to, seat.side);
         for (id, cost) in moving.iter().zip(&costs) {
             if truth {
                 super::breakdown::begin_motion(content, state, id, &from, strict);
+                if state.land.units[id].trucks.light > 0 {
+                    super::breakdown::record_light_extra(state, id, cost.light_extra_quarters)
+                        .map_err(Rejection::Engine)?;
+                }
                 super::breakdown::record_edge(
                     state,
                     id,
@@ -712,10 +710,7 @@ fn run(
                 state,
                 seat.side,
                 &from,
-                before_from
-                    != state
-                        .units_of(seat.side)
-                        .any(|u| u.location.hex() == Some(&from)),
+                before_from != state.stack_presence(&from, seat.side),
                 events,
             );
             emit_stacks(
@@ -723,10 +718,7 @@ fn run(
                 state,
                 seat.side,
                 &to,
-                before_to
-                    != state
-                        .units_of(seat.side)
-                        .any(|u| u.location.hex() == Some(&to)),
+                before_to != state.stack_presence(&to, seat.side),
                 events,
             );
             if stacking::validate_end(content, state, &to, seat.side, strict).is_ok() {
@@ -808,11 +800,21 @@ fn emit_stacks(
     enemy_presence_changed: bool,
     events: &mut Vec<EngineEvent>,
 ) {
-    let ids: Vec<_> = state
+    let mut ids: Vec<_> = state
         .units_of(side)
         .filter(|u| u.location.hex() == Some(hex))
         .map(|u| u.id.to_string())
         .collect();
+    ids.extend(
+        state
+            .land
+            .breakdown
+            .markers
+            .values()
+            .filter(|m| m.side == side && &m.hex == hex)
+            .map(|m| m.id.clone()),
+    );
+    ids.sort();
     if ids.is_empty() {
         for audience in std::iter::once(Audience::Side(side))
             .chain(enemy_presence_changed.then_some(Audience::SideOnly(side.opponent())))
@@ -1004,6 +1006,16 @@ pub(super) fn defer_stop(state: &mut State, error: EngineError) {
 }
 /// Execute accepted plans until a reaction suspends them. Later plans remain checkpointed.
 /// Cases: land:8.13, land:8.51, land:8.52, land:10.6
+pub(super) fn resume_orders(
+    c: &CnaContent,
+    s: &mut State,
+    seat: SeatId,
+    orders: &[Order],
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), Rejection> {
+    execute_orders(c, s, seat, orders, strict, cx, true)
+}
 fn execute_orders(
     c: &CnaContent,
     s: &mut State,
@@ -1093,6 +1105,15 @@ fn execute_orders(
             super::reaction::open_interrupt(c, s, cx);
             return Ok(());
         }
+        if super::breakdown::window::park(
+            s,
+            Some(super::breakdown::window::Resume::Orders {
+                seat,
+                orders: orders[index + 1..].to_vec(),
+            }),
+        ) {
+            return Ok(());
+        }
     }
     if !s
         .decisions
@@ -1177,6 +1198,15 @@ pub(super) fn finish_continuation(
     s.decisions
         .pending
         .extend(std::mem::take(&mut s.land.reaction.held));
+    if super::breakdown::window::park(
+        s,
+        Some(super::breakdown::window::Resume::Orders {
+            seat: k.seat,
+            orders: k.orders_after.clone(),
+        }),
+    ) {
+        return Ok(());
+    }
     execute_orders(c, s, k.seat, &k.orders_after, strict, cx, true)
 }
 fn nonphasing_draft(s: &State, kind: NonPhasingMove) -> State {
@@ -1524,8 +1554,10 @@ fn reachable_inner(
         stacks: stacking::PlanningStacks::new(content, &base, seat.side, &members, &origin),
         limits,
         enemy_positions: state
-            .units_of(seat.side.opponent())
-            .filter_map(|u| u.location.hex().cloned())
+            .stacks()
+            .into_keys()
+            .filter(|(_, side)| *side == seat.side.opponent())
+            .map(|(h, _)| h)
             .collect(),
     };
     // Fuel can debit the current members' tanks and friendly stocks at each captured

@@ -222,6 +222,7 @@ impl Cna {
         }
         state.decisions.pending.remove(idx);
         let summary = self.respond_to(content, state, &pending, &response.action, cx)?;
+        land::breakdown::window::park(state, None);
         cx.emit(EngineEvent::new(
             Audience::Seat(pending.seat),
             GameEvent::DecisionResolved {

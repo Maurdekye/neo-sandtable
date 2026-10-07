@@ -16,6 +16,7 @@ use cna_tables::land::terrain::TerrainFeature as F;
 pub struct StepCost {
     pub cp_quarters: i32,
     pub breakdown_quarters: i32,
+    pub light_extra_quarters: i32,
     pub on_network: bool,
     pub assumed_edges: bool,
 }
@@ -213,6 +214,16 @@ pub fn step_cost_with_network(
             unsupported("land:21.21", "breakdown terrain value is unresolved")
         })?,
         on_network: matches!(route, Route::Road | Route::Track | Route::UnfinishedRoad),
+        light_extra_quarters: content
+            .tables
+            .airlog
+            .truck_characteristics
+            .light_breakdown_extra_quarters(
+                route == Route::Road,
+                i32::try_from(features.len())
+                    .map_err(|_| illegal("breakdown exposure overflow"))?,
+            )
+            .ok_or_else(|| illegal("breakdown exposure overflow"))?,
         assumed_edges: unknown,
     })
 }
