@@ -237,6 +237,50 @@ pub fn advance(
     }
     Ok(())
 }
+/// Advance only exact current-stage histories present among the caller-validated
+/// physical groups. Missing or stale groups remain unknown; untouched records
+/// are retained. This is an edge writer, never a source of fresh histories.
+/// Cases: airlog:53.24, airlog:53.25, land:8.83, land:8.89
+pub fn advance_tracked(
+    state: &mut State,
+    side: Side,
+    site: &CargoSite,
+    cohorts: &[PhysicalTrucks],
+    delta: i32,
+) -> Result<(), MotionError> {
+    if delta < 0 {
+        return Err(MotionError::Invalid);
+    }
+    permitted(state, side, site)?;
+    physical(cohorts)?;
+    let mut e = match entry(
+        &state.logistics.cargo_history.motion,
+        site,
+        WaterStage::current(state),
+    ) {
+        Ok(e) => e.clone(),
+        Err(MotionError::Unknown) => return Ok(()),
+        Err(err) => return Err(err),
+    };
+    let mut changed = false;
+    for h in &mut e.cohorts {
+        if cohorts
+            .iter()
+            .any(|c| c.id == h.id && c.kind == h.kind && c.count == h.count)
+        {
+            h.spent_cp_quarters = h
+                .spent_cp_quarters
+                .checked_add(delta)
+                .ok_or(MotionError::Invalid)?;
+            changed = true;
+        }
+    }
+    if changed {
+        save(&mut state.logistics.cargo_history.motion, e);
+    }
+    Ok(())
+}
+
 /// Move exactly the cohorts returned by an already validated physical split.
 /// A partial split uses the returned new identity and its immediate parent;
 /// this does not copy the whole parent's quantity or any body history. Markers

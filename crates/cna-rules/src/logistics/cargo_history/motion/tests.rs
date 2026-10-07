@@ -171,3 +171,84 @@ fn motion_snapshots_and_enemy_pairs_preserve_private_physical_history() {
         serde_json::to_value(&before).unwrap()
     );
 }
+
+/// Cases: airlog:53.25, land:8.83, land:8.89
+#[test]
+fn partial_tracked_writers_preserve_untouched_histories_and_never_seed_unknown_groups() {
+    let (mut s, a, _, _) = game();
+    let known = cohort("known", FuelTruckKind::Medium, 2);
+    let untouched = cohort("untouched", FuelTruckKind::Light, 1);
+    let incoming = cohort("incoming", FuelTruckKind::Heavy, 1);
+    seed_fresh(&mut s, Side::Axis, &a, &[known.clone(), untouched.clone()]).unwrap();
+    let before = s.clone();
+    advance_tracked(
+        &mut s,
+        Side::Axis,
+        &a,
+        &[known.clone(), incoming.clone()],
+        12,
+    )
+    .unwrap();
+    let h = query(&s, Side::Axis, &a, &[known.clone(), untouched.clone()]).unwrap();
+    assert_eq!(
+        h.iter().map(|c| c.spent_cp_quarters).collect::<Vec<_>>(),
+        vec![12, 0]
+    );
+    assert_eq!(
+        query(
+            &s,
+            Side::Axis,
+            &a,
+            &[known.clone(), untouched.clone(), incoming.clone()]
+        ),
+        Err(MotionError::Unknown)
+    );
+    crate::testkit::assert_indistinguishable(
+        &crate::Cna::dev(),
+        content(),
+        &s,
+        &before,
+        Side::Commonwealth,
+    );
+    let mut replay: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    advance_tracked(&mut s, Side::Axis, &a, std::slice::from_ref(&untouched), 4).unwrap();
+    advance_tracked(
+        &mut replay,
+        Side::Axis,
+        &a,
+        std::slice::from_ref(&untouched),
+        4,
+    )
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(&s).unwrap(),
+        serde_json::to_value(&replay).unwrap()
+    );
+    let saved = serde_json::to_value(&s).unwrap();
+    assert_eq!(
+        advance_tracked(
+            &mut s,
+            Side::Axis,
+            &a,
+            &[known.clone(), untouched.clone()],
+            i32::MAX
+        ),
+        Err(MotionError::Invalid)
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), saved);
+    s.cursor.op_stage = Some(2);
+    let stale = serde_json::to_value(&s).unwrap();
+    advance_tracked(
+        &mut s,
+        Side::Axis,
+        &a,
+        &[known.clone(), incoming.clone()],
+        12,
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), stale);
+    assert_eq!(
+        query(&s, Side::Axis, &a, &[known, incoming]),
+        Err(MotionError::Unknown)
+    );
+}
