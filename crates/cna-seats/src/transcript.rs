@@ -114,10 +114,18 @@ impl TranscriptSink {
     /// Wait until everything queued so far has been accepted by the store.
     /// A permanently unavailable store needs the supervisor's bounded shutdown path.
     pub async fn flush(&self) {
+        let _ = self.flush_confirmed().await;
+    }
+
+    /// Confirm captures queued before this marker. Later captures from other
+    /// producers may remain pending. A dead delivery worker returns an error.
+    pub async fn flush_confirmed(&self) -> Result<(), String> {
         let (done, wait) = oneshot::channel();
-        if self.tx.send(Item::Flush(done)).is_ok() {
-            let _ = wait.await;
-        }
+        self.tx
+            .send(Item::Flush(done))
+            .map_err(|_| "transcript delivery worker is closed".to_string())?;
+        wait.await
+            .map_err(|_| "transcript delivery marker was not confirmed".to_string())
     }
 
     pub fn pending_count(&self) -> usize {

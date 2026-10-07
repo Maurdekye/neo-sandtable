@@ -61,3 +61,12 @@ Drivers receive their independent seat-scoped MCP URL. All inherited `CNA_*`
 variables are removed along with parent agent and provider credentials, including
 operator capability paths and source-directory paths. No operator credentials are
 written to the seat working directory or included in its prompt/MCP configuration.
+
+The runner's local forced-answer adapter uses only the own-seat action schema and an
+explicit offered pass. It never uses kind names or game knowledge. Empty required
+choices and zero-item lists can avoid a CLI turn; optional empty fields and actionable
+lists cannot. Automatic intents and receipts remain visible in the same transcript,
+with the original controller epoch and exact revision. Transcript failures and rejected
+submissions stop work instead of substituting an order. New forced windows are handled
+before model nudges as well as before session startup. The generic runner constructor
+requires its binding's `controller_epoch`; never re-read an epoch to authorize old work.

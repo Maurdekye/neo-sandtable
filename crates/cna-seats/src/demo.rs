@@ -79,6 +79,7 @@ pub async fn play_toy_game(
         let url = server.url(*seat).expect("endpoint");
         let mut runner = SeatRunner {
             seat: *seat,
+            controller_epoch: 1,
             driver: make_driver(*seat, url, sink.clone(), prompts.system_prompt(*seat)),
             game: game.clone(),
             memory: memory.clone(),

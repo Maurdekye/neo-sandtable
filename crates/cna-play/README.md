@@ -152,3 +152,51 @@ ration/water restrictions. It does not measure a full supplied OpStage or a
 subscription invoice. Accounting records three reserved attempts, two completed
 model turns and one canceled inert attempt; that third reservation made no paid
 CLI call. Sanitized transcript and accounting fixtures preserve this evidence.
+
+
+## Avoiding unnecessary model turns
+
+Before starting or resuming a CLI, the launcher handles explicit forced passes locally.
+The proof uses only the seat's current action space: a pass must be offered, and the
+non-pass schema must have no answer, or be a list with no possible nonempty answer.
+Optional empty fields, unrestricted domains and a selectable empty list do not prove
+force. Labels and game knowledge never choose an automatic answer. A rejected model
+draft or failed automatic submission still pauses; it never becomes a fallback pass.
+
+Each automatic attempt is visible in the transcript before submission. It uses the
+session's original controller epoch, exact decision revision and an idempotency key.
+Unconfirmed transcript delivery prevents a new automatic order. A failure after commit
+may leave a visible intent without a confirmed receipt; inspect stored state before
+replaying an outbox. Automatic operations use the lifetime wall budget and separate
+stage counters (`automatic_attempts`, `automatic_completed`), without charging model
+turns, MCP calls or reported model cost. Interrupted reservations stay charged on restart.
+
+For list-shaped actions, the seat prompt asks for a segment plan, inspection of key
+units or targets, and several compatible ordered items in one validated answer.
+Observation metadata includes list bounds; full domains still come from describe_actions.
+Two inert real-Graziani tests move the same two Maletti units to C3518: a two-item
+answer takes one model window, while two single-item answers take two. No paid CLI
+is used, and larger plans can still consume more tokens or inspection calls.
+
+The recorded offline GT1/OpStage1 trace compares identical fake-controller choices
+before and after local forced answers. Setup is excluded; logistics pass and supply
+can restrict units. These are model-visible window counts, not a paid cost forecast:
+
+| Seat | Before | After | Automatic |
+| --- | ---: | ---: | ---: |
+| Axis commander | 1 | 1 | 0 |
+| Axis front line | 10 | 6 | 4 |
+| Axis logistics | 10 | 2 | 8 |
+| Axis rear area | 10 | 6 | 4 |
+| Axis air | 0 | 0 | 0 |
+| Commonwealth commander | 0 | 0 | 0 |
+| Commonwealth front line | 10 | 6 | 4 |
+| Commonwealth logistics | 10 | 2 | 8 |
+| Commonwealth rear area | 9 | 1 | 8 |
+| Commonwealth air | 0 | 0 | 0 |
+| Total | 60 | 24 | 36 |
+
+The pinned sample is `tests/fixtures/offline_window_accounting.json`. Future rules and
+baseline changes can alter counts; the slow offline test generates a fresh report and
+asserts reconciliation rather than fixing the engine to this sample. Default tests keep
+the bounded two-unit batching proof, while the complete stage trace runs in slow CI.

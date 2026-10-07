@@ -366,8 +366,9 @@ impl Demo {
             }
         };
         let work = async {
-            driver.start(None).await.map_err(|e| e.to_string())?;
-            for turn in 0..turns.min(self.config.max_turns) {
+            let mut turn = 0;
+            let mut started = false;
+            loop {
                 let mut windows = self.handle.watch_seat(seat);
                 let pending = loop {
                     let p = windows.borrow_and_update().pending.clone();
@@ -383,6 +384,25 @@ impl Demo {
                     }
                     windows.changed().await.map_err(|e| e.to_string())?;
                 };
+                let mut automatic = false;
+                for request in &pending {
+                    if cna_seats::automatic::answer(&self.handle, seat, epoch, request, &self.sink)
+                        .await
+                        .map_err(|e| e.to_string())?
+                    {
+                        automatic = true;
+                    }
+                }
+                if automatic {
+                    continue;
+                }
+                if turn >= turns.min(self.config.max_turns) {
+                    return Ok(());
+                }
+                if !started {
+                    driver.start(None).await.map_err(|e| e.to_string())?;
+                    started = true;
+                }
                 let prompt = if turn == 0 {
                     let notebook = self
                         .handle
@@ -419,8 +439,11 @@ impl Demo {
                         outcome.usage
                     ),
                 );
+                turn += 1;
+                if turn >= turns.min(self.config.max_turns) {
+                    return Ok(());
+                }
             }
-            Ok(())
         };
         let mut result = tokio::select! {
             _ = invalidated => Err("controller binding changed; old session stopped".into()),

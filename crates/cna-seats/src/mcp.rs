@@ -238,6 +238,10 @@ impl ToolRouter {
                         json!({
                             "decision_id": d.id, "kind": d.kind, "revision": d.revision,
                             "summary": d.summary, "rules": d.rules, "secrecy": d.secrecy,
+                            "list_answer": match &d.space.schema {
+                                cna_core::decision::ActionSchema::List { min, max, .. } => Some(json!({"min_items":min,"max_items":max})),
+                                _ => None,
+                            },
                         })
                     })
                     .collect();

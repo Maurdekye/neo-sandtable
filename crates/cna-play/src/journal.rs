@@ -16,6 +16,10 @@ use std::{
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct StageUsage {
+    #[serde(default)]
+    pub automatic_attempts: u64,
+    #[serde(default)]
+    pub automatic_completed: u64,
     pub attempts: u64,
     pub completed: u64,
     pub reported_cost_usd: f64,
@@ -277,6 +281,9 @@ impl SessionJournal {
             if s.inflight.is_some() {
                 return Err("overlapping model operations".into());
             }
+            if kind == "automatic" {
+                s.stages.entry(stage.into()).or_default().automatic_attempts += 1;
+            }
             if kind == "turn" {
                 if s.turns >= state.config.max_turns as u64 {
                     return Err("durable turn budget exhausted".into());
@@ -326,6 +333,27 @@ impl SessionJournal {
             Ok(())
         })?;
         Ok(reserved)
+    }
+    /// Finish a local automatic operation without attributing it to a model turn.
+    pub fn complete_automatic(
+        &self,
+        seat: SeatId,
+        elapsed_ms: u64,
+        accepted: bool,
+    ) -> Result<(), String> {
+        self.update(|state| {
+            let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
+            let r = s.inflight.take().ok_or("no reserved operation")?;
+            if r.kind != "automatic" {
+                return Err("not an automatic reservation".into());
+            }
+            s.wall_millis = s
+                .wall_millis
+                .saturating_sub(r.millis)
+                .saturating_add(elapsed_ms.max(1));
+            s.stages.entry(r.stage).or_default().automatic_completed += u64::from(accepted);
+            Ok(())
+        })
     }
     // CLI estimates use decimal USD; these values never enter game adjudication.
     #[allow(clippy::float_arithmetic)]
@@ -465,6 +493,59 @@ mod tests {
             },
             quota: vec![],
         }
+    }
+    #[test]
+    fn automatic_answers_preserve_model_caps_cost_and_crash_reservations() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let mut limits = config();
+        limits.tool_calls = 1;
+        limits.max_turns = 1;
+        let journal =
+            SessionJournal::create(root.path(), &id, limits, &BTreeMap::from([(seat(), 7)]))
+                .unwrap();
+        journal
+            .reserve_decision(seat(), "GT1:OpStage1", 1000, "d1", 1)
+            .unwrap();
+        ToolBudget::charge(&journal, seat()).unwrap();
+        journal
+            .complete(
+                seat(),
+                10,
+                Some(&outcome(0.01)),
+                &SessionTelemetry::default(),
+            )
+            .unwrap();
+        journal
+            .reserve(seat(), "automatic", "GT1:OpStage1", 5000)
+            .unwrap();
+        assert!(ToolBudget::charge(&journal, seat()).is_err());
+        journal.complete_automatic(seat(), 12, true).unwrap();
+        let state = journal.snapshot().unwrap();
+        let record = &state.seats[&seat()];
+        assert_eq!((record.turns, record.calls, record.wall_millis), (1, 1, 22));
+        assert!((record.reported_cost_usd - 0.01).abs() < 1e-9);
+        assert_eq!(record.stages["GT1:OpStage1"].automatic_completed, 1);
+        journal
+            .reserve(seat(), "automatic", "GT1:OpStage1", 5000)
+            .unwrap();
+        drop(journal);
+        let recovered = SessionJournal::recover(root.path(), &id).unwrap();
+        let state = recovered.snapshot().unwrap();
+        let record = &state.seats[&seat()];
+        assert_eq!(
+            (
+                record.turns,
+                record.calls,
+                record.wall_millis,
+                record.incomplete_turns
+            ),
+            (1, 1, 5022, 0)
+        );
+        assert_eq!(record.stages["GT1:OpStage1"].automatic_attempts, 2);
+        assert_eq!(record.stages["GT1:OpStage1"].automatic_completed, 1);
+        let old:StageUsage=serde_json::from_str(r#"{"attempts":1,"completed":1,"reported_cost_usd":0,"input_tokens":0,"output_tokens":0}"#).unwrap();
+        assert_eq!(old.automatic_completed, 0);
     }
     #[test]
     fn hard_crash_keeps_charge_lease_and_lifetime_call_cap() {

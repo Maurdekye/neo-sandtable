@@ -7,6 +7,7 @@
 //! [`game::GameBackend`]; the toy game in [`toy`] stands in until the engine's decision model
 //! lands. See `README.md` for how each CLI is driven.
 
+pub mod automatic;
 pub mod demo;
 pub mod driver;
 pub mod game;

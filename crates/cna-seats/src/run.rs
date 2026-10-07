@@ -143,6 +143,18 @@ pub struct DefaultPrompts {
     pub game_description: String,
 }
 
+fn batch_hint(pending: &[DecisionRequest]) -> &'static str {
+    if pending.iter().any(|p| {
+        matches!(
+            p.space.schema,
+            cna_core::decision::ActionSchema::List { .. }
+        )
+    }) {
+        "\nOne answer can carry a list. Plan this segment/window first, inspect key disclosed units or targets, and submit several compatible items together where legal. Respect list bounds and order; validate the complete list. Use an offered pass only when its described meaning matches your intended plan. Do not replace a rejected draft with a pass."
+    } else {
+        ""
+    }
+}
 fn list(pending: &[DecisionRequest]) -> String {
     pending
         .iter()
@@ -163,7 +175,11 @@ impl PromptBuilder for DefaultPrompts {
              (durable notes that survive restarts; keep standing plans and lessons there). You have \
              no other tools: no files, no shell, no web. Never invent decision ids or answers: take \
              them from the tools. When you have answered the decision IDs and revisions requested for this model turn, stop calling tools \
-             and reply with a one-line summary. Leave newer revisions and later windows for the next turn.",
+             and reply with a one-line summary. Leave newer revisions and later windows for the next turn. \
+             One answer can carry a list: plan the current segment/window, inspect key disclosed targets, \
+             and group compatible actions in one ordered list when the schema allows it. Respect bounds \
+             and validate the complete list. Follow the described pass meaning; never use pass as fallback \
+             after a rejected draft.",
             self.game_description
         )
     }
@@ -176,15 +192,17 @@ impl PromptBuilder for DefaultPrompts {
         };
         format!(
             "The game begins for you as {seat}. {notes}\n\nPending decisions:\n{}\n\nCall observe, then \
-             answer each pending decision with submit.",
-            list(pending)
+             answer each pending decision with submit.{}",
+            list(pending),
+            batch_hint(pending)
         )
     }
 
     fn window_turn(&self, _seat: SeatId, pending: &[DecisionRequest]) -> String {
         format!(
-            "New pending decisions:\n{}\n\nCall observe, then answer each with submit.",
-            list(pending)
+            "New pending decisions:\n{}\n\nCall observe, then answer each with submit.{}",
+            list(pending),
+            batch_hint(pending)
         )
     }
 
@@ -211,6 +229,7 @@ pub enum SeatEnd {
 /// Everything one seat runner needs.
 pub struct SeatRunner {
     pub seat: SeatId,
+    pub controller_epoch: u64,
     pub driver: Box<dyn SeatDriver>,
     pub game: Arc<dyn GameBackend>,
     pub memory: Arc<dyn SeatMemory>,
@@ -276,6 +295,29 @@ impl SeatRunner {
         end
     }
 
+    async fn answer_automatic(&mut self, pending: &[DecisionRequest]) -> Result<bool, SeatEnd> {
+        let mut answered = false;
+        for request in pending
+            .iter()
+            .filter(|p| crate::automatic::forced_pass(&p.space))
+        {
+            let remaining = self.limits.max_wall.saturating_sub(self.started.elapsed());
+            let result = tokio::select! {
+                result = tokio::time::timeout(remaining, crate::automatic::answer(
+                    self.game.as_ref(), self.seat, self.controller_epoch, request, &self.sink,
+                )) => result.map_err(|_| SeatEnd::Paused(PauseReason::WallClockExhausted))?,
+                _ = async {
+                    if self.stop.wait_for(|stop| *stop).await.is_err() {
+                        std::future::pending::<()>().await;
+                    }
+                } => return Err(SeatEnd::Stopped),
+            };
+            answered |=
+                result.map_err(|e| SeatEnd::Paused(PauseReason::CliError(e.to_string())))?;
+        }
+        Ok(answered)
+    }
+
     async fn run_inner(&mut self) -> SeatEnd {
         let mut fresh = self.sessions.load(self.seat).is_none();
         let mut alive = false;
@@ -290,12 +332,15 @@ impl SeatRunner {
                 if self.game.outcome().await.is_some() {
                     return SeatEnd::Finished;
                 }
-                if let Some(r) = self.budget_exhausted() {
-                    return SeatEnd::Paused(r);
+                if self.started.elapsed() > self.limits.max_wall {
+                    return SeatEnd::Paused(PauseReason::WallClockExhausted);
                 }
                 let p = self.pending().await;
                 if !p.is_empty() {
                     break p;
+                }
+                if let Some(reason) = self.budget_exhausted() {
+                    return SeatEnd::Paused(reason);
                 }
                 self.set(SeatStatus::Idle, None);
                 tokio::select! {
@@ -303,6 +348,14 @@ impl SeatRunner {
                     _ = self.stop.changed() => {}
                 }
             };
+            match self.answer_automatic(&pending).await {
+                Ok(true) => continue,
+                Ok(false) => {}
+                Err(end) => return end,
+            }
+            if let Some(reason) = self.budget_exhausted() {
+                return SeatEnd::Paused(reason);
+            }
             self.set(SeatStatus::Deciding, None);
 
             // Take a session slot before touching the CLI.
@@ -332,6 +385,13 @@ impl SeatRunner {
             let mut nudges = 0;
             let mut pending = pending;
             loop {
+                // New revisions can open immediately after a model submission or
+                // crash recovery. Apply the same no-model rule before every nudge.
+                match self.answer_automatic(&pending).await {
+                    Ok(true) => break,
+                    Ok(false) => {}
+                    Err(end) => return end,
+                }
                 let prompt = match kind {
                     TurnKind::First => {
                         let notebook = self.memory.notebook_read(self.seat).await;
@@ -394,6 +454,12 @@ impl SeatRunner {
                 }
                 pending = self.pending().await;
                 if pending.is_empty() {
+                    break;
+                }
+                if pending
+                    .iter()
+                    .any(|p| crate::automatic::forced_pass(&p.space))
+                {
                     break;
                 }
                 if let Some(r) = self.budget_exhausted() {
@@ -596,6 +662,7 @@ mod tests {
         let (_, stop) = watch::channel(false);
         SeatRunner {
             seat,
+            controller_epoch: 1,
             driver: Box::new(FakeDriver {
                 seat,
                 router: h.router.clone(),

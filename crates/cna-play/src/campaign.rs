@@ -174,6 +174,35 @@ impl Demo {
                 tokio::select! {_=tokio::time::sleep(Duration::from_millis(ms))=>{}, _=windows.changed()=>{}}
                 journal.complete(seat, elapsed(start), None, &driver.telemetry())?;
             };
+            let stage = format!(
+                "GT{}:{}",
+                pending.clock.game_turn,
+                pending
+                    .clock
+                    .op_stage
+                    .map(|n| format!("OpStage{n}"))
+                    .unwrap_or_else(|| pending.clock.anchor.stage().into())
+            );
+            if cna_seats::automatic::forced_pass(&pending.space) {
+                let ms = journal.reserve(seat, "automatic", &stage, 5000)?;
+                let start = Instant::now();
+                let result = tokio::time::timeout(
+                    Duration::from_millis(ms),
+                    cna_seats::automatic::answer(
+                        &self.handle,
+                        seat,
+                        self.epochs[&seat],
+                        &pending,
+                        &self.sink,
+                    ),
+                )
+                .await
+                .map_err(|_| "automatic wall-clock budget exhausted".to_string())
+                .and_then(|r| r.map_err(|e| e.to_string()));
+                journal.complete_automatic(seat, elapsed(start), matches!(result, Ok(true)))?;
+                result?;
+                continue;
+            }
             if !started {
                 let saved = journal.snapshot()?.seats[&seat].session.clone();
                 let resume = saved.as_ref().map(|s| s.session_id.as_str());
@@ -231,15 +260,7 @@ impl Demo {
                 "{prompt}\n\nAnswer exactly decision {} revision {} once, then end this model turn. The same group may reopen with a newer revision: leave that new request for the next turn. Keep durable plans in notebook_write. Use only your scoped MCP tools.",
                 pending.id, pending.revision
             );
-            let stage = format!(
-                "GT{}:{}",
-                pending.clock.game_turn,
-                pending
-                    .clock
-                    .op_stage
-                    .map(|n| format!("OpStage{n}"))
-                    .unwrap_or_else(|| pending.clock.anchor.stage().into())
-            );
+
             let ms = journal.reserve_decision(
                 seat,
                 &stage,

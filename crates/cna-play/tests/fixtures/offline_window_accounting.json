@@ -1,0 +1,76 @@
+{
+  "columns": [
+    "before",
+    "after",
+    "automatic"
+  ],
+  "elapsed_seconds": 68.4124475,
+  "game_turn": 1,
+  "measurement": "offline counterfactual model windows from identical first-OpStage fake-controller answers; not paid usage",
+  "op_stage": 1,
+  "policy": "pass when offered; otherwise first enumerated choice with positive integer minima; no scripted supply baseline",
+  "profile": "cna-2021-dev",
+  "scenario": "graziani",
+  "seats": {
+    "axis.air": [
+      0,
+      0,
+      0
+    ],
+    "axis.commander": [
+      1,
+      1,
+      0
+    ],
+    "axis.front_line": [
+      10,
+      6,
+      4
+    ],
+    "axis.logistics": [
+      10,
+      2,
+      8
+    ],
+    "axis.rear_area": [
+      10,
+      6,
+      4
+    ],
+    "commonwealth.air": [
+      0,
+      0,
+      0
+    ],
+    "commonwealth.commander": [
+      0,
+      0,
+      0
+    ],
+    "commonwealth.front_line": [
+      10,
+      6,
+      4
+    ],
+    "commonwealth.logistics": [
+      10,
+      2,
+      8
+    ],
+    "commonwealth.rear_area": [
+      9,
+      1,
+      8
+    ]
+  },
+  "setup_excluded": true,
+  "total_after": 24,
+  "total_before": 60,
+  "engine_revision": "a7b4aa1",
+  "batching": {
+    "same_real_units": 2,
+    "single_item_model_windows": 2,
+    "list_model_windows": 1,
+    "paid_calls": 0
+  }
+}
