@@ -490,10 +490,31 @@ fn unknown_surface_and_unknown_hq_rates_follow_profiles() {
 #[test]
 fn dev_campaign_finishes_with_scripted_real_unit_moves() {
     let (c, s, _o) = setup(LEG, Some("road"), false, None);
-    let mut g = Game {
+    let mut g: Game<Cna> = Game {
         state: s,
         rng: CampaignRng::from_seed([8; 32]).state(),
     };
+    // This synthetic fixture starts mid-half. Prepare its empty pre-game convoy plans
+    // through the real logistics API before running movement, preserving its actual RNG.
+    let mut fixture_rng = CampaignRng::from_state(&g.rng);
+    let mut fixture_events = vec![];
+    let mut cx = Cx {
+        rng: &mut fixture_rng,
+        events: &mut fixture_events,
+    };
+    crate::logistics::convoys::initialize(&c, &mut g.state, false, &mut cx).unwrap();
+    while let Some(pos) = g
+        .state
+        .decisions
+        .pending
+        .iter()
+        .position(|p| p.kind.starts_with(crate::logistics::convoys::PREFIX))
+    {
+        let pending = g.state.decisions.pending.remove(pos);
+        crate::logistics::convoys::answer(&c, &mut g.state, &pending, &Value::Null, &mut cx)
+            .unwrap();
+    }
+    g.rng = fixture_rng.state();
     let rules = Cna::dev();
     let mut moves = 0;
     for n in 0..1000 {
