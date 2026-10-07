@@ -296,5 +296,107 @@ pub fn transfer_activity_water_credit(
     record(state, to, b)?;
     Ok(credit)
 }
+
+/// Before removing trucks, take only their paid activity-water credit. The caller
+/// stores the result and this WaterStage with its broken marker; reserves stay explicit.
+/// Cases: land:21.25, land:21.29, airlog:52.42, airlog:52.43
+/// Interpretations: interp:airlog-0015
+pub fn remove_activity_water_credit(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    trucks: Trucks,
+) -> Result<TruckWater, SupplyError> {
+    let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
+    if trucks.light > unit.trucks.light
+        || trucks.medium > unit.trucks.medium
+        || trucks.heavy > unit.trucks.heavy
+    {
+        return Err(SupplyError::Invalid);
+    }
+    let removed = TruckWater::from_trucks(trucks, rations::hot_multiplier(content, state, id)?)?;
+    let mut l = ledger(content, state, id)?;
+    let mut result = TruckWater::default();
+    for (required, paid, n, out) in [
+        (
+            &mut l.truck_required.light,
+            &mut l.truck_paid.light,
+            removed.light,
+            &mut result.light,
+        ),
+        (
+            &mut l.truck_required.medium,
+            &mut l.truck_paid.medium,
+            removed.medium,
+            &mut result.medium,
+        ),
+        (
+            &mut l.truck_required.heavy,
+            &mut l.truck_paid.heavy,
+            removed.heavy,
+            &mut result.heavy,
+        ),
+    ] {
+        if n > *required {
+            return Err(SupplyError::Invalid);
+        }
+        let amount = n.min(*paid);
+        *required -= n;
+        *paid -= amount;
+        *out = amount;
+    }
+    record(state, id, l)?;
+    Ok(result)
+}
+/// Before adding recovered trucks, restore their requirement and same-stage paid
+/// credit. Credit from another stage expires. This never credits the body's water
+/// or adds reserve water. The caller retires the marker in the same transaction.
+/// Cases: land:21.25, land:21.29, airlog:52.42, airlog:52.43
+/// Interpretations: interp:airlog-0015
+pub fn restore_activity_water_credit(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    trucks: Trucks,
+    paid: TruckWater,
+    credited_stage: WaterStage,
+) -> Result<(), SupplyError> {
+    paid.sum()?;
+    let required = TruckWater::from_trucks(trucks, rations::hot_multiplier(content, state, id)?)?;
+    let mut l = ledger(content, state, id)?;
+    let paid = if credited_stage == l.stage {
+        paid
+    } else {
+        TruckWater::default()
+    };
+    for (need, out, n, p) in [
+        (
+            &mut l.truck_required.light,
+            &mut l.truck_paid.light,
+            required.light,
+            paid.light,
+        ),
+        (
+            &mut l.truck_required.medium,
+            &mut l.truck_paid.medium,
+            required.medium,
+            paid.medium,
+        ),
+        (
+            &mut l.truck_required.heavy,
+            &mut l.truck_paid.heavy,
+            required.heavy,
+            paid.heavy,
+        ),
+    ] {
+        if p > n {
+            return Err(SupplyError::Invalid);
+        }
+        *need = need.checked_add(n).ok_or(SupplyError::Invalid)?;
+        *out = out.checked_add(p).ok_or(SupplyError::Invalid)?;
+    }
+    record(state, id, l)
+}
+
 #[cfg(test)]
 mod tests;

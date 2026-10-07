@@ -378,14 +378,29 @@ pub fn apply_truck_cargo_loss(
     }
     balanced(&available_types, &lost_types, 1)?;
     balanced(&available_cargo, &lost_cargo, den)?;
+    let mut draft = state.clone();
     for (id, attached, transport, carried) in changes {
-        let unit = state.land.units.get_mut(&id).expect("validated unit");
+        let killed = subtract(&draft.land.units[&id].trucks, &attached)?;
+        if killed.light > 0 || killed.medium > 0 || killed.heavy > 0 {
+            crate::logistics::remove_segment_fuel_cohorts(&mut draft, &id, killed)?;
+            let stage = crate::logistics::water::WaterStage::current(&draft);
+            if draft.logistics.rations.get(&id).is_some_and(|r| {
+                r.activity_used_stage == Some(stage)
+                    || r.activity_water_ledger
+                        .as_ref()
+                        .is_some_and(|l| l.stage == stage)
+            }) {
+                crate::logistics::remove_activity_water_credit(content, &mut draft, &id, killed)?;
+            }
+        }
+        let unit = draft.land.units.get_mut(&id).expect("validated unit");
         unit.trucks = attached;
         unit.transport_trucks = transport;
-        if let Some(stock) = state.logistics.unit_supply.get_mut(&id) {
+        if let Some(stock) = draft.logistics.unit_supply.get_mut(&id) {
             stock.carried = carried;
         }
     }
+    *state = draft;
     Ok(report)
 }
 
@@ -702,5 +717,54 @@ mod tests {
             apply_truck_cargo_loss(&c, &mut s, &[], 99, &[]).unwrap(),
             TruckCargoLossReport::default()
         );
+    }
+    /// Cases: land:12.46, airlog:49.13, airlog:49.16, airlog:52.42
+    #[test]
+    fn truck_destruction_retires_fuel_and_paid_water_without_refunding_past_movement() {
+        let (c, mut s, ids) = fixture();
+        let id = &ids[0];
+        s.cursor.op_stage = Some(1);
+        s.turn.weather = Some(crate::state::WeatherState {
+            kind: cna_tables::land::weather::WeatherKind::Normal,
+            storm_sections: vec![],
+        });
+        s.land.units.get_mut(id).unwrap().trucks.light = 2;
+        s.logistics.unit_supply.get_mut(id).unwrap().activity_water =
+            cna_core::quantity::WaterPoints::new(2);
+        s.logistics.dumps.insert(
+            "fuel-test".into(),
+            crate::state::Dump {
+                id: "fuel-test".into(),
+                marker: "dump-test".into(),
+                side: s.land.units[id].side,
+                active: true,
+                dummy: false,
+                location: crate::state::DumpLocation::Hex {
+                    hex: "C4022".into(),
+                },
+                supplies: Supplies {
+                    fuel: 3,
+                    ..Supplies::default()
+                },
+            },
+        );
+        crate::logistics::spend_segment_fuel(&c, &mut s, id, 8).unwrap();
+        crate::logistics::spend_activity_water(&c, &mut s, id).unwrap();
+        let mut a = allocation(id);
+        a.chart_losses.light = 1;
+        apply_truck_cargo_loss(&c, &mut s, std::slice::from_ref(id), 1, &[a]).unwrap();
+        assert_eq!(s.land.units[id].trucks.light, 1);
+        assert_eq!(
+            crate::logistics::segment_fuel_cohorts(&s, id)
+                .unwrap()
+                .iter()
+                .map(|c| c.count)
+                .sum::<i32>(),
+            1
+        );
+        assert_eq!(crate::logistics::activity_water_due(&c, &s, id).unwrap(), 0);
+        crate::logistics::spend_segment_fuel(&c, &mut s, id, 12).unwrap();
+        assert_eq!(s.logistics.fuel_accounts[id].paid_cost.get(), 10);
+        assert_eq!(s.logistics.dumps["fuel-test"].supplies.fuel, 2);
     }
 }

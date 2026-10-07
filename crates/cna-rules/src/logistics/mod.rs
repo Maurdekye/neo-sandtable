@@ -40,7 +40,8 @@
 pub mod activity;
 pub use activity::{
     ActivityWaterLedger, ActivityWaterPayment, TruckWater, activity_water_due,
-    consume_activity_water_forced, transfer_activity_water_credit,
+    consume_activity_water_forced, remove_activity_water_credit, restore_activity_water_credit,
+    transfer_activity_water_credit,
 };
 pub mod attrition;
 pub mod baseline;

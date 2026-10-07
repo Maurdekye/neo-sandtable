@@ -22,3 +22,5 @@ Incoming fire cannot gain immunity through a known water shortage. Partial payme
 
 ## Affected behaviour and tests
 Tests cover partial forced payments, repeated forced use, rewatering, casualty changes, hot-weather rates, checkpoints, new stages, body-versus-truck credit and atomic transfer rejection.
+
+Broken-truck markers retain their selected paid truck water and credited OpStage. Removal takes truck obligations and paid credit, never body credit or reserve water. Recovery restores the same-stage truck credit; older-stage payments expire. Actual reserve water is allocated separately with the broken vehicle holdings. Tests cover partial hot-weather credit, checkpointed recovery, expired credit and invalid markers.

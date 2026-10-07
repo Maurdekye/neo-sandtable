@@ -292,3 +292,118 @@ fn unknown_hq_is_not_treated_as_zero_and_legacy_paid_markers_remain_paid() {
         WaterPoints::ZERO
     );
 }
+
+/// Cases: land:21.25, land:21.29, airlog:52.42, airlog:52.43
+/// Interpretations: interp:airlog-0015
+#[test]
+fn partial_hot_credit_travels_to_a_marker_and_returns_without_body_or_reserve_credit() {
+    let mut s = fixture(true);
+    let id = A.into();
+    set_reserve(&mut s, A, 5);
+    consume_activity_water_forced(content(), &mut s, &id).unwrap();
+    let stage = WaterStage::current(&s);
+    let trucks = Trucks {
+        light: 1,
+        ..Trucks::default()
+    };
+    let paid = remove_activity_water_credit(content(), &mut s, &id, trucks).unwrap();
+    assert_eq!(
+        paid,
+        TruckWater {
+            light: 1,
+            ..TruckWater::default()
+        }
+    );
+    s.land.units.get_mut(&id).unwrap().trucks.light -= 1;
+    let l = s.logistics.rations[&id]
+        .activity_water_ledger
+        .as_ref()
+        .unwrap();
+    assert_eq!((l.body_required, l.body_paid), (4, 4));
+    assert_eq!(activity_water_due(content(), &s, &id).unwrap(), 6);
+    assert_eq!(s.logistics.unit_supply[&id].activity_water.get(), 0);
+    let mut recovered: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    restore_activity_water_credit(content(), &mut recovered, &id, trucks, paid, stage).unwrap();
+    recovered.land.units.get_mut(&id).unwrap().trucks.light += 1;
+    assert_eq!(activity_water_due(content(), &recovered, &id).unwrap(), 7);
+    let l = recovered.logistics.rations[&id]
+        .activity_water_ledger
+        .as_ref()
+        .unwrap();
+    assert_eq!((l.body_required, l.body_paid), (4, 4));
+    assert_eq!(l.truck_paid.light, 1);
+    assert_eq!(
+        consume_activity_water_forced(content(), &mut recovered, &id)
+            .unwrap()
+            .consumed
+            .get(),
+        0
+    );
+    set_reserve(&mut recovered, A, 7);
+    spend_activity_water(content(), &mut recovered, &id).unwrap();
+    assert_eq!(activity_water_due(content(), &recovered, &id).unwrap(), 0);
+    assert_eq!(recovered.logistics.unit_supply[&id].activity_water.get(), 0);
+    // An old marker's payment cannot satisfy a new-stage requirement.
+    s.cursor.op_stage = Some(2);
+    s.turn.weather.as_mut().unwrap().kind = WeatherKind::Normal;
+    restore_activity_water_credit(content(), &mut s, &id, trucks, paid, stage).unwrap();
+    s.land.units.get_mut(&id).unwrap().trucks.light += 1;
+    assert_eq!(activity_water_due(content(), &s, &id).unwrap(), 6);
+}
+/// Cases: land:21.25, airlog:52.42
+#[test]
+fn invalid_marker_credit_and_excess_removals_leave_water_history_unchanged() {
+    let mut s = fixture(true);
+    let id = A.into();
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(
+        remove_activity_water_credit(
+            content(),
+            &mut s,
+            &id,
+            Trucks {
+                light: 3,
+                ..Trucks::default()
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    let stage = WaterStage::current(&s);
+    assert!(
+        restore_activity_water_credit(
+            content(),
+            &mut s,
+            &id,
+            Trucks {
+                light: 1,
+                ..Trucks::default()
+            },
+            TruckWater {
+                light: 3,
+                ..TruckWater::default()
+            },
+            stage
+        )
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    assert!(
+        restore_activity_water_credit(
+            content(),
+            &mut s,
+            &id,
+            Trucks {
+                light: 1,
+                ..Trucks::default()
+            },
+            TruckWater {
+                light: -1,
+                ..TruckWater::default()
+            },
+            stage
+        )
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+}
