@@ -253,7 +253,11 @@ pub struct Pending {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Decisions {
     pub pending: Vec<Pending>,
-    pub next_id: u32,
+    /// Decisions opened so far, per seat. Ids count per seat (`axis.front_line-3`) so that a
+    /// seat's ids reveal nothing about how many decisions other seats, above all the enemy's,
+    /// were given (land:3.6).
+    #[serde(default)]
+    pub opened: BTreeMap<SeatId, u32>,
 }
 
 impl State {

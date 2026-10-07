@@ -5,13 +5,14 @@
 //! composition, status and attributes of enemy units are not. Own-side seats see everything their
 //! side knows; the operator sees everything and is labelled as omniscient by the board.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use cna_content::units::Toe;
 use cna_core::clock::{Anchor, Clock};
-use cna_core::engine::Rejection;
+use cna_core::engine::{Cx, Rejection};
+use cna_core::event::EngineEvent;
 use cna_core::ids::{HexId, UnitId};
-use cna_core::visibility::Perspective;
+use cna_core::visibility::{Audience, Perspective};
 use cna_protocol::{self as wire, Side};
 use serde_json::{Value, json};
 
@@ -159,6 +160,57 @@ pub(crate) fn toe_points(content: &CnaContent, unit: &LandUnit) -> Option<i32> {
     }
 }
 
+/// Stamp `moved_this_segment` (own detail only) from the movement state.
+fn stamp_moved(state: &State, id: &UnitId, view: &mut wire::UnitView) {
+    if let Some(detail) = view.detail.as_mut() {
+        detail.insert(
+            "moved_this_segment".to_owned(),
+            json!(state.land.movement.moved.contains(id)),
+        );
+    }
+}
+
+/// Keep `moved_this_segment` in live updates consistent with snapshots. Runs at the end of every
+/// engine call (`advance`, `respond`): it stamps the flag on each `UnitUpdated` of a land unit and
+/// sends an update for every unit whose flag the call cleared (a new Movement Segment), so viewers
+/// never keep a stale `true`. `before` is the moved set when the call began.
+pub(crate) fn sync_moved_flags(
+    content: &CnaContent,
+    state: &State,
+    before: &BTreeSet<UnitId>,
+    cx: &mut Cx<'_>,
+) {
+    let moved = &state.land.movement.moved;
+    let updated: BTreeSet<String> = cx
+        .events
+        .iter()
+        .filter_map(|e| match &e.event {
+            wire::GameEvent::UnitUpdated { unit } => Some(unit.id.clone()),
+            _ => None,
+        })
+        .collect();
+    for id in before.difference(moved) {
+        if let Some(unit) = state.land.units.get(id)
+            && !updated.contains(&id.to_string())
+        {
+            cx.emit(EngineEvent::new(
+                Audience::Side(unit.side),
+                wire::GameEvent::UnitUpdated {
+                    unit: unit_view(content, unit),
+                },
+            ));
+        }
+    }
+    for event in cx.events.iter_mut() {
+        if let wire::GameEvent::UnitUpdated { unit } = &mut event.event {
+            let id = UnitId::new(&unit.id);
+            if state.land.units.contains_key(&id) {
+                stamp_moved(state, &id, unit);
+            }
+        }
+    }
+}
+
 /// A unit's full board view (own side or operator only).
 pub(crate) fn unit_view(content: &CnaContent, unit: &LandUnit) -> wire::UnitView {
     let oa = content.units.units.get(&unit.id);
@@ -235,12 +287,7 @@ pub(crate) fn view(
             for u in members {
                 let mut view = unit_view(content, u);
                 // Own units only: whether the unit has already used its move this segment.
-                if let Some(detail) = view.detail.as_mut() {
-                    detail.insert(
-                        "moved_this_segment".to_owned(),
-                        json!(state.land.movement.moved.contains(&u.id)),
-                    );
-                }
+                stamp_moved(state, &u.id, &mut view);
                 units.insert(u.id.to_string(), view);
             }
         } else {
@@ -265,6 +312,7 @@ pub(crate) fn view(
             Location::Hex { .. } | Location::NotArrived | Location::Eliminated => continue,
         };
         let mut view = unit_view(content, u);
+        stamp_moved(state, &u.id, &mut view);
         if let Some(detail) = view.detail.as_mut() {
             detail.insert("location".to_owned(), location);
         }

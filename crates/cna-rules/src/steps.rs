@@ -152,8 +152,9 @@ pub(crate) fn open(
     secrecy: Secrecy,
     space: ActionSpace,
 ) {
-    state.decisions.next_id += 1;
-    let id = DecisionId::new(format!("d{}", state.decisions.next_id));
+    let n = state.decisions.opened.entry(seat).or_default();
+    *n += 1;
+    let id = DecisionId::new(format!("{seat}-{n}"));
     cx.emit(EngineEvent::new(
         Audience::Seat(seat),
         GameEvent::DecisionOpened {

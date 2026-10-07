@@ -340,3 +340,93 @@ fn source_files_lists_exactly_what_the_loaders_read() {
             .any(|p| p.ends_with("italian_campaign/scenario.toml"))
     );
 }
+
+/// Live unit updates carry `moved_this_segment` like snapshots, a new Movement Segment sends the
+/// reset, and decision ids count per seat so they reveal nothing about other seats.
+#[test]
+fn moved_flags_stay_live_and_decision_ids_count_per_seat() {
+    let ruleset = Cna::dev();
+    let content = content();
+    let mut game = new_game(3);
+    let mut rng = CampaignRng::from_seed([7; 32]);
+    let mut mover: Option<String> = None;
+    let mut reset_seen = false;
+    let mut opened_per_seat = std::collections::BTreeMap::<String, u32>::new();
+    let check = |events: &[EngineEvent],
+                 mover: &Option<String>,
+                 reset_seen: &mut bool,
+                 opened: &mut std::collections::BTreeMap<String, u32>| {
+        for e in events {
+            match &e.event {
+                GameEvent::UnitUpdated { unit } => {
+                    let flag = unit
+                        .detail
+                        .as_ref()
+                        .and_then(|d| d.get("moved_this_segment"));
+                    assert!(flag.is_some(), "UnitUpdated for {} lacks the flag", unit.id);
+                    if mover.as_deref() == Some(unit.id.as_str()) && flag == Some(&json!(false)) {
+                        *reset_seen = true;
+                    }
+                }
+                GameEvent::DecisionOpened { decision } => {
+                    let n = opened.entry(decision.seat.clone()).or_default();
+                    *n += 1;
+                    assert_eq!(decision.id, format!("{}-{n}", decision.seat));
+                }
+                _ => {}
+            }
+        }
+    };
+    for answered in 0..20_000 {
+        let t = evaluate(&ruleset, content, &game, &Command::Advance).unwrap();
+        check(&t.events, &mover, &mut reset_seen, &mut opened_per_seat);
+        game = t.game;
+        if reset_seen || matches!(t.progress, Some(Progress::Finished { .. })) {
+            break;
+        }
+        let request = ruleset.pending(content, &game.state).remove(0);
+        let action = if request.kind == land::movement::KIND && mover.is_none() {
+            baseline::random_orders(content, &game.state, &request, &mut rng)
+        } else {
+            match &request.space.schema {
+                ActionSchema::Choice { options } => json!(options[0].id),
+                _ => Value::Null,
+            }
+        };
+        let moving = action
+            .as_array()
+            .and_then(|orders| orders.first())
+            .and_then(|order| order["unit"].as_str())
+            .map(str::to_owned);
+        let response = DecisionResponse {
+            decision_id: request.id.clone(),
+            seat: request.seat,
+            controller_epoch: 1,
+            decision_revision: request.revision,
+            idempotency_key: format!("k{answered}"),
+            action,
+            public_explanation: None,
+        };
+        let t = evaluate(&ruleset, content, &game, &Command::Respond(response)).unwrap();
+        if let Some(unit) = moving {
+            let flagged = t.events.iter().any(|e| {
+                matches!(&e.event, GameEvent::UnitUpdated { unit: u }
+                    if u.id == unit
+                        && u.detail.as_ref().unwrap()["moved_this_segment"] == json!(true))
+            });
+            assert!(flagged, "the move's live update says the unit moved");
+            mover = Some(unit);
+        }
+        check(&t.events, &mover, &mut reset_seen, &mut opened_per_seat);
+        game = t.game;
+    }
+    assert!(mover.is_some(), "a baseline move happened");
+    assert!(
+        reset_seen,
+        "the next Movement Segment sent the mover's reset"
+    );
+    assert!(
+        opened_per_seat.len() > 2,
+        "several seats received decisions"
+    );
+}
