@@ -881,7 +881,7 @@ async fn capabilities_authorize_every_http_route_without_mutation_on_denial() {
         (
             "POST",
             format!("{decision_path}/validate"),
-            serde_json::json!({"action":draft.action}),
+            serde_json::json!({"action":draft.action,"controller_epoch":draft.controller_epoch,"decision_revision":draft.decision_revision}),
         ),
         (
             "POST",
@@ -1041,7 +1041,7 @@ async fn capabilities_authorize_every_http_route_without_mutation_on_denial() {
             client
                 .post(format!("{}{decision_path}/validate", server.url))
                 .bearer_auth(token)
-                .json(&serde_json::json!({"action":draft.action}))
+                .json(&serde_json::json!({"action":draft.action,"controller_epoch":draft.controller_epoch,"decision_revision":draft.decision_revision}))
                 .send()
                 .await
                 .unwrap()
@@ -1321,7 +1321,7 @@ async fn http_submit_retry_and_rejections_preserve_all_persistence_and_projectio
             response.clone(),
             404,
         ),
-        (endpoint.clone(), stale, 400),
+        (endpoint.clone(), stale, 409),
         (
             format!("{root}/seats/{}/decisions/unknown/submit", d.seat),
             unknown,
@@ -1649,4 +1649,163 @@ async fn run_boundary_http_is_operator_only_and_persists_without_resuming() {
             op_stage: Some(1)
         })
     );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn http_console_observation_and_validation_use_current_binding_prerequisites() {
+    let dir = tempfile::tempdir().unwrap();
+    let handle = sandbox::create(dir.path(), &data(), request("human", false)).unwrap();
+    let d = pending(&handle).await;
+    handle.pause(true).await.unwrap();
+    let id = handle.header(Perspective::Operator).meta.id;
+    let path = dir.path().join(format!("{id}.sqlite"));
+    let epoch = handle.seat(d.seat).binding.controller_epoch;
+    let response = scripted::answer(&d, epoch, Mode::PassWhenPossible, 0, &NoCandidates).unwrap();
+    let server = Server::new(dir.path(), Some(handle.clone())).await;
+    let client = server.client();
+    let root = format!("{}/api/campaigns/{id}/seats/{}", server.url, d.seat);
+    let endpoint = format!("{root}/decisions/{}/validate", d.id);
+    let observe: Value = client
+        .get(format!("{root}/observe"))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(observe["controller"]["kind"], "human");
+    assert_eq!(observe["controller_epoch"], epoch);
+    assert_eq!(observe["pending"][0]["revision"], d.revision);
+    let rows = persisted(&path);
+    let views = all_views(&handle);
+    let draft = serde_json::json!({"action":response.action,"controller_epoch":epoch,"decision_revision":d.revision});
+    assert_eq!(
+        client
+            .post(&endpoint)
+            .json(&draft)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        200
+    );
+    unchanged(&handle, &path, &rows, &views);
+    // The current epoch must not replace the caller's stale value, even for a legal action.
+    for (body, error) in [
+        (
+            serde_json::json!({"action":response.action,"controller_epoch":epoch-1,"decision_revision":d.revision}),
+            "this seat's controller epoch is out of date; the session was superseded".to_owned(),
+        ),
+        (
+            serde_json::json!({"action":response.action,"controller_epoch":epoch,"decision_revision":d.revision+1}),
+            format!(
+                "stale decision revision {} (current is {})",
+                d.revision + 1,
+                d.revision
+            ),
+        ),
+    ] {
+        let rejected = client.post(&endpoint).json(&body).send().await.unwrap();
+        assert_eq!(rejected.status(), 409);
+        assert_eq!(
+            rejected.json::<Value>().await.unwrap(),
+            serde_json::json!({"error":error})
+        );
+        unchanged(&handle, &path, &rows, &views);
+    }
+    for body in [
+        serde_json::json!({"action":response.action}),
+        serde_json::json!({"action":response.action,"controller_epoch":epoch}),
+    ] {
+        assert_eq!(
+            client
+                .post(&endpoint)
+                .json(&body)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            422
+        );
+        unchanged(&handle, &path, &rows, &views);
+    }
+    let mut invalid = draft.clone();
+    invalid["action"] = serde_json::json!({"not_a_legal_answer":true});
+    let expected = handle
+        .validate_action_at(
+            d.seat,
+            d.id.as_str(),
+            invalid["action"].clone(),
+            epoch,
+            d.revision,
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+    let rejected = client.post(&endpoint).json(&invalid).send().await.unwrap();
+    assert_eq!(rejected.status(), 400);
+    assert_eq!(
+        rejected.json::<Value>().await.unwrap(),
+        serde_json::json!({"error":expected})
+    );
+    unchanged(&handle, &path, &rows, &views);
+    let replacement = handle
+        .handover(
+            d.seat,
+            Some(cna_protocol::ControllerInfo {
+                kind: cna_protocol::ControllerKind::Scripted,
+                label: "scripted:legal_random".into(),
+            }),
+            serde_json::json!({"mode":"legal_random"}),
+        )
+        .await
+        .unwrap();
+    let rows = persisted(&path);
+    let views = all_views(&handle);
+    let observe: Value = client
+        .get(format!("{root}/observe"))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(observe["controller"]["kind"], "scripted");
+    assert_eq!(observe["controller_epoch"], replacement.controller_epoch);
+    assert_eq!(observe["pending"][0]["id"], d.id.as_str());
+    assert_eq!(
+        client
+            .post(&endpoint)
+            .json(&draft)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        409
+    );
+    assert_eq!(
+        client
+            .post(format!("{root}/decisions/{}/submit", d.id))
+            .json(&response)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        409
+    );
+    unchanged(&handle, &path, &rows, &views);
+    let mut refreshed = draft;
+    refreshed["controller_epoch"] = replacement.controller_epoch.into();
+    assert_eq!(
+        client
+            .post(&endpoint)
+            .json(&refreshed)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        200
+    );
+    unchanged(&handle, &path, &rows, &views);
+    server.stop().await;
 }

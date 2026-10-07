@@ -202,7 +202,21 @@ impl IntoResponse for ApiError {
 }
 impl From<Error> for ApiError {
     fn from(e: Error) -> Self {
-        Self(StatusCode::BAD_REQUEST, seat_error(e).to_string())
+        let status = match &e {
+            Error::StaleEpoch
+            | Error::Rejected(cna_core::engine::Rejection::StaleRevision { .. }) => {
+                StatusCode::CONFLICT
+            }
+            _ => StatusCode::BAD_REQUEST,
+        };
+        let message = match &e {
+            Error::Rejected(
+                rejection @ (cna_core::engine::Rejection::Illegal { .. }
+                | cna_core::engine::Rejection::StaleRevision { .. }),
+            ) => rejection.to_string(),
+            _ => seat_error(e).to_string(),
+        };
+        Self(status, message)
     }
 }
 fn seat(text: &str) -> Result<SeatId, ApiError> {
@@ -482,7 +496,7 @@ async fn observe(
     authorized(grant.campaign(&id) && grant.seat(seat(&s)?, false))?;
     let (observation, state) = app.campaign(&id)?.observation_state(seat(&s)?);
     Ok(Json(
-        json!({"observation":observation,"pending":state.pending,"controller_epoch":state.binding.controller_epoch,"paused":state.binding.paused,"failure":state.binding.failure}),
+        json!({"observation":observation,"pending":state.pending,"controller":state.binding.controller,"controller_epoch":state.binding.controller_epoch,"paused":state.binding.paused,"failure":state.binding.failure}),
     ))
 }
 async fn inspect_target(
@@ -516,8 +530,11 @@ async fn actions(
     ))
 }
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Draft {
     action: Value,
+    controller_epoch: u64,
+    decision_revision: u32,
 }
 async fn validate(
     State(app): State<App>,
@@ -527,7 +544,13 @@ async fn validate(
 ) -> Result<Json<Value>, ApiError> {
     authorized(grant.campaign(&id) && grant.seat(seat(&s)?, false))?;
     app.campaign(&id)?
-        .validate_action(seat(&s)?, &decision, draft.action)
+        .validate_action_at(
+            seat(&s)?,
+            &decision,
+            draft.action,
+            draft.controller_epoch,
+            draft.decision_revision,
+        )
         .await?;
     Ok(Json(json!({"valid":true})))
 }

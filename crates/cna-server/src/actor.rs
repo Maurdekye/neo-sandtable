@@ -83,7 +83,7 @@ enum Op {
     PauseSeat(SeatId, Option<u64>, String),
     Submit(DecisionResponse),
     SubmitAction(SeatId, SubmitRequest),
-    Validate(SeatId, String, Value),
+    Validate(SeatId, String, Value, Option<(u64, u32)>),
     Inspect(SeatId, String),
     Transcript(SeatId, String, TranscriptEntry),
     Notebook(SeatId),
@@ -515,7 +515,25 @@ impl CampaignHandle {
         decision: &str,
         action: Value,
     ) -> Result<(), Error> {
-        self.call(Op::Validate(seat, decision.into(), action)).await
+        self.call(Op::Validate(seat, decision.into(), action, None))
+            .await
+    }
+    /// Check a caller's binding and decision revision on the writer before pure validation.
+    pub async fn validate_action_at(
+        &self,
+        seat: SeatId,
+        decision: &str,
+        action: Value,
+        controller_epoch: u64,
+        decision_revision: u32,
+    ) -> Result<(), Error> {
+        self.call(Op::Validate(
+            seat,
+            decision.into(),
+            action,
+            Some((controller_epoch, decision_revision)),
+        ))
+        .await
     }
     pub async fn inspect(&self, seat: SeatId, target: &str) -> Result<Value, Error> {
         self.call(Op::Inspect(seat, target.into())).await
@@ -767,13 +785,19 @@ fn dispatch<R: Ruleset>(campaign: &mut Campaign<R>, op: Op) -> Result<Value, Err
                 },
             )
         }
-        Op::Validate(seat, id, action) => {
-            let request = campaign.actions(seat, &id)?;
+        Op::Validate(seat, id, action, expected) => {
+            let (controller_epoch, decision_revision) = match expected {
+                Some(expected) => expected,
+                None => (
+                    campaign.binding(seat).controller_epoch,
+                    campaign.actions(seat, &id)?.revision,
+                ),
+            };
             campaign.validate(&DecisionResponse {
                 decision_id: id.as_str().into(),
                 seat,
-                controller_epoch: campaign.binding(seat).controller_epoch,
-                decision_revision: request.revision,
+                controller_epoch,
+                decision_revision,
                 idempotency_key: "validate-only".into(),
                 action,
                 public_explanation: None,

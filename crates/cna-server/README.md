@@ -93,13 +93,19 @@ sandbox-specific factory.
 | `GET /api/campaigns/{id}/seats` | Seat metadata |
 | `POST /api/campaigns/{id}/seats/{seat}/controller` | Handover `{controller, config}`; returns new epoch |
 | `POST /api/campaigns/{id}/seats/{seat}/pause` | Pause one seat without substituting an order |
-| `GET /api/campaigns/{id}/seats/{seat}/observe` | Authorized observation, pending requests, epoch and failure |
+| `GET /api/campaigns/{id}/seats/{seat}/observe` | Authorized observation, pending requests, controller kind/label, epoch and failure |
 | `GET /api/campaigns/{id}/seats/{seat}/inspect/{target}` | Authorized ruleset detail |
 | `GET /api/campaigns/{id}/seats/{seat}/decisions/{decision}/actions` | Request and action schema |
-| `POST /api/campaigns/{id}/seats/{seat}/decisions/{decision}/validate` | Pure draft validation `{action}` |
+| `POST /api/campaigns/{id}/seats/{seat}/decisions/{decision}/validate` | Pure draft validation `{action, controller_epoch, decision_revision}` |
 | `POST /api/campaigns/{id}/seats/{seat}/decisions/{decision}/submit` | Full core `DecisionResponse` |
 | `GET /api/campaigns/{id}/transcripts?perspective=...&seat=...&after=...` | At most 512 authorized transcript rows |
 | `GET /api/campaigns/{id}/stream` | WebSocket implementing `docs/protocol.md` |
+
+Validation and submit return HTTP409 for a superseded controller epoch or stale decision
+revision, preserving the exact engine message in `{error}`. Validation checks both supplied
+prerequisites on the writer without persisting a command or consuming campaign RNG. The
+observation controller, epoch and pending requests come from one committed snapshot; submit
+checks them again, so a handover after validation cannot authorize an old submission.
 
 Metadata queries accept `?perspective=operator|side:...|seat:...`; the default is the local
 operator. The WebSocket accepts `subscribe`, then emits `hello`, a fresh `snapshot` or events
