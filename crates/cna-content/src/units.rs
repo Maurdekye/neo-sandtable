@@ -13,12 +13,14 @@ use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
 
 use crate::{ContentError, read_toml, toml_files};
+pub mod formations;
 mod ships;
 pub use ships::{CoastalShip, ShipRoster};
 
 /// Everything under `data/units/`.
 #[derive(Debug, Clone, Default)]
 pub struct UnitsContent {
+    pub formations: formations::FormationContent,
     pub coastal_ships: BTreeMap<String, CoastalShip>,
     /// Validated relative data/units paths and their distinct counter ids.
     pub coastal_rosters: BTreeMap<String, Vec<String>>,
@@ -561,6 +563,12 @@ impl UnitsContent {
             schedule.path = path;
             out.schedules.push(schedule);
         }
+        out.formations = formations::FormationContent::load(
+            &units_dir.join("formations"),
+            &out.classes,
+            &out.units,
+            &out.sheets,
+        )?;
         out.check(units_dir)?;
         Ok(out)
     }

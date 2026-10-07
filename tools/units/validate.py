@@ -218,7 +218,7 @@ FORMATION_ALLOWED = {"id", "nation", "name", "kind", "echelon", "sp", "periods",
 MEMBER_ALLOWED = {"kind", "formation", "sp", "any_of", "style", "gap", "glyph_note", "echelon_mark", "note"}
 ECHELONS = {"company", "battalion", "brigade", "super_brigade", "division", "battle_group"}
 SYMBOL_ECHELONS = {"I", "II", "III", "X", "XX"}
-kinds, formations = {}, {}
+kinds, formations, parents = {}, {}, {}
 form_refs = []  # (path, owner, field, ref)
 for p in sorted((units / "formations").glob("*.toml")) if (units / "formations").exists() else []:
     d = load(p)
@@ -300,6 +300,44 @@ for p in sorted((units / "formations").glob("*.toml")) if (units / "formations")
 
         for m in f.get("members", []):
             check_member(m, True)
+
+    for row in d.get("parent", []):
+        check_fields(p, row, ["unit", "evidence", "src"],
+                     {"unit", "profiles", "oa_slots", "evidence", "src", "attachment_maximum"}, "parent")
+        uid = row.get("unit")
+        if uid in parents:
+            err(p, f"duplicate organization parent {uid}")
+        parents[uid] = (p, row)
+        if ("profiles" in row) == ("oa_slots" in row):
+            err(p, f"{uid}: exactly one of profiles and oa_slots is required")
+        ev = row.get("evidence", {})
+        if ev.get("verification") != "double" or len(ev.get("transcribed_from", [])) < 2 or not all(ev.get("transcribed_from", [])):
+            err(p, f"{uid}: paired double-read organization evidence required")
+        form_refs.append((p, uid, "unit", uid))
+        for fid in row.get("profiles", []):
+            form_refs.append((p, uid, "formation", fid))
+        for slot in row.get("oa_slots", []):
+            form_refs.append((p, uid, "unit", slot))
+        if "profiles" in row and not row["profiles"]:
+            err(p, f"{uid}: empty profile list")
+        limit = row.get("attachment_maximum")
+        if limit is not None:
+            check_fields(p, limit, ["units", "evidence", "src"], {"units", "evidence", "src"}, "attachment maximum")
+            ev = limit.get("evidence", {})
+            if not isinstance(limit.get("units"), int) or limit["units"] < 0 or ev.get("verification") != "double" or len(ev.get("transcribed_from", [])) < 2:
+                err(p, f"{uid}: invalid attachment maximum evidence")
+
+for uid, (p, row) in parents.items():
+    dates = []
+    for fid in row.get("profiles", []):
+        f = formations.get(fid)
+        if not f:
+            continue
+        for period in f.get("periods", [{"gt_from": 1}]):
+            lo, hi = period.get("gt_from", 1), period.get("gt_to", 65535)
+            if any(lo <= b and a <= hi for a, b in dates):
+                err(p, f"{uid}: overlapping inclusive organization profiles")
+            dates.append((lo, hi))
 
 # sp consistency of member rows vs. the referenced kind / formation
 for p, owner, what, ref in form_refs:

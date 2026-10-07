@@ -456,3 +456,22 @@ Free French MS406/Potez63/11 rows use symmetric references for their scenario-sp
 squadron permission (`scen:60.42`, `airlog:35.21`). Squadron composition otherwise follows
 the printed class restrictions. Refitted reserves remain part of the ready-plane count; the
 flight-ready limit does not cap all refitted planes stored at the squadron (`airlog:35.26`).
+
+### Parent organization mappings
+
+Each `[[parent]]` row in a formation chart file names one OA `unit` and exactly
+one capacity source: `profiles = [formation ids]` for a chart-defined parent, or
+`oa_slots = [OA unit ids]` for explicit slots on a singular OA structure.
+The slots are source templates; they do not change when a child is eliminated.
+An explicitly empty `oa_slots` list means zero assignment capacity.
+
+`evidence = { transcribed_from = [OA source, chart source], verification = "double" }`
+and `src` accompany the mapping. A separate `attachment_maximum` table, when
+printed, contains `units`, its own `evidence`, and `src`. Assignment slots never
+supply an attachment maximum. Every OA unit can have only one mapping.
+
+Profiles use the referenced formation's inclusive `periods`; omitted periods
+mean all positive Game-Turns. Overlapping profile periods, unknown references,
+and mappings with both or neither capacity source fail loading. A gap between
+periods stays a gap: the engine cannot choose a neighbouring profile. The
+content loader tracks each consumed formation file for campaign pinning.
