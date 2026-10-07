@@ -489,7 +489,7 @@ fn run(
                 own_half,
             )?;
             if truth {
-                events.extend(super::engagement::break_off(content, state, id));
+                super::engagement::break_off(state, id);
             } else {
                 // Own-known planning prices the mover's breakoff, never updates its opponents.
                 state.land.units.get_mut(id).unwrap().engaged = false;

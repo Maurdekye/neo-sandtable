@@ -2468,7 +2468,7 @@ fn last_engaged_opponent_retreat_clears_both_tanks_and_recovers_relationships() 
     place(&mut s, other.as_str(), "C4020");
     let defenders = [UnitId::new(TANK), other.clone()];
     let id = UnitId::new(LEG);
-    super::super::engagement::engage(&c, &mut s, std::slice::from_ref(&id), &defenders).unwrap();
+    super::super::engagement::engage(&mut s, std::slice::from_ref(&id), &defenders).unwrap();
     let order = Order {
         unit: id.clone(),
         path: vec!["C4022".into(), "C4023".into()],
@@ -2503,9 +2503,21 @@ fn last_engaged_opponent_retreat_clears_both_tanks_and_recovers_relationships() 
     for unit in std::iter::once(&id).chain(&defenders) {
         assert!(!s.land.units[unit].engaged);
     }
+    let initial: State = serde_json::from_value(before).unwrap();
+    let game = start(&c, initial, true);
+    let accepted = respond(
+        &c,
+        &game,
+        seat,
+        json!([{"unit":id,"path":["C4022","C4023"]}]),
+        true,
+    )
+    .unwrap();
     for d in &defenders {
-        assert!(events.iter().any(|e| e.audience==Audience::Side(Side::Axis)
-            && matches!(&e.event, cna_protocol::GameEvent::UnitUpdated{unit} if unit.id==d.as_str())));
+        assert!(accepted.events.iter().any(|e| e.audience==Audience::SideOnly(Side::Axis)
+            && matches!(&e.event,cna_protocol::GameEvent::UnitUpdated {unit} if unit.id==d.as_str())));
+        assert!(!accepted.events.iter().any(|e| e.visible_to(Perspective::Side(Side::Commonwealth))
+            && matches!(&e.event,cna_protocol::GameEvent::UnitUpdated {unit} if unit.id==d.as_str())));
     }
     let restored: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
     assert_eq!(
@@ -2552,7 +2564,7 @@ fn one_remaining_engaged_opponent_preserves_tank_flags_until_its_own_breakoff() 
     }
     let defenders = [UnitId::new(TANK), other];
     let attackers = [UnitId::new(LEG), second.clone()];
-    super::super::engagement::engage(&c, &mut s, &attackers, &defenders).unwrap();
+    super::super::engagement::engage(&mut s, &attackers, &defenders).unwrap();
     let original: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
     let mut rng = CampaignRng::from_seed([73; 32]);
     for (n, id) in attackers.iter().enumerate() {
@@ -2599,7 +2611,7 @@ fn one_remaining_engaged_opponent_preserves_tank_flags_until_its_own_breakoff() 
     assert!(s.land.engagements.is_empty());
     // Invalid participant sides are checked before any relation or flag changes.
     let before = serde_json::to_value(&s).unwrap();
-    assert!(super::super::engagement::engage(&c, &mut s, &attackers, &attackers).is_err());
+    assert!(super::super::engagement::engage(&mut s, &attackers, &attackers).is_err());
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
     // The graph's identities do not appear in the opponent's readable state.
     let mut graph_only = original.clone();
