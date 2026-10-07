@@ -137,3 +137,6 @@ pub fn random_breakdown(
         .unwrap_or(Value::Null)
 }
 pub use crate::land::combat::assignment::random_orders as random_assignments;
+
+/// Source-conserving fixed arrival/withdrawal role plans.
+pub use crate::land::arrivals::arrival_orders;
