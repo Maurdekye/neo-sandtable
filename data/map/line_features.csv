@@ -106,6 +106,11 @@ D4001,D4002,road,land:8.33;land:8.37,map-lines-0002
 E2901,E3001,track,land:8.33;land:8.37,map-lines-2-0004
 E2902,E3001,track,land:8.33;land:8.37,map-lines-2-0004
 E2905,E3004,track,land:8.33;land:8.37,map-lines-2-0004
+E2909,E3008,track,land:8.33;land:8.37,map-lines-2-0006
+E2910,E3010,track,land:8.33;land:8.37,map-lines-2-0006
+E2911,E3010,track,land:8.33;land:8.37,map-lines-2-0006
+E2914,E2915,road,land:8.33;land:8.37,map-lines-2-0006
+E2914,E3013,road,land:8.33;land:8.37,map-lines-2-0006
 E3001,E3002,track,land:8.33;land:8.37,map-lines-2-0004
 E3001,E3102,road,land:8.33;land:8.37,map-lines-2-0004
 E3002,E3003,road,land:8.33;land:8.37,map-lines-2-0004
@@ -117,6 +122,13 @@ E3005,E3106,road,land:8.33;land:8.37,map-lines-2-0004
 E3006,E3106,road,land:8.33;land:8.37,map-lines-2-0004
 E3007,E3107,road,land:8.33;land:8.37,map-lines-2-0004
 E3007,E3108,road,land:8.33;land:8.37,map-lines-2-0004
+E3008,E3109,track,land:8.33;land:8.37,map-lines-2-0006
+E3010,E3011,track,land:8.33;land:8.37,map-lines-2-0006
+E3010,E3111,track,land:8.33;land:8.37,map-lines-2-0006
+E3011,E3012,track,land:8.33;land:8.37,map-lines-2-0006
+E3011,E3111,track,land:8.33;land:8.37,map-lines-2-0006
+E3012,E3113,track,land:8.33;land:8.37,map-lines-2-0006
+E3013,E3113,road,land:8.33;land:8.37,map-lines-2-0006
 E3101,E3102,road,land:8.33;land:8.37,map-lines-2-0004
 E3106,E3107,road,land:8.33;land:8.37,map-lines-2-0004
 E3107,E3108,road,land:8.33;land:8.37,map-lines-2-0004
@@ -137,3 +149,7 @@ E3410,E3411,road,land:8.33;land:8.37,map-lines-2-0005
 E3411,E3512,road,land:8.33;land:8.37,map-lines-2-0005
 E3512,E3513,road,land:8.33;land:8.37,map-lines-2-0005
 E3513,E3613,road,land:8.33;land:8.37,map-lines-2-0005
+E3613,E3714,road,land:8.33;land:8.37,map-lines-2-0006
+E3614,E3615,road,land:8.33;land:8.37,map-lines-2-0006
+E3614,E3714,road,land:8.33;land:8.37,map-lines-2-0006
+E3714,E3715,road,land:8.33;land:8.37,map-lines-2-0006

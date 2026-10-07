@@ -144,6 +144,13 @@ E3105,NE,E3205,all_sea,,land:8.35;land:8.37,map-lines-2-0004
 E3106,NW,E3205,all_sea,,land:8.35;land:8.37,map-lines-2-0004
 E3106,NE,E3206,all_sea,,land:8.35;land:8.37,map-lines-2-0004
 E3107,NW,E3206,all_sea,,land:8.35;land:8.37,map-lines-2-0004
+E3201,NW,E3301,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3205,E,E3206,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3206,E,E3207,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3206,NE,E3307,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3207,NW,E3307,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3207,NE,E3308,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3307,E,E3308,all_sea,,land:8.35;land:8.37,map-lines-2-0006
 E3308,E,E3309,all_sea,,land:8.35;land:8.37,map-lines-2-0005
 E3308,NE,E3408,all_sea,,land:8.35;land:8.37,map-lines-2-0005
 E3309,NW,E3408,all_sea,,land:8.35;land:8.37,map-lines-2-0005
@@ -156,3 +163,12 @@ E3510,E,E3511,all_sea,,land:8.35;land:8.37,map-lines-2-0005
 E3511,E,E3512,all_sea,,land:8.35;land:8.37,map-lines-2-0005
 E3511,NE,E3611,all_sea,,land:8.35;land:8.37,map-lines-2-0005
 E3512,NW,E3611,all_sea,,land:8.35;land:8.37,map-lines-2-0005
+E3611,E,E3612,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3713,E,E3714,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3713,NE,E3813,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3714,NW,E3813,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3813,E,E3814,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3813,NE,E3914,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3814,NW,E3914,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3814,NE,E3915,all_sea,,land:8.35;land:8.37,map-lines-2-0006
+E3914,E,E3915,all_sea,,land:8.35;land:8.37,map-lines-2-0006
