@@ -21,6 +21,16 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
 
+  # End-to-end tests too slow for every landing (whole campaigns with active movers, the
+  # launcher's scripted campaign) are #[ignore = "slow: ..."] and run here after each push.
+  rust-slow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace -- --ignored
+
   web:
     runs-on: ubuntu-latest
     defaults:

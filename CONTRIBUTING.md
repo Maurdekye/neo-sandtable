@@ -83,6 +83,14 @@ tests that pin it. The lead agent batches consequential interpretations for the 
   the holder and the queue, `leave` gives up your place. Never push to `main` while someone else
   holds the lock, and never force-push `main`; `tools/land.py` force-updates only its own
   `landing-lock` and `landing-queue/*` refs, with leases.
+- **Test time.** The checks everyone runs before each push must stay quick, so the landing
+  queue keeps moving. Each test in the default `cargo test --workspace` should finish within
+  about 60 seconds on this shared, busy machine. Slower end-to-end tests (whole campaigns with
+  active movers, the launcher's scripted campaign) are marked `#[ignore = "slow: <why>"]` and run
+  in CI's `rust-slow` job after every push. Run them yourself with
+  `cargo test -p <crate> -- --ignored` when you change what they cover, and keep a bounded
+  version (one game-turn, a fixed number of decisions) in the default set, so the same paths
+  are still exercised before each push. Never just raise a timeout to make a slow test fit.
 - **Disk.** All agents build on one machine. Keep a single clone, build with the workspace
   profile (small debug info, no incremental cache), and run `cargo clean` in your clone if its
   `target/` grows past a few GB.
