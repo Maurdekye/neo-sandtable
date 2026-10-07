@@ -2,6 +2,7 @@ use super::*;
 use crate::state::{UnitSupply, WeatherState, WellState};
 use cna_content::{places::Place, units::Trucks};
 use cna_core::{dice::CampaignRng, quantity::FuelTenths};
+use cna_protocol::Role;
 use cna_tables::land::weather::{MapSection, WeatherKind};
 
 fn setup(kind: Option<&str>) -> (CnaContent, State, UnitId, HexId) {
@@ -572,4 +573,47 @@ fn rain_clears_the_public_depletion_marker_without_clearing_poison() {
         condition(&state, &hex, Perspective::Side(Side::Axis)),
         json!({"poisoned":true})
     );
+}
+
+/// Cases: airlog:52.13, airlog:52.41
+#[test]
+fn dispatcher_routes_draw_and_allocation_after_the_well_menu() {
+    let (content, mut state, id, _) = setup(None);
+    state.land.units.get_mut(&id).unwrap().location = Location::Hex {
+        hex: "E1730".into(),
+    };
+    let seat = SeatId::new(Side::Axis, Role::Logistics);
+    let mut rng = CampaignRng::from_seed([7; 32]);
+    let mut events = Vec::new();
+    let mut cx = Cx {
+        rng: &mut rng,
+        events: &mut events,
+    };
+    open_request(&content, &mut state, &id, seat, &mut cx).unwrap();
+    let pending = state.decisions.pending.pop().unwrap();
+    assert!(pending.kind.starts_with(REQUEST_PREFIX));
+    crate::Cna::dev()
+        .respond_to(
+            &content,
+            &mut state,
+            &pending,
+            &serde_json::json!({"requested":1,"packing":CargoPacking::default()}),
+            &mut cx,
+        )
+        .unwrap();
+    let pending = state.decisions.pending.pop().unwrap();
+    assert!(pending.kind.starts_with(ALLOCATE_PREFIX));
+    crate::Cna::dev()
+        .respond_to(
+            &content,
+            &mut state,
+            &pending,
+            &serde_json::json!({"infantry":1,"activity":0,"pasta":false,"cargo":0,
+            "packing":CargoPacking::default()}),
+            &mut cx,
+        )
+        .unwrap();
+    assert!(!state.logistics.drawn_water.contains_key(&id));
+    assert_eq!(state.logistics.rations[&id].infantry_water_received, 1);
+    assert_eq!(state.land.units[&id].cp_spent_quarters, 4);
 }
