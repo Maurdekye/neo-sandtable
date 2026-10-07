@@ -3,7 +3,7 @@
 pub use crate::logistics::baseline::logistics_orders;
 use crate::{
     CnaContent, State,
-    land::{movement, zoc},
+    land::{movement, reaction},
 };
 use cna_core::{
     decision::{ActionSchema, DecisionRequest},
@@ -32,7 +32,7 @@ fn index(rng: &mut CampaignRng, count: usize) -> usize {
 }
 /// Choose at most one complete move, preventing competing draws/stack destinations in a list.
 /// Uncertain control may truncate the move at execution but is never queried by this controller.
-/// Under full, avoid public enemy adjacency because reaction is not supported yet.
+/// Reaction and continuation use the same own-information search.
 /// Cases: land:8.11, land:8.13, land:10.6, land:19.44
 pub fn random_orders(
     content: &CnaContent,
@@ -40,7 +40,10 @@ pub fn random_orders(
     request: &DecisionRequest,
     rng: &mut CampaignRng,
 ) -> Value {
-    if request.kind != movement::KIND {
+    if !matches!(
+        request.kind.as_str(),
+        movement::KIND | reaction::KIND | reaction::CONTINUE
+    ) {
         return Value::Null;
     }
     let ActionSchema::List { item, .. } = &request.space.schema else {
@@ -68,18 +71,7 @@ pub fn random_orders(
         let strict = state.land.movement.strict;
         let paths: Vec<_> = movement::reachable(content, state, &id, strict)
             .into_iter()
-            .filter(|r| {
-                !r.path.is_empty()
-                    && (!strict
-                        || r.path.iter().all(|hex| {
-                            !zoc::possibly_controlled(
-                                content,
-                                state,
-                                request.seat.side.opponent(),
-                                hex,
-                            )
-                        }))
-            })
+            .filter(|r| !r.path.is_empty())
             .collect();
         if paths.is_empty() {
             continue;

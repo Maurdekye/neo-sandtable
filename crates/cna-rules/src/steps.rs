@@ -121,6 +121,17 @@ impl Cna {
             crate::land::combat::POSITION_KIND => {
                 crate::land::combat::answer_positions(content, state, pending, action, cx)
             }
+            crate::land::reaction::KIND => {
+                crate::land::reaction::answer(content, state, pending, action, self.strict, cx)
+            }
+            crate::land::reaction::CONTINUE => crate::land::reaction::answer_continuation(
+                content,
+                state,
+                pending,
+                action,
+                self.strict,
+                cx,
+            ),
             crate::land::movement::KIND => {
                 crate::land::movement::answer(content, state, pending, action, self.strict, cx)
             }

@@ -1514,3 +1514,143 @@ fn reserve_designation_movement_and_release_survive_recovery() {
     assert_eq!(g.state.cursor.cycle, 3);
     assert!(!reachable(&c, &g.state, &TANK.into(), false).is_empty());
 }
+
+fn reaction_fixture() -> (CnaContent, Game<Cna>, Overlay, UnitId) {
+    let (c, mut s, o) = setup(TANK, Some("road"), false, None);
+    let defender = s
+        .units_of(Side::Commonwealth)
+        .find(|u| {
+            formation::class(&c, &u.id).is_some_and(|a| a.unit_type == "tank")
+                && formation::individual_allowance(&c, &s, &u.id).is_some_and(|a| a.motorized)
+        })
+        .unwrap()
+        .id
+        .clone();
+    place(&mut s, defender.as_str(), "C4022");
+    {
+        let g = start(&c, s, true);
+        (c, g, o, defender)
+    }
+}
+/// Cases: land:8.51, land:8.52, land:8.55, land:8.13, land:3.62
+/// Interpretations: interp:land-0026
+#[test]
+fn reaction_interrupt_replans_and_survives_checkpoint_without_breaking_off_cost() {
+    let (c, g, _o, defender) = reaction_fixture();
+    let mover = seat(&g);
+    let t = respond(
+        &c,
+        &g,
+        mover,
+        json!([{"unit":TANK,"path":["C4021","C4022","C4023"]}]),
+        true,
+    );
+    // A path cannot include the public occupied enemy hex.
+    assert!(t.is_err());
+    let t = respond(
+        &c,
+        &g,
+        mover,
+        json!([{"unit":TANK,"path":["C4021","C4020"]}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(
+        t.game.state.land.units[&TANK.into()].location.hex(),
+        Some(&"C4021".into())
+    );
+    assert!(
+        t.game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .all(|p| p.kind == super::super::reaction::KIND)
+    );
+    assert_eq!(t.game.state.land.units[&TANK.into()].cp_spent_quarters, 2);
+    let serialized = serde_json::to_vec(&t.game).unwrap();
+    let recovered: Game<Cna> = serde_json::from_slice(&serialized).unwrap();
+    let defender_seat = seat(&recovered);
+    let t = respond(
+        &c,
+        &recovered,
+        defender_seat,
+        json!([{"unit":defender,"path":["C4023"]}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(t.game.state.land.units[&defender].cp_spent_quarters, 2);
+    assert_eq!(t.game.state.land.units[&defender].voluntary_cp_quarters, 0);
+    assert_eq!(
+        t.game.state.decisions.pending[0].kind,
+        super::super::reaction::CONTINUE
+    );
+    let t = respond(
+        &c,
+        &t.game,
+        mover,
+        json!([{"unit":TANK,"path":["C4020"]}]),
+        true,
+    )
+    .unwrap();
+    assert_eq!(t.game.state.land.units[&TANK.into()].cp_spent_quarters, 4);
+    assert_eq!(
+        t.game.state.land.units[&TANK.into()].location.hex(),
+        Some(&"C4020".into())
+    );
+    assert!(t.game.state.land.reaction.continuation.is_none());
+    let enemy = Cna::full().inspect(&c, &t.game.state, Perspective::Seat(defender_seat), TANK);
+    assert!(enemy.is_err());
+}
+/// Cases: land:8.51, land:8.52, land:8.55, land:10.6
+#[test]
+fn reaction_baseline_answers_are_accepted_for_many_seeds() {
+    let (c, g, _o, _) = reaction_fixture();
+    let t = respond(
+        &c,
+        &g,
+        seat(&g),
+        json!([{"unit":TANK,"path":["C4021"]}]),
+        true,
+    )
+    .unwrap();
+    let request = Cna::full().pending(&c, &t.game.state)[0].clone();
+    assert_eq!(request.kind, super::super::reaction::KIND);
+    for n in 0..96u8 {
+        let mut rng = CampaignRng::from_seed([n; 32]);
+        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng);
+        let accepted = respond(&c, &t.game, request.seat, action.clone(), true);
+        assert!(accepted.is_ok(), "seed {n}: {action}: {:?}", accepted.err());
+    }
+}
+/// Cases: land:8.53, land:8.54
+#[test]
+fn reaction_eligibility_excludes_engaged_pinned_and_unmotorized_defenders() {
+    let (c, g, _o, id) = reaction_fixture();
+    let moving = vec![TANK.into()];
+    assert!(
+        super::super::reaction::candidates(&c, &g.state, &moving, &"C4021".into(), &[], true)
+            .unwrap()
+            .contains(&id)
+    );
+    for engaged in [false, true] {
+        let mut s = g.state.clone();
+        if engaged {
+            s.land.units.get_mut(&id).unwrap().engaged = true
+        } else {
+            s.land.combat.pinned.insert(id.clone());
+        }
+        assert!(
+            !super::super::reaction::candidates(&c, &s, &moving, &"C4021".into(), &[], true)
+                .unwrap()
+                .contains(&id)
+        );
+    }
+    let mut s = g.state.clone();
+    place(&mut s, LEG, "C4022");
+    assert!(
+        !super::super::reaction::candidates(&c, &s, &moving, &"C4021".into(), &[], true)
+            .unwrap()
+            .contains(&LEG.into())
+    );
+}

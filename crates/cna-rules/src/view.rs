@@ -484,6 +484,8 @@ pub(crate) fn inspect(
             "moved_this_segment": state.land.movement.moved.contains(&unit.id),
             "repeat_movement_allowed": crate::land::cycles::movement_allowed(state, &unit.id),
             "reserve": unit.reserve,
+            "engaged": unit.engaged,
+            "assault_intentions": state.land.assault_intentions.get(&unit.id),
             "movement_restrictions": crate::land::formation::members(content,state,&unit.id).into_iter().map(|id| {
                 let assessment=crate::logistics::movement_restrictions(content,state,&id).map(|r|json!({
                     "may_move":r.may_move,"may_exceed_cpa":r.may_exceed_cpa,"may_enter_enemy_zoc":r.may_enter_enemy_zoc,

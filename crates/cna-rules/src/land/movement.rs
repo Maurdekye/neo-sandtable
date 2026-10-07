@@ -22,9 +22,29 @@ use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const KIND: &str = "cna.movement.orders";
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NonPhasingMove {
+    #[default]
+    Reaction,
+    Retreat,
+}
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum WindowMode {
+    #[default]
+    Segment,
+    Reaction,
+    Retreat,
+}
+
 const PATH_LIMIT: u32 = 4096;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct MovementState {
+    #[serde(default)]
+    mode: WindowMode,
+    #[serde(default)]
+    pub starting_controls: BTreeMap<HexId, bool>,
     /// Profile of this entered window, so scripted controllers use the same reachability policy.
     #[serde(default)]
     pub strict: bool,
@@ -39,13 +59,15 @@ pub struct MovementState {
     /// Units explicitly off the network; retained between segments until they use it again.
     pub off_road: BTreeSet<UnitId>,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Order {
-    unit: UnitId,
-    path: Vec<HexId>,
+pub struct Order {
+    pub unit: UnitId,
+    pub path: Vec<HexId>,
     #[serde(default)]
-    with_stack: bool,
+    pub with_stack: bool,
+    #[serde(default)]
+    pub close_assault: Vec<HexId>,
 }
 #[derive(Debug, Clone, Serialize)]
 pub struct Reachable {
@@ -142,18 +164,22 @@ fn eligible_base(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId)
     u.side == seat.side
         && u.location.hex().is_some()
         && ownership::seat_for_unit(content, state, id) == seat.role
-        && !state.land.movement.moved.contains(id)
-        && super::cycles::movement_allowed(state, id)
+        && (state.land.movement.mode != WindowMode::Segment
+            || continuing(state, id)
+            || !state.land.movement.moved.contains(id))
+        && (state.land.movement.mode != WindowMode::Segment
+            || super::cycles::movement_allowed(state, id))
         && super::reserve::validate_path(u, 1).is_ok()
-        && !matches!(
-            content.units.units[id].kind.as_deref(),
-            Some("convoy" | "second_line_truck" | "third_line_truck")
-        )
+        && (state.land.movement.mode != WindowMode::Segment
+            || !matches!(
+                content.units.units[id].kind.as_deref(),
+                Some("convoy" | "second_line_truck" | "third_line_truck")
+            ))
 }
 fn eligible(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId) -> bool {
     eligible_base(content, state, id, seat)
         && formation::allowance(content, state, id)
-            .is_some_and(|a| capability::validate_move(&state.land.units[id], a, 1).is_ok())
+            .is_some_and(|a| validate_window_move(state, &state.land.units[id], a, 1).is_ok())
 }
 fn available(content: &CnaContent, state: &State, seat: SeatId) -> Vec<UnitId> {
     let formations = formation::FormationIndex::new(content, state);
@@ -191,6 +217,7 @@ fn open_seat(content: &CnaContent, state: &mut State, seat: SeatId, cx: &mut Cx<
     let space=ActionSpace::new(ActionSchema::List {min:0,max:count,item:Box::new(ActionSchema::Record {fields:vec![
         FieldSchema {name:"unit".into(),doc:"Unit to move once in this segment; its represented components move with it.".into(),schema:ActionSchema::Unit {among:ids},optional:false},
         FieldSchema {name:"path".into(),doc:"Complete ordered move: adjacent hexes entered, beginning next to the current hex.".into(),schema:ActionSchema::List {item:Box::new(ActionSchema::Hex {among:None}),min:1,max:PATH_LIMIT},optional:false},
+        FieldSchema {name:"close_assault".into(),doc:"Public enemy stack hexes against which this move announces close assault.".into(),schema:ActionSchema::List {item:Box::new(ActionSchema::Hex{among:None}),min:0,max:6},optional:true},
         FieldSchema {name:"with_stack".into(),doc:"Move all independent counters here commanded by this seat as one stack.".into(),schema:ActionSchema::Bool,optional:true},
     ]})}).with_pass("Finish this seat's movement for the segment.");
     open(state,cx,seat,KIND,"Order complete moves in execution order. Inspect your units for paths and exact quarter-CP/fuel costs, or pass to finish.".into(),
@@ -225,6 +252,8 @@ pub fn enter(
     state.land.movement.strict = strict;
     state.land.movement.moved.clear();
     state.land.movement.controls.clear();
+    state.land.movement.starting_controls.clear();
+    state.land.reaction = super::reaction::ReactionState::default();
     let starts: BTreeSet<_> = state
         .units_of(side)
         .filter_map(|u| u.location.hex().cloned())
@@ -233,6 +262,7 @@ pub fn enter(
         let control = zoc::controlled(content, state, side.opponent(), &hex, strict)?;
         state.land.movement.controls.insert(hex, control);
     }
+    state.land.movement.starting_controls = state.land.movement.controls.clone();
     for role in [Role::FrontLine, Role::RearArea, Role::Logistics] {
         open_seat(content, state, SeatId::new(side, role), cx);
     }
@@ -263,6 +293,13 @@ fn unit_stack(
     seat: SeatId,
     strict: bool,
 ) -> Result<Vec<UnitId>, Rejection> {
+    if continuing(state, &order.unit) {
+        let k = state.land.reaction.continuation.as_ref().unwrap();
+        if k.seat != seat || k.with_stack != order.with_stack || k.mover_stopped {
+            return Err(illegal("unit cannot continue this move"));
+        }
+        return Ok(k.members.clone());
+    }
     if !eligible(content, state, &order.unit, seat) {
         return Err(illegal(
             "unit is not available to this seat in this segment",
@@ -288,10 +325,10 @@ fn unit_stack(
         }
         members.extend(formation::members(content, state, root));
     }
-    if members
-        .iter()
-        .any(|id| !super::cycles::movement_allowed(state, id))
-    {
+    if members.iter().any(|id| {
+        state.land.movement.mode == WindowMode::Segment
+            && !super::cycles::movement_allowed(state, id)
+    }) {
         return Err(illegal(
             "a represented unit cannot repeat movement this phase (land:8.23)",
         ));
@@ -317,15 +354,21 @@ fn unit_stack(
             .ok_or_else(|| illegal("parent movement rating is unresolved"))?;
         let limits = logistics::movement_restrictions(content, state, &parent)
             .map_err(|e| activity_error(e, strict))?;
-        validate_supplied_cp(&state.land.units[&parent], a, 4, limits)?;
+        validate_window_cp(state, &state.land.units[&parent], a, 4, limits)?;
         spend_activity(content, state, &parent, strict)?;
-        capability::charge(state.land.units.get_mut(&parent).unwrap(), a, 4, true)?;
+        let own_half = state.land.movement.mode == WindowMode::Segment;
+        capability::charge(state.land.units.get_mut(&parent).unwrap(), a, 4, own_half)?;
         let a = formation::individual_allowance(content, state, &order.unit)
             .ok_or_else(|| illegal("movement rating is unresolved"))?;
         let limits = moving_limits(content, state, &order.unit, strict)?;
-        validate_supplied_cp(&state.land.units[&order.unit], a, 4, limits)?;
+        validate_window_cp(state, &state.land.units[&order.unit], a, 4, limits)?;
         spend_activity(content, state, &order.unit, strict)?;
-        capability::charge(state.land.units.get_mut(&order.unit).unwrap(), a, 4, true)?;
+        capability::charge(
+            state.land.units.get_mut(&order.unit).unwrap(),
+            a,
+            4,
+            own_half,
+        )?;
         state.land.units.get_mut(&order.unit).unwrap().detached = true;
         state.land.units.get_mut(&order.unit).unwrap().attached_to = None;
         if content.units.units[&order.unit].parent.as_ref() != Some(&parent) {
@@ -339,7 +382,7 @@ fn unit_stack(
 /// Cases: land:8.13, land:8.14, land:8.15, land:8.24, land:8.65, land:9.31, land:9.33
 /// Cases: land:29.44, land:29.51
 /// Cases: land:10.22, land:10.23, land:10.24, land:10.25, land:10.26, land:10.29, land:19.43, land:19.44
-/// Unsupported: land:8.51 - reaction requires the separate reaction procedure.
+/// Cases: land:8.51, land:8.52, land:8.53, land:8.55, land:8.56
 #[allow(clippy::too_many_arguments)]
 fn run(
     content: &CnaContent,
@@ -355,6 +398,12 @@ fn run(
     if order.path.is_empty() || order.path.len() > PATH_LIMIT as usize {
         return Err(illegal("path length is invalid"));
     }
+    validate_announcements(content, state, order)?;
+    let initial_cp = state
+        .land
+        .units
+        .get(&order.unit)
+        .map_or(0, |u| u.cp_spent_quarters);
     let moving = match planning_group {
         Some(group) => group.members.to_vec(),
         None => unit_stack(content, state, order, seat, strict)?,
@@ -388,26 +437,43 @@ fn run(
             .map(|id| moving_limits(content, state, id, strict))
             .collect::<Result<Vec<_>, _>>()?
     };
+    let own_half = state.land.movement.mode == WindowMode::Segment;
     let start_control = state
         .land
         .movement
-        .controls
+        .starting_controls
         .get(&from)
         .copied()
         .unwrap_or(false);
     let start_contact = effective_control(content, state, seat.side, &from, &moving, start_control);
-    if start_contact {
+    if !continuing(state, &order.unit)
+        && state.land.movement.mode != WindowMode::Reaction
+        && (start_contact || moving.iter().any(|id| state.land.units[id].engaged))
+    {
+        let mut highest = 0;
         for (id, limit) in moving.iter().zip(&limits) {
-            validate_supplied_cp(&state.land.units[id], group_allowance, 8, *limit)?;
+            let cp = if state.land.units[id].engaged {
+                16
+            } else if start_contact {
+                8
+            } else {
+                0
+            };
+            if cp == 0 {
+                continue;
+            }
+            highest = highest.max(cp);
+            validate_window_cp(state, &state.land.units[id], group_allowance, cp, *limit)?;
             spend_activity(content, state, id, strict)?;
             capability::charge(
                 state.land.units.get_mut(id).unwrap(),
                 group_allowance,
-                8,
-                true,
+                cp,
+                own_half,
             )?;
+            state.land.units.get_mut(id).unwrap().engaged = false;
         }
-        total += 8;
+        total += highest;
     }
     // Only authoritative execution needs a rollback snapshot for newly disclosed control.
     let mut last_legal = truth.then(|| {
@@ -495,7 +561,8 @@ fn run(
             state.land.movement.controls.insert(to.clone(), control);
         }
         let cannot_enter = controlled
-            && (start_contact && path.is_empty()
+            && (state.land.movement.mode != WindowMode::Segment
+                || start_contact && path.is_empty()
                 || limits.iter().any(|limit| !limit.may_enter_enemy_zoc)
                 || moving.iter().any(|id| {
                     state.land.units[id].reserve.status == super::reserve::Status::First
@@ -517,8 +584,13 @@ fn run(
                 },
             ));
         }
+        let reactors = if truth && own_half {
+            super::reaction::candidates(content, state, &moving, &to, &order.close_assault, strict)?
+        } else {
+            vec![]
+        };
         for (id, limit) in moving.iter().zip(&limits) {
-            validate_supplied_cp(&state.land.units[id], group_allowance, cp, *limit)?;
+            validate_window_cp(state, &state.land.units[id], group_allowance, cp, *limit)?;
             spend_activity(content, state, id, strict)?;
             let previous = state
                 .logistics
@@ -545,7 +617,7 @@ fn run(
                 state.land.units.get_mut(id).unwrap(),
                 group_allowance,
                 cp,
-                true,
+                own_half,
             )?;
         }
         for id in &moving {
@@ -584,30 +656,39 @@ fn run(
             if costs.iter().any(|c| c.assumed_edges) {
                 events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:format!("{from} to {to}: incomplete edge layers; plain terrain assumed (land:8.37).")}));
             }
-            let adjacent_presence =
-                zoc::possibly_controlled(content, state, seat.side.opponent(), &to);
-            if adjacent_presence {
-                if strict
-                    && formation::combat_unit(content, &order.unit)
-                    && content.map.neighbors(&to).iter().any(|h| {
-                        state.units_of(seat.side.opponent()).any(|u| {
-                            u.location.hex() == Some(&h.id)
-                                && formation::combat_unit(content, &u.id)
-                                && u.cohesion_quarters > -104
-                                && formation::individual_allowance(content, state, &u.id)
-                                    .is_some_and(|a| a.motorized)
-                        })
-                    })
-                {
-                    return Err(unsupported(
-                        "land:8.51",
-                        "reaction procedure is not implemented",
-                    ));
+            if own_half {
+                for target in &order.close_assault {
+                    if content.map.neighbors(&to).iter().any(|h| &h.id == target)
+                        && state
+                            .land
+                            .assault_intentions
+                            .entry(order.unit.clone())
+                            .or_default()
+                            .insert(target.clone())
+                    {
+                        events.push(EngineEvent::public(GameEvent::Note{text:format!("Stack at {to} announces close assault against {target} (land:8.53).") }));
+                    }
                 }
-                if !strict {
-                    events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note {text:"Movement is adjacent to an enemy stack; possible reaction is not implemented (land:8.51).".into()}));
+                if !reactors.is_empty() {
+                    state.land.reaction.controls.clear();
+                    state.land.reaction.window = Some(super::reaction::Window {
+                        trigger_hex: to.clone(),
+                        eligible: reactors,
+                        reacted: BTreeSet::new(),
+                        mover_stopped: controlled
+                            || moving.iter().any(|id| {
+                                state.land.units[id].reserve.status == super::reserve::Status::First
+                            }),
+                        moving: moving.clone(),
+                    });
                 }
             }
+            logistics::ports::record_entry(
+                content,
+                state,
+                seat.side,
+                &Location::Hex { hex: to.clone() },
+            );
             emit_stacks(content, state, seat.side, &from, events);
             emit_stacks(content, state, seat.side, &to, events);
             if stacking::validate_end(content, state, &to, seat.side, strict).is_ok() {
@@ -622,6 +703,9 @@ fn run(
             }
         }
         from = to;
+        if truth && own_half && state.land.reaction.window.is_some() {
+            break;
+        }
         if controlled {
             if !truth && path.len() != order.path.len() {
                 return Err(illegal(
@@ -636,7 +720,10 @@ fn run(
         None => stacking::validate_end(content, state, &from, seat.side, strict),
     };
     let end_valid = end.is_ok();
-    if check_end && !path.is_empty() {
+    if check_end
+        && !path.is_empty()
+        && (state.land.movement.mode != WindowMode::Segment || state.land.reaction.window.is_none())
+    {
         end?;
     }
     state.land.movement.moved.extend(moving.iter().cloned());
@@ -661,7 +748,7 @@ fn run(
     Ok(Reachable {
         hex: from,
         path,
-        cp_quarters: total,
+        cp_quarters: state.land.units[&order.unit].cp_spent_quarters - initial_cp,
         fuel_tenths: fuel,
         control_unknown: uncertain,
         end_valid,
@@ -754,50 +841,377 @@ pub fn answer(
             None,
         )?;
     }
-    let mut draft = state.clone();
-    let mut events = Vec::new();
-    for order in &orders {
-        run(
-            content,
-            &mut draft,
-            order,
-            pending.seat,
+    execute_orders(content, state, pending.seat, &orders, strict, cx, false)?;
+    Ok(format!(
+        "Accepted {} planned movement orders.",
+        orders.len()
+    ))
+}
+impl Order {
+    pub fn new(unit: UnitId, path: Vec<HexId>) -> Self {
+        Self {
+            unit,
+            path,
+            with_stack: false,
+            close_assault: vec![],
+        }
+    }
+}
+fn continuing(state: &State, id: &UnitId) -> bool {
+    state.land.movement.mode == WindowMode::Segment
+        && state.land.reaction.window.is_none()
+        && state
+            .land
+            .reaction
+            .continuation
+            .as_ref()
+            .is_some_and(|k| &k.unit == id && !k.mover_stopped)
+}
+fn validate_window_move(
+    state: &State,
+    u: &crate::state::LandUnit,
+    a: capability::Allowance,
+    q: i32,
+) -> Result<(), Rejection> {
+    if state.land.movement.mode == WindowMode::Segment {
+        capability::validate_move(u, a, q)
+    } else {
+        capability::validate_nonphasing_move(u, a, q)
+    }
+}
+fn validate_window_cp(
+    state: &State,
+    u: &crate::state::LandUnit,
+    a: capability::Allowance,
+    q: i32,
+    l: logistics::MovementRestrictions,
+) -> Result<(), Rejection> {
+    validate_window_move(state, u, a, q)?;
+    if !l.may_move {
+        return Err(illegal(
+            "unit cannot move under its ration or water restrictions",
+        ));
+    }
+    if !l.may_exceed_cpa && i64::from(u.cp_spent_quarters) + i64::from(q) > i64::from(a.cpa) * 4 {
+        return Err(illegal(
+            "ration or water restriction limits movement to CPA",
+        ));
+    }
+    Ok(())
+}
+/// An assault announcement is a public commitment against a publicly present stack.
+/// Cases: land:8.53, land:8.54
+fn validate_announcements(c: &CnaContent, s: &State, o: &Order) -> Result<(), Rejection> {
+    if o.close_assault.is_empty() {
+        return Ok(());
+    }
+    if s.land.movement.mode != WindowMode::Segment || !formation::combat_unit(c, &o.unit) {
+        return Err(illegal("this unit cannot announce close assault"));
+    }
+    let Some(u) = s.land.units.get(&o.unit) else {
+        return Err(illegal("unit is unavailable"));
+    };
+    let members = formation::members(c, s, &o.unit);
+    for id in &members {
+        if matches!(
+            s.land.units[id].reserve.status,
+            super::reserve::Status::First | super::reserve::Status::Second
+        ) || !logistics::movement_restrictions(c, s, id)
+            .map_err(|e| activity_error(e, s.land.movement.strict))?
+            .may_offensive_close_assault
+        {
+            return Err(illegal("unit cannot announce offensive close assault"));
+        }
+    }
+    let mut seen = BTreeSet::new();
+    for h in &o.close_assault {
+        if !seen.insert(h)
+            || c.map.canonical(h) != Some(h)
+            || !s
+                .units_of(u.side.opponent())
+                .any(|e| e.location.hex() == Some(h))
+            || !o
+                .path
+                .iter()
+                .any(|p| c.map.neighbors(p).iter().any(|n| &n.id == h))
+        {
+            return Err(illegal(
+                "assault target must be a public enemy stack adjacent to the planned path",
+            ));
+        }
+    }
+    Ok(())
+}
+/// A truth-only failure cannot invalidate a seat's already valid plan.
+/// Adjudication reports it once ordinary and interrupt decisions have been parked.
+/// Cases: land:10.21, land:10.6
+pub(super) fn defer_stop(state: &mut State, error: EngineError) {
+    state.land.reaction.adjudication_stop = Some(error);
+    state
+        .land
+        .reaction
+        .held
+        .extend(std::mem::take(&mut state.decisions.pending));
+}
+/// Execute accepted plans until a reaction suspends them. Later plans remain checkpointed.
+/// Cases: land:8.13, land:8.51, land:8.52, land:10.6
+fn execute_orders(
+    c: &CnaContent,
+    s: &mut State,
+    seat: SeatId,
+    orders: &[Order],
+    strict: bool,
+    cx: &mut Cx<'_>,
+    skip_invalid: bool,
+) -> Result<(), Rejection> {
+    for (index, o) in orders.iter().enumerate() {
+        let mut trial = s.clone();
+        let mut events = vec![];
+        // Resumed lists can have become impossible after public reaction moves.
+        let mut preview = trial.clone();
+        if let Err(e) = run(
+            c,
+            &mut preview,
+            o,
+            seat,
+            strict,
+            false,
+            true,
+            &mut vec![],
+            None,
+        ) {
+            if !skip_invalid {
+                return Err(e);
+            }
+            cx.emit(EngineEvent::new(
+                Audience::Side(seat.side),
+                GameEvent::Note {
+                    text: "A remaining planned move is unavailable after reaction; order skipped."
+                        .into(),
+                },
+            ));
+            s.land.movement.moved.insert(o.unit.clone());
+            continue;
+        }
+        let r = match run(
+            c,
+            &mut trial,
+            o,
+            seat,
             strict,
             true,
             true,
             &mut events,
             None,
-        )?;
-    }
-    let updated: BTreeSet<_> = events
-        .iter()
-        .filter_map(|e| {
-            if let GameEvent::UnitUpdated { unit } = &e.event {
-                Some(UnitId::new(&unit.id))
-            } else {
-                None
+        ) {
+            Ok(r) => r,
+            Err(Rejection::Engine(e)) => {
+                defer_stop(s, e);
+                return Ok(());
             }
-        })
-        .collect();
-    for (id, unit) in &draft.land.units {
-        if state.land.units.get(id) != Some(unit) && !updated.contains(id) {
-            events.push(EngineEvent::new(
-                Audience::Side(unit.side),
-                GameEvent::UnitUpdated {
-                    unit: view::unit_view(content, unit),
-                },
-            ));
+            Err(e) => return Err(e),
+        };
+        // Detaching a component also changes its stationary parent.
+        for (id, u) in &trial.land.units {
+            if s.land
+                .units
+                .get(id)
+                .is_some_and(|old| old.cp_spent_quarters != u.cp_spent_quarters)
+                && !events.iter().any(
+                    |e| matches!(&e.event,GameEvent::UnitUpdated{unit} if unit.id==id.to_string()),
+                )
+            {
+                events.push(EngineEvent::new(
+                    Audience::Side(u.side),
+                    GameEvent::UnitUpdated {
+                        unit: view::unit_view(c, u),
+                    },
+                ));
+            }
+        }
+        *s = trial;
+        cx.events.extend(events);
+        if let Some(w) = &s.land.reaction.window {
+            s.land.reaction.continuation = Some(super::reaction::Continuation {
+                seat,
+                unit: o.unit.clone(),
+                members: w.moving.clone(),
+                with_stack: o.with_stack,
+                planned_path: o.path[r.path.len()..].to_vec(),
+                orders_after: orders[index + 1..].to_vec(),
+                mover_stopped: w.mover_stopped,
+            });
+            super::reaction::open_interrupt(c, s, cx);
+            return Ok(());
         }
     }
-    *state = draft;
-    cx.events.extend(events);
-    open_seat(content, state, pending.seat, cx);
-    super::cycles::finish_movement(content, state);
-    Ok(format!(
-        "Executed {} complete movement orders.",
-        orders.len()
-    ))
+    if !s
+        .decisions
+        .pending
+        .iter()
+        .any(|p| p.kind == KIND && p.seat == seat)
+    {
+        open_seat(c, s, seat, cx)
+    }
+    super::cycles::finish_movement(c, s);
+    Ok(())
 }
+/// Resume the same represented membership without repeating detachment or breaking-off CP.
+/// Cases: land:8.13, land:8.51, land:9.31
+/// Interpretations: interp:land-0026
+pub(super) fn continue_order(
+    c: &CnaContent,
+    s: &mut State,
+    o: &Order,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), Rejection> {
+    let k = s.land.reaction.continuation.as_ref().unwrap().clone();
+    let mut preview = s.clone();
+    run(
+        c,
+        &mut preview,
+        o,
+        k.seat,
+        strict,
+        false,
+        true,
+        &mut vec![],
+        None,
+    )?;
+    let mut draft = s.clone();
+    let mut events = vec![];
+    let r = match run(
+        c,
+        &mut draft,
+        o,
+        k.seat,
+        strict,
+        true,
+        true,
+        &mut events,
+        None,
+    ) {
+        Ok(r) => r,
+        Err(Rejection::Engine(e)) => {
+            defer_stop(s, e);
+            return Ok(());
+        }
+        Err(e) => return Err(e),
+    };
+    *s = draft;
+    cx.events.extend(events);
+    if let Some(w) = &s.land.reaction.window {
+        s.land.reaction.continuation = Some(super::reaction::Continuation {
+            planned_path: o.path[r.path.len()..].to_vec(),
+            mover_stopped: w.mover_stopped,
+            ..k
+        });
+        super::reaction::open_interrupt(c, s, cx);
+        Ok(())
+    } else {
+        finish_continuation(c, s, strict, cx)
+    }
+}
+/// Restore the parked seat windows only after the moving unit's complete move ends.
+/// Cases: land:8.13, land:8.51
+pub(super) fn finish_continuation(
+    c: &CnaContent,
+    s: &mut State,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), Rejection> {
+    let k = s.land.reaction.continuation.take().unwrap();
+    s.land.reaction.window = None;
+    s.decisions
+        .pending
+        .extend(std::mem::take(&mut s.land.reaction.held));
+    execute_orders(c, s, k.seat, &k.orders_after, strict, cx, true)
+}
+fn nonphasing_draft(s: &State, kind: NonPhasingMove) -> State {
+    let mut draft = s.clone();
+    draft.land.movement.mode = match kind {
+        NonPhasingMove::Reaction => WindowMode::Reaction,
+        NonPhasingMove::Retreat => WindowMode::Retreat,
+    };
+    draft.land.movement.controls = draft.land.reaction.controls.clone();
+    draft.land.movement.starting_controls = draft.land.reaction.controls.clone();
+    draft
+}
+/// Shared own-information path search for nonphasing reaction and retreat windows.
+/// The caller retains source eligibility and retreat distance limits.
+/// Cases: land:8.17, land:8.55, land:15.24
+pub fn nonphasing_reachable(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    strict: bool,
+    kind: NonPhasingMove,
+) -> Vec<Reachable> {
+    reachable_inner(c, &nonphasing_draft(s, kind), id, strict)
+}
+/// Execute a prevalidated nonphasing complete path, preserving the ordinary movement window.
+/// Hidden control stops the accepted move and a hidden technical gap stops adjudication.
+/// Cases: land:8.55, land:8.56, land:15.24
+pub fn execute_nonphasing(
+    c: &CnaContent,
+    s: &mut State,
+    o: &Order,
+    seat: SeatId,
+    strict: bool,
+    kind: NonPhasingMove,
+    cx: &mut Cx<'_>,
+) -> Result<Reachable, Rejection> {
+    let mut draft = nonphasing_draft(s, kind);
+    let mut preview = draft.clone();
+    run(
+        c,
+        &mut preview,
+        o,
+        seat,
+        strict,
+        false,
+        true,
+        &mut vec![],
+        None,
+    )?;
+    let mut events = vec![];
+    let r = match run(
+        c,
+        &mut draft,
+        o,
+        seat,
+        strict,
+        true,
+        true,
+        &mut events,
+        None,
+    ) {
+        Ok(r) => r,
+        Err(Rejection::Engine(e)) => {
+            defer_stop(s, e);
+            return Ok(Reachable {
+                hex: s.land.units[&o.unit].location.hex().unwrap().clone(),
+                path: vec![],
+                cp_quarters: 0,
+                fuel_tenths: 0,
+                control_unknown: true,
+                end_valid: true,
+            });
+        }
+        Err(e) => return Err(e),
+    };
+    let controls = draft.land.movement.controls.clone();
+    let off_road = draft.land.movement.off_road.clone();
+    draft.land.movement = s.land.movement.clone();
+    draft.land.movement.controls.clear(); // The enemy moved publicly; stale disclosed absence is invalid.
+    draft.land.movement.off_road = off_road;
+    draft.land.reaction.controls = controls;
+    *s = draft;
+    cx.events.extend(events);
+    Ok(r)
+}
+
 // Search nodes contain only the fields `run(..., truth=false)` can change. One working
 // world is reused across edges; unrelated units, air state and decision schemas are not copied.
 struct PlanningGroup<'a> {
@@ -880,25 +1294,60 @@ impl PlanningNode {
 /// is labelled; inspect never asks authoritative enemy strength at a hypothetical destination.
 /// Cases: land:3.62, land:8.13, land:8.17, land:10.6
 pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool) -> Vec<Reachable> {
+    if state.land.movement.mode == WindowMode::Segment
+        && state
+            .land
+            .reaction
+            .window
+            .as_ref()
+            .is_some_and(|w| w.eligible.contains(id) && !w.reacted.contains(id))
+    {
+        return nonphasing_reachable(content, state, id, strict, NonPhasingMove::Reaction);
+    }
+    reachable_inner(content, state, id, strict)
+}
+fn reachable_inner(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Vec<Reachable> {
     let Some(unit) = state.land.units.get(id) else {
         return vec![];
     };
     let seat = SeatId::new(unit.side, ownership::seat_for_unit(content, state, id));
-    if state.cursor.anchor() != "opstage.movement_and_combat.movement"
-        || state.cursor.phasing(state.turn.player_a) != Some(unit.side)
+    if (state.land.movement.mode == WindowMode::Segment
+        && state.cursor.anchor() != "opstage.movement_and_combat.movement")
+        || (state.land.movement.mode == WindowMode::Segment
+            && state.cursor.phasing(state.turn.player_a) != Some(unit.side))
         || !eligible(content, state, id, seat)
     {
         return vec![];
     }
-    let moving = formation::members(content, state, id);
-    let Some(allowance) = formation::allowance(content, state, id) else {
+    let moving = state
+        .land
+        .reaction
+        .continuation
+        .as_ref()
+        .filter(|_| continuing(state, id))
+        .map_or_else(
+            || formation::members(content, state, id),
+            |k| k.members.clone(),
+        );
+    let Some(allowance) = moving
+        .iter()
+        .filter_map(|m| formation::individual_allowance(content, state, m))
+        .min_by_key(|a| a.cpa)
+    else {
         return vec![];
     };
     // Every entered edge costs at least one quarter CP. Do not search a graph when even
     // that lower bound is impossible for a represented member or its fuel holdings.
     for member in &moving {
         if moving_limits(content, state, member, strict)
-            .and_then(|limit| validate_supplied_cp(&state.land.units[member], allowance, 1, limit))
+            .and_then(|limit| {
+                validate_window_cp(state, &state.land.units[member], allowance, 1, limit)
+            })
             .is_err()
         {
             return vec![];
@@ -936,7 +1385,14 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
         &Order {
             unit: id.clone(),
             path: vec![],
-            with_stack: false,
+            with_stack: state
+                .land
+                .reaction
+                .continuation
+                .as_ref()
+                .filter(|_| continuing(state, id))
+                .is_some_and(|k| k.with_stack),
+            close_assault: vec![],
         },
         seat,
         strict,
@@ -975,7 +1431,14 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
             .iter()
             .zip(&group.limits)
             .any(|(member, limit)| {
-                validate_supplied_cp(&draft.land.units[member], group.allowance, 1, *limit).is_err()
+                validate_window_cp(
+                    &draft,
+                    &draft.land.units[member],
+                    group.allowance,
+                    1,
+                    *limit,
+                )
+                .is_err()
             })
         {
             continue;
@@ -1019,7 +1482,14 @@ pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool)
                 &Order {
                     unit: id.clone(),
                     path: vec![to.id.clone()],
-                    with_stack: false,
+                    with_stack: state
+                        .land
+                        .reaction
+                        .continuation
+                        .as_ref()
+                        .filter(|_| continuing(state, id))
+                        .is_some_and(|k| k.with_stack),
+                    close_assault: vec![],
                 },
                 seat,
                 strict,

@@ -76,6 +76,7 @@ pub fn charge(
 /// Training and rail travel disqualify idle recovery even when no CP was charged.
 /// Cases: land:6.16, land:6.23, land:6.24, land:8.73
 pub fn finish_opstage(state: &mut State) {
+    state.land.assault_intentions.clear();
     for unit in state.land.units.values_mut() {
         let in_play = matches!(
             unit.location,
@@ -93,6 +94,19 @@ pub fn finish_opstage(state: &mut State) {
         unit.voluntary_cp_quarters = 0;
         unit.no_idle_recovery = false;
     }
+}
+
+/// Reaction and retreat charge stage CP and fatigue without the own-half voluntary ceiling.
+/// Cases: land:6.14, land:6.26, land:8.17, land:8.52
+pub fn validate_nonphasing_move(
+    unit: &LandUnit,
+    allowance: Allowance,
+    quarters: i32,
+) -> Result<(), Rejection> {
+    if quarters <= 0 || allowance.cpa <= 0 || unit.cohesion_quarters <= -104 {
+        return Err(illegal("unit cannot move"));
+    }
+    Ok(())
 }
 
 #[cfg(test)]

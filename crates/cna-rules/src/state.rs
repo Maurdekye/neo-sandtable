@@ -107,6 +107,8 @@ pub struct LandUnit {
     pub cp_spent_quarters: i32,
     #[serde(default)]
     pub reserve: crate::land::reserve::ReserveState,
+    #[serde(default)]
+    pub engaged: bool,
     /// Voluntary CP in the owning half, separate from reaction/retreat, in quarters.
     #[serde(default)]
     pub voluntary_cp_quarters: i32,
@@ -130,6 +132,11 @@ pub struct LandUnit {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LandState {
+    #[serde(default)]
+    pub reaction: crate::land::reaction::ReactionState,
+    /// Public target-hex assault announcements, retained until the OpStage ends.
+    #[serde(default)]
+    pub assault_intentions: BTreeMap<UnitId, BTreeSet<HexId>>,
     #[serde(default)]
     pub combat: crate::land::combat::CombatState,
     pub units: BTreeMap<UnitId, LandUnit>,
@@ -366,6 +373,7 @@ impl State {
                             toe: oa.toe.clone(),
                             cp_spent_quarters: 0,
                             reserve: crate::land::reserve::ReserveState::default(),
+                            engaged: false,
                             voluntary_cp_quarters: 0,
                             cohesion_quarters: 0,
                             no_idle_recovery: false,
@@ -400,6 +408,7 @@ impl State {
                 toe: oa.toe.clone(),
                 cp_spent_quarters: 0,
                 reserve: crate::land::reserve::ReserveState::default(),
+                engaged: false,
                 voluntary_cp_quarters: 0,
                 cohesion_quarters: 0,
                 no_idle_recovery: false,
