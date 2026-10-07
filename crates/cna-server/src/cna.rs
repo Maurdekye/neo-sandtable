@@ -173,7 +173,7 @@ fn movement_policy() -> ActionPolicy<Cna> {
 mod tests {
     use super::*;
     use cna_content::map::{LineKind, MapContent, SideKind};
-    use cna_core::quantity::FuelTenths;
+    use cna_core::quantity::{AmmoPoints, FuelTenths, WaterPoints};
     use cna_core::{
         engine::{Command, Ruleset, evaluate},
         ids::UnitId,
@@ -234,9 +234,11 @@ mod tests {
         unit.detached = true;
         unit.attached_to = None;
         state.logistics.unit_supply.insert(
-            id,
+            id.clone(),
             UnitSupply {
                 tank_fuel: FuelTenths::new(10000),
+                ready_ammo: AmmoPoints::new(10000),
+                activity_water: WaterPoints::new(10000),
                 ..UnitSupply::default()
             },
         );
@@ -250,6 +252,16 @@ mod tests {
         state.cursor.op_stage = Some(1);
         state.cursor.index = 1;
         state.cursor.entered = false;
+        state.logistics.rations.insert(
+            id,
+            cna_rules::logistics::Rations {
+                water_stage: Some(cna_rules::logistics::water::WaterStage::current(&state)),
+                infantry_water_received: 2,
+                issued_gt: Some(state.cursor.game_turn),
+                pasta_gt: Some(state.cursor.game_turn),
+                ..cna_rules::logistics::Rations::default()
+            },
+        );
         let rules = Cna::dev();
         let game = evaluate(
             &rules,
