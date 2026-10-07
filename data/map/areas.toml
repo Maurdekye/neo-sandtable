@@ -123,6 +123,16 @@ reference_status = "printed_only"
 note = "Stable off-map identity only. Printed reference is retained; no ordinary hex occupancy, distance, capacity or attachment is inferred."
 
 [[locations]]
+id = "offmap_malta"
+kind = "box"
+name = "Malta"
+off_map = true
+printed_location = "Malta Box"
+range_status = "unresolved"
+src = ["scen:60.46", "airlog:44.11", "airlog:34.81"]
+note = "Symbolic Malta region outside the African axial grid. The differently scaled inset supplies no mainland coordinates. Scenario aggregate capacity belongs to campaign setup; individual airfield anchors and distances are not resolved here."
+
+[[locations]]
 id = "offmap_port_said"
 kind = "air_facility"
 name = "Port Said"
@@ -235,6 +245,14 @@ reason = "Printed national frontier and full land membership not yet verified. N
 membership_status = "unresolved"
 hex_ids = []
 location_ids = []
+
+[[areas]]
+id = "malta"
+kind = "locations"
+src = ["scen:60.46", "airlog:44.11", "airlog:34.81"]
+location_ids = ["offmap_malta"]
+membership_status = "resolved"
+hex_ids = []
 
 [[areas]]
 id = "map_a"

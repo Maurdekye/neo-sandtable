@@ -292,3 +292,18 @@ states need symbol-specific work, and no escarpment classifier has been audited.
 Full-window line and hexside ETAs therefore remain provisional. Next steps are
 reviewed strip expansion with connected route tracing, tighter dash/tie filters,
 then an independent escarpment/high-side pilot. No traced artwork is published.
+
+
+## Malta symbolic setup region (2026-10-07)
+
+Source text scen:60.46 identifies a Malta air setup and an aggregate initial
+facility capacity. airlog:44.11 identifies a Malta inset with different scale
+and placement from the African map; airlog:34.81 includes Malta among possible
+Commonwealth reinforcement destinations. These establish the symbolic region
+`offmap_malta` and resolved area `malta`, with no African-grid hex membership.
+The location has kind `box` and a source-named Malta Box locator. This is a
+rules-text check, not a visual enumeration of the inset's individual fields.
+No coordinate, port anchor, distance or per-field capacity is inferred. The
+scenario owner retains the aggregate setup value in scenario data. Specific
+Maltese airfield/mission targets remain unverified. Area generation now produces
+33 selectors and 14 symbolic locations; terrain and feature coverage are unchanged.

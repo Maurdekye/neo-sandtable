@@ -101,3 +101,12 @@ pending. Existing palette proposals cannot certify edge absence or orientation.
   absences do not establish a classifier. Unfinished railroad and pipeline have
   no coverage. All hexside layers, including directional escarpments, remain
   unreviewed. No movement cost or route absence may be inferred there.
+
+
+## Malta inset
+
+The area `malta` resolves to the symbolic location `offmap_malta`, outside the
+African axial grid (airlog:44.11; scen:60.46). Individual airfield identities,
+inset target hexes, Valetta port anchoring and transfer distances remain
+unverified. The aggregate scenario facility allowance does not resolve those
+geographic details or assign capacity to individual fields.

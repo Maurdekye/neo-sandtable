@@ -283,13 +283,20 @@ geometric sets; unit-specific movement/placement restrictions still apply.
 | `italy`, `sicily`, `crete`, `axis_mediterranean_bases` | Separate bases and their union; campaign availability is separate |
 | `offmap_abu_seier`, `offmap_deversoir`, `offmap_kabrit` | Off-map facilities with retained printed references |
 | `offmap_fayid`, `offmap_ismailia`, `offmap_port_said` | Other distinct off-map facilities |
+| `malta` | Symbolic region containing `offmap_malta`; no African-grid hex or individual airfield implied |
 | `alexandria`, `helwan` | Cited ordinary hex sets; Helwan is E1430 |
 | `benghazi` | Verified city set A4827, source-locked review benghazi-0001; nearby El Berca/Benina excluded |
 | `cairo` | Verified city set: E1930, E1931, E1829, E1830, E1730; Helwan remains separate |
 | `any_air_facility` | Requires friendly control, construction and capacity state |
 
 Symbolic location IDs are `box_<name>` for the seven main boxes/bases and the
-six `offmap_<facility>` IDs. These are separate from canonical grid IDs and
+six `offmap_<facility>` IDs, plus `offmap_malta`. Malta has kind `box`, grounded
+in airlog:44.11, and printed_location `Malta Box`. Its inset uses a separate scale
+and geographic placement, so it supplies no coordinates in the African axial
+grid. The `malta` selector resolves to that symbolic location only. Initial
+aggregate capacity (scen:60.46) stays in scenario state; individual Maltese fields,
+mission target hexes and flight distances still need separate source verification.
+These are separate from canonical grid IDs and
 carry no invented axial coordinates. `Areas.within(hex,n)` generates a sorted
 canonical grid set by integer hex distance, includes the center, resolves source
 aliases, rejects invalid radii, and never invents cells outside the grid. It does
