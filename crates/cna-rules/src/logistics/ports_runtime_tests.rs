@@ -18,6 +18,7 @@ fn future_policy(c: &mut CnaContent) -> Port {
     record.port = "Sollum".into();
     record.efficiency_level = 1;
     // Synthetic unsupported policy, not a claim about a published scenario.
+    record.condition = None;
     record.src = vec!["scen:61.1".into()];
     c.scenario.construction.port_overrides = vec![record];
     p
@@ -450,6 +451,244 @@ fn full_coastal_dispatcher_and_convoy_entry_preflight_before_private_noop_branch
             assert_eq!(serde_json::to_value(&s).unwrap(), saved);
             assert_eq!(rng.state(), before_rng);
             assert!(events.is_empty());
+        }
+    }
+}
+
+/// Missing authored setup cannot become listed maximum through legacy state.
+/// Cases: airlog:55.18, scen:60.7, land:3.6
+#[test]
+fn missing_general_entry_is_owner_only_and_never_returns_legacy_capacity() {
+    use cna_core::visibility::Perspective;
+    let mut c = content();
+    c.scenario.construction.port_policy = None;
+    let p = at(
+        &c,
+        &Location::Hex {
+            hex: "C4022".into(),
+        },
+    )
+    .unwrap();
+    let mut s = State::new(&c).unwrap();
+    let mut old = known(&c, &p);
+    old.efficiency = 0;
+    old.used_tons24 = 127;
+    old.mined_levels = 1;
+    s.logistics.ports.insert(p.id.clone(), old.clone());
+    let before = s.clone();
+    let mut events = Vec::new();
+    record_entry(
+        &c,
+        &mut s,
+        Side::Commonwealth,
+        &p.location,
+        false,
+        &mut events,
+    )
+    .unwrap();
+    assert_eq!(s.logistics.unknown_ports[&p.id], Side::Commonwealth);
+    assert_eq!(s.logistics.ports[&p.id], old);
+    assert!(matches!(
+        capacity_tons(&c, &s, &p),
+        Err(PortOperationError::Starting(_))
+    ));
+    assert!(
+        events
+            .iter()
+            .all(|e| !Perspective::Side(Side::Axis).can_see(&e.audience))
+    );
+    assert!(
+        serde_json::to_value(&events)
+            .unwrap()
+            .to_string()
+            .contains("initial port default has not been authored")
+    );
+    crate::testkit::assert_indistinguishable(&crate::Cna::dev(), &c, &before, &s, Side::Axis);
+    let checkpoint = serde_json::to_value(&s).unwrap();
+    let restored: State = serde_json::from_value(checkpoint.clone()).unwrap();
+    assert_eq!(serde_json::to_value(&restored).unwrap(), checkpoint);
+    assert_eq!(capacity_tons(&c, &restored, &p), capacity_tons(&c, &s, &p));
+    events.clear();
+    record_entry(&c, &mut s, Side::Axis, &p.location, false, &mut events).unwrap();
+    assert_eq!(s.logistics.unknown_ports[&p.id], Side::Axis);
+    assert_eq!(s.logistics.ports[&p.id], old);
+    assert!(
+        events
+            .iter()
+            .all(|e| e.audience == Audience::Side(Side::Axis))
+    );
+}
+
+/// Content stops precede no-icon, already initialized, and no-inventory branches.
+/// Cases: airlog:55.18, scen:60.7
+#[test]
+fn full_initializer_and_entry_are_uniform_and_preserve_state_rng_and_events() {
+    let mut c = content();
+    c.scenario.construction.port_policy = None;
+    let p = at(
+        &c,
+        &Location::OffMap {
+            id: "box_tripoli".into(),
+        },
+    )
+    .unwrap();
+    for existing in [false, true] {
+        let mut s = State::new(&c).unwrap();
+        if existing {
+            s.logistics.ports.insert(p.id.clone(), known(&c, &p));
+        }
+        let before = serde_json::to_value(&s).unwrap();
+        let mut rng = cna_core::dice::CampaignRng::from_seed([43; 32]);
+        let rng_before = rng.state();
+        let mut events = vec![EngineEvent::new(
+            Audience::Side(Side::Axis),
+            GameEvent::Note {
+                text: "prior".into(),
+            },
+        )];
+        let events_before = events.clone();
+        let expected = super::preflight(&c, true).unwrap_err();
+        assert_eq!(
+            initialize(
+                &c,
+                &mut s,
+                true,
+                &mut cna_core::engine::Cx {
+                    rng: &mut rng,
+                    events: &mut events
+                }
+            ),
+            Err(expected.clone())
+        );
+        for location in [&p.location, &Location::NotArrived] {
+            assert_eq!(
+                record_entry(&c, &mut s, Side::Axis, location, true, &mut events),
+                Err(expected.clone())
+            );
+        }
+        assert_eq!(serde_json::to_value(&s).unwrap(), before);
+        assert_eq!(rng.state(), rng_before);
+        assert_eq!(events, events_before);
+    }
+    c.scenario.construction.port_policy = content().scenario.construction.port_policy;
+    let mut s = State::new(&c).unwrap();
+    let before = serde_json::to_value(&s).unwrap();
+    let mut events = Vec::new();
+    record_entry(
+        &c,
+        &mut s,
+        Side::Axis,
+        &Location::NotArrived,
+        true,
+        &mut events,
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    assert!(events.is_empty());
+}
+
+/// Authored listed maxima and the cited exception initialize once, preserving damage.
+/// Synthetic port icon is a fixture premise, not a published map verification.
+/// Cases: scen:60.7, scen:60.23, airlog:55.25, airlog:55.3, land:30.58
+#[test]
+fn authored_initialization_and_capture_preserve_damage_budget_and_blockage() {
+    for scenario in ["graziani", "italian_campaign"] {
+        let mut c = CnaContent::load(&cna_content::repo_data_dir(), scenario).unwrap();
+        let mut icon = c.places.places["port-sollum"].clone();
+        icon.id = "synthetic-tobruk-port".into();
+        icon.name = "Tobruk".into();
+        icon.hex_id = "C4807".into();
+        c.places.places.insert(icon.id.clone(), icon);
+        let p = at(
+            &c,
+            &Location::Hex {
+                hex: "C4807".into(),
+            },
+        )
+        .unwrap();
+        let mut s = State::new(&c).unwrap();
+        s.cursor.op_stage = Some(1);
+        let mut events = Vec::new();
+        record_entry(&c, &mut s, Side::Axis, &p.location, true, &mut events).unwrap();
+        let maximum = c
+            .tables
+            .airlog
+            .port_capacity
+            .port(p.name)
+            .max_efficiency_level;
+        assert_eq!(s.logistics.ports[&p.id].efficiency, maximum - 3);
+        assert_eq!(s.logistics.ports[&p.id].blocked_levels, 3);
+        let row = s.logistics.ports.get_mut(&p.id).unwrap();
+        row.efficiency = 1;
+        row.used_tons24 = 127;
+        row.bombed_stage = Some(WaterStage::current(&State::new(&c).unwrap()));
+        let mut retained = row.clone();
+        retained.owner = Side::Commonwealth;
+        record_entry(
+            &c,
+            &mut s,
+            Side::Commonwealth,
+            &p.location,
+            true,
+            &mut events,
+        )
+        .unwrap();
+        assert_eq!(s.logistics.ports[&p.id], retained);
+        s.cursor.op_stage = Some(2);
+        advance(&c, &mut s, &p).unwrap();
+        assert_eq!(s.logistics.ports[&p.id].blocked_levels, 3);
+        assert!(s.logistics.ports[&p.id].efficiency <= maximum - 3);
+        assert!(events.is_empty());
+    }
+}
+
+/// General Unknown setup preserves the same dispatcher requests and public stream.
+/// Cases: airlog:55.18, land:3.6
+#[test]
+fn missing_general_fixed_coastal_rounds_survive_hidden_inventory_and_checkpoint() {
+    use cna_core::engine::{Command, evaluate};
+    for anchor in [
+        "opstage.organization.tactical_shipping",
+        "opstage.truck_convoy_movement",
+    ] {
+        let (mut c, a, _) = coastal_game(anchor);
+        c.scenario.construction.port_policy = None;
+        c.scenario.construction.port_overrides.clear();
+        let mut b = a.clone();
+        b.state.logistics.ports.clear();
+        b.state
+            .logistics
+            .dumps
+            .get_mut("fixture.C4022")
+            .unwrap()
+            .supplies
+            .stores = 99;
+        for rules in [crate::Cna::dev(), crate::Cna::full()] {
+            crate::testkit::assert_action_indistinguishable(
+                &rules,
+                &c,
+                &a,
+                &b,
+                &Command::Advance,
+                Side::Axis,
+            );
+        }
+        for g in [&a, &b] {
+            let checkpoint = serde_json::to_value(g).unwrap();
+            let restored = serde_json::from_value(checkpoint).unwrap();
+            let transition = evaluate(&crate::Cna::dev(), &c, g, &Command::Advance).unwrap();
+            let replay = evaluate(&crate::Cna::dev(), &c, &restored, &Command::Advance).unwrap();
+            assert_eq!(
+                serde_json::to_value(&transition.game).unwrap(),
+                serde_json::to_value(&replay.game).unwrap()
+            );
+            assert_eq!(transition.events, replay.events);
+            assert_eq!(transition.game.rng, g.rng);
+            assert_eq!(
+                transition.game.state.logistics.dumps,
+                g.state.logistics.dumps
+            );
+            assert_eq!(transition.game.state.decisions.pending.len(), 1);
         }
     }
 }

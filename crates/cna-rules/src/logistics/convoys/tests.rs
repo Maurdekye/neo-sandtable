@@ -291,7 +291,7 @@ fn captured_port_cancels_and_congestion_turns_back_excess_cargo() {
         );
         s.cursor.op_stage = Some(1);
         if captured {
-            ports::record_entry(
+            ports::record_entry_fixture(
                 &c,
                 &mut s,
                 Side::Commonwealth,
@@ -382,6 +382,7 @@ fn unknown_port_arrivals_fixture() -> (CnaContent, State, ports::Port) {
     record.port = "Benghazi".into();
     record.efficiency_level = 1;
     // Synthetic valid future policy exercises diagnostics, not source transcription.
+    record.condition = None;
     record.src = vec!["scen:61.1".into()];
     c.scenario.construction.port_overrides = vec![record];
     let mut s = State::new(&c).unwrap();
@@ -540,6 +541,85 @@ fn unknown_arrival_is_terminal_without_zero_delivery_while_healthy_port_unloads(
         let parsed: ConvoyStatus = serde_json::from_value(json!(status)).unwrap();
         assert_eq!(serde_json::to_value(parsed).unwrap(), json!(status));
     }
+}
+
+/// A missing general policy cannot block an explicitly supported other destination.
+/// Cases: airlog:55.18, airlog:56.28, land:3.6
+#[test]
+fn missing_general_arrival_retains_cargo_and_healthy_exception_delivers_in_same_stage() {
+    use cna_content::scenario::construction::{KnownPortCondition, PortStartingCondition};
+    let (mut c, mut s, healthy) = unknown_port_arrivals_fixture();
+    c.scenario.construction.port_policy = None;
+    c.scenario.construction.port_overrides[0].condition = Some(PortStartingCondition::Known(
+        KnownPortCondition::ExactEfficiency,
+    ));
+    let before_ports = s.logistics.ports.clone();
+    let before_stores: i32 = s.logistics.dumps.values().map(|d| d.supplies.stores).sum();
+    let gt = s.cursor.game_turn;
+    let mut rng = CampaignRng::from_seed([44; 32]);
+    let rng_before = rng.state();
+    let mut events = Vec::new();
+    arrive(
+        &c,
+        &mut s,
+        false,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
+    let turn = &s.logistics.convoy_turns[&gt];
+    assert_eq!(turn.convoys[&2].status, ConvoyStatus::Unassessed);
+    assert_eq!(turn.convoys[&2].cargo.stores, 10);
+    assert_eq!(turn.convoys[&2].delivered, None);
+    assert_eq!(turn.convoys[&3].status, ConvoyStatus::Arrived);
+    assert_eq!(turn.convoys[&3].delivered.unwrap().stores, 10);
+    assert_eq!(
+        s.logistics.ports["box_tripoli"],
+        before_ports["box_tripoli"]
+    );
+    assert_eq!(
+        s.logistics.ports[&healthy.id].used_tons24,
+        ports::weight24(&c, &turn.convoys[&3].cargo).unwrap()
+    );
+    assert_eq!(
+        s.logistics
+            .dumps
+            .values()
+            .map(|d| d.supplies.stores)
+            .sum::<i32>()
+            - before_stores,
+        10
+    );
+    assert_eq!(rng.state(), rng_before);
+    assert!(
+        events
+            .iter()
+            .all(|e| !Perspective::Side(Side::Commonwealth).can_see(&e.audience))
+    );
+    assert!(
+        serde_json::to_value(&events)
+            .unwrap()
+            .to_string()
+            .contains("initial port default has not been authored")
+    );
+    let saved = serde_json::to_value(&s).unwrap();
+    let mut restored: State = serde_json::from_value(saved.clone()).unwrap();
+    events.clear();
+    arrive(
+        &c,
+        &mut restored,
+        false,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_value(&restored).unwrap(), saved);
+    assert_eq!(rng.state(), rng_before);
+    assert!(events.is_empty());
 }
 
 /// Cases: airlog:55.18, airlog:56.28, land:3.6

@@ -277,8 +277,8 @@ fn attrition_batches_hide_shortages_and_apply_only_at_recovered_closure() {
 #[test]
 fn coastal_schedules_are_fixed_across_private_port_domains_and_ship_stocks() {
     let mut a = game("opstage.organization.tactical_shipping");
-    ports::initialize(content(), &mut a.state);
-    ports::record_entry(
+    ports::initialize_fixture(content(), &mut a.state);
+    ports::record_entry_fixture(
         content(),
         &mut a.state,
         Side::Commonwealth,
@@ -547,9 +547,9 @@ fn accepted_stock_lists_wait_for_joint_closure_and_recover_without_enemy_probes(
             );
         }
         if coastal_order {
-            ports::initialize(content(), &mut a.state);
+            ports::initialize_fixture(content(), &mut a.state);
             coastal::initialize(content(), &mut a.state).unwrap();
-            ports::record_entry(
+            ports::record_entry_fixture(
                 content(),
                 &mut a.state,
                 Side::Axis,

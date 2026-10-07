@@ -505,6 +505,7 @@ fn menu_port(
             if last_owner == Some(side) {
                 let source = match error {
                     PortOperationError::Policy(source) => source.to_string(),
+                    PortOperationError::Starting(source) => source.to_string(),
                     PortOperationError::Supply(source) => format!("{source:?}"),
                 };
                 let mut note = EngineEvent::new(
@@ -719,7 +720,7 @@ pub fn enter_cw(
     {
         return Ok(());
     }
-    ports::initialize(content, state);
+    ports::initialize(content, state, strict, cx)?;
 
     let mut origins = vec![];
     for dump in state.logistics.dumps.values().filter(|d| {
@@ -910,6 +911,7 @@ fn apply_orders(
         };
         result.map_err(|e| match e {
             PortOperationError::Policy(_)
+            | PortOperationError::Starting(_)
             | PortOperationError::Supply(SupplyError::Unsupported { .. }) => {
                 Rejection::Engine(engine(e))
             }

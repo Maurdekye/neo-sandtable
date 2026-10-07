@@ -18,7 +18,7 @@ fn setup() -> State {
         .position(|p| p.anchor == "opstage.truck_convoy_movement")
         .unwrap();
     s.turn.player_a = Some(Side::Axis);
-    ports::initialize(c, &mut s);
+    ports::initialize_fixture(c, &mut s);
     initialize(c, &mut s).unwrap();
     s
 }
@@ -61,7 +61,7 @@ fn port_fixture() -> State {
     for ship in s.logistics.coastal_ships.values_mut() {
         ship.location = at.clone();
     }
-    ports::record_entry(c, &mut s, Side::Axis, &at);
+    ports::record_entry_fixture(c, &mut s, Side::Axis, &at);
     dump(
         &mut s,
         "fixture",
@@ -374,8 +374,8 @@ fn commonwealth_transfer_conserves_supplies_and_both_port_budgets() {
     let b = Location::Hex {
         hex: "C4024".into(),
     };
-    ports::record_entry(&c, &mut s, Side::Commonwealth, &a);
-    ports::record_entry(&c, &mut s, Side::Commonwealth, &b);
+    ports::record_entry_fixture(&c, &mut s, Side::Commonwealth, &a);
+    ports::record_entry_fixture(&c, &mut s, Side::Commonwealth, &b);
     dump(&mut s, "origin", Side::Commonwealth, a, stores(20));
     commonwealth_transfer(&c, &mut s, "origin", "new:C4024", stores(7)).unwrap();
     assert_eq!(s.logistics.dumps["origin"].supplies.stores, 13);

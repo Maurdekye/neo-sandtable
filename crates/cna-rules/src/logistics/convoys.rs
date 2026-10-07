@@ -132,7 +132,7 @@ pub fn initialize(
         return Ok(());
     }
     super::dump_markers::initialize(state, cx)?;
-    ports::initialize(content, state);
+    ports::initialize(content, state, strict, cx)?;
     super::coastal::initialize(content, state).map_err(engine)?;
     let Some(setup) = &content.scenario.fleet_logistics.axis_convoys else {
         state.logistics.convoys_initialized = true;
@@ -255,6 +255,7 @@ fn lanes(
                 if last_owner == Some(Side::Axis) {
                     let source = match error {
                         ports::PortOperationError::Policy(source) => source.to_string(),
+                        ports::PortOperationError::Starting(source) => source.to_string(),
                         ports::PortOperationError::Supply(source) => format!("{source:?}"),
                     };
                     let mut note = EngineEvent::new(
@@ -604,6 +605,7 @@ pub fn arrive(
                             ship.lane,
                             match error {
                                 ports::PortOperationError::Policy(source) => source.to_string(),
+                                ports::PortOperationError::Starting(source) => source.to_string(),
                                 ports::PortOperationError::Supply(source) => format!("{source:?}"),
                             }
                         ),

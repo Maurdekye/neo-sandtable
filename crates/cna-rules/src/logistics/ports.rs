@@ -7,6 +7,12 @@ use crate::{
     state::{Location, State},
 };
 use cna_content::scenario::Supplies;
+use cna_core::{
+    engine::{Cx, EngineError},
+    event::EngineEvent,
+    visibility::Audience,
+};
+use cna_protocol::GameEvent;
 use cna_protocol::Side;
 use cna_tables::airlog::{supply::SupplyType, trucks::PortName};
 use serde::{Deserialize, Serialize};
@@ -126,10 +132,20 @@ pub fn lane_destination(content: &CnaContent, lane: u8) -> Result<Port, SupplyEr
 /// Mandatory scheduled reinforcements do not consume this budget; planned personnel
 /// apply their own penalty before supplies. Existing state is not reinitialized.
 /// Cases: airlog:55.15, airlog:56.24, scen:59.54
-pub fn initialize(content: &CnaContent, state: &mut State) {
+pub fn initialize(
+    content: &CnaContent,
+    state: &mut State,
+    strict: bool,
+    cx: &mut Cx<'_>,
+) -> Result<(), EngineError> {
+    preflight(content, strict)?;
+    let mut draft = state.clone();
+    let mut events = Vec::new();
     if content.scenario.fleet_logistics.axis_coastal_shipping.as_ref().is_some_and(|f|matches!(&f.location,cna_content::scenario::Placement::City{city} if city=="tripoli")){
   let loc=Location::OffMap{id:"box_tripoli".into()};
-  if !state.logistics.ports.contains_key("box_tripoli"){record_entry(content,state,Side::Axis,&loc);}
+  if !draft.logistics.ports.contains_key("box_tripoli") && !draft.logistics.unknown_ports.contains_key("box_tripoli") {
+      record_entry(content,&mut draft,Side::Axis,&loc,strict,&mut events)?;
+  }
  }
     let entries: Vec<_> = state
         .land
@@ -139,35 +155,95 @@ pub fn initialize(content: &CnaContent, state: &mut State) {
         .map(|u| (u.side, u.location.clone()))
         .collect();
     for (side, loc) in entries {
-        if at(content, &loc).is_ok_and(|p| !state.logistics.ports.contains_key(&p.id)) {
-            record_entry(content, state, side, &loc);
+        if at(content, &loc).is_ok_and(|p| {
+            !draft.logistics.ports.contains_key(&p.id)
+                && !draft.logistics.unknown_ports.contains_key(&p.id)
+        }) {
+            record_entry(content, &mut draft, side, &loc, strict, &mut events)?;
         }
     }
+    state.logistics = draft.logistics;
+    cx.events.extend(events);
+    Ok(())
 }
 /// Record last accepted friendly entry only. A planning probe must never call this.
 /// Existing damage and the shared throughput budget survive a change of owner.
 /// Cases: airlog:55.11, airlog:55.14, land:30.58
-pub fn record_entry(content: &CnaContent, state: &mut State, side: Side, location: &Location) {
+pub fn record_entry(
+    content: &CnaContent,
+    state: &mut State,
+    side: Side,
+    location: &Location,
+    strict: bool,
+    events: &mut Vec<EngineEvent>,
+) -> Result<(), EngineError> {
+    preflight(content, strict)?;
     let Ok(port) = at(content, location) else {
-        return;
+        return Ok(());
     };
-    let row = content.tables.airlog.port_capacity.port(port.name);
-    let initial_block = if port.name == PortName::Tobruk { 3 } else { 0 };
+    let condition = match super::port_initialization::initial_port_starting_policy(content, &port)
+        .map_err(|error| error.into_engine())?
+    {
+        super::port_initialization::InitialPortStartingPolicy::Known(condition) => condition,
+        super::port_initialization::InitialPortStartingPolicy::Unknown(source) => {
+            state.logistics.unknown_ports.insert(port.id.clone(), side);
+            let mut note = EngineEvent::new(
+                Audience::Side(side),
+                GameEvent::Note {
+                    text: format!(
+                        "Port {} entry recorded with unknown starting efficiency; capacity operations are unavailable. {source}",
+                        port.id
+                    ),
+                },
+            );
+            if let Some(hex) = port.location.hex() {
+                note = note.at(hex.clone());
+            }
+            events.push(note);
+            return Ok(());
+        }
+    };
     let stage = WaterStage::current(state);
     let entry = state
         .logistics
         .ports
-        .entry(port.id)
+        .entry(port.id.clone())
         .or_insert_with(|| PortState {
             owner: side,
-            efficiency: (row.max_efficiency_level - initial_block).max(0),
-            blocked_levels: initial_block,
+            efficiency: condition.efficiency,
+            blocked_levels: condition.blocked_levels,
             mined_levels: 0,
             bombed_stage: None,
             budget_stage: Some(stage),
             used_tons24: 0,
         });
     entry.owner = side;
+    state.logistics.unknown_ports.remove(&port.id);
+    Ok(())
+}
+#[cfg(test)]
+pub(super) fn initialize_fixture(content: &CnaContent, state: &mut State) {
+    let mut rng = cna_core::dice::CampaignRng::from_seed([0; 32]);
+    let mut events = Vec::new();
+    initialize(
+        content,
+        state,
+        false,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )
+    .unwrap();
+}
+#[cfg(test)]
+pub(super) fn record_entry_fixture(
+    content: &CnaContent,
+    state: &mut State,
+    side: Side,
+    location: &Location,
+) {
+    record_entry(content, state, side, location, false, &mut Vec::new()).unwrap();
 }
 /// A policy refusal retains the authored source context; ordinary supply errors
 /// keep their original category. Consumers must not turn a policy error into a
@@ -176,7 +252,18 @@ pub fn record_entry(content: &CnaContent, state: &mut State, side: Side, locatio
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PortOperationError {
     Policy(super::port_initialization::PortInitializationError),
+    Starting(super::port_initialization::PortStartingDiagnostic),
     Supply(SupplyError),
+}
+impl From<super::port_initialization::PortStartingDiagnostic> for PortOperationError {
+    fn from(value: super::port_initialization::PortStartingDiagnostic) -> Self {
+        match value {
+            super::port_initialization::PortStartingDiagnostic::Override(error) => {
+                Self::Policy(error)
+            }
+            general => Self::Starting(general),
+        }
+    }
 }
 impl From<SupplyError> for PortOperationError {
     fn from(value: SupplyError) -> Self {
@@ -194,6 +281,7 @@ impl PortOperationError {
     pub fn is_unknown(&self) -> bool {
         matches!(self, Self::Policy(error)
             if error.kind == super::port_initialization::PortInitializationErrorKind::UnsupportedPolicy)
+            || matches!(self, Self::Starting(error) if error.kind() == super::port_initialization::PortInitializationErrorKind::UnsupportedPolicy)
             || matches!(
                 self,
                 Self::Supply(SupplyError::Unsupported {
@@ -204,6 +292,7 @@ impl PortOperationError {
     pub fn into_engine(self) -> cna_core::engine::EngineError {
         match self {
             Self::Policy(error) => error.into_engine(),
+            Self::Starting(error) => error.into_engine(),
             Self::Supply(error) => super::stores::engine(error),
         }
     }
@@ -212,7 +301,7 @@ impl PortOperationError {
 /// The dev profile preserves diagnostics for the affected port's operation query.
 /// Cases: airlog:55.18, scen:60.7
 pub fn preflight(content: &CnaContent, strict: bool) -> Result<(), cna_core::engine::EngineError> {
-    let diagnostics = super::port_initialization::unsupported_port_policies(content)
+    let diagnostics = super::port_initialization::port_starting_diagnostics(content)
         .map_err(|error| error.into_engine())?;
     if strict && let Some(error) = diagnostics.into_iter().next() {
         return Err(error.into_engine());
@@ -228,10 +317,10 @@ pub fn state<'a>(
     state: &'a State,
     port: &Port,
 ) -> Result<&'a PortState, PortOperationError> {
-    if let super::port_initialization::InitialPortPolicy::Unknown(error) =
-        super::port_initialization::initial_port_policy(content, port)?
+    if let super::port_initialization::InitialPortStartingPolicy::Unknown(error) =
+        super::port_initialization::initial_port_starting_policy(content, port)?
     {
-        return Err(PortOperationError::Policy(error));
+        return Err(error.into());
     }
     if state.logistics.unknown_ports.contains_key(&port.id) {
         return Err(SupplyError::Unsupported {
@@ -402,7 +491,7 @@ mod tests {
         let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
         let mut s = State::new(&c).unwrap();
         s.cursor.op_stage = Some(1);
-        initialize(&c, &mut s);
+        initialize_fixture(&c, &mut s);
         let p = at(
             &c,
             &Location::OffMap {
@@ -494,7 +583,7 @@ mod tests {
     fn last_entry_preserves_damage_and_unverified_city_is_not_port() {
         let (c, mut s, p) = setup();
         s.logistics.ports.get_mut(&p.id).unwrap().efficiency = 4;
-        record_entry(&c, &mut s, Side::Commonwealth, &p.location);
+        record_entry_fixture(&c, &mut s, Side::Commonwealth, &p.location);
         assert_eq!(s.logistics.ports[&p.id].owner, Side::Commonwealth);
         assert_eq!(s.logistics.ports[&p.id].efficiency, 4);
         assert!(charge(&c, &mut s, Side::Axis, &p, 24, false).is_err());
@@ -537,7 +626,7 @@ mod tests {
         );
         let id: UnitId = "it.1_libyan_div.viii_libyan_bn".into();
         s.land.units.get_mut(&id).unwrap().location = port.location.clone();
-        record_entry(&c, &mut s, Side::Axis, &port.location);
+        record_entry_fixture(&c, &mut s, Side::Axis, &port.location);
         assert_eq!(s.logistics.ports[&port.id].owner, Side::Axis);
     }
     /// Cases: airlog:55.11, airlog:56.11
