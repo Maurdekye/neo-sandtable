@@ -94,9 +94,42 @@ fn assert_initiative_and_transcript_count(path: &Path, transcript_count: usize) 
     assert_eq!(transcript_count, requests.len());
 }
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "slow: whole campaign"]
 async fn real_graziani_baselines_finish_with_private_transcripts_and_exact_recovery() {
+    check_real_baselines(true).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn bounded_graziani_decisions_keep_private_transcripts_and_exact_recovery() {
+    check_real_baselines(false).await;
+}
+
+async fn bounded_progress(handle: &CampaignHandle, path: &Path, count: usize) {
+    tokio::time::timeout(Duration::from_secs(20), async {
+        while resolved_decisions(path).len() < count {
+            assert_eq!(handle.status(), CampaignStatus::Running);
+            for seat in SeatId::all() {
+                assert!(
+                    !handle.seat(seat).binding.paused,
+                    "{seat}: {:?}",
+                    handle.seat(seat).binding
+                );
+            }
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .expect("bounded decision window stalled");
+    handle.pause(true).await.unwrap();
+}
+
+async fn check_real_baselines(whole: bool) {
     let directory = tempfile::tempdir().unwrap();
-    for mode in ["legal_random", "pass_when_possible"] {
+    for mode in if whole {
+        vec!["legal_random", "pass_when_possible"]
+    } else {
+        vec!["pass_when_possible"]
+    } {
         let handle = campaigns::create(
             directory.path(),
             &data(),
@@ -111,20 +144,51 @@ async fn real_graziani_baselines_finish_with_private_transcripts_and_exact_recov
         // The initial board is the real scenario, not the sandbox's nine units.
         assert!(handle.projection(Perspective::Operator).view.units.len() > 100);
         handle.pause(false).await.unwrap();
-        assert!(
-            matches!(terminal(&handle).await, CampaignStatus::Finished { .. }),
-            "{:?}",
-            handle.status()
-        );
+        let handle = if whole {
+            assert!(
+                matches!(terminal(&handle).await, CampaignStatus::Finished { .. }),
+                "{:?}",
+                handle.status()
+            );
+            handle
+        } else {
+            bounded_progress(&handle, &path, 16).await;
+            let expected: Vec<_> = Perspective::all()
+                .map(|p| (p, handle.projection(p)))
+                .collect();
+            handle.shutdown().await.unwrap();
+            let before = stored(&path);
+            let restored = campaigns::recover(&path, &data()).unwrap();
+            assert_eq!(restored.status(), CampaignStatus::Paused);
+            for (p, projection) in expected {
+                assert_eq!(restored.projection(p), projection);
+            }
+            assert_eq!(stored(&path), before);
+            restored.pause(false).await.unwrap();
+            bounded_progress(&restored, &path, 32).await;
+            restored
+        };
         let projections: Vec<_> = Perspective::all()
             .map(|p| (p, handle.projection(p)))
             .collect();
         let mut count = 0;
         for seat in SeatId::all() {
-            let rows = handle
-                .replay()
-                .transcripts(Perspective::Operator, seat, 0)
-                .unwrap();
+            let mut rows = Vec::new();
+            let mut after = 0;
+            loop {
+                let page = handle
+                    .replay()
+                    .transcripts(Perspective::Operator, seat, after)
+                    .unwrap();
+                let len = page.len();
+                if let Some(ServerMessage::Transcript { tseq, .. }) = page.last() {
+                    after = *tseq;
+                }
+                rows.extend(page);
+                if len < 512 {
+                    break;
+                }
+            }
             count += rows.len();
             for (index, row) in rows.iter().enumerate() {
                 assert!(
@@ -145,13 +209,30 @@ async fn real_graziani_baselines_finish_with_private_transcripts_and_exact_recov
                     .is_empty()
             );
         }
-        assert_initiative_and_transcript_count(&path, count);
+        if whole {
+            assert_initiative_and_transcript_count(&path, count);
+        } else {
+            assert_eq!(count, resolved_decisions(&path).len());
+        }
+        let db = Connection::open_with_flags(&path, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+        let submitted: usize = db
+            .query_row("SELECT COUNT(*) FROM commands WHERE seat != ''", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(
+            submitted, count,
+            "every submitted decision has exactly one truthful transcript"
+        );
+        drop(db);
         let movement_ids: std::collections::BTreeSet<_> = resolved_decisions(&path)
             .into_iter()
             .filter(|d| d.kind == cna_rules::land::movement::KIND)
             .map(|d| d.id)
             .collect();
-        assert!(!movement_ids.is_empty());
+        if whole {
+            assert!(!movement_ids.is_empty());
+        }
         let db = Connection::open_with_flags(&path, OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
         let mut statement = db
             .prepare("SELECT command FROM commands WHERE seat != ''")
@@ -412,7 +493,17 @@ async fn campaign_kind_and_profile_must_agree_before_creating_a_database() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "slow: whole campaign"]
 async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts() {
+    check_http_real_profile(true).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn http_bounded_real_profile_serves_private_transcripts_and_recovers() {
+    check_http_real_profile(false).await;
+}
+
+async fn check_http_real_profile(whole: bool) {
     use cna_server::http::App;
     use serde_json::{Value, json};
     use std::sync::Arc;
@@ -440,7 +531,15 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
         .unwrap();
     let response = client
         .post(format!("{base}/api/campaigns"))
-        .json(&request(cna_rules::PROFILE_DEV, "legal_random", true))
+        .json(&request(
+            cna_rules::PROFILE_DEV,
+            if whole {
+                "legal_random"
+            } else {
+                "pass_when_possible"
+            },
+            true,
+        ))
         .send()
         .await
         .unwrap();
@@ -489,7 +588,7 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
             .status(),
         200
     );
-    tokio::time::timeout(Duration::from_secs(120), async {
+    tokio::time::timeout(Duration::from_secs(if whole { 120 } else { 20 }), async {
         loop {
             let detail: Value = client
                 .get(format!("{base}/api/campaigns/{id}"))
@@ -499,7 +598,11 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
                 .json()
                 .await
                 .unwrap();
-            if detail["status"]["state"] == "finished" {
+            if whole && detail["status"]["state"] == "finished"
+                || !whole
+                    && resolved_decisions(&directory.path().join(format!("{id}.sqlite"))).len()
+                        >= 16
+            {
                 break;
             }
             assert_ne!(detail["status"]["state"], "stopped", "{detail}");
@@ -508,21 +611,55 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
     })
     .await
     .unwrap();
+    if !whole {
+        assert_eq!(
+            client
+                .post(format!("{base}/api/campaigns/{id}/pause"))
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            200
+        );
+    }
     let mut count = 0;
     for seat in SeatId::all() {
-        let rows: Vec<ServerMessage> = client
-            .get(format!(
-                "{base}/api/campaigns/{id}/transcripts?perspective=operator&seat={seat}"
-            ))
+        let mut after = 0;
+        loop {
+            let rows: Vec<ServerMessage> = client
+                .get(format!("{base}/api/campaigns/{id}/transcripts?perspective=operator&seat={seat}&after={after}"))
+                .send().await.unwrap().json().await.unwrap();
+            count += rows.len();
+            if let Some(ServerMessage::Transcript { tseq, .. }) = rows.last() {
+                after = *tseq;
+            }
+            if rows.len() < 512 {
+                break;
+            }
+        }
+    }
+    let path = directory.path().join(format!("{id}.sqlite"));
+    if whole {
+        assert_initiative_and_transcript_count(&path, count);
+    } else {
+        assert_eq!(count, resolved_decisions(&path).len());
+    }
+    let mut expected = Vec::new();
+    for p in Perspective::all() {
+        let detail: Value = client
+            .get(format!("{base}/api/campaigns/{id}?perspective={p}"))
             .send()
             .await
             .unwrap()
             .json()
             .await
             .unwrap();
-        count += rows.len();
+        expected.push((
+            p,
+            serde_json::from_value::<cna_server::actor::Projection>(detail["snapshot"].clone())
+                .unwrap(),
+        ));
     }
-    assert_initiative_and_transcript_count(&directory.path().join(format!("{id}.sqlite")), count);
     let denied:Vec<Value> = client.get(format!("{base}/api/campaigns/{id}/transcripts?perspective=side:axis&seat=commonwealth.commander"))
         .send().await.unwrap().json().await.unwrap();
     assert!(denied.is_empty());
@@ -536,6 +673,13 @@ async fn http_creates_the_real_profile_and_serves_its_snapshot_and_transcripts()
     app.shutdown().await;
     task.abort();
     let _ = task.await;
+    let before = stored(&path);
+    let restored = campaigns::recover(&path, &data()).unwrap();
+    for (p, snapshot) in expected {
+        assert_eq!(restored.projection(p), snapshot);
+    }
+    restored.shutdown().await.unwrap();
+    assert_eq!(stored(&path), before);
 }
 
 #[tokio::test]

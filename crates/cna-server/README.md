@@ -162,3 +162,16 @@ do not relabel saved pins to bypass that check.
 The real-scenario tests cover both baselines reaching Finished, private transcript replay,
 checkpoint plus tail recovery, strict-profile rollback, HTTP creation/control, input drift and
 mixed sandbox/CNA recovery. No provider invocation is needed for these tests.
+
+Default CNA checks use bounded decision windows, including an accepted real-unit move and
+mid-run recovery of all perspective views, counters, transcripts and adjudication RNG. Whole
+Graziani campaigns are marked `slow: whole campaign`; run them with
+`cargo test -p cna-server -- --ignored`. Their existing 120-second completion limits remain.
+The bounded mover test prints engine, writer (including engine and SQLite), and all-perspective
+projection timings; it uses real unit data with a small test map rather than a full-roster benchmark.
+
+One bounded fixture run resolved 16 decisions in 31 transitions: engine evaluation averaged
+1.1 ms, the writer including engine and SQLite averaged 29.2 ms, and all 13 projections averaged
+1.7 ms per resolved decision. These include automatic transitions between decisions. The test
+uses real Graziani unit data and a small map; this is not a full-roster benchmark, and SQLite
+cost was not measured independently from the writer. Numbers vary with machine load.

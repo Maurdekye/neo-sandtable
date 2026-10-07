@@ -944,6 +944,7 @@ async fn cna_binding_uses_real_observation_and_current_action_schema() {
     demo.shutdown().await.unwrap();
 }
 #[tokio::test]
+#[ignore = "slow: whole campaign"]
 async fn cna_scripted_only_runs_and_recovers_without_any_driver_endpoint() {
     use cna_play::config::{GameKind, LaunchConfig};
     let config = LaunchConfig::resolve(GameKind::Cna, &["*=scripted:legal_random".into()]).unwrap();

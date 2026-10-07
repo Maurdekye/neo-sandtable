@@ -465,7 +465,7 @@ impl CampaignHandle {
         result
     }
 }
-fn auto_step<R: Ruleset>(
+pub(crate) fn auto_step<R: Ruleset>(
     campaign: &mut Campaign<R>,
     baseline: Option<&Baseline<R>>,
     candidates: &dyn Candidates,
