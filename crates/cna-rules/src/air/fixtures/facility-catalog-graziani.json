@@ -1,0 +1,607 @@
+{
+  "facilities": [
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "air_landing_strip_augila",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "B0707"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_burg_el_arab",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "E3109"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "air_landing_strip_el_agheila",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "A1816"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_el_hamman",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "E3007"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_fuka",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "D3323"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "air_landing_strip_gazala",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "B4933"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "air_landing_strip_maraua",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "B5410"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_matten_baggush",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "D3520"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "air_landing_strip_mechili",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "B4921"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_qotifiya",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "D3227"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_sidi_haneish",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "D3418"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "air_landing_strip_tmimi",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "B5229"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_unnamed_d3231",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "D3231"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_unnamed_d3416",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "D3416"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_unnamed_d3516",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "D3516"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "air_landing_strip_unnamed_d3903",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "D3903"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "air_landing_strip_ztert",
+      "kind": "air_landing_strip",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "B5917"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_abbassia",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "E2132"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_aboukir",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "E3815"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_abu_seier",
+      "kind": "airfield",
+      "limit": 9,
+      "location": {
+        "at": "off_map",
+        "id": "offmap_abu_seier"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_alexandria@E3613",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "E3613"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_alexandria@E3714",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "E3714"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_almaza",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "E2133"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_amiriya",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "E2212"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_barce",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "B5504"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_benina",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "A4829"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_dekheila",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "E3512"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_deversoir",
+      "kind": "airfield",
+      "limit": 9,
+      "location": {
+        "at": "off_map",
+        "id": "offmap_deversoir"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_el_berea",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "A4728"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_fayid",
+      "kind": "airfield",
+      "limit": 9,
+      "location": {
+        "at": "off_map",
+        "id": "offmap_fayid"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_ismailia",
+      "kind": "airfield",
+      "limit": 9,
+      "location": {
+        "at": "off_map",
+        "id": "offmap_ismailia"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_kabrit",
+      "kind": "airfield",
+      "limit": 9,
+      "location": {
+        "at": "off_map",
+        "id": "offmap_kabrit"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_martuba",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "B5526"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "commonwealth",
+      "id": "airfield_mersa_matruh",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "D3714"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_soluch",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "A4130"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_tripoli_tunisia_boxes@box_gabes",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "off_map",
+        "id": "box_gabes"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_tripoli_tunisia_boxes@box_tripoli",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "off_map",
+        "id": "box_tripoli"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_tripoli_tunisia_boxes@box_tripolitania",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "off_map",
+        "id": "box_tripolitania"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_tripoli_tunisia_boxes@box_tunis",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "off_map",
+        "id": "box_tunis"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": false,
+      "force": "axis",
+      "id": "airfield_unnamed_b5825",
+      "kind": "airfield",
+      "limit": 6,
+      "location": {
+        "at": "hex",
+        "hex": "B5825"
+      },
+      "normal": true,
+      "side": "axis"
+    },
+    {
+      "flying_boat": true,
+      "force": "axis",
+      "id": "flying_boat_alighting_area_derna",
+      "kind": "flying_boat_alighting_area",
+      "limit": 1,
+      "location": {
+        "at": "hex",
+        "hex": "B5925"
+      },
+      "normal": false,
+      "side": "axis"
+    },
+    {
+      "flying_boat": true,
+      "force": "commonwealth",
+      "id": "flying_boat_basin_alexandria",
+      "kind": "flying_boat_basin",
+      "limit": 3,
+      "location": {
+        "at": "hex",
+        "hex": "E3614"
+      },
+      "normal": false,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": true,
+      "force": "axis",
+      "id": "flying_boat_basin_bomba",
+      "kind": "flying_boat_basin",
+      "limit": 3,
+      "location": {
+        "at": "hex",
+        "hex": "B5331"
+      },
+      "normal": false,
+      "side": "axis"
+    },
+    {
+      "flying_boat": true,
+      "force": "commonwealth",
+      "id": "flying_boat_basin_port_said",
+      "kind": "flying_boat_basin",
+      "limit": 3,
+      "location": {
+        "at": "off_map",
+        "id": "offmap_port_said"
+      },
+      "normal": false,
+      "side": "commonwealth"
+    },
+    {
+      "flying_boat": false,
+      "force": "malta",
+      "id": "malta.initial",
+      "kind": "airfield",
+      "limit": 5,
+      "location": {
+        "at": "off_map",
+        "id": "offmap_malta"
+      },
+      "normal": true,
+      "side": "commonwealth"
+    }
+  ],
+  "unresolved": [
+    "airfield_el_adem: initial national ownership is not verified",
+    "airfield_ft_maddalena: initial national ownership is not verified",
+    "air_landing_strip_bardia: initial national ownership is not verified",
+    "air_landing_strip_bir_el_gubi: initial national ownership is not verified",
+    "air_landing_strip_buq_buq: initial national ownership is not verified",
+    "air_landing_strip_ft_capuzzo: initial national ownership is not verified",
+    "air_landing_strip_gambut: initial national ownership is not verified",
+    "air_landing_strip_giarabub: initial national ownership is not verified",
+    "air_landing_strip_menastir: initial national ownership is not verified",
+    "air_landing_strip_sidi_azeiz: initial national ownership is not verified",
+    "air_landing_strip_sidi_barrani: initial national ownership is not verified",
+    "air_landing_strip_sidi_omar: initial national ownership is not verified",
+    "air_landing_strip_sollum: initial national ownership is not verified",
+    "air_landing_strip_siwa: initial national ownership is not verified",
+    "air_landing_strip_tobruk: initial national ownership is not verified",
+    "air_landing_strip_unnamed_c4119: initial national ownership is not verified"
+  ]
+}

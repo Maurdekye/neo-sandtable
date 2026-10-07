@@ -5,5 +5,6 @@
 //! rebuilds the aggregate mirrors atomically. Runtime IDs never enter enemy
 //! disclosures; combat labels will be scoped to their disclosure window.
 
+pub mod facilities;
 pub mod inventory;
 pub mod state;
