@@ -3,6 +3,7 @@ mod decisions;
 mod facilities;
 pub mod placement;
 mod pools;
+mod preload;
 mod stacking;
 pub(crate) use decisions::{KIND_DUMP, KIND_TRUCKS, KIND_UNIT, answer, enter};
 
@@ -22,16 +23,39 @@ pub struct SetupState {
     #[serde(default)]
     pub pools_started: bool,
     #[serde(default)]
+    pub preload_started: bool,
+    #[serde(default)]
+    pub preload_packing: BTreeMap<String, crate::logistics::CargoPacking>,
+    #[serde(default)]
+    pub pool_sources: BTreeMap<String, usize>,
+    #[serde(default)]
     pub pool_locations: BTreeMap<String, Location>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SetupTask {
-    Unit { unit: UnitId, case: String },
-    Dump { dump: String, case: String },
-    Trucks { group: String },
-    Pool { pool: String, source: usize },
+    Unit {
+        unit: UnitId,
+        case: String,
+    },
+    Dump {
+        dump: String,
+        case: String,
+    },
+    Trucks {
+        group: String,
+    },
+    Pool {
+        pool: String,
+        source: usize,
+    },
+    Preload {
+        asset: preload::Asset,
+        operation: String,
+    },
 }
 
 pub(crate) const KIND_POOL: &str = pools::KIND;
+
+pub(crate) const KIND_PRELOAD: &str = preload::KIND;
