@@ -591,6 +591,9 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
             };
             moves += 1;
             json!([{"unit":LEG,"path":[to]}])
+        } else if p.kind == "cna.arrivals.batch" {
+            crate::baseline::arrival_orders(&c, &g.state, &p)
+                .expect("mandatory arrival batch has a source-conserving plan")
         } else if p.space.pass.is_some()
             && matches!(&p.space.schema, ActionSchema::Choice { options } if options.is_empty())
         {
