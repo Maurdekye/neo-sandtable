@@ -825,6 +825,22 @@ fn run(
     state.land.movement.moved.extend(moving.iter().cloned());
     if truth {
         for id in &moving {
+            // Printed map counters are visible under RAW fog; attached contents are not.
+            // A side-only copy avoids duplicating the owner's full event for the operator.
+            if view::is_map_counter(content, state, &state.land.units[id]) {
+                events.push(
+                    EngineEvent::new(
+                        Audience::SideOnly(seat.side.opponent()),
+                        GameEvent::UnitMoved {
+                            unit_id: id.to_string(),
+                            path: path.iter().map(ToString::to_string).collect(),
+                            cp_spent: None,
+                        },
+                    )
+                    .at(from.clone())
+                    .about(id.clone()),
+                );
+            }
             events.push(EngineEvent::new(
                 Audience::Side(seat.side),
                 GameEvent::UnitMoved {
