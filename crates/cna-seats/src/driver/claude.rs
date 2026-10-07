@@ -498,7 +498,9 @@ impl SeatDriver for ClaudeDriver {
     }
     async fn start(&mut self, resume_session: Option<&str>) -> Result<SessionInfo, DriverError> {
         if let Some(p) = &mut self.proc {
-            p.kill().await;
+            p.kill()
+                .await
+                .map_err(|e| DriverError::Died(format!("CLI termination failed: {e}")))?;
         }
         self.proc = None;
         self.parser = ClaudeParser::default();
@@ -637,15 +639,20 @@ impl SeatDriver for ClaudeDriver {
         self.proc.as_mut().is_some_and(ChildProc::is_running)
     }
 
-    async fn stop(&mut self) {
+    async fn stop(&mut self) -> Result<(), DriverError> {
         if let Some(p) = &mut self.proc {
             if self.idle {
-                p.finish(Duration::from_secs(2)).await;
+                p.finish(Duration::from_secs(2))
+                    .await
+                    .map_err(|e| DriverError::Died(format!("CLI termination failed: {e}")))?;
             } else {
-                p.kill().await;
+                p.kill()
+                    .await
+                    .map_err(|e| DriverError::Died(format!("CLI termination failed: {e}")))?;
             }
         }
         self.proc = None;
+        Ok(())
     }
 }
 

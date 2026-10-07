@@ -142,8 +142,10 @@ impl SeatDriver for FakeCli {
     fn is_alive(&mut self) -> bool {
         !self.stopped
     }
-    async fn stop(&mut self) {
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
         self.stopped = true;
+
+        Ok(())
     }
 }
 // An inert baseline for integration fixtures, never a real AI failure fallback.
@@ -622,8 +624,10 @@ impl SeatDriver for FinishCli {
     fn is_alive(&mut self) -> bool {
         self.inner.is_alive()
     }
-    async fn stop(&mut self) {
-        self.inner.stop().await;
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
+        self.inner.stop().await?;
+
+        Ok(())
     }
 }
 #[tokio::test]
@@ -716,8 +720,10 @@ impl SeatDriver for HangingCli {
     fn is_alive(&mut self) -> bool {
         self.inner.is_alive()
     }
-    async fn stop(&mut self) {
-        self.inner.stop().await;
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
+        self.inner.stop().await?;
+
+        Ok(())
     }
 }
 #[tokio::test]
@@ -1057,13 +1063,15 @@ impl SeatDriver for WriterLossOnStopCli {
     fn is_alive(&mut self) -> bool {
         self.inner.is_alive()
     }
-    async fn stop(&mut self) {
-        self.inner.stop().await;
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
+        self.inner.stop().await?;
         // Result was already selected. Deterministic writer loss before control persistence.
         self.handle.shutdown().await.unwrap();
         self.inner
             .sink
             .system(self.inner.seat, "unconfirmed after writer loss");
+
+        Ok(())
     }
 }
 
@@ -1360,10 +1368,12 @@ impl SeatDriver for TrackedCli {
     fn is_alive(&mut self) -> bool {
         self.inner.is_alive()
     }
-    async fn stop(&mut self) {
-        self.inner.stop().await;
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
+        self.inner.stop().await?;
         self.stopped
             .store(true, std::sync::atomic::Ordering::SeqCst);
+
+        Ok(())
     }
 }
 #[tokio::test]
@@ -1463,8 +1473,10 @@ impl SeatDriver for PairedCli {
     fn is_alive(&mut self) -> bool {
         self.inner.is_alive()
     }
-    async fn stop(&mut self) {
-        self.inner.stop().await;
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
+        self.inner.stop().await?;
+
+        Ok(())
     }
 }
 #[tokio::test]

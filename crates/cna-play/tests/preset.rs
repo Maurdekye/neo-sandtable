@@ -21,7 +21,10 @@ use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Duration,
 };
 use tokio::sync::watch;
@@ -46,6 +49,7 @@ struct Fake {
     cost: f64,
     model: String,
     trace: Arc<Mutex<Trace>>,
+    refuse_cleanup: Arc<AtomicBool>,
 }
 impl Fake {
     async fn call(&self, tool: &str, args: Value) -> Result<Value, DriverError> {
@@ -206,11 +210,16 @@ impl SeatDriver for Fake {
     fn is_alive(&mut self) -> bool {
         self.alive
     }
-    async fn stop(&mut self) {
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
+        if self.alive && self.refuse_cleanup.load(Ordering::SeqCst) {
+            return Err(DriverError::Died("inert parking termination denied".into()));
+        }
         if self.alive {
             self.trace.lock().unwrap().active -= 1;
             self.alive = false;
         }
+
+        Ok(())
     }
 }
 fn first(schema: &ActionSchema) -> Result<Value, DriverError> {
@@ -271,6 +280,7 @@ fn drivers(demo: &Demo, trace: Arc<Mutex<Trace>>) -> Vec<(SeatId, Box<dyn SeatDr
                         .last_session_cost,
                     model: model.into(),
                     trace: trace.clone(),
+                    refuse_cleanup: Arc::new(AtomicBool::new(false)),
                 }) as Box<dyn SeatDriver>,
             )
         })
@@ -495,4 +505,81 @@ async fn real_driver_without_verified_bound_pauses_before_any_native_start() {
     );
     assert!(!root.path().join("sandbox").exists());
     demo.shutdown().await.unwrap();
+}
+
+#[tokio::test]
+async fn accounted_turn_with_failed_parking_retains_full_envelope() {
+    use cna_play::{
+        budget::{Admission, RunControl, SpendBudget},
+        config::{GameKind, LaunchConfig, SessionLimits},
+    };
+    let root = tempfile::tempdir().unwrap();
+    let repo = repo();
+    let seat: SeatId = "axis.commander".parse().unwrap();
+    let mut config = LaunchConfig::resolve(
+        GameKind::Sandbox,
+        &[
+            "axis.commander=claude:haiku".into(),
+            "*=scripted:aggressive".into(),
+        ],
+    )
+    .unwrap();
+    config.session = Some(SessionLimits::default());
+    config.max_turns = 20;
+    config.run = Some(RunControl {
+        boundary: cna_server::RunBoundary {
+            game_turn: 2,
+            op_stage: None,
+        },
+        budget: SpendBudget::usd(4., &[seat], BTreeMap::from([(seat, 1.)])).unwrap(),
+    });
+    let demo = Demo::with_config(
+        root.path(),
+        &repo.join("data"),
+        &repo.join("web/dist"),
+        config,
+    )
+    .await
+    .unwrap();
+    let trace = Arc::new(Mutex::new(Trace::default()));
+    let refuse = Arc::new(AtomicBool::new(true));
+    let driver = Fake {
+        seat,
+        url: demo.mcp.url(seat).unwrap(),
+        sink: demo.sink.clone(),
+        id: None,
+        alive: false,
+        cap: 0.,
+        cost: 0.,
+        model: "haiku".into(),
+        trace: trace.clone(),
+        refuse_cleanup: refuse.clone(),
+    };
+    let mut drivers = vec![(seat, Box::new(driver) as Box<dyn SeatDriver>)];
+    let (_tx, rx) = watch::channel(false);
+    let result = demo.play_durable(&mut drivers, rx).await;
+    let record = demo.journal.as_ref().unwrap().snapshot().unwrap().seats[&seat].clone();
+    let paused = matches!(demo.handle.status(), cna_server::CampaignStatus::Paused);
+    let admission = demo
+        .journal
+        .as_ref()
+        .unwrap()
+        .admission(seat, drivers[0].1.estimate_bound().as_ref())
+        .unwrap();
+    let active_before_cleanup = trace.lock().unwrap().active;
+    refuse.store(false, Ordering::SeqCst);
+    drivers[0].1.stop().await.unwrap();
+    demo.shutdown().await.unwrap();
+    assert!(
+        result
+            .unwrap_err()
+            .contains("inert parking termination denied")
+    );
+    assert_eq!(active_before_cleanup, 1);
+    assert_eq!(trace.lock().unwrap().active, 0);
+    assert_eq!(record.turns, 1);
+    assert_eq!(record.reported_cost_usd, 0.01);
+    assert_eq!(record.admitted_estimate_usd, Some(1.02));
+    assert!(record.uncertain_budget_spend && paused);
+    assert!(matches!(admission, Admission::Stop(_)));
 }

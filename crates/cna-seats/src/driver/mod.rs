@@ -214,8 +214,8 @@ pub trait SeatDriver: Send + Sync {
     fn session_id(&self) -> Option<String>;
     /// Is the CLI process still alive?
     fn is_alive(&mut self) -> bool;
-    /// Stop the CLI process, leaving the session resumable.
-    async fn stop(&mut self);
+    /// Return Ok only after process termination is confirmed; errors retain uncertain cleanup.
+    async fn stop(&mut self) -> Result<(), crate::driver::DriverError>;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -281,15 +281,15 @@ impl ChildProc {
 
     /// Close input and give an idle CLI time to persist resumable session totals.
     /// Active/canceled turns use kill instead; this grace is bounded.
-    pub async fn finish(&mut self, grace: Duration) {
+    pub async fn finish(&mut self, grace: Duration) -> std::io::Result<()> {
         self.close_stdin();
-        if !matches!(
-            tokio::time::timeout(grace, self.child.wait()).await,
-            Ok(Ok(_))
-        ) {
-            self.kill().await;
+        match tokio::time::timeout(grace, self.child.wait()).await {
+            Ok(Ok(_)) => Ok(()),
+            Ok(Err(error)) => Err(error),
+            Err(_) => self.kill().await,
         }
     }
+
     pub async fn send_line(&mut self, line: &str) -> std::io::Result<()> {
         let stdin = self
             .stdin
@@ -317,7 +317,7 @@ impl ChildProc {
     }
 
     pub fn is_running(&mut self) -> bool {
-        matches!(self.child.try_wait(), Ok(None))
+        !matches!(self.child.try_wait(), Ok(Some(_)))
     }
 
     pub fn stderr_tail(&self) -> String {
@@ -325,9 +325,12 @@ impl ChildProc {
         g.iter().cloned().collect::<Vec<_>>().join("\n")
     }
 
-    pub async fn kill(&mut self) {
+    pub async fn kill(&mut self) -> std::io::Result<()> {
         self.stdin = None;
-        let _ = self.child.kill().await;
+        if self.child.try_wait()?.is_none() {
+            self.child.start_kill()?;
+        }
+        self.child.wait().await.map(|_| ())
     }
 }
 
@@ -636,6 +639,40 @@ mod tests {
                 String::from_utf8_lossy(&output.stdout)
             );
         }
+    }
+    #[test]
+    fn termination_probe_child() {
+        if std::env::var_os("SEAT_TERMINATION_PROBE").is_some() {
+            println!("termination probe ready");
+            std::thread::sleep(Duration::from_secs(20));
+        }
+    }
+    #[tokio::test]
+    async fn native_child_forced_finish_confirms_exit_before_success() {
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command.args([
+            "--exact",
+            "driver::tests::termination_probe_child",
+            "--nocapture",
+        ]);
+        apply_seat_env(
+            &mut command,
+            &[("SEAT_TERMINATION_PROBE", OsString::from("1"))],
+        );
+        let mut child = ChildProc::spawn(&mut command).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let mut ready = false;
+        while let Ok(Some(line)) = child.next_line(deadline).await {
+            if line.contains("termination probe ready") {
+                ready = true;
+                break;
+            }
+        }
+        // The child ignores stdin, so idle grace must use the checked kill/wait path.
+        child.finish(Duration::from_millis(10)).await.unwrap();
+        assert!(!child.is_running());
+        child.kill().await.unwrap(); // An already reaped process also confirms cleanly.
+        assert!(ready);
     }
     #[test]
     fn tool_results_get_summary_and_detail() {

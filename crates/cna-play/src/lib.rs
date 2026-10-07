@@ -316,8 +316,7 @@ impl Demo {
             self.run_session(self.seat, self.epoch, driver, turns, stop)
                 .await
         } else {
-            driver.stop().await;
-            start
+            combine_results(start, driver.stop().await.map_err(|e| e.to_string()))
         };
         self.finish_run(result).await
     }
@@ -341,10 +340,10 @@ impl Demo {
                 "exactly one confined Claude driver is required for each Claude binding".into(),
             );
         }
-        let start = self.handle.pause(false).await.map_err(|e| e.to_string());
+        let mut start = self.handle.pause(false).await.map_err(|e| e.to_string());
         if start.is_err() {
             for (_, driver) in drivers {
-                driver.stop().await;
+                start = combine_results(start, driver.stop().await.map_err(|e| e.to_string()));
             }
             return self.finish_run(start).await;
         }
@@ -503,7 +502,7 @@ impl Demo {
             _ = cancelled => { self.sink.system(seat, "bounded peer session ended; this session stopped"); Ok(()) },
             result = tokio::time::timeout(WALL_LIMIT, work) => result.unwrap_or_else(|_| Err("demo wall-clock budget exhausted".into())),
         };
-        driver.stop().await;
+        result = combine_results(result, driver.stop().await.map_err(|e| e.to_string()));
         if let Err(reason) = &result
             && !matches!(
                 self.handle.status(),

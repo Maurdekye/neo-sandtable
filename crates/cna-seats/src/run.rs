@@ -278,7 +278,11 @@ impl SeatRunner {
     /// Run until the game ends, the seat pauses or fails, or a stop is requested.
     pub async fn run(&mut self) -> SeatEnd {
         let mut end = self.run_inner().await;
-        self.driver.stop().await;
+        if let Err(error) = self.driver.stop().await {
+            end = SeatEnd::Failed(PauseReason::CliError(format!(
+                "CLI cleanup failed: {error}"
+            )));
+        }
         let drained = tokio::time::timeout(Duration::from_secs(5), self.sink.flush()).await;
         if drained.is_err() || self.sink.pending_count() != 0 {
             self.sink.stop_delivery().await;
@@ -436,7 +440,9 @@ impl SeatRunner {
                             return SeatEnd::Paused(PauseReason::TurnTimeout);
                         }
                         // Kill whatever is left and bring the session back (resume, else reseed).
-                        self.driver.stop().await;
+                        if let Err(error) = self.driver.stop().await {
+                            return SeatEnd::Failed(PauseReason::CliError(error.to_string()));
+                        }
                         match self.bring_up(false).await {
                             Ok(was_fresh) => fresh = was_fresh,
                             Err(end) => return end,
@@ -476,7 +482,9 @@ impl SeatRunner {
                 kind = TurnKind::Nudge;
             }
             if self.limits.park_between_windows {
-                self.driver.stop().await;
+                if let Err(error) = self.driver.stop().await {
+                    return SeatEnd::Failed(PauseReason::CliError(error.to_string()));
+                }
                 alive = false;
                 permit = None;
             }
@@ -511,7 +519,9 @@ impl SeatRunner {
                         self.seat,
                         format!("could not resume session {id} ({e}); starting a new one from the notebook"),
                     );
-                    self.driver.stop().await;
+                    self.driver.stop().await.map_err(|error| {
+                        SeatEnd::Failed(PauseReason::CliError(error.to_string()))
+                    })?;
                     self.sessions.clear(self.seat);
                 }
             }
@@ -627,8 +637,10 @@ mod tests {
         fn is_alive(&mut self) -> bool {
             self.alive
         }
-        async fn stop(&mut self) {
+        async fn stop(&mut self) -> Result<(), crate::driver::DriverError> {
             self.alive = false;
+
+            Ok(())
         }
     }
 

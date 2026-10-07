@@ -94,10 +94,27 @@ impl Demo {
             }
         } else {
             for (_, driver) in drivers.iter_mut() {
-                driver.stop().await;
+                result = combine_results(result, driver.stop().await.map_err(|e| e.to_string()));
             }
         }
         self.finish_run(result).await
+    }
+    async fn stop_child(&self, seat: SeatId, driver: &mut dyn SeatDriver) -> Result<(), String> {
+        let stopped = tokio::time::timeout(Duration::from_secs(5), driver.stop())
+            .await
+            .map_err(|_| "CLI stop exceeded five seconds".to_string())
+            .and_then(|r| r.map_err(|e| e.to_string()));
+        if stopped.is_err() {
+            // Neither a failed stop nor absence of a turn marker proves no model work.
+            let marked = self
+                .journal
+                .as_ref()
+                .ok_or("missing journal")?
+                .interrupt(seat, false);
+            let paused = self.handle.pause(true).await.map_err(|e| e.to_string());
+            return combine_results(combine_results(stopped, marked), paused);
+        }
+        Ok(())
     }
     async fn publish_usage(&self, seat: SeatId) -> Result<(), String> {
         // Board decoder/revision replacement landed in 87ffa001 before producer enable.
@@ -154,11 +171,9 @@ impl Demo {
             _=cancelled=>{self.sink.system(seat,"campaign session stopped; journal retained for resume");Ok(())},
             r=tokio::time::timeout(Duration::from_millis(remaining),self.durable_work(seat,driver,slots,&mut permit))=>r.unwrap_or_else(|_|Err("durable wall-clock budget exhausted".into())),
         };
-        let stopped = tokio::time::timeout(Duration::from_secs(5), driver.stop())
-            .await
-            .map_err(|_| "CLI stop exceeded five seconds".to_string());
+        let stopped = self.stop_child(seat, driver).await;
+        let cleanup_confirmed = stopped.is_ok();
         result = combine_results(result, stopped);
-        drop(permit);
         if self.config.run.is_some()
             && result.as_ref().is_err_and(|e| {
                 matches!(
@@ -181,8 +196,11 @@ impl Demo {
             self.journal
                 .as_ref()
                 .ok_or("missing journal")?
-                .interrupt(seat),
+                .interrupt(seat, cleanup_confirmed),
         );
+        // Unconfirmed cleanup has already durably blocked admissions and paused the
+        // campaign. Only then may this task relinquish capacity.
+        drop(permit);
         result = combine_results(result, self.publish_usage(seat).await);
         if let Err(reason) = &result
             && !matches!(
@@ -331,9 +349,9 @@ impl Demo {
                     }
                     Err(error) if resume.is_some() && unavailable(&error) => {
                         journal.recover_process(seat, true)?;
-                        driver.stop().await;
+                        self.stop_child(seat, driver).await?;
                         reseed = true;
-                        journal.release_admission(seat)?;
+                        journal.release_admission(seat, true)?;
                         permit.take();
                         continue;
                     }
@@ -424,9 +442,9 @@ impl Demo {
                     first && saved.as_ref().is_some_and(|s| s.resumed) && unavailable(&error);
                 if reseed_now || outcome.as_ref().is_err_and(retryable_death) {
                     journal.recover_process(seat, reseed_now)?;
-                    driver.stop().await;
+                    self.stop_child(seat, driver).await?;
                     started = false;
-                    journal.release_admission(seat)?;
+                    journal.release_admission(seat, true)?;
                     permit.take();
                     reseed = reseed_now;
                     self.sink.system(
@@ -442,9 +460,8 @@ impl Demo {
                 return Err(error);
             }
             if self.config.run.is_some() {
-                tokio::time::timeout(Duration::from_secs(5), driver.stop())
-                    .await
-                    .map_err(|_| "CLI parking exceeded five seconds")?;
+                self.stop_child(seat, driver).await?;
+                journal.release_admission(seat, true)?;
                 permit.take();
                 started = false;
             }

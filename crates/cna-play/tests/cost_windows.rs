@@ -326,8 +326,10 @@ impl SeatDriver for Fake {
     fn is_alive(&mut self) -> bool {
         self.id.is_some()
     }
-    async fn stop(&mut self) {
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
         self.id = None;
+
+        Ok(())
     }
 }
 
@@ -457,7 +459,7 @@ async fn first_opstage_model_visible_windows_before_and_after_forced_answers_exc
         demo.handle.pause(true).await.unwrap();
     }
     for driver in &mut drivers {
-        driver.stop().await;
+        driver.stop().await.unwrap();
     }
     let cleanup = demo.shutdown().await;
     cna_play::combine_results(result, cleanup).unwrap();

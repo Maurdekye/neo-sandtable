@@ -293,7 +293,9 @@ mod tests {
         fn is_alive(&mut self) -> bool {
             false
         }
-        async fn stop(&mut self) {}
+        async fn stop(&mut self) -> Result<(), crate::driver::DriverError> {
+            Ok(())
+        }
     }
     #[tokio::test]
     async fn local_forced_answer_needs_no_cli_slot_or_model_call_budget() {
@@ -441,7 +443,9 @@ mod tests {
         fn is_alive(&mut self) -> bool {
             true
         }
-        async fn stop(&mut self) {}
+        async fn stop(&mut self) -> Result<(), crate::driver::DriverError> {
+            Ok(())
+        }
     }
     #[tokio::test]
     async fn forced_successor_is_local_instead_of_a_model_nudge() {

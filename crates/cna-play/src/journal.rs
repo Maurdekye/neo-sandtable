@@ -326,7 +326,8 @@ impl SessionJournal {
     }
     /// Settle a cancelled operation without claiming result-less model spend is known.
     /// Its full pre-action reservation remains charged, as on hard-crash recovery.
-    pub fn interrupt(&self, seat: SeatId) -> Result<(), String> {
+    /// Cleanup must come from a verified termination result, never an absent turn marker.
+    pub fn interrupt(&self, seat: SeatId, cleanup_confirmed: bool) -> Result<(), String> {
         self.update(|state| {
             let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
             migrate_usage(s);
@@ -335,6 +336,13 @@ impl SessionJournal {
                 s.incomplete_token_turns += 1;
                 s.uncertain_budget_spend = true;
                 queue_usage(s)?;
+            } else if !cleanup_confirmed {
+                if !s.uncertain_budget_spend {
+                    s.uncertain_budget_spend = true;
+                    s.incomplete_turns += 1;
+                    s.incomplete_token_turns += 1;
+                    queue_usage(s)?;
+                }
             } else if !uncertain_budget(s, state.config.run.as_ref().map(|r| &r.budget)) {
                 // stop() has confirmed cleanup before model input was sent.
                 s.admitted_estimate_usd = None;
@@ -534,7 +542,10 @@ impl SessionJournal {
             Ok(result)
         })
     }
-    pub fn release_admission(&self, seat: SeatId) -> Result<(), String> {
+    pub fn release_admission(&self, seat: SeatId, cleanup_confirmed: bool) -> Result<(), String> {
+        if !cleanup_confirmed {
+            return self.interrupt(seat, false);
+        }
         self.update(|state| {
             let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
             if uncertain_budget(s, state.config.run.as_ref().map(|r| &r.budget)) {
@@ -896,7 +907,9 @@ impl SessionJournal {
                     Some(SpendBudget::Tokens { .. }) => !token_incomplete,
                     None => true,
                 };
-                if accounted {
+                // Controlled runs retain the envelope until a confirmed process stop;
+                // a final usage result alone does not release an unconfirmed live child.
+                if accounted && state.config.run.is_none() {
                     s.admitted_estimate_usd = None;
                     s.admitted_tokens = None;
                 }
@@ -1031,16 +1044,18 @@ mod tests {
             let record = j.snapshot().unwrap().seats[&seat()].clone();
             assert_eq!(record.incomplete_token_turns, u64::from(usd));
             assert_eq!(record.incomplete_turns, u64::from(!usd));
+            assert!(j.admit(seat(), Some(&bound())).is_err());
+            j.release_admission(seat(), true).unwrap();
             assert!(matches!(
                 j.admit(seat(), Some(&bound())).unwrap(),
                 Admission::Ready { .. }
             ));
-            j.release_admission(seat()).unwrap();
+            j.release_admission(seat(), true).unwrap();
             assert!(matches!(
                 j.admit(seat(), Some(&bound())).unwrap(),
                 Admission::Ready { .. }
             ));
-            j.interrupt(seat()).unwrap();
+            j.interrupt(seat(), true).unwrap();
             let record = j.snapshot().unwrap().seats[&seat()].clone();
             assert!(record.admitted_estimate_usd.is_none() && record.admitted_tokens.is_none());
         }
@@ -1170,7 +1185,7 @@ mod tests {
             j.admission(seat(), Some(&bound())).unwrap(),
             Admission::Stop(_)
         ));
-        j.release_admission(seat()).unwrap();
+        j.release_admission(seat(), true).unwrap();
         assert_eq!(
             j.snapshot().unwrap().seats[&seat()].admitted_estimate_usd,
             Some(1.02)
@@ -1194,7 +1209,7 @@ mod tests {
             j.admit(seat(), Some(&bound())).unwrap(),
             Admission::Ready { .. }
         ));
-        j.release_admission(seat()).unwrap(); // caller verified stop before sending model input
+        j.release_admission(seat(), true).unwrap(); // caller verified stop before sending model input
         assert!(
             j.snapshot().unwrap().seats[&seat()]
                 .admitted_estimate_usd
@@ -1203,11 +1218,17 @@ mod tests {
         j.admit(seat(), Some(&bound())).unwrap();
         j.reserve_decision(seat(), "GT1:OpStage1", 1000, "d", 0)
             .unwrap();
-        assert!(j.release_admission(seat()).is_err());
+        assert!(j.release_admission(seat(), true).is_err());
         let mut report = outcome(0.01);
         report.usage.cost_basis_known = Some(true);
         j.complete(seat(), 1, Some(&report), &SessionTelemetry::default())
             .unwrap();
+        assert!(
+            j.snapshot().unwrap().seats[&seat()]
+                .admitted_estimate_usd
+                .is_some()
+        );
+        j.release_admission(seat(), true).unwrap();
         assert!(
             j.snapshot().unwrap().seats[&seat()]
                 .admitted_estimate_usd
@@ -1439,7 +1460,7 @@ mod tests {
                 .inflight
                 .is_some()
         );
-        journal.interrupt(seat()).unwrap();
+        journal.interrupt(seat(), true).unwrap();
         let snapshot = journal.usage_outbox(seat()).unwrap()[0].clone();
         assert_eq!(
             (
@@ -1483,7 +1504,7 @@ mod tests {
             ),
             (None, None, None)
         );
-        journal.interrupt(seat()).unwrap();
+        journal.interrupt(seat(), true).unwrap();
         assert_eq!(
             journal.usage_outbox(seat()).unwrap(),
             vec![snapshot.clone()]
@@ -1491,7 +1512,7 @@ mod tests {
         journal
             .reserve_decision(seat(), "GT1:OpStage2", 1000, "d2", 1)
             .unwrap();
-        journal.interrupt(seat()).unwrap();
+        journal.interrupt(seat(), true).unwrap();
         drop(journal);
         let journal = SessionJournal::recover(root.path(), &id).unwrap();
         let entries = journal.usage_outbox(seat()).unwrap();

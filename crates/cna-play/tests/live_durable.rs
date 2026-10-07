@@ -47,8 +47,10 @@ impl SeatDriver for OneTurn {
     fn is_alive(&mut self) -> bool {
         self.inner.is_alive()
     }
-    async fn stop(&mut self) {
-        self.inner.stop().await;
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
+        self.inner.stop().await?;
+
+        Ok(())
     }
 }
 fn driver(

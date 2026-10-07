@@ -157,7 +157,9 @@ impl SeatDriver for Inert {
     fn is_alive(&mut self) -> bool {
         true
     }
-    async fn stop(&mut self) {}
+    async fn stop(&mut self) -> Result<(), cna_seats::driver::DriverError> {
+        Ok(())
+    }
 }
 fn first(schema: &ActionSchema) -> Value {
     match schema {
