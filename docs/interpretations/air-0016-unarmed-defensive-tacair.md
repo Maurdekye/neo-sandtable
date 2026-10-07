@@ -1,10 +1,10 @@
 # air-0016 - Unarmed aircraft retain normal ratings against opposing fire
 
 - **Cases:** airlog:38.43, airlog:45.0, airlog:45.17
-- **Status:** proposed
+- **Status:** proposed (implemented provisionally)
 - **Profile version:** v0.1
-- **Decided by:** rules-air, 2026-10-07 (proposal awaiting lead ruling)
-- **Owner review:** pending (consequential)
+- **Decided by:** neo-sandtable (lead), 2026-10-07
+- **Owner review:** pending batch 4 (consequential)
 
 ## Question
 
@@ -16,7 +16,7 @@ An ammunition shortage sets an aircraft's TacAir to zero in the maintenance rule
 
 ## Ruling
 
-Proposed: apply the specific combat instruction in 45.17. An aircraft without gun ammunition cannot fire and consumes no firing dice. Against opposing fire, use its normal mode rating, with applicable pilot, formation and maneuver adjustments established by the combat procedure. Do not replace its defensive TacAir with zero because of the ammunition shortage.
+Provisionally ruled: apply the specific combat instruction in 45.17. An aircraft without gun ammunition cannot fire and consumes no firing dice. Against opposing fire, use its normal mode rating, with applicable pilot, formation and maneuver adjustments established by the combat procedure. The zero in 38.43 governs its own fire only; do not replace its defensive TacAir because of the ammunition shortage.
 
 Alternative: apply the zero TacAir in 38.43 to both sides of the differential. The unarmed aircraft still cannot fire, but its opponent subtracts zero TacAir when resolving a shot against it. Normal non-TacAir ratings continue to apply.
 
@@ -26,4 +26,4 @@ Alternative: apply the zero TacAir in 38.43 to both sides of the differential. T
 
 ## Affected behaviour and tests
 
-This is consequential: the readings can change the opponent's differential and kill threshold. The isolated local air::combat::Combatant::differential calculation implements the proposed reading; the ammunition test verifies no firing dice for an unarmed aircraft and preservation of the opposing-fire differential. There is no gameplay caller, persistent loss, disclosure or live combat-window implementation in this slice. Caller adoption remains held pending the lead's ruling. No squadron ammunition payment, load entitlement or maintenance procedure is established by this calculation helper.
+This is consequential: the readings can change the opponent's differential and kill threshold. The isolated local air::combat::Combatant::differential calculation implements the provisionally ruled reading; the ammunition test verifies no firing dice for an unarmed aircraft and preservation of the opposing-fire differential. There is no gameplay caller, persistent loss, disclosure or live combat-window implementation in this slice. The lead permits caller adoption under this reading, subject to the existing decision-window, privacy and shared-contract requirements. This ruling grants no publication clearance or full combat-phase approval. No squadron ammunition payment, load entitlement or maintenance procedure is established by this calculation helper.
