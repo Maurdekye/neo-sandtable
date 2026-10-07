@@ -2620,3 +2620,163 @@ fn one_remaining_engaged_opponent_preserves_tank_flags_until_its_own_breakoff() 
     graph_only.land.engagements.clear();
     crate::testkit::assert_indistinguishable(&Cna::full(), &c, &original, &graph_only, Side::Axis);
 }
+
+/// Cases: land:15.81, land:8.53, land:8.67, land:6.16
+#[test]
+fn authoritative_patrol_boundary_expires_engagement_before_the_next_stage() {
+    let (c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+    place(&mut s, LEG, "C4021");
+    place(&mut s, TANK, "C4020");
+    let leg = UnitId::new(LEG);
+    let tank = UnitId::new(TANK);
+    super::super::engagement::engage(
+        &mut s,
+        std::slice::from_ref(&leg),
+        std::slice::from_ref(&tank),
+    )
+    .unwrap();
+    s.cursor.index = crate::seq::PLAYER_HALF.len() - 1;
+    s.cursor.half = Some(Half::B);
+    s.cursor.entered = false;
+    s.turn.initiative = Some(Side::Axis);
+    let g = Game {
+        state: s,
+        rng: CampaignRng::from_seed([81; 32]).state(),
+    };
+    let t = evaluate(&Cna::dev(), &c, &g, &Command::Advance).unwrap();
+    assert_eq!(t.game.state.cursor.op_stage, Some(2));
+    assert_eq!(t.game.state.cursor.block, Block::OpStage);
+    assert!(t.game.state.land.engagements.is_empty());
+    assert!(!t.game.state.land.units[&leg].engaged && !t.game.state.land.units[&tank].engaged);
+    let candidates =
+        super::super::reaction::candidates(&c, &t.game.state, &[leg], &"C4021".into(), &[], true)
+            .unwrap();
+    assert!(candidates.contains(&tank));
+    let order = Order {
+        unit: tank.clone(),
+        path: vec!["C4019".into()],
+        with_stack: false,
+        close_assault: vec![],
+    };
+    assert_eq!(
+        validate_nonphasing(
+            &c,
+            &t.game.state,
+            &order,
+            SeatId::new(Side::Axis, Role::FrontLine),
+            true,
+            NonPhasingMove::Retreat
+        )
+        .unwrap()
+        .cp_quarters,
+        2
+    );
+    assert!(t.events.iter().any(|e|e.audience==Audience::SideOnly(Side::Axis) && matches!(&e.event,cna_protocol::GameEvent::UnitUpdated {unit} if unit.id==TANK && unit.detail.as_ref().unwrap()["engaged"]==false)));
+    assert!(
+        !t.events
+            .iter()
+            .any(|e| e.visible_to(Perspective::Side(Side::Commonwealth))
+                && matches!(&e.event,cna_protocol::GameEvent::UnitUpdated {unit} if unit.id==TANK))
+    );
+}
+/// Cases: land:12.45, land:19.62, land:8.67, land:13.21
+#[test]
+fn terminal_barrage_loss_reconciles_engagement_before_the_same_advance_opens_retreat() {
+    use super::super::combat::barrage;
+    use cna_core::decision::{ActionSchema, ActionSpace, Secrecy, Trigger};
+    let (c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+    place(&mut s, LEG, "C4021");
+    place(&mut s, TANK, "C4020");
+    let leg = UnitId::new(LEG);
+    let tank = UnitId::new(TANK);
+    s.land.units.get_mut(&leg).unwrap().toe = Some(cna_content::units::Toe::Under { under: 1 });
+    super::super::engagement::engage(
+        &mut s,
+        std::slice::from_ref(&leg),
+        std::slice::from_ref(&tank),
+    )
+    .unwrap();
+    s.cursor.index = 4;
+    s.cursor.entered = true;
+    s.land.combat.barrage.resolved = true;
+    s.land.combat.barrage.casualties.insert(
+        leg.clone(),
+        vec![barrage::Casualty {
+            weapons: vec![],
+            loss: 1,
+            pinned: false,
+            trucks: 0,
+        }],
+    );
+    let seat = SeatId::new(Side::Commonwealth, Role::FrontLine);
+    let mut rng = CampaignRng::from_seed([82; 32]);
+    let mut events = vec![];
+    crate::steps::open(
+        &mut s,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+        seat,
+        barrage::LOSSES,
+        "Allocate the battalion's own recorded casualty.".into(),
+        &["land:12.45"],
+        Trigger::Triggered,
+        Secrecy::Secret,
+        ActionSpace::new(ActionSchema::List {
+            min: 1,
+            max: 1,
+            item: Box::new(ActionSchema::Record { fields: vec![] }),
+        }),
+    );
+    let g = Game {
+        state: s,
+        rng: rng.state(),
+    };
+    let answered = respond(
+        &c,
+        &g,
+        seat,
+        json!([{"unit":LEG,"weapon":null,"toe":1}]),
+        false,
+    )
+    .unwrap();
+    assert_eq!(formation::strength(&c, &answered.game.state, &leg), 0);
+    // An own answer records casualties; it does not adjudicate the enemy's engagement status.
+    assert!(answered.game.state.land.units[&tank].engaged);
+    let t = evaluate(&Cna::dev(), &c, &answered.game, &Command::Advance).unwrap();
+    assert_eq!(
+        t.game.state.cursor.step().unwrap().anchor,
+        super::super::combat::retreat::ANCHOR
+    );
+    assert!(!t.game.state.land.units[&tank].engaged);
+    assert!(t.game.state.land.engagements.is_empty());
+    let request = Cna::dev()
+        .pending(&c, &t.game.state)
+        .into_iter()
+        .find(|r| r.seat.side == Side::Axis && r.kind == super::super::combat::retreat::KIND)
+        .unwrap();
+    let order = Order {
+        unit: tank.clone(),
+        path: vec!["C4019".into()],
+        with_stack: false,
+        close_assault: vec![],
+    };
+    assert_eq!(
+        validate_nonphasing(
+            &c,
+            &t.game.state,
+            &order,
+            request.seat,
+            true,
+            NonPhasingMove::Retreat
+        )
+        .unwrap()
+        .cp_quarters,
+        2
+    );
+    assert!(t.events.iter().any(|e|e.audience==Audience::SideOnly(Side::Axis) && matches!(&e.event,cna_protocol::GameEvent::UnitUpdated {unit} if unit.id==TANK && unit.detail.as_ref().unwrap()["engaged"]==false)));
+    let restored: State =
+        serde_json::from_value(serde_json::to_value(&t.game.state).unwrap()).unwrap();
+    assert!(!restored.land.units[&tank].engaged && restored.land.engagements.is_empty());
+}

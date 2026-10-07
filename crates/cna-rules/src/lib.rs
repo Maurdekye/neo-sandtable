@@ -173,11 +173,13 @@ impl Cna {
                     clock: view::wire_clock(content, state),
                 }));
                 self.enter_step(content, state, cx)?;
+                land::engagement::reconcile(content, state);
                 continue;
             }
             // Entered and nothing left to decide: let the step resolve what its answers closed,
             // which may open further decisions; otherwise the step is complete.
             self.finish_step(content, state, cx)?;
+            land::engagement::reconcile(content, state);
             if !state.decisions.pending.is_empty() {
                 continue;
             }

@@ -74,8 +74,9 @@ pub fn charge(
 
 /// Idle units recover five cohesion, capped at zero. CP never carries into the next OpStage.
 /// Training and rail travel disqualify idle recovery even when no CP was charged.
-/// Cases: land:6.16, land:6.23, land:6.24, land:8.73
+/// Cases: land:6.16, land:6.23, land:6.24, land:8.73, land:15.81
 pub fn finish_opstage(state: &mut State) {
+    super::engagement::clear(state);
     state.land.assault_intentions.clear();
     state.land.breakdown.accumulated_quarters.clear();
     state.land.breakdown.light_extra_quarters.clear();
@@ -164,7 +165,7 @@ mod tests {
         pooled.cohesion_quarters = -103;
         assert!(validate_move(&pooled, a, 1).is_ok());
     }
-    /// Cases: land:6.16, land:6.23, land:6.24, land:8.73
+    /// Cases: land:6.16, land:6.23, land:6.24, land:8.73, land:15.81
     #[test]
     fn stage_reset_restores_only_eligible_idle_units_and_keeps_cohesion() {
         let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
