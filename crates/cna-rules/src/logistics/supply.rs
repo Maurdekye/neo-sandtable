@@ -98,7 +98,8 @@ impl SupplyDemand {
 
 /// Current strength from the mutable TOE and the printed class maximum.
 /// Missing composition is rejected rather than replaced by full strength.
-/// Cases: airlog:49.12, airlog:50.13
+/// U/O indicators contain the actual arrival strength, never a deficit or increment.
+/// Cases: land:4.45, airlog:49.12, airlog:50.13
 pub fn toe_strength(
     content: &CnaContent,
     unit: &LandUnit,
@@ -115,11 +116,19 @@ pub fn toe_strength(
     };
     let strength = match &unit.toe {
         Some(Toe::Normal(_)) => max()?,
-        Some(Toe::Under { under }) if *under >= 0 => {
-            max()?.checked_sub(*under).ok_or(SupplyError::Invalid)?
+        Some(Toe::Under { under }) => {
+            let maximum = max().map_err(|_| SupplyError::Invalid)?;
+            if *under < 0 || *under >= maximum {
+                return Err(SupplyError::Invalid);
+            }
+            *under
         }
-        Some(Toe::Over { over }) if *over >= 0 => {
-            max()?.checked_add(*over).ok_or(SupplyError::Invalid)?
+        Some(Toe::Over { over }) => {
+            let maximum = max().map_err(|_| SupplyError::Invalid)?;
+            if *over <= maximum || *over < 0 {
+                return Err(SupplyError::Invalid);
+            }
+            *over
         }
         Some(Toe::Weapons(weapons)) => weapons.iter().try_fold(0i32, |sum, w| {
             if w.n < 0 {

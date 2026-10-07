@@ -49,10 +49,12 @@ fn lose(content: &CnaContent, state: &mut State, id: &UnitId, n: i32) -> Result<
         .max_toe
         .ok_or(SupplyError::Unsupported { case: "land:4.46" })?;
     let left = current - n;
-    let toe = if left <= max {
-        Toe::Under { under: max - left }
+    let toe = if left < max {
+        Toe::Under { under: left }
+    } else if left == max {
+        Toe::Normal(cna_content::units::NormalToe::N)
     } else {
-        Toe::Over { over: left - max }
+        Toe::Over { over: left }
     };
     state
         .land

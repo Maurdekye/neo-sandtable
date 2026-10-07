@@ -175,3 +175,37 @@ fn food_loss_rounds_the_hex_total_once_and_owner_selects_the_casualties() {
     assert_eq!(after, total - expected);
     assert!(state.decisions.pending.is_empty());
 }
+
+/// Cases: land:4.45, airlog:51.22, airlog:52.53
+#[test]
+fn casualties_write_actual_remaining_strength_including_normal_boundary() {
+    let (mut state, id) = setup();
+    let max = rations::class(content(), &id).unwrap().max_toe.unwrap();
+    state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Over { over: max + 2 });
+    lose(content(), &mut state, &id, 1).unwrap();
+    assert_eq!(state.land.units[&id].toe, Some(Toe::Over { over: max + 1 }));
+    lose(content(), &mut state, &id, 1).unwrap();
+    assert_eq!(
+        state.land.units[&id].toe,
+        Some(Toe::Normal(cna_content::units::NormalToe::N))
+    );
+    lose(content(), &mut state, &id, 1).unwrap();
+    assert_eq!(
+        state.land.units[&id].toe,
+        Some(Toe::Under { under: max - 1 })
+    );
+    assert_eq!(
+        crate::view::toe_points(content(), &state.land.units[&id]),
+        Some(max - 1)
+    );
+    let mut restored: State =
+        serde_json::from_value(serde_json::to_value(&state).unwrap()).unwrap();
+    lose(content(), &mut restored, &id, max - 1).unwrap();
+    assert_eq!(restored.land.units[&id].toe, Some(Toe::Under { under: 0 }));
+    assert_eq!(
+        toe_strength(content(), &restored.land.units[&id])
+            .unwrap()
+            .get(),
+        0
+    );
+}

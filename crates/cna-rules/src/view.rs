@@ -7,7 +7,6 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use cna_content::units::Toe;
 use cna_core::clock::{Anchor, Clock};
 use cna_core::engine::{Cx, Rejection};
 use cna_core::event::EngineEvent;
@@ -146,18 +145,9 @@ fn board_size(echelon: Option<&str>) -> String {
 
 /// TOE strength points a unit holds now (`land:3.5`).
 pub(crate) fn toe_points(content: &CnaContent, unit: &LandUnit) -> Option<i32> {
-    let class = content
-        .units
-        .units
-        .get(&unit.id)
-        .and_then(|oa| oa.class.as_ref())
-        .and_then(|c| content.units.classes.get(c));
-    match unit.toe.as_ref()? {
-        Toe::Normal(_) => class.and_then(|c| c.max_toe),
-        Toe::Under { under } => Some(*under),
-        Toe::Over { over } => Some(*over),
-        Toe::Weapons(list) => Some(list.iter().map(|w| w.n).sum()),
-    }
+    crate::logistics::toe_strength(content, unit)
+        .ok()
+        .map(|n| n.get())
 }
 
 /// Stamp `moved_this_segment` (own detail only) from the movement state.

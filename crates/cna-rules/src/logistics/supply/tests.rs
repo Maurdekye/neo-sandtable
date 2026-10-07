@@ -125,6 +125,11 @@ fn infantry_and_recce_use_current_strength_and_attached_trucks() {
     let strength = toe_strength(content(), &state.land.units[&recce])
         .unwrap()
         .get();
+    assert_eq!(strength, 1);
+    assert_eq!(
+        crate::logistics::rations::activity_points(content(), &state, &recce).unwrap(),
+        1
+    );
     assert_eq!(
         movement_fuel_cost(content(), &state, &recce, 20),
         Ok(FuelTenths::new(strength * 10))
@@ -520,4 +525,79 @@ fn unlimited_stocks_require_the_scenario_side_and_exact_resolved_city_membership
             .iter()
             .any(|s| s.source == SupplySource::Unlimited)
     );
+}
+
+/// Cases: land:4.45, airlog:50.14, airlog:51.11, airlog:52.41
+#[test]
+fn real_under_and_over_arrival_values_are_strength_and_consumption_agrees_with_board() {
+    let mut state = State::new(content()).unwrap();
+    state.turn.weather = Some(crate::state::WeatherState {
+        kind: cna_tables::land::weather::WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    state.cursor.op_stage = Some(1);
+    for (name, actual) in [
+        ("cw.2_nz_div.21st_nz_bn", 2),
+        ("cw.unassigned_indian.6th_rajputana_rifles_bn", 4),
+    ] {
+        let id: UnitId = name.into();
+        let oa = &content().units.units[&id];
+        let unit = state.land.units.get_mut(&id).unwrap();
+        unit.toe = oa.toe.clone();
+        unit.location = Location::Hex {
+            hex: "E1730".into(),
+        };
+        unit.trucks = Trucks::default();
+        assert_eq!(toe_strength(content(), unit).unwrap().get(), actual);
+        assert_eq!(crate::view::toe_points(content(), unit), Some(actual));
+        assert_eq!(
+            crate::logistics::rations::stores_required(content(), &state, &id).unwrap(),
+            actual * 4
+        );
+        assert_eq!(
+            ammunition_cost(
+                content(),
+                AmmoMode::Played,
+                AmmoAction::CloseAssaultInfClass,
+                ToeStrengthPoints::new(actual)
+            )
+            .unwrap()
+            .get(),
+            actual
+        );
+        assert_eq!(
+            crate::logistics::water::requirements(content(), &state, &id)
+                .unwrap()
+                .infantry,
+            1
+        );
+    }
+}
+/// Cases: land:4.45
+#[test]
+fn invalid_under_over_ranges_and_missing_maximum_are_rejected() {
+    let (mut state, id) = state();
+    let maximum = content().units.classes[content().units.units[&id].class.as_ref().unwrap()]
+        .max_toe
+        .unwrap();
+    for toe in [
+        Toe::Under { under: maximum },
+        Toe::Under { under: -1 },
+        Toe::Over { over: maximum },
+        Toe::Over { over: -1 },
+    ] {
+        state.land.units.get_mut(&id).unwrap().toe = Some(toe);
+        assert_eq!(
+            toe_strength(content(), &state.land.units[&id]),
+            Err(SupplyError::Invalid)
+        );
+        assert_eq!(
+            crate::view::toe_points(content(), &state.land.units[&id]),
+            None
+        );
+    }
+    let mut unknown = state.land.units[&id].clone();
+    unknown.id = "unknown-max".into();
+    unknown.toe = Some(Toe::Under { under: 1 });
+    assert_eq!(toe_strength(content(), &unknown), Err(SupplyError::Invalid));
 }
