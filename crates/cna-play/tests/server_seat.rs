@@ -180,9 +180,103 @@ async fn setup() -> (tempfile::TempDir, Demo) {
     (root, demo)
 }
 
+type FixtureSocket =
+    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
+
+async fn collect_fixture_transcripts(
+    mut socket: FixtureSocket,
+    wanted_seat: String,
+    initial_rows: Vec<ServerMessage>,
+    mut completed: tokio::sync::oneshot::Receiver<(Vec<u64>, tokio::time::Instant)>,
+    require_resync: bool,
+) -> Result<(Vec<ServerMessage>, usize, usize), String> {
+    let result = async {
+        let mut rows = initial_rows.into_iter().map(|frame| {
+            let ServerMessage::Transcript { tseq, .. } = &frame else { unreachable!() };
+            (*tseq, frame)
+        }).collect::<std::collections::BTreeMap<_, _>>();
+        let mut expected = None;
+        let mut deadline = None;
+        let mut resyncs = 0;
+        let mut duplicates = 0;
+        loop {
+            let found = rows.keys().copied().collect::<Vec<_>>();
+            if expected.as_ref() == Some(&found) && (!require_resync || (resyncs > 0 && duplicates > 0)) {
+                return Ok((rows.into_values().collect(), resyncs, duplicates));
+            }
+            tokio::select! {
+                target = &mut completed, if expected.is_none() => {
+                    let (target, limit) = target.map_err(|e| e.to_string())?;
+                    expected = Some(target);
+                    deadline = Some(limit);
+                }
+                _ = async {
+                    match deadline {
+                        Some(limit) => tokio::time::sleep_until(limit).await,
+                        None => std::future::pending::<()>().await,
+                    }
+                } => {
+                    return Err(format!("30s post-play receive guard elapsed: expected {expected:?}, received {found:?}, resyncs {resyncs}, identical replays {duplicates}"));
+                }
+                message = socket.next() => {
+                    let message = message.ok_or("socket closed before transcript confirmation")?
+                        .map_err(|e| e.to_string())?;
+                    match message {
+                        Message::Text(text) => {
+                            let frame: ServerMessage = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+                            match &frame {
+                                ServerMessage::Resync => {
+                                    resyncs += 1;
+                                    // Lag requests a new subscription. Its transcript history may
+                                    // repeat frames already received, keyed by the seat and tseq.
+                                    socket.send(Message::Text(serde_json::to_string(&ClientMessage::Subscribe {
+                                        perspective: "operator".into(), from_seq: None,
+                                    }).map_err(|e| e.to_string())?.into())).await.map_err(|e| e.to_string())?;
+                                }
+                                ServerMessage::Transcript { seat, tseq, .. } if seat == &wanted_seat => {
+                                    if let Some(previous) = rows.insert(*tseq, frame.clone()) {
+                                        if previous != frame {
+                                            return Err(format!("replay changed transcript frame {tseq}"));
+                                        }
+                                        duplicates += 1;
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        Message::Close(_) => return Err("socket closed before transcript confirmation".into()),
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }.await;
+    let closed = socket.close(None).await.map_err(|e| e.to_string());
+    match result {
+        Ok(rows) => closed.map(|()| rows),
+        Err(error) => Err(error),
+    }
+}
+
 #[tokio::test]
 async fn mcp_answer_reaches_persistent_websocket_transcript() {
+    websocket_transcript_fixture(false).await;
+}
+
+#[tokio::test]
+async fn mcp_transcript_resync_replays_identical_frames_without_double_counting() {
+    websocket_transcript_fixture(true).await;
+}
+
+async fn websocket_transcript_fixture(force_resync: bool) {
     let (_root, demo) = setup().await;
+    if force_resync {
+        demo.sink.system(demo.seat, "inert fixture replay canary");
+        tokio::time::timeout(Duration::from_secs(30), demo.sink.flush_confirmed())
+            .await
+            .unwrap()
+            .unwrap();
+    }
     let url = format!(
         "{}/api/campaigns/{}/stream?cap={}",
         demo.base_url.replace("http:", "ws:"),
@@ -201,7 +295,8 @@ async fn mcp_answer_reaches_persistent_websocket_transcript() {
         ))
         .await
         .unwrap();
-    // Establish subscription before generating CLI transcript entries.
+    // The snapshot confirms registration; drain concurrently while CLI captures
+    // arrive, including while the server is finishing its initial history replay.
     loop {
         let message = socket.next().await.unwrap().unwrap();
         if let Message::Text(t) = message
@@ -213,6 +308,33 @@ async fn mcp_answer_reaches_persistent_websocket_transcript() {
             break;
         }
     }
+    let mut initial_rows = Vec::new();
+    if force_resync {
+        loop {
+            let message = socket.next().await.unwrap().unwrap();
+            if let Message::Text(text) = message {
+                let frame: ServerMessage = serde_json::from_str(&text).unwrap();
+                if matches!(&frame, ServerMessage::Transcript { seat, tseq: 1, .. } if seat == &demo.seat.to_string())
+                {
+                    initial_rows.push(frame);
+                    break;
+                }
+            }
+        }
+        // Deterministic real-server recovery witness: the previous fixture ignored
+        // this Resync and exhausted its unchanged 30s guard. No delay/load is needed.
+        socket
+            .send(Message::Text(
+                serde_json::to_string(&ClientMessage::Subscribe {
+                    perspective: "operator".into(),
+                    from_seq: Some(u64::MAX),
+                })
+                .unwrap()
+                .into(),
+            ))
+            .await
+            .unwrap();
+    }
     let mut driver = FakeCli {
         url: demo.mcp.url(demo.seat).unwrap(),
         sink: demo.sink.clone(),
@@ -221,9 +343,38 @@ async fn mcp_answer_reaches_persistent_websocket_transcript() {
         stopped: false,
         drain_pending: false,
     };
-    demo.play(&mut driver, 1).await.unwrap();
+    let (finished, completed) = tokio::sync::oneshot::channel();
+    let play = async {
+        let result = demo.play(&mut driver, 1).await;
+        let rows = demo.transcript();
+        let expected = rows
+            .iter()
+            .map(|m| match m {
+                ServerMessage::Transcript { tseq, .. } => *tseq,
+                _ => unreachable!(),
+            })
+            .collect::<Vec<_>>();
+        // Exactly the previous post-play guard, including time before the reader
+        // observes this signal; concurrent draining adds no extra receive time.
+        let _ = finished.send((
+            expected,
+            tokio::time::Instant::now() + Duration::from_secs(30),
+        ));
+        (result, rows)
+    };
+    let receive = collect_fixture_transcripts(
+        socket,
+        demo.seat.to_string(),
+        initial_rows,
+        completed,
+        force_resync,
+    );
+    let ((played, rows), received) = tokio::join!(play, receive);
+    let cleanup = demo.shutdown().await;
+    played.unwrap();
+    let (actual, resyncs, duplicates) = received.unwrap();
+    cleanup.unwrap();
     assert!(driver.stopped);
-    let rows = demo.transcript();
     assert!(rows.iter().any(|m| matches!(
         m,
         ServerMessage::Transcript {
@@ -231,32 +382,20 @@ async fn mcp_answer_reaches_persistent_websocket_transcript() {
             ..
         }
     )));
-    let expected: Vec<_> = rows
+    let expected = rows
         .iter()
         .map(|m| match m {
             ServerMessage::Transcript { tseq, .. } => *tseq,
             _ => unreachable!(),
         })
-        .collect();
-    let actual = tokio::time::timeout(Duration::from_secs(30), async {
-        let mut found = vec![];
-        while found.len() < expected.len() {
-            if let Message::Text(t) = socket.next().await.unwrap().unwrap()
-                && let ServerMessage::Transcript { seat, tseq, .. } =
-                    serde_json::from_str(&t).unwrap()
-                && seat == demo.seat.to_string()
-            {
-                found.push(tseq);
-            }
-        }
-        found
-    })
-    .await
-    .unwrap();
-    assert_eq!(actual, expected);
+        .collect::<Vec<_>>();
     assert_eq!(expected, (1..=expected.len() as u64).collect::<Vec<_>>());
-    socket.close(None).await.unwrap();
-    demo.shutdown().await.unwrap();
+    // Compare complete durable payloads, timestamps and alignment, not just ids.
+    assert_eq!(actual, rows);
+    if force_resync {
+        assert!(resyncs > 0);
+        assert!(duplicates > 0);
+    }
 }
 
 #[tokio::test]
