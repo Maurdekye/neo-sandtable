@@ -9,7 +9,11 @@ use std::collections::BTreeMap;
 use cna_core::engine::EngineError;
 use cna_protocol::Side;
 
-use super::state::{AirRuntime, AircraftState, PilotId, PilotState, PlaneId};
+use super::{
+    facilities::{self, FacilityCapacity, FacilityId, FacilityOrigin, FacilityState},
+    sgsu::{SgsuId, SgsuPosition, SgsuState},
+    state::{AirRuntime, AircraftState, PilotId, PilotState, PlaneId},
+};
 use crate::{
     CnaContent, State,
     state::{AirState, PlaneCount},
@@ -209,7 +213,22 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
         return Err(invalid("setup must close before inventory import"));
     }
     if state.air.runtime.initialized {
-        return check(content, &state.air);
+        if state.air.runtime.bases_initialized {
+            return check(content, &state.air);
+        }
+        // Legacy inventory is already canonical. Import only bases in a draft;
+        // do not allocate or recreate a single aircraft, pilot or serial.
+        let projected = mirrors(content, &state.air)?;
+        if projected.forces != state.air.forces || projected.squadrons != state.air.squadrons {
+            return Err(invalid(
+                "legacy inventory mirrors disagree before base migration",
+            ));
+        }
+        let mut draft = state.air.clone();
+        import_bases(content, &mut draft)?;
+        check(content, &draft)?;
+        state.air = draft;
+        return Ok(());
     }
     if state.air.runtime != AirRuntime::default() {
         return Err(invalid("uninitialized runtime contains records"));
@@ -259,9 +278,136 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
     runtime.initialized = true;
     let mut draft = state.air.clone();
     draft.runtime = runtime;
+    import_bases(content, &mut draft)?;
     check(content, &draft)?;
     state.air = draft;
     Ok(())
+}
+
+/// Source-backed initial bases, including checkpoint migration. Unresolved
+/// catalog entries remain unknown; Malta aggregate capacity is not a site.
+/// Cases: airlog:35.11, airlog:36.0, airlog:44.14
+fn import_bases(content: &CnaContent, air: &mut AirState) -> Result<(), EngineError> {
+    if air.runtime.bases_initialized {
+        return Err(invalid("base import cannot be repeated"));
+    }
+    if !air.runtime.facilities.is_empty() || !air.runtime.sgsus.is_empty() {
+        return Err(invalid("uninitialized base maps contain records"));
+    }
+    for source in facilities::catalog(content)?.facilities {
+        if source.force == "malta" {
+            continue;
+        }
+        let id = FacilityId(source.id);
+        let site = FacilityState {
+            origin: FacilityOrigin::Scenario,
+            owner: source.side,
+            current_capacity: source
+                .limit
+                .map_or(FacilityCapacity::Unlimited, FacilityCapacity::Levels),
+            upgraded_kind: None,
+            project_unavailable: false,
+        };
+        site.properties(content, &id)?;
+        if air.runtime.facilities.insert(id, site).is_some() {
+            return Err(invalid("duplicate source facility identity"));
+        }
+    }
+    for (id, squadron) in &air.squadrons {
+        if squadron.force == "malta" {
+            continue;
+        }
+        let facility = FacilityId(squadron.facility.clone());
+        if !air.runtime.facilities.contains_key(&facility) {
+            return Err(EngineError::Unsupported {
+                case: "airlog:35.11".into(),
+                detail: "Initial SGSU facility has no verified canonical source".into(),
+            });
+        }
+        air.runtime.sgsus.insert(
+            SgsuId(id.clone()),
+            SgsuState {
+                force: squadron.force.clone(),
+                nationality: squadron.nationality.clone(),
+                position: SgsuPosition::Facility(facility),
+                stores_paid_game_turn: None,
+                fuel_water_paid: None,
+            },
+        );
+    }
+    // This happens only in a disposable draft. Publication follows full check.
+    air.runtime.bases_initialized = true;
+    Ok(())
+}
+
+/// Validate canonical bases and project SGSU aggregates from their one truth.
+/// Force SGSU reserves remain the pre-existing unplaced count until arrivals
+/// have individual source identities. Malta rosters remain non-SGSU groups.
+/// Cases: airlog:35.11, airlog:35.14, airlog:36.0, airlog:44.14
+fn base_mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError> {
+    let mut draft = air.clone();
+    for (id, site) in &air.runtime.facilities {
+        site.properties(content, id)?;
+    }
+    for (id, unit) in &air.runtime.sgsus {
+        if id.0.is_empty()
+            || unit.nationality.is_empty()
+            || !air.forces.contains_key(&unit.force)
+            || unit.stores_paid_game_turn == Some(0)
+            || unit
+                .fuel_water_paid
+                .is_some_and(|p| p.game_turn == 0 || !(1..=3).contains(&p.op_stage))
+        {
+            return Err(invalid("invalid canonical SGSU record"));
+        }
+        let squadron = draft
+            .squadrons
+            .get_mut(&id.0)
+            .ok_or_else(|| invalid("SGSU has no corresponding squadron identity"))?;
+        if squadron.force == "malta" {
+            return Err(invalid("Malta roster grouping cannot become an SGSU"));
+        }
+        unit.location(content, &air.runtime.facilities)?;
+        squadron.force = unit.force.clone();
+        squadron.side = unit.side()?;
+        squadron.nationality = unit.nationality.clone();
+        squadron.facility = match &unit.position {
+            SgsuPosition::Facility(id) => id.0.clone(),
+            SgsuPosition::Ground(_) => String::new(),
+        };
+    }
+    // Removed actual SGSUs remove their mirror roster too. Aircraft/pilots
+    // must already have been reassigned or resolved by the owning procedure;
+    // the subsequent assignment check rejects dangling identities atomically.
+    draft.squadrons.retain(|id, squadron| {
+        squadron.force == "malta" || air.runtime.sgsus.contains_key(&SgsuId(id.clone()))
+    });
+    for plane in air.runtime.aircraft.values() {
+        let Some(id) = &plane.facility else {
+            continue;
+        };
+        // A legacy Malta grouping has no flight/maintenance entitlement. This
+        // exception preserves inventory only while individual sites are unknown.
+        if plane.force == "malta"
+            && facilities::catalog(content)?
+                .facilities
+                .iter()
+                .any(|site| site.force == "malta" && site.id == *id)
+        {
+            continue;
+        }
+        let facility = FacilityId(id.clone());
+        let site = air
+            .runtime
+            .facilities
+            .get(&facility)
+            .ok_or_else(|| invalid("aircraft physical facility is not canonical"))?;
+        let properties = site.properties(content, &facility)?;
+        if site.removed(&properties) {
+            return Err(invalid("aircraft still references a removed facility"));
+        }
+    }
+    Ok(draft)
 }
 
 fn validate_id(
@@ -316,14 +462,21 @@ fn mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError
     }
     for (id, squadron) in &air.squadrons {
         if id != &squadron.id
-            || squadron.facility.is_empty()
+            || (!air.runtime.bases_initialized && squadron.facility.is_empty())
             || side(&squadron.force)? != squadron.side
             || !air.forces.contains_key(&squadron.force)
         {
             return Err(invalid("invalid squadron identity or owner"));
         }
     }
-    let mut draft = air.clone();
+    let mut draft = if air.runtime.bases_initialized {
+        base_mirrors(content, air)?
+    } else {
+        if !air.runtime.facilities.is_empty() || !air.runtime.sgsus.is_empty() {
+            return Err(invalid("uninitialized base maps contain records"));
+        }
+        air.clone()
+    };
     for pool in draft.forces.values_mut() {
         for count in pool.planes.values_mut() {
             *count = PlaneCount::default();
@@ -347,7 +500,7 @@ fn mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError
             "aircraft",
             &air.runtime.plane_serial,
         )?;
-        check_assignment(air, &plane.force, plane.squadron.as_deref())?;
+        check_assignment(&draft, &plane.force, plane.squadron.as_deref())?;
         if !content.units.aircraft.contains_key(&plane.aircraft)
             || plane.facility.as_ref().is_some_and(String::is_empty)
             || (plane.squadron.is_some() && plane.facility.is_none())
@@ -380,7 +533,7 @@ fn mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError
             "pilot",
             &air.runtime.pilot_serial,
         )?;
-        check_assignment(air, &pilot.force, pilot.squadron.as_deref())?;
+        check_assignment(&draft, &pilot.force, pilot.squadron.as_deref())?;
         if !matches!(pilot.rating, 1 | 2 | 3 | 4 | 6)
             || pilot
                 .trained_aircraft
@@ -412,8 +565,8 @@ fn mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError
 /// or supply entitlement is inferred from these consistency checks.
 /// Cases: airlog:34.0, airlog:35.24
 pub fn check(content: &CnaContent, air: &AirState) -> Result<(), EngineError> {
-    if !air.runtime.initialized {
-        return Err(invalid("inventory has not been imported"));
+    if !air.runtime.initialized || !air.runtime.bases_initialized {
+        return Err(invalid("inventory and bases must be imported"));
     }
     let draft = mirrors(content, air)?;
     if air.forces != draft.forces || air.squadrons != draft.squadrons {
@@ -447,8 +600,8 @@ where
     }) {
         return Err(invalid("persistent serials cannot move backward"));
     }
-    if !draft.runtime.initialized {
-        return Err(invalid("an initialized inventory cannot be reset"));
+    if !draft.runtime.initialized || !draft.runtime.bases_initialized {
+        return Err(invalid("initialized inventory and bases cannot be reset"));
     }
     draft = mirrors(content, &draft)?;
     *air = draft;

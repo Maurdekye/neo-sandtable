@@ -3,7 +3,7 @@
 use super::*;
 use crate::{
     Cna,
-    state::AirSquadron,
+    state::{AirSquadron, Location},
     testkit::{assert_indistinguishable, visible_to},
 };
 use std::collections::BTreeSet;
@@ -111,7 +111,7 @@ fn add_squadron(state: &mut State, types: &[&str]) {
             force: "axis".into(),
             side: Side::Axis,
             nationality: "it".into(),
-            facility: "test.facility".into(),
+            facility: "airfield_benina".into(),
             initial_aircraft: None,
             planes,
             pilots: BTreeMap::from([(1, 1)]),
@@ -308,7 +308,7 @@ fn every_inventory_flag_assignment_and_private_id_stays_hidden_from_enemy() {
                 2 => runtime.aircraft.get_mut(&plane).unwrap().armed = false,
                 3 => {
                     runtime.aircraft.get_mut(&plane).unwrap().facility =
-                        Some("another.private.facility".into())
+                        Some("airfield_barce".into())
                 }
                 4 => {
                     runtime.pilots.get_mut(&pilot).unwrap().trained_aircraft =
@@ -460,4 +460,213 @@ fn private_arrivals_are_hidden_and_other_side_serials_do_not_change_ids() {
         a.air.runtime.aircraft[&ids_a[0]],
         b.air.runtime.aircraft[&ids_b[0]]
     );
+}
+
+/// Cases: airlog:35.11, airlog:36.0, airlog:44.14
+#[test]
+fn legacy_base_migration_preserves_individual_identity_serials_and_checkpoint() {
+    let content = content();
+    let mut state = closed_initial(&content);
+    add_squadron(&mut state, &["it.cr42"]);
+    initialize(&content, &mut state).unwrap();
+    let runtime = state.air.runtime.clone();
+    let mirrors = (state.air.forces.clone(), state.air.squadrons.clone());
+    let mut value = serde_json::to_value(&state).unwrap();
+    let old_runtime = value["air"]["runtime"].as_object_mut().unwrap();
+    for field in ["bases_initialized", "facilities", "sgsus"] {
+        old_runtime.remove(field);
+    }
+    let mut legacy: State = serde_json::from_value(value).unwrap();
+    assert!(legacy.air.runtime.initialized);
+    assert!(!legacy.air.runtime.bases_initialized);
+    initialize(&content, &mut legacy).unwrap();
+    assert!(legacy.air.runtime.bases_initialized);
+    assert_eq!(legacy.air.runtime.aircraft, runtime.aircraft);
+    assert_eq!(legacy.air.runtime.pilots, runtime.pilots);
+    assert_eq!(legacy.air.runtime.plane_serial, runtime.plane_serial);
+    assert_eq!(legacy.air.runtime.pilot_serial, runtime.pilot_serial);
+    assert_eq!(
+        (legacy.air.forces.clone(), legacy.air.squadrons.clone()),
+        mirrors
+    );
+    assert_eq!(legacy.air.runtime.facilities.len(), 44);
+    assert!(
+        !legacy
+            .air
+            .runtime
+            .facilities
+            .contains_key(&FacilityId("malta.initial".into()))
+    );
+    assert_eq!(legacy.air.runtime.sgsus.len(), 1);
+    let before = serde_json::to_vec(&legacy).unwrap();
+    let mut restored: State = serde_json::from_slice(&before).unwrap();
+    initialize(&content, &mut restored).unwrap();
+    assert_eq!(before, serde_json::to_vec(&restored).unwrap());
+}
+
+/// Cases: airlog:36.0
+#[test]
+fn imported_empty_bases_never_resurrect_and_marker_cannot_reset() {
+    let content = content();
+    let mut state = closed_initial(&content);
+    add_squadron(&mut state, &["it.cr42"]);
+    initialize(&content, &mut state).unwrap();
+    let before_elimination = serde_json::to_vec(&state).unwrap();
+    assert!(
+        update(&content, &mut state.air, |runtime| {
+            runtime.sgsus.clear();
+            Ok(())
+        })
+        .is_err()
+    );
+    assert_eq!(before_elimination, serde_json::to_vec(&state).unwrap());
+    update(&content, &mut state.air, |runtime| {
+        // This only verifies consistency of an authorized draft; actual
+        // capture/evacuation eligibility belongs to its later procedure.
+        runtime.sgsus.clear();
+        for plane in runtime.aircraft.values_mut() {
+            plane.squadron = None;
+            plane.facility = None;
+        }
+        for pilot in runtime.pilots.values_mut() {
+            pilot.squadron = None;
+        }
+        runtime.facilities.clear();
+        Ok(())
+    })
+    .unwrap();
+    assert!(state.air.squadrons.is_empty());
+    assert!(state.air.runtime.sgsus.is_empty());
+    assert!(state.air.runtime.bases_initialized);
+    assert!(state.air.runtime.facilities.is_empty());
+    let before = serde_json::to_vec(&state).unwrap();
+    let mut restored: State = serde_json::from_slice(&before).unwrap();
+    initialize(&content, &mut restored).unwrap();
+    assert_eq!(before, serde_json::to_vec(&restored).unwrap());
+    assert!(
+        update(&content, &mut state.air, |runtime| {
+            runtime.bases_initialized = false;
+            Ok(())
+        })
+        .is_err()
+    );
+    assert_eq!(before, serde_json::to_vec(&state).unwrap());
+}
+
+/// Cases: airlog:35.11, airlog:36.0
+#[test]
+fn failed_base_migration_and_invalid_canonical_edits_preserve_bytes() {
+    let content = content();
+    let mut state = closed_initial(&content);
+    add_squadron(&mut state, &["it.cr42"]);
+    initialize(&content, &mut state).unwrap();
+    let mut value = serde_json::to_value(&state).unwrap();
+    let old_runtime = value["air"]["runtime"].as_object_mut().unwrap();
+    for field in ["bases_initialized", "facilities", "sgsus"] {
+        old_runtime.remove(field);
+    }
+    let mut legacy: State = serde_json::from_value(value).unwrap();
+    legacy.air.squadrons.get_mut("axis.test").unwrap().facility = "unknown.site".into();
+    let before = serde_json::to_vec(&legacy).unwrap();
+    assert!(initialize(&content, &mut legacy).is_err());
+    assert_eq!(before, serde_json::to_vec(&legacy).unwrap());
+    assert!(!legacy.air.runtime.bases_initialized);
+    let before = serde_json::to_vec(&state).unwrap();
+    assert!(
+        update(&content, &mut state.air, |runtime| {
+            runtime
+                .facilities
+                .get_mut(&FacilityId("airfield_benina".into()))
+                .unwrap()
+                .current_capacity = FacilityCapacity::Levels(7);
+            Ok(())
+        })
+        .is_err()
+    );
+    assert_eq!(before, serde_json::to_vec(&state).unwrap());
+    assert!(
+        update(&content, &mut state.air, |runtime| {
+            runtime
+                .sgsus
+                .get_mut(&SgsuId("axis.test".into()))
+                .unwrap()
+                .force = "commonwealth".into();
+            Ok(())
+        })
+        .is_err()
+    );
+    assert_eq!(before, serde_json::to_vec(&state).unwrap());
+}
+
+/// Cases: land:3.62, airlog:35.11, airlog:35.14, airlog:36.14, land:24.79
+#[test]
+fn capacity_project_and_sgsu_dues_position_identity_stay_hidden_from_enemy() {
+    let content = content();
+    let mut a = closed_initial(&content);
+    add_squadron(&mut a, &["it.cr42"]);
+    initialize(&content, &mut a).unwrap();
+    for fact in 0..6 {
+        let mut b = a.clone();
+        update(&content, &mut b.air, |runtime| {
+            match fact {
+                0 => {
+                    runtime
+                        .facilities
+                        .get_mut(&FacilityId("airfield_benina".into()))
+                        .unwrap()
+                        .current_capacity = FacilityCapacity::Levels(3)
+                }
+                1 => {
+                    runtime
+                        .facilities
+                        .get_mut(&FacilityId("airfield_benina".into()))
+                        .unwrap()
+                        .project_unavailable = true
+                }
+                2 => {
+                    runtime
+                        .sgsus
+                        .get_mut(&SgsuId("axis.test".into()))
+                        .unwrap()
+                        .stores_paid_game_turn = Some(1)
+                }
+                3 => {
+                    runtime
+                        .sgsus
+                        .get_mut(&SgsuId("axis.test".into()))
+                        .unwrap()
+                        .fuel_water_paid = Some(super::super::sgsu::SgsuOpStage {
+                        game_turn: 1,
+                        op_stage: 1,
+                    })
+                }
+                4 => {
+                    runtime
+                        .sgsus
+                        .get_mut(&SgsuId("axis.test".into()))
+                        .unwrap()
+                        .position = SgsuPosition::Facility(FacilityId("airfield_barce".into()))
+                }
+                5 => {
+                    runtime
+                        .sgsus
+                        .get_mut(&SgsuId("axis.test".into()))
+                        .unwrap()
+                        .position = SgsuPosition::Ground(Location::Hex {
+                        hex: "A4829".into(),
+                    })
+                }
+                _ => unreachable!(),
+            }
+            Ok(())
+        })
+        .unwrap();
+        check(&content, &b.air).unwrap();
+        assert_indistinguishable(&Cna::dev(), &content, &a, &b, Side::Commonwealth);
+        let targets = BTreeSet::from(["axis.test".to_string(), "airfield_benina".to_string()]);
+        assert_eq!(
+            visible_to(&Cna::dev(), &content, &a, Side::Commonwealth, &targets),
+            visible_to(&Cna::dev(), &content, &b, Side::Commonwealth, &targets)
+        );
+    }
 }
