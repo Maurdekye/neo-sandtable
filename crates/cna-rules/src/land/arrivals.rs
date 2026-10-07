@@ -854,6 +854,8 @@ fn empty_trucks(content: &CnaContent, state: &State) -> BTreeMap<String, Trucks>
     for pool in &state.logistics.truck_pools {
         if pool.side == Side::Commonwealth
             && pool.cargo == Supplies::default()
+            && pool.tank_fuel.is_zero()
+            && pool.activity_water.is_zero()
             && pool
                 .location
                 .as_ref()
@@ -961,6 +963,42 @@ fn retire_truck_history(
     }
     Ok(())
 }
+/// Retire the exact departing pool trucks while retaining already-paid fuel.
+/// Cases: land:20.83, airlog:49.13, airlog:49.16
+fn retire_pool_truck_history(
+    state: &mut State,
+    id: &str,
+    mut amount: Trucks,
+) -> Result<(), Rejection> {
+    use crate::logistics::{FuelCohortSelection, FuelTruckKind};
+    if amount.total() == 0 || !state.logistics.pool_fuel_segments.contains_key(id) {
+        return Ok(());
+    }
+    let cohorts = crate::logistics::pool_fuel::pool_segment_fuel_cohorts(state, id)
+        .map_err(|_| illegal("truck pool fuel history cannot be reconciled"))?;
+    let mut selection = Vec::new();
+    for cohort in cohorts {
+        let remaining = match cohort.kind {
+            FuelTruckKind::Light => &mut amount.light,
+            FuelTruckKind::Medium => &mut amount.medium,
+            FuelTruckKind::Heavy => &mut amount.heavy,
+        };
+        let count = (*remaining).min(cohort.count);
+        if count > 0 {
+            selection.push(FuelCohortSelection {
+                id: cohort.id,
+                count,
+            });
+            *remaining -= count;
+        }
+    }
+    if amount != Trucks::default() {
+        return Err(illegal("truck pool fuel history cannot be reconciled"));
+    }
+    crate::logistics::pool_fuel::remove_selected_pool_fuel_cohorts(state, id, &selection)
+        .map_err(|_| illegal("truck pool fuel history cannot be reconciled"))?;
+    Ok(())
+}
 fn remove_empty_trucks(
     content: &CnaContent,
     state: &mut State,
@@ -992,6 +1030,7 @@ fn remove_empty_trucks(
             cx,
         )
         .map_err(Rejection::Engine)?;
+        retire_pool_truck_history(state, id, amount)?;
         let pool = state
             .logistics
             .truck_pools
@@ -2461,6 +2500,128 @@ mod tests {
         crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 4).unwrap();
         assert_eq!(game.state.logistics.dumps["funding"].supplies, stock);
         crate::logistics::spend_segment_fuel(&c, &mut game.state, &id, 8).unwrap();
+    }
+    /// Cases: land:20.83, airlog:49.13, airlog:49.16
+    #[test]
+    fn empty_pool_withdrawal_retires_exact_kinds_and_keeps_paid_fuel_through_recovery() {
+        use cna_core::quantity::{FuelTenths, WaterPoints};
+        let (c, mut game) = fixture();
+        game.state.cursor.op_stage = Some(1);
+        let location = city_domain(&c, "cairo").unwrap()[0].clone();
+        let id = crate::logistics::pools::add_truck_pool(
+            &mut game.state.logistics,
+            None,
+            Side::Commonwealth,
+            Placement::City {
+                city: "cairo".into(),
+            },
+            Some(location.clone()),
+            Trucks {
+                light: 1,
+                medium: 2,
+                heavy: 1,
+            },
+            Supplies::default(),
+        )
+        .unwrap();
+        game.state.logistics.dumps.insert(
+            "pool-funding".into(),
+            crate::state::Dump {
+                marker: "pool-funding-marker".into(),
+                id: "pool-funding".into(),
+                side: Side::Commonwealth,
+                location: crate::state::DumpLocation::Hex {
+                    hex: location.hex().unwrap().clone(),
+                },
+                supplies: Supplies {
+                    fuel: 10,
+                    ..Supplies::default()
+                },
+                active: true,
+                dummy: false,
+            },
+        );
+        crate::logistics::pool_fuel::spend_pool_segment_fuel(&c, &mut game.state, &id, 16).unwrap();
+        let paid = game.state.logistics.pool_fuel_accounts[&id].clone();
+        let stock = game.state.logistics.dumps["pool-funding"].supplies;
+        let key = format!("pool:{id}");
+        assert!(empty_trucks(&c, &game.state).contains_key(&key));
+        let pool = game
+            .state
+            .logistics
+            .truck_pools
+            .iter_mut()
+            .find(|p| p.id == id)
+            .unwrap();
+        pool.tank_fuel = FuelTenths::new(1);
+        assert!(!empty_trucks(&c, &game.state).contains_key(&key));
+        let pool = game
+            .state
+            .logistics
+            .truck_pools
+            .iter_mut()
+            .find(|p| p.id == id)
+            .unwrap();
+        pool.tank_fuel = FuelTenths::ZERO;
+        pool.activity_water = WaterPoints::new(1);
+        assert!(!empty_trucks(&c, &game.state).contains_key(&key));
+        game.state
+            .logistics
+            .truck_pools
+            .iter_mut()
+            .find(|p| p.id == id)
+            .unwrap()
+            .activity_water = WaterPoints::ZERO;
+        remove_empty_trucks(
+            &c,
+            &mut game.state,
+            &key,
+            Trucks {
+                medium: 1,
+                ..Trucks::default()
+            },
+            false,
+            &mut Cx {
+                rng: &mut CampaignRng::from_state(&game.rng),
+                events: &mut vec![],
+            },
+        )
+        .unwrap();
+        assert_eq!(game.state.logistics.pool_fuel_accounts[&id], paid);
+        assert_eq!(game.state.logistics.dumps["pool-funding"].supplies, stock);
+        let mut remaining = Trucks::default();
+        for cohort in
+            crate::logistics::pool_fuel::pool_segment_fuel_cohorts(&game.state, &id).unwrap()
+        {
+            match cohort.kind {
+                crate::logistics::FuelTruckKind::Light => remaining.light += cohort.count,
+                crate::logistics::FuelTruckKind::Medium => remaining.medium += cohort.count,
+                crate::logistics::FuelTruckKind::Heavy => remaining.heavy += cohort.count,
+            }
+        }
+        assert_eq!(
+            remaining,
+            Trucks {
+                light: 1,
+                medium: 1,
+                heavy: 1
+            }
+        );
+        let mut recovered: State =
+            serde_json::from_value(serde_json::to_value(&game.state).unwrap()).unwrap();
+        crate::logistics::pool_fuel::spend_pool_segment_fuel(&c, &mut game.state, &id, 16).unwrap();
+        assert_eq!(game.state.logistics.dumps["pool-funding"].supplies, stock);
+        crate::logistics::pool_fuel::spend_pool_segment_fuel(&c, &mut recovered, &id, 16).unwrap();
+        assert_eq!(
+            serde_json::to_value(&game.state).unwrap(),
+            serde_json::to_value(&recovered).unwrap()
+        );
+        crate::logistics::pool_fuel::spend_pool_segment_fuel(&c, &mut game.state, &id, 20).unwrap();
+        crate::logistics::pool_fuel::spend_pool_segment_fuel(&c, &mut recovered, &id, 20).unwrap();
+        assert_eq!(
+            serde_json::to_value(&game.state).unwrap(),
+            serde_json::to_value(&recovered).unwrap()
+        );
     }
     /// Cases: land:8.88, land:20.83, land:3.6
     /// Interpretations: interp:airlog-0019
