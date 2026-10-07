@@ -30,7 +30,6 @@ const PENDING_BINDINGS: &[&str] = &[
     "land.16.6.patrol_survival",
     "land.16.7.patrol_recon",
     "land.16.8.objective_loss",
-    "land.17.6.training_chart",
     "land.19.5.maximum_attachment",
     "land.20.3.replacement_point_conversion",
     "land.20.66.axis_replacement_pool",
