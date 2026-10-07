@@ -12,6 +12,7 @@ mod grid;
 pub mod morale;
 pub mod raids;
 pub mod repair;
+pub mod replacements;
 pub mod terrain;
 pub mod training;
 pub mod weather;
@@ -30,6 +31,7 @@ crate::tables_group! {
         close_assault: assault::CloseAssaultTable,
         morale: morale::MoraleTable,
         training: training::TrainingChart,
+        replacement_conversion: replacements::ReplacementConversion,
         breakdown: breakdown::BreakdownTable,
         vehicle_repair_supply_costs: repair::VehicleRepairSupplyCosts,
         destroyed_tanks_repair: repair::DestroyedTanksRepair,
