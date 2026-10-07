@@ -20,7 +20,10 @@ fn attack(group: AaGroup, n: usize, density_applies: bool) -> Attack {
 fn chart_group_density_and_separate_rolls_use_original_column() {
     let c = content();
     for (n, shift) in [(12, 0), (23, 0), (24, 1), (35, 1), (36, 2)] {
-        let a = attack(AaGroup::PlanesOnOtherMissions, n, true);
+        let mut a = attack(AaGroup::PlanesOnOtherMissions, n, true);
+        // Below the final column: density must change the actual chart lookup,
+        // rather than being hidden by saturation at the table's right edge.
+        a.flak_points = 9;
         for seed in 0..16 {
             let mut rng = CampaignRng::from_seed([seed; 32]);
             let out = resolve(&c, &mut rng, &a).unwrap();
