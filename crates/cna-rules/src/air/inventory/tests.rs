@@ -3,6 +3,7 @@
 use super::*;
 use crate::{
     Cna,
+    air::preparation::KnownLoad,
     state::{AirSquadron, Location},
     testkit::{assert_indistinguishable, visible_to},
 };
@@ -16,6 +17,21 @@ fn closed_initial(content: &CnaContent) -> State {
     let mut state = State::new(content).unwrap();
     state.setup.closed = true;
     state
+}
+
+// Private structural fixture only: no setup authentication or paid producer.
+fn fixture_known_guns(air: &mut AirState, id: &PlaneId) {
+    air.runtime.preparation.current.insert(
+        id.clone(),
+        CurrentPreparation::KnownLoad {
+            load: KnownLoad {
+                mode: 0,
+                fuel_available: true,
+                gun_ammunition: true,
+                ordnance: None,
+            },
+        },
+    );
 }
 
 fn serialized(air: &AirState) -> serde_json::Value {
@@ -174,11 +190,17 @@ fn update_rebuilds_mirrors_and_rejects_invalid_edits_atomically() {
         .unwrap()
         .0
         .clone();
+    fixture_known_guns(&mut state.air, &id);
     update(&content, &mut state.air, |runtime| {
+        let CurrentPreparation::KnownLoad { load } =
+            runtime.preparation.current.get_mut(&id).unwrap()
+        else {
+            unreachable!()
+        };
+        load.gun_ammunition = false;
         let plane = runtime.aircraft.get_mut(&id).unwrap();
         plane.refitted = false;
         plane.fuelled = false;
-        plane.armed = false;
         Ok(())
     })
     .unwrap();
@@ -257,7 +279,15 @@ fn private_serials_are_side_local_and_never_reused_after_removal() {
     let mut new_id = None;
     update(&content, &mut a.air, |runtime| {
         runtime.aircraft.remove(&id);
-        new_id = Some(runtime.insert_aircraft(plane)?);
+        runtime.preparation.current.remove(&id);
+        let mut plane = plane;
+        plane.armed = false;
+        let allocated = runtime.insert_aircraft(plane)?;
+        runtime
+            .preparation
+            .current
+            .insert(allocated.clone(), CurrentPreparation::Unprepared);
+        new_id = Some(allocated);
         Ok(())
     })
     .unwrap();
@@ -299,13 +329,21 @@ fn every_inventory_flag_assignment_and_private_id_stays_hidden_from_enemy() {
         .unwrap()
         .0
         .clone();
+    fixture_known_guns(&mut a.air, &plane);
     for fact in 0..6 {
         let mut b = a.clone();
         update(&content, &mut b.air, |runtime| {
             match fact {
                 0 => runtime.aircraft.get_mut(&plane).unwrap().refitted = false,
                 1 => runtime.aircraft.get_mut(&plane).unwrap().fuelled = false,
-                2 => runtime.aircraft.get_mut(&plane).unwrap().armed = false,
+                2 => {
+                    let CurrentPreparation::KnownLoad { load } =
+                        runtime.preparation.current.get_mut(&plane).unwrap()
+                    else {
+                        unreachable!()
+                    };
+                    load.gun_ammunition = false;
+                }
                 3 => {
                     runtime.aircraft.get_mut(&plane).unwrap().facility =
                         Some("airfield_barce".into())
@@ -316,6 +354,7 @@ fn every_inventory_flag_assignment_and_private_id_stays_hidden_from_enemy() {
                 }
                 5 => {
                     runtime.aircraft.remove(&plane);
+                    runtime.preparation.current.remove(&plane);
                 }
                 _ => unreachable!(),
             }

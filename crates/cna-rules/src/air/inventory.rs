@@ -11,6 +11,7 @@ use cna_protocol::Side;
 
 use super::{
     facilities::{self, FacilityCapacity, FacilityId, FacilityOrigin, FacilityState},
+    preparation::{self, CurrentPreparation, InitialChoice},
     sgsu::{SgsuId, SgsuPosition, SgsuState},
     state::{AirRuntime, AircraftState, PilotId, PilotState, PlaneId},
 };
@@ -126,7 +127,7 @@ pub fn receive_unassigned(
     let mut ids = Vec::new();
     update(content, air, |runtime| {
         for _ in 0..count {
-            ids.push(runtime.insert_aircraft(AircraftState {
+            let id = runtime.insert_aircraft(AircraftState {
                 aircraft: aircraft.into(),
                 force: force.into(),
                 squadron: None,
@@ -134,7 +135,12 @@ pub fn receive_unassigned(
                 refitted: false,
                 fuelled: false,
                 armed: false,
-            })?);
+            })?;
+            runtime
+                .preparation
+                .current
+                .insert(id.clone(), CurrentPreparation::Unprepared);
+            ids.push(id);
         }
         Ok(())
     })?;
@@ -206,6 +212,8 @@ fn import_pilots(
 /// counts are preserved exactly, including unplaced force reserves. Initial
 /// fuel/arming is uniform per source cohort; partial legacy counts cannot reveal
 /// overlap and are rejected rather than assigned an invented correlation.
+/// This generic import creates only legacy-unknown preparation, never initial
+/// credit. Actual fresh setup authentication requires a separate reviewed path.
 /// Cases: airlog:34.0, airlog:35.24, scen:59.32
 /// Interpretations: interp:air-0005
 pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineError> {
@@ -213,8 +221,17 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
         return Err(invalid("setup must close before inventory import"));
     }
     if state.air.runtime.initialized {
+        check_preparation(content, &state.air.runtime)?;
         if state.air.runtime.bases_initialized {
-            return check(content, &state.air);
+            check(content, &state.air)?;
+            if state.air.runtime.preparation.initialized {
+                return Ok(());
+            }
+            let mut draft = state.air.clone();
+            migrate_preparation(content, &mut draft.runtime)?;
+            check(content, &draft)?;
+            state.air = draft;
+            return Ok(());
         }
         // Legacy inventory is already canonical. Import only bases in a draft;
         // do not allocate or recreate a single aircraft, pilot or serial.
@@ -226,6 +243,7 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
         }
         let mut draft = state.air.clone();
         import_bases(content, &mut draft)?;
+        migrate_preparation(content, &mut draft.runtime)?;
         check(content, &draft)?;
         state.air = draft;
         return Ok(());
@@ -279,6 +297,7 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
     let mut draft = state.air.clone();
     draft.runtime = runtime;
     import_bases(content, &mut draft)?;
+    migrate_preparation(content, &mut draft.runtime)?;
     check(content, &draft)?;
     state.air = draft;
     Ok(())
@@ -427,14 +446,200 @@ fn validate_id(
     side: Side,
     kind: &str,
     serials: &BTreeMap<Side, u64>,
-) -> Result<(), EngineError> {
+) -> Result<u64, EngineError> {
     let prefix = format!("{}.{kind}-", side_name(side));
     let serial = id
         .strip_prefix(&prefix)
         .and_then(|value| value.parse::<u64>().ok())
         .filter(|value| *value > 0 && *value <= serials.get(&side).copied().unwrap_or(0));
-    if serial.is_none() || id != format!("{prefix}{}", serial.unwrap_or(0)) {
+    let serial = serial.ok_or_else(|| invalid("invalid persistent identity"))?;
+    if id != format!("{prefix}{serial}") {
         return Err(invalid("invalid persistent identity"));
+    }
+    Ok(serial)
+}
+
+/// Historical ledger keys use the same canonical syntax and serial bounds as
+/// live identities; an eliminated ID does not require a surviving force record.
+fn plane_identity(id: &PlaneId, serials: &BTreeMap<Side, u64>) -> Result<(Side, u64), EngineError> {
+    let owner = if id.0.starts_with("axis.") {
+        Side::Axis
+    } else if id.0.starts_with("commonwealth.") {
+        Side::Commonwealth
+    } else {
+        return Err(invalid("invalid aircraft identity side"));
+    };
+    Ok((owner, validate_id(&id.0, owner, "aircraft", serials)?))
+}
+
+/// Validate explicit records independently of the one-time marker admission.
+/// This establishes consistency only, never payment or fresh setup authority.
+/// Cases: airlog:34.0, airlog:34.14, scen:59.32
+/// Interpretations: interp:air-0018
+fn check_preparation_records(
+    content: &CnaContent,
+    runtime: &AirRuntime,
+) -> Result<(), EngineError> {
+    let prep = &runtime.preparation;
+    for id in prep.initial_choices.keys() {
+        plane_identity(id, &runtime.plane_serial)?;
+    }
+    if prep
+        .current
+        .keys()
+        .any(|id| !runtime.aircraft.contains_key(id))
+    {
+        return Err(invalid("preparation references an absent aircraft"));
+    }
+    for (id, plane) in &runtime.aircraft {
+        let current = prep
+            .current
+            .get(id)
+            .ok_or_else(|| invalid("live aircraft preparation is missing"))?;
+        let valid = matches!(
+            (prep.initial_choices.get(id), current),
+            (
+                Some(InitialChoice::Unselected),
+                CurrentPreparation::InitialUnspecified
+            ) | (
+                Some(InitialChoice::Committed | InitialChoice::Forfeited),
+                CurrentPreparation::Unprepared | CurrentPreparation::KnownLoad { .. }
+            ) | (
+                None,
+                CurrentPreparation::UnknownLegacy
+                    | CurrentPreparation::Unprepared
+                    | CurrentPreparation::KnownLoad { .. }
+            )
+        );
+        if !valid {
+            return Err(invalid("initial credit and current preparation disagree"));
+        }
+        if let CurrentPreparation::KnownLoad { load } = current {
+            preparation::validate_load(content, plane, load)?;
+        }
+        if preparation::armed_projection(current, plane.armed) != plane.armed {
+            return Err(invalid("informational arming projection disagrees"));
+        }
+    }
+    Ok(())
+}
+
+/// False/empty is global legacy knowledge; pure validation never migrates.
+/// Cases: airlog:34.0, scen:59.32
+/// Interpretations: interp:air-0018
+fn check_preparation(content: &CnaContent, runtime: &AirRuntime) -> Result<(), EngineError> {
+    if !runtime.preparation.initialized {
+        if !runtime.preparation.initial_choices.is_empty()
+            || !runtime.preparation.current.is_empty()
+        {
+            return Err(invalid("legacy preparation marker has populated maps"));
+        }
+        return Ok(());
+    }
+    check_preparation_records(content, runtime)
+}
+
+/// Private one-time no-credit migration in the enclosing disposable Air draft.
+/// No source setup, load, refit, assignment or allocation is inferred.
+/// Cases: airlog:34.0, scen:59.32
+/// Interpretations: interp:air-0018
+fn migrate_preparation(content: &CnaContent, runtime: &mut AirRuntime) -> Result<(), EngineError> {
+    check_preparation(content, runtime)?;
+    if runtime.preparation.initialized {
+        return Ok(());
+    }
+    for id in runtime.aircraft.keys() {
+        runtime
+            .preparation
+            .current
+            .insert(id.clone(), CurrentPreparation::UnknownLegacy);
+    }
+    check_preparation_records(content, runtime)?;
+    runtime.preparation.initialized = true;
+    Ok(())
+}
+
+/// Compare the post-bootstrap/pre-callback truth with the edited draft. This
+/// admits no ledger writer, setup registration, loading or clearing procedure.
+/// Restored known loads and edits of existing known records remain structurally
+/// valid; creating a known load requires a separately reviewed admission.
+/// Cases: airlog:34.0, scen:59.32
+/// Interpretations: interp:air-0018
+fn check_preparation_transition(old: &AirRuntime, new: &AirRuntime) -> Result<(), EngineError> {
+    if !new.preparation.initialized {
+        return Err(invalid("preparation initialized marker cannot reset"));
+    }
+    if old.preparation.initial_choices != new.preparation.initial_choices {
+        return Err(invalid(
+            "ordinary update cannot edit initial credit history",
+        ));
+    }
+    for (id, plane) in &new.aircraft {
+        let current = new.preparation.current.get(id);
+        if let Some(previous) = old.aircraft.get(id) {
+            if previous.aircraft != plane.aircraft || previous.force != plane.force {
+                return Err(invalid("persistent aircraft type and force cannot change"));
+            }
+            let before = old.preparation.current.get(id);
+            match (before, current) {
+                (
+                    Some(CurrentPreparation::UnknownLegacy | CurrentPreparation::Unprepared),
+                    Some(CurrentPreparation::KnownLoad { .. }),
+                ) => return Err(invalid("ordinary update cannot establish a known load")),
+                (
+                    Some(CurrentPreparation::KnownLoad { .. }),
+                    None | Some(CurrentPreparation::UnknownLegacy | CurrentPreparation::Unprepared),
+                )
+                | (Some(CurrentPreparation::Unprepared), Some(CurrentPreparation::UnknownLegacy))
+                | (Some(CurrentPreparation::UnknownLegacy), Some(CurrentPreparation::Unprepared)) =>
+                {
+                    return Err(invalid(
+                        "ordinary update cannot downgrade preparation knowledge",
+                    ));
+                }
+                _ => {}
+            }
+            if matches!(current, Some(CurrentPreparation::UnknownLegacy))
+                && !matches!(before, Some(CurrentPreparation::UnknownLegacy))
+            {
+                return Err(invalid("unknown preparation requires private migration"));
+            }
+            if matches!(
+                before,
+                Some(CurrentPreparation::UnknownLegacy | CurrentPreparation::InitialUnspecified)
+            ) && before == current
+                && previous.armed != plane.armed
+            {
+                return Err(invalid(
+                    "unknown or initial coarse arming must be preserved",
+                ));
+            }
+        } else {
+            let (owner, serial) = plane_identity(id, &new.plane_serial)?;
+            if serial <= old.plane_serial.get(&owner).copied().unwrap_or(0) {
+                return Err(invalid("historical aircraft identity cannot be reinserted"));
+            }
+            if matches!(current, Some(CurrentPreparation::UnknownLegacy)) {
+                return Err(invalid("new aircraft cannot fabricate legacy preparation"));
+            }
+            if matches!(current, Some(CurrentPreparation::KnownLoad { .. })) {
+                return Err(invalid("new aircraft cannot establish a known load"));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The sole informational projection write; it never supplies mission rights.
+fn project_preparation(old: &AirRuntime, new: &mut AirRuntime) -> Result<(), EngineError> {
+    for (id, plane) in &mut new.aircraft {
+        let current = new
+            .preparation
+            .current
+            .get(id)
+            .ok_or_else(|| invalid("live aircraft preparation is missing"))?;
+        let old_bit = old.aircraft.get(id).map_or(plane.armed, |p| p.armed);
+        plane.armed = preparation::armed_projection(current, old_bit);
     }
     Ok(())
 }
@@ -580,6 +785,7 @@ pub fn check(content: &CnaContent, air: &AirState) -> Result<(), EngineError> {
     if !air.runtime.initialized || !air.runtime.bases_initialized {
         return Err(invalid("inventory and bases must be imported"));
     }
+    check_preparation(content, &air.runtime)?;
     let draft = mirrors(content, air)?;
     if air.forces != draft.forces || air.squadrons != draft.squadrons {
         return Err(invalid(
@@ -707,6 +913,8 @@ where
 {
     check(content, air)?;
     let mut draft = air.clone();
+    migrate_preparation(content, &mut draft.runtime)?;
+    let before_edit = draft.runtime.clone();
     edit(&mut draft.runtime)?;
     check_site_transition(content, &air.runtime, &draft.runtime, allocation.as_ref())?;
     if [
@@ -723,10 +931,17 @@ where
     if !draft.runtime.initialized || !draft.runtime.bases_initialized {
         return Err(invalid("initialized inventory and bases cannot be reset"));
     }
+    check_preparation_transition(&before_edit, &draft.runtime)?;
+    project_preparation(&before_edit, &mut draft.runtime)?;
+    check_preparation(content, &draft.runtime)?;
     draft = mirrors(content, &draft)?;
+    check(content, &draft)?;
     *air = draft;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod preparation_tests;
