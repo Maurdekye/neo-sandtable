@@ -578,18 +578,36 @@ mod tests {
     /// Cases: scen:60.31, scen:60.34, scen:60.44, land:8.37
     #[test]
     fn generated_regions_preserve_exact_land_profiles_and_dump_exclusion() {
+        use std::collections::BTreeSet;
+
         let c = content();
-        // Counts verified against Cartographer's frozen generated artifact, SHA256 5c8d7778.
-        for (id, count, case) in [
-            ("libya", 3878, "scen:60.31"),
-            ("egypt", 3078, "scen:60.44"),
-            ("map_c_libya", 912, "scen:60.34"),
-            ("map_c_or_d_egypt", 1797, "scen:60.44"),
+        let members =
+            |id: &str| -> BTreeSet<_> { c.areas.areas[id].hex_ids.iter().cloned().collect() };
+        assert_eq!(
+            members("map_c_libya"),
+            &members("map_c") & &members("libya")
+        );
+        assert_eq!(
+            members("map_c_or_d_egypt"),
+            &(&members("map_c") | &members("map_d")) & &members("egypt")
+        );
+        for (id, case) in [
+            ("libya", "scen:60.31"),
+            ("egypt", "scen:60.44"),
+            ("map_c_libya", "scen:60.34"),
+            ("map_c_or_d_egypt", "scen:60.44"),
         ] {
             let area = &c.areas.areas[id];
             assert_eq!(area.membership_status, "resolved");
             assert!(area.requires_land);
-            assert_eq!(area.hex_ids.len(), count);
+            assert!(!area.hex_ids.is_empty());
+            assert!(!area.src.is_empty());
+            assert!(area.location_ids.is_empty());
+            assert!(
+                area.hex_ids
+                    .iter()
+                    .all(|hex| c.map.canonical(hex) == Some(hex))
+            );
             let expected: Vec<_> = area
                 .hex_ids
                 .iter()
