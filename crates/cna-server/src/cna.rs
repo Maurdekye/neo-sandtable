@@ -99,6 +99,7 @@ pub fn create(
             })
             .collect(),
     };
+    let strict = ruleset.strict;
     let mut campaign = Campaign::create(
         &path,
         ruleset,
@@ -127,17 +128,23 @@ pub fn create(
     if request.paused {
         campaign.set_paused(true)?;
     }
-    CampaignHandle::spawn_with_policy(campaign, &path, movement_policy())
+    CampaignHandle::spawn_with_policy(campaign, &path, movement_policy_with_profile(strict))
 }
 pub fn recover(path: &Path, data: &Path, profile: &str) -> Result<CampaignHandle, Error> {
     let ruleset = ruleset(profile)?;
     let (content, pins) = inputs(data, profile)?;
+    let strict = ruleset.strict;
     let campaign = Campaign::recover(path, ruleset, content, &pins)?;
-    CampaignHandle::spawn_with_policy(campaign, path, movement_policy())
+    CampaignHandle::spawn_with_policy(campaign, path, movement_policy_with_profile(strict))
 }
 
+#[cfg(test)]
 fn movement_policy() -> ActionPolicy<Cna> {
-    Box::new(|content, state, request, epoch| {
+    movement_policy_with_profile(false)
+}
+
+fn movement_policy_with_profile(strict: bool) -> ActionPolicy<Cna> {
+    Box::new(move |content, state, request, epoch| {
         if request.kind == "cna.arrivals.batch" {
             // Fixed arrival windows need the source-conserving policy, never the generic sampler.
             // A missing mandatory policy pauses at the actor's Null/no-pass guard.
@@ -184,9 +191,9 @@ fn movement_policy() -> ActionPolicy<Cna> {
         );
         let seed = hash.finalize().into();
         let mut rng = CampaignRng::from_seed(seed);
-        if let Some(action) =
-            cna_rules::baseline::logistics_orders(content, state, request, &mut rng)
-        {
+        if let Some(action) = cna_rules::baseline::logistics_orders_with_profile(
+            content, state, request, &mut rng, strict,
+        )? {
             return Ok(Some(action));
         }
         if request.kind.starts_with("cna.combat.barrage") {
