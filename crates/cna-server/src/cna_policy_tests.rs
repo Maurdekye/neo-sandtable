@@ -767,3 +767,81 @@ async fn production_full_create_publishes_its_actual_initial_source_error_withou
         serde_json::to_value(initial).unwrap()
     );
 }
+
+// Observe the actual argument captured by the factory-installed policy constructor.
+// Disabled outside this test's thread-local scope; absent in non-test compilation.
+thread_local! {
+    static FACTORY_POLICY_CAPTURE: std::cell::RefCell<Option<Vec<bool>>> = const { std::cell::RefCell::new(None) };
+}
+pub(super) fn record_factory_policy_capture(strict: bool) {
+    FACTORY_POLICY_CAPTURE.with(|slot| {
+        if let Some(captured) = slot.borrow_mut().as_mut() {
+            captured.push(strict);
+        }
+    });
+}
+struct FactoryPolicyCapture;
+impl FactoryPolicyCapture {
+    fn start() -> Self {
+        FACTORY_POLICY_CAPTURE.with(|slot| assert!(slot.replace(Some(vec![])).is_none()));
+        Self
+    }
+    fn finish(self) -> Vec<bool> {
+        FACTORY_POLICY_CAPTURE.with(|slot| slot.borrow_mut().take().unwrap())
+    }
+}
+impl Drop for FactoryPolicyCapture {
+    fn drop(&mut self) {
+        FACTORY_POLICY_CAPTURE.with(|slot| {
+            slot.borrow_mut().take();
+        });
+    }
+}
+
+/// Cases: land:3.6, airlog:52.42
+#[tokio::test]
+async fn production_factories_capture_each_actual_full_dev_policy_profile_independently() {
+    for (profile, expected) in [
+        (cna_rules::PROFILE_FULL, true),
+        (cna_rules::PROFILE_DEV, false),
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        let data = cna_content::repo_data_dir();
+        let capture = FactoryPolicyCapture::start();
+        let created = create(
+            directory.path(),
+            &data,
+            CreateRequest {
+                kind: CampaignKind::Cna,
+                rules_profile: profile.into(),
+                seed: [17; 32],
+                title: "Actual policy capture".into(),
+                paused: true,
+                controller: "legal_random".into(),
+            },
+        )
+        .unwrap();
+        let created_capture = capture.finish();
+        let path = directory.path().join(format!(
+            "{}.sqlite",
+            created.header(Perspective::Operator).meta.id
+        ));
+        let before = rows(&path);
+        created.shutdown().await.unwrap();
+        assert_eq!(
+            created_capture,
+            vec![expected],
+            "create installed the wrong {profile} policy capture"
+        );
+        let capture = FactoryPolicyCapture::start();
+        let restored = recover(&path, &data, profile).unwrap();
+        let restored_capture = capture.finish();
+        restored.shutdown().await.unwrap();
+        assert_eq!(
+            restored_capture,
+            vec![expected],
+            "recover installed the wrong {profile} policy capture"
+        );
+        assert_eq!(rows(&path), before);
+    }
+}

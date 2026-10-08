@@ -144,6 +144,8 @@ fn movement_policy() -> ActionPolicy<Cna> {
 }
 
 fn movement_policy_with_profile(strict: bool) -> ActionPolicy<Cna> {
+    #[cfg(test)]
+    policy_tests::record_factory_policy_capture(strict);
     Box::new(move |content, state, request, epoch| {
         if request.kind == "cna.arrivals.batch" {
             // Fixed arrival windows need the source-conserving policy, never the generic sampler.
