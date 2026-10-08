@@ -29,8 +29,10 @@ pub struct AircraftState {
     pub facility: Option<String>,
     pub refitted: bool,
     pub fuelled: bool,
-    /// Compatibility with setup's arming count. Mission-specific gun and
-    /// ordnance expenditures will refine this before operational flight.
+    /// Informational arming summary, projected only inside inventory::update.
+    /// Never ammunition, mission legality or flight readiness: typed preparation
+    /// is operative. Unknown legacy and initial unspecified loads preserve the
+    /// old coarse summary; an unprepared aircraft projects false.
     pub armed: bool,
 }
 
@@ -63,6 +65,9 @@ pub struct AirRuntime {
     pub sgsus: BTreeMap<super::sgsu::SgsuId, super::sgsu::SgsuState>,
     pub designation: super::designation::DesignationState,
     pub tactical: super::missions::TacticalState,
+    /// Missing preparation is legacy unknown with NO free initial credit.
+    #[serde(default)]
+    pub(crate) preparation: super::preparation::PreparationState,
     pub aircraft: BTreeMap<PlaneId, AircraftState>,
     pub pilots: BTreeMap<PilotId, PilotState>,
     /// Side-local monotone serials keep the other side's assets from affecting
