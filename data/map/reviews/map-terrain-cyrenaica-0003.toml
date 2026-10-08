@@ -1,0 +1,555 @@
+[batch]
+id = "map-terrain-cyrenaica-0003"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-terrain"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "C2901,C2902,C2903,C2904,C2905,C2906,C2907,C2801,C2802,C2803,C2804,C2805,C2806,C2807,C2701,C2702,C2703,C2704,C2705,C2706,C2707,C2601,C2602,C2603,C2604,C2605,C2606,C2607,C2501,C2502,C2503,C2504,C2505,C2506,C2507,C2401,C2402,C2403,C2404,C2405,C2406,C2407,C2301,C2302,C2303,C2304,C2305,C2306,C2307,C2201,C2202,C2203,C2204,C2205,C2206,C2207,C2101,C2102,C2103,C2104,C2105,C2106,C2107,C2001,C2002,C2003,C2004,C2005"
+notes = "Exact first68 of the remaining203 original frozen C-Libya cells under standing terrain GO. All full native/4x cells and TEC viewed directly; fifteen mixed/boundary cells additionally enlarged6x.66 accepted land cells and two rough/clear deferrals. Adopted predominant-land rule and explicit minor substrates; no palette classifier, independent visual agreement, measured source error or1979 equivalence. No places, edges, lakes, facilities, national membership or scenario legality."
+
+[[hex]]
+hex_id = "C2901"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2902"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2903"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2904"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills or clearly predominates throughout the complete printed interior. The green marginal stroke matches the TEC wadi graphic and stays separate from land substrate; no distinct minor land substrate or marine fill is identified. No edge presence, absence or high side is supplied."
+
+[[hex]]
+hex_id = "C2905"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full-boundary native/6x views show a broad beige rough central and eastern body that clearly predominates. Minor substrate: clear in the upper-left indentation, narrow western strip and smaller southeastern pocket. Broad green marginal wadi ink is separate from substrate; no ground beneath it or edge mask is inferred."
+
+[[hex]]
+hex_id = "C2906"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full-boundary native/6x views show beige rough filling the broad upper and central interior and clearly predominating. Minor substrate: clear in the smaller southern region and eastern indentation. Rough outside the boundary does not contribute to this decision."
+
+[[hex]]
+hex_id = "C2907"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2801"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2802"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2803"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2804"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x full-cell views show a broad hooked beige rough central body and substantial cream clear western, southern and eastern interior. Green wadi ink and dashed transport printing cover parts of the view and are excluded from substrate. The rough/clear balance does not establish confident predominance; retain Unknown with both land substrates recorded."
+
+[[hex]]
+hex_id = "C2805"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show cream clear ground throughout the complete printed interior. Nearby beige rough patches lie outside the boundary; no distinct interior minor substrate is identified. Any marginal green or dashed transport ink stays separate from substrate."
+
+[[hex]]
+hex_id = "C2806"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2807"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills or clearly predominates throughout the complete printed interior. The green marginal stroke matches the TEC wadi graphic and stays separate from land substrate; no distinct minor land substrate or marine fill is identified. No edge presence, absence or high side is supplied."
+
+[[hex]]
+hex_id = "C2701"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2702"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2703"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2704"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show cream clear ground clearly predominating in the broad western interior and surrounding upper, eastern and southern regions. Minor substrate: rough in the smaller central/eastern plume. The dashed transport ink is separate from land substrate."
+
+[[hex]]
+hex_id = "C2705"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2706"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills or clearly predominates throughout the complete printed interior. The green marginal stroke matches the TEC wadi graphic and stays separate from land substrate; no distinct minor land substrate or marine fill is identified. No edge presence, absence or high side is supplied."
+
+[[hex]]
+hex_id = "C2707"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show cream clear ground throughout the complete printed interior. Nearby beige rough patches lie outside the boundary; no distinct interior minor substrate is identified. Any marginal green or dashed transport ink stays separate from substrate."
+
+[[hex]]
+hex_id = "C2601"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2602"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2603"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2604"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2605"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x full-cell views show a broad beige rough central/eastern body and substantial cream clear upper, western and lower interior, with broad green marginal wadi ink. Rough and clear do not establish confident predominance after separating the graphic; retain Unknown without inferring substrate hidden beneath ink."
+
+[[hex]]
+hex_id = "C2606"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show beige rough clearly predominating through the central/western and lower interior. Minor substrate: clear in the smaller upper band and eastern indentation/corner. The green wadi stroke on the west margin is separate from substrate and supplies no edge or water-body decision."
+
+[[hex]]
+hex_id = "C2607"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2501"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2502"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2503"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2504"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2505"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills or clearly predominates throughout the complete printed interior. The green marginal stroke matches the TEC wadi graphic and stays separate from land substrate; no distinct minor land substrate or marine fill is identified. No edge presence, absence or high side is supplied."
+
+[[hex]]
+hex_id = "C2506"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show a broad beige rough upper/central body that clearly predominates. Minor substrate: clear in the smaller western crescent, eastern indentation and lower region. Broad green marginal wadi ink stays separate from the two visible land substrates."
+
+[[hex]]
+hex_id = "C2507"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show cream clear ground throughout the complete printed interior. Nearby beige rough patches lie outside the boundary; no distinct interior minor substrate is identified. Any marginal green or dashed transport ink stays separate from substrate."
+
+[[hex]]
+hex_id = "C2401"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2402"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2403"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2404"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2405"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills or clearly predominates throughout the complete printed interior. The green marginal stroke matches the TEC wadi graphic and stays separate from land substrate; no distinct minor land substrate or marine fill is identified. No edge presence, absence or high side is supplied."
+
+[[hex]]
+hex_id = "C2406"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills or clearly predominates throughout the complete printed interior. The green marginal stroke matches the TEC wadi graphic and stays separate from land substrate; no distinct minor land substrate or marine fill is identified. No edge presence, absence or high side is supplied."
+
+[[hex]]
+hex_id = "C2407"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2301"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2302"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2303"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2304"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2305"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2306"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2307"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2201"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2202"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2203"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2204"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2205"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. The yellow-network or beige patches beyond the southern/eastern printed sides are outside this cell; no interior minor substrate is identified. No neighboring terrain or water identity is inferred."
+
+[[hex]]
+hex_id = "C2206"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. The yellow-network or beige patches beyond the southern/eastern printed sides are outside this cell; no interior minor substrate is identified. No neighboring terrain or water identity is inferred."
+
+[[hex]]
+hex_id = "C2207"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2101"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2102"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2103"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2104"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2105"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x full-cell views show a broad connected yellow angular network over a beige patch, matching the TEC salt-marsh family. That marsh body clearly predominates in the central/eastern and lower interior. Minor substrate: clear in the smaller upper band, western indentation and southern rim. Beige beneath the marsh network is part of the marsh symbol, not a separate rough substrate; no marine fill is visible."
+
+[[hex]]
+hex_id = "C2106"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x full-cell views show a broad yellow angular network over its beige patch, matching the TEC salt-marsh family. Salt marsh clearly predominates through the broad central and lower interior and upper arms. Minor substrate: clear in the upper notch, western/lower-left and eastern peripheral regions. No marine fill or lake identity is established by that land graphic."
+
+[[hex]]
+hex_id = "C2107"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2001"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2002"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate fills the complete printed interior. No distinct minor substrate or marine fill is identified. Any visible transport or marginal graphical ink remains separate from substrate."
+
+[[hex]]
+hex_id = "C2003"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. The yellow-network or beige patches beyond the southern/eastern printed sides are outside this cell; no interior minor substrate is identified. No neighboring terrain or water identity is inferred."
+
+[[hex]]
+hex_id = "C2004"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills or clearly predominates throughout the complete printed interior. The green marginal stroke matches the TEC wadi graphic and stays separate from land substrate; no distinct minor land substrate or marine fill is identified. No edge presence, absence or high side is supplied."
+
+[[hex]]
+hex_id = "C2005"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show a broad beige rough central body that clearly predominates within the printed boundary. Minor substrate: clear in the smaller western, upper and eastern regions. Yellow marsh patches visible above the cell are outside its upper sides and do not classify its interior."
