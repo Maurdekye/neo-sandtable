@@ -2153,11 +2153,21 @@ mod tests {
             let runtime = checkpoint["state"]["air"]["runtime"]
                 .as_object_mut()
                 .unwrap();
-            for field in ["bases_initialized", "facilities", "sgsus"] {
+            for field in ["bases_initialized", "facilities", "sgsus", "preparation"] {
                 runtime.remove(field);
             }
             game = serde_json::from_value(checkpoint).unwrap();
             assert!(!game.state.air.runtime.bases_initialized);
+            assert!(!game.state.air.runtime.preparation.initialized);
+            assert!(game.state.air.runtime.preparation.current.is_empty());
+            assert!(
+                game.state
+                    .air
+                    .runtime
+                    .preparation
+                    .initial_choices
+                    .is_empty()
+            );
         }
         at(&mut game, 15, 1);
         (c, game)
@@ -2225,6 +2235,7 @@ mod tests {
             let mut closed = transition.game;
             crate::air::inventory::check(&c, &closed.state.air).unwrap();
             assert!(closed.state.air.runtime.bases_initialized);
+            assert!(closed.state.air.runtime.preparation.initialized);
             assert_eq!(closed.state.air.runtime.pilots, initial.runtime.pilots);
             assert_eq!(
                 closed.state.air.runtime.pilot_serial,
@@ -2240,6 +2251,19 @@ mod tests {
             );
             for (id, plane) in &initial.runtime.aircraft {
                 assert_eq!(&closed.state.air.runtime.aircraft[id], plane);
+                assert_eq!(
+                    closed.state.air.runtime.preparation.current[id],
+                    crate::air::preparation::CurrentPreparation::UnknownLegacy
+                );
+                assert!(
+                    !closed
+                        .state
+                        .air
+                        .runtime
+                        .preparation
+                        .initial_choices
+                        .contains_key(id)
+                );
             }
             let new: Vec<_> = closed
                 .state
@@ -2250,7 +2274,20 @@ mod tests {
                 .filter(|(id, _)| !initial.runtime.aircraft.contains_key(*id))
                 .collect();
             assert_eq!(new.len(), 2);
-            for (_, plane) in new {
+            for (id, plane) in new {
+                assert_eq!(
+                    closed.state.air.runtime.preparation.current[id],
+                    crate::air::preparation::CurrentPreparation::Unprepared
+                );
+                assert!(
+                    !closed
+                        .state
+                        .air
+                        .runtime
+                        .preparation
+                        .initial_choices
+                        .contains_key(id)
+                );
                 assert_eq!(plane.aircraft, "cw.hurricane_i");
                 assert_eq!(plane.force, "commonwealth");
                 assert!(plane.squadron.is_none() && plane.facility.is_none());
@@ -2378,6 +2415,17 @@ mod tests {
             .unwrap()
             .game;
         let mut ready = prepare_air_count(&c, opened, 2);
+        assert!(!ready.state.air.runtime.preparation.initialized);
+        assert!(ready.state.air.runtime.preparation.current.is_empty());
+        assert!(
+            ready
+                .state
+                .air
+                .runtime
+                .preparation
+                .initial_choices
+                .is_empty()
+        );
         let before = json!(ready);
         assert!(matches!(
             evaluate(&Cna::dev(), &c, &ready, &Command::Advance),
@@ -2401,6 +2449,17 @@ mod tests {
         assert_eq!(rng.state(), ready.rng);
         assert!(events.is_empty());
         assert!(!ready.state.air.runtime.bases_initialized);
+        assert!(!ready.state.air.runtime.preparation.initialized);
+        assert!(ready.state.air.runtime.preparation.current.is_empty());
+        assert!(
+            ready
+                .state
+                .air
+                .runtime
+                .preparation
+                .initial_choices
+                .is_empty()
+        );
     }
     /// Cases: land:3.6, airlog:34.84, airlog:35.11
     #[test]
@@ -2439,6 +2498,19 @@ mod tests {
                 .unwrap()
                 .game;
             let mut ready = prepare_air_count(&c, opened, 2);
+            if missing_base {
+                assert!(!ready.state.air.runtime.preparation.initialized);
+                assert!(ready.state.air.runtime.preparation.current.is_empty());
+                assert!(
+                    ready
+                        .state
+                        .air
+                        .runtime
+                        .preparation
+                        .initial_choices
+                        .is_empty()
+                );
+            }
             let before = json!(ready);
             let expected_case = if missing_base {
                 "airlog:35.11"
@@ -2475,6 +2547,19 @@ mod tests {
                 Err(EngineError::Unsupported { case, detail }) if case == expected_case && detail == expected_detail)
             );
             assert_eq!(json!(ready), before);
+            if missing_base {
+                assert!(!ready.state.air.runtime.preparation.initialized);
+                assert!(ready.state.air.runtime.preparation.current.is_empty());
+                assert!(
+                    ready
+                        .state
+                        .air
+                        .runtime
+                        .preparation
+                        .initial_choices
+                        .is_empty()
+                );
+            }
             assert_eq!(rng.state(), ready.rng);
             assert!(events.is_empty());
         }
@@ -2508,6 +2593,17 @@ mod tests {
             );
             assert_eq!(json!(opened), before);
             assert!(!opened.state.air.runtime.bases_initialized);
+            assert!(!opened.state.air.runtime.preparation.initialized);
+            assert!(opened.state.air.runtime.preparation.current.is_empty());
+            assert!(
+                opened
+                    .state
+                    .air
+                    .runtime
+                    .preparation
+                    .initial_choices
+                    .is_empty()
+            );
         }
     }
     /// Cases: airlog:34.84
