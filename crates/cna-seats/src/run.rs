@@ -427,10 +427,12 @@ impl SeatRunner {
                     }
                     Err(DriverError::Cli(e)) => return SeatEnd::Paused(PauseReason::CliError(e)),
                     Err(
-                        e
-                        @ (DriverError::Died(_) | DriverError::Timeout | DriverError::Protocol(_)),
+                        e @ (DriverError::Died(_)
+                        | DriverError::Timeout
+                        | DriverError::TimeoutAt(_)
+                        | DriverError::Protocol(_)),
                     ) => {
-                        let timed_out = matches!(e, DriverError::Timeout);
+                        let timed_out = e.is_timeout();
                         self.sink.system(self.seat, format!("session problem: {e}"));
                         recoveries += 1;
                         if recoveries > self.limits.max_recoveries {
@@ -571,6 +573,7 @@ mod tests {
         Silent,
         /// Plays, but the process "dies" during turn 2 *after* submitting.
         DiesAfterSubmitOnTurn2,
+        TimesOut(crate::driver::TimeoutKind),
     }
 
     #[async_trait]
@@ -599,6 +602,15 @@ mod tests {
             _limit: Duration,
         ) -> Result<TurnOutcome, DriverError> {
             self.turns += 1;
+            if let Script::TimesOut(kind) = self.script {
+                return if kind == crate::driver::TimeoutKind::LegacyUnclassified {
+                    Err(DriverError::Timeout)
+                } else {
+                    let mut diagnostic = crate::driver::TimeoutDiagnostic::legacy();
+                    diagnostic.kind = kind;
+                    Err(DriverError::TimeoutAt(diagnostic))
+                };
+            }
             let play = !matches!(self.script, Script::Silent);
             if play {
                 let obs = self
@@ -648,6 +660,7 @@ mod tests {
         game: Arc<dyn GameBackend>,
         router: Arc<ToolRouter>,
         sink: TranscriptSink,
+        stored: Arc<LocalTranscript>,
         sessions: Arc<InMemorySessions>,
         permits: Arc<Semaphore>,
         starts: Arc<AtomicU32>,
@@ -659,10 +672,12 @@ mod tests {
         let game: Arc<dyn GameBackend> = Arc::new(NumberDuel::game(11));
         let memory = Arc::new(InMemorySeatMemory::new(seats.clone()));
         let router = Arc::new(ToolRouter::new(game.clone(), memory, &seats));
+        let stored = LocalTranscript::detached();
         Harness {
             game,
             router,
-            sink: TranscriptSink::new(LocalTranscript::detached()),
+            sink: TranscriptSink::new(stored.clone()),
+            stored,
             sessions: Arc::new(InMemorySessions::default()),
             permits: Arc::new(Semaphore::new(2)),
             starts: Arc::new(AtomicU32::new(0)),
@@ -832,5 +847,48 @@ mod tests {
             matches!(end,SeatEnd::Failed(PauseReason::CliError(ref s)) if s.contains("pending decisions") && s.contains("unconfirmed"))
         );
         assert_eq!(h.sink.pending_count(), 1);
+    }
+
+    #[tokio::test]
+    async fn both_timeout_categories_and_legacy_keep_existing_recovery_pause_and_private_transcript()
+     {
+        use crate::driver::TimeoutKind;
+        for kind in [
+            TimeoutKind::TurnReservation,
+            TimeoutKind::TranscriptConfirmation,
+            TimeoutKind::LegacyUnclassified,
+        ] {
+            let h = harness();
+            let mut r = runner(&h, AXIS, Script::TimesOut(kind), RunLimits::default());
+            let result = r.run().await;
+            let entries = h.stored.seat_log(AXIS);
+            h.sink.stop_delivery().await;
+            assert_eq!(result, SeatEnd::Paused(PauseReason::TurnTimeout));
+            assert_eq!(h.starts.load(Ordering::SeqCst), 1);
+            assert_eq!(h.resumes.load(Ordering::SeqCst), 1);
+            assert!(h.game.outcome().await.is_none());
+            let wire =
+                serde_json::to_string(&entries.iter().map(|e| e.to_message()).collect::<Vec<_>>())
+                    .unwrap();
+            assert!(wire.contains("the turn exceeded its time limit"));
+            for private in [
+                "turn_reservation",
+                "transcript_confirmation",
+                "legacy_unclassified",
+                "phase_elapsed_ms",
+            ] {
+                assert!(!wire.contains(private));
+            }
+            let h = harness();
+            let limits = RunLimits {
+                max_recoveries: 0,
+                ..RunLimits::default()
+            };
+            let mut r = runner(&h, AXIS, Script::TimesOut(kind), limits);
+            let result = r.run().await;
+            h.sink.stop_delivery().await;
+            assert_eq!(result, SeatEnd::Paused(PauseReason::RecoveriesExhausted));
+            assert_eq!(h.resumes.load(Ordering::SeqCst), 0);
+        }
     }
 }

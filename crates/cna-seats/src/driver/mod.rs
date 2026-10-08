@@ -109,6 +109,116 @@ pub trait StreamParser: Send {
     fn feed(&mut self, line: &str) -> Vec<StreamEvent>;
 }
 
+/// Private launcher provenance. Displaying a driver error never exposes these fields.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimeoutKind {
+    TurnReservation,
+    TranscriptConfirmation,
+    LegacyUnclassified,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TurnPhase {
+    Unknown,
+    Observe,
+    DescribeActions,
+    Decode,
+    Choose,
+    Validate,
+    Submit,
+    FinalCapture,
+    TranscriptConfirmation,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LimitOrigin {
+    ConfiguredTurnReservation,
+    FixedPresetFlush,
+    UnclassifiedLegacy,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PhaseMeasurement {
+    Available,
+    Unavailable,
+    RejectedStale,
+}
+/// Monotonic client operation boundary, never an engine/provider timing claim.
+/// Drivers reset turn_started_at at actual turn entry and phase_started_at at each boundary.
+#[derive(Clone, Copy, Debug)]
+pub struct TurnProgress {
+    pub turn_started_at: Instant,
+    pub phase_started_at: Instant,
+    pub phase: TurnPhase,
+}
+pub fn measured_millis(duration: Duration) -> u64 {
+    u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TimeoutDiagnostic {
+    pub kind: TimeoutKind,
+    pub observed_limit_ms: Option<u64>,
+    pub limit_origin: LimitOrigin,
+    pub observed_elapsed_ms: Option<u64>,
+    pub phase: TurnPhase,
+    pub phase_elapsed_ms: Option<u64>,
+    pub phase_measurement: PhaseMeasurement,
+}
+impl TimeoutDiagnostic {
+    pub fn legacy() -> Self {
+        Self {
+            kind: TimeoutKind::LegacyUnclassified,
+            observed_limit_ms: None,
+            limit_origin: LimitOrigin::UnclassifiedLegacy,
+            observed_elapsed_ms: None,
+            phase: TurnPhase::Unknown,
+            phase_elapsed_ms: None,
+            phase_measurement: PhaseMeasurement::Unavailable,
+        }
+    }
+    /// Called only when the outer timer wins, after the cancelled future has been dropped.
+    pub fn turn_reservation(
+        start: Instant,
+        reserved_ms: u64,
+        progress: Option<TurnProgress>,
+    ) -> Self {
+        let now = Instant::now();
+        let mut result = Self::legacy();
+        result.kind = TimeoutKind::TurnReservation;
+        result.observed_limit_ms = Some(reserved_ms);
+        result.limit_origin = LimitOrigin::ConfiguredTurnReservation;
+        result.observed_elapsed_ms = Some(measured_millis(now.duration_since(start)));
+        if let Some(p) = progress {
+            if p.turn_started_at >= start
+                && p.turn_started_at <= p.phase_started_at
+                && p.phase_started_at <= now
+            {
+                result.phase = p.phase;
+                result.phase_elapsed_ms =
+                    Some(measured_millis(now.duration_since(p.phase_started_at)));
+                result.phase_measurement = PhaseMeasurement::Available;
+            } else {
+                result.phase_measurement = PhaseMeasurement::RejectedStale;
+            }
+        }
+        result
+    }
+    /// Inert preset's own flush timer; not a classification of a native CLI timeout.
+    pub fn transcript_confirmation(wait_start: Instant, limit: Duration) -> Self {
+        let elapsed = measured_millis(wait_start.elapsed());
+        Self {
+            kind: TimeoutKind::TranscriptConfirmation,
+            observed_limit_ms: Some(measured_millis(limit)),
+            limit_origin: LimitOrigin::FixedPresetFlush,
+            observed_elapsed_ms: Some(elapsed),
+            phase: TurnPhase::TranscriptConfirmation,
+            phase_elapsed_ms: Some(elapsed),
+            phase_measurement: PhaseMeasurement::Available,
+        }
+    }
+}
+
 /// What can go wrong driving a CLI.
 #[derive(Debug, thiserror::Error)]
 pub enum DriverError {
@@ -121,12 +231,27 @@ pub enum DriverError {
     Died(String),
     #[error("the turn exceeded its time limit")]
     Timeout,
+    #[error("the turn exceeded its time limit")]
+    TimeoutAt(TimeoutDiagnostic),
     #[error("the CLI refused the turn: {0}")]
     Cli(String),
     #[error("isolation check failed: {0}")]
     Isolation(String),
     #[error("protocol error: {0}")]
     Protocol(String),
+}
+
+impl DriverError {
+    pub fn is_timeout(&self) -> bool {
+        matches!(self, Self::Timeout | Self::TimeoutAt(_))
+    }
+    pub fn timeout_diagnostic(&self) -> Option<TimeoutDiagnostic> {
+        match self {
+            Self::Timeout => Some(TimeoutDiagnostic::legacy()),
+            Self::TimeoutAt(diagnostic) => Some(diagnostic.clone()),
+            _ => None,
+        }
+    }
 }
 
 /// Information about a started session.
@@ -185,6 +310,10 @@ impl EstimateBound {
 #[async_trait]
 pub trait SeatDriver: Send + Sync {
     fn kind(&self) -> CliKind;
+    /// Optional current-turn client boundary; native drivers stay opaque by default.
+    fn turn_progress(&self) -> Option<TurnProgress> {
+        None
+    }
     fn telemetry(&self) -> SessionTelemetry {
         SessionTelemetry::default()
     }
@@ -686,5 +815,84 @@ mod tests {
             }
             other => panic!("{other:?}"),
         }
+    }
+
+    #[test]
+    fn timeout_classification_and_display_keep_private_fields_private() {
+        for kind in [
+            TimeoutKind::TurnReservation,
+            TimeoutKind::TranscriptConfirmation,
+            TimeoutKind::LegacyUnclassified,
+        ] {
+            let mut d = TimeoutDiagnostic::legacy();
+            d.kind = kind;
+            d.phase = TurnPhase::Submit;
+            d.phase_elapsed_ms = Some(12345);
+            let error = DriverError::TimeoutAt(d.clone());
+            assert!(error.is_timeout());
+            assert_eq!(error.timeout_diagnostic(), Some(d));
+            assert_eq!(error.to_string(), DriverError::Timeout.to_string());
+            assert!(!error.to_string().contains("12345"));
+            assert!(!error.to_string().contains("submit"));
+        }
+        assert!(DriverError::Timeout.is_timeout());
+        assert_eq!(
+            DriverError::Timeout.timeout_diagnostic(),
+            Some(TimeoutDiagnostic::legacy())
+        );
+        for error in [
+            DriverError::Protocol("sink failed".into()),
+            DriverError::Cli("refused".into()),
+            DriverError::Died("exited".into()),
+        ] {
+            assert!(!error.is_timeout());
+            assert!(error.timeout_diagnostic().is_none());
+        }
+    }
+    #[test]
+    fn timeout_phase_requires_this_attempt_and_monotonic_boundary() {
+        let start = Instant::now();
+        let valid = TurnProgress {
+            turn_started_at: start,
+            phase_started_at: start,
+            phase: TurnPhase::Submit,
+        };
+        let d = TimeoutDiagnostic::turn_reservation(start, 19, Some(valid));
+        assert_eq!(
+            (d.phase, d.phase_measurement),
+            (TurnPhase::Submit, PhaseMeasurement::Available)
+        );
+        assert!(d.phase_elapsed_ms.is_some());
+        for invalid in [
+            TurnProgress {
+                turn_started_at: start - Duration::from_secs(1),
+                ..valid
+            },
+            TurnProgress {
+                phase_started_at: start - Duration::from_secs(1),
+                ..valid
+            },
+            TurnProgress {
+                phase_started_at: start + Duration::from_secs(60),
+                ..valid
+            },
+            TurnProgress {
+                turn_started_at: start + Duration::from_secs(60),
+                ..valid
+            },
+        ] {
+            let d = TimeoutDiagnostic::turn_reservation(start, 19, Some(invalid));
+            assert_eq!(
+                (d.phase, d.phase_measurement, d.phase_elapsed_ms),
+                (TurnPhase::Unknown, PhaseMeasurement::RejectedStale, None)
+            );
+        }
+        let d = TimeoutDiagnostic::turn_reservation(start - Duration::from_secs(2), 19, None);
+        assert_eq!(
+            (d.phase, d.phase_measurement),
+            (TurnPhase::Unknown, PhaseMeasurement::Unavailable)
+        );
+        assert!(d.observed_elapsed_ms.unwrap() >= 2000);
+        assert_eq!(d.observed_limit_ms, Some(19)); // Measured elapsed is not the configured limit.
     }
 }

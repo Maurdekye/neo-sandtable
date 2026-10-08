@@ -5,7 +5,7 @@ use crate::config::LaunchConfig;
 use cna_core::ids::SeatId;
 use cna_protocol::UsageSnapshot;
 use cna_seats::{
-    driver::{EstimateBound, SessionInfo, SessionTelemetry, TurnOutcome},
+    driver::{EstimateBound, SessionInfo, SessionTelemetry, TimeoutDiagnostic, TurnOutcome},
     mcp::ToolBudget,
 };
 use rusqlite::{Connection, OpenFlags, params};
@@ -113,13 +113,46 @@ fn queue_usage(s: &mut SeatJournal) -> Result<(), String> {
     });
     Ok(())
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Reservation {
     pub kind: String,
     pub stage: String,
     pub millis: u64,
     pub decision: Option<(String, u32)>,
 }
+/// Operator-only launcher record, never included in the usage outbox or seat transcript.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TimeoutEvent {
+    pub schema_version: u32,
+    pub campaign_id: String,
+    pub seat: SeatId,
+    pub controller_epoch: u64,
+    pub attempt: u64,
+    pub reservation: Reservation,
+    pub requested_turn_ms: u64,
+    pub effective_reserved_ms: u64,
+    pub supervisor_turn_elapsed_ms: u64,
+    pub diagnostic: TimeoutDiagnostic,
+}
+/// Trusted supervisor measurements accompanying a returned driver timeout.
+pub struct TimeoutCompletion {
+    pub diagnostic: TimeoutDiagnostic,
+    pub requested_turn_ms: u64,
+    pub supervisor_turn_elapsed_ms: u64,
+}
+/// A failed completion retains diagnostic and storage failure locally; nothing was committed.
+#[derive(Debug)]
+pub struct CompletionError {
+    pub timeout: Option<TimeoutDiagnostic>,
+    pub storage: String,
+}
+impl std::fmt::Display for CompletionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "journal completion failed: {}", self.storage)
+    }
+}
+impl std::error::Error for CompletionError {}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SeatJournal {
     pub epoch: u64,
@@ -146,6 +179,8 @@ pub struct SeatJournal {
     pub inflight: Option<Reservation>,
     #[serde(default)]
     pub usage: Option<UsageJournal>,
+    #[serde(default)]
+    pub timeout_events: Vec<TimeoutEvent>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct JournalState {
@@ -252,6 +287,7 @@ impl SessionJournal {
                         stages: BTreeMap::new(),
                         inflight: None,
                         usage: Some(UsageJournal::default()),
+                        timeout_events: Vec::new(),
                     },
                 )
             })
@@ -798,8 +834,7 @@ impl SessionJournal {
             Ok(())
         })
     }
-    // CLI estimates use decimal USD; these values never enter game adjudication.
-    #[allow(clippy::float_arithmetic)]
+    /// Existing callers retain completion/accounting semantics without a diagnostic.
     pub fn complete(
         &self,
         seat: SeatId,
@@ -807,8 +842,40 @@ impl SessionJournal {
         outcome: Option<&TurnOutcome>,
         telemetry: &SessionTelemetry,
     ) -> Result<(), String> {
+        self.complete_with_diagnostic(seat, elapsed_ms, outcome, telemetry, None)
+            .map_err(|e| e.storage)
+    }
+    // CLI estimates use decimal USD; these values never enter game adjudication.
+    #[allow(clippy::float_arithmetic)]
+    pub fn complete_with_diagnostic(
+        &self,
+        seat: SeatId,
+        elapsed_ms: u64,
+        outcome: Option<&TurnOutcome>,
+        telemetry: &SessionTelemetry,
+        timeout: Option<TimeoutCompletion>,
+    ) -> Result<(), CompletionError> {
+        let diagnostic = timeout.as_ref().map(|t| t.diagnostic.clone());
         self.update(|state| {
             let s = state.seats.get_mut(&seat).ok_or("unknown seat")?;
+            if let Some(timeout) = timeout {
+                let reservation = s.inflight.as_ref().ok_or("no reserved operation")?;
+                if reservation.kind != "turn" || outcome.is_some() {
+                    return Err("timeout completion requires a failed reserved turn".into());
+                }
+                s.timeout_events.push(TimeoutEvent {
+                    schema_version: 1,
+                    campaign_id: state.campaign_id.clone(),
+                    seat,
+                    controller_epoch: s.epoch,
+                    attempt: s.turns,
+                    reservation: reservation.clone(),
+                    requested_turn_ms: timeout.requested_turn_ms,
+                    effective_reserved_ms: reservation.millis,
+                    supervisor_turn_elapsed_ms: timeout.supervisor_turn_elapsed_ms,
+                    diagnostic: timeout.diagnostic,
+                });
+            }
             let r = s.inflight.take().ok_or("no reserved operation")?;
             // Round up elapsed time; never charge less than one millisecond for an operation.
             s.wall_millis = s
@@ -916,6 +983,10 @@ impl SessionJournal {
                 queue_usage(s)?;
             }
             Ok(())
+        })
+        .map_err(|storage| CompletionError {
+            timeout: diagnostic,
+            storage,
         })
     }
 }
@@ -1988,5 +2059,173 @@ mod tests {
             .complete(seat(), u64::MAX, None, &SessionTelemetry::default())
             .unwrap();
         assert!(journal.reserve(seat(), "idle", "idle", 1000).is_err());
+    }
+
+    #[test]
+    fn actual_prechange_journal_deserializes_and_recovers_without_invented_timeout() {
+        // Generated by eb65bef's unchanged SessionJournal serializer before this change.
+        let text = include_str!("../tests/fixtures/journal-before-timeout-eb65bef.json");
+        let state: JournalState = serde_json::from_str(text).unwrap();
+        assert!(state.seats[&seat()].timeout_events.is_empty());
+        assert_eq!(
+            state.seats[&seat()].inflight.as_ref().unwrap().decision,
+            Some(("fixture-decision".into(), 2))
+        );
+        let root = tempfile::tempdir().unwrap();
+        let journal = SessionJournal::create(
+            root.path(),
+            &state.campaign_id,
+            config(),
+            &BTreeMap::from([(seat(), 7)]),
+        )
+        .unwrap();
+        journal
+            .db
+            .lock()
+            .unwrap()
+            .execute("UPDATE journal SET state=?1 WHERE id=1", [text])
+            .unwrap();
+        drop(journal);
+        let recovered = SessionJournal::recover(root.path(), &state.campaign_id)
+            .unwrap()
+            .snapshot()
+            .unwrap();
+        assert!(recovered.seats[&seat()].timeout_events.is_empty());
+        assert!(recovered.seats[&seat()].inflight.is_none());
+        assert_eq!(recovered.seats[&seat()].wall_millis, 1000);
+        assert_eq!(recovered.seats[&seat()].incomplete_turns, 1);
+    }
+    #[test]
+    fn timeout_record_commits_with_identical_completion_accounting_but_not_usage_payload() {
+        let roots = [tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap()];
+        let id = uuid::Uuid::new_v4().to_string();
+        let journals: Vec<_> = roots
+            .iter()
+            .map(|root| {
+                let mut c = config();
+                c.session.as_mut().unwrap().wall_seconds = 1;
+                c.session.as_mut().unwrap().turn_seconds = 1;
+                let j = SessionJournal::create(root.path(), &id, c, &BTreeMap::from([(seat(), 7)]))
+                    .unwrap();
+                assert_eq!(
+                    j.reserve_decision(seat(), "private-stage", 60000, "private-decision", 9)
+                        .unwrap(),
+                    1000
+                );
+                j
+            })
+            .collect();
+        journals[0]
+            .complete(seat(), 1234, None, &SessionTelemetry::default())
+            .unwrap();
+        let diagnostic = TimeoutDiagnostic::legacy();
+        journals[1]
+            .complete_with_diagnostic(
+                seat(),
+                1234,
+                None,
+                &SessionTelemetry::default(),
+                Some(TimeoutCompletion {
+                    diagnostic: diagnostic.clone(),
+                    requested_turn_ms: 60000,
+                    supervisor_turn_elapsed_ms: 1233,
+                }),
+            )
+            .unwrap();
+        let old = journals[0].snapshot().unwrap();
+        let new = journals[1].snapshot().unwrap();
+        let record = &new.seats[&seat()];
+        assert!(record.inflight.is_none());
+        assert_eq!(record.timeout_events.len(), 1);
+        let event = &record.timeout_events[0];
+        assert_eq!(
+            (
+                event.campaign_id.as_str(),
+                event.seat,
+                event.controller_epoch,
+                event.attempt
+            ),
+            (id.as_str(), seat(), 7, 1)
+        );
+        assert_eq!(
+            event.reservation.decision,
+            Some(("private-decision".into(), 9))
+        );
+        assert_eq!(event.reservation.stage, "private-stage");
+        assert_eq!(
+            (
+                event.requested_turn_ms,
+                event.effective_reserved_ms,
+                event.supervisor_turn_elapsed_ms
+            ),
+            (60000, 1000, 1233)
+        );
+        assert_eq!(event.diagnostic, diagnostic);
+        assert_eq!(record.wall_millis, 1234);
+        let usage = serde_json::to_string(&journals[1].usage_outbox(seat()).unwrap()).unwrap();
+        for private in [
+            "private-decision",
+            "private-stage",
+            "timeout_events",
+            "legacy_unclassified",
+            "supervisor_turn_elapsed_ms",
+        ] {
+            assert!(!usage.contains(private));
+        }
+        let mut expected = serde_json::to_value(old).unwrap();
+        let mut actual = serde_json::to_value(new).unwrap();
+        for state in [&mut expected, &mut actual] {
+            state["seats"][seat().to_string()]
+                .as_object_mut()
+                .unwrap()
+                .remove("timeout_events");
+        }
+        assert_eq!(actual, expected);
+        drop(journals);
+        let recovered = SessionJournal::recover(roots[1].path(), &id)
+            .unwrap()
+            .snapshot()
+            .unwrap();
+        assert_eq!(recovered.seats[&seat()].timeout_events.len(), 1);
+        assert_eq!(
+            recovered.seats[&seat()].timeout_events[0].diagnostic,
+            diagnostic
+        );
+    }
+    #[test]
+    fn failed_timeout_commit_retains_both_causes_and_rolls_back_event_accounting_outbox() {
+        let root = tempfile::tempdir().unwrap();
+        let id = uuid::Uuid::new_v4().to_string();
+        let j = SessionJournal::create(root.path(), &id, config(), &BTreeMap::from([(seat(), 7)]))
+            .unwrap();
+        j.reserve_decision(seat(), "private-stage", 1000, "private-decision", 9)
+            .unwrap();
+        let before = serde_json::to_value(j.snapshot().unwrap()).unwrap();
+        j.db.lock().unwrap().execute_batch("CREATE TRIGGER deny_completion BEFORE UPDATE ON journal BEGIN SELECT RAISE(ABORT, 'injected completion storage failure'); END;").unwrap();
+        let diagnostic = TimeoutDiagnostic::transcript_confirmation(
+            tokio::time::Instant::now(),
+            std::time::Duration::from_secs(30),
+        );
+        let error = j
+            .complete_with_diagnostic(
+                seat(),
+                11,
+                None,
+                &SessionTelemetry::default(),
+                Some(TimeoutCompletion {
+                    diagnostic: diagnostic.clone(),
+                    requested_turn_ms: 1000,
+                    supervisor_turn_elapsed_ms: 10,
+                }),
+            )
+            .unwrap_err();
+        assert_eq!(error.timeout, Some(diagnostic));
+        assert!(
+            error
+                .storage
+                .contains("injected completion storage failure")
+        );
+        assert_eq!(serde_json::to_value(j.snapshot().unwrap()).unwrap(), before);
+        assert!(j.usage_outbox(seat()).unwrap().is_empty());
     }
 }

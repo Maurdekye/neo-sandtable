@@ -2,7 +2,7 @@
 use crate::{Demo, budget::Admission, combine_results};
 use cna_core::ids::SeatId;
 use cna_seats::{
-    driver::{CliKind, DriverError, SeatDriver},
+    driver::{CliKind, DriverError, SeatDriver, TimeoutDiagnostic, measured_millis},
     run::PromptBuilder,
 };
 use cna_server::CampaignStatus;
@@ -40,6 +40,36 @@ fn retryable_death(error: &DriverError) -> bool {
     ]
     .iter()
     .any(|word| text.contains(word))
+}
+/// Observe which timer branch actually returned. An inner diagnostic stays intact.
+async fn bounded_turn(
+    driver: &mut dyn SeatDriver,
+    prompt: &str,
+    reserved_ms: u64,
+    start: Instant,
+) -> Result<cna_seats::driver::TurnOutcome, DriverError> {
+    match tokio::time::timeout(
+        Duration::from_millis(reserved_ms),
+        driver.run_turn(prompt, Duration::from_millis(reserved_ms)),
+    )
+    .await
+    {
+        Ok(outcome) => outcome,
+        Err(_) => Err(DriverError::TimeoutAt(TimeoutDiagnostic::turn_reservation(
+            start,
+            reserved_ms,
+            driver.turn_progress(),
+        ))),
+    }
+}
+fn completion_failure(
+    original: Option<&DriverError>,
+    storage: &crate::journal::CompletionError,
+) -> String {
+    match original {
+        Some(error) => format!("{error}; {storage}"),
+        None => storage.to_string(),
+    }
 }
 impl Demo {
     /// Stop is graceful and resumable; exhausted budgets or CLI failures pause the bound seat.
@@ -399,18 +429,25 @@ impl Demo {
                 pending.revision,
             )?;
             let start = Instant::now();
-            let outcome = tokio::time::timeout(
-                Duration::from_millis(ms),
-                driver.run_turn(&prompt, Duration::from_millis(ms)),
-            )
-            .await
-            .unwrap_or(Err(DriverError::Timeout));
-            journal.complete(
-                seat,
-                elapsed(start),
-                outcome.as_ref().ok(),
-                &driver.telemetry(),
-            )?;
+            let outcome = bounded_turn(driver, &prompt, ms, start).await;
+            let timeout = outcome
+                .as_ref()
+                .err()
+                .and_then(DriverError::timeout_diagnostic)
+                .map(|diagnostic| crate::journal::TimeoutCompletion {
+                    diagnostic,
+                    requested_turn_ms: limits.turn_seconds * 1000,
+                    supervisor_turn_elapsed_ms: measured_millis(start.elapsed()),
+                });
+            journal
+                .complete_with_diagnostic(
+                    seat,
+                    elapsed(start),
+                    outcome.as_ref().ok(),
+                    &driver.telemetry(),
+                    timeout,
+                )
+                .map_err(|storage| completion_failure(outcome.as_ref().err(), &storage))?;
             self.publish_usage(seat).await?;
             if let Some(id) = driver.session_id()
                 && journal.snapshot()?.seats[&seat]
@@ -510,5 +547,137 @@ mod tests {
             "process exited unexpectedly".into()
         )));
         assert!(!retryable_death(&DriverError::Timeout));
+    }
+
+    struct TimerDriver {
+        error: Option<DriverError>,
+        hang: bool,
+        progress: Option<cna_seats::driver::TurnProgress>,
+        entered: bool,
+        cancelled: Arc<std::sync::atomic::AtomicBool>,
+    }
+    struct CancelGuard(Arc<std::sync::atomic::AtomicBool>);
+    impl Drop for CancelGuard {
+        fn drop(&mut self) {
+            self.0.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+    #[async_trait::async_trait]
+    impl SeatDriver for TimerDriver {
+        fn kind(&self) -> CliKind {
+            CliKind::Claude
+        }
+        fn turn_progress(&self) -> Option<cna_seats::driver::TurnProgress> {
+            self.progress
+        }
+        async fn start(
+            &mut self,
+            _: Option<&str>,
+        ) -> Result<cna_seats::driver::SessionInfo, DriverError> {
+            unreachable!()
+        }
+        async fn run_turn(
+            &mut self,
+            _: &str,
+            limit: Duration,
+        ) -> Result<cna_seats::driver::TurnOutcome, DriverError> {
+            assert!(!limit.is_zero());
+            self.entered = true;
+            let _guard = CancelGuard(self.cancelled.clone());
+            if self.hang {
+                std::future::pending::<()>().await;
+            }
+            Err(self.error.take().unwrap())
+        }
+        fn session_id(&self) -> Option<String> {
+            None
+        }
+        fn is_alive(&mut self) -> bool {
+            false
+        }
+        async fn stop(&mut self) -> Result<(), DriverError> {
+            Ok(())
+        }
+    }
+    fn timer_driver(error: Option<DriverError>, hang: bool) -> TimerDriver {
+        TimerDriver {
+            error,
+            hang,
+            progress: None,
+            entered: false,
+            cancelled: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        }
+    }
+    #[tokio::test]
+    async fn actual_outer_timer_cancels_and_classifies_without_retry_or_stale_phase() {
+        use cna_seats::driver::{PhaseMeasurement, TimeoutKind, TurnPhase, TurnProgress};
+        let mut driver = timer_driver(None, true);
+        let start = Instant::now();
+        driver.progress = Some(TurnProgress {
+            turn_started_at: start - Duration::from_secs(1),
+            phase_started_at: start,
+            phase: TurnPhase::Submit,
+        });
+        let result = bounded_turn(&mut driver, "inert", 5, start).await;
+        let error = result.unwrap_err();
+        assert!(driver.entered);
+        assert!(driver.cancelled.load(std::sync::atomic::Ordering::SeqCst));
+        let d = error.timeout_diagnostic().unwrap();
+        assert_eq!(d.kind, TimeoutKind::TurnReservation);
+        assert_eq!(d.observed_limit_ms, Some(5));
+        assert!(d.observed_elapsed_ms.unwrap() >= 5);
+        assert_eq!(
+            (d.phase, d.phase_measurement),
+            (TurnPhase::Unknown, PhaseMeasurement::RejectedStale)
+        );
+        assert!(!retryable_death(&error));
+    }
+    #[tokio::test]
+    async fn inner_timeout_and_other_errors_are_not_reclassified_by_outer_timer() {
+        let diagnostic =
+            TimeoutDiagnostic::transcript_confirmation(Instant::now(), Duration::from_secs(30));
+        let mut driver = timer_driver(Some(DriverError::TimeoutAt(diagnostic.clone())), false);
+        let error = bounded_turn(&mut driver, "inert", 1000, Instant::now())
+            .await
+            .unwrap_err();
+        assert_eq!(error.timeout_diagnostic(), Some(diagnostic));
+        assert!(!retryable_death(&error));
+        let mut driver = timer_driver(Some(DriverError::Timeout), false);
+        let error = bounded_turn(&mut driver, "inert", 1000, Instant::now())
+            .await
+            .unwrap_err();
+        assert!(matches!(error, DriverError::Timeout));
+        assert_eq!(
+            error.timeout_diagnostic(),
+            Some(TimeoutDiagnostic::legacy())
+        );
+        for original in [
+            DriverError::Cli("refused".into()),
+            DriverError::Protocol("sink failed".into()),
+        ] {
+            let text = original.to_string();
+            let mut driver = timer_driver(Some(original), false);
+            let error = bounded_turn(&mut driver, "inert", 1000, Instant::now())
+                .await
+                .unwrap_err();
+            assert_eq!(error.to_string(), text);
+            assert!(!error.is_timeout());
+        }
+    }
+    #[test]
+    fn completion_error_preserves_both_failures_without_exposing_diagnostic() {
+        let error = DriverError::TimeoutAt(TimeoutDiagnostic::transcript_confirmation(
+            Instant::now(),
+            Duration::from_secs(30),
+        ));
+        let storage = crate::journal::CompletionError {
+            timeout: error.timeout_diagnostic(),
+            storage: "injected completion persistence failure".into(),
+        };
+        let displayed = completion_failure(Some(&error), &storage);
+        assert!(displayed.contains(&DriverError::Timeout.to_string()));
+        assert!(displayed.contains(&storage.storage));
+        assert!(!displayed.contains("transcript_confirmation"));
+        assert_eq!(storage.timeout, error.timeout_diagnostic());
     }
 }

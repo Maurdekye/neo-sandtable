@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "campaign_id": "00000000-0000-4000-8000-000000000035",
+  "config": {
+    "kind": "Cna",
+    "seats": {
+      "axis.commander": {
+        "Scripted": "legal_random"
+      },
+      "axis.front_line": {
+        "Claude": "haiku"
+      },
+      "axis.rear_area": {
+        "Scripted": "legal_random"
+      },
+      "axis.logistics": {
+        "Scripted": "legal_random"
+      },
+      "axis.air": {
+        "Scripted": "legal_random"
+      },
+      "commonwealth.commander": {
+        "Scripted": "legal_random"
+      },
+      "commonwealth.front_line": {
+        "Scripted": "legal_random"
+      },
+      "commonwealth.rear_area": {
+        "Scripted": "legal_random"
+      },
+      "commonwealth.logistics": {
+        "Scripted": "legal_random"
+      },
+      "commonwealth.air": {
+        "Scripted": "legal_random"
+      }
+    },
+    "max_turns": 20,
+    "tool_calls": 6,
+    "session": {
+      "wall_seconds": 150,
+      "turn_seconds": 60,
+      "context_tokens": 100000,
+      "recoveries": 2
+    },
+    "run": null
+  },
+  "seats": {
+    "axis.front_line": {
+      "epoch": 7,
+      "model": "haiku",
+      "session": null,
+      "calls": 0,
+      "turns": 1,
+      "wall_millis": 1000,
+      "recoveries": 0,
+      "incomplete_turns": 0,
+      "incomplete_token_turns": 0,
+      "uncertain_budget_spend": false,
+      "admitted_estimate_usd": null,
+      "admitted_tokens": null,
+      "reported_cost_usd": 0.0,
+      "last_session_cost": 0.0,
+      "compactions": 0,
+      "telemetry": {
+        "model": null,
+        "cli_version": null,
+        "tools": [],
+        "context_tokens": null,
+        "compactions": 0
+      },
+      "stages": {
+        "GT1:OpStage1": {
+          "automatic_attempts": 0,
+          "automatic_completed": 0,
+          "attempts": 1,
+          "completed": 0,
+          "reported_cost_usd": 0.0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "cache_read_tokens": null,
+          "cache_creation_tokens": null,
+          "reasoning_tokens": null
+        }
+      },
+      "inflight": {
+        "kind": "turn",
+        "stage": "GT1:OpStage1",
+        "millis": 1000,
+        "decision": [
+          "fixture-decision",
+          2
+        ]
+      },
+      "usage": {
+        "revision": 0,
+        "acknowledged_revision": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_creation_tokens": null,
+        "reasoning_tokens": null,
+        "reported_cost_usd": null,
+        "outbox": []
+      }
+    }
+  },
+  "largest_turn_cost_usd": 0.0
+}

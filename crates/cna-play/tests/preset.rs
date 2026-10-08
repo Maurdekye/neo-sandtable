@@ -12,8 +12,8 @@ use cna_play::{
 use cna_protocol::{GameEvent, ServerMessage, TranscriptEntry, UsageSnapshot};
 use cna_seats::{
     driver::{
-        CliKind, DriverError, EntryEmitter, EstimateBound, SeatDriver, SessionInfo, TurnOutcome,
-        Usage, tool_result_entry,
+        CliKind, DriverError, EntryEmitter, EstimateBound, SeatDriver, SessionInfo,
+        TimeoutDiagnostic, TurnOutcome, TurnPhase, TurnProgress, Usage, tool_result_entry,
     },
     transcript::TranscriptSink,
 };
@@ -28,6 +28,194 @@ use std::{
     time::Duration,
 };
 use tokio::sync::watch;
+
+async fn confirm_transcript(sink: &TranscriptSink, limit: Duration) -> Result<(), DriverError> {
+    let start = tokio::time::Instant::now();
+    tokio::time::timeout(limit, sink.flush_confirmed())
+        .await
+        .map_err(|_| {
+            DriverError::TimeoutAt(TimeoutDiagnostic::transcript_confirmation(start, limit))
+        })?
+        .map_err(DriverError::Protocol)
+}
+
+#[tokio::test]
+async fn timeout_diagnostics_short_flush_preserves_timeout_and_sink_error_boundaries() {
+    use cna_seats::driver::TimeoutKind;
+    use cna_seats::transcript::{LocalTranscript, TranscriptStore};
+    struct PendingStore;
+    #[async_trait]
+    impl TranscriptStore for PendingStore {
+        async fn append(&self, _: SeatId, _: String, _: TranscriptEntry) -> Result<u64, String> {
+            std::future::pending().await
+        }
+    }
+    let sink = TranscriptSink::new(Arc::new(PendingStore));
+    sink.system("axis.commander".parse().unwrap(), "inert capture");
+    let result = confirm_transcript(&sink, Duration::from_millis(5)).await;
+    let unconfirmed = sink.stop_delivery().await;
+    let error = result.unwrap_err();
+    let diagnostic = error.timeout_diagnostic().unwrap();
+    assert_eq!(diagnostic.kind, TimeoutKind::TranscriptConfirmation);
+    assert_eq!(diagnostic.observed_limit_ms, Some(5));
+    assert!(diagnostic.observed_elapsed_ms.unwrap() >= 5);
+    assert_eq!(unconfirmed.len(), 1);
+    let sink = TranscriptSink::new(LocalTranscript::detached());
+    let result = confirm_transcript(&sink, Duration::from_secs(1)).await;
+    let unconfirmed = sink.stop_delivery().await;
+    result.unwrap();
+    assert!(unconfirmed.is_empty());
+    let error = confirm_transcript(&sink, Duration::from_secs(1))
+        .await
+        .unwrap_err();
+    assert!(matches!(error, DriverError::Protocol(_)));
+    assert!(!error.is_timeout());
+}
+
+struct TimeoutFixtureDriver {
+    kind: cna_seats::driver::TimeoutKind,
+    journal_file: PathBuf,
+    deny_completion: bool,
+    id: String,
+    stopped: Arc<AtomicBool>,
+}
+#[async_trait]
+impl SeatDriver for TimeoutFixtureDriver {
+    fn kind(&self) -> CliKind {
+        CliKind::Claude
+    }
+    async fn start(&mut self, _: Option<&str>) -> Result<SessionInfo, DriverError> {
+        Ok(SessionInfo {
+            session_id: self.id.clone(),
+            model: Some("haiku".into()),
+            cli_version: None,
+            resumed: false,
+        })
+    }
+    async fn run_turn(&mut self, _: &str, limit: Duration) -> Result<TurnOutcome, DriverError> {
+        assert_eq!(limit, Duration::from_secs(1));
+        if self.deny_completion {
+            let db = rusqlite::Connection::open(&self.journal_file).unwrap();
+            db.execute_batch("CREATE TRIGGER deny_completion BEFORE UPDATE ON journal BEGIN SELECT RAISE(ABORT, 'inert completion persistence denied'); END;").unwrap();
+        }
+        match self.kind {
+            cna_seats::driver::TimeoutKind::TurnReservation => std::future::pending().await,
+            cna_seats::driver::TimeoutKind::TranscriptConfirmation => Err(DriverError::TimeoutAt(
+                TimeoutDiagnostic::transcript_confirmation(
+                    tokio::time::Instant::now(),
+                    Duration::from_secs(30),
+                ),
+            )),
+            cna_seats::driver::TimeoutKind::LegacyUnclassified => Err(DriverError::Timeout),
+        }
+    }
+    fn session_id(&self) -> Option<String> {
+        Some(self.id.clone())
+    }
+    fn is_alive(&mut self) -> bool {
+        !self.stopped.load(Ordering::SeqCst)
+    }
+    async fn stop(&mut self) -> Result<(), DriverError> {
+        self.stopped.store(true, Ordering::SeqCst);
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn timeout_diagnostics_actual_supervisor_commits_private_event_before_generic_failure() {
+    use cna_play::config::{GameKind, LaunchConfig, SessionLimits};
+    use cna_seats::driver::{PhaseMeasurement, TimeoutKind};
+    let seat: SeatId = "axis.commander".parse().unwrap();
+    for (kind, deny_completion) in [
+        (TimeoutKind::TurnReservation, false),
+        (TimeoutKind::TranscriptConfirmation, false),
+        (TimeoutKind::LegacyUnclassified, false),
+        (TimeoutKind::TranscriptConfirmation, true),
+    ] {
+        let root = tempfile::tempdir().unwrap();
+        let mut config = LaunchConfig::resolve(
+            GameKind::Sandbox,
+            &["axis.commander=claude:haiku".into(), "*=human".into()],
+        )
+        .unwrap();
+        config.session = Some(SessionLimits {
+            turn_seconds: 1,
+            ..SessionLimits::default()
+        });
+        let demo = Demo::with_config(
+            root.path(),
+            &repo().join("data"),
+            &root.path().join("dist"),
+            config,
+        )
+        .await
+        .unwrap();
+        let stopped = Arc::new(AtomicBool::new(false));
+        let driver = TimeoutFixtureDriver {
+            kind,
+            journal_file: demo.journal.as_ref().unwrap().file().to_owned(),
+            deny_completion,
+            id: uuid::Uuid::new_v4().to_string(),
+            stopped: stopped.clone(),
+        };
+        let (_tx, stop) = watch::channel(false);
+        let result = demo
+            .play_durable(&mut [(seat, Box::new(driver))], stop)
+            .await;
+        let state = demo.journal.as_ref().unwrap().snapshot().unwrap();
+        let page = demo
+            .handle
+            .replay()
+            .transcripts(cna_core::visibility::Perspective::Operator, seat, 0)
+            .unwrap();
+        let view = demo
+            .handle
+            .projection(cna_core::visibility::Perspective::Seat(seat))
+            .view;
+        let cleanup = demo.shutdown().await;
+        cleanup.unwrap(); // All HTTP/actor/sink tasks are joined before assertions.
+        let error = result.unwrap_err();
+        assert!(stopped.load(Ordering::SeqCst));
+        assert!(error.contains(&DriverError::Timeout.to_string()));
+        assert_eq!(state.seats[&seat].turns, 1);
+        let events = &state.seats[&seat].timeout_events;
+        if deny_completion {
+            assert!(error.contains("inert completion persistence denied"));
+            assert!(events.is_empty());
+            assert!(state.seats[&seat].inflight.is_some());
+        } else {
+            assert_eq!(events.len(), 1);
+            assert_eq!(events[0].diagnostic.kind, kind);
+            assert_eq!(events[0].requested_turn_ms, 1000);
+            assert_eq!(events[0].effective_reserved_ms, 1000);
+            assert!(events[0].reservation.decision.is_some());
+            assert!(state.seats[&seat].inflight.is_none());
+            assert_eq!(state.seats[&seat].incomplete_turns, 1);
+            if kind == TimeoutKind::TurnReservation {
+                assert!(events[0].supervisor_turn_elapsed_ms >= 1000);
+                assert_eq!(
+                    events[0].diagnostic.phase_measurement,
+                    PhaseMeasurement::Unavailable
+                );
+            }
+        }
+        for visible in [
+            error,
+            serde_json::to_string(&page).unwrap(),
+            serde_json::to_string(&view).unwrap(),
+        ] {
+            for private in [
+                "timeout_events",
+                "transcript_confirmation",
+                "turn_reservation",
+                "legacy_unclassified",
+                "phase_elapsed_ms",
+            ] {
+                assert!(!visible.contains(private));
+            }
+        }
+    }
+}
 
 // The producer owns these fresh, private handoff paths even if no browser starts.
 struct PrivateHandoff {
@@ -165,9 +353,23 @@ struct Fake {
     trace: Arc<Mutex<Trace>>,
     refuse_cleanup: Arc<AtomicBool>,
     batch_setup: bool,
+    progress: Mutex<Option<TurnProgress>>,
 }
 impl Fake {
+    fn phase(&self, phase: TurnPhase) {
+        if let Some(p) = self.progress.lock().unwrap().as_mut() {
+            p.phase = phase;
+            p.phase_started_at = tokio::time::Instant::now();
+        }
+    }
     async fn call(&self, tool: &str, args: Value) -> Result<Value, DriverError> {
+        self.phase(match tool {
+            "observe" => TurnPhase::Observe,
+            "describe_actions" => TurnPhase::DescribeActions,
+            "validate" => TurnPhase::Validate,
+            "submit" => TurnPhase::Submit,
+            _ => TurnPhase::Unknown,
+        });
         let id = uuid::Uuid::new_v4().to_string();
         let mut emitter = EntryEmitter::new(self.seat, self.sink.clone());
         emitter.emit(TranscriptEntry::ToolCall {
@@ -191,13 +393,59 @@ impl Fake {
         if result["isError"] == true {
             return Err(DriverError::Cli(text.into()));
         }
+        self.phase(TurnPhase::Decode);
         serde_json::from_str(text).map_err(|e| DriverError::Protocol(e.to_string()))
     }
+}
+
+#[tokio::test]
+async fn timeout_diagnostics_fake_resets_phase_at_actual_turn_entry() {
+    use cna_seats::transcript::LocalTranscript;
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    drop(listener);
+    let sink = TranscriptSink::new(LocalTranscript::detached());
+    let previous = tokio::time::Instant::now() - Duration::from_secs(1);
+    let mut driver = Fake {
+        client: reqwest::Client::builder()
+            .timeout(Duration::from_secs(1))
+            .build()
+            .unwrap(),
+        seat: "axis.commander".parse().unwrap(),
+        url: format!("http://{address}/"),
+        sink: sink.clone(),
+        id: None,
+        alive: false,
+        cap: 0.,
+        cost: 0.,
+        model: "haiku".into(),
+        trace: Arc::new(Mutex::new(Trace::default())),
+        refuse_cleanup: Arc::new(AtomicBool::new(false)),
+        batch_setup: false,
+        progress: Mutex::new(Some(TurnProgress {
+            turn_started_at: previous,
+            phase_started_at: previous,
+            phase: TurnPhase::Submit,
+        })),
+    };
+    driver.start(None).await.unwrap();
+    let start = tokio::time::Instant::now();
+    let result = driver.run_turn("inert", Duration::from_secs(1)).await;
+    let progress = driver.turn_progress().unwrap();
+    driver.stop().await.unwrap();
+    sink.stop_delivery().await;
+    assert!(matches!(result, Err(DriverError::Protocol(_))));
+    assert!(progress.turn_started_at >= start);
+    assert!(progress.phase_started_at >= progress.turn_started_at);
+    assert_eq!(progress.phase, TurnPhase::Observe);
 }
 #[async_trait]
 impl SeatDriver for Fake {
     fn kind(&self) -> CliKind {
         CliKind::Claude
+    }
+    fn turn_progress(&self) -> Option<TurnProgress> {
+        *self.progress.lock().unwrap()
     }
     fn estimate_bound(&self) -> Option<EstimateBound> {
         Some(EstimateBound {
@@ -241,6 +489,12 @@ impl SeatDriver for Fake {
     }
     async fn run_turn(&mut self, prompt: &str, _: Duration) -> Result<TurnOutcome, DriverError> {
         assert!(self.alive);
+        let entered = tokio::time::Instant::now();
+        *self.progress.lock().unwrap() = Some(TurnProgress {
+            turn_started_at: entered,
+            phase_started_at: entered,
+            phase: TurnPhase::Unknown,
+        });
         let before_bytes = self
             .trace
             .lock()
@@ -268,6 +522,7 @@ impl SeatDriver for Fake {
         let described = self
             .call("describe_actions", json!({"decision_id":id}))
             .await?;
+        self.phase(TurnPhase::Decode);
         let request: DecisionRequest = serde_json::from_value(described["request"].clone())
             .map_err(|e| DriverError::Protocol(e.to_string()))?;
         assert_eq!(request.seat, self.seat);
@@ -285,6 +540,7 @@ impl SeatDriver for Fake {
             "observation_bytes":observed.to_string().len(),"action_description_bytes":described.to_string().len(),
             "provider_tokens":null
         }));
+        self.phase(TurnPhase::Choose);
         let action = if request.space.pass.is_some() {
             Value::Null
         } else {
@@ -322,16 +578,15 @@ impl SeatDriver for Fake {
             .or_default()
             .entry(phase)
             .or_default() += 1;
+        self.phase(TurnPhase::FinalCapture);
         self.sink.emit(
             self.seat,
             TranscriptEntry::AssistantText {
                 text: "Offline fake turn complete.".into(),
             },
         );
-        tokio::time::timeout(Duration::from_secs(30), self.sink.flush_confirmed())
-            .await
-            .map_err(|_| DriverError::Timeout)?
-            .map_err(DriverError::Protocol)?;
+        self.phase(TurnPhase::TranscriptConfirmation);
+        confirm_transcript(&self.sink, Duration::from_secs(30)).await?;
         self.cost += 0.01;
         Ok(TurnOutcome {
             ok: true,
@@ -459,6 +714,7 @@ fn drivers_with_policy(
                     trace: trace.clone(),
                     refuse_cleanup: Arc::new(AtomicBool::new(false)),
                     batch_setup,
+                    progress: Mutex::new(None),
                 }) as Box<dyn SeatDriver>,
             )
         })
@@ -818,6 +1074,7 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
         "complete":complete,"fence_repreview":fence_repreview,"final_clock":clock,"healthy":healthy,"budget_stops":budget_stops,"error":combined.as_ref().err(),
         "gameplay_seconds":gameplay_seconds,"total_helper_seconds":started.elapsed().as_secs_f64(),"browser_acknowledged":browser_acknowledged,"paid_calls":0,"native_processes":0,"fake_peak":t.peak,"rows":rows,
         "usage_diagnostics":usage_diagnostics,
+        "timeout_diagnostics":accounting.seats.iter().map(|(seat,record)| (seat.to_string(), &record.timeout_events)).collect::<BTreeMap<_,_>>(),
         "measurement":"UTF-8 bytes only; provider tokens, real USD and an active-movement game-turn cost are unmeasured"});
     if let Ok(path) = std::env::var("CNA_PRESET_FULL_OUTPUT") {
         std::fs::write(path, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
@@ -1106,6 +1363,7 @@ async fn accounted_turn_with_failed_parking_retains_full_envelope() {
         trace: trace.clone(),
         refuse_cleanup: refuse.clone(),
         batch_setup: false,
+        progress: Mutex::new(None),
     };
     let mut drivers = vec![(seat, Box::new(driver) as Box<dyn SeatDriver>)];
     let (_tx, rx) = watch::channel(false);
