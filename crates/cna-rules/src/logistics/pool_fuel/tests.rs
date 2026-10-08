@@ -16,6 +16,13 @@ fn game(trucks: Trucks, fuel: i32) -> (State, String) {
     s.logistics.dumps.clear();
     s.logistics.unit_supply.clear();
     s.logistics.truck_pools.clear();
+    // This fixture replaces the complete pool roster, including its creation histories.
+    // The replacement pool below deliberately models legacy missing timing.
+    s.logistics
+        .cargo_history
+        .motion
+        .entries
+        .retain(|entry| !matches!(entry.site, CargoSite::Pool(_)));
     s.cursor.op_stage = Some(1);
     let id = super::super::pools::add_truck_pool(
         &mut s.logistics,

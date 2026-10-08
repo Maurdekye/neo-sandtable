@@ -111,6 +111,13 @@ fn actual_dispatcher_entered_checkpoint_opens_once_in_both_halves_and_profiles()
 
 /// Bounded loaded-pool component fixture, explicitly not the required real setup witness.
 fn loaded_fixture() -> (State, String) {
+    loaded_fixture_with(Trucks {
+        medium: 20,
+        ..Trucks::default()
+    })
+}
+
+fn loaded_fixture_with(trucks: Trucks) -> (State, String) {
     let (mut s, id) = fixture();
     s.cursor.entered = true;
     for u in s.land.units.values_mut() {
@@ -126,14 +133,10 @@ fn loaded_fixture() -> (State, String) {
         .iter_mut()
         .find(|p| p.id == id)
         .unwrap();
-    p.trucks = Trucks {
-        light: 0,
-        medium: 20,
-        heavy: 0,
-    };
+    p.trucks = trucks;
     p.cargo = Supplies {
         ammo: 2,
-        fuel: 200,
+        fuel: if trucks.light > 0 { 100 } else { 200 },
         stores: 2,
         water: 2,
     };
@@ -216,9 +219,16 @@ fn actual_dispatcher_move_buffers_only_then_pays_moves_and_recovers_once() {
 }
 
 fn loss_wait_fixture() -> (Game<Cna>, String, String) {
+    loss_wait_fixture_with(Trucks {
+        medium: 20,
+        ..Trucks::default()
+    })
+}
+
+fn loss_wait_fixture_with(trucks: Trucks) -> (Game<Cna>, String, String) {
     // Prior accumulated exposure is a bounded component fixture, not a setup proof.
     for seed in 0..16 {
-        let (mut state, id) = loaded_fixture();
+        let (mut state, id) = loaded_fixture_with(trucks);
         state
             .land
             .breakdown
@@ -1901,4 +1911,195 @@ fn real_graziani_setup_stock_issue_move_and_checkpoint_use_actual_dispatcher() {
             .pool_fuel_segments
             .contains_key(&id)
     );
+}
+/// Cases: land:3.6, land:29.1, airlog:53.25
+#[test]
+fn actual_dispatcher_source_and_history_errors_preserve_buffer_state_rng_and_prior_events() {
+    for fault in 0..3 {
+        let (s, id) = loaded_fixture();
+        let opened = evaluate(
+            &Cna::dev(),
+            content(),
+            &Game::<Cna> {
+                state: s,
+                rng: CampaignRng::from_seed([3; 32]).state(),
+            },
+            &Command::Advance,
+        )
+        .unwrap()
+        .game;
+        let command = respond(
+            &opened.state.decisions.pending[0],
+            json!([{"operation":"move","pool":id,"path":["C4021"]}]),
+        );
+        let accepted = evaluate(&Cna::dev(), content(), &opened, &command)
+            .unwrap()
+            .game;
+        let corrupt = |state: &mut State| match fault {
+            0 => state.turn.weather = None,
+            1 => {
+                state
+                    .logistics
+                    .cargo_history
+                    .motion
+                    .entries
+                    .iter_mut()
+                    .find(|e| e.site == CargoSite::Pool(id.clone()))
+                    .unwrap()
+                    .cohorts[0]
+                    .count += 1
+            }
+            _ => {
+                state.logistics.cargo_history.histories.insert(
+                    CargoSite::Pool(id.clone()),
+                    cargo_history::CargoHistory {
+                        stage: super::super::water::WaterStage::current(state),
+                        lots: vec![cargo_history::CargoLot {
+                            id: "axis.cargo.1".into(),
+                            goods: Supplies {
+                                ammo: 1,
+                                ..Supplies::default()
+                            },
+                            spent_cp_quarters: 4,
+                            ceiling_cp_quarters: 120,
+                            continuous_first_line: false,
+                        }],
+                    },
+                );
+            }
+        };
+        let mut rejected = opened.clone();
+        corrupt(&mut rejected.state);
+        let before = serde_json::to_value(&rejected).unwrap();
+        let Rejection::Engine(expected) =
+            evaluate(&Cna::dev(), content(), &rejected, &command).unwrap_err()
+        else {
+            panic!("must preserve a typed engine error")
+        };
+        match (fault, &expected) {
+            (0, EngineError::Unsupported { case, .. }) => assert_eq!(case, "land:29.1"),
+            (1, EngineError::Invariant { .. }) => {}
+            (2, EngineError::Unsupported { case, .. }) => assert_eq!(case, "airlog:53.25"),
+            _ => panic!("wrong error {expected:?}"),
+        }
+        assert_eq!(serde_json::to_value(&rejected).unwrap(), before);
+        let mut state = accepted.state;
+        corrupt(&mut state);
+        let before = serde_json::to_value(&state).unwrap();
+        let mut rng = CampaignRng::from_state(&accepted.rng);
+        let dice = rng.state();
+        let mut events = vec![EngineEvent::new(
+            Audience::Side(Side::Axis),
+            cna_protocol::GameEvent::Note {
+                text: "prior committed event".into(),
+            },
+        )];
+        let prior = events.clone();
+        assert_eq!(
+            dispatched_finish(Cna::dev(), &mut state, &mut rng, &mut events).unwrap_err(),
+            expected
+        );
+        assert_eq!(serde_json::to_value(&state).unwrap(), before);
+        assert_eq!(rng.state(), dice);
+        assert_eq!(events, prior);
+        // A checkpoint retry returns the same source error without a new outcome.
+        let mut restored: State = serde_json::from_value(before.clone()).unwrap();
+        assert_eq!(
+            dispatched_finish(Cna::dev(), &mut restored, &mut rng, &mut events).unwrap_err(),
+            expected
+        );
+        assert_eq!(serde_json::to_value(&restored).unwrap(), before);
+        assert_eq!(rng.state(), dice);
+        assert_eq!(events, prior);
+    }
+}
+
+/// Cases: land:21.35, land:21.41, land:21.43, airlog:53.12, land:3.6
+#[test]
+fn actual_dispatcher_light_and_heavy_loss_preserve_exact_type_lineage_and_all_holdings() {
+    for trucks in [
+        Trucks {
+            light: 20,
+            ..Trucks::default()
+        },
+        Trucks {
+            heavy: 20,
+            ..Trucks::default()
+        },
+    ] {
+        let (waiting, id, _) = loss_wait_fixture_with(trucks);
+        let before = waiting
+            .state
+            .logistics
+            .truck_pools
+            .iter()
+            .find(|p| p.id == id)
+            .unwrap();
+        let accepted = accept_loss(&waiting);
+        let a = evaluate(&Cna::dev(), content(), &accepted, &Command::Advance).unwrap();
+        let b = evaluate(
+            &Cna::dev(),
+            content(),
+            &checkpoint(&accepted),
+            &Command::Advance,
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_value(&a.game).unwrap(),
+            serde_json::to_value(&b.game).unwrap()
+        );
+        assert_eq!(a.events, b.events);
+        let working = a
+            .game
+            .state
+            .logistics
+            .truck_pools
+            .iter()
+            .find(|p| p.id == id)
+            .unwrap();
+        let mut counts = working.trucks;
+        let mut goods = working.cargo;
+        let mut fuel = working.tank_fuel.get();
+        let mut water = working.activity_water.get();
+        let markers: Vec<_> = a
+            .game
+            .state
+            .land
+            .breakdown
+            .markers
+            .values()
+            .filter(|m| m.source_pool.as_deref() == Some(id.as_str()))
+            .collect();
+        assert!(!markers.is_empty());
+        for m in markers {
+            for asset in &m.pool_assets {
+                let cohort = m
+                    .pool_fuel_cohorts
+                    .iter()
+                    .find(|g| g.id == asset.cohort)
+                    .unwrap();
+                assert_eq!(cohort.count, asset.points);
+                match cohort.kind {
+                    segment::FuelTruckKind::Light => counts.light += cohort.count,
+                    segment::FuelTruckKind::Medium => counts.medium += cohort.count,
+                    segment::FuelTruckKind::Heavy => counts.heavy += cohort.count,
+                }
+            }
+            let held = m.cargo.totals().unwrap();
+            goods.ammo += held.ammo;
+            goods.fuel += held.fuel;
+            goods.stores += held.stores;
+            goods.water += held.water;
+            fuel += m.tank_fuel.get();
+            water += m.activity_water.get();
+            assert!(m.assets.is_empty() && m.passengers.is_empty());
+            assert_eq!(m.transport, Trucks::default());
+        }
+        assert_eq!(counts, before.trucks);
+        assert_eq!(goods, before.cargo);
+        assert_eq!(fuel, before.tank_fuel.get());
+        assert_eq!(water, before.activity_water.get());
+        assert!(a.game.state.logistics.truck_convoy.resolved);
+        assert!(a.game.state.land.breakdown.window.pool.is_none());
+    }
 }
