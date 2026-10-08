@@ -13,3 +13,5 @@ Format: `S-NNN` · area · what is missing or unclear · source checked · statu
 - **S-009** · `scen:60.41` "Broken Down Vehicles": recorded at Alexandria as 2 TOE of A9 and 1 TOE of A10 cruiser tanks; the booklet does not say how they are repaired or whether they count against any unit's maximum TOE (assumed handled by the repair rules, `land:22`). · open
 - **S-010** · `scen:60.34` Axis dumps for Benghazi and Tripoli (box) have no hex printed; placed by city name. · noted
 - **S-011** · `scen:60.81` the printed Italian "Tactical Victory" wording ("retain possession of Sollum ... and Fort Maddalena and Giarabub in supply") is ambiguous on whether the supply requirement applies to Sollum; recorded as retain-all with supply to Tobruk. · open
+
+- **S-012** · setup geography · KNOWN DEFERRED: unflagged `map_a_or_b`, `map_d_or_e` and `Within` choices still include sea or unassessed terrain. The 2026-10-08 lead correction filters only areas carrying existing `requires_land` metadata; these other spaces and their counts remain unchanged pending separate authorization. · deferred

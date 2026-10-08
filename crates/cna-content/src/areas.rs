@@ -13,6 +13,8 @@ pub struct Area {
     pub id: String,
     pub membership_status: String,
     #[serde(default)]
+    pub requires_land: bool,
+    #[serde(default)]
     pub hex_ids: Vec<HexId>,
     #[serde(default)]
     pub location_ids: Vec<String>,
@@ -95,6 +97,19 @@ impl AreasContent {
 mod tests {
     use super::*;
 
+    /// Cases: scen:60.31, scen:60.34
+    #[test]
+    fn existing_land_requirement_is_decoded_and_omission_stays_false() {
+        let record =
+            "id='test'\nmembership_status='resolved'\nhex_ids=['C4020']\nsrc=['scen:60.31']\n";
+        let omitted: Area = toml::from_str(record).unwrap();
+        assert!(!omitted.requires_land);
+        let flagged: Area = toml::from_str(&format!("{record}requires_land=true\n")).unwrap();
+        assert!(flagged.requires_land);
+        assert_eq!(flagged.hex_ids, omitted.hex_ids);
+        assert_eq!(flagged.src, omitted.src);
+    }
+
     /// Cases: scen:60.31, scen:60.41, land:8.81
     #[test]
     fn resolved_domains_and_unresolved_regions_remain_distinct() {
@@ -104,6 +119,8 @@ mod tests {
         assert_eq!(areas.areas["alexandria"].hex_ids.len(), 2);
         assert_eq!(areas.areas["tripoli"].location_ids, ["box_tripoli"]);
         assert_eq!(areas.areas["libya"].membership_status, "unresolved");
+        assert!(areas.areas["libya"].requires_land);
+        assert!(!areas.areas["alexandria"].requires_land);
         assert!(areas.areas["libya"].hex_ids.is_empty());
         assert!(areas.locations["offmap_abu_seier"].off_map);
     }

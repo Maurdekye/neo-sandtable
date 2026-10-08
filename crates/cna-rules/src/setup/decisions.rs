@@ -257,7 +257,7 @@ fn refresh_stacking(
         .collect();
     for (id, unit, case) in tasks {
         let (p, _) = group_placement(content, state, &unit)?;
-        let geographic = placement::choices(content, &p, side, &case)?;
+        let geographic = placement::choices_with_profile(content, &p, side, &case, strict)?;
         if !geographic.contains(destination) {
             continue;
         }
@@ -518,8 +518,8 @@ pub(crate) fn answer(
                 }
             } else {
                 let (p, _) = group_placement(content, state, &unit).map_err(Rejection::Engine)?;
-                let domain =
-                    placement::choices(content, &p, owner, &case).map_err(Rejection::Engine)?;
+                let domain = placement::choices_with_profile(content, &p, owner, &case, strict)
+                    .map_err(Rejection::Engine)?;
                 let destination = resolved_destination(&domain, action)?;
                 if enemy_fixed_at(state, owner, &destination) {
                     return Err(illegal("not a legal setup destination"));
@@ -575,8 +575,8 @@ pub(crate) fn answer(
             let DumpLocation::AwaitingSetup { placement: p } = &d.location else {
                 return Err(illegal("dump already placed"));
             };
-            let domain =
-                placement::choices(content, p, d.side, &case).map_err(Rejection::Engine)?;
+            let domain = placement::choices_with_profile(content, p, d.side, &case, strict)
+                .map_err(Rejection::Engine)?;
             let destination = resolved_destination(&domain, action)?;
             if d.dummy
                 && destination
