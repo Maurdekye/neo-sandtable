@@ -1,0 +1,611 @@
+[batch]
+id = "map-terrain-cyrenaica-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-terrain"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "C4807,C4707,C4806,C4907,C4606,C4607,C4706,C4805,C4906,C5006,C4506,C4507,C4605,C4705,C4804,C4905,C5005,C4405,C4406,C4407,C4505,C4604,C4704,C4803,C4904,C5004,C5105,C4305,C4306,C4307,C4404,C4504,C4603,C4703,C4802,C4903,C5003,C5104,C4204,C4205,C4206,C4207,C4304,C4403,C4503,C4602,C4702,C4801,C4902,C5002,C4104,C4105,C4106,C4107,C4203,C4303,C4402,C4502,C4601,C4701,C4901,C5001,C4003,C4004,C4005,C4006,C4007,C4103,C4202,C4302,C4401,C4501,C3903,C3904,C3905"
+notes = "Exact first75 of the authorized351 fresh map_c_libya C00..07 allocation. Every full cell directly viewed native/4x against actual TEC; selected mixed/boundary cells also viewed 6x. 68 accepted and seven deferred; no classifier, independent-observer agreement, whole-source error estimate or1979 equivalence. Marine-only coastal policy and adopted predominant-land rule applied; explicit minor substrates retained. No places, facility extents, edges, lake masks, national membership, scenario legality or source pixels published."
+
+[[hex]]
+hex_id = "C4807"
+status = "accepted"
+terrain = "major_city"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Blue block building groups inside the printed land boundary match the TEC major-city symbol. Black training figures, anchor, roads and contour strokes are separate overprints. The city symbol supplies the terrain decision; marine water also lies inside the boundary. No facility, port, city extent or neighboring terrain decision is made."
+
+[[hex]]
+hex_id = "C4707"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4806"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4907"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified. Marine sea is also visibly inside the boundary; predominance is assessed only among land substrates."
+
+[[hex]]
+hex_id = "C4606"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native and 6x boundary views show a broad central beige rough island and broad cream clear ground above and around it. Gold marginal contour strokes are excluded from substrate. Neither land region clearly predominates; retain Unknown with both rough and clear recorded."
+
+[[hex]]
+hex_id = "C4607"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4706"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4805"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4906"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified. Marine sea is also visibly inside the boundary; predominance is assessed only among land substrates."
+
+[[hex]]
+hex_id = "C5006"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The complete printed hex interior is marine blue water, with no land fragment inside any side or corner. Nearby land, where visible, lies outside the boundary. Terrain is sea; no movement-cost row or hexside decision is inferred."
+
+[[hex]]
+hex_id = "C4506"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4507"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4605"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4705"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the central island. Minor substrate: clear in the smaller broad cream margins, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4804"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4905"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The broad beige rough land patch is readable inside the complete coastal boundary. Pale narrow shoreline/contour edging is decorative; no distinct minor clear substrate is identified. Gray contour strokes are excluded. Marine sea lies inside the upper side."
+
+[[hex]]
+hex_id = "C5005"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The complete printed hex interior is marine blue water, with no land fragment inside any side or corner. Nearby land, where visible, lies outside the boundary. Terrain is sea; no movement-cost row or hexside decision is inferred."
+
+[[hex]]
+hex_id = "C4405"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the broad interior. Minor substrate: clear in the smaller broad cream corner regions, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4406"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the broad interior. Minor substrate: clear in the smaller broad cream pockets, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4407"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the broad interior. Minor substrate: clear in the smaller broad cream edge regions, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4505"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4604"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4704"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the middle island. Minor substrate: clear in the smaller cream upper and lower regions, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4803"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4904"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified. Marine sea is also visibly inside the boundary; predominance is assessed only among land substrates."
+
+[[hex]]
+hex_id = "C5004"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native and 6x views show the marine shoreline and a land fragment inside the lower V-shaped boundary. Gray contour ink obscures most of that fragment; narrow pale shoreline edging does not establish clear substrate, and the small beige fringe at the southeast side is insufficient to bind a predominant substrate. Land plus marine sea is verified; terrain remains Unknown/coastal."
+
+[[hex]]
+hex_id = "C5105"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The complete printed hex interior is marine blue water, with no land fragment inside any side or corner. Nearby land, where visible, lies outside the boundary. Terrain is sea; no movement-cost row or hexside decision is inferred."
+
+[[hex]]
+hex_id = "C4305"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native and 6x views show an S-shaped beige rough interior and substantial cream clear regions along both sides and the lower corner. Their mixed footprint does not establish sufficiently confident predominance; retain Unknown with rough and clear recorded."
+
+[[hex]]
+hex_id = "C4306"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4307"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4404"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the middle/lower body. Minor substrate: clear in the smaller broad cream upper-left region, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4504"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4603"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4703"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native and 6x views show a broad beige rough middle band with broad cream clear regions above and below. The gray marginal contour and blue label are graphical ink. No confident rough/clear predominance; retain Unknown."
+
+[[hex]]
+hex_id = "C4802"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4903"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified. Marine sea is also visibly inside the boundary; predominance is assessed only among land substrates."
+
+[[hex]]
+hex_id = "C5003"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "A cream clear triangular land fragment is visibly inside the lower V-shaped boundary beneath the marine shoreline. Its interior is readable; majority sea does not determine terrain. No distinct minor land substrate is observed."
+
+[[hex]]
+hex_id = "C5104"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The complete printed hex interior is marine blue water, with no land fragment inside any side or corner. Nearby land, where visible, lies outside the boundary. Terrain is sea; no movement-cost row or hexside decision is inferred."
+
+[[hex]]
+hex_id = "C4204"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4205"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4206"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native and 6x views show beige rough middle/lower ground and broad cream clear upper/left/right ground. The green marginal wadi graphic and transport strokes are separate. No confident rough/clear predominance; retain Unknown."
+
+[[hex]]
+hex_id = "C4207"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground predominates through the complete interior. The broad green marginal stroke is a wadi graphic, separate from substrate; the beige rough patch is outside the lower-left boundary. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4304"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete interior. The neighboring beige rough patch lies outside the right side; the crossing dashed transport ink is separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4403"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native and 6x views show a broad central/right beige rough island and substantial cream clear upper, left and lower interior. Track ink is separate. No confident rough/clear predominance; retain Unknown."
+
+[[hex]]
+hex_id = "C4503"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete interior. Neighboring gravel rings lie outside the west side and gold contour ink outside the east side. Transport strokes are separate; no distinct interior minor substrate is identified."
+
+[[hex]]
+hex_id = "C4602"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete interior. Neighboring rough and gravel patterns lie outside the upper and lower printed sides. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4702"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native and 6x views show a central beige rough island and broad cream clear upper, lower and left interior. The gray upper contour is separate. No confident rough/clear predominance; retain Unknown."
+
+[[hex]]
+hex_id = "C4801"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete interior. Gray marginal contour strokes and the gravel pattern outside the southwest side are separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4902"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified. Marine sea is also visibly inside the boundary; predominance is assessed only among land substrates."
+
+[[hex]]
+hex_id = "C5002"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The complete printed hex interior is marine blue water, with no land fragment inside any side or corner. Nearby land, where visible, lies outside the boundary. Terrain is sea; no movement-cost row or hexside decision is inferred."
+
+[[hex]]
+hex_id = "C4104"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4105"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4106"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the middle/right body. Minor substrate: clear in the smaller cream west and lower corners, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4107"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the middle/lower-left body. Minor substrate: clear in the smaller cream upper/right regions, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4203"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4303"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4402"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground visibly predominates. Gravel pattern is chiefly outside the northwest side; a narrow ring-glyph fringe touches that printed boundary and is retained as a possible minor gravel fringe, without treating it as a broad interior region. Transport ink is separate."
+
+[[hex]]
+hex_id = "C4502"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The rock/gravel ring pattern extends across the complete cell interior and matches the TEC rock/gravel family (published row gravel). Cream gaps between pattern glyphs are its background, not a separate clear substrate. No distinct minor substrate is identified; transport and contour strokes remain separate."
+
+[[hex]]
+hex_id = "C4601"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground visibly predominates. Minor gravel: small ring-pattern fragments at the lower printed edge; the broad neighboring gravel field is outside the cell. The beige rough patch is outside the upper boundary."
+
+[[hex]]
+hex_id = "C4701"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The rock/gravel ring pattern extends across the complete cell interior and matches the TEC rock/gravel family (published row gravel). Cream gaps between pattern glyphs are its background, not a separate clear substrate. No distinct minor substrate is identified; transport and contour strokes remain separate."
+
+[[hex]]
+hex_id = "C4901"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified. Marine sea is also visibly inside the boundary; predominance is assessed only among land substrates."
+
+[[hex]]
+hex_id = "C5001"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The complete printed hex interior is marine blue water, with no land fragment inside any side or corner. Nearby land, where visible, lies outside the boundary. Terrain is sea; no movement-cost row or hexside decision is inferred."
+
+[[hex]]
+hex_id = "C4003"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the central/lower body. Minor substrate: clear in the smaller cream top and lower-right regions, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4004"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the broad central body. Minor substrate: clear in the smaller cream upper/right and lower margins, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4005"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4006"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the middle/right body. Minor substrate: clear in the smaller cream west and lower-left region, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4007"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the broad central/west body. Minor substrate: clear in the smaller cream upper/right and lower-right regions, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C4103"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4202"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4302"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C4401"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground visibly predominates. Minor gravel: narrow ring-pattern fringe at the upper/right printed edge; the broad surrounding gravel field is outside the cell. Dashed transport ink is separate."
+
+[[hex]]
+hex_id = "C4501"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The rock/gravel ring pattern extends across the complete cell interior and matches the TEC rock/gravel family (published row gravel). Cream gaps between pattern glyphs are its background, not a separate clear substrate. No distinct minor substrate is identified; transport and contour strokes remain separate."
+
+[[hex]]
+hex_id = "C3903"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough substrate clearly predominates in the broad central body. Minor substrate: clear in the smaller cream upper-left, right and lower-right regions, distinct from printed contour/shoreline fringes. Contour and transport graphics remain separate."
+
+[[hex]]
+hex_id = "C3904"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
+
+[[hex]]
+hex_id = "C3905"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate visibly predominates inside the complete printed boundary. Contour, transport, label and facility ink remain separate. No distinct minor substrate is identified."
