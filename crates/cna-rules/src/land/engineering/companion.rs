@@ -17,7 +17,8 @@ pub enum MinefieldCompanionBenefit {
 /// side conversion requires renewed seam review; this is not a State validator.
 /// Does not establish ownership, location, attachment, actual accompaniment, self
 /// treatment, a CP price or a loss result. No caller/private surface is activated.
-/// Cases: land:23.13, land:23.14, land:23.15, land:26.24, land:26.25, interp:land-0037
+/// Cases: land:23.13, land:23.14, land:23.15, land:26.24, land:26.25
+/// Interpretations: interp:land-0037
 pub fn minefield_companion_qualifies(
     content: &CnaContent,
     state: &State,

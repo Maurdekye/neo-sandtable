@@ -84,7 +84,8 @@ fn raw_error_first(content: &CnaContent, state: &State, id: &UnitId) {
     }
 }
 
-/// Cases: land:23.13, land:23.14, land:23.15, land:26.24, land:26.25, interp:land-0037
+/// Cases: land:23.13, land:23.14, land:23.15, land:26.24, land:26.25
+/// Interpretations: interp:land-0037
 #[test]
 fn every_scope_role_and_side_has_separate_companion_benefits() {
     let (mut content, mut state, id) = fixture();
@@ -118,7 +119,8 @@ fn every_scope_role_and_side_has_separate_companion_benefits() {
         }
     }
 }
-/// Cases: land:23.13, land:24.61, land:26.24, land:26.25, interp:land-0037
+/// Cases: land:23.13, land:24.61, land:26.24, land:26.25
+/// Interpretations: interp:land-0037
 #[test]
 fn actual_source_rows_keep_rail_company_and_printed_echelon_distinct() {
     let (content, mut state, _) = fixture();
@@ -136,7 +138,8 @@ fn actual_source_rows_keep_rail_company_and_printed_echelon_distinct() {
         );
     }
 }
-/// Cases: land:23.15, land:26.24, land:26.25, interp:land-0037
+/// Cases: land:23.15, land:26.24, land:26.25
+/// Interpretations: interp:land-0037
 #[test]
 fn current_scorpion_gate_and_duplicates_control_all_benefits() {
     let (mut content, mut state, id) = fixture();
@@ -165,7 +168,8 @@ fn current_scorpion_gate_and_duplicates_control_all_benefits() {
         all_results(&content, &state, &id, [eligible; 3]);
     }
 }
-/// Cases: land:23.15, land:26.24, land:26.25, interp:land-0037
+/// Cases: land:23.15, land:26.24, land:26.25
+/// Interpretations: interp:land-0037
 #[test]
 fn side_guard_precedes_every_known_negative_but_is_query_local() {
     let (mut content, mut state, id) = fixture();
@@ -206,7 +210,8 @@ fn side_guard_precedes_every_known_negative_but_is_query_local() {
         }
     }
 }
-/// Cases: land:23.11, land:23.15, land:26.24, land:26.25, interp:land-0037
+/// Cases: land:23.11, land:23.15, land:26.24, land:26.25
+/// Interpretations: interp:land-0037
 #[test]
 fn raw_gaps_and_corruption_win_over_side_and_role_negatives() {
     let (mut content, mut state, id) = fixture();
@@ -320,7 +325,8 @@ fn raw_gaps_and_corruption_win_over_side_and_role_negatives() {
     m.scope = EngineeringScope::None;
     raw_error_first(&content, &state, &id);
 }
-/// Cases: land:23.11, land:26.24, land:26.25, interp:land-0037
+/// Cases: land:23.11, land:26.24, land:26.25
+/// Interpretations: interp:land-0037
 #[test]
 fn trusted_missing_and_stored_identity_errors_remain_exact() {
     let (content, state, id) = fixture();
