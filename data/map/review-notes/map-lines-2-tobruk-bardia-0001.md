@@ -1,0 +1,13 @@
+# Tobruk/Bardia terrain batch 0001
+
+The fixed36-cell section-B share supplies previously unknown terrain evidence in existing published Libya. It follows standing terrain GO2026-10-08T11:06:15.889Z for the approved ItalianCampaign60.23 terrain-first phase. The exact source-free allocation SHA256 is `4cba292ce4fafaab8eed6ff8c46d6b610fc58fd04e8189ba82ebc48b6e18948f`; compatible public base is `335763a51b07e2226989b72d31eb9e71e9778d95`. All36 selected cells are canonical existing Libya members and absent from every prior raw terrain observation, including Unknown. Geographic work priority supplies no named-place extent, country ruling, complete setup domain or action permission. The historical Egypt share remains outside this snapshot.
+
+Every full printed cell and its boundary was directly viewed in all nine registered/unmarked native4x twin pages plus context against the actual TEC. Section-B source registration and native2021 map/build/key pins are retained in the raw batch. Clear cream substrate visibly predominates in all36 cells; no distinct minor land substrate was confidently identified. All36 full cells establish land without marine water; Unknown0, Sea0. Gray-green channel and dashed transport graphics remain separate from substrate, with no edge or feature observations published. The adopted map-0003 predominance/minor policy and map-0002 marine-only domains apply; each record cites land:8.37 and both interpretations.
+
+This is direct single-observer native2021 review, with no classifier acceptance, independent observer agreement, measured source error or original1979 equivalence. All source images and views remain outside the repository. Existing facility/point flags, raw evidence including deferrals, masks, geometry and other features must remain preserved by union replay. Only this raw batch, matching note and mechanical terrain/layer/area outputs are authorized. There is no accepted Sea, hence no area membership removal or other field change is expected. No new port, place, anchor, edge, lake, pipeline, frontier, definition or code evidence is supplied.
+
+Initial frozen-candidate gate receipts and authored bundle provenance are separate from this source note. This note does not assert passing checks or publication. Parent final union checks/publication and bounded own-clone inclusion verification remain required.
+
+Exact ordered selection:
+
+`B3033,B3030,B2931,B2932,B2933,B2930,B2830,B2831,B2832,B2833,B2829,B2730,B2731,B2732,B2733,B2729,B2629,B2630,B2631,B2632,B2633,B2628,B2529,B2530,B2531,B2532,B2528,B2428,B2429,B2430,B2427,B2328,B2329,B2327,B2227,B2226`
