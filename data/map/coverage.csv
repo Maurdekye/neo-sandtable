@@ -185,6 +185,7 @@ coastal,A5433,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fom
 coastal,A5532,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,A5533,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,A5632,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,A5633,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B1914,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0002
 coastal,B1915,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0002
 coastal,B2013,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0002
@@ -313,6 +314,8 @@ coastal,B2733,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-tobruk-bard
 coastal,B2801,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B2802,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B2803,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B2804,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B2805,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B2806,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B2807,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B2808,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -345,6 +348,8 @@ coastal,B2901,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B2902,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B2903,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B2904,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B2905,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B2906,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B2907,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B2908,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B2909,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -376,6 +381,11 @@ coastal,B3001,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B3002,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B3003,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3004,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3005,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3006,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3007,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3008,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3009,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3010,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3011,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3012,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -405,6 +415,11 @@ coastal,B3102,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B3103,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B3104,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3105,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3106,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3107,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3108,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3109,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3110,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3111,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3112,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3113,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -435,6 +450,9 @@ coastal,B3205,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fom
 coastal,B3206,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3207,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3208,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3209,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3210,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3211,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3212,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3213,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3214,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -464,6 +482,9 @@ coastal,B3306,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fom
 coastal,B3307,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3308,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3309,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3310,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3311,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3312,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3313,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3314,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3315,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -493,6 +514,9 @@ coastal,B3406,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fom
 coastal,B3407,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B3408,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3409,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3410,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3411,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3412,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3413,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3414,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3415,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -522,6 +546,9 @@ coastal,B3507,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B3508,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B3509,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3510,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3511,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3512,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3513,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3514,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3515,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3516,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-derna-mechili-0001
@@ -550,6 +577,9 @@ coastal,B3607,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B3608,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B3609,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3610,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3611,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3612,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3613,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3614,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B3615,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-derna-mechili-0001
 coastal,B3616,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-derna-mechili-0001
@@ -579,6 +609,9 @@ coastal,B3708,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B3709,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B3710,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3711,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3712,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3713,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3714,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3715,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 coastal,B3716,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 coastal,B3717,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
@@ -607,6 +640,9 @@ coastal,B3808,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B3809,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B3810,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3811,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3812,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3813,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3814,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3815,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 coastal,B3816,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 coastal,B3817,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
@@ -635,6 +671,8 @@ coastal,B3909,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B3910,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B3911,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B3912,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B3913,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B3914,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B3915,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 coastal,B3916,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 coastal,B3917,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
@@ -662,6 +700,8 @@ coastal,B4009,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B4010,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B4011,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B4012,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B4013,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B4014,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B4015,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B4016,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B4017,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
@@ -691,6 +731,8 @@ coastal,B4109,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B4110,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 coastal,B4111,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B4112,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B4113,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B4114,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B4115,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B4116,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B4117,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
@@ -718,6 +760,8 @@ coastal,B4207,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B4208,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0003
 coastal,B4210,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B4211,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B4212,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B4213,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B4214,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B4215,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B4216,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
@@ -746,6 +790,8 @@ coastal,B4306,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B4307,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0002
 coastal,B4308,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0003
 coastal,B4311,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B4312,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B4313,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B4314,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B4315,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B4316,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
@@ -774,6 +820,7 @@ coastal,B4405,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 coastal,B4406,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0002
 coastal,B4407,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0003
 coastal,B4410,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B4411,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B4415,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
 coastal,B4416,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
 coastal,B4417,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
@@ -914,6 +961,9 @@ coastal,B4932,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bard
 coastal,B4933,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 coastal,B5001,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B5002,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B5003,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5004,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5005,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B5015,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 coastal,B5016,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0002
 coastal,B5017,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0002
@@ -935,6 +985,12 @@ coastal,B5032,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bard
 coastal,B5033,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 coastal,B5101,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 coastal,B5102,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B5103,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5104,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5105,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5106,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5107,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5108,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B5111,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 coastal,B5112,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B5115,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
@@ -953,6 +1009,8 @@ coastal,B5131,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili
 coastal,B5132,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 coastal,B5133,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 coastal,B5201,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B5202,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5203,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B5204,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5205,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5206,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -979,6 +1037,8 @@ coastal,B5228,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 coastal,B5231,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B5232,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 coastal,B5301,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+coastal,B5302,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5303,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B5304,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5305,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5306,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -1007,6 +1067,8 @@ coastal,B5328,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 coastal,B5329,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 coastal,B5331,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 coastal,B5332,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
+coastal,B5401,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5402,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B5403,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5404,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5405,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -1036,6 +1098,8 @@ coastal,B5428,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 coastal,B5429,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 coastal,B5430,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
 coastal,B5431,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
+coastal,B5501,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+coastal,B5502,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B5503,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5504,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5505,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -1065,6 +1129,7 @@ coastal,B5528,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 coastal,B5529,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 coastal,B5530,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 coastal,B5531,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
+coastal,B5601,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B5602,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5603,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5604,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -1095,6 +1160,7 @@ coastal,B5628,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 coastal,B5629,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 coastal,B5630,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 coastal,B5631,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
+coastal,B5701,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 coastal,B5702,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5703,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 coastal,B5704,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35093,6 +35159,7 @@ terrain,A5433,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fom
 terrain,A5532,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,A5533,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,A5632,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,A5633,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B1914,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0002
 terrain,B1915,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0002
 terrain,B2013,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0002
@@ -35221,6 +35288,8 @@ terrain,B2733,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-tobruk-bard
 terrain,B2801,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B2802,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B2803,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B2804,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B2805,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B2806,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B2807,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B2808,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35253,6 +35322,8 @@ terrain,B2901,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B2902,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B2903,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B2904,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B2905,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B2906,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B2907,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B2908,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B2909,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35284,6 +35355,11 @@ terrain,B3001,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B3002,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B3003,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3004,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3005,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3006,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3007,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3008,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3009,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3010,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3011,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3012,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35313,6 +35389,11 @@ terrain,B3102,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B3103,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B3104,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3105,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3106,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3107,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3108,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3109,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3110,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3111,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3112,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3113,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35343,6 +35424,9 @@ terrain,B3205,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fom
 terrain,B3206,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3207,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3208,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3209,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3210,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3211,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3212,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3213,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3214,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35372,6 +35456,9 @@ terrain,B3306,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fom
 terrain,B3307,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3308,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3309,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3310,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3311,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3312,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3313,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3314,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3316,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35400,6 +35487,9 @@ terrain,B3406,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fom
 terrain,B3407,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B3408,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3409,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3410,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3411,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3412,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3413,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3414,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3415,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35428,6 +35518,9 @@ terrain,B3507,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B3508,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B3509,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3510,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3511,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3512,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3513,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3514,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3515,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3516,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-derna-mechili-0001
@@ -35454,6 +35547,9 @@ terrain,B3607,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B3608,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B3609,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3610,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3611,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3612,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3613,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3614,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B3615,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-derna-mechili-0001
 terrain,B3616,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-derna-mechili-0001
@@ -35481,6 +35577,9 @@ terrain,B3708,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B3709,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B3710,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3711,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3712,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3713,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3714,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3715,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 terrain,B3716,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 terrain,B3717,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
@@ -35508,6 +35607,8 @@ terrain,B3808,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B3809,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B3810,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3811,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3812,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3813,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3815,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 terrain,B3816,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 terrain,B3817,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
@@ -35536,6 +35637,8 @@ terrain,B3909,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B3910,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B3911,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B3912,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B3913,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B3914,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B3916,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 terrain,B3917,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 terrain,B3918,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
@@ -35561,6 +35664,8 @@ terrain,B4009,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B4010,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B4011,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B4012,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B4013,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B4014,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B4015,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B4016,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B4017,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
@@ -35590,6 +35695,8 @@ terrain,B4109,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B4110,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0001
 terrain,B4111,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B4112,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B4113,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B4114,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B4115,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B4116,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B4117,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
@@ -35617,6 +35724,8 @@ terrain,B4207,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B4208,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0003
 terrain,B4210,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B4211,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B4212,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B4213,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B4214,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B4215,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B4216,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
@@ -35644,6 +35753,7 @@ terrain,B4306,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B4307,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0002
 terrain,B4308,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0003
 terrain,B4311,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B4312,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B4314,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B4315,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B4316,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
@@ -35671,6 +35781,7 @@ terrain,B4405,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-f
 terrain,B4406,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0002
 terrain,B4407,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-msus-beda-fomm-benghazi-0003
 terrain,B4410,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B4411,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B4415,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
 terrain,B4416,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
 terrain,B4417,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
@@ -35805,6 +35916,9 @@ terrain,B4932,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bard
 terrain,B4933,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 terrain,B5001,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B5002,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B5003,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5004,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5005,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B5015,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 terrain,B5016,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0002
 terrain,B5017,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0002
@@ -35825,6 +35939,11 @@ terrain,B5032,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bard
 terrain,B5033,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 terrain,B5101,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
 terrain,B5102,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B5103,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5104,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5105,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5107,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5108,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B5111,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0003
 terrain,B5115,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 terrain,B5116,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
@@ -35841,6 +35960,7 @@ terrain,B5131,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili
 terrain,B5132,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 terrain,B5133,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 terrain,B5201,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B5202,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B5204,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5205,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5206,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35866,6 +35986,8 @@ terrain,B5228,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 terrain,B5231,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B5232,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-tobruk-bardia-0001
 terrain,B5301,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0002
+terrain,B5302,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5303,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B5304,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5305,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5306,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35890,6 +36012,8 @@ terrain,B5328,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 terrain,B5329,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 terrain,B5331,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
 terrain,B5332,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
+terrain,B5401,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5402,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B5403,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5404,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5405,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35916,6 +36040,8 @@ terrain,B5428,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 terrain,B5429,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 terrain,B5430,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
 terrain,B5431,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0002
+terrain,B5501,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
+terrain,B5502,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B5504,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5505,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5506,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
@@ -35944,6 +36070,7 @@ terrain,B5528,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 terrain,B5529,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 terrain,B5530,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 terrain,B5531,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
+terrain,B5601,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B5602,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5605,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5606,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0002
@@ -35971,6 +36098,7 @@ terrain,B5628,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechi
 terrain,B5629,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 terrain,B5630,,land:8.37;interp:map-0002;interp:map-0003,map-terrain-derna-mechili-0003
 terrain,B5631,,land:8.37;interp:map-0002;interp:map-0003,map-lines-derna-mechili-0001
+terrain,B5701,,land:8.37;interp:map-0002;interp:map-0003,map-lines-msus-beda-fomm-benghazi-0003
 terrain,B5702,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5703,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
 terrain,B5704,,land:8.37;interp:map-0002;interp:map-0003,map-lines-2-msus-beda-fomm-benghazi-0001
