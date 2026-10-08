@@ -22,6 +22,9 @@ crate::tables_group! {
     /// Land tables currently bound; the loader test records the remaining tables explicitly.
     LandTables {
         desert_raider_raids: raids::DesertRaiderRaids,
+        raid_on_rommel: raids::RaidOnRommel,
+        sas_brigade_raid: raids::SasBrigadeRaid,
+        chariot_raid: raids::ChariotRaid,
         construction: engineering::ConstructionChart,
         demolition: engineering::DemolitionChart,
         combat_calculations: combat::CombatCalculations,
