@@ -1,0 +1,555 @@
+[batch]
+id = "map-lines-cyrenaica-0003"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "C2908,C2909,C2910,C2911,C2912,C2913,C2914,C2808,C2809,C2810,C2811,C2812,C2813,C2814,C2708,C2709,C2710,C2711,C2712,C2713,C2714,C2608,C2609,C2610,C2611,C2612,C2613,C2614,C2508,C2509,C2510,C2511,C2512,C2513,C2514,C2408,C2409,C2410,C2411,C2412,C2413,C2414,C2308,C2309,C2310,C2311,C2312,C2313,C2314,C2208,C2209,C2210,C2211,C2212,C2213,C2214,C2108,C2109,C2110,C2111,C2112,C2113,C2114,C2008,C2009,C2010,C2011,C2012"
+notes = "Exact68 fresh cells in original C08..14 allocation under standing terrain GO. Six full-cell native2x sheets plus nine full-cell4x details directly reviewed against TEC.66accepted clear,2predominance abstentions retain land domain. Minor salt marsh at C2313 recorded; clear/salt-marsh balance at C2314/C2213 unresolved. No marine cells or inferred coastal water. Single observer, no classifier/independent accuracy/original1979 equivalence claim. Source crops outside repository. No edge/lake/place/national/action acceptance."
+
+[[hex]]
+hex_id = "C2908"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2909"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2910"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2911"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2912"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2913"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2914"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2808"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2809"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2810"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2811"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2812"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2813"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2814"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2708"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2709"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2710"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2711"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2712"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2713"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2714"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2608"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2609"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2610"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2611"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2612"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2613"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2614"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2508"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2509"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2510"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2511"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2512"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2513"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2514"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2408"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2409"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2410"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2411"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2412"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2413"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside. Full4x boundary recheck places the neighboring salt-marsh body outside the southeast side."
+
+[[hex]]
+hex_id = "C2414"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside. Full4x boundary recheck places the neighboring salt-marsh body outside the southwest side."
+
+[[hex]]
+hex_id = "C2308"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2309"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2310"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2311"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2312"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2313"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x boundary review: cream clear ground dominates. A small yellow-branched olive salt-marsh tip enters just inside the southeast side near its eastern end; record salt_marsh as minor. The larger neighboring marsh body remains outside. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C2314"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x review shows a substantial yellow-branched olive salt-marsh body and broad cream clear regions inside the complete boundary. Their footprints are too comparable for confident predominant terrain under map-0003. Both visible land substrates recorded without a predominant/minor designation; retain Unknown with land domain. No marine water inside."
+
+[[hex]]
+hex_id = "C2208"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2209"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2210"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2211"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2212"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside. Full4x boundary recheck places the neighboring salt-marsh body outside the east side."
+
+[[hex]]
+hex_id = "C2213"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x review shows a broad lobed yellow-branched olive salt-marsh region across the north/center and cream clear margins in the south and east. No confidently predominant substrate; keep Unknown with land domain and both visible substrates. The crossing dashed route stays separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2214"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside. Full4x boundary recheck places the neighboring salt-marsh body outside the northwest side."
+
+[[hex]]
+hex_id = "C2108"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2109"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2110"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2111"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2112"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2113"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside. Full4x boundary recheck places the neighboring salt-marsh body outside the northeast side."
+
+[[hex]]
+hex_id = "C2114"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside. Full4x boundary recheck places the neighboring salt-marsh body outside the northwest and southeast side."
+
+[[hex]]
+hex_id = "C2008"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2009"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2010"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2011"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C2012"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and interior directly inspected against TEC: cream clear substrate predominates, with no distinct minor land substrate identified. Grid strokes, labels and dashed transport ink remain separate. No marine water inside."

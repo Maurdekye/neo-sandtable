@@ -1,0 +1,9 @@
+# Cyrenaica terrain continuation 0003
+
+Exactly68 fresh cells, C2908 through C2012 in original remaining order, were individually reviewed over their complete printed boundaries against native2021 source and TEC. Six unmarked2x sheets plus nine full-cell4x details were inspected; source crops and coordinate receipts stay outside the repository. Source decision SHA256 744723712057f57d09f7a704ad4fe21407aa12611b0f77b0d16e6b6ae1693c22. Compatible public base9c14e890; standing terrain GO2026-10-08T11:06:15Z. Allocation defines work ownership, never scenario legality.
+
+66 cells accept clear ground. C2313 has a small salt-marsh tip just inside its southeast side, retained as minor land substrate. Yellow branching inside olive patches matches the TEC salt-marsh pattern; it is distinct from contour decoration. Full-boundary detail checks place neighboring marsh patches outside C2413,C2414,C2212,C2214,C2113,C2114.
+
+C2314 and C2213 remain Unknown because their substantial salt-marsh regions and broad clear margins do not yield confident predominant land terrain. Both visible substrates are recorded without a predominant/minor label. These two retain land domain, with no terrain masks. All68 cells have established land domain and no marine water within the complete boundary.
+
+Existing mechanical terrain/layer/areas replay adds134 masks:66 terrain and68 coastal-domain masks. No newSea, so generated areas remain byte-unchanged; no area definitions or national evidence edited. Prior raw observations, coverage, edges, facilities and geometry preserved. No lake/edge/place/port/control/action evidence inferred. Single direct observer, no classifier acceptance, independent error estimate or original1979 equivalence claim. Parent cartographer remains sole main assembler; next source batch may proceed outside this pinned snapshot under standing GO.
