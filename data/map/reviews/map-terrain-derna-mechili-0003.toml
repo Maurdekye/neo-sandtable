@@ -1,0 +1,523 @@
+[batch]
+id = "map-terrain-derna-mechili-0003"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-terrain"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "B5819,B5830,B5720,B5730,B5620,B5629,B5518,B5519,B5520,B5521,B5529,B5417,B5428,B5317,B5325,B5326,B5327,B5328,B5216,B5225,B5116,B5126,B5015,B5026,B4915,B4927,B4815,B4826,B4716,B4726,B4616,B4625,B4517,B4525,B4417,B4424,B4318,B4319,B4320,B4321,B4322,B4323,B4324,B6119,B6018,B5918,B5818,B5719,B5731,B5617,B5618,B5619,B5630,B5517,B5530,B5416,B5429,B5316,B5329,B5215,B5226,B5227,B5228,B5115"
+notes = "Exact final64 frozen Derna/Mechili allocation. Every full native/4x cell and actual TEC directly inspected,22 mixed/boundary cells enlarged6x plus regional marine context. 62 accepted classes(60land2Sea), two predominant-land Unknowns. Explicit minors and marine-only domains. Source accuracy, parent visual agreement and1979 equivalence unmeasured. No edge, lake, place, port, facility, frontier or action facts."
+
+[[hex]]
+hex_id = "B5819"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary. Minor substrate: rough in the smaller northern/eastern indentation."
+
+[[hex]]
+hex_id = "B5830"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show marine blue throughout the entire bounded cell, with no inside-boundary land fragment. Native regional view establishes the open offshore Mediterranean along this source coastline; compared with actual TEC Sea."
+
+[[hex]]
+hex_id = "B5720"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary. Minor substrate: rough in the smaller southeastern pocket."
+
+[[hex]]
+hex_id = "B5730"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. Marine blue is inside the printed boundary in directly inspected regional coastline context, establishing coastal land. Land predominance is assessed independently of the water area. Narrow cream shoreline edging and holes within contour splash bands are printed decoration, not a broad clear substrate region."
+
+[[hex]]
+hex_id = "B5620"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller broad southwestern body."
+
+[[hex]]
+hex_id = "B5629"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5518"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller broad southern rim and eastern indentation."
+
+[[hex]]
+hex_id = "B5519"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5520"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5521"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller western and southeastern regions; gravel in a narrow western boundary fragment containing outlined rings."
+
+[[hex]]
+hex_id = "B5529"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5417"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5428"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary. Olive splash-fringed margins follow the northeastern/southeastern sides; they do not establish an interior mountain region."
+
+[[hex]]
+hex_id = "B5317"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5325"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller southern band and northeastern pocket."
+
+[[hex]]
+hex_id = "B5326"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5327"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5328"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5216"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller broad eastern indentation."
+
+[[hex]]
+hex_id = "B5225"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5116"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller southern band and eastern pocket."
+
+[[hex]]
+hex_id = "B5126"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5015"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5026"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4915"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4927"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4815"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4826"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4716"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4726"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4616"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4625"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4517"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show a broad land body carrying the angular yellow network matching actual TEC salt marsh, clearly predominant among land substrates; surrounding cream is a smaller clear region. No marine water lies inside the printed boundary. Minor substrate: clear around the smaller broad peripheral region outside the yellow-network marsh body."
+
+[[hex]]
+hex_id = "B4525"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4417"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary. Minor substrate: gravel in a narrow eastern boundary fragment with ring marks."
+
+[[hex]]
+hex_id = "B4424"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4318"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4319"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4320"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4321"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4322"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4323"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B4324"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B6119"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. Marine blue is inside the printed boundary in directly inspected regional coastline context, establishing coastal land. Land predominance is assessed independently of the water area. Narrow cream shoreline edging and holes within contour splash bands are printed decoration, not a broad clear substrate region."
+
+[[hex]]
+hex_id = "B6018"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5918"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show substantial mountain and rough land with no confidently predominant substrate; retain Unknown under map-0003. Minor substrates observed: mountain and rough. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5818"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5719"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5731"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show marine blue throughout the entire bounded cell, with no inside-boundary land fragment. Native regional view establishes the open offshore Mediterranean along this source coastline; compared with actual TEC Sea. Full6x resolves the nearby cream shoreline and land below the southwestern printed diagonal/bottom-left vertex, outside the bounded cell."
+
+[[hex]]
+hex_id = "B5617"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5618"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller southeastern interior pocket."
+
+[[hex]]
+hex_id = "B5619"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller broad southern/eastern band; rough in a smaller northeastern patch around that clear pocket."
+
+[[hex]]
+hex_id = "B5630"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. Marine blue is inside the printed boundary in directly inspected regional coastline context, establishing coastal land. Land predominance is assessed independently of the water area. Minor substrate: clear in the smaller western and southwestern interior region distinct from narrow shoreline edging and side-band ink."
+
+[[hex]]
+hex_id = "B5517"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show a broad solid olive interior mountain body clearly predominant, compared directly with actual TEC. The interior filled body is distinct from marginal contour splash/fringe printing; transport and point/label ink do not decide substrate. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5530"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show a broad land body carrying the angular yellow network matching actual TEC salt marsh, clearly predominant among land substrates; surrounding cream is a smaller clear region. Marine blue is inside the printed boundary in directly inspected regional coastline context, establishing coastal land. Land predominance is assessed independently of the water area. Minor substrate: clear around the smaller western and southern interior margins outside the yellow-network marsh body."
+
+[[hex]]
+hex_id = "B5416"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show substantial mountain, rough and clear land with transport ink and no confidently predominant substrate. Minor substrates observed: mountain, rough and clear; retain Unknown under map-0003. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5429"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5316"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller eastern indentation. Full boundary recheck resolves the adjacent solid olive mountain patch wholly outside the western printed side."
+
+[[hex]]
+hex_id = "B5329"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5215"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5226"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5227"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show outlined ring marks across the interior matching actual TEC rock/gravel, clearly predominant. Cream interstices and narrow gaps between rings are part of the texture, not automatically minor clear. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5228"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary views show cream clear land clearly predominant after separating marginal contour/linear graphics and transport/label ink. Contour splash dots are not minor mountain. No marine water lies inside the printed boundary."
+
+[[hex]]
+hex_id = "B5115"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/6x boundary views show beige filled rough land clearly predominant, compared with actual TEC rough. Olive splash-fringed side bands and gray-green bands following printed boundaries are separate linear graphics; no side identity is certified. No marine water lies inside the printed boundary. Minor substrate: clear in the smaller broad southern margin."
