@@ -95,6 +95,14 @@ fn unfunded_motion(state: &State, id: &str) -> Result<Vec<TruckMotion>, MotionEr
         })
         .collect();
     let records = motion::query(state, p.side, &site, &physical)?;
+    validate_unfunded_motion(p, id, records)
+}
+
+fn validate_unfunded_motion(
+    p: &TruckPool,
+    id: &str,
+    records: Vec<TruckMotion>,
+) -> Result<Vec<TruckMotion>, MotionError> {
     let prefix = format!("pool.{id}.fuel-trucks-");
     let mut identities = vec![];
     let mut kinds = BTreeSet::new();
@@ -133,7 +141,10 @@ fn unfunded_motion(state: &State, id: &str) -> Result<Vec<TruckMotion>, MotionEr
             return Err(MotionError::Invalid);
         }
     }
-    if records.iter().any(|r| r.spent_cp_quarters != 0) {
+    if records
+        .iter()
+        .any(|r| r.spent_cp_quarters != 0 || r.count <= 0)
+    {
         return Err(MotionError::Invalid);
     }
     Ok(records)
@@ -202,6 +213,221 @@ pub fn seed_created_pool(state: &mut State, id: &str) -> Result<(), cna_core::en
     let cohorts = fresh_pool_physical_cohorts(state, id).map_err(|_| invalid())?;
     let side = pool(state, id).map_err(|_| invalid())?.side;
     motion::seed_fresh(state, side, &CargoSite::Pool(id.into()), &cohorts).map_err(|_| invalid())
+}
+
+/// Authoritative early-OpStage preparation only, not a query or a mid-stage repair.
+/// Retained fuel identities stay authoritative; historical funding is never rewritten.
+/// Duplicate entry preserves the complete current physical history.
+/// Cases: land:6.13, airlog:53.25
+pub fn seed_pool_opstage(state: &mut State) -> Result<(), cna_core::engine::EngineError> {
+    use cna_core::engine::EngineError;
+    let invalid = || EngineError::Invariant {
+        detail: "pool OpStage physical identities cannot be reconciled".into(),
+    };
+    if state.cursor.anchor() != "opstage.weather"
+        || !matches!(state.cursor.op_stage, Some(1..=3))
+        || state.cursor.half.is_some()
+    {
+        return Err(invalid());
+    }
+    let stage = super::water::WaterStage::current(state);
+    let mut ids = BTreeSet::new();
+    for p in &state.logistics.truck_pools {
+        if !ids.insert(p.id.clone()) || !state.logistics.truck_pool_ids.contains(&p.id) {
+            return Err(invalid());
+        }
+    }
+    let mut draft = state.clone();
+    let mut physical_ids = BTreeSet::new();
+    for id in ids {
+        let p = pool(&draft, &id).map_err(|_| invalid())?;
+        let side = p.side;
+        let site = CargoSite::Pool(id.clone());
+        let groups: Vec<PhysicalTrucks> = if let Some(old) =
+            draft.logistics.pool_fuel_segments.get(&id)
+        {
+            // Validate against the retained segment rather than creating a new fuel account.
+            segment::carrier_ledger(
+                Some(old),
+                old.segment.clone(),
+                &old.origin,
+                &p.trucks,
+                &id,
+                &format!("pool.{id}"),
+            )
+            .map_err(|_| invalid())?
+            .cohorts
+            .iter()
+            .map(PhysicalTrucks::from)
+            .collect()
+        } else {
+            if draft.logistics.pool_fuel_accounts.contains_key(&id) {
+                return Err(invalid());
+            }
+            let mut old = draft
+                .logistics
+                .cargo_history
+                .motion
+                .entries
+                .iter()
+                .filter(|e| e.site == site);
+            let records = if let Some(entry) = old.next() {
+                if old.next().is_some() {
+                    return Err(invalid());
+                }
+                validate_unfunded_motion(p, &id, entry.cohorts.clone()).map_err(|_| invalid())?
+            } else {
+                segment::initial_cohorts(
+                    &p.trucks,
+                    &id,
+                    &format!("pool.{id}"),
+                    &SegmentKey::current(&draft),
+                    0,
+                    0,
+                )
+                .map_err(|_| invalid())?
+                .0
+                .iter()
+                .map(|c| TruckMotion {
+                    id: c.id.clone(),
+                    kind: c.kind,
+                    count: c.count,
+                    spent_cp_quarters: 0,
+                })
+                .collect()
+            };
+            records
+                .iter()
+                .map(|r| PhysicalTrucks {
+                    id: r.id.clone(),
+                    parent: None,
+                    kind: r.kind,
+                    count: r.count,
+                })
+                .collect()
+        };
+        for group in &groups {
+            if !physical_ids.insert((side, group.id.clone()))
+                || draft
+                    .logistics
+                    .cargo_history
+                    .motion
+                    .entries
+                    .iter()
+                    .filter(|entry| {
+                        entry.site != site
+                            && entry.stage == stage
+                            && super::cargo_history::owner(&draft, &entry.site) == Some(side)
+                    })
+                    .any(|entry| entry.cohorts.iter().any(|cohort| cohort.id == group.id))
+            {
+                return Err(invalid());
+            }
+        }
+        let current: Vec<_> = draft
+            .logistics
+            .cargo_history
+            .motion
+            .entries
+            .iter()
+            .filter(|e| e.site == site && e.stage == stage)
+            .collect();
+        if current.len() > 1 {
+            return Err(invalid());
+        }
+        if let Some(entry) = current.first() {
+            if entry.cohorts.len() != groups.len() {
+                return Err(invalid());
+            }
+            motion::query(&draft, side, &site, &groups).map_err(|_| invalid())?;
+        } else {
+            motion::seed_fresh(&mut draft, side, &site, &groups).map_err(|_| invalid())?;
+        }
+    }
+    // Cargo history already expires by WaterStage; no old parcels or stock are deleted.
+    state.logistics.cargo_history.motion = draft.logistics.cargo_history.motion;
+    Ok(())
+}
+
+/// Retire exact departing counts before inventory subtraction. No caller is activated here.
+/// Unknown legacy physical history stays Unknown; invalid known history rolls back.
+/// Cases: land:20.83, airlog:49.13, airlog:49.16, airlog:53.25
+pub fn retire_pool_truck_counts(
+    state: &mut State,
+    id: &str,
+    mut amount: cna_content::units::Trucks,
+) -> Result<(), cna_core::engine::EngineError> {
+    use cna_core::engine::EngineError;
+    let invalid = || EngineError::Invariant {
+        detail: "departing pool physical truck counts cannot be reconciled".into(),
+    };
+    let p = pool(state, id).map_err(|_| invalid())?;
+    let side = p.side;
+    segment::truck_total(&amount).map_err(|_| invalid())?;
+    if amount.light > p.trucks.light
+        || amount.medium > p.trucks.medium
+        || amount.heavy > p.trucks.heavy
+    {
+        return Err(invalid());
+    }
+    if amount == cna_content::units::Trucks::default() {
+        return Ok(());
+    }
+    let funded = state.logistics.pool_fuel_segments.contains_key(id);
+    let groups: Vec<PhysicalTrucks> = if funded {
+        pool_segment_fuel_cohorts(state, id)
+            .map_err(|_| invalid())?
+            .iter()
+            .map(PhysicalTrucks::from)
+            .collect()
+    } else {
+        match unfunded_pool_physical_cohorts(state, id) {
+            Ok(groups) => groups,
+            Err(MotionError::Unknown) => return Ok(()),
+            Err(_) => return Err(invalid()),
+        }
+    };
+    let mut selection = Vec::new();
+    for g in groups {
+        let remaining = match g.kind {
+            segment::FuelTruckKind::Light => &mut amount.light,
+            segment::FuelTruckKind::Medium => &mut amount.medium,
+            segment::FuelTruckKind::Heavy => &mut amount.heavy,
+        };
+        let count = (*remaining).min(g.count);
+        if count > 0 {
+            selection.push(FuelCohortSelection { id: g.id, count });
+            *remaining -= count;
+        }
+    }
+    if amount != cna_content::units::Trucks::default() {
+        return Err(invalid());
+    }
+    let mut draft = state.clone();
+    if funded {
+        let retired =
+            remove_selected_pool_fuel_cohorts(&mut draft, id, &selection).map_err(|_| invalid())?;
+        let physical: Vec<_> = retired.iter().map(PhysicalTrucks::from).collect();
+        let has_current_motion = draft
+            .logistics
+            .cargo_history
+            .motion
+            .entries
+            .iter()
+            .any(|entry| {
+                entry.site == CargoSite::Pool(id.into())
+                    && entry.stage == super::water::WaterStage::current(&draft)
+            });
+        match motion::retire(&mut draft, side, &CargoSite::Pool(id.into()), &physical) {
+            Ok(()) => {}
+            Err(MotionError::Unknown) if !has_current_motion => {}
+            Err(_) => return Err(invalid()),
+        }
+    } else {
+        retire_unfunded_pool_motion(&mut draft, id, &selection).map_err(|_| invalid())?;
+    }
+    state.logistics = draft.logistics;
+    Ok(())
 }
 
 /// Retire known zero-CP physical counts before an unfunded inventory withdrawal.

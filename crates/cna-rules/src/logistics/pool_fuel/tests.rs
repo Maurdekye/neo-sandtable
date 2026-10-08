@@ -42,6 +42,285 @@ fn single() -> Trucks {
         ..Trucks::default()
     }
 }
+
+fn at_stage_start(s: &mut State, stage: u8) {
+    s.cursor.block = crate::seq::Block::OpStage;
+    s.cursor.index = crate::seq::OPSTAGE
+        .iter()
+        .position(|step| step.anchor == "opstage.weather")
+        .unwrap();
+    s.cursor.op_stage = Some(stage);
+    s.cursor.half = None;
+}
+
+/// Cases: land:6.13, airlog:53.25
+#[test]
+fn authoritative_stage_seed_preserves_surviving_ids_and_duplicate_entry() {
+    let (mut s, id) = game(
+        Trucks {
+            light: 2,
+            medium: 3,
+            heavy: 1,
+        },
+        100,
+    );
+    pool_mut_for_test(&mut s, &id).location = None;
+    seed_created_pool(&mut s, &id).unwrap();
+    retire_pool_truck_counts(
+        &mut s,
+        &id,
+        Trucks {
+            light: 2,
+            ..Trucks::default()
+        },
+    )
+    .unwrap();
+    pool_mut_for_test(&mut s, &id).trucks.light = 0;
+    let before = serde_json::to_value(&s.logistics).unwrap();
+    at_stage_start(&mut s, 2);
+    seed_pool_opstage(&mut s).unwrap();
+    let site = CargoSite::Pool(id.clone());
+    let entry = s
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter()
+        .find(|e| e.site == site)
+        .unwrap();
+    assert_eq!(entry.stage, super::super::water::WaterStage::current(&s));
+    assert_eq!(
+        entry
+            .cohorts
+            .iter()
+            .map(|c| c.id.as_str())
+            .collect::<Vec<_>>(),
+        [
+            format!("pool.{id}.fuel-trucks-2"),
+            format!("pool.{id}.fuel-trucks-3")
+        ]
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+    );
+    assert!(entry.cohorts.iter().all(|c| c.spent_cp_quarters == 0));
+    let after = serde_json::to_value(&s.logistics).unwrap();
+    seed_pool_opstage(&mut s).unwrap();
+    assert_eq!(serde_json::to_value(&s.logistics).unwrap(), after);
+    assert_eq!(after["pool_fuel_segments"], before["pool_fuel_segments"]);
+    assert_eq!(after["pool_fuel_accounts"], before["pool_fuel_accounts"]);
+    assert_eq!(after["truck_pools"], before["truck_pools"]);
+}
+
+/// Cases: land:6.13, airlog:53.25
+#[test]
+fn stage_seed_late_corruption_is_atomic_and_queries_never_initialize_legacy() {
+    let (mut s, id) = game(single(), 100);
+    let other = super::super::pools::add_truck_pool(
+        &mut s.logistics,
+        None,
+        Side::Axis,
+        Placement::Hex {
+            hex: "C4020".into(),
+        },
+        None,
+        single(),
+        Supplies::default(),
+    )
+    .unwrap();
+    at_stage_start(&mut s, 1);
+    assert!(matches!(
+        motion::query(
+            &s,
+            Side::Axis,
+            &CargoSite::Pool(id.clone()),
+            &fresh_pool_physical_cohorts(&s, &id).unwrap()
+        ),
+        Err(MotionError::Unknown)
+    ));
+    // The first pool's prepared zero history must not publish if a later pool is corrupt.
+    s.logistics
+        .truck_pools
+        .iter_mut()
+        .find(|p| p.id == other)
+        .unwrap()
+        .trucks
+        .light = -1;
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(seed_pool_opstage(&mut s).is_err());
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    assert!(s.logistics.cargo_history.motion.entries.is_empty());
+}
+
+/// Cases: land:6.13, airlog:49.16, airlog:53.25
+#[test]
+fn stage_seed_resets_only_physical_cp_and_preserves_funding_stock_posture() {
+    let (mut s, id) = game(single(), 100);
+    seed_created_pool(&mut s, &id).unwrap();
+    spend_pool_segment_fuel(content(), &mut s, &id, 8).unwrap();
+    let physical = pool_segment_fuel_cohorts(&s, &id)
+        .unwrap()
+        .iter()
+        .map(PhysicalTrucks::from)
+        .collect::<Vec<_>>();
+    motion::advance(
+        &mut s,
+        Side::Axis,
+        &CargoSite::Pool(id.clone()),
+        &physical,
+        8,
+    )
+    .unwrap();
+    s.land.movement.pool_on_road.insert(id.clone());
+    let accounts = serde_json::to_value(&s.logistics.pool_fuel_accounts).unwrap();
+    let fuel = serde_json::to_value(&s.logistics.pool_fuel_segments).unwrap();
+    let stock_before = stock(&s, &id);
+    at_stage_start(&mut s, 2);
+    seed_pool_opstage(&mut s).unwrap();
+    assert_eq!(
+        motion::query(&s, Side::Axis, &CargoSite::Pool(id.clone()), &physical).unwrap()[0]
+            .spent_cp_quarters,
+        0
+    );
+    assert_eq!(
+        serde_json::to_value(&s.logistics.pool_fuel_accounts).unwrap(),
+        accounts
+    );
+    assert_eq!(
+        serde_json::to_value(&s.logistics.pool_fuel_segments).unwrap(),
+        fuel
+    );
+    assert_eq!(stock(&s, &id), stock_before);
+    assert!(s.land.movement.pool_on_road.contains(&id));
+    motion::advance(
+        &mut s,
+        Side::Axis,
+        &CargoSite::Pool(id.clone()),
+        &physical,
+        4,
+    )
+    .unwrap();
+    let before = serde_json::to_value(&s).unwrap();
+    seed_pool_opstage(&mut s).unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    s.cursor.block = crate::seq::Block::PlayerHalf;
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(seed_pool_opstage(&mut s).is_err());
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+}
+
+/// Cases: land:20.83, airlog:49.16, airlog:53.25
+#[test]
+fn withdrawal_wrapper_retires_paid_split_motion_once_and_rolls_back_bad_amount() {
+    let (mut s, id) = game(
+        Trucks {
+            medium: 3,
+            ..Trucks::default()
+        },
+        100,
+    );
+    seed_created_pool(&mut s, &id).unwrap();
+    spend_pool_segment_fuel(content(), &mut s, &id, 8).unwrap();
+    let physical = pool_segment_fuel_cohorts(&s, &id)
+        .unwrap()
+        .iter()
+        .map(PhysicalTrucks::from)
+        .collect::<Vec<_>>();
+    motion::advance(
+        &mut s,
+        Side::Axis,
+        &CargoSite::Pool(id.clone()),
+        &physical,
+        8,
+    )
+    .unwrap();
+    let accounts = serde_json::to_value(&s.logistics.pool_fuel_accounts).unwrap();
+    let mut corrupt = s.clone();
+    corrupt
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter_mut()
+        .find(|e| e.site == CargoSite::Pool(id.clone()))
+        .unwrap()
+        .cohorts[0]
+        .id = "unbound-id".into();
+    let corrupt_before = serde_json::to_value(&corrupt).unwrap();
+    assert!(
+        retire_pool_truck_counts(
+            &mut corrupt,
+            &id,
+            Trucks {
+                medium: 1,
+                ..Trucks::default()
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&corrupt).unwrap(), corrupt_before);
+    retire_pool_truck_counts(
+        &mut s,
+        &id,
+        Trucks {
+            medium: 1,
+            ..Trucks::default()
+        },
+    )
+    .unwrap();
+    pool_mut_for_test(&mut s, &id).trucks.medium -= 1;
+    let surviving = pool_segment_fuel_cohorts(&s, &id)
+        .unwrap()
+        .iter()
+        .map(PhysicalTrucks::from)
+        .collect::<Vec<_>>();
+    let records = motion::query(&s, Side::Axis, &CargoSite::Pool(id.clone()), &surviving).unwrap();
+    assert_eq!(records[0].count, 2);
+    assert_eq!(records[0].spent_cp_quarters, 8);
+    assert_eq!(
+        serde_json::to_value(&s.logistics.pool_fuel_accounts).unwrap(),
+        accounts
+    );
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(
+        retire_pool_truck_counts(
+            &mut s,
+            &id,
+            Trucks {
+                medium: 3,
+                ..Trucks::default()
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    let mut recovered: State = serde_json::from_value(before).unwrap();
+    assert_eq!(
+        pool_segment_fuel_cohorts(&recovered, &id).unwrap(),
+        pool_segment_fuel_cohorts(&s, &id).unwrap()
+    );
+    retire_pool_truck_counts(
+        &mut recovered,
+        &id,
+        Trucks {
+            medium: 2,
+            ..Trucks::default()
+        },
+    )
+    .unwrap();
+    assert!(
+        recovered
+            .logistics
+            .cargo_history
+            .motion
+            .entries
+            .iter()
+            .find(|e| e.site == CargoSite::Pool(id.clone()))
+            .unwrap()
+            .cohorts
+            .is_empty()
+    );
+}
 fn stock(s: &State, id: &str) -> i32 {
     pool(s, id).unwrap().cargo.fuel
 }
