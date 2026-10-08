@@ -132,6 +132,29 @@ unsure which case you are in, you are in the last one.
 
 Say in the commit message which checks you ran. Never describe a gate you skipped as passing.
 
+### Measuring anything across two commits
+
+Two traps have already invalidated real measurements here. Read this before you compare timings,
+counts or outputs between revisions.
+
+**A shared target directory can make two commits run the same data.** `cna_content::repo_data_dir`
+resolves through `env!("CARGO_MANIFEST_DIR")`, which is baked in when the crate is compiled. If two
+checkouts share a `CARGO_TARGET_DIR`, the second may reuse the first's binary and read the first's
+`data/` — so the two "different heads" are reading identical content and the comparison means
+nothing. Use a fresh target directory per head, and prove it: hash each test binary and check the
+data root it actually compiled against before you believe a single number.
+
+**Wall-clock numbers taken under load measure the load.** Other agents land continuously, so a
+`cargo` run competes with their builds and tests. Before attributing a slowdown to a code or data
+change, measure in a quiet window and say what else was running. A timing assertion that only holds
+on an idle machine does not belong in a gate; put it where a clock means something, or set its
+threshold for the loaded case. Record the isolated time, the loaded time and the relevant data sizes
+beside any threshold you choose, so the next person can recompute the ratio instead of rediscovering
+this paragraph.
+
+And ratios of *bounds* are not ratios of *work*: a cost growing faster than every input dimension is
+worth investigating, but a published bound is an upper limit, not a measurement of what ran.
+
 ## 4. Areas and owners
 
 Each area has one owning agent at a time, recorded in `docs/ownership.md`. You may read anything,
