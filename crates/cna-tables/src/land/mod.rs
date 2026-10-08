@@ -8,12 +8,14 @@ pub mod breakdown;
 pub mod capability;
 pub mod combat;
 pub mod engineering;
+pub mod fleet;
 mod grid;
 pub mod morale;
 pub mod patrol;
 pub mod raids;
 pub mod repair;
 pub mod replacements;
+pub mod simplified_supply;
 pub mod terrain;
 pub mod training;
 pub mod weather;
@@ -21,6 +23,9 @@ pub mod weather;
 crate::tables_group! {
     /// Land tables currently bound; the loader test records the remaining tables explicitly.
     LandTables {
+        cw_fleet_reinforcement: fleet::CommonwealthFleetReinforcement,
+        axis_supply_availability: simplified_supply::AxisSupplyAvailability,
+        cw_supply_availability: simplified_supply::CommonwealthSupplyAvailability,
         desert_raider_raids: raids::DesertRaiderRaids,
         raid_on_rommel: raids::RaidOnRommel,
         sas_brigade_raid: raids::SasBrigadeRaid,
