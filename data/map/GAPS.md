@@ -399,3 +399,18 @@ unresolved coastal domains and empty flags; neither domain nor terrain is
 certified there. Other eight deferrals have reviewed noncoastal domains.
 Further source allocations remain paced work; this continuation adds no
 edge, lake, named-place, facility or complete setup/action certification.
+
+
+### Standing C-Libya cycle 1 deferrals, 2026-10-08
+
+C2804, C2605, C2314, C2213 and C2718 retain unknown terrain because their
+visible land substrates do not have a confidently predominant class. Their
+individual raw notes retain both the observed substrates and reasons for
+abstention. All five have directly reviewed noncoastal domains, so they
+receive only domain masks; no terrain mask is supplied. Earlier Unknowns
+remain unchanged.
+
+This terrain-only cycle adds no lake, movement-side, port, place or facility
+evidence. Continuous terrain work follows the standing approved phase;
+other layers still require their own authorization. Geographic country
+membership alone does not make an Unknown terrain cell usable for setup.

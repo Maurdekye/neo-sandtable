@@ -750,3 +750,30 @@ source frontier, geometry, other membership or place record changes. C4908
 Sea terrain supplies no Tobruk port or other facility fact. All 170 map
 files reproduce byte-identically through two terrain/layer/area replays.
 Full joint gate results and exact publication remain separate receipts.
+
+
+### Standing C-Libya terrain cycle 1, 2026-10-08
+
+Three immutable worker reviews cover 193 previously unobserved cells:
+map-terrain and map-lines cyrenaica-0003, and map-lines-2 cyrenaica-0002.
+They add 188 land classifications (181 clear, five rough, two salt marsh)
+and retain five explicit terrain Unknowns. Every accepted cell uses direct
+native 2021/TEC review and the adopted predominant land-substrate rule
+(land:8.37; interp:map-0003); mixed-cell minor substrates stay in the raw
+notes. Authored raw and note bytes and author dates are preserved. This is
+single-observer evidence; source error rates, independent batch agreement
+and original 1979 equivalence remain unmeasured.
+
+The union adds 381 masks: 188 terrain and 193 noncoastal-domain records.
+Existing point flags, including C1715 Village/Bir, remain separate from
+terrain observations. Known-land counts rise from 344 to 532 in Libya and
+from 343 to 531 in map_c_libya. No Sea is added, so all generated area
+memberships and fields remain unchanged. Prior raw records, geometry,
+frontier, places, edges and strips are preserved. Whole-map totals become
+1,378 classified cells, 5,645 unclassified cells and 2,808 cell masks;
+31,968 edge-kind masks, 393 lines and 409 sides remain unchanged.
+
+All 176 map files reproduce byte-identically through two complete terrain,
+layer and area replays. Exact joint Rust/web gate results and main
+publication are recorded separately; replay does not certify source
+accuracy, a complete setup domain or new action permission.
