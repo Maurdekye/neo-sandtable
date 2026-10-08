@@ -150,18 +150,29 @@ cases are not implemented. Write every procedure so that it is correct under `fu
 
 ## 5. How far along the sequence of play is
 
-The sequence has **50 steps**. 24 of them dispatch to a procedure; 26 fall through to
-`Cna::unimplemented`, which the `full` profile turns into `Unsupported`. Two of the 24 —
-`opstage.movement_and_combat.combat.close_assault` and `end_of_game` — dispatch but still call
-`unimplemented` themselves, so `full` refuses there too.
+Don't estimate this by hand — measure it. `tools/rules/coverage.py` compares the rule-case
+registry against the `Cases:` and `Unsupported:` citations in the engine source, per scenario and
+per sequence anchor, and CI runs it on every push:
 
-To size what is left, ask the registry how many procedural cases apply to the scenario at each
-step (`Registry::procedural_at(anchor, "graziani")`). For Graziani that is **1030 case-slots**
-across the 50 steps; a case anchored at several timings counts once per timing, so these are
-slots, not distinct cases. Roughly **500 of them sit at steps with no procedure**.
+```sh
+python tools/rules/coverage.py --scenario graziani
+python tools/rules/coverage.py --scenario graziani --json out.json   # per-anchor detail
+```
 
-Treat that as the *shape* of the remaining work, not a completion percentage: a step with a
-procedure is not necessarily complete, and the slot count says nothing about how hard a case is.
+On `aa5c46c`: **998 applicable cases, 342 implemented (34.3%), 248 of those also tested, 655
+missing, 1 explicitly unsupported.**
+
+What the measure does and does not say. A case counts as implemented when a non-test `Cases:`
+line cites it, and tested when test code cites it too — so this tracks *claimed* coverage, not
+correctness, and it says nothing about how hard the remaining cases are. The 94-case gap between
+implemented and tested is worth watching on its own, as are the 13 `test_only_citation` warnings,
+where a case is cited only from test code and so counts as neither.
+
+Separately, the sequence has 50 steps and 24 of them dispatch to a procedure; the rest fall
+through to `Cna::unimplemented`, which `full` turns into `Unsupported`. Two that do dispatch,
+`opstage.movement_and_combat.combat.close_assault` and `end_of_game`, call `unimplemented`
+themselves, so `full` refuses there too. Step dispatch is a coarser signal than case coverage —
+prefer the tool.
 
 Working, broadly: the sequence itself with skipping by system; scenario set-up, including area
 placements and first-line truck distribution; initiative and the per-OpStage declaration;
@@ -177,7 +188,13 @@ combat, flak, deployment, completion, return, maintenance), anti-armor and close
 and towing, patrol, CW fleet and rail movement, naval-convoy recon, lanes and bombing, training,
 end of turn, and victory determination.
 
-**Air is the long pole for D2.** It is about 6.5k lines against 29k for Land and 33k for
-Logistics, and ten of its twelve steps are unwired — together a little under half of everything
-still missing. Modules exist for air combat, flak and maintenance, but they are small and their
-steps do not dispatch yet, so "a file exists" is not the same as "the step runs".
+**Air is the long pole for D2**, and the coverage report puts a number on it. Grouping its
+per-anchor output by system: Land 242 of 648 implemented (37%), Logistics 60 of 109 (55%),
+the `continuous` cases 52 of 85 (61%) — and **Air 33 of 314, or 11%**. Air therefore holds 281 of
+the 655 missing cases, roughly 43% of everything left, while being the least advanced subsystem.
+Modules exist for air combat, flak and maintenance, but they are small and their steps do not
+dispatch, so "a file exists" is not the same as "the step runs".
+
+The largest single gaps, missing out of applicable: movement 71/144, close assault 62/79,
+construction 57/66, land-support assignment 54/58, air combat 50/57, air completion 47/51,
+reorganization 40/51, `continuous` 33/85, repair maintenance 27/27, truck convoys 24/44.
