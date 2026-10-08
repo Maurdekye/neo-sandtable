@@ -1,0 +1,307 @@
+[batch]
+id = "map-lines-tobruk-bardia-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "B3933,B3833,B4230,B4131,B4031,B3932,B3832,B3733,B3633,B4030,B3931,B3831,B3732,B3632,B3533,B3433,B3830,B3731,B3631,B3532,B3432,B3333,B3630,B3531,B3431,B3332,B3232,B3233,B3430,B3331,B3231,B3132,B3133,B3230,B3131,B3031,B3032"
+notes = "Exact37 fresh published B-Libya terrain cells, allocation SHA76c9e133, actualbase335763a under standing ItalianCampaign60.23 terrain-first GO. Every full source cell/boundary inspected on4native2x sheets and12full-cell4x details against TEC.25clear accepted;12gray-green ribbon identities remain Unknown with emptyflags and known-land notes. No marine/domain or line-side/facility inference from ribbon/color/geography. No distinct minor land substrate confidently identified; all evidence in individual notes. Source views outside repo; direct single observer, no classifier/independent accuracy/1979 equivalence."
+
+[[hex]]
+hex_id = "B3933"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3833"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B4230"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B4131"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B4031"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3932"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3832"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3733"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3633"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B4030"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3931"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3831"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3732"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a small ribbon tip extends inside the southwest side. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3632"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3533"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3433"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3830"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3731"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon tip enters the southeast side. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3631"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a broad ribbon bends through the west interior between the northern and southern vertices. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3532"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon margin extends inside the west side. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3432"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3333"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3630"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon margin overlaps the southwest/southern boundary. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3531"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a broad U-shaped ribbon spans the western/southern/eastern interior. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3431"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon margin follows the northwest/west/southwest boundary. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3332"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3232"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3233"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3430"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon margin follows the northeast/east/southeast boundary. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3331"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon bends through the western interior from north to south. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3231"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon margin overlaps the northwest/west side. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3132"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3133"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3230"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon bends through the eastern interior between northeast and southern sides. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3131"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x complete-cell interior and every boundary directly inspected: a ribbon margin follows the northwest/west side. Cream clear land is visible, but the gray-green ribbon identity and its terrain/domain consequences are not confidently established against TEC. Keep Unknown with empty terrain-domain flags; known-land observation is recorded only in this note. No lake, marine identity, wadi or other hexside/feature acceptance is inferred from the ribbon, source color or planning geography."
+
+[[hex]]
+hex_id = "B3031"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
+
+[[hex]]
+hex_id = "B3032"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native source interior and all six printed boundaries directly inspected against TEC: cream clear land throughout; no distinct minor land substrate confidently identified. Printed grid, section seams and transport ink remain separate from substrate. No marine water inside; no facility or line/side evidence is supplied."
