@@ -976,6 +976,10 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
     let rules = Cna::dev();
     let mut rng = CampaignRng::from_seed([19; 32]);
     let begin = std::time::Instant::now();
+    // The bounded default test budgets its own CPU work, excluding parallel tests and waiting.
+    // Keep the ignored whole-campaign profiler's wall budget unchanged.
+    let thread_begin = (!must_finish)
+        .then(|| cpu_time::ThreadTime::try_now().expect("movement test needs a thread CPU clock"));
     let mut moves = 0;
     let mut after_setup = 0;
     for n in 0..answer_limit + 4096 {
@@ -991,10 +995,36 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
                 moves
             );
         }
-        assert!(
-            begin.elapsed().as_secs() < if must_finish { 180 } else { 60 },
-            "movement campaign exceeded its bounded test budget"
-        );
+        if let Some(thread_begin) = &thread_begin {
+            let cpu = thread_begin
+                .try_elapsed()
+                .expect("movement test needs a thread CPU clock");
+            let wall = begin.elapsed();
+            if n % 100 == 0 {
+                eprintln!(
+                    "bounded movement budget: thread CPU {:.3}s, wall {:.3}s",
+                    cpu.as_secs_f64(),
+                    wall.as_secs_f64()
+                );
+            }
+            assert!(
+                cpu < std::time::Duration::from_secs(60),
+                "movement campaign exceeded its 60s test-thread CPU budget: CPU {:.3}s, wall {:.3}s",
+                cpu.as_secs_f64(),
+                wall.as_secs_f64()
+            );
+            assert!(
+                wall < std::time::Duration::from_secs(600),
+                "movement campaign exceeded its 600s wall hang backstop: CPU {:.3}s, wall {:.3}s",
+                cpu.as_secs_f64(),
+                wall.as_secs_f64()
+            );
+        } else {
+            assert!(
+                begin.elapsed().as_secs() < 180,
+                "movement campaign exceeded its bounded test budget"
+            );
+        }
         let t = evaluate(&rules, &c, &g, &Command::Advance).unwrap();
         g = t.game;
         if matches!(t.progress, Some(Progress::Finished { .. })) {
@@ -1029,6 +1059,16 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
         )
         .unwrap()
         .game;
+    }
+    if let Some(thread_begin) = &thread_begin {
+        eprintln!(
+            "bounded movement finished: thread CPU {:.3}s, wall {:.3}s, {after_setup} post-setup answers, {moves} movement orders",
+            thread_begin
+                .try_elapsed()
+                .expect("movement test needs a thread CPU clock")
+                .as_secs_f64(),
+            begin.elapsed().as_secs_f64()
+        );
     }
     assert!(
         moves > 0,

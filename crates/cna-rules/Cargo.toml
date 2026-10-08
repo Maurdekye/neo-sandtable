@@ -15,5 +15,8 @@ cna-tables = { path = "../cna-tables" }
 serde.workspace = true
 serde_json.workspace = true
 
+[dev-dependencies]
+cpu-time = "1.0.0"
+
 [lints]
 workspace = true
