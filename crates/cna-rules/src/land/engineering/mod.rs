@@ -230,3 +230,6 @@ pub fn whole_stage_idle_at(state: &State, id: &UnitId, location: &Location) -> b
 
 #[cfg(test)]
 mod tests;
+
+mod capability;
+pub use capability::{EngineerCapability, source_capability};
