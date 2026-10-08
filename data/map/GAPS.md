@@ -446,3 +446,18 @@ This final 134-cell terrain snapshot completes source coverage of the
 original C-Libya allocations after publication and inclusion verification.
 Explicit Unknowns remain gaps. It adds no lake, edge, port, place or
 facility evidence; those layers retain their separate authorization rules.
+
+
+### Tobruk/Bardia B-Libya terrain deferrals, 2026-10-08
+
+B3131, B3230, B3231, B3331, B3430, B3431, B3531, B3532, B3630, B3631, B3731, B3732
+retain unknown terrain and coastal domains. Their gray-green inland
+bands do not establish water identity; empty flags supply no terrain or
+coastal mask. Individual notes retain the visible known-land evidence.
+
+B4232, B4333, B4430, B4630, B5031
+retain unknown terrain because land-substrate predominance is unresolved.
+Their directly reviewed noncoastal land domains receive only domain masks.
+No deferred cell receives a terrain mask. All earlier Unknowns remain
+unchanged. These terrain records add no lake, edge, port, place or
+facility evidence; those layers retain separate authorization.

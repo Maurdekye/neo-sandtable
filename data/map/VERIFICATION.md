@@ -833,3 +833,32 @@ All 186 map files reproduce byte-identically through two complete terrain,
 layer and area replays. Full joint gates and actual main publication have
 separate receipts. Coverage of an allocation does not resolve its explicit
 Unknowns, certify source accuracy or grant new action or facility permission.
+
+
+### Tobruk/Bardia B-Libya terrain allocation, 2026-10-08
+
+Three immutable reviews cover 110 previously unobserved canonical cells
+in the existing Libyan B-section work allocation. Direct full native 2021
+cell and boundary review against the TEC supplies 93 classifications:
+75 clear, 12 gravel, three rough, one salt marsh and two Sea, with
+17 explicit Unknowns. Each cell cites land:8.37 and adopted map-0002/
+map-0003; observed minor substrates and abstention reasons stay in raw
+notes. Original raw/note bytes, authors and author dates are preserved.
+Parent audits establish provenance and mechanical preservation; source
+accuracy, independent visual agreement and 1979 equivalence are unmeasured.
+
+The union adds 191 masks: 93 terrain and 98 marine-only coastal-domain
+observations. Twelve inland water-identity Unknowns have empty flags and
+receive no masks; five substrate-balance Unknowns receive domain masks
+only. B5133 and B5232 are directly reviewed Sea and remove themselves
+only from generated Libya, with no additions or other area-field changes.
+All prior raw observations, point flags, geometry, frontier, places, edges
+and strips are preserved. Known-land Libya grows from 825 to 916;
+map_c_libya stays at 824. Whole-map totals become 1,764 classified cells,
+5,259 unclassified and 3,604 cell masks. Edge-kind masks, lines and sides
+remain 31,968, 393 and 409.
+
+All 192 map files reproduce byte-identically through two complete terrain,
+layer and area replays. Full final joint gates and actual main publication
+have separate receipts. Allocation coverage does not resolve explicit
+Unknowns or grant a place, facility, movement-side or action permission.
