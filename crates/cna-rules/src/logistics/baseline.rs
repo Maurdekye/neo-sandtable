@@ -287,6 +287,18 @@ fn batch_orders(
     if kind != batches::WATER {
         return Some(json!(out));
     }
+    let wells = batch_wells(content, &mut draft, request)?;
+    if wells.is_null() {
+        return Some(Value::Null);
+    }
+    Some(json!({"allocations":out,"wells":wells}))
+}
+
+fn batch_wells(
+    content: &CnaContent,
+    draft: &mut State,
+    request: &DecisionRequest,
+) -> Option<Value> {
     let mut ops = vec![];
     let ActionSchema::Record { fields } = &request.space.schema else {
         return Some(Value::Null);
@@ -316,20 +328,20 @@ fn batch_orders(
             .units
             .get(&id)
             .is_some_and(|u| u.side == request.seat.side)
-            || known_bad(&draft, &id, request.seat.side)
+            || known_bad(draft, &id, request.seat.side)
             || draft.logistics.water_window.completed_wells.contains(&id)
         {
             continue;
         }
-        let Some((requested, packing)) = well_request(content, &draft, &id) else {
+        let Some((requested, packing)) = well_request(content, draft, &id) else {
             continue;
         };
-        if wells::prepare_draw(content, &mut draft, &id, requested, &packing).is_err() {
+        if wells::prepare_draw(content, draft, &id, requested, &packing).is_err() {
             continue;
         }
         ops.push(json!({"operation":o.id,"requested":requested,"packing":packing}));
     }
-    Some(json!({"allocations":out,"wells":ops}))
+    Some(json!(ops))
 }
 
 /// Feed and water the owning side from enumerated legal sources. Prefer units whose
@@ -355,6 +367,9 @@ pub fn logistics_orders_with_profile(
     if request.kind != super::batches::WATER || answer.is_null() {
         return Ok(Some(answer));
     }
+    // Match the handler's unit -> pool -> well order on the disposable owner draft.
+    // Pool stock issues can debit a well unit's carried water, changing its draw packing.
+    answer["wells"] = json!([]);
     let mut draft = state.clone();
     super::batches::apply_water_answer(content, &mut draft, request.seat.side, &answer, strict)
         .map_err(|error| match error {
@@ -364,6 +379,11 @@ pub fn logistics_orders_with_profile(
             },
         })?;
     let pools = water::pools::baseline(content, &mut draft, request.seat.side)?;
+    answer["wells"] = batch_wells(content, &mut draft, request).ok_or_else(|| {
+        cna_core::engine::EngineError::Invariant {
+            detail: "baseline well list is invalid".into(),
+        }
+    })?;
     answer
         .as_object_mut()
         .ok_or_else(|| cna_core::engine::EngineError::Invariant {
@@ -673,6 +693,265 @@ mod tests {
         }
         panic!("baseline did not finish the logistics window")
     }
+    /// Cases: airlog:52.13, airlog:52.42, land:3.6
+    #[test]
+    fn pool_stock_issue_precedes_well_packing_in_the_joint_baseline() {
+        let strict = false;
+        let id = UnitId::new("it.libyan_tank_command.xxi_l_tank_bn");
+        let mut state = fixture(0);
+        for (other, unit) in &mut state.land.units {
+            if *other != id {
+                unit.location = Location::Eliminated;
+            }
+        }
+        state.logistics.dumps.clear();
+        state.logistics.unit_supply.clear();
+        state.cursor.block = Block::OpStage;
+        state.cursor.index = 2;
+        state.land.units.get_mut(&id).unwrap().location = Location::Hex {
+            hex: "E1730".into(),
+        };
+        state.land.units.get_mut(&id).unwrap().trucks.light = 1;
+        assert_eq!(
+            wells::source_at(
+                content(),
+                &state,
+                cna_protocol::Side::Axis,
+                &state.land.units[&id].location
+            )
+            .unwrap(),
+            wells::Source::MajorCity
+        );
+        let need = rations::activity_points(content(), &state, &id).unwrap();
+        assert!(need > 1);
+        let stock = Supplies {
+            water: 1,
+            ..Supplies::default()
+        };
+        assert!(packing(content(), &state, &id, stock).is_some());
+        let held = state.logistics.unit_supply.entry(id.clone()).or_default();
+        held.carried = stock;
+        held.activity_water = cna_core::quantity::WaterPoints::new(need);
+        let pool = crate::logistics::pools::add_truck_pool(
+            &mut state.logistics,
+            None,
+            cna_protocol::Side::Axis,
+            cna_content::scenario::Placement::Hex {
+                hex: "E1730".into(),
+            },
+            Some(state.land.units[&id].location.clone()),
+            cna_content::units::Trucks {
+                light: 1,
+                ..Default::default()
+            },
+            Supplies::default(),
+        )
+        .unwrap();
+        let mut rng = CampaignRng::from_seed([13; 32]);
+        let mut events = vec![];
+        let rules = Cna::dev();
+        water::enter(
+            content(),
+            &mut state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+            strict,
+        )
+        .unwrap();
+        let before = serde_json::to_value(&state).unwrap();
+        let game_rng = rng.state();
+        let request = rules.pending(content(), &state).remove(0);
+        assert_eq!(request.kind, crate::logistics::batches::WATER);
+        let mut controller = CampaignRng::from_seed([17; 32]);
+        let legacy =
+            logistics_orders(content(), &state, &request, &mut controller.clone()).unwrap();
+        let action =
+            logistics_orders_with_profile(content(), &state, &request, &mut controller, strict)
+                .unwrap()
+                .unwrap();
+        assert_eq!(serde_json::to_value(&state).unwrap(), before);
+        assert_eq!(rng.state(), game_rng);
+        assert_eq!(action["pool_allocations"][0]["pool"], json!(pool));
+        assert_eq!(action["pool_allocations"][0]["activity"], 1);
+        assert_eq!(
+            action["pool_allocations"][0]["draws"][0]["source"],
+            json!(serde_json::to_string(&SupplySource::UnitStock(id.clone())).unwrap())
+        );
+        assert_eq!(action["wells"].as_array().unwrap().len(), 1);
+        assert_eq!(
+            action["wells"][0]["requested"].as_i64().unwrap(),
+            legacy["wells"][0]["requested"].as_i64().unwrap() + 1
+        );
+        let respond = |game: &Game<Cna>, action: Value| {
+            let request = rules.pending(content(), &game.state).remove(0);
+            let before = serde_json::to_value(game).unwrap();
+            let transition = evaluate(
+                &rules,
+                content(),
+                game,
+                &Command::Respond(DecisionResponse {
+                    decision_id: request.id.clone(),
+                    seat: request.seat,
+                    controller_epoch: 1,
+                    decision_revision: request.revision,
+                    idempotency_key: request.id.to_string(),
+                    action,
+                    public_explanation: None,
+                }),
+            )
+            .unwrap();
+            assert_eq!(serde_json::to_value(game).unwrap(), before);
+            assert_eq!(transition.game.rng, game.rng);
+            transition.game
+        };
+        let mut game = respond(
+            &Game {
+                state,
+                rng: game_rng.clone(),
+            },
+            action.clone(),
+        );
+        assert_eq!(game.state.logistics.unit_supply[&id].carried.water, 1);
+        assert_eq!(
+            game.state
+                .logistics
+                .truck_pools
+                .iter()
+                .find(|p| p.id == pool)
+                .unwrap()
+                .activity_water
+                .get(),
+            0
+        );
+        assert_eq!(game.state.land.units[&id].cp_spent_quarters, 0);
+        assert!(game.state.logistics.drawn_water.is_empty());
+        assert_eq!(game.state.decisions.pending.len(), 1);
+        let other = rules.pending(content(), &game.state).remove(0);
+        let pass =
+            logistics_orders_with_profile(content(), &game.state, &other, &mut controller, strict)
+                .unwrap()
+                .unwrap();
+        game = respond(&game, pass);
+        assert!(game.state.decisions.pending.is_empty());
+
+        // Both fixed rounds replay from full game checkpoints, including events and dice.
+        let finish = |game: &Game<Cna>| {
+            let mut state = game.state.clone();
+            let mut dice = CampaignRng::from_state(&game.rng);
+            let mut events = vec![];
+            crate::logistics::batches::finish_water(
+                content(),
+                &mut state,
+                &mut Cx {
+                    rng: &mut dice,
+                    events: &mut events,
+                },
+                strict,
+            )
+            .unwrap();
+            (
+                Game::<Cna> {
+                    state,
+                    rng: dice.state(),
+                },
+                events,
+            )
+        };
+        let checkpoint: Game<Cna> =
+            serde_json::from_slice(&serde_json::to_vec(&game).unwrap()).unwrap();
+        let (closed, events) = finish(&game);
+        let (replayed, replay_events) = finish(&checkpoint);
+        assert_eq!(
+            serde_json::to_value(&closed).unwrap(),
+            serde_json::to_value(&replayed).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(events).unwrap(),
+            serde_json::to_value(replay_events).unwrap()
+        );
+        game = closed;
+        let drawn = game.state.logistics.drawn_water[&id].points;
+        assert_eq!(
+            drawn,
+            action["wells"][0]["requested"].as_i64().unwrap() as i32
+        );
+        assert_eq!(game.state.logistics.unit_supply[&id].carried.water, 0);
+        assert_eq!(
+            game.state.logistics.unit_supply[&id].activity_water.get(),
+            0
+        );
+        assert_eq!(
+            game.state
+                .logistics
+                .truck_pools
+                .iter()
+                .find(|p| p.id == pool)
+                .unwrap()
+                .activity_water
+                .get(),
+            1
+        );
+        assert_eq!(game.state.land.units[&id].cp_spent_quarters, 4);
+        assert!(game.state.logistics.dumps.is_empty());
+        assert_eq!(game.state.decisions.pending.len(), 2);
+        for _ in 0..2 {
+            let request = rules.pending(content(), &game.state).remove(0);
+            assert_eq!(request.kind, crate::logistics::batches::WELL_ALLOCATION);
+            let action = logistics_orders_with_profile(
+                content(),
+                &game.state,
+                &request,
+                &mut controller,
+                strict,
+            )
+            .unwrap()
+            .unwrap();
+            game = respond(&game, action);
+        }
+        let checkpoint: Game<Cna> =
+            serde_json::from_slice(&serde_json::to_vec(&game).unwrap()).unwrap();
+        let (closed, events) = finish(&game);
+        let (replayed, replay_events) = finish(&checkpoint);
+        assert_eq!(
+            serde_json::to_value(&closed).unwrap(),
+            serde_json::to_value(&replayed).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(events).unwrap(),
+            serde_json::to_value(replay_events).unwrap()
+        );
+        let holding = &closed.state.logistics.unit_supply[&id];
+        let reserve = closed
+            .state
+            .logistics
+            .truck_pools
+            .iter()
+            .find(|p| p.id == pool)
+            .unwrap()
+            .activity_water
+            .get();
+        let paid = closed.state.logistics.rations[&id]
+            .activity_water_ledger
+            .as_ref()
+            .unwrap();
+        assert_eq!(paid.body_paid + paid.truck_paid.light, need);
+        assert_eq!(
+            1 + need + drawn,
+            holding.carried.water + holding.activity_water.get() + reserve + need
+        );
+        assert_eq!(holding.carried.water, drawn);
+        assert_eq!(holding.activity_water.get(), 0);
+        assert_eq!(reserve, 1);
+        assert!(closed.state.logistics.drawn_water.is_empty());
+        assert!(closed.state.decisions.pending.is_empty());
+        assert!(matches!(
+            closed.state.logistics.water_window.round,
+            crate::logistics::batches::WaterRound::Complete
+        ));
+    }
+
     /// Cases: airlog:51.11, airlog:51.23, airlog:52.13, airlog:52.41, airlog:52.42, airlog:52.6
     #[test]
     fn generated_rations_and_water_are_accepted_across_many_seeds() {
