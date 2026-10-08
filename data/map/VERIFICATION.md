@@ -928,3 +928,35 @@ Whole-map totals become 2,157 classified cells, 4,866 unclassified and
 terrain/layer/area replays. Required final joint checks, publication and
 independent inclusion have separate receipts. Coverage does not establish
 a complete setup/control domain or grant action permission.
+
+
+### Derna/Mechili final terrain snapshot, 2026-10-08
+
+Three disjoint source reviews cover the final 191 cells of the frozen
+641-cell Derna/Mechili allocation. They supply 174 classifications:
+103 clear, 25 gravel, 29 rough, 13 mountain, two salt marsh and two Sea;
+17 retain explicit Unknown terrain. Every full native2021 cell and boundary
+was reviewed against the actual TEC by its batch observer. Adopted map-0003
+chooses clearly predominant land substrates; minor substrates and honest
+uncertainty remain in source-bound per-cell notes. Original raw/note bytes,
+source pins, authors and dates are retained. Parent provenance and replay
+checks do not measure visual accuracy or independent observer agreement;
+1979 equivalence remains unmeasured.
+
+The union adds 353 cell masks: 174 terrain and 179 marine-domain observations.
+Twelve inland water-identity Unknowns have empty flags and no masks. Five
+land-substrate Unknowns have only domain masks and no terrain masks. Newly
+reviewed Sea B5731 and B5830 remove themselves only from generated Libya;
+no additions or other area-field changes occur. Prior raw records including
+Unknown, all prior masks, point/facility flags, geometry, frontier, edges
+and places remain preserved. No lake, edge, port/place, facility anchor,
+closed extent, setup/control completeness or action permission is added.
+
+Candidate Libya known land grows from 1,289 to 1,461; map_c_libya remains
+824. Whole-map totals become 2,331 classified cells, 4,692 unclassified and
+4,764 cell masks. Edge-kind masks, lines and sides stay 31,968, 393 and 409.
+All 210 map files replay byte-identically twice. Final joint gates,
+publication and independent inclusion are recorded separately. The full
+641-cell allocation is observed exactly once: 545 known land, 22 Sea and
+74 explicit Unknowns. Allocation completion does not resolve those gaps
+or establish source accuracy.

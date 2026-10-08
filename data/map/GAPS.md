@@ -495,3 +495,17 @@ supplies only coastal-domain masks; none receives a terrain mask.
 B5907, B5908, B5909 retain directly established marine coastal land.
 All other domain-only deferrals retain noncoastal land evidence. Prior
 Unknowns stay unchanged, with no inferred lake, edge, place or facility fact.
+
+
+### Derna/Mechili final terrain snapshot deferrals, 2026-10-08
+
+B3825, B3826, B3827, B3925, B3926, B3927, B3928, B5010, B5713, B5714, B5813, B5814
+retain Unknown terrain and unresolved marine coastal domains because inland
+patterns do not establish water identity. Empty flags supply no terrain or
+domain masks; individual source notes retain visible land evidence.
+
+B3915, B3922, B5412, B5416, B5918
+retain Unknown terrain because land-substrate predominance is unresolved.
+Direct domain evidence supplies only domain masks, never terrain masks.
+These five retain noncoastal known-land observations. Previous Unknowns
+remain unchanged; no lake, edge, place or facility fact is inferred.
