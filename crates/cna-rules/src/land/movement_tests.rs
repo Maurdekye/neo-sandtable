@@ -559,6 +559,8 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
             .all(|pending| !pending.kind.starts_with("cna.setup."))
     );
     g.state.setup.closed = true;
+    // This mid-half fixture already chose Player A; later OpStages need its initiative holder.
+    g.state.turn.initiative = g.state.turn.player_a;
     crate::air::inventory::initialize(&c, &mut g.state).unwrap();
     // This synthetic fixture starts mid-half. Prepare its empty pre-game convoy plans
     // through the real logistics API before running movement, preserving its actual RNG.
