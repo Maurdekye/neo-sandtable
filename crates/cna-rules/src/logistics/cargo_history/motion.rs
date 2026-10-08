@@ -390,5 +390,41 @@ pub fn retire(
     Ok(())
 }
 
+/// Destroy selected counts in place when no fuel split has been materialized.
+/// This never creates a transferable child identity or initializes missing history.
+/// Cases: land:20.83, airlog:53.25
+pub(in crate::logistics) fn retire_selected_counts(
+    state: &mut State,
+    side: Side,
+    site: &CargoSite,
+    selected: &[PhysicalTrucks],
+) -> Result<(), MotionError> {
+    permitted(state, side, site)?;
+    physical(selected)?;
+    let mut source = entry(
+        &state.logistics.cargo_history.motion,
+        site,
+        WaterStage::current(state),
+    )?
+    .clone();
+    for c in selected {
+        if c.parent.is_some() {
+            return Err(MotionError::Invalid);
+        }
+        let h = source
+            .cohorts
+            .iter_mut()
+            .find(|h| h.id == c.id)
+            .ok_or(MotionError::Invalid)?;
+        if h.kind != c.kind || c.count > h.count {
+            return Err(MotionError::Invalid);
+        }
+        h.count -= c.count;
+    }
+    source.cohorts.retain(|c| c.count > 0);
+    save(&mut state.logistics.cargo_history.motion, source);
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests;

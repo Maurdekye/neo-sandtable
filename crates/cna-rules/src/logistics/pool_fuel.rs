@@ -1,6 +1,10 @@
 //! Fuel for actual second-/third-line carriers. Pool identities have separate
 //! checkpointed maps; no land-unit record or troop-body rate is fabricated.
 use super::{
+    cargo_history::{
+        CargoSite,
+        motion::{self, MotionError, PhysicalTrucks, TruckMotion},
+    },
     segment::{
         self, FuelCohortSelection, FuelFundingAccount, FuelSegmentLedger, SegmentFuelPlan,
         SegmentKey, TruckFuelCohort,
@@ -28,14 +32,208 @@ fn pool<'a>(state: &'a State, id: &str) -> Result<&'a TruckPool, SupplyError> {
 }
 fn ledger(state: &State, id: &str) -> Result<FuelSegmentLedger<String>, SupplyError> {
     let p = pool(state, id)?;
-    segment::carrier_ledger(
+    let mut result = segment::carrier_ledger(
         state.logistics.pool_fuel_segments.get(id),
         SegmentKey::current(state),
         p.location.as_ref().ok_or(SupplyError::Invalid)?,
         &p.trucks,
         &id.to_owned(),
         &format!("pool.{id}"),
-    )
+    )?;
+    if !state.logistics.pool_fuel_segments.contains_key(id) {
+        match unfunded_motion(state, id) {
+            Ok(records) => {
+                result.cohorts = records
+                    .into_iter()
+                    .map(|r| TruckFuelCohort {
+                        id: r.id,
+                        parent: None,
+                        kind: r.kind,
+                        count: r.count,
+                        cp_quarters: 0,
+                        account: id.to_owned(),
+                        segment: result.segment.clone(),
+                    })
+                    .collect();
+                // Genesis uses at most three serials. Reserve all of them even
+                // after an unfunded withdrawal removed the highest identity.
+                result.next_cohort_serial = 3;
+            }
+            Err(MotionError::Unknown) => {}
+            Err(_) => return Err(SupplyError::Invalid),
+        }
+    }
+    Ok(result)
+}
+
+fn unfunded_motion(state: &State, id: &str) -> Result<Vec<TruckMotion>, MotionError> {
+    let p = pool(state, id).map_err(|_| MotionError::Invalid)?;
+    if state.logistics.pool_fuel_accounts.contains_key(id) {
+        return Err(MotionError::Invalid);
+    }
+    let site = CargoSite::Pool(id.into());
+    let stage = super::water::WaterStage::current(state);
+    let mut matches = state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter()
+        .filter(|e| e.site == site && e.stage == stage);
+    let entry = matches.next().ok_or(MotionError::Unknown)?;
+    if matches.next().is_some() {
+        return Err(MotionError::Invalid);
+    }
+    let physical: Vec<_> = entry
+        .cohorts
+        .iter()
+        .map(|h| PhysicalTrucks {
+            id: h.id.clone(),
+            parent: None,
+            kind: h.kind,
+            count: h.count,
+        })
+        .collect();
+    let records = motion::query(state, p.side, &site, &physical)?;
+    let prefix = format!("pool.{id}.fuel-trucks-");
+    let mut identities = vec![];
+    let mut kinds = BTreeSet::new();
+    for r in &records {
+        let limit = match r.kind {
+            segment::FuelTruckKind::Light => 1,
+            segment::FuelTruckKind::Medium => 2,
+            segment::FuelTruckKind::Heavy => 3,
+        };
+        let serial =
+            r.id.strip_prefix(&prefix)
+                .and_then(|s| s.parse::<u64>().ok())
+                .filter(|n| (1..=limit).contains(n))
+                .ok_or(MotionError::Invalid)?;
+        if r.id != format!("{prefix}{serial}") || !kinds.insert(r.kind) {
+            return Err(MotionError::Invalid);
+        }
+        identities.push((r.kind, serial));
+    }
+    identities.sort();
+    if identities.windows(2).any(|pair| pair[0].1 >= pair[1].1) {
+        return Err(MotionError::Invalid);
+    }
+    for (kind, expected) in [
+        (segment::FuelTruckKind::Light, p.trucks.light),
+        (segment::FuelTruckKind::Medium, p.trucks.medium),
+        (segment::FuelTruckKind::Heavy, p.trucks.heavy),
+    ] {
+        let count = records
+            .iter()
+            .filter(|r| r.kind == kind)
+            .try_fold(0i32, |n, r| {
+                n.checked_add(r.count).ok_or(MotionError::Invalid)
+            })?;
+        if count != expected {
+            return Err(MotionError::Invalid);
+        }
+    }
+    if records.iter().any(|r| r.spent_cp_quarters != 0) {
+        return Err(MotionError::Invalid);
+    }
+    Ok(records)
+}
+
+/// Exact surviving genesis groups for an unfunded withdrawal, without seeding.
+/// Cases: land:20.83, airlog:49.13, airlog:53.25
+pub fn unfunded_pool_physical_cohorts(
+    state: &State,
+    id: &str,
+) -> Result<Vec<PhysicalTrucks>, MotionError> {
+    if state.logistics.pool_fuel_segments.contains_key(id) {
+        return Err(MotionError::Invalid);
+    }
+    Ok(unfunded_motion(state, id)?
+        .into_iter()
+        .map(|r| PhysicalTrucks {
+            id: r.id,
+            parent: None,
+            kind: r.kind,
+            count: r.count,
+        })
+        .collect())
+}
+
+/// Location-free identities for a trusted fresh allocation, never a legacy fallback.
+/// Cases: airlog:49.13, land:21.25, land:21.29
+pub fn fresh_pool_physical_cohorts(
+    state: &State,
+    id: &str,
+) -> Result<Vec<PhysicalTrucks>, SupplyError> {
+    let p = pool(state, id)?;
+    if state.logistics.pool_fuel_segments.contains_key(id)
+        || state.logistics.pool_fuel_accounts.contains_key(id)
+        || state
+            .logistics
+            .cargo_history
+            .motion
+            .entries
+            .iter()
+            .any(|e| e.site == CargoSite::Pool(id.into()))
+    {
+        return Err(SupplyError::Invalid);
+    }
+    let (cohorts, _) = segment::initial_cohorts(
+        &p.trucks,
+        &id.to_owned(),
+        &format!("pool.{id}"),
+        &SegmentKey::current(state),
+        0,
+        0,
+    )?;
+    Ok(cohorts.iter().map(PhysicalTrucks::from).collect())
+}
+
+/// Seed only a trusted newly allocated real pool, including unresolved setup placement.
+/// No creation caller is activated by this helper alone.
+/// Cases: airlog:53.25, land:6.13
+pub fn seed_created_pool(state: &mut State, id: &str) -> Result<(), cna_core::engine::EngineError> {
+    let invalid = || cna_core::engine::EngineError::Invariant {
+        detail: format!("fresh pool {id}: physical creation identity cannot be reconciled"),
+    };
+    if !state.logistics.truck_pool_ids.contains(id) {
+        return Err(invalid());
+    }
+    let cohorts = fresh_pool_physical_cohorts(state, id).map_err(|_| invalid())?;
+    let side = pool(state, id).map_err(|_| invalid())?.side;
+    motion::seed_fresh(state, side, &CargoSite::Pool(id.into()), &cohorts).map_err(|_| invalid())
+}
+
+/// Retire known zero-CP physical counts before an unfunded inventory withdrawal.
+/// Missing legacy history remains Unknown; this never makes a fuel record or child.
+/// Cases: land:20.83, airlog:49.13, airlog:53.25
+pub fn retire_unfunded_pool_motion(
+    state: &mut State,
+    id: &str,
+    selection: &[FuelCohortSelection],
+) -> Result<(), MotionError> {
+    if state.logistics.pool_fuel_segments.contains_key(id) {
+        return Err(MotionError::Invalid);
+    }
+    let records = unfunded_motion(state, id)?;
+    let p = pool(state, id).map_err(|_| MotionError::Invalid)?;
+    let side = p.side;
+    let selected = selection
+        .iter()
+        .map(|s| {
+            let record = records
+                .iter()
+                .find(|r| r.id == s.id)
+                .ok_or(MotionError::Invalid)?;
+            Ok(PhysicalTrucks {
+                id: record.id.clone(),
+                parent: None,
+                kind: record.kind,
+                count: s.count,
+            })
+        })
+        .collect::<Result<Vec<_>, MotionError>>()?;
+    motion::retire_selected_counts(state, side, &CargoSite::Pool(id.into()), &selected)
 }
 fn account(
     state: &State,

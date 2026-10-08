@@ -228,6 +228,39 @@ fn new_id<A>(ledger: &mut FuelSegmentLedger<A>, id: &str) -> Result<String, Supp
         .ok_or(SupplyError::Invalid)?;
     Ok(format!("{id}.fuel-trucks-{}", ledger.next_cohort_serial))
 }
+/// Canonical identity-only genesis; no origin or funding record is required.
+/// Cases: airlog:49.13, land:21.25, land:21.29
+pub(super) fn initial_cohorts<A: Clone>(
+    trucks: &Trucks,
+    account: &A,
+    identity: &str,
+    segment: &SegmentKey,
+    cp_quarters: i32,
+    serial: u64,
+) -> Result<(Vec<TruckFuelCohort<A>>, u64), SupplyError> {
+    if identity.is_empty() || cp_quarters < 0 {
+        return Err(SupplyError::Invalid);
+    }
+    truck_total(trucks)?;
+    let mut next = serial;
+    let mut cohorts = vec![];
+    for kind in KINDS {
+        let count = kind.count(trucks);
+        if count > 0 {
+            next = next.checked_add(1).ok_or(SupplyError::Invalid)?;
+            cohorts.push(TruckFuelCohort {
+                id: format!("{identity}.fuel-trucks-{next}"),
+                parent: None,
+                kind,
+                count,
+                cp_quarters,
+                account: account.clone(),
+                segment: segment.clone(),
+            });
+        }
+    }
+    Ok((cohorts, next))
+}
 fn validate_cohorts<A>(ledger: &FuelSegmentLedger<A>, trucks: &Trucks) -> Result<(), SupplyError> {
     let mut ids = BTreeSet::new();
     for k in KINDS {
@@ -293,24 +326,16 @@ pub(super) fn carrier_ledger<A: Clone>(
     }
     draws_map(&ledger.draws, ledger.paid_cost)?;
     if !ledger.cohorts_initialized {
-        for kind in KINDS {
-            let count = kind.count(trucks);
-            if count < 0 {
-                return Err(SupplyError::Invalid);
-            }
-            if count > 0 {
-                let cohort_id = new_id(&mut ledger, identity)?;
-                ledger.cohorts.push(TruckFuelCohort {
-                    id: cohort_id,
-                    parent: None,
-                    kind,
-                    count,
-                    cp_quarters: ledger.cp_quarters,
-                    account: id.clone(),
-                    segment: segment.clone(),
-                });
-            }
-        }
+        let (cohorts, serial) = initial_cohorts(
+            trucks,
+            id,
+            identity,
+            &segment,
+            ledger.cp_quarters,
+            ledger.next_cohort_serial,
+        )?;
+        ledger.cohorts.extend(cohorts);
+        ledger.next_cohort_serial = serial;
         ledger.cohorts_initialized = true;
     } else if old.is_some_and(|l| l.segment != segment) {
         for cohort in &mut ledger.cohorts {

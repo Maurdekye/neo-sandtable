@@ -53,6 +53,215 @@ fn at(s: &mut State, id: &str, hex: &str) {
         .unwrap()
         .location = Some(Location::Hex { hex: hex.into() });
 }
+/// Cases: airlog:49.13, land:21.25, land:21.29
+#[test]
+fn location_free_creation_matches_fuel_genesis_without_allocating_funding() {
+    let (mut s, id) = game(
+        Trucks {
+            light: 2,
+            medium: 3,
+            heavy: 1,
+        },
+        100,
+    );
+    pool_mut_for_test(&mut s, &id).location = None;
+    let before = serde_json::to_value(&s).unwrap();
+    let physical = fresh_pool_physical_cohorts(&s, &id).unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    assert_eq!(
+        physical.iter().map(|c| c.id.clone()).collect::<Vec<_>>(),
+        (1..=3)
+            .map(|n| format!("pool.{id}.fuel-trucks-{n}"))
+            .collect::<Vec<_>>()
+    );
+    seed_created_pool(&mut s, &id).unwrap();
+    assert!(!s.logistics.pool_fuel_segments.contains_key(&id));
+    assert!(!s.logistics.pool_fuel_accounts.contains_key(&id));
+    let seeded = serde_json::to_value(&s).unwrap();
+    assert!(matches!(
+        seed_created_pool(&mut s, &id),
+        Err(cna_core::engine::EngineError::Invariant { .. })
+    ));
+    assert_eq!(serde_json::to_value(&s).unwrap(), seeded);
+    assert_eq!(
+        fresh_pool_physical_cohorts(&s, &id),
+        Err(SupplyError::Invalid)
+    );
+    at(&mut s, &id, "C4020");
+    let fuel = pool_segment_fuel_cohorts(&s, &id).unwrap();
+    assert_eq!(
+        fuel.iter().map(PhysicalTrucks::from).collect::<Vec<_>>(),
+        physical
+    );
+    assert!(fuel.iter().all(|c| c.cp_quarters == 0 && c.account == id));
+    assert!(!s.logistics.pool_fuel_segments.contains_key(&id));
+}
+fn pool_mut_for_test<'a>(state: &'a mut State, id: &str) -> &'a mut TruckPool {
+    state
+        .logistics
+        .truck_pools
+        .iter_mut()
+        .find(|p| p.id == id)
+        .unwrap()
+}
+/// Cases: land:20.83, airlog:49.13, airlog:53.25
+#[test]
+fn unfunded_partial_withdrawal_keeps_survivor_ids_and_reserves_retired_genesis_serials() {
+    let (mut s, id) = game(
+        Trucks {
+            light: 2,
+            medium: 3,
+            heavy: 1,
+        },
+        100,
+    );
+    pool_mut_for_test(&mut s, &id).location = None;
+    let physical = fresh_pool_physical_cohorts(&s, &id).unwrap();
+    let site = CargoSite::Pool(id.clone());
+    motion::seed_fresh(&mut s, Side::Axis, &site, &physical).unwrap();
+    retire_unfunded_pool_motion(
+        &mut s,
+        &id,
+        &[
+            FuelCohortSelection {
+                id: physical[0].id.clone(),
+                count: 1,
+            },
+            FuelCohortSelection {
+                id: physical[2].id.clone(),
+                count: 1,
+            },
+        ],
+    )
+    .unwrap();
+    pool_mut_for_test(&mut s, &id).trucks = Trucks {
+        light: 1,
+        medium: 3,
+        heavy: 0,
+    };
+    let before = serde_json::to_value(&s).unwrap();
+    let mut restored: State = serde_json::from_value(before.clone()).unwrap();
+    at(&mut s, &id, "C4020");
+    at(&mut restored, &id, "C4020");
+    let l = ledger(&s, &id).unwrap();
+    assert_eq!(l, ledger(&restored, &id).unwrap());
+    assert_eq!(
+        l.cohorts.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
+        vec![physical[0].id.as_str(), physical[1].id.as_str()]
+    );
+    assert_eq!(l.next_cohort_serial, 3);
+    assert_eq!(l.paid_cost, FuelTenths::ZERO);
+    assert!(l.draws.is_empty());
+    spend_pool_segment_fuel(content(), &mut s, &id, 4).unwrap();
+    let split = remove_selected_pool_fuel_cohorts(
+        &mut s,
+        &id,
+        &[FuelCohortSelection {
+            id: physical[1].id.clone(),
+            count: 1,
+        }],
+    )
+    .unwrap();
+    assert_eq!(split[0].id, format!("pool.{id}.fuel-trucks-4"));
+    assert_eq!(split[0].parent.as_deref(), Some(physical[1].id.as_str()));
+}
+/// Cases: land:20.83, airlog:49.13, airlog:53.25
+#[test]
+fn unfunded_withdrawal_preserves_unknown_and_rejects_positive_cp_or_overdraw_atomically() {
+    let (mut s, id) = game(
+        Trucks {
+            light: 2,
+            ..Trucks::default()
+        },
+        100,
+    );
+    let physical = fresh_pool_physical_cohorts(&s, &id).unwrap();
+    let selection = [FuelCohortSelection {
+        id: physical[0].id.clone(),
+        count: 1,
+    }];
+    let before = serde_json::to_value(&s).unwrap();
+    assert_eq!(
+        retire_unfunded_pool_motion(&mut s, &id, &selection),
+        Err(MotionError::Unknown)
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    let site = CargoSite::Pool(id.clone());
+    motion::seed_fresh(&mut s, Side::Axis, &site, &physical).unwrap();
+    let before = serde_json::to_value(&s).unwrap();
+    let overdraw = [FuelCohortSelection {
+        id: physical[0].id.clone(),
+        count: 3,
+    }];
+    assert_eq!(
+        retire_unfunded_pool_motion(&mut s, &id, &overdraw),
+        Err(MotionError::Invalid)
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    let mut corrupt = s.clone();
+    corrupt
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter_mut()
+        .find(|e| e.site == site)
+        .unwrap()
+        .cohorts[0]
+        .id = "invented-physical-id".into();
+    let corrupt_before = serde_json::to_value(&corrupt).unwrap();
+    assert_eq!(
+        unfunded_pool_physical_cohorts(&corrupt, &id),
+        Err(MotionError::Invalid)
+    );
+    assert_eq!(serde_json::to_value(&corrupt).unwrap(), corrupt_before);
+    motion::advance(&mut s, Side::Axis, &site, &physical, 4).unwrap();
+    let before = serde_json::to_value(&s).unwrap();
+    assert_eq!(
+        retire_unfunded_pool_motion(&mut s, &id, &selection),
+        Err(MotionError::Invalid)
+    );
+    assert_eq!(
+        pool_segment_fuel_cohorts(&s, &id),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+}
+/// Cases: airlog:49.13, land:21.25, land:21.29
+#[test]
+fn location_free_genesis_rejects_negative_counts_and_serial_overflow() {
+    let key = SegmentKey {
+        game_turn: 1,
+        op_stage: Some(1),
+        half: None,
+        cycle: 0,
+    };
+    assert_eq!(
+        segment::initial_cohorts(
+            &single(),
+            &"pool".to_owned(),
+            "pool.pool",
+            &key,
+            0,
+            u64::MAX
+        ),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(
+        segment::initial_cohorts(
+            &Trucks {
+                light: -1,
+                ..Trucks::default()
+            },
+            &"pool".to_owned(),
+            "pool.pool",
+            &key,
+            0,
+            0
+        ),
+        Err(SupplyError::Invalid)
+    );
+}
 /// Cases: airlog:49.13, airlog:49.18, airlog:53.22
 /// Interpretations: interp:airlog-0001, interp:airlog-0018
 #[test]
