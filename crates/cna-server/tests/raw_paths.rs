@@ -570,14 +570,19 @@ fn prove_raw_paths(joining: bool, retreats: &[bool]) {
             < 33
         {
             let command = if let Some(request) = campaign.pending().first() {
-                assert!(
-                    request.space.pass.is_some(),
-                    "unexpected compulsory fixture window: {}",
-                    request.kind
-                );
+                let action = if request.kind == cna_rules::logistics::truck_convoy::KIND {
+                    json!([])
+                } else {
+                    assert!(
+                        request.space.pass.is_some(),
+                        "unexpected compulsory fixture window: {}",
+                        request.kind
+                    );
+                    Value::Null
+                };
                 Command::Respond(response(
                     request,
-                    Value::Null,
+                    action,
                     &format!("checkpoint-pass-{}", request.id),
                 ))
             } else {
