@@ -414,3 +414,21 @@ This terrain-only cycle adds no lake, movement-side, port, place or facility
 evidence. Continuous terrain work follows the standing approved phase;
 other layers still require their own authorization. Geographic country
 membership alone does not make an Unknown terrain cell usable for setup.
+
+
+### Standing C-Libya cycle 2 deferrals, 2026-10-08
+
+C1308, C1309, C1408, C1410, C1508, C1509, C1510, C1511, C1512, C1513,
+C1609, C1610, C1611, C1612 and C1814 retain unknown terrain and coastal
+domains. Their visible inland bands do not establish marine water identity;
+empty flags supply neither terrain nor coastal masks. Their individual
+notes preserve the known-land observations and source uncertainty.
+
+C2014, C1313, C1114, C1104, C1003, C1015, C1018, C0818, C0717 and C0616
+retain unknown terrain with reviewed noncoastal domains. Their notes
+record unresolved substrate class or predominance; only coastal-domain
+masks are supplied. All prior Unknown records remain unchanged.
+
+This terrain-only cycle supplies no lake, movement-side, port, place or
+facility evidence. The final 134 cells in this C-Libya allocation remain
+separate checked-publication work under the standing terrain authorization.

@@ -777,3 +777,32 @@ All 176 map files reproduce byte-identically through two complete terrain,
 layer and area replays. Exact joint Rust/web gate results and main
 publication are recorded separately; replay does not certify source
 accuracy, a complete setup domain or new action permission.
+
+
+### Standing C-Libya terrain cycle 2, 2026-10-08
+
+Three immutable reviews cover 193 previously unobserved cells: map-terrain
+and map-lines cyrenaica-0004, and map-lines-2 cyrenaica-0003. They add 168
+land classifications (121 clear, eight rough, eight salt marsh and 31
+desert), with 25 explicit terrain Unknowns. Direct native 2021/TEC review
+uses the adopted predominant land-substrate rule (land:8.37;
+interp:map-0003); minor substrates and abstention reasons remain in each
+worker's raw notes. Authored raw/note bytes and author dates are preserved.
+Source accuracy, independent observer agreement and 1979 equivalence
+remain unmeasured.
+
+The union adds 346 masks: 168 terrain and 178 coastal-domain records.
+Fifteen inland water-identity deferrals have empty flags and supply no
+terrain or coastal masks. The other ten terrain deferrals have reviewed
+noncoastal domains and supply only domain masks. No Sea is accepted;
+all area memberships and fields remain unchanged. Existing point flags,
+prior raw records, geometry, frontier, places, edges and strips are
+preserved. Known-land Libya grows from 532 to 700, and map_c_libya from
+531 to 699. Whole-map totals become 1,546 classified cells, 5,477
+unclassified cells and 3,154 cell masks; 31,968 edge-kind masks, 393 lines
+and 409 sides remain unchanged.
+
+All 182 map files reproduce byte-identically through two complete terrain,
+layer and area replays. Full joint Rust/web gates and main publication
+have separate receipts. Terrain evidence certifies no complete setup
+domain, new movement side, place, facility or action permission.
