@@ -45,6 +45,7 @@ fn scripted_answer(
 ) -> Value {
     baseline::arrival_orders(content, state, request).unwrap_or_else(|| {
         match &request.space.schema {
+            _ if request.kind == crate::logistics::truck_convoy::KIND => json!([]),
             _ if request.kind == crate::logistics::attrition::KIND => {
                 crate::logistics::attrition::baseline(content, state, request.seat.side)
                     .expect("complete attrition allocation")
