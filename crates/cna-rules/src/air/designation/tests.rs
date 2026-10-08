@@ -312,13 +312,43 @@ fn hidden_enemy_pass_and_malta_declaration_have_identical_enemy_observations() {
 /// Cases: airlog:41.0, airlog:39.16, land:3.6
 #[test]
 fn enemy_readiness_and_pilots_never_change_own_designation_schema_or_answer() {
-    let a = opened(true, true);
+    use super::super::preparation::{CurrentPreparation, KnownLoad};
+
+    let mut a = opened(true, true);
+    // Private canonical fixture only: no paid loading or setup authority.
+    // Vary typed guns while preserving every existing coarse source summary.
+    for (id, plane) in a
+        .state
+        .air
+        .runtime
+        .aircraft
+        .iter()
+        .filter(|(_, p)| p.force == "axis")
+    {
+        a.state.air.runtime.preparation.current.insert(
+            id.clone(),
+            CurrentPreparation::KnownLoad {
+                load: KnownLoad {
+                    mode: 0,
+                    fuel_available: plane.fuelled,
+                    gun_ammunition: plane.armed,
+                    ordnance: None,
+                },
+            },
+        );
+    }
+    super::super::inventory::check(content(), &a.state.air).unwrap();
     let mut b = a.clone();
     super::super::inventory::update(content(), &mut b.state.air, |rt| {
-        for p in rt.aircraft.values_mut().filter(|p| p.force == "axis") {
+        for (id, p) in rt.aircraft.iter_mut().filter(|(_, p)| p.force == "axis") {
             p.refitted = !p.refitted;
             p.fuelled = !p.fuelled;
-            p.armed = !p.armed;
+            let CurrentPreparation::KnownLoad { load } =
+                rt.preparation.current.get_mut(id).unwrap()
+            else {
+                panic!("private typed-load fixture missing");
+            };
+            load.gun_ammunition = !load.gun_ammunition;
         }
         for p in rt.pilots.values_mut().filter(|p| p.force == "axis") {
             p.rating = 6;
