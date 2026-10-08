@@ -1,11 +1,11 @@
 # land-0040 - Formations and convoys share road space
 
 - **Cases:** land:9.29, land:9.33, land:9.34, land:9.4
-- **Status:** proposed
+- **Status:** adopted
 - **Classification:** consequential
 - **Profile version:** v1
 - **Decided by:** rules-land under neo-sandtable's delegated choice, 2026-10-07
-- **Owner review:** pending (batch review 4)
+- **Owner review:** reviewed 2026-10-08 by the owner (batch review 4)
 
 ## Question
 
@@ -29,6 +29,6 @@ A separate five-point convoy quota would allow stationary convoys to leave all f
 
 One checked occupancy function serves convoy execution and both formation planning and execution. Over-capacity transit is repriced without network benefits and may become prohibited terrain. Tests pin combined values, off-road/excluded/foreign pools, checked overflow, old-checkpoint default and planning/truth parity. Caller activation still requires exact lead readback and the complete convoy transaction proofs.
 
-## Related open question
+## Related question: set-up and arrival units (decided)
 
-Should setup and arrival units also start OFF? This is reserved for the lead's batch4 owner decision. Existing unit off_road semantics remain unchanged in this slice.
+Owner decision, 2026-10-08 (batch review 4): units placed at set-up or on arrival also start off the network. Like a pool, a unit counts against road space only after an executed move whose last edge used the network leaves it in that hex. Land implements this for units as a follow-up; until it lands, the unit off_road default is unchanged.

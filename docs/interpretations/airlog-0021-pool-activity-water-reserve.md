@@ -1,10 +1,10 @@
 # airlog-0021 - One-stage pool activity reserve
 
 - **Cases:** airlog:52.42, airlog:52.43, land:29.34, land:29.35
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full, pending reviewed caller activation
 - **Decided by:** neo-sandtable (lead), 2026-10-08, selected reserve ruling
-- **Owner review:** pending (consequential, batch 4)
+- **Owner review:** reviewed 2026-10-08 by the owner (batch review 4)
 
 ## Question
 How much water may a real second- or third-line truck pool receive as activity reserve, distinct from its carried water cargo?

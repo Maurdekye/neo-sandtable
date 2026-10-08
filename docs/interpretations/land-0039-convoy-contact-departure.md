@@ -1,11 +1,11 @@
 # land-0039 - Convoy Contact at phase departure
 
 - **Cases:** land:8.15, land:8.62, land:8.65, land:8.68, land:10.23, land:10.26, land:10.29
-- **Status:** proposed
+- **Status:** adopted
 - **Classification:** consequential
 - **Profile version:** v1
 - **Decided by:** neo-sandtable via rules-mgr, 2026-10-07 (selected convoy ruling)
-- **Owner review:** pending (batch review 4)
+- **Owner review:** reviewed 2026-10-08 by the owner (batch review 4)
 
 ## Question
 

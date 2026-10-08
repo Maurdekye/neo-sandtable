@@ -4,7 +4,7 @@
 - **Status:** adopted
 - **Profile version:** 2021 map baseline; area schema version 1
 - **Decided by:** neo-sandtable, 2026-10-08
-- **Owner review:** pending, consequential interpretation
+- **Owner review:** reviewed 2026-10-08 by the owner (batch review 4)
 
 ## Question
 

@@ -1,10 +1,10 @@
 # map-0004 - Printed inland-water contact on a shared side
 
 - **Cases:** land:10.21, land:8.37
-- **Status:** proposed; provisional lead ruling for owner batch review 4
+- **Status:** adopted
 - **Profile version:** planned lake-enabled map contract; current published schema unchanged
 - **Decided by:** neo-sandtable, 2026-10-07, provisional direction
-- **Owner review:** pending batch review 4
+- **Owner review:** reviewed 2026-10-08 by the owner (batch review 4)
 
 ## Question
 

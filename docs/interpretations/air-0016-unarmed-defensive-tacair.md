@@ -1,10 +1,10 @@
 # air-0016 - Unarmed aircraft retain normal ratings against opposing fire
 
 - **Cases:** airlog:38.43, airlog:45.0, airlog:45.17
-- **Status:** proposed (implemented provisionally)
+- **Status:** adopted
 - **Profile version:** v0.1
 - **Decided by:** neo-sandtable (lead), 2026-10-07
-- **Owner review:** pending batch 4 (consequential)
+- **Owner review:** reviewed 2026-10-08 by the owner (batch review 4)
 
 ## Question
 
