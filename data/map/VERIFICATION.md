@@ -960,3 +960,37 @@ publication and independent inclusion are recorded separately. The full
 641-cell allocation is observed exactly once: 545 known land, 22 Sea and
 74 explicit Unknowns. Allocation completion does not resolve those gaps
 or establish source accuracy.
+
+
+### Msus/Beda Fomm/Benghazi first terrain union, 2026-10-08
+
+Three disjoint frozen 79-cell selections contain 237 directly reviewed cells.
+Workers inspected native 2021 full interiors and printed boundaries against
+the actual TEC, following land:8.37 and adopted map-0002/map-0003. The source,
+build and key hashes, observed minor substrates, and individual reasons are
+retained in the three unique raw reviews and matching review notes. This is
+single-observer source evidence plus a parent provenance/preservation audit;
+no independent visual agreement, measured error rate or 1979 equivalence
+is established.
+
+The union contains 204 accepted classes: 147 clear, 17 rough, 13 mountain,
+6 salt marsh, 3 heavy vegetation and 17 Sea. It adds 187 known-land cells and
+retains 33 explicit Unknowns. Of 419 new cell masks, 204 cover terrain and
+215 cover directly established marine domains. The 22 empty-flag Unknowns
+have no masks; the other 11 have domain masks only. All prior raw observations
+including Unknown, point/facility flags, geometry, masks, places and features
+are preserved.
+
+Only the 17 newly accepted Sea cells remove themselves from generated Libya:
+A3328, A3626, A3726, A4125, A4625, A4726, A4826, A4927, A5027, A5028, A5128, A5129, A5431, B5702, B5802, B5803, B5904.
+No membership additions or other area fields change. All Unknowns remain
+geometric members and requires_land is unchanged. The observations supply no
+lake, edge, port/place, facility anchor, closed extent, complete setup domain
+or action permission.
+
+Candidate Libya known land grows from 1,461 to 1,648; map_c_libya remains 824.
+Whole-map totals become 2,535 classified, 4,488 unclassified and 5,183 cell
+masks. Edge-kind masks, lines and sides remain 31,968, 393 and 409. All 216
+map files replay byte-identically twice. Final joint gates, publication and
+independent inclusion are recorded separately. Later 472 source observations
+stay outside this checked snapshot until preceding publication and inclusion.

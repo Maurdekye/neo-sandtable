@@ -509,3 +509,16 @@ retain Unknown terrain because land-substrate predominance is unresolved.
 Direct domain evidence supplies only domain masks, never terrain masks.
 These five retain noncoastal known-land observations. Previous Unknowns
 remain unchanged; no lake, edge, place or facility fact is inferred.
+
+
+### Msus/Beda Fomm/Benghazi first terrain snapshot deferrals, 2026-10-08
+
+A4232, A4332, A4432, B4209, B4309, B4408, B4501, B4508, B4509, B4601, B4602, B4603, B4604, B4605, B4606, B4607, B4608, B4701, B4702, B4706, B4707, B4708
+retain Unknown terrain and uncertain inland water identity. Their empty flags
+supply neither terrain nor marine-domain masks; source notes retain visible
+land evidence without inferring a lake, wadi or marine absence.
+
+A4633, A4830, B3315, B3804, B4801, B4901, B5408, B5503, B5603, B5604, B5705
+retain Unknown terrain because no substrate clearly predominates. They have
+only directly established domain masks, with no terrain masks. Prior Unknowns
+remain immutable; these observations add no edge, place or facility facts.
