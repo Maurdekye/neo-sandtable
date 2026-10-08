@@ -116,12 +116,39 @@ pub fn truck_step_cost(
     strict: bool,
     rainstorm: bool,
 ) -> Result<StepCost, Rejection> {
+    truck_step_cost_with_network(content, side, trucks, from, to, strict, rainstorm, true)
+}
+
+/// Reprice a real convoy without network benefits after the shared road limit is exceeded.
+/// Terrain prohibitions still apply; no combat-unit identity is substituted.
+/// Cases: land:9.29, land:9.33, land:8.44, land:8.48, airlog:53.12
+#[allow(clippy::too_many_arguments)]
+pub fn truck_step_cost_with_network(
+    content: &CnaContent,
+    side: cna_protocol::Side,
+    trucks: &cna_content::units::Trucks,
+    from: &HexId,
+    to: &HexId,
+    strict: bool,
+    rainstorm: bool,
+    use_network: bool,
+) -> Result<StepCost, Rejection> {
     let counts = [trucks.light, trucks.medium, trucks.heavy];
     if counts.iter().any(|n| *n < 0) || counts.iter().all(|n| *n == 0) {
         return Err(illegal("convoy has no valid trucks"));
     }
     price(
-        content, side, trucks, from, to, strict, rainstorm, true, true, false, false,
+        content,
+        side,
+        trucks,
+        from,
+        to,
+        strict,
+        rainstorm,
+        use_network,
+        true,
+        false,
+        false,
     )
 }
 

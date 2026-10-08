@@ -58,6 +58,10 @@ pub struct MovementState {
     pub controls: BTreeMap<HexId, bool>,
     /// Units explicitly off the network; retained between segments until they use it again.
     pub off_road: BTreeSet<UnitId>,
+    /// Actual supply pools share road occupancy; absence means on the network.
+    /// Cases: land:9.29, land:9.33, land:9.34
+    #[serde(default)]
+    pub pool_off_road: BTreeSet<String>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -568,14 +572,28 @@ fn run(
                 formation::individual_allowance(content, state, id).is_some_and(|a| a.motorized)
             }) {
             if let Some(group) = planning_group {
-                group.stacks.road_halves(&to) + group.stacks.moving_halves() > 10
+                stacking::road_over_limit(
+                    group.stacks.road_halves(&to).map_err(Rejection::Engine)?,
+                    group.stacks.moving_halves().map_err(Rejection::Engine)?,
+                )
+                .map_err(Rejection::Engine)?
             } else {
                 let moving_sp: i32 = formation::roots(content, state, &from, seat.side)
                     .iter()
                     .filter(|id| moving.contains(id))
                     .map(|id| formation::stacking_halves(content, state, id))
-                    .sum();
-                stacking::road_halves(content, state, &to, seat.side, &moving) + moving_sp > 10
+                    .try_fold(0_i32, |sum, n| sum.checked_add(n))
+                    .ok_or_else(|| {
+                        Rejection::Engine(EngineError::Invariant {
+                            detail: "moving road occupancy overflow".into(),
+                        })
+                    })?;
+                stacking::road_over_limit(
+                    stacking::road_halves(content, state, &to, seat.side, &moving)
+                        .map_err(Rejection::Engine)?,
+                    moving_sp,
+                )
+                .map_err(Rejection::Engine)?
             }
         } else {
             false

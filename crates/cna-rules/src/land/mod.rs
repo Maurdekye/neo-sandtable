@@ -3,6 +3,7 @@ pub mod arrivals;
 pub mod breakdown;
 pub mod capability;
 pub mod combat;
+pub mod convoy_move;
 pub mod cycles;
 pub mod engagement;
 pub mod engineering;

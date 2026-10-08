@@ -9,7 +9,10 @@ use cna_core::{
 };
 use cna_protocol::Side;
 use cna_tables::land::terrain::{StackingLimit, TerrainFeature as F};
-use std::{cell::RefCell, collections::BTreeMap};
+use std::{
+    cell::RefCell,
+    collections::{BTreeMap, BTreeSet},
+};
 
 /// Count one represented counter per root. Attached first-line trucks add no points.
 /// Cases: land:9.11, land:9.12, land:9.13, land:9.21, land:9.29
@@ -27,12 +30,92 @@ pub fn road_halves(
     hex: &HexId,
     side: Side,
     excluded: &[UnitId],
-) -> i32 {
-    formation::roots(content, state, hex, side)
+) -> Result<i32, EngineError> {
+    road_occupancy_halves(content, state, hex, side, excluded, None)
+}
+
+fn road_invariant() -> EngineError {
+    EngineError::Invariant {
+        detail: "invalid road occupancy or truck-point count".into(),
+    }
+}
+
+fn checked_road_sum(mut values: impl Iterator<Item = i32>) -> Result<i32, EngineError> {
+    values.try_fold(0_i32, |total, n| {
+        if n < 0 {
+            return Err(road_invariant());
+        }
+        total.checked_add(n).ok_or_else(road_invariant)
+    })
+}
+
+/// Convoy chart blocks contribute to the same five-point transit limit as formations.
+/// Attached first-line trucks stay included only through their represented formation.
+/// Cases: land:9.29, land:9.33, land:9.34
+/// Interpretations: interp:land-0040
+pub fn road_occupancy_halves(
+    content: &CnaContent,
+    state: &State,
+    hex: &HexId,
+    side: Side,
+    excluded_units: &[UnitId],
+    excluded_pool: Option<&str>,
+) -> Result<i32, EngineError> {
+    let units = checked_road_sum(
+        formation::roots(content, state, hex, side)
+            .iter()
+            .filter(|id| !excluded_units.contains(id) && !state.land.movement.off_road.contains(id))
+            .map(|id| formation::stacking_halves(content, state, id)),
+    )?;
+    combine_road_occupancy(content, state, hex, side, excluded_pool, units)
+}
+
+fn combine_road_occupancy(
+    content: &CnaContent,
+    state: &State,
+    hex: &HexId,
+    side: Side,
+    excluded_pool: Option<&str>,
+    units: i32,
+) -> Result<i32, EngineError> {
+    let mut ids = BTreeSet::new();
+    let mut total = units;
+    for pool in state
+        .logistics
+        .truck_pools
         .iter()
-        .filter(|id| !excluded.contains(id) && !state.land.movement.off_road.contains(id))
-        .map(|id| formation::stacking_halves(content, state, id))
-        .sum()
+        .filter(|p| p.side == side)
+    {
+        if pool.id.is_empty() || !ids.insert(&pool.id) {
+            return Err(road_invariant());
+        }
+        if excluded_pool == Some(pool.id.as_str())
+            || pool.location.as_ref().and_then(|l| l.hex()) != Some(hex)
+            || state.land.movement.pool_off_road.contains(&pool.id)
+        {
+            continue;
+        }
+        let points = checked_road_sum(
+            [pool.trucks.light, pool.trucks.medium, pool.trucks.heavy].into_iter(),
+        )?;
+        let halves = content
+            .tables
+            .land
+            .stacking_values
+            .blocks_halves(
+                cna_tables::land::administration::OrganizationLevel::TruckPointsInConvoy,
+                points,
+            )
+            .ok_or_else(road_invariant)?;
+        total = total.checked_add(halves).ok_or_else(road_invariant)?;
+    }
+    Ok(total)
+}
+
+/// The mover joins the occupied road space only when it will use the network.
+/// Cases: land:9.33
+pub fn road_over_limit(occupied: i32, moving: i32) -> Result<bool, EngineError> {
+    Ok(checked_road_sum([occupied, moving].into_iter())? > 10)
 }
 /// A unit may pass an overfull ordinary hex, but may never finish its move there.
 /// Zero-point independent companies/batteries have a separate five-counter limit.
@@ -173,16 +256,18 @@ impl<'a> PlanningStacks<'a> {
             .collect();
         self.fixed.borrow_mut().insert(hex.clone(), counters);
     }
-    pub(super) fn moving_halves(&self) -> i32 {
-        self.moving.iter().map(|c| c.halves).sum()
+    pub(super) fn moving_halves(&self) -> Result<i32, EngineError> {
+        checked_road_sum(self.moving.iter().map(|c| c.halves))
     }
-    pub(super) fn road_halves(&self, hex: &HexId) -> i32 {
+    pub(super) fn road_halves(&self, hex: &HexId) -> Result<i32, EngineError> {
         self.ensure(hex);
-        self.fixed.borrow()[hex]
-            .iter()
-            .filter(|c| c.on_network)
-            .map(|c| c.halves)
-            .sum()
+        let units = checked_road_sum(
+            self.fixed.borrow()[hex]
+                .iter()
+                .filter(|c| c.on_network)
+                .map(|c| c.halves),
+        )?;
+        combine_road_occupancy(self.content, self.base, hex, self.side, None, units)
     }
     pub(super) fn validate_end(&self, hex: &HexId, strict: bool) -> Result<(), Rejection> {
         self.ensure(hex);

@@ -3,6 +3,7 @@ use super::{Asset, Equipment};
 use crate::State;
 use cna_content::units::Trucks;
 use cna_core::{
+    engine::EngineError,
     event::EngineEvent,
     ids::{HexId, UnitId},
     quantity::{FuelTenths, WaterPoints},
@@ -10,7 +11,205 @@ use cna_core::{
 };
 use cna_protocol::{GameEvent, Side, Stack};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+
+/// A trusted, validated allocation batch; never decoded from an actor answer.
+pub struct PreparedPoolMarkers {
+    markers: Vec<BrokenMarker>,
+    expected_serials: BTreeMap<Side, u64>,
+    ids: Vec<String>,
+}
+
+fn marker_invariant() -> EngineError {
+    EngineError::Invariant {
+        detail: "invalid convoy marker allocation or holdings".into(),
+    }
+}
+
+fn marker_supply(error: crate::logistics::SupplyError) -> EngineError {
+    match error {
+        crate::logistics::SupplyError::Unsupported { case } => EngineError::Unsupported {
+            case: case.into(),
+            detail: "convoy marker capacity is unavailable".into(),
+        },
+        _ => marker_invariant(),
+    }
+}
+
+/// Validate all marker counts and serials before invoking the legacy infallible writer.
+/// The outer loss transaction must already bind exact selected physical cohorts and
+/// conserve source/working/marker holdings; this helper creates no selection entitlement.
+/// Empty candidates consume no id. Pool-only candidates carry no Unit paid-water credit.
+/// Cases: land:21.25, land:21.29, land:21.42, land:21.43, airlog:54.2
+pub fn prepare_pool_markers(
+    c: &crate::CnaContent,
+    s: &State,
+    candidates: &[BrokenMarker],
+) -> Result<PreparedPoolMarkers, EngineError> {
+    use crate::logistics::{FuelTruckKind, capacity};
+    use cna_tables::airlog::trucks::TruckType;
+    let mut prepared = PreparedPoolMarkers {
+        markers: vec![],
+        expected_serials: BTreeMap::new(),
+        ids: vec![],
+    };
+    let mut serials = s.land.breakdown.next_marker.clone();
+    let mut physical_ids = BTreeSet::new();
+    for marker in candidates {
+        if !marker.id.is_empty()
+            || !marker.assets.is_empty()
+            || !marker.passengers.is_empty()
+            || marker.transport != Trucks::default()
+            || !marker.fuel_cohorts.is_empty()
+            || marker.paid_truck_water != crate::logistics::TruckWater::default()
+            || marker.water_credit_stage.is_some()
+            || c.map.get(&marker.hex).is_none()
+            || marker.tank_fuel.get() < 0
+            || marker.activity_water.get() < 0
+        {
+            return Err(marker_invariant());
+        }
+        let source = marker.source_pool.as_deref().ok_or_else(marker_invariant)?;
+        let mut pools = s.logistics.truck_pools.iter().filter(|p| p.id == source);
+        let p = pools.next().ok_or_else(marker_invariant)?;
+        if source.is_empty() || pools.next().is_some() || p.side != marker.side {
+            return Err(marker_invariant());
+        }
+        let mut counts = BTreeMap::new();
+        let mut trucks = Trucks::default();
+        for asset in &marker.pool_assets {
+            let (kind, count) = match asset.equipment {
+                Equipment::LightTruck => (FuelTruckKind::Light, &mut trucks.light),
+                Equipment::MediumTruck => (FuelTruckKind::Medium, &mut trucks.medium),
+                Equipment::HeavyTruck => (FuelTruckKind::Heavy, &mut trucks.heavy),
+                _ => return Err(marker_invariant()),
+            };
+            if asset.pool != source
+                || asset.points <= 0
+                || asset.cohort.is_empty()
+                || counts
+                    .insert(asset.cohort.clone(), (kind, asset.points))
+                    .is_some()
+            {
+                return Err(marker_invariant());
+            }
+            *count = count
+                .checked_add(asset.points)
+                .ok_or_else(marker_invariant)?;
+        }
+        let mut remaining = counts;
+        for cohort in &marker.pool_fuel_cohorts {
+            if cohort.id.is_empty()
+                || cohort.count <= 0
+                || cohort.cp_quarters < 0
+                || cohort.parent.as_ref() == Some(&cohort.id)
+                || !physical_ids.insert(cohort.id.clone())
+                || remaining.remove(&cohort.id) != Some((cohort.kind, cohort.count))
+            {
+                return Err(marker_invariant());
+            }
+        }
+        if !remaining.is_empty() {
+            return Err(marker_invariant());
+        }
+        let cargo = marker.cargo.totals().map_err(marker_supply)?;
+        capacity::validate_packing(c, &trucks, &Trucks::default(), &cargo, &marker.cargo)
+            .map_err(marker_supply)?;
+        let total = trucks
+            .light
+            .checked_add(trucks.medium)
+            .and_then(|n| n.checked_add(trucks.heavy))
+            .ok_or_else(marker_invariant)?;
+        if total == 0 {
+            if cargo != cna_content::scenario::Supplies::default()
+                || marker.tank_fuel.get() != 0
+                || marker.activity_water.get() != 0
+            {
+                return Err(marker_invariant());
+            }
+            continue;
+        }
+        let capacity = [
+            (TruckType::Light, trucks.light),
+            (TruckType::Medium, trucks.medium),
+            (TruckType::Heavy, trucks.heavy),
+        ]
+        .into_iter()
+        .try_fold(0_i64, |sum, (kind, count)| {
+            let per = c
+                .tables
+                .airlog
+                .truck_characteristics
+                .truck(kind)
+                .fuel_capacity_points;
+            if per < 0 {
+                return Err(marker_invariant());
+            }
+            let value = i64::from(count)
+                .checked_mul(i64::from(per))
+                .and_then(|n| n.checked_mul(10))
+                .ok_or_else(marker_invariant)?;
+            sum.checked_add(value).ok_or_else(marker_invariant)
+        })?;
+        if i64::from(marker.tank_fuel.get()) > capacity {
+            return Err(marker_invariant());
+        }
+        prepared
+            .expected_serials
+            .entry(marker.side)
+            .or_insert_with(|| {
+                s.land
+                    .breakdown
+                    .next_marker
+                    .get(&marker.side)
+                    .copied()
+                    .unwrap_or(0)
+            });
+        let n = serials.entry(marker.side).or_default();
+        *n = n.checked_add(1).ok_or_else(marker_invariant)?;
+        let id = format!("broken-{}-{n}", marker.side);
+        if s.land.breakdown.markers.contains_key(&id) {
+            return Err(marker_invariant());
+        }
+        prepared.ids.push(id);
+        prepared.markers.push(marker.clone());
+    }
+    Ok(prepared)
+}
+
+/// Recheck the entire allocation footprint before the first marker/event is written.
+/// Caller applies this only on its complete unpublished loss draft.
+/// Cases: land:21.42, land:21.43
+pub fn apply_pool_markers(
+    c: &crate::CnaContent,
+    s: &mut State,
+    prepared: PreparedPoolMarkers,
+) -> Result<Vec<EngineEvent>, EngineError> {
+    if prepared
+        .expected_serials
+        .iter()
+        .any(|(side, n)| s.land.breakdown.next_marker.get(side).copied().unwrap_or(0) != *n)
+        || prepared
+            .ids
+            .iter()
+            .any(|id| s.land.breakdown.markers.contains_key(id))
+    {
+        return Err(marker_invariant());
+    }
+    let rechecked = prepare_pool_markers(c, s, &prepared.markers)?;
+    if rechecked.ids != prepared.ids {
+        return Err(marker_invariant());
+    }
+    let mut events = Vec::new();
+    for marker in prepared.markers {
+        events.extend(add(s, marker));
+    }
+    Ok(events)
+}
+
+#[cfg(test)]
+#[path = "pool_marker_tests.rs"]
+mod pool_marker_tests;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrokenMarker {
     pub id: String,

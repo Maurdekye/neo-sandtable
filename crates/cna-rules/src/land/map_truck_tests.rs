@@ -101,6 +101,237 @@ fn step(c: &CnaContent, t: Trucks, strict: bool, rain: bool) -> Result<StepCost,
         rain,
     )
 }
+
+/// Cases: land:9.29, land:9.33, land:8.44
+#[test]
+fn convoy_network_repricing_keeps_plain_prohibitions() {
+    let trucks = Trucks {
+        medium: 1,
+        ..Trucks::default()
+    };
+    let (c, _overlay) = fixture("clear", Some("road"), true, None);
+    assert_eq!(step(&c, trucks, true, false).unwrap().cp_quarters, 2);
+    let off = truck_step_cost_with_network(
+        &c,
+        Side::Axis,
+        &trucks,
+        &"C4020".into(),
+        &"C4021".into(),
+        true,
+        false,
+        false,
+    )
+    .unwrap();
+    assert_eq!(off.cp_quarters, 8);
+    assert!(!off.on_network);
+    let (c, _overlay) = fixture("salt_marsh", Some("road"), true, None);
+    assert!(step(&c, trucks, true, false).is_ok());
+    assert!(matches!(
+        truck_step_cost_with_network(
+            &c,
+            Side::Axis,
+            &trucks,
+            &"C4020".into(),
+            &"C4021".into(),
+            true,
+            false,
+            false
+        ),
+        Err(Rejection::Illegal { .. })
+    ));
+}
+
+fn add_pool(s: &mut State, side: Side, hex: &str, count: i32) -> String {
+    s.turn.weather.get_or_insert(crate::state::WeatherState {
+        kind: cna_tables::land::weather::WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    crate::logistics::pools::add_truck_pool(
+        &mut s.logistics,
+        None,
+        side,
+        cna_content::scenario::Placement::Hex { hex: hex.into() },
+        Some(crate::state::Location::Hex { hex: hex.into() }),
+        Trucks {
+            light: count,
+            ..Trucks::default()
+        },
+        cna_content::scenario::Supplies::default(),
+    )
+    .unwrap()
+}
+
+/// Cases: land:9.29, land:9.33, land:9.34, land:29.45
+#[test]
+fn convoy_preparation_reprices_shared_road_and_preserves_state() {
+    let (c, _overlay) = fixture("clear", Some("road"), true, None);
+    let mut s = State::new(&content()).unwrap();
+    s.land.units.clear();
+    s.logistics.truck_pools.clear();
+    let moving = add_pool(&mut s, Side::Axis, "C4020", 5);
+    let fixed = add_pool(&mut s, Side::Axis, "C4021", 50);
+    add_pool(&mut s, Side::Commonwealth, "C4020", 500);
+    let before = serde_json::to_value(&s).unwrap();
+    let plan = crate::land::convoy_move::prepare_pool_route(
+        &c,
+        &s,
+        Side::Axis,
+        &moving,
+        &["C4021".into()],
+        true,
+    )
+    .unwrap();
+    assert_eq!(plan.costs[0].cp_quarters, 8);
+    assert!(!plan.costs[0].on_network);
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    assert_eq!(
+        crate::land::stacking::road_halves(&c, &s, &"C4021".into(), Side::Axis, &[]).unwrap(),
+        10
+    );
+    {
+        let origin: HexId = "C4020".into();
+        let stacks = crate::land::stacking::PlanningStacks::new(&c, &s, Side::Axis, &[], &origin);
+        assert_eq!(stacks.road_halves(&"C4021".into()).unwrap(), 10);
+    }
+    s.land.movement.pool_off_road.insert(fixed);
+    let plan = crate::land::convoy_move::prepare_pool_route(
+        &c,
+        &s,
+        Side::Axis,
+        &moving,
+        &["C4021".into()],
+        true,
+    )
+    .unwrap();
+    assert_eq!(plan.costs[0].cp_quarters, 2);
+    assert!(plan.costs[0].on_network);
+    s.turn.weather.as_mut().unwrap().kind = cna_tables::land::weather::WeatherKind::Sandstorm;
+    s.turn.weather.as_mut().unwrap().storm_sections =
+        vec![cna_tables::land::weather::MapSection::C];
+    let plan = crate::land::convoy_move::prepare_pool_route(
+        &c,
+        &s,
+        Side::Axis,
+        &moving,
+        &["C4021".into()],
+        true,
+    )
+    .unwrap();
+    assert_eq!(plan.costs[0].cp_quarters, 4);
+    assert_eq!(plan.costs[0].breakdown_quarters, 2);
+    assert!(crate::land::stacking::road_over_limit(i32::MAX, 1).is_err());
+    s.logistics.truck_pools[0].trucks.light = -1;
+    assert!(matches!(
+        crate::land::convoy_move::prepare_pool_route(&c, &s, Side::Axis, &moving, &[], true),
+        Err(Rejection::Engine(EngineError::Invariant { .. }))
+    ));
+}
+
+/// Cases: land:9.34
+#[test]
+fn convoy_posture_old_checkpoint_default_and_zero_edge_are_preserved() {
+    let (c, _overlay) = fixture("clear", Some("road"), true, None);
+    let mut s = State::new(&content()).unwrap();
+    let mut old = serde_json::to_value(&s.land.movement).unwrap();
+    old.as_object_mut().unwrap().remove("pool_off_road");
+    let old: crate::land::movement::MovementState = serde_json::from_value(old).unwrap();
+    assert!(old.pool_off_road.is_empty());
+    s.logistics.truck_pools.clear();
+    let id = add_pool(&mut s, Side::Axis, "C4020", 1);
+    crate::land::convoy_move::record_pool_posture(&mut s, &id, false).unwrap();
+    let plan =
+        crate::land::convoy_move::prepare_pool_route(&c, &s, Side::Axis, &id, &[], true).unwrap();
+    assert!(plan.costs.is_empty());
+    assert!(s.land.movement.pool_off_road.contains(&id));
+    crate::land::convoy_move::record_pool_posture(&mut s, &id, true).unwrap();
+    assert!(!s.land.movement.pool_off_road.contains(&id));
+}
+
+/// Cases: land:10.23, land:10.24, land:10.26, land:10.29
+#[test]
+fn trusted_convoy_edges_keep_illegal_geometry_and_departure_separate() {
+    let (c, _overlay) = fixture("clear", Some("road"), true, None);
+    let mut s = State::new(&content()).unwrap();
+    s.land.units.clear();
+    s.logistics.truck_pools.clear();
+    let id = add_pool(&mut s, Side::Axis, "C4020", 1);
+    assert_eq!(
+        crate::land::convoy_move::pool_departure_cp(&c, &s, &id, true).unwrap(),
+        0
+    );
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(
+        matches!(crate::land::convoy_move::adjudicate_pool_edge(&c, &s, &id, &"C4020".into(), &"C4021".into(), true).unwrap(), crate::land::convoy_move::PoolEdge::Pass(cost) if cost.cp_quarters == 2)
+    );
+    assert!(matches!(
+        crate::land::convoy_move::adjudicate_pool_edge(
+            &c,
+            &s,
+            &id,
+            &"C4021".into(),
+            &"C4020".into(),
+            true
+        ),
+        Err(EngineError::Invariant { .. })
+    ));
+    assert!(matches!(
+        crate::land::convoy_move::adjudicate_pool_edge(
+            &c,
+            &s,
+            &id,
+            &"C4020".into(),
+            &"C4020".into(),
+            true
+        ),
+        Err(EngineError::Invariant { .. })
+    ));
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+}
+
+/// Cases: land:9.29, land:9.33, land:9.34
+#[test]
+fn formations_and_real_pools_share_one_road_occupancy_in_planning_and_truth() {
+    let c = content();
+    let mut s = State::new(&c).unwrap();
+    let id: UnitId = "it.libyan_tank_command.xxi_l_tank_bn".into();
+    let mut unit = s.land.units[&id].clone();
+    unit.location = crate::state::Location::Hex {
+        hex: "C4021".into(),
+    };
+    s.land.units.clear();
+    s.land.units.insert(id.clone(), unit);
+    s.logistics.truck_pools.clear();
+    let pool = add_pool(&mut s, Side::Axis, "C4021", 5);
+    let unit_halves = crate::land::formation::stacking_halves(&c, &s, &id);
+    assert!(unit_halves > 0);
+    let hex: HexId = "C4021".into();
+    assert_eq!(
+        crate::land::stacking::road_halves(&c, &s, &hex, Side::Axis, &[]).unwrap(),
+        unit_halves + 1
+    );
+    {
+        let stacks = crate::land::stacking::PlanningStacks::new(&c, &s, Side::Axis, &[], &hex);
+        assert_eq!(stacks.road_halves(&hex).unwrap(), unit_halves + 1);
+    }
+    assert_eq!(
+        crate::land::stacking::road_occupancy_halves(
+            &c,
+            &s,
+            &hex,
+            Side::Axis,
+            std::slice::from_ref(&id),
+            Some(&pool)
+        )
+        .unwrap(),
+        0
+    );
+    s.land.movement.pool_off_road.insert(pool);
+    s.land.movement.off_road.insert(id);
+    assert_eq!(
+        crate::land::stacking::road_halves(&c, &s, &hex, Side::Axis, &[]).unwrap(),
+        0
+    );
+}
 /// Cases: airlog:53.12, airlog:54.2, land:8.37
 #[test]
 fn convoy_costs_share_verified_unit_terrain_prices() {
