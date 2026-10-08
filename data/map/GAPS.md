@@ -534,3 +534,15 @@ A4731, A4931, A5233, B3604, B3702, B5607
 retain Unknown terrain with directly established domain masks only. Their
 substrate balance remains unresolved; no terrain masks are supplied. All
 prior Unknown records remain immutable.
+
+
+### Msus/Beda Fomm/Benghazi final terrain snapshot deferrals, 2026-10-08
+
+B4412, B4512, B4611, B4711, B4810, B4910, B5006, B5007, B5008, B5009, B5109, B5110
+retain Unknown terrain and ambiguous domain with empty flags and no terrain
+or marine-domain masks. No lake, wadi or marine absence is inferred.
+
+A3627, A4133, A4932, A5031, B1715, B2319, B3505, B3814, B4313, B5106, B5203
+retain Unknown terrain with directly established domain masks only.
+Individual fresh reasons, source pins and citations remain in the unique raw
+reviews; prior observations, including all Unknown inputs, stay immutable.

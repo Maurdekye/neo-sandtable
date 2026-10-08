@@ -1030,3 +1030,39 @@ this checked snapshot until preceding publication and inclusion.
 The preceding first-union paragraph now correctly reports 14 mountain cells;
 the earlier 13 was a prose tally error. Raw classes, generated data and
 other first-union counts were unchanged.
+
+
+### Msus/Beda Fomm/Benghazi final terrain union, 2026-10-08
+
+Three disjoint frozen selections of 79, 78 and 78 cells add 235 directly
+reviewed full printed cells. Actual native 2021 source and TEC are cited
+under adopted map-0002/map-0003. Original author/date, source pins, explicit
+minor substrates, Unknown reasons and all preceding inputs remain intact.
+Single-observer source classifications and parent provenance/preservation
+checks supply no measured source accuracy or 1979 equivalence.
+
+Accepted classes counted from immutable raw: 166 clear, 4 gravel, 4 heavy vegetation, 3 mountain, 26 rough, 2 salt marsh, 7 sea.
+These 212 accepted classes comprise 205 land and seven Sea cells; 23 remain
+Unknown. Added masks total 435: 212 terrain and 223 domain. Twelve empty-flag
+Unknowns are entirely unmasked and eleven have domain masks only. Prior
+terrain/edge masks, geometry, point flags, places, features and strips are
+preserved. Only these new Sea cells remove themselves from generated Libya:
+A3527, A4225, A4325, A5330, A5331, A5633, B5701.
+No additions or other area field changes occur; requires_land is unchanged.
+
+Whole-map totals become 2,963 classified, 4,060 Unknown and 6,056 cell masks.
+Libya known land becomes 2,055; map_c_libya remains 824. Edge masks, line
+features and sides remain 31,968, 393 and 409. All 228 map files reproduce
+byte-identically twice. These counts are source/data outcomes; final green
+gates and actual publication are recorded separately. No lake, edge,
+port/place, facility extent, complete setup domain or action permission
+is established.
+
+The western worker initial workspace matrix failed the existing movement
+test wall-time guard. Its exact head, tree, raw exit and logs are preserved
+separately; missing historical CPU/load measurements are unmeasured. Other
+already-started worker matrices completed successfully. The lead identified
+the wall-time guard as contention-sensitive and directed the consumer owner
+to correct it separately. That failure is retained, not a map source/data
+correction or a measured source error rate. Parent final publication still
+requires the specifically authorized one complete green gate.
