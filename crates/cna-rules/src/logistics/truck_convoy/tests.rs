@@ -1772,7 +1772,8 @@ fn real_graziani_setup_stock_issue_move_and_checkpoint_use_actual_dispatcher() {
         }
     );
     // Real weekly storage loss precedes first-stage issue: Axis6%, normal weather.
-    // Cases: airlog:49.3, airlog:52.44. The legal setup preload above remains100.
+    // Cases: airlog:49.3, airlog:52.44
+    // The legal setup preload above remains 100.
     assert_eq!(
         game.state.turn.weather.as_ref().unwrap().kind,
         WeatherKind::Normal
