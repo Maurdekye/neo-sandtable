@@ -235,6 +235,38 @@ fn withdrawal_wrapper_retires_paid_split_motion_once_and_rolls_back_bad_amount()
     )
     .unwrap();
     let accounts = serde_json::to_value(&s.logistics.pool_fuel_accounts).unwrap();
+    for extra_record in [false, true] {
+        let mut corrupt = s.clone();
+        let entry = corrupt
+            .logistics
+            .cargo_history
+            .motion
+            .entries
+            .iter_mut()
+            .find(|e| e.site == CargoSite::Pool(id.clone()))
+            .unwrap();
+        if extra_record {
+            let mut extra = entry.cohorts[0].clone();
+            extra.id = "extra-unbound-positive-motion".into();
+            extra.count = 1;
+            entry.cohorts.push(extra);
+        } else {
+            entry.cohorts[0].count = 4;
+        }
+        let before = serde_json::to_value(&corrupt).unwrap();
+        assert!(matches!(
+            retire_pool_truck_counts(
+                &mut corrupt,
+                &id,
+                Trucks {
+                    medium: 1,
+                    ..Trucks::default()
+                }
+            ),
+            Err(cna_core::engine::EngineError::Invariant { .. })
+        ));
+        assert_eq!(serde_json::to_value(&corrupt).unwrap(), before);
+    }
     let mut corrupt = s.clone();
     corrupt
         .logistics

@@ -387,6 +387,21 @@ pub fn retire_pool_truck_counts(
             Err(_) => return Err(invalid()),
         }
     };
+    let has_current_motion = state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter()
+        .any(|entry| {
+            entry.site == CargoSite::Pool(id.into())
+                && entry.stage == super::water::WaterStage::current(state)
+        });
+    if funded && has_current_motion {
+        // Selection-only retirement cannot detect oversized or unbound survivors.
+        // Reconcile the complete current footprint before splitting any fuel identity.
+        motion::query(state, side, &CargoSite::Pool(id.into()), &groups).map_err(|_| invalid())?;
+    }
     let mut selection = Vec::new();
     for g in groups {
         let remaining = match g.kind {
@@ -408,16 +423,6 @@ pub fn retire_pool_truck_counts(
         let retired =
             remove_selected_pool_fuel_cohorts(&mut draft, id, &selection).map_err(|_| invalid())?;
         let physical: Vec<_> = retired.iter().map(PhysicalTrucks::from).collect();
-        let has_current_motion = draft
-            .logistics
-            .cargo_history
-            .motion
-            .entries
-            .iter()
-            .any(|entry| {
-                entry.site == CargoSite::Pool(id.into())
-                    && entry.stage == super::water::WaterStage::current(&draft)
-            });
         match motion::retire(&mut draft, side, &CargoSite::Pool(id.into()), &physical) {
             Ok(()) => {}
             Err(MotionError::Unknown) if !has_current_motion => {}
