@@ -389,3 +389,13 @@ C4807 major-city terrain does not resolve the withheld Tobruk port anchor or
 establish a closed city extent, capacity, water, garrison or fortification fact.
 Subsequent Cyrenaican cells, later campaign areas and lake/side consumers
 remain separate paced work; this terrain wave certifies no new edge or action.
+
+
+Northern Cyrenaica continuation retains unknown terrain at C3902, C3702,
+C3606, C3507, C3406, C3306, C3205, C3908, C3708, C3608, C3508 and C3408.
+Their individual review notes record unresolved substrate predominance or
+water identity. C3908, C3708, C3608 and C3508 have known visible land but
+unresolved coastal domains and empty flags; neither domain nor terrain is
+certified there. Other eight deferrals have reviewed noncoastal domains.
+Further source allocations remain paced work; this continuation adds no
+edge, lake, named-place, facility or complete setup/action certification.

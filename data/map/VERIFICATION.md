@@ -732,3 +732,21 @@ All 166 map files reproduce byte-identically through two terrain, layer and
 area replays. Initial worker Rust runs found obsolete live-count fixtures;
 owner fixture correction, full combined gates and exact main publication are
 separate receipts and must not be inferred from the map audit.
+
+
+Northern Cyrenaica terrain continuation (132 directly reviewed cells): the
+map-lines and map-terrain cyrenaica-0002 reviews add 120 classifications
+(110 clear, nine rough, one Sea) and retain 12 explicit unknowns. All 119
+newly classified land cells use the adopted predominant-substrate rule;
+minor clear substrate in rough cells remains cited review evidence. This is
+single-observer native 2021/TEC evidence, with no whole-batch second-observer
+agreement, measured population error rate or 1979 equivalence claim.
+
+The union adds 248 cell masks; the four unknown coastal domains C3908,
+C3708, C3608 and C3508 add neither terrain nor coastal masks. Known-land
+Libya grows from 225 to 344 and map_c_libya from 224 to 343. The generator
+removes only newly verified Sea C4908 from these two derived regions; no
+source frontier, geometry, other membership or place record changes. C4908
+Sea terrain supplies no Tobruk port or other facility fact. All 170 map
+files reproduce byte-identically through two terrain/layer/area replays.
+Full joint gate results and exact publication remain separate receipts.
