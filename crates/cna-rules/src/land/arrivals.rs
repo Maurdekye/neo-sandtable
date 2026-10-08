@@ -2426,6 +2426,10 @@ mod tests {
                     runtime
                         .aircraft
                         .retain(|_, p| p.aircraft != "cw.hurricane_i");
+                    runtime
+                        .preparation
+                        .current
+                        .retain(|id, _| runtime.aircraft.contains_key(id));
                     Ok(())
                 })
                 .unwrap();
