@@ -1,0 +1,483 @@
+[batch]
+id = "map-lines-cyrenaica-0002"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "C3814,C3908,C4908,C3708,C3709,C3710,C3711,C3712,C3713,C3714,C3608,C3609,C3610,C3611,C3612,C3613,C3614,C3508,C3509,C3510,C3511,C3512,C3513,C3514,C3408,C3409,C3410,C3411,C3412,C3413,C3414,C3308,C3309,C3310,C3311,C3312,C3313,C3314,C3208,C3209,C3210,C3211,C3212,C3213,C3214,C3108,C3109,C3110,C3111,C3112,C3113,C3114,C3008,C3009,C3010,C3011,C3012,C3013,C3014"
+notes = "Exactly59 fresh next northern cells from original allocation independently source-inspected in five complete-cell native2x sheets plus11full-cell4x details against TEC.54accepted53clear1sea;5deferred. Four inland identity abstentions keep empty flags with known-land notes; one mixed clear/rough balance abstention retains land domain. All visible substrates recorded; no invented minor classification. Source-only observations sealed before promotion at explicit cartographer10:28 commit GO on compatible public fixture base. No classifier, independent accuracy or original1979 equivalence claim. No edge/lake/facility/national or action observations. Source imagery remains outside repo."
+
+[[hex]]
+hex_id = "C3814"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3908"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Large irregular beige rough land and smaller cream clear regions lie inside the complete cell. A green-gray band also crosses its east/northeast interior; exact inland identity/water-domain effect remains uncertain. Known land is visible; keep terrain Unknown and empty flags under the allocated uncertainty policy. Record both visible land substrates without using the band as a substrate."
+
+[[hex]]
+hex_id = "C4908"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Direct full-boundary4x inspection: the whole cell is marine water. Tobruk lettering and the anchor graphic cross water; nearby buildings and shore remain outside the southwest boundary. No land fragment is inside. No place or port record is inferred."
+
+[[hex]]
+hex_id = "C3708"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground forms nearly the entire cell, but a green-gray diagonal band intrudes across its northwest interior/left side. Known land is visible; uncertain band identity/water-domain effect requires Unknown and empty flags. No marine water seen. Band is not accepted as a terrain substrate or edge feature."
+
+[[hex]]
+hex_id = "C3709"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3710"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3711"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3712"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3713"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3714"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3608"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground is visible throughout. Enlarged full boundary shows a small green-gray rounded tip reaching inside the southwest vertex. Its exact inland identity/water-domain effect remains uncertain; retain Unknown and empty flags with known land visible. No marine water seen or edge feature accepted."
+
+[[hex]]
+hex_id = "C3609"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3610"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3611"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3612"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3613"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3614"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3508"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the interior; a green-gray band enters along the northwest edge and rounds inside the top vertex. Its exact inland identity/water-domain effect remains uncertain. Known land is visible; retain Unknown with empty flags. Beige rough patch in lower-right crop lies outside the southeast cell side."
+
+[[hex]]
+hex_id = "C3509"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3510"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3511"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3512"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3513"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3514"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3408"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "A substantial irregular beige rough island and broad cream clear margins both occupy the complete cell. Their visible areas are too comparable for a confident predominant class under map-0003; retain Unknown. Full cell is land with no marine water. Both land substrates recorded; neither is assigned a predominant/minor label."
+
+[[hex]]
+hex_id = "C3409"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3410"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3411"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3412"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3413"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3414"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3308"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3309"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3310"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3311"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3312"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3313"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3314"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3208"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3209"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3210"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3211"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3212"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3213"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3214"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3108"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3109"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3110"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3111"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3112"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3113"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3114"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3008"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3009"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3010"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3011"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3012"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3013"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
+
+[[hex]]
+hex_id = "C3014"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed side and full interior directly inspected: cream clear substrate predominates, with no distinct minor land substrate identified. Labels, blue point symbols and transport ink are separate where present. Neighboring beige patches stay outside the boundary where visible. No marine water inside."
