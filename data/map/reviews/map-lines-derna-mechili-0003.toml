@@ -1,0 +1,523 @@
+[batch]
+id = "map-lines-derna-mechili-0003"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "B3916,B3917,B3918,B3919,B3920,B3921,B3922,B3923,B3924,B3925,B3926,B6115,B6014,B5914,B5814,B5714,B5613,B5513,B5412,B5312,B5211,B5111,B5010,B4530,B4429,B4329,B4228,B4128,B4027,B3915,B3927,B3815,B3816,B3817,B3818,B3819,B3820,B3821,B3822,B3823,B3824,B3825,B3826,B6114,B6013,B5913,B5813,B5713,B5612,B5512,B5411,B5311,B5210,B4330,B4229,B4129,B4028,B3928,B3827,B3715,B3716,B3717,B3718,B3719"
+notes = "Frozen final64 of214 fresh Derna/Mechili terrain cells, allocation608b06d9; actual preceding second75 c0d7bb97 public inclusion independently checked. Six full native2x sheets and35full-cell4x details against actual TEC.49accepted:26clear5gravel14rough4mountain;15Unknown:12unresolved ribbon identities emptyflags,3land-domain substrate balance. Ten cells explicitly record minor substrates. Full-cell/boundary adopted predominant land substrate; separate contour ink. No new Sea classification. All source pixels outside repo; direct single observer, no classifier, independent accuracy or1979 equivalence. No side/lake/place/facility/control/action evidence."
+
+[[hex]]
+hex_id = "B3916"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3917"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The gravel substrate clearly predominates, with a smaller clear land portion. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: clear."
+
+[[hex]]
+hex_id = "B3918"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3919"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3920"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The gravel substrate clearly predominates, with a smaller clear land portion. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: clear."
+
+[[hex]]
+hex_id = "B3921"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3922"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x detail. Plain clear land west and a filled rough body east have competing interior extents. Predominance is not confidently established; keep terrain Unknown and both visible substrates without inventing primary/minor ordering. Land domain is directly established without marine water."
+
+[[hex]]
+hex_id = "B3923"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The rough substrate clearly predominates, with a smaller clear land portion. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: clear."
+
+[[hex]]
+hex_id = "B3924"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The rough substrate clearly predominates, with a smaller clear land portion. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: clear."
+
+[[hex]]
+hex_id = "B3925"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at northeast and east interior margins. Visible land substrates: clear. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B3926"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at west and southern interior margins. Visible land substrates: clear. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B6115"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The partial southern land band is rough fill; linear contour splashes remain separate. Direct marine water occupies the northern interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B6014"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The entire interior is rough fill; linear contour splashes north lie outside the cell. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5914"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The entire interior is rough fill; small adjacent mountain patches remain outside the southern boundary. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5814"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at south and southeast interior. Visible land substrates: mountain, rough. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B5714"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at north interior margin. Visible land substrates: mountain. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B5613"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The mountain substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5513"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The mountain substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5412"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x detail. The rough body west and filled mountain body east have competing irregular interior extents. Predominance is not confidently established; keep terrain Unknown and both visible substrates without inventing primary/minor ordering. Land domain is directly established without marine water."
+
+[[hex]]
+hex_id = "B5312"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. Rough ground clearly predominates around a smaller mountain tongue in the eastern/central interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: mountain."
+
+[[hex]]
+hex_id = "B5211"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The rough substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5111"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. Rough ground clearly predominates, with a smaller plain clear fringe south; gravel remains outside the southern boundary. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: clear."
+
+[[hex]]
+hex_id = "B5010"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at west and southwest interior. Visible land substrates: gravel, clear. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B4530"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The gravel substrate clearly predominates, with a smaller clear land portion. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: clear."
+
+[[hex]]
+hex_id = "B4429"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The gravel substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B4329"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B4228"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B4128"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B4027"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3915"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x detail. The isolated rough body and surrounding plain clear land have competing interior extents. Predominance is not confidently established; keep terrain Unknown and both visible substrates without inventing primary/minor ordering. Land domain is directly established without marine water."
+
+[[hex]]
+hex_id = "B3927"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at south interior margin. Visible land substrates: clear. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B3815"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. Plain clear land occupies the interior; the neighboring rough patch northwest remains outside. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3816"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3817"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3818"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3819"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3820"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The gravel substrate clearly predominates, with a smaller clear land portion. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: clear."
+
+[[hex]]
+hex_id = "B3821"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. Plain clear land predominates; a small gravel-pattern fringe reaches the western interior margin. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: gravel."
+
+[[hex]]
+hex_id = "B3822"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3823"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3824"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3825"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at east and southeast interior margins. Visible land substrates: clear. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B3826"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at north, west and southern interior margins. Visible land substrates: clear. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B6114"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. Rough fill occupies the land portion; a separate linear contour stroke and splashes establish no other substrate. Direct marine water cuts the northern interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B6013"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The entire interior is rough fill; linear contour splashes north lie outside the cell. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5913"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The interior is rough fill; northwest contour ink remains separate from substrate and neighboring mountain bodies remain outside. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5813"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at south interior margin. Visible land substrates: rough, mountain. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B5713"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at north interior margin. Visible land substrates: mountain. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B5612"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The mountain substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5512"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The mountain body clearly predominates, with a smaller rough portion south. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied. Explicit minor land substrates: rough."
+
+[[hex]]
+hex_id = "B5411"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. Rough fill occupies the interior; neighboring filled mountain bodies remain outside the printed boundary. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5311"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The rough substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B5210"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The rough substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B4330"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B4229"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B4129"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B4028"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3928"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at southwest boundary corner. Visible land substrates: clear. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B3827"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell and all six boundaries directly inspected, with a4x full-cell detail. Gray-green ribbon at northwest and southwest interior corners. Visible land substrates: clear. Ribbon identity or precise boundary incidence remains unresolved against TEC, including terrain/domain consequences. Keep empty terrain-domain flags and visible-land notes only; no lake, marine-domain, wadi or other line/side evidence inferred."
+
+[[hex]]
+hex_id = "B3715"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. Plain clear land occupies the interior; the blue point and transport ink remain separate, and the neighboring rough patches stay outside. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3716"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3717"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3718"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. The clear substrate is directly established throughout the interior. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."
+
+[[hex]]
+hex_id = "B3719"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Whole native cell interior and all six printed boundaries directly inspected against actual TEC. Plain clear land occupies the interior; rough patches south remain outside all printed boundaries. Grid, labels, transport ink, point markers and contour strokes remain separate; no facility, line/side or action permission is supplied."

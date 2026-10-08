@@ -1,0 +1,11 @@
+# Derna/Mechili terrain review 0003
+
+Every whole printed cell interior and all six boundaries of the final frozen64 in the214-cell allocation were directly inspected against native2021source and actual TEC. Allocation SHA256608b06d9c83b9fd26e97da4e3bcfcdfecc815919b65e45dc37494cd57dd2996e; source decisions SHA256280ab4c9c0f5aad6c6540ef8a95d41cde8faa2eed4a8bddcdaf8e2326dd572d0. Six unmarked nearest-neighbor2x sheets, separate geometric locators and35full-cell4x details support this single-observer review. Planning anchors establish only ordering, with no place or facility extent.
+
+49 cells are accepted:26clear,5gravel,14rough and4mountain. Interior substrate fill remains separate from contour strokes and splashes. Ten accepted cells name directly observed minor land substrates in individual notes. B6115/B6114 have rough coastal land bands beneath separate linear contour ink. No newly accepted Sea cell is supplied.
+
+15 cells remain Unknown. Twelve uncertain gray-green ribbon identities supply empty domain flags and no masks: B3825,B3826,B3827,B3925,B3926,B3927,B3928,B5010,B5713,B5714,B5813,B5814. Visible land and precise ribbon incidence remain recorded without inventing lake, marine-domain, wadi or other feature evidence. Three competing land-substrate balances retain only directly established land domain: B3915,B3922,B5412. Neither ordering nor terrain mask is invented.
+
+Immutable raw-union terrain/layer/area replay supplies101new masks:49terrain and52terrain-domain. Derived area membership and fields remain unchanged; Unknown remains geometric. No area additions or definitions change. All prior accepted/deferred raw records, coverage, point flags, geometry, frontier, places and line/side layers are preserved separately. Source pixels, rules prose and source coordinates remain outside the repository.
+
+Direct native2021single-observer review; no measured accuracy, independent source agreement or original1979 equivalence. Terrain facts establish no new edge/lake/pipeline/place/port/facility anchor, complete setup/control domain or action permission. Cartographer is the sole main assembler; this authored snapshot awaits joint gates, publication and independent inclusion verification. Exact214 allocation completion requires all three actual-public inclusion receipts.
