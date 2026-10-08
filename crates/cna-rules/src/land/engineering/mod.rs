@@ -233,3 +233,6 @@ mod tests;
 
 mod capability;
 pub use capability::{EngineerCapability, source_capability};
+
+mod companion;
+pub use companion::{MinefieldCompanionBenefit, minefield_companion_qualifies};
