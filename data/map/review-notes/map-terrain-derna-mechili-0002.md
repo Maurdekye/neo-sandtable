@@ -1,0 +1,15 @@
+# Derna/Mechili terrain: second frozen 75 cells
+
+Actual compatible public base: aa5c46c10ece45cfff499d25b058362318f46f82. Original allocation SHA256: 211f7c507d9e94481bf42fdecb2fd43a7ab41e96f51f4c41f7e2288e52428caa. Current source receipt SHA256: 74eeecde4d30b86a2de8f4fe9afa28c3643b2a6f05068300a0c02c6668ad0b57.
+
+Every complete native2021 cell and boundary was viewed directly at native/4x against actual TEC;21 mixed/shoreline cells additionally at6x. Unmarked regional source context establishes open offshore marine water. Raw notes retain individual land predominance, observed minors and abstention reasons. Source images stay outside the repository. Source accuracy, parent visual agreement and1979 equivalence are unmeasured.
+
+72 classifications:33 gravel,18 rough,18 clear,two mountain,one Sea;71 newly known land. B5321,B5117,B5919 retain terrain Unknown because no land substrate confidently predominates; all three have directly reviewed noncoastal land domains and receive no terrain masks. All75 domains are directly established;147 new masks(72terrain75domain). Coastal land: B6121,B6020,B5729,B6120 rough. B6121 and B6120 contain small inside-boundary land fragments, preventing all-Sea. B5829 is entirely marine Sea. The two mountain cells B5820/B5721 contain broad solid interior bodies distinct from marginal contour splash printing, with explicit minor rough. Every observed minor substrate is retained in raw notes.
+
+B5321's nearby western gravel marks were directly rechecked outside its printed side; they are not a third land substrate within the hex. This precision was recorded before raw publication; the earlier scratch receipt remains archived. No class or domain decision changed. Individual boundaries are authoritative; neighboring land types, labels and transport/point graphics provide no terrain classification.
+
+Exact immutable selection: B5525,B5526,B5527,B5319,B5320,B5321,B5322,B5323,B5218,B5223,B5118,B5124,B5017,B5024,B4917,B4925,B4817,B4824,B4718,B4724,B4618,B4623,B4519,B4520,B4521,B4522,B4523,B6121,B6020,B5920,B5820,B5829,B5721,B5729,B5621,B5628,B5522,B5528,B5418,B5419,B5420,B5421,B5422,B5423,B5424,B5425,B5426,B5427,B5318,B5324,B5217,B5224,B5117,B5125,B5016,B5025,B4916,B4926,B4816,B4825,B4717,B4725,B4617,B4624,B4518,B4524,B4418,B4419,B4420,B4421,B4422,B4423,B6120,B6019,B5919.
+
+Only this new raw/note and mechanical terrain/layer/area outputs belong to the snapshot. Existing point/facility flags, geometry, prior raw including Unknown, masks, edges, places, features and area definitions are preserved. New Sea removes only itself from existing generated land-required frontier memberships; Unknown stays geometric. Final64 reviewed decisions remain outside the checked snapshot. No lake, movement-side, place, port, facility, national or action/control evidence is added.
+
+Initial checks and author-preserved transport are recorded separately in scratch receipts. Parent final union/gates/fair publication have separate evidence; this note does not assert publication.
