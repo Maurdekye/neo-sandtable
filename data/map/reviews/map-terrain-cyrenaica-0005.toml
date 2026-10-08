@@ -1,0 +1,547 @@
+[batch]
+id = "map-terrain-cyrenaica-0005"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-terrain"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "C1004,C1005,C1006,C1007,C0901,C0902,C0903,C0904,C0905,C0906,C0907,C0801,C0802,C0803,C0804,C0805,C0806,C0807,C0701,C0702,C0703,C0704,C0705,C0706,C0707,C0601,C0602,C0603,C0604,C0605,C0606,C0607,C0501,C0502,C0503,C0504,C0505,C0506,C0507,C0401,C0402,C0403,C0404,C0405,C0406,C0407,C0301,C0302,C0303,C0304,C0305,C0306,C0307,C0201,C0202,C0203,C0204,C0205,C0206,C0207,C0101,C0102,C0103,C0104,C0105,C0106,C0107"
+notes = "Exact final 67 of the original frozen 351-cell C-Libya worker allocation under standing terrain GO. All complete native/4x cells and actual TEC directly viewed; nineteen mixed/boundary cases additionally enlarged6x. 63 accepted land and four substrate-balance deferrals. Predominant-land rule with explicit minor substrates. No classifier, independent visual agreement, measured source accuracy or1979 equivalence. No places, edges, lakes, facilities, country or scenario ruling."
+
+[[hex]]
+hex_id = "C1004"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x full-boundary views show a broad dark olive filled central body matching the TEC mountain family, distinct from the surrounding beige rough. Mountain clearly predominates. Minor substrate: rough in the smaller northern, western and eastern rim. This is a broad interior filled patch, not a thin contour fringe or a marginal line; dashed transport ink stays separate."
+
+[[hex]]
+hex_id = "C1005"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show beige rough filling almost all the interior and clearly predominating. Minor substrate: clear in the smaller southeastern indentation. Dark mountain fragments visible on the west lie outside the boundary and do not decide this cell."
+
+[[hex]]
+hex_id = "C1006"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show beige rough clearly predominating across the broad upper/central interior. Minor substrate: clear in the smaller southern band and central southern indentation."
+
+[[hex]]
+hex_id = "C1007"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show beige rough clearly predominating across the upper, central and eastern interior. Minor substrate: clear in the smaller southwestern pocket. Dashed transport ink is separate."
+
+[[hex]]
+hex_id = "C0901"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. No distinct minor substrate or marine fill is identified; any visible transport ink stays separate."
+
+[[hex]]
+hex_id = "C0902"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. No distinct minor substrate or marine fill is identified; any visible transport ink stays separate."
+
+[[hex]]
+hex_id = "C0903"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show broad cream clear western/upper ground and a substantial beige rough eastern/lower body. Neither substrate establishes confident predominance inside the boundary; retain Unknown with rough and clear recorded."
+
+[[hex]]
+hex_id = "C0904"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show a substantial dark olive filled mountain patch in the central/eastern/lower interior and broad beige rough elsewhere. These match distinct TEC mountain and rough families, but the full-cell balance does not establish confident predominance; retain Unknown."
+
+[[hex]]
+hex_id = "C0905"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show beige rough clearly predominating in the broad upper/central/western interior. Minor substrate: clear in the smaller southeastern pocket; mountain in narrow dark olive fragments entering the western printed edge. The broad neighboring mountain body outside that side is excluded."
+
+[[hex]]
+hex_id = "C0906"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. Nearby beige rough or golden-yellow desert patches are outside the boundary; no distinct interior minor substrate is identified. Dashed transport strokes stay separate."
+
+[[hex]]
+hex_id = "C0907"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. Nearby beige rough or golden-yellow desert patches are outside the boundary; no distinct interior minor substrate is identified. Dashed transport strokes stay separate."
+
+[[hex]]
+hex_id = "C0801"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. Nearby beige rough or golden-yellow desert patches are outside the boundary; no distinct interior minor substrate is identified. Dashed transport strokes stay separate."
+
+[[hex]]
+hex_id = "C0802"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. Nearby beige rough or golden-yellow desert patches are outside the boundary; no distinct interior minor substrate is identified. Dashed transport strokes stay separate."
+
+[[hex]]
+hex_id = "C0803"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show broad beige rough central/eastern ground and substantial cream clear western and southern interior. The balance does not establish confident predominance; retain Unknown with rough and clear recorded. Dashed transport printing stays separate."
+
+[[hex]]
+hex_id = "C0804"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show beige rough clearly predominating through the broad upper/central interior. Minor substrate: clear in the smaller southern band and eastern indentation. The dark mountain patch above the northwest side lies outside the boundary."
+
+[[hex]]
+hex_id = "C0805"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the visible complete interior around a blue point symbol and label. These are printing/point graphics, not marine water or another land substrate. No place or facility record is supplied."
+
+[[hex]]
+hex_id = "C0806"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete interior around the blue place-name lettering, which is printing ink rather than a water-body or substrate. No point/extent/port record is supplied."
+
+[[hex]]
+hex_id = "C0807"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x full-boundary views show cream clear ground throughout the interior. Adjacent golden desert or beige rough patches lie outside the printed sides or touch the boundary without an identified interior region; no distinct interior minor substrate or marine fill is identified."
+
+[[hex]]
+hex_id = "C0701"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show a broad flat golden-yellow desert body clearly predominating in the central/lower/eastern interior. Minor substrate: clear in the smaller upper/western and upper-central indentation. The actual TEC desert fill is distinct from its muted green-yellow delta sample and from the angular marsh network; no marsh network, gravel rings or vegetation pattern is present."
+
+[[hex]]
+hex_id = "C0702"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full-boundary views show flat golden-yellow desert clearly predominating through the central/lower interior. Minor substrate: clear in the smaller upper and northeastern regions. Class binding uses the actual TEC desert family, not geography or a numerical palette classifier."
+
+[[hex]]
+hex_id = "C0703"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show flat golden-yellow desert clearly predominating across the broad central/lower interior. Minor substrate: clear in the smaller upper band and upper-right region. No marsh network or gravel/vegetation pattern is visible."
+
+[[hex]]
+hex_id = "C0704"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show flat golden-yellow desert clearly predominating through the central and lower interior. Minor substrate: clear in the smaller upper band and upper-central indentation. Beige ground above the cell lies outside its printed sides."
+
+[[hex]]
+hex_id = "C0705"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x full-boundary views show cream clear ground throughout the interior. Adjacent golden desert or beige rough patches lie outside the printed sides or touch the boundary without an identified interior region; no distinct interior minor substrate or marine fill is identified."
+
+[[hex]]
+hex_id = "C0706"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. No distinct minor substrate or marine fill is identified; any visible transport ink stays separate."
+
+[[hex]]
+hex_id = "C0707"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear ground fills the complete printed interior. No distinct minor substrate or marine fill is identified; any visible transport ink stays separate."
+
+[[hex]]
+hex_id = "C0601"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0602"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0603"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0604"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show flat golden-yellow desert filling almost all the interior and clearly predominating. Minor substrate: clear in the smaller northeastern indentation."
+
+[[hex]]
+hex_id = "C0605"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show flat golden-yellow desert clearly predominating through the broad central/lower interior. Minor substrate: clear in the smaller upper band and upper-central indentation."
+
+[[hex]]
+hex_id = "C0606"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show a substantial flat golden-yellow desert central/western/lower body and broad cream clear upper/eastern regions. The balance does not establish confident predominance; retain Unknown with desert and clear recorded."
+
+[[hex]]
+hex_id = "C0607"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x full-boundary views show cream clear ground throughout the interior. Adjacent golden desert or beige rough patches lie outside the printed sides or touch the boundary without an identified interior region; no distinct interior minor substrate or marine fill is identified."
+
+[[hex]]
+hex_id = "C0501"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0502"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0503"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0504"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0505"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0506"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0507"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Native/6x views show flat golden-yellow desert clearly predominating across the broad western/central/lower interior. Minor substrate: clear in the smaller northeastern indentation. Dashed transport printing is separate."
+
+[[hex]]
+hex_id = "C0401"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0402"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0403"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0404"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0405"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0406"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0407"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0301"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0302"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0303"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0304"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0305"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0306"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0307"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0201"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0202"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0203"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0204"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0205"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0206"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0207"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0101"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0102"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0103"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0104"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0105"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0106"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
+
+[[hex]]
+hex_id = "C0107"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Flat golden-yellow desert fills the complete printed interior, matching the actual TEC desert family. No distinct minor substrate or marine fill is identified. This fill has no salt-marsh network, gravel rings or vegetation graphic; transport and boundary ink stay separate. Geography and numerical color classification do not determine the class."
