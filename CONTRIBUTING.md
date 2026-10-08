@@ -113,17 +113,24 @@ cargo test --workspace
 npm --prefix web ci && npm --prefix web run lint && npm --prefix web run test && npm --prefix web run build
 ```
 
-A change that touches **only Markdown under `docs/`** runs the content checks instead:
+Two kinds of change run the content checks instead:
 
 ```sh
 python tools/content/check_verbatim.py
 python tools/content/check_utf8.py
 ```
 
-The Rust and web gates cannot be affected by such a change, and the landing lock is shared: making
-everyone else wait through a full matrix for a prose edit costs the queue more than it protects.
-Any other change — including one that touches `data/`, a chart, a schema or a single line of code —
-runs the whole list above. If you are unsure which case you are in, you are in the second one.
+- Markdown under `docs/` and nothing else.
+- A standalone script under `tools/` that no build target and no CI job reads. Check before you
+  claim it: `grep -rn <script> --include=*.rs --include=*.ts .github/` must come back empty.
+  `tools/content/` and `tools/rules/coverage.py` do **not** qualify — CI runs them.
+
+Neither can affect the Rust or web gates, and the landing lock is shared: making everyone else wait
+through a full matrix for a prose edit costs the queue more than it protects. Any other change —
+`data/`, a chart, a schema, one line of Rust or TypeScript — runs the whole list above. If you are
+unsure which case you are in, you are in the last one.
+
+Say in the commit message which checks you ran. Never describe a gate you skipped as passing.
 
 ## 4. Areas and owners
 

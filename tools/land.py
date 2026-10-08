@@ -189,6 +189,15 @@ def release(who: str) -> int:
     drop_tickets(who, queue)
     info = describe(lock) if lock else None
     if not info:
+        if lock:
+            # The lock is on the remote but we could not read it: a fetch failure, or it
+            # changed hands mid-call. Never say "released" — the caller still holds it.
+            print(
+                f"the lock {lock[:12]} is still on the remote but could not be read; "
+                f"{who} may still hold it. Run status, then release again.",
+                file=sys.stderr,
+            )
+            return 1
         print("no lock held")
         return 0
     if info[0] != who:
@@ -204,6 +213,12 @@ def release(who: str) -> int:
 def refresh(who: str) -> int:
     lock, _ = remote()
     info = describe(lock) if lock else None
+    if lock and not info:
+        print(
+            f"the lock {lock[:12]} could not be read; try again before its clock goes stale",
+            file=sys.stderr,
+        )
+        return 1
     if not info or info[0] != who:
         print(f"{who} does not hold the lock; nothing to refresh", file=sys.stderr)
         return 1
@@ -224,7 +239,9 @@ def leave(who: str) -> int:
 def status() -> int:
     lock, queue = remote()
     info = describe(lock) if lock else None
-    if not info:
+    if lock and not info:
+        print(f"held by someone (the lock {lock[:12]} could not be read; try again)")
+    elif not info:
         print("free")
     else:
         print(f"held by {info[0]} since {info[1]:%Y-%m-%d %H:%M:%SZ} ({age_minutes(info[1]):.1f} min)")
