@@ -554,6 +554,106 @@ mod tests {
         assert_eq!(f.members.last().unwrap().any_of.len(), 2);
         assert_eq!(u.formations.kinds["it.at_bn"].fill_by[0].max, 3);
     }
+    /// Cases: land:4.45, land:19.3, land:19.31
+    #[test]
+    fn actual_7th_armored_parents_select_source_profiles_and_track_reads() {
+        let (u, reads) = crate::record_reads(units);
+        for file in ["units/formations/cw.toml", "units/oa/cw/7_armd_div.toml"] {
+            assert!(reads.contains(&crate::normalize(&repo_data_dir().join(file))));
+        }
+        for (unit, prefix, ids) in [
+            (
+                "cw.7_armd_div.7th_armored_div_hq",
+                "cw.armd_div_",
+                vec![
+                    "cw.armd_div_i",
+                    "cw.armd_div_ii",
+                    "cw.armd_div_iii",
+                    "cw.armd_div_iv",
+                ],
+            ),
+            (
+                "cw.7_armd_div.4th_armored_bde_hq",
+                "cw.armd_bde_",
+                vec!["cw.armd_bde_i", "cw.armd_bde_ii", "cw.armd_bde_iii"],
+            ),
+            (
+                "cw.7_armd_div.7th_armored_bde_hq",
+                "cw.armd_bde_",
+                vec!["cw.armd_bde_i", "cw.armd_bde_ii", "cw.armd_bde_iii"],
+            ),
+        ] {
+            let id = UnitId::new(unit);
+            let mapping = &u.formations.parents[&id];
+            assert_eq!(mapping.profiles.as_ref().unwrap(), &ids);
+            assert!(mapping.oa_slots.is_none());
+            assert!(mapping.attachment_maximum.is_none());
+            assert_eq!(mapping.evidence.verification, "double");
+            assert_eq!(
+                mapping.evidence.transcribed_from,
+                [
+                    "vassal:OC BR 7th Armoured Division-01.png",
+                    "vassal:Allied Formation Chart.png",
+                ]
+            );
+            for gt in [1, 18, 19, 70, 71, 91, 92, 111] {
+                let suffix = match gt {
+                    1 | 18 => "i",
+                    19 | 70 => "ii",
+                    71 | 91 => "iii",
+                    _ if prefix == "cw.armd_div_" => "iv",
+                    _ => "ii",
+                };
+                let profile = u.formations.profile(&id, gt).unwrap();
+                assert_eq!(profile.id, format!("{prefix}{suffix}"));
+                assert_eq!(profile.echelon, u.units[&id].echelon.as_deref().unwrap());
+                assert_eq!(
+                    ids.iter()
+                        .filter(|name| u.formations.formations[**name].active(gt))
+                        .count(),
+                    1
+                );
+            }
+            assert!(u.formations.profile(&id, 0).is_none());
+            let mut incomplete = u.formations.clone();
+            incomplete
+                .parents
+                .get_mut(&id)
+                .unwrap()
+                .profiles
+                .as_mut()
+                .unwrap()
+                .remove(1);
+            for gt in [19, 70] {
+                assert!(incomplete.profile(&id, gt).is_none());
+            }
+            if prefix == "cw.armd_bde_" {
+                assert!(incomplete.profile(&id, 92).is_none());
+            }
+        }
+        // A standard brigade's chart maximum remains three tank battalions,
+        // despite the two printed battalions under each of these OA HQs.
+        let slots = &u.formations.formations["cw.armd_bde_i"].members;
+        assert_eq!(slots.len(), 3);
+        assert!(
+            slots
+                .iter()
+                .all(|slot| slot.kind.as_deref() == Some("cw.tank_bn"))
+        );
+        for parent in [
+            "cw.7_armd_div.4th_armored_bde_hq",
+            "cw.7_armd_div.7th_armored_bde_hq",
+        ] {
+            let id = UnitId::new(parent);
+            assert_eq!(
+                u.units
+                    .values()
+                    .filter(|unit| unit.parent.as_ref() == Some(&id))
+                    .count(),
+                2
+            );
+        }
+    }
     /// Cases: land:19.25, land:19.31
     #[test]
     fn inclusive_dates_choose_exact_profile_and_never_bridge_gaps() {

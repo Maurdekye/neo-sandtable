@@ -332,3 +332,22 @@ members = [
   { kind = "cw.any_small_unit" },
 ]
 src = ["land:19.31"]
+
+# Source-bound OA parents; assignment capacity comes from chart profiles.
+[[parent]]
+unit = "cw.7_armd_div.7th_armored_div_hq"
+profiles = ["cw.armd_div_i", "cw.armd_div_ii", "cw.armd_div_iii", "cw.armd_div_iv"]
+evidence = { transcribed_from = ["vassal:OC BR 7th Armoured Division-01.png", "vassal:Allied Formation Chart.png"], verification = "double" }
+src = ["land:4.45", "land:19.3", "land:19.31"]
+
+[[parent]]
+unit = "cw.7_armd_div.4th_armored_bde_hq"
+profiles = ["cw.armd_bde_i", "cw.armd_bde_ii", "cw.armd_bde_iii"]
+evidence = { transcribed_from = ["vassal:OC BR 7th Armoured Division-01.png", "vassal:Allied Formation Chart.png"], verification = "double" }
+src = ["land:4.45", "land:19.3", "land:19.31"]
+
+[[parent]]
+unit = "cw.7_armd_div.7th_armored_bde_hq"
+profiles = ["cw.armd_bde_i", "cw.armd_bde_ii", "cw.armd_bde_iii"]
+evidence = { transcribed_from = ["vassal:OC BR 7th Armoured Division-01.png", "vassal:Allied Formation Chart.png"], verification = "double" }
+src = ["land:4.45", "land:19.3", "land:19.31"]
