@@ -14,6 +14,7 @@ pub mod fleet;
 mod grid;
 pub mod morale;
 pub mod patrol;
+pub mod production;
 pub mod raids;
 pub mod repair;
 pub mod replacements;
@@ -25,6 +26,8 @@ pub mod weather;
 crate::tables_group! {
     /// Land tables currently bound; the loader test records the remaining tables explicitly.
     LandTables {
+        axis_replacement_pool: production::AxisReplacementPool,
+        commonwealth_production: production::CommonwealthProduction,
         maximum_attachment: attachment::MaximumAttachment,
         axis_convoy_bombing: convoy_bombing::AxisConvoyBombing,
         cw_fleet_reinforcement: fleet::CommonwealthFleetReinforcement,
