@@ -13,7 +13,12 @@ use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
 
 use crate::{ContentError, read_toml, toml_files};
+mod engineering;
 pub mod formations;
+pub use engineering::{
+    EngineeringEvidence, EngineeringMetadata, EngineeringRole, EngineeringScope,
+    EngineeringToeRequirement,
+};
 mod ships;
 pub use ships::{CoastalShip, ShipRoster};
 
@@ -271,6 +276,7 @@ pub struct OaUnit {
     pub class: Option<String>,
     pub infantry_kind: Option<InfantryKind>,
     pub infantry_kind_evidence: Option<InfantryKindEvidence>,
+    pub engineering: Option<EngineeringMetadata>,
     pub echelon: Option<String>,
     pub toe: Option<Toe>,
     pub arrives: Arrival,
@@ -461,6 +467,7 @@ struct UnitRow {
     class: Option<String>,
     infantry_kind: Option<InfantryKind>,
     infantry_kind_evidence: Option<InfantryKindEvidence>,
+    engineering: Option<EngineeringMetadata>,
     echelon: Option<String>,
     toe: Option<Toe>,
     arrives: Arrival,
@@ -537,6 +544,7 @@ impl UnitsContent {
                     class: row.class,
                     infantry_kind: row.infantry_kind,
                     infantry_kind_evidence: row.infantry_kind_evidence,
+                    engineering: row.engineering,
                     echelon: row.echelon,
                     toe: row.toe,
                     arrives: row.arrives,
@@ -579,6 +587,11 @@ impl UnitsContent {
             message,
         };
         for unit in self.units.values() {
+            if let Some(metadata) = &unit.engineering {
+                metadata
+                    .validate(&self.weapons)
+                    .map_err(|detail| invalid(format!("{}: {detail}", unit.id)))?;
+            }
             match (unit.infantry_kind, &unit.infantry_kind_evidence) {
                 (None, None) => {}
                 (Some(_), Some(evidence))

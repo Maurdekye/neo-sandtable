@@ -46,6 +46,7 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "it.benghazi_garrison.viii_ii_engineer_bn"
+engineering = { scope = "general", role = "battalion", evidence = { transcribed_from = ["vassal:OC IT Benghazi Garrison.png", "vassal:IT VIII-II - Bnghzi.png"], verification = "double" }, src = ["land:4.45", "land:23.11", "land:23.23"] }
 name = "VIII/II Engineer Bn"
 counter = "VIII/II"
 class = "it.bb"

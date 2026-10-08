@@ -71,6 +71,31 @@ by `rules-airlog` (`data/tables/airlog/54.2-…`); scenario and schedule records
 - **Notes** are paraphrased; each OA footnote becomes a structured field where it has rules
   meaning (`reassign = { month = "1942-02", to = … }`), else a short `note`.
 
+## Engineering identity (`land:23.11`–`23.15`, `land:24.61`)
+
+An OA unit may carry an `engineering` table with `scope`, optional `role` and
+`toe_requirement`, `evidence`, and `src`. Scopes are `general`, `railroad_only`,
+`road_only`, `anti_mine_only`, or `none`; omission remains Unknown. Explicit `none`
+requires a verified non-engineer identity and has neither role nor TOE gate. A positive
+scope needs a sourced `company`, `battalion`, or `headquarters` procedure role. This role
+does not replace the printed `echelon`: the NZ railroad construction units retain their
+OA battalion echelon while `land:24.61` gives their construction procedure a company role.
+
+Evidence lists the exact local source filenames in `transcribed_from` and records
+`verification = "double"`; only names and data are shipped, never source art. The first
+batch contains three verified identities: Benghazi VIII/II and the 10th and 13th NZ
+railroad construction companies. The 7th Armoured HQ counter flag remains pending under
+U-012/U-014 and has no typed record. Alternate NZ chart files are
+two visual reads of the same chart, not independent corroboration. No class-wide
+engineering or non-engineering inference is made.
+
+The optional gate is `{ weapon = "cw.scorpion", min_points = 6 }` under
+`anti_mine_only`, citing `land:23.15`. A procedure must test actual identified current
+points; the gate does not establish a refit date, grant a transfer, or imply readiness.
+No Scorpion-gated unit is entered until its identity mapping is verified. Eligibility,
+construction costs, minefield protection and activity history remain rules-layer decisions;
+this table adds no runtime permissions or generalized protection flag.
+
 ## Field meanings (rating fields)
 
 | Field | Unit | Meaning | Defined in |

@@ -10,6 +10,7 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.unassigned_nz.10th_nz_rr_construction_coy"
+engineering = { scope = "railroad_only", role = "company", evidence = { transcribed_from = ["vassal:OC NZ Unassigned Newzealand Units.png", "vassal:NZ Unassigned Newzealand Units.png"], verification = "double" }, src = ["land:4.45", "land:23.13", "land:24.61"] }
 name = "10th NZ RR Construction Coy"
 counter = "10 NZ"
 class = "cw.uu"
@@ -23,6 +24,7 @@ src = ["land:4.45"]
 
 [[unit]]
 id = "cw.unassigned_nz.13th_nz_rr_construction_coy"
+engineering = { scope = "railroad_only", role = "company", evidence = { transcribed_from = ["vassal:OC NZ Unassigned Newzealand Units.png", "vassal:NZ Unassigned Newzealand Units.png"], verification = "double" }, src = ["land:4.45", "land:23.13", "land:24.61"] }
 name = "13th NZ RR Construction Coy"
 counter = "13 NZ"
 class = "cw.uu"

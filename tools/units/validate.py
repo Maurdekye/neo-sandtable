@@ -58,12 +58,54 @@ MISSION_VALUES = {"day", "night", "night_only", "strafe_only"}
 UNIT_ALLOWED = {"id", "name", "counter", "class", "echelon", "toe", "arrives", "arrives_raw", "parent", "nationality",
                 "note", "src", "reassign", "training", "morale_untrained", "shell", "garrison_of", "immobile",
                 "toe_note", "arrives_note", "kind", "group", "engineer_hq", "never_arrived_parent", "stacking_points",
-                "echelon_symbol", "engineer", "garrison", "basic_morale", "begins_attached_to_sheet", "immobile", "cpa", "vehicle", "commander", "infantry_kind", "infantry_kind_evidence"}
+                "echelon_symbol", "engineer", "garrison", "basic_morale", "begins_attached_to_sheet", "immobile", "cpa", "vehicle", "commander", "infantry_kind", "infantry_kind_evidence", "engineering"}
 SHEET_ALLOWED = {"id", "nation", "side", "nationality", "name", "basic_morale", "basic_morale_untrained", "src", "note"}
 MENTION_ALLOWED = {"unit", "begins_attached_to", "note", "src"}
 
 weapons, classes, aircraft, unit_ids = {}, {}, {}, {}
 pending_refs = []  # (path, kind, ref)
+
+
+def check_engineering(path, unit):
+    metadata = unit.get("engineering")
+    if metadata is None:
+        return  # Omitted is Unknown, including units sharing an engineer's class.
+    if not isinstance(metadata, dict):
+        err(path, f"unit {unit.get('id')}: engineering must be a table")
+        return
+    check_fields(path, metadata, ["scope", "evidence", "src"],
+                 {"scope", "role", "toe_requirement", "evidence", "src"}, "engineering")
+    scope, role, gate = metadata.get("scope"), metadata.get("role"), metadata.get("toe_requirement")
+    if not isinstance(scope, str) or scope not in {"general", "railroad_only", "road_only", "anti_mine_only", "none"}:
+        err(path, f"unit {unit.get('id')}: unknown engineering scope")
+    if scope == "none":
+        if role is not None or gate is not None:
+            err(path, f"unit {unit.get('id')}: non-engineer identity cannot have role or TOE gate")
+    elif not isinstance(role, str) or role not in {"company", "battalion", "headquarters"}:
+        err(path, f"unit {unit.get('id')}: positive engineering scope requires a sourced role")
+    citations = metadata.get("src")
+    if not isinstance(citations, list) or not citations or not all(isinstance(s, str) and s.strip() for s in citations):
+        err(path, f"unit {unit.get('id')}: engineering requires source citations")
+    evidence = metadata.get("evidence")
+    if not isinstance(evidence, dict):
+        err(path, f"unit {unit.get('id')}: engineering requires double-read evidence")
+    else:
+        check_fields(path, evidence, ["transcribed_from", "verification"],
+                     {"transcribed_from", "verification"}, "engineering evidence")
+        files = evidence.get("transcribed_from")
+        if evidence.get("verification") != "double" or not isinstance(files, list) or len(files) < 2 or not all(isinstance(f, str) and f.strip() for f in files):
+            err(path, f"unit {unit.get('id')}: engineering needs two source filenames and double verification")
+    if gate is not None:
+        if not isinstance(gate, dict):
+            err(path, f"unit {unit.get('id')}: engineering TOE gate must be a table")
+            return
+        check_fields(path, gate, ["weapon", "min_points"], {"weapon", "min_points"}, "engineering TOE gate")
+        if not isinstance(gate.get("weapon"), str):
+            err(path, f"unit {unit.get('id')}: engineering TOE weapon must be an id")
+            return
+        if scope != "anti_mine_only" or gate.get("weapon") != "cw.scorpion" or type(gate.get("min_points")) is not int or gate["min_points"] != 6:
+            err(path, f"unit {unit.get('id')}: engineering gate must use land:23.15 Scorpion six-point threshold")
+        pending_refs.append((path, "weapon", gate.get("weapon"), unit.get("id")))
 
 for p in sorted((units / "weapons").glob("*.toml")) if (units / "weapons").exists() else []:
     d = load(p)
@@ -109,6 +151,7 @@ for p in sorted((units / "oa").glob("*/*.toml")) if (units / "oa").exists() else
         err(p, f"sheet {sheet.get('id')}: side must be axis|commonwealth")
     for u in d.get("unit", []):
         check_fields(p, u, ["id", "name", "arrives"], UNIT_ALLOWED, "unit")
+        check_engineering(p, u)
         kind, evidence = u.get("infantry_kind"), u.get("infantry_kind_evidence")
         if kind is not None or evidence is not None:
             if kind not in {"ordinary", "machine_gun", "heavy_weapons"}:
