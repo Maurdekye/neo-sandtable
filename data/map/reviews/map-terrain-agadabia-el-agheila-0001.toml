@@ -1,0 +1,659 @@
+[batch]
+id = "map-terrain-agadabia-el-agheila-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-terrain"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "A1813,A1714,A1614,A1913,A1812,A1713,A1613,A1514,A1414,A2012,A1912,A1811,A1712,A1612,A1513,A1413,A1314,A1315,A2112,A2011,A1911,A1810,A1711,A1611,A1512,A1412,A1313,A1213,A1214,A1215,A2111,A2010,A1910,A1809,A1710,A1610,A1511,A1411,A1312,A1212,A1113,A1114,A1115,A1116,A2210,A2110,A2009,A1909,A1808,A1709,A1609,A1510,A1410,A1311,A1211,A1112,A1012,A1013,A1014,A1015,A1016,A2310,A2209,A2109,A2008,A1908,A1807,A1708,A1608,A1509,A1409,A1310,A1210,A1111,A1011,A0912,A0913,A0914,A0915,A0916,A0917"
+notes = "Exact authorized first81 of frozen403 Agadabia/El Agheila terrain allocation. Every full native/4x boundary and actual TEC directly reviewed;16 cells additionally enlarged6x, one unmarked native marine context.76 accepted classes71land5Sea;five explicit mixed-substrate Unknowns. No population accuracy, parent visual agreement or1979 equivalence; no edge/lake/place/control/action evidence. Later322 held."
+
+[[hex]]
+hex_id = "A1813"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Native regional context identifies open marine blue inside the printed cell, hence land/coastal. Predominance is among land alone. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1714"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1614"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review retains Unknown under map-0003; no terrain mask is supplied. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Full6x shows a central yellow-network salt-marsh body and broad cream clear pockets around its lobes, including the western and northern interior. The two land regions are comparable; no confidently clear predominance. Competing substrates: salt_marsh, clear."
+
+[[hex]]
+hex_id = "A1913"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Native regional context identifies open marine blue inside the printed cell, hence land/coastal. Predominance is among land alone. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1812"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the land body with superimposed yellow network clearly predominant, compared directly with actual TEC Salt Marsh. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller cream interior pockets around the yellow-network body; the patterned body clearly predominates, excluding printing on the boundary."
+
+[[hex]]
+hex_id = "A1713"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review retains Unknown under map-0003; no terrain mask is supplied. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Full6x shows western/southern yellow-network salt marsh competing with the broad cream northeastern/eastern interior; neither substrate confidently predominates. Competing substrates: salt_marsh, clear."
+
+[[hex]]
+hex_id = "A1613"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Nearby yellow-network lobes lie outside the west and northwest printed sides; no inside-cell salt-marsh minor is accepted."
+
+[[hex]]
+hex_id = "A1514"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. The nearby yellow-network patch lies outside the northeast printed side; the bounded interior is clear."
+
+[[hex]]
+hex_id = "A1414"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. The nearby yellow-network patch lies outside the northeast printed side; the bounded interior is clear."
+
+[[hex]]
+hex_id = "A2012"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows marine blue throughout the bounded cell with no inside-boundary land fragment. Actual TEC Sea and unmarked native Gulf/coast regional context establish offshore Mediterranean water, not inland water or a majority-water rule."
+
+[[hex]]
+hex_id = "A1912"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Native regional context identifies open marine blue inside the printed cell, hence land/coastal. Predominance is among land alone. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1811"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1712"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the land body with superimposed yellow network clearly predominant, compared directly with actual TEC Salt Marsh. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller cream interior pockets around the yellow-network body; the patterned body clearly predominates, excluding printing on the boundary."
+
+[[hex]]
+hex_id = "A1612"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the land body with superimposed yellow network clearly predominant, compared directly with actual TEC Salt Marsh. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller cream interior pockets around the yellow-network body; the patterned body clearly predominates, excluding printing on the boundary."
+
+[[hex]]
+hex_id = "A1513"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1413"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. The nearby small yellow-network patch lies beyond the southwest printed side; no inside-cell salt-marsh minor is accepted."
+
+[[hex]]
+hex_id = "A1314"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1315"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A2112"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows marine blue throughout the bounded cell with no inside-boundary land fragment. Actual TEC Sea and unmarked native Gulf/coast regional context establish offshore Mediterranean water, not inland water or a majority-water rule."
+
+[[hex]]
+hex_id = "A2011"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Native regional context identifies open marine blue inside the printed cell, hence land/coastal. Predominance is among land alone. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1911"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. The nearby blue point and shoreline lie outside the upper printed boundary; there is no marine water inside this full cell."
+
+[[hex]]
+hex_id = "A1810"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1711"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1611"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1512"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. The gray-green curving band follows the printed left and lower sides rather than forming a separate broad TEC substrate. No side kind or high endpoint is certified."
+
+[[hex]]
+hex_id = "A1412"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review retains Unknown under map-0003; no terrain mask is supplied. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Full6x shows broad beige rough in the lower interior and broad cream in the upper interior; boundary-adjacent shapes make the split too close for a confident predominance decision. Competing substrates: rough, clear."
+
+[[hex]]
+hex_id = "A1313"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the small northeastern interior notch."
+
+[[hex]]
+hex_id = "A1213"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller southeastern interior pocket."
+
+[[hex]]
+hex_id = "A1214"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1215"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A2111"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows marine blue throughout the bounded cell with no inside-boundary land fragment. Actual TEC Sea and unmarked native Gulf/coast regional context establish offshore Mediterranean water, not inland water or a majority-water rule."
+
+[[hex]]
+hex_id = "A2010"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Native regional context identifies open marine blue inside the printed cell, hence land/coastal. Predominance is among land alone. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. The existing port/point artwork and lettering do not supply a new port or place record; cream land is reviewed independently of the marine fraction."
+
+[[hex]]
+hex_id = "A1910"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1809"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1710"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1610"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: gravel in the small ring-pattern wedge inside the western printed side. The main cream interior clearly predominates."
+
+[[hex]]
+hex_id = "A1511"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1411"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrates: rough in the broad eastern/southeastern lobe, gravel in the much smaller ring-pattern strip inside the western side. Cream remains the clearly largest single land substrate."
+
+[[hex]]
+hex_id = "A1312"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1212"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1113"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1114"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller northeastern interior wedge."
+
+[[hex]]
+hex_id = "A1115"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear across smaller northern and eastern interior pockets; the joined beige body is clearly predominant."
+
+[[hex]]
+hex_id = "A1116"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A2210"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows marine blue throughout the bounded cell with no inside-boundary land fragment. Actual TEC Sea and unmarked native Gulf/coast regional context establish offshore Mediterranean water, not inland water or a majority-water rule."
+
+[[hex]]
+hex_id = "A2110"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Native regional context identifies open marine blue inside the printed cell, hence land/coastal. Predominance is among land alone. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A2009"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1909"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1808"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1709"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1609"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1510"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1410"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1311"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller northern/western interior pocket; the beige southern/eastern body is clearly predominant. Nearby gravel outside the upper-left boundary is not a minor claim."
+
+[[hex]]
+hex_id = "A1211"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1112"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1012"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review retains Unknown under map-0003; no terrain mask is supplied. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Full6x shows beige rough occupying the upper region and a broad cream southwestern pocket plus cream southeastern lower region. These compete too closely to certify predominance. Competing substrates: rough, clear."
+
+[[hex]]
+hex_id = "A1013"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller western and southern interior pockets."
+
+[[hex]]
+hex_id = "A1014"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller eastern and southern interior pockets."
+
+[[hex]]
+hex_id = "A1015"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1016"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the land body with superimposed yellow network clearly predominant, compared directly with actual TEC Salt Marsh. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller cream interior pockets around the yellow-network body; the patterned body clearly predominates, excluding printing on the boundary."
+
+[[hex]]
+hex_id = "A2310"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows marine blue throughout the bounded cell with no inside-boundary land fragment. Actual TEC Sea and unmarked native Gulf/coast regional context establish offshore Mediterranean water, not inland water or a majority-water rule."
+
+[[hex]]
+hex_id = "A2209"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Native regional context identifies open marine blue inside the printed cell, hence land/coastal. Predominance is among land alone. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A2109"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A2008"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1908"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1807"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1708"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1608"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1509"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1409"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1310"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1210"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review retains Unknown under map-0003; no terrain mask is supplied. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Full6x shows cream across the upper/left interior and beige rough across the lower/right interior; neither confidently predominates. Competing substrates: rough, clear."
+
+[[hex]]
+hex_id = "A1111"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A1011"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the broad beige filled rough body clearly predominant among land, compared directly with actual TEC Rough. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller southeastern interior wedge."
+
+[[hex]]
+hex_id = "A0912"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller western interior strip; the ring-pattern gravel body is predominant."
+
+[[hex]]
+hex_id = "A0913"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A0914"
+status = "accepted"
+terrain = "gravel"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows the ring-pattern rock/gravel field clearly predominant among land, compared directly with actual TEC Rock/Gravel. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
+
+[[hex]]
+hex_id = "A0915"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the land body with superimposed yellow network clearly predominant, compared directly with actual TEC Salt Marsh. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller cream interior pockets around the yellow-network body; the patterned body clearly predominates, excluding printing on the boundary."
+
+[[hex]]
+hex_id = "A0916"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x and additional complete6x boundary review shows the land body with superimposed yellow network clearly predominant, compared directly with actual TEC Salt Marsh. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence. Minor substrate: clear in the smaller cream interior pockets around the yellow-network body; the patterned body clearly predominates, excluding printing on the boundary."
+
+[[hex]]
+hex_id = "A0917"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full native/4x boundary review shows cream clear as the clearly largest land substrate, compared directly with actual TEC Clear. Complete printed boundary contains land and no marine blue; land domain is directly known. Transport, label, point and marginal line printing are separated from substrate without new feature-kind evidence."
