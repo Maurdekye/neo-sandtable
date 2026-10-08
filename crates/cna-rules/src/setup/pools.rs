@@ -293,6 +293,9 @@ pub(super) fn answer(
     if trucks == p.trucks {
         state.setup.pool_locations.insert(id.into(), destination);
     } else {
+        // The initial split has no earned credit; retire parent counts first.
+        crate::logistics::pool_fuel::retire_pool_truck_counts(state, id, trucks)
+            .map_err(Rejection::Engine)?;
         let original = state
             .logistics
             .truck_pools
@@ -312,6 +315,10 @@ pub(super) fn answer(
             Supplies::default(),
         )
         .map_err(|s| Rejection::Engine(invariant(&s)))?;
+        crate::logistics::pool_fuel::seed_created_pool(state, &fresh).map_err(Rejection::Engine)?;
+        if state.land.movement.pool_on_road.contains(id) {
+            state.land.movement.pool_on_road.insert(fresh.clone());
+        }
         state.setup.pool_sources.insert(fresh.clone(), source);
         state.setup.pool_locations.insert(fresh, destination);
         open(content, state, id, source, strict, cx).map_err(Rejection::Engine)?;

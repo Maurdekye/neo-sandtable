@@ -387,7 +387,7 @@ fn advance_arrivals(
                     open_pool_arrival(state, cx, &row, &b, domain);
                     return Ok(());
                 }
-                crate::logistics::pools::add_truck_pool(
+                let fresh = crate::logistics::pools::add_truck_pool(
                     &mut state.logistics,
                     None,
                     b.side,
@@ -399,6 +399,7 @@ fn advance_arrivals(
                     Supplies::default(),
                 )
                 .map_err(invariant)?;
+                crate::logistics::pool_fuel::seed_created_pool(state, &fresh)?;
                 state.land.arrivals.batches.get_mut(&row).unwrap().trucks = Trucks::default();
             } else {
                 open_arrival_trucks(state, cx, &row, &b);
@@ -970,39 +971,9 @@ fn retire_truck_history(
 }
 /// Retire the exact departing pool trucks while retaining already-paid fuel.
 /// Cases: land:20.83, airlog:49.13, airlog:49.16
-fn retire_pool_truck_history(
-    state: &mut State,
-    id: &str,
-    mut amount: Trucks,
-) -> Result<(), Rejection> {
-    use crate::logistics::{FuelCohortSelection, FuelTruckKind};
-    if amount.total() == 0 || !state.logistics.pool_fuel_segments.contains_key(id) {
-        return Ok(());
-    }
-    let cohorts = crate::logistics::pool_fuel::pool_segment_fuel_cohorts(state, id)
-        .map_err(|_| illegal("truck pool fuel history cannot be reconciled"))?;
-    let mut selection = Vec::new();
-    for cohort in cohorts {
-        let remaining = match cohort.kind {
-            FuelTruckKind::Light => &mut amount.light,
-            FuelTruckKind::Medium => &mut amount.medium,
-            FuelTruckKind::Heavy => &mut amount.heavy,
-        };
-        let count = (*remaining).min(cohort.count);
-        if count > 0 {
-            selection.push(FuelCohortSelection {
-                id: cohort.id,
-                count,
-            });
-            *remaining -= count;
-        }
-    }
-    if amount != Trucks::default() {
-        return Err(illegal("truck pool fuel history cannot be reconciled"));
-    }
-    crate::logistics::pool_fuel::remove_selected_pool_fuel_cohorts(state, id, &selection)
-        .map_err(|_| illegal("truck pool fuel history cannot be reconciled"))?;
-    Ok(())
+fn retire_pool_truck_history(state: &mut State, id: &str, amount: Trucks) -> Result<(), Rejection> {
+    crate::logistics::pool_fuel::retire_pool_truck_counts(state, id, amount)
+        .map_err(Rejection::Engine)
 }
 fn remove_empty_trucks(
     content: &CnaContent,
@@ -1043,6 +1014,9 @@ fn remove_empty_trucks(
             .find(|p| p.id == id)
             .ok_or_else(|| illegal("unknown empty truck holding"))?;
         subtract(&mut pool.trucks, amount);
+        if pool.trucks == Trucks::default() {
+            state.land.movement.pool_on_road.remove(id);
+        }
     } else {
         return Err(illegal("unknown empty truck holding"));
     }
@@ -1296,7 +1270,7 @@ pub(crate) fn answer(
                     .into_iter()
                     .find(|l| crate::setup::placement::destination_id(l).as_deref() == Some(chosen))
                     .ok_or_else(|| illegal("not a legal truck arrival location"))?;
-                crate::logistics::pools::add_truck_pool(
+                let fresh = crate::logistics::pools::add_truck_pool(
                     &mut state.logistics,
                     None,
                     b.side,
@@ -1306,6 +1280,8 @@ pub(crate) fn answer(
                     Supplies::default(),
                 )
                 .map_err(|e| Rejection::Engine(invariant(e)))?;
+                crate::logistics::pool_fuel::seed_created_pool(state, &fresh)
+                    .map_err(Rejection::Engine)?;
                 state.land.arrivals.batches.get_mut(&row).unwrap().trucks = Trucks::default();
             } else {
                 let unit = UnitId::new(
