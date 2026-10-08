@@ -897,3 +897,34 @@ two complete terrain/layer/area replays. Required full final joint
 gates, actual publication and independent inclusion have separate
 receipts; source coverage never grants a complete setup/control domain,
 place extent, movement-side fact or action permission.
+
+
+### Derna/Mechili second terrain snapshot, 2026-10-08
+
+Three disjoint source reviews cover exactly 225 further cells in the frozen
+Derna/Mechili allocation. They supply 194 classifications: 104 clear,
+43 gravel, 29 rough, nine mountain, two salt marsh and seven Sea;
+31 remain explicitly Unknown. Each whole native2021 cell and boundary
+was inspected against the actual TEC by its batch observer. Adopted
+map-0003 selects the clearly predominant land substrate; observed minor
+substrates and deferral reasons remain in the individual raw records.
+Original raw/note bytes, source pins, authors and dates are retained.
+Parent checks establish provenance and mechanical preservation; visual
+accuracy, independent observer agreement and 1979 equivalence are unmeasured.
+
+The union adds 398 cell masks: 194 terrain and 204 marine-only
+coastal-domain observations. Twenty-one inland water-identity Unknowns
+have empty flags and no masks. Ten land-substrate deferrals have only
+domain masks; none has a terrain mask. Seven newly reviewed Sea cells
+remove themselves only from generated Libya, without additions or other
+area-field changes. Prior raw observations including Unknown, all prior
+masks, point/facility flags, geometry, frontier, edges and places remain
+preserved. These records add no facility anchor, extent or other-layer fact.
+
+Libya known land grows from 1,102 to 1,289; map_c_libya remains at 824.
+Whole-map totals become 2,157 classified cells, 4,866 unclassified and
+4,411 cell masks. Edge-kind masks, lines and sides remain 31,968,
+393 and 409. All 204 map files reproduce byte-identically in two complete
+terrain/layer/area replays. Required final joint checks, publication and
+independent inclusion have separate receipts. Coverage does not establish
+a complete setup/control domain or grant action permission.
