@@ -236,3 +236,6 @@ pub use capability::{EngineerCapability, source_capability};
 
 mod companion;
 pub use companion::{MinefieldCompanionBenefit, minefield_companion_qualifies};
+
+mod city;
+pub use city::source_city_fortification_level;
