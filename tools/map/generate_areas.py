@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import tomllib
 from geometry import Grid
+from frontier import load_national_regions
 
 
 def materialize(definitions, grid):
@@ -24,6 +25,7 @@ def materialize(definitions, grid):
             if field in location:
                 grid.canonical(location[field])
     areas = []
+    national = None
     seen = set()
     for definition in definitions["areas"]:
         entry = copy.deepcopy(definition)
@@ -41,6 +43,12 @@ def materialize(definitions, grid):
             cells.update(target for alias, target in grid.aliases.items() if alias[0] in sections)
         elif kind == "hexes":
             cells = {grid.canonical(name) for name in entry["hex_ids"]}
+        elif kind == "frontier_region":
+            if national is None:
+                national = load_national_regions(grid)
+            if entry["id"] not in national or entry.get("requires_land") is not True:
+                raise ValueError("Unknown national selector or missing land filter")
+            cells = national[entry["id"]]
         elif kind == "locations":
             places = set(entry["location_ids"])
             if not places or not places <= location_ids:

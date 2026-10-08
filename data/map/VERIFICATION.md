@@ -616,9 +616,9 @@ The immutable `map-lines-0012`, `map-lines-2-0011` and `map-terrain-edges-0007` 
 
 The eastern worker's current 840-pair share now has all fourteen supported kinds explicitly observed or unresolved: 11,760 records, 10,500 resolved masks and 1,260 abstentions without masks. This fulfills the current source-review inventory; it does not establish absence for deferred kinds. The four older authored D30 pairs transferred geographically retain their original evidence.
 
-Seven directly source-observed track crossings form E2804–E2905–E2805–E2806–E2807–E2808–E2809–E2910. The eight route cells have known terrain and coastal masks, and each of the seven route edges has all thirteen current movement kinds resolved. The established strip generator emits regular hexagons and center links from structured data, without source art. This is current-schema map-layer completeness only: pipeline, future lake coverage, adjacent control halo and unit action legality remain unverified. The separate E2814/E2915 road is excluded because E2915 terrain is unknown.
+Seven directly source-observed track crossings form E2804â€“E2905â€“E2805â€“E2806â€“E2807â€“E2808â€“E2809â€“E2910. The eight route cells have known terrain and coastal masks, and each of the seven route edges has all thirteen current movement kinds resolved. The established strip generator emits regular hexagons and center links from structured data, without source art. This is current-schema map-layer completeness only: pipeline, future lake coverage, adjacent control halo and unit action legality remain unverified. The separate E2814/E2915 road is excluded because E2915 terrain is unknown.
 
-The union contains 856 classified terrain cells, 1,743 cell masks, 28,620 edge-kind masks, 349 lines and 404 side features. Corridor terrain remains 801 known and 33 unknown. At least one observation exists on 2,284 of 2,541 corridor pairs, leaving 257 wholly untouched. Western/inland/eastern inventories are 840/969, 604/732 and 840/840 observed. These physical inventories include abstentions and do not establish full movement constraints. C3024/C3124 terrain and outside-corridor D2705–D2710 terrain/coastal gaps remain unchanged.
+The union contains 856 classified terrain cells, 1,743 cell masks, 28,620 edge-kind masks, 349 lines and 404 side features. Corridor terrain remains 801 known and 33 unknown. At least one observation exists on 2,284 of 2,541 corridor pairs, leaving 257 wholly untouched. Western/inland/eastern inventories are 840/969, 604/732 and 840/840 observed. These physical inventories include abstentions and do not establish full movement constraints. C3024/C3124 terrain and outside-corridor D2705â€“D2710 terrain/coastal gaps remain unchanged.
 
 Each worker reviewed the native 2021 source against the TEC. Population error, independent whole-batch source agreement and original 1979 equivalence remain unmeasured. No lake survey, terrain/place change, complete control halo or action certification is added. The four uncertain coastal domains remain unknown.
 
@@ -673,3 +673,27 @@ cells, places and existing strips remain unchanged. The 159 tracked map files
 reproduce byte-identically across two terrain-then-layer replays. Worker
 initial checks, assembler final gates and actual remote publication are
 separate receipts; no source error rate is inferred from passing software tests.
+
+
+### Libya-Egypt frontier and regions, 2026-10-08
+
+One observer directly reviewed every one of 83 complete printed frontier sides
+against the native 2021 map/key, plus the partial coastal C4122/C4221 side.
+The lead independently confirmed that northern incidence only. An assembler
+orientation audit detected a single swapped country label at C3819/C3920;
+fresh native context inspection corrected it through a new supplemental
+receipt, preserving the original source handoff. This is one detected metadata
+error, not a measured population source error rate. No original 1979 map was
+available for incidence comparison. Reduced complete A/B/D/E overviews supplied
+no additional national border at their scales; exhaustive native absence and
+whole-source agreement remain unmeasured.
+
+The 84-wall fill separates C into 912 Libyan and 591 Egyptian canonical cells.
+Whole country memberships are 3878 and 3078; map_c_libya has 912 and
+map_c_or_d_egypt 1797. Sixty-seven verified Sea cells belong to neither; all
+other 6956 cells partition with unknown terrain retained geometrically.
+No unsourced coastal bridge or whole-map land mask is constructed. Software
+checks cover missing walls, unknown coastal bypasses, incorrect orientation,
+uncited/duplicate incidences, Sea coverage and seam aliases. Publication gates,
+byte replay and compatible consumer checks have separate exact-commit receipts.
+Old map inputs and movement feature/mask bytes remain unchanged.

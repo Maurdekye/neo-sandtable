@@ -186,39 +186,35 @@ sections = ["D", "E"]
 
 [[areas]]
 id = "libya"
-kind = "unresolved_region"
-src = ["scen:60.31"]
+kind = "frontier_region"
+src = ["scen:60.31", "land:4.1", "land:8.37", "interp:map-0005"]
 country = "libya"
-sections = ["A", "B", "C", "D", "E"]
+sections = ["A", "B", "C"]
 requires_land = true
-reason = "Printed national frontier and full land membership not yet verified. No legal placement set may be inferred from this empty placeholder."
 
 [[areas]]
 id = "egypt"
-kind = "unresolved_region"
-src = ["scen:60.44"]
+kind = "frontier_region"
+src = ["scen:60.44", "land:4.1", "land:8.37", "interp:map-0005"]
 country = "egypt"
-sections = ["A", "B", "C", "D", "E"]
+sections = ["C", "D", "E"]
 requires_land = true
-reason = "Printed national frontier and full land membership not yet verified. No legal placement set may be inferred from this empty placeholder."
 
 [[areas]]
 id = "map_c_libya"
-kind = "unresolved_region"
-src = ["scen:60.34"]
+kind = "frontier_region"
+src = ["scen:60.34", "land:4.1", "land:8.37", "interp:map-0005"]
 country = "libya"
 sections = ["C"]
 requires_land = true
-reason = "Printed national frontier and full land membership not yet verified. No legal placement set may be inferred from this empty placeholder."
 
 [[areas]]
 id = "map_c_or_d_egypt"
-kind = "unresolved_region"
-src = ["scen:60.44"]
+kind = "frontier_region"
+src = ["scen:60.44", "land:4.1", "land:8.37", "interp:map-0005"]
 country = "egypt"
 sections = ["C", "D"]
 requires_land = true
-reason = "Printed national frontier and full land membership not yet verified. No legal placement set may be inferred from this empty placeholder."
 
 [[areas]]
 id = "tripolitania"

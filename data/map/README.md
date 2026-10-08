@@ -276,7 +276,7 @@ geometric sets; unit-specific movement/placement restrictions still apply.
 |---|---|
 | `map_a` through `map_e` | Exact canonical membership of each source section |
 | `map_a_or_b`, `map_d_or_e` | Exact section unions, including observed aliases |
-| `libya`, `egypt`, `map_c_libya`, `map_c_or_d_egypt` | Stable IDs; unresolved frontier/full-land membership |
+| `libya`, `egypt`, `map_c_libya`, `map_c_or_d_egypt` | Resolved frontier geometry; surveyed-land placement filter |
 | `tripoli`, `tripolitania`, `gabes`, `tunis` | Separate main boxes from land:8.81 |
 | `tripoli_tunisia_boxes` | The four boxes above; no transit boxes included |
 | `tunisia_boxes` | Gabes and Tunis boxes |
@@ -473,3 +473,20 @@ Fort Maddalena C3019, el Grein C1715, Mechili B4921, Derna B5925 and Giarabub
 C1014 cite land:8.37 and scen:60.31. Their stable ids are respectively
 `bir-sceferzen`, `fort-maddalena`, `el-grein`, `mechili`, `derna`, `giarabub`.
 The names alone do not expand their extent or infer a facility type.
+
+
+### National frontier regions
+
+`national-frontier.toml` pins 84 cited section-C incidences to the 2021 map:
+83 complete sides and one printed to shore with its remaining extent in water.
+`frontier.py` verifies canonical adjacency, unique incidence, source orientation,
+and separation. `generate_areas.py` flood-fills C with these walls, excluding
+only cells with explicit Sea terrain/domain coverage. Unknown terrain participates
+geometrically. Countries cover all non-Sea canonical cells and preserve section
+aliases; the two restricted regions are exact section intersections.
+
+The existing requires_land flag is enforced by the checked setup consumer:
+development omits unknown terrain, full rules reject an incomplete domain,
+and Sea is never offered. Region membership supplies no terrain mask. See
+map-0005 and GAPS for original-map unavailability and bounded source-review
+limits. Earlier movement-layer observations remain unchanged.

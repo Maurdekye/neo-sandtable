@@ -1,0 +1,945 @@
+schema_version = 1
+id = "libya-egypt-frontier-0001"
+trace_status = "complete"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-08"
+source_orientation_supplement_sha256 = "19b574955a8fdc90ffb21f5dbd51b8b6197abffeabd01ef5979f0a6fd5acb51a"
+source_trace_sha256 = "da08275b52ac8b56891e400dbd17383646be37fc213980c036d1e3f4f510e514"
+partition_policy = "exclude_verified_sea_include_unknown"
+west_seeds = ["C4121", "C4221"]
+east_seeds = ["C4122"]
+full_printed_side_count = 83
+printed_to_shore_side_count = 1
+original_1979_comparison = "unavailable"
+lead_source_agreement = "Northern C4122/C4221 incidence only; remaining83 single observer"
+other_sections_review = "Complete reduced A/B/D/E overviews: no other frontier observed at these scales; not exhaustive native-side absence"
+movement_layer_amendment = false
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+
+[[sides]]
+sequence = 1
+from_hex = "C4122"
+to_hex = "C4221"
+libya_side = "C4221"
+egypt_side = "C4122"
+extent = "printed_to_shore_remaining_water"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Printed border reaches the shoreline along this side; remainder is water. The adopted ruling uses this incidence as a country wall."
+
+[[sides]]
+sequence = 2
+from_hex = "C4121"
+to_hex = "C4122"
+libya_side = "C4121"
+egypt_side = "C4122"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 3
+from_hex = "C4021"
+to_hex = "C4121"
+libya_side = "C4121"
+egypt_side = "C4021"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 4
+from_hex = "C4020"
+to_hex = "C4021"
+libya_side = "C4020"
+egypt_side = "C4021"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 5
+from_hex = "C3921"
+to_hex = "C4020"
+libya_side = "C4020"
+egypt_side = "C3921"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 6
+from_hex = "C3920"
+to_hex = "C3921"
+libya_side = "C3920"
+egypt_side = "C3921"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 7
+from_hex = "C3820"
+to_hex = "C3920"
+libya_side = "C3920"
+egypt_side = "C3820"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 8
+from_hex = "C3819"
+to_hex = "C3920"
+libya_side = "C3920"
+egypt_side = "C3819"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 9
+from_hex = "C3819"
+to_hex = "C3919"
+libya_side = "C3919"
+egypt_side = "C3819"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 10
+from_hex = "C3818"
+to_hex = "C3819"
+libya_side = "C3818"
+egypt_side = "C3819"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 11
+from_hex = "C3719"
+to_hex = "C3818"
+libya_side = "C3818"
+egypt_side = "C3719"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 12
+from_hex = "C3718"
+to_hex = "C3719"
+libya_side = "C3718"
+egypt_side = "C3719"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 13
+from_hex = "C3618"
+to_hex = "C3718"
+libya_side = "C3718"
+egypt_side = "C3618"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 14
+from_hex = "C3617"
+to_hex = "C3618"
+libya_side = "C3617"
+egypt_side = "C3618"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 15
+from_hex = "C3518"
+to_hex = "C3618"
+libya_side = "C3518"
+egypt_side = "C3618"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 16
+from_hex = "C3518"
+to_hex = "C3519"
+libya_side = "C3518"
+egypt_side = "C3519"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 17
+from_hex = "C3418"
+to_hex = "C3519"
+libya_side = "C3418"
+egypt_side = "C3519"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 18
+from_hex = "C3418"
+to_hex = "C3419"
+libya_side = "C3418"
+egypt_side = "C3419"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 19
+from_hex = "C3319"
+to_hex = "C3418"
+libya_side = "C3418"
+egypt_side = "C3319"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 20
+from_hex = "C3318"
+to_hex = "C3319"
+libya_side = "C3318"
+egypt_side = "C3319"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 21
+from_hex = "C3218"
+to_hex = "C3319"
+libya_side = "C3218"
+egypt_side = "C3319"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 22
+from_hex = "C3218"
+to_hex = "C3219"
+libya_side = "C3218"
+egypt_side = "C3219"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 23
+from_hex = "C3119"
+to_hex = "C3219"
+libya_side = "C3119"
+egypt_side = "C3219"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 24
+from_hex = "C3119"
+to_hex = "C3120"
+libya_side = "C3119"
+egypt_side = "C3120"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 25
+from_hex = "C3019"
+to_hex = "C3120"
+libya_side = "C3019"
+egypt_side = "C3120"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 26
+from_hex = "C3019"
+to_hex = "C3020"
+libya_side = "C3019"
+egypt_side = "C3020"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 27
+from_hex = "C2920"
+to_hex = "C3019"
+libya_side = "C3019"
+egypt_side = "C2920"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 28
+from_hex = "C2919"
+to_hex = "C2920"
+libya_side = "C2919"
+egypt_side = "C2920"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 29
+from_hex = "C2819"
+to_hex = "C2920"
+libya_side = "C2819"
+egypt_side = "C2920"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 30
+from_hex = "C2819"
+to_hex = "C2820"
+libya_side = "C2819"
+egypt_side = "C2820"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 31
+from_hex = "C2720"
+to_hex = "C2820"
+libya_side = "C2720"
+egypt_side = "C2820"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 32
+from_hex = "C2720"
+to_hex = "C2721"
+libya_side = "C2720"
+egypt_side = "C2721"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 33
+from_hex = "C2620"
+to_hex = "C2720"
+libya_side = "C2720"
+egypt_side = "C2620"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 34
+from_hex = "C2619"
+to_hex = "C2620"
+libya_side = "C2619"
+egypt_side = "C2620"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 35
+from_hex = "C2520"
+to_hex = "C2620"
+libya_side = "C2520"
+egypt_side = "C2620"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 36
+from_hex = "C2520"
+to_hex = "C2521"
+libya_side = "C2520"
+egypt_side = "C2521"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 37
+from_hex = "C2420"
+to_hex = "C2520"
+libya_side = "C2520"
+egypt_side = "C2420"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 38
+from_hex = "C2419"
+to_hex = "C2420"
+libya_side = "C2419"
+egypt_side = "C2420"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 39
+from_hex = "C2320"
+to_hex = "C2419"
+libya_side = "C2419"
+egypt_side = "C2320"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 40
+from_hex = "C2319"
+to_hex = "C2320"
+libya_side = "C2319"
+egypt_side = "C2320"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 41
+from_hex = "C2219"
+to_hex = "C2319"
+libya_side = "C2319"
+egypt_side = "C2219"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 42
+from_hex = "C2218"
+to_hex = "C2219"
+libya_side = "C2218"
+egypt_side = "C2219"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 43
+from_hex = "C2119"
+to_hex = "C2218"
+libya_side = "C2218"
+egypt_side = "C2119"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 44
+from_hex = "C2118"
+to_hex = "C2119"
+libya_side = "C2118"
+egypt_side = "C2119"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 45
+from_hex = "C2018"
+to_hex = "C2118"
+libya_side = "C2118"
+egypt_side = "C2018"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 46
+from_hex = "C2017"
+to_hex = "C2018"
+libya_side = "C2017"
+egypt_side = "C2018"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 47
+from_hex = "C1918"
+to_hex = "C2017"
+libya_side = "C2017"
+egypt_side = "C1918"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 48
+from_hex = "C1917"
+to_hex = "C1918"
+libya_side = "C1917"
+egypt_side = "C1918"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 49
+from_hex = "C1817"
+to_hex = "C1917"
+libya_side = "C1917"
+egypt_side = "C1817"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 50
+from_hex = "C1816"
+to_hex = "C1817"
+libya_side = "C1816"
+egypt_side = "C1817"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 51
+from_hex = "C1717"
+to_hex = "C1816"
+libya_side = "C1816"
+egypt_side = "C1717"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 52
+from_hex = "C1716"
+to_hex = "C1717"
+libya_side = "C1716"
+egypt_side = "C1717"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 53
+from_hex = "C1616"
+to_hex = "C1717"
+libya_side = "C1616"
+egypt_side = "C1717"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 54
+from_hex = "C1616"
+to_hex = "C1617"
+libya_side = "C1616"
+egypt_side = "C1617"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 55
+from_hex = "C1517"
+to_hex = "C1617"
+libya_side = "C1517"
+egypt_side = "C1617"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 56
+from_hex = "C1517"
+to_hex = "C1518"
+libya_side = "C1517"
+egypt_side = "C1518"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 57
+from_hex = "C1417"
+to_hex = "C1518"
+libya_side = "C1417"
+egypt_side = "C1518"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 58
+from_hex = "C1417"
+to_hex = "C1418"
+libya_side = "C1417"
+egypt_side = "C1418"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 59
+from_hex = "C1318"
+to_hex = "C1418"
+libya_side = "C1318"
+egypt_side = "C1418"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 60
+from_hex = "C1318"
+to_hex = "C1319"
+libya_side = "C1318"
+egypt_side = "C1319"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 61
+from_hex = "C1218"
+to_hex = "C1318"
+libya_side = "C1318"
+egypt_side = "C1218"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 62
+from_hex = "C1217"
+to_hex = "C1218"
+libya_side = "C1217"
+egypt_side = "C1218"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 63
+from_hex = "C1118"
+to_hex = "C1218"
+libya_side = "C1118"
+egypt_side = "C1218"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 64
+from_hex = "C1118"
+to_hex = "C1119"
+libya_side = "C1118"
+egypt_side = "C1119"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 65
+from_hex = "C1018"
+to_hex = "C1119"
+libya_side = "C1018"
+egypt_side = "C1119"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 66
+from_hex = "C1018"
+to_hex = "C1019"
+libya_side = "C1018"
+egypt_side = "C1019"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 67
+from_hex = "C0919"
+to_hex = "C1019"
+libya_side = "C0919"
+egypt_side = "C1019"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 68
+from_hex = "C0919"
+to_hex = "C0920"
+libya_side = "C0919"
+egypt_side = "C0920"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 69
+from_hex = "C0819"
+to_hex = "C0919"
+libya_side = "C0919"
+egypt_side = "C0819"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 70
+from_hex = "C0818"
+to_hex = "C0819"
+libya_side = "C0818"
+egypt_side = "C0819"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 71
+from_hex = "C0719"
+to_hex = "C0818"
+libya_side = "C0818"
+egypt_side = "C0719"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 72
+from_hex = "C0718"
+to_hex = "C0719"
+libya_side = "C0718"
+egypt_side = "C0719"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 73
+from_hex = "C0618"
+to_hex = "C0719"
+libya_side = "C0618"
+egypt_side = "C0719"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 74
+from_hex = "C0618"
+to_hex = "C0619"
+libya_side = "C0618"
+egypt_side = "C0619"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 75
+from_hex = "C0519"
+to_hex = "C0619"
+libya_side = "C0519"
+egypt_side = "C0619"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 76
+from_hex = "C0519"
+to_hex = "C0520"
+libya_side = "C0519"
+egypt_side = "C0520"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 77
+from_hex = "C0419"
+to_hex = "C0520"
+libya_side = "C0419"
+egypt_side = "C0520"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 78
+from_hex = "C0419"
+to_hex = "C0420"
+libya_side = "C0419"
+egypt_side = "C0420"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 79
+from_hex = "C0320"
+to_hex = "C0420"
+libya_side = "C0320"
+egypt_side = "C0420"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 80
+from_hex = "C0320"
+to_hex = "C0321"
+libya_side = "C0320"
+egypt_side = "C0321"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 81
+from_hex = "C0220"
+to_hex = "C0321"
+libya_side = "C0220"
+egypt_side = "C0321"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 82
+from_hex = "C0220"
+to_hex = "C0221"
+libya_side = "C0220"
+egypt_side = "C0221"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 83
+from_hex = "C0121"
+to_hex = "C0220"
+libya_side = "C0220"
+egypt_side = "C0121"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."
+
+[[sides]]
+sequence = 84
+from_hex = "C0120"
+to_hex = "C0121"
+libya_side = "C0120"
+egypt_side = "C0121"
+extent = "full_printed_side"
+observed = "present"
+src = ["land:4.1", "land:8.37", "interp:map-0005"]
+reason = "Dense blue ticked line follows the shared side under the adopted national-frontier ruling."

@@ -48,9 +48,11 @@
 
 ## Scenario area memberships and off-map range
 
-- Stable region IDs libya, egypt, map_c_libya and map_c_or_d_egypt are published,
-  but exact national frontier and complete land masks are not yet verified.
-  Their membership_status is unresolved; empty lists are not legal placement sets.
+- Libya, Egypt and their section-restricted selectors have resolved geometric
+  memberships from the cited 84-incidence frontier. Known Sea belongs to
+  neither country; unknown terrain retains geometric membership. The
+  requires_land consumer offers only surveyed land in development and refuses
+  incomplete land domains under full rules. No whole-map land survey follows.
 - Cairo city cells E1930/E1931/E1829/E1830/E1730 are now visually enumerated and
   published as a resolved area. Helwan E1430 remains separate.
 - Six off-map facility identities follow scen:60.5 text and oob's page
@@ -66,16 +68,32 @@
 - B5825, C4119, D3231, D3416, D3516, D3903 are valid canonical grid IDs. This
   membership check does not verify facility symbols or supply/owner attributes.
 
-## Frontier symbol discrepancy (requires lead ruling)
+## Frontier symbol discrepancy: adopted 2021 baseline
 
-The prominent blue ticked line in section C, near the Libya/Egypt labels,
-appears graphically similar to the TEC unfinished-railroad key, while its long
-north-south alignment could denote a frontier or fence in the 2021 re-rendering.
-Neither name/geometry alone proves its feature identity. The TEC border example
-uses a different appearance. No border feature or country division has been
-published from this line. Local labeled section/whole-map inspection overviews
-are in cartographer scratch runs/frontier, outside the repo. Ask the lead to
-establish the intended source symbol/authority before national sets depend on it.
+Lead rulings on 2026-10-08 adopt the dense blue ticked section-C line as
+national Border, distinct from the gray crossed transport through cell centres.
+The 2021 map supplies 83 full sides and C4122/C4221 printed only to the shore;
+the remaining part is water. All 84 incidences are cited separately in
+national-frontier.toml. No artificial seaward wall was added. Map-0005 records
+this interpretation and the non-Sea flood fill. C4221 is Libyan; C4122 is
+Egyptian. The fresh orientation supplement corrects C3920 to Libya and C3819
+to Egypt at a returning bend; the original local source receipt stays intact.
+
+The available 1979 scans contain rulebooks, but no original map. Corresponding
+frontier incidence comparison is therefore unavailable; no equivalence is
+claimed. Complete reduced overviews of A/B/D/E show no additional national
+border at those scales, with no exhaustive native-side absence claim. Source
+views and local tracing receipts remain outside this repository. Error rates
+and whole-source independent agreement are unmeasured; the lead independently
+confirmed only the northern coastal incidence.
+
+Country geometry resolves libya=3878, egypt=3078, map_c_libya=912 and
+map_c_or_d_egypt=1797 canonical cells. The 67 source-verified Sea cells have
+neither country; all other 6956 cells, including unknown terrain, partition
+without a gap. Requires_land filtering does not classify unknown cells.
+Old movement reviews, border masks and rail-family abstentions remain
+unchanged: this country trace is separate evidence, not a movement-layer
+amendment. No other terrain, facility, lake or Italian extent is added.
 
 ## Movement-layer completeness
 
@@ -255,7 +273,7 @@ The three inputs retain 320 unresolved observations without masks: pipeline on a
 
 ### Seventh assembled edge-cycle abstentions, 2026-10-07
 
-The three raw inputs retain 379 unresolved observations without masks: pipeline on all 260 pairs, 53 slope and 53 ridge decisions, two escarpment decisions, two railroad and two unfinished-railroad identities, two border identities, three road-family decisions and two marine endpoints. Exact identities and reasons remain in the immutable raw reviews. C3019/C3120 and C3028/C3129 tied or coincident line/border symbols stay unresolved. C3024/C3124 and outside-corridor D2705–D2710 surface gaps remain authoritative. Eastern whole-share observation completion still leaves 1,260 kind abstentions, including every pipeline. The new seven-edge track strip covers the current thirteen movement kinds only; missing lake evidence, adjacent halo and action legality remain unknown. No edge review resolves the 33 corridor terrain gaps.
+The three raw inputs retain 379 unresolved observations without masks: pipeline on all 260 pairs, 53 slope and 53 ridge decisions, two escarpment decisions, two railroad and two unfinished-railroad identities, two border identities, three road-family decisions and two marine endpoints. Exact identities and reasons remain in the immutable raw reviews. C3019/C3120 and C3028/C3129 tied or coincident line/border symbols stay unresolved. C3024/C3124 and outside-corridor D2705â€“D2710 surface gaps remain authoritative. Eastern whole-share observation completion still leaves 1,260 kind abstentions, including every pipeline. The new seven-edge track strip covers the current thirteen movement kinds only; missing lake evidence, adjacent halo and action legality remain unknown. No edge review resolves the 33 corridor terrain gaps.
 
 
 ### Final fresh corridor-edge inventory limits, 2026-10-07

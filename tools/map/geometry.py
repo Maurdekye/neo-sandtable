@@ -10,6 +10,7 @@ DIRECTIONS = {"E": (1, 0), "SE": (0, 1), "SW": (-1, 1),
 
 class Grid:
     def __init__(self, folder: Path):
+        self.folder = folder
         self.metadata = tomllib.loads((folder / "sections.toml").read_text())
         self.sections = {s["id"]: s for s in self.metadata["sections"]}
         with (folder / "hexes.csv").open(newline="") as f:
