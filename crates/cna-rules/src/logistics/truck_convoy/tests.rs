@@ -1,8 +1,9 @@
 use super::*;
 use crate::Cna;
+use crate::logistics::SupplySource;
 use crate::seq::{Block, PLAYER_HALF};
 use cna_content::scenario::Placement;
-use cna_core::decision::DecisionResponse;
+use cna_core::decision::{ActionSchema, DecisionResponse};
 use cna_core::dice::CampaignRng;
 use cna_core::engine::{Command, Game, Ruleset, evaluate};
 use std::sync::OnceLock;
@@ -1502,4 +1503,402 @@ fn serialized_progress_rejects_invalid_keys_duplicate_pools_and_detached_wait() 
             "{change}"
         );
     }
+}
+
+fn first_setup(schema: &ActionSchema) -> Value {
+    match schema {
+        ActionSchema::Choice { options } => json!(options[0].id),
+        ActionSchema::Unit { among } => json!(among[0]),
+        ActionSchema::Integer { max, .. } => json!(max),
+        ActionSchema::Record { fields } => Value::Object(
+            fields
+                .iter()
+                .map(|f| (f.name.clone(), first_setup(&f.schema)))
+                .collect(),
+        ),
+        other => panic!("unexpected setup shape {other:?}"),
+    }
+}
+
+fn graziani_response(p: &Pending, action: Value) -> Command {
+    Command::Respond(DecisionResponse {
+        decision_id: p.id.clone(),
+        seat: p.seat,
+        controller_epoch: 1,
+        decision_revision: p.revision,
+        idempotency_key: p.id.to_string(),
+        action,
+        public_explanation: None,
+    })
+}
+
+/// Drive real authored setup and the scheduled stock-only water window. No reserve,
+/// location, cargo or cursor is edited by this proof driver.
+fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
+    let c = content();
+    let rules = Cna::dev();
+    let mut game: Game<Cna> = Game {
+        state: State::new(c).unwrap(),
+        rng: CampaignRng::from_seed([12; 32]).state(),
+    };
+    // Derive an actual source-authorized shared placement, including the
+    // fixed-enemy four-hex exclusion and surveyed land. No geometry is injected.
+    let source_pool = game
+        .state
+        .logistics
+        .truck_pools
+        .iter()
+        .find(|p| {
+            p.side == Side::Axis
+                && p.trucks.light == 30
+                && p.trucks.medium == 100
+                && p.trucks.heavy == 25
+        })
+        .unwrap();
+    let pool_domain = crate::setup::placement::choices_with_profile(
+        c,
+        &source_pool.placement,
+        Side::Axis,
+        "scen:59.44",
+        false,
+    )
+    .unwrap();
+    let crate::state::DumpLocation::AwaitingSetup { placement } =
+        &game.state.logistics.dumps["ax_dump_1"].location
+    else {
+        panic!()
+    };
+    let dump_domain = crate::setup::placement::choices_with_profile(
+        c,
+        placement,
+        Side::Axis,
+        "scen:60.34",
+        false,
+    )
+    .unwrap();
+    let origin = dump_domain.iter().filter(|l| pool_domain.contains(l))
+        .filter_map(Location::hex).find(|hex| c.map.neighbors(hex).iter().any(|h|
+            matches!(c.map.terrain_survey(&h.id), cna_content::map::Survey::Present(t) if t != "sea")
+            && crate::land::map::truck_step_cost(c, Side::Axis,
+                &Trucks { light:30, medium:0, heavy:0 }, hex, &h.id, false, false).is_ok()
+        )).expect("published regions provide an eligible known-land pool/dump placement").clone();
+    let mut events = vec![];
+    let mut selected = None;
+    let mut loaded = false;
+    let mut issued = false;
+    for _ in 0..100_000 {
+        if game.state.decisions.pending.is_empty() {
+            let t = evaluate(&rules, c, &game, &Command::Advance).unwrap();
+            game = t.game;
+            events.extend(t.events);
+            continue;
+        }
+        let p = game.state.decisions.pending[0].clone();
+        if p.kind == KIND && p.seat.side == Side::Axis {
+            assert!(game.state.setup.closed && loaded && issued);
+            return (game, selected.unwrap(), origin, events);
+        }
+        let mut action = if game.state.setup.closed {
+            let request = rules
+                .pending(c, &game.state)
+                .into_iter()
+                .find(|r| r.id == p.id)
+                .unwrap();
+            let mut local = CampaignRng::from_seed([1; 32]);
+            crate::baseline::logistics_orders_with_profile(
+                c,
+                &game.state,
+                &request,
+                &mut local,
+                false,
+            )
+            .unwrap()
+            .unwrap_or_else(|| {
+                if p.space.pass.is_some() {
+                    Value::Null
+                } else {
+                    first_setup(&p.space.schema)
+                }
+            })
+        } else {
+            first_setup(&p.space.schema)
+        };
+        if let Some(task) = game.state.setup.tasks.get(&p.id) {
+            match task {
+                crate::setup::SetupTask::Dump { dump, .. } if dump.starts_with("ax_dump_") => {
+                    let ActionSchema::Choice { options } = &p.space.schema else {
+                        panic!()
+                    };
+                    assert!(options.iter().any(|o| o.id == origin.to_string()));
+                    action = json!(origin);
+                }
+                crate::setup::SetupTask::Pool { pool, .. }
+                    if selected.is_none()
+                        && game.state.logistics.truck_pools.iter().any(|q| {
+                            q.id == *pool
+                                && q.side == Side::Axis
+                                && q.trucks.light == 30
+                                && q.trucks.medium == 100
+                        }) =>
+                {
+                    action = json!({"destination":origin,"light":30,"medium":0,"heavy":0});
+                }
+                crate::setup::SetupTask::Preload { asset, operation }
+                    if selected
+                        .as_ref()
+                        .is_some_and(|id| asset.key() == format!("pool:{id}")) =>
+                {
+                    if operation == "menu" && !loaded {
+                        action = json!("load");
+                    } else if operation == "load" {
+                        action = json!({"light":{"fuel":100}});
+                        loaded = true;
+                    }
+                }
+                _ => {}
+            }
+        }
+        if p.kind == super::super::batches::WATER && p.seat.side == Side::Axis {
+            let id = selected.as_ref().unwrap_or_else(|| {
+                panic!(
+                    "no selected pool after setup: {:?}",
+                    game.state.logistics.truck_pools
+                )
+            });
+            let need =
+                super::super::water::pools::activity_need(c, &game.state, Side::Axis, id).unwrap();
+            assert!(need == 30 || need == 60);
+            let source =
+                serde_json::to_string(&super::super::SupplySource::Dump("ax_dump_1".into()))
+                    .unwrap();
+            action = json!({"allocations":[],"wells":[],"pool_allocations":[
+                {"pool":id,"activity":need,"draws":[{"source":source,"stores":0,"water":need}]}]});
+            let before = serde_json::to_value(&game.state.logistics.truck_pools).unwrap();
+            let stock = game.state.logistics.dumps["ax_dump_1"].supplies.water;
+            let t = evaluate(&rules, c, &game, &graziani_response(&p, action)).unwrap();
+            assert_eq!(t.game.rng, game.rng);
+            assert_eq!(
+                serde_json::to_value(&t.game.state.logistics.truck_pools).unwrap(),
+                before
+            );
+            assert_eq!(
+                t.game.state.logistics.dumps["ax_dump_1"].supplies.water,
+                stock
+            );
+            game = t.game;
+            events.extend(t.events);
+            issued = true;
+            continue;
+        }
+        let t = evaluate(&rules, c, &game, &graziani_response(&p, action.clone()))
+            .unwrap_or_else(|e| panic!("{} {:?}: {e:?}", p.kind, action));
+        game = t.game;
+        events.extend(t.events);
+        if p.kind == "cna.setup.preload" && action == json!({"light":{"fuel":100}}) {
+            let id = selected.as_ref().unwrap();
+            assert_eq!(
+                game.state
+                    .logistics
+                    .truck_pools
+                    .iter()
+                    .find(|q| &q.id == id)
+                    .unwrap()
+                    .cargo
+                    .fuel,
+                100
+            );
+            assert!(!game.state.setup.closed);
+        }
+        if selected.is_none() {
+            selected = game
+                .state
+                .logistics
+                .truck_pools
+                .iter()
+                .find(|q| {
+                    q.side == Side::Axis
+                        && q.trucks
+                            == Trucks {
+                                light: 30,
+                                medium: 0,
+                                heavy: 0,
+                            }
+                        && game
+                            .state
+                            .setup
+                            .pool_locations
+                            .get(&q.id)
+                            .and_then(Location::hex)
+                            == Some(&origin)
+                })
+                .map(|q| q.id.clone());
+        }
+    }
+    panic!("real Graziani proof did not reach convoy within campaign bound");
+}
+
+/// Cases: scen:59.44, scen:59.45, scen:60.34, airlog:52.42, airlog:53.25, land:21.41
+#[test]
+fn real_graziani_setup_stock_issue_move_and_checkpoint_use_actual_dispatcher() {
+    let c = content();
+    let (game, id, origin, _) = graziani_ready_convoy();
+    let pool = game
+        .state
+        .logistics
+        .truck_pools
+        .iter()
+        .find(|p| p.id == id)
+        .unwrap();
+    assert_eq!(
+        pool.location.as_ref().and_then(Location::hex),
+        Some(&origin)
+    );
+    assert_eq!(
+        pool.trucks,
+        Trucks {
+            light: 30,
+            medium: 0,
+            heavy: 0
+        }
+    );
+    // Real weekly storage loss precedes first-stage issue: Axis6%, normal weather.
+    // Cases: airlog:49.3, airlog:52.44. The legal setup preload above remains100.
+    assert_eq!(
+        game.state.turn.weather.as_ref().unwrap().kind,
+        WeatherKind::Normal
+    );
+    assert_eq!(pool.cargo.fuel, 100 - 100 * 6 / 100);
+    assert_eq!(pool.activity_water.get(), 30);
+    assert_eq!(
+        game.state.logistics.dumps["ax_dump_1"].supplies.water,
+        200 - 200 * 6 / 100 - 30
+    );
+    // Case: airlog:54.2. Light supply convoy40CP; Medium/Heavy30CP.
+    assert_eq!(ceiling(c, pool.trucks).unwrap(), 160);
+    let before_logistics = game.state.logistics.clone();
+    let origin = pool.location.as_ref().unwrap().hex().unwrap();
+    let target = c
+        .map
+        .neighbors(origin)
+        .into_iter()
+        .find_map(|h| {
+            let path = vec![h.id.clone()];
+            let plan = vec![TruckConvoyOrder::Move {
+                pool: id.clone(),
+                path: path.clone(),
+            }];
+            (validate_plan(c, &game.state, Side::Axis, &plan, false).is_ok()
+                && matches!(
+                    convoy_move::adjudicate_pool_edge(c, &game.state, &id, origin, &h.id, false),
+                    Ok(convoy_move::PoolEdge::Pass(_))
+                ))
+            .then_some(h.id.clone())
+        })
+        .expect("authored setup has an eligible neighboring convoy edge");
+    let cost = convoy_move::prepare_pool_route(
+        c,
+        &game.state,
+        Side::Axis,
+        &id,
+        std::slice::from_ref(&target),
+        false,
+    )
+    .unwrap()
+    .costs
+    .remove(0);
+    let contact = convoy_move::pool_departure_cp(c, &game.state, &id, false).unwrap();
+    let cp = cost.cp_quarters + contact;
+    let exact_fuel = c
+        .tables
+        .airlog
+        .fuel_consumption
+        .fuel_for(1, (cp + 3) / 4)
+        .unwrap()
+        .get()
+        * 30;
+    let quote = pool_fuel::plan_pool_segment_fuel(c, &game.state, &id, cp).unwrap();
+    assert_eq!(quote.ledger.paid_cost.get(), exact_fuel);
+    assert!(exact_fuel > 0);
+    let pending = game.state.decisions.pending[0].clone();
+    let cmd = graziani_response(
+        &pending,
+        json!([{"operation":"move","pool":id,"path":[target]}]),
+    );
+    let accepted = evaluate(&Cna::dev(), c, &game, &cmd).unwrap();
+    assert_eq!(
+        serde_json::to_value(&accepted.game.state.logistics.truck_pools).unwrap(),
+        serde_json::to_value(&game.state.logistics.truck_pools).unwrap()
+    );
+    assert_eq!(accepted.game.rng, game.rng);
+    let restored: Game<Cna> =
+        serde_json::from_value(serde_json::to_value(&accepted.game).unwrap()).unwrap();
+    let moved = evaluate(&Cna::dev(), c, &accepted.game, &Command::Advance).unwrap();
+    let resumed = evaluate(&Cna::dev(), c, &restored, &Command::Advance).unwrap();
+    assert_eq!(
+        serde_json::to_value(&moved.game).unwrap(),
+        serde_json::to_value(&resumed.game).unwrap()
+    );
+    assert_eq!(moved.events, resumed.events);
+    let pool = moved
+        .game
+        .state
+        .logistics
+        .truck_pools
+        .iter()
+        .find(|p| p.id == id)
+        .unwrap();
+    assert_eq!(
+        pool.location.as_ref().and_then(Location::hex),
+        Some(&target)
+    );
+    assert_eq!(pool.activity_water.get(), 0);
+    let ledger = &moved.game.state.logistics.pool_fuel_segments[&id];
+    assert_eq!(ledger.cp_quarters, cp);
+    assert_eq!(ledger.paid_cost.get(), exact_fuel);
+    assert_eq!(ledger.draws, quote.ledger.draws);
+    let mut source_debit = 0;
+    for draw in &quote.draws {
+        let points = draw.amount.fuel.ceil_points().get();
+        source_debit += draw.amount.fuel.get();
+        match &draw.source {
+            SupplySource::Dump(source) => assert_eq!(
+                moved.game.state.logistics.dumps[source].supplies.fuel,
+                before_logistics.dumps[source].supplies.fuel - points
+            ),
+            SupplySource::PoolStock(source) => {
+                let before = before_logistics
+                    .truck_pools
+                    .iter()
+                    .find(|p| &p.id == source)
+                    .unwrap();
+                let after = moved
+                    .game
+                    .state
+                    .logistics
+                    .truck_pools
+                    .iter()
+                    .find(|p| &p.id == source)
+                    .unwrap();
+                assert_eq!(after.cargo.fuel, before.cargo.fuel - points);
+            }
+            other => panic!("real witness must debit actual friendly stock: {other:?}"),
+        }
+    }
+    assert!(source_debit >= exact_fuel && source_debit - exact_fuel < 10);
+    assert_eq!(
+        own_report(c, &moved.game.state, Side::Axis, &id).unwrap()["spent_cp_quarters"],
+        cp
+    );
+    assert_eq!(
+        moved.game.state.land.movement.pool_on_road.contains(&id),
+        cost.on_network
+    );
+    assert!(
+        moved
+            .game
+            .state
+            .logistics
+            .pool_fuel_segments
+            .contains_key(&id)
+    );
 }
