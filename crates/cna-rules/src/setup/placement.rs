@@ -245,6 +245,20 @@ mod tests {
         CONTENT.get_or_init(|| CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap())
     }
 
+    fn unresolved_fixture() -> CnaContent {
+        let mut c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        for region in ["libya", "egypt", "map_c_libya", "map_c_or_d_egypt"] {
+            let mut area = c.areas.areas[region].clone();
+            area.id = format!("test_unresolved_{region}");
+            area.membership_status = "unresolved".into();
+            area.hex_ids.clear();
+            area.location_ids.clear();
+            area.reason = Some("synthetic unresolved membership for refusal coverage".into());
+            c.areas.areas.insert(area.id.clone(), area);
+        }
+        c
+    }
+
     fn surveyed_fixture(members: &[&str], requires_land: bool) -> CnaContent {
         use std::sync::atomic::{AtomicU64, Ordering};
         static SERIAL: AtomicU64 = AtomicU64::new(0);
@@ -552,10 +566,99 @@ mod tests {
                 .map(|h| Some(h.to_owned()))
                 .collect::<Vec<_>>()
         );
-        for area in ["libya", "egypt", "map_c_libya", "map_c_or_d_egypt"] {
+        let c = unresolved_fixture();
+        for region in ["libya", "egypt", "map_c_libya", "map_c_or_d_egypt"] {
+            let area = format!("test_unresolved_{region}");
             assert!(
-                matches!(choices(content(), &Placement::Area { area: area.into(), exclusion: None }, Side::Axis, "scen:60.31"), Err(EngineError::Unsupported { case, .. }) if case == "scen:60.31")
+                matches!(choices(&c, &Placement::Area { area, exclusion: None }, Side::Axis, "scen:60.31"), Err(EngineError::Unsupported { case, .. }) if case == "scen:60.31")
             );
+        }
+    }
+
+    /// Cases: scen:60.31, scen:60.34, scen:60.44, land:8.37
+    #[test]
+    fn generated_regions_preserve_exact_land_profiles_and_dump_exclusion() {
+        let c = content();
+        // Counts verified against Cartographer's frozen generated artifact, SHA256 5c8d7778.
+        for (id, count, case) in [
+            ("libya", 3878, "scen:60.31"),
+            ("egypt", 3078, "scen:60.44"),
+            ("map_c_libya", 912, "scen:60.34"),
+            ("map_c_or_d_egypt", 1797, "scen:60.44"),
+        ] {
+            let area = &c.areas.areas[id];
+            assert_eq!(area.membership_status, "resolved");
+            assert!(area.requires_land);
+            assert_eq!(area.hex_ids.len(), count);
+            let expected: Vec<_> = area
+                .hex_ids
+                .iter()
+                .filter_map(|hex| match c.map.terrain_survey(hex) {
+                    cna_content::map::Survey::Present("sea") => None,
+                    cna_content::map::Survey::Present(_) => {
+                        Some(Location::Hex { hex: hex.clone() })
+                    }
+                    _ => None,
+                })
+                .collect();
+            assert!(!expected.is_empty());
+            let p = Placement::Area {
+                area: id.into(),
+                exclusion: None,
+            };
+            assert_eq!(
+                choices_with_profile(c, &p, Side::Axis, case, false).unwrap(),
+                expected
+            );
+            let unknown = area.hex_ids.iter().find(|hex| {
+                !matches!(
+                    c.map.terrain_survey(hex),
+                    cna_content::map::Survey::Present(_)
+                )
+            });
+            if let Some(hex) = unknown {
+                assert!(
+                    matches!(choices_with_profile(c, &p, Side::Axis, case, true), Err(EngineError::Unsupported { case: actual, detail }) if actual == case && detail == format!("placement area {id} has an incomplete land domain: terrain at {hex} is unassessed ({}; land:8.37)", area.src.join(", ")))
+                );
+            } else {
+                assert_eq!(
+                    choices_with_profile(c, &p, Side::Axis, case, true).unwrap(),
+                    expected
+                );
+            }
+            if id == "map_c_libya" {
+                let fixed = fixed_enemy_hexes(c, Side::Axis).unwrap();
+                let excluded: Vec<_> = expected
+                    .into_iter()
+                    .filter(|location| {
+                        let axial = c.map.get(location.hex().unwrap()).unwrap().axial;
+                        fixed
+                            .iter()
+                            .all(|enemy| axial.distance(c.map.get(enemy).unwrap().axial) > 4)
+                    })
+                    .collect();
+                assert!(!excluded.is_empty());
+                let dump = Placement::Area {
+                    area: id.into(),
+                    exclusion: Some(Exclusion {
+                        enemy_unit_within_hexes: Some(4),
+                    }),
+                };
+                assert_eq!(
+                    choices_with_profile(c, &dump, Side::Axis, case, false).unwrap(),
+                    excluded
+                );
+                if unknown.is_some() {
+                    assert!(
+                        matches!(choices_with_profile(c, &dump, Side::Axis, case, true), Err(EngineError::Unsupported { case: actual, detail }) if actual == case && detail.contains("incomplete land domain"))
+                    );
+                } else {
+                    assert_eq!(
+                        choices_with_profile(c, &dump, Side::Axis, case, true).unwrap(),
+                        excluded
+                    );
+                }
+            }
         }
     }
 
@@ -602,8 +705,8 @@ mod tests {
     /// Cases: scen:60.31
     #[test]
     fn development_reports_unresolved_area_privately_without_changing_state() {
-        let c = content();
-        let state = crate::State::new(c).unwrap();
+        let c = unresolved_fixture();
+        let state = crate::State::new(&c).unwrap();
         let before = serde_json::to_string(&state).unwrap();
         let mut rng = CampaignRng::from_seed([1; 32]);
         let mut events = Vec::new();
@@ -612,16 +715,16 @@ mod tests {
             events: &mut events,
         };
         let p = Placement::Area {
-            area: "libya".into(),
+            area: "test_unresolved_libya".into(),
             exclusion: None,
         };
         assert!(
-            for_profile(c, &p, Side::Axis, "scen:60.31", false, &mut cx)
+            for_profile(&c, &p, Side::Axis, "scen:60.31", false, &mut cx)
                 .unwrap()
                 .is_none()
         );
         assert!(matches!(
-            for_profile(c, &p, Side::Axis, "scen:60.31", true, &mut cx),
+            for_profile(&c, &p, Side::Axis, "scen:60.31", true, &mut cx),
             Err(EngineError::Unsupported { .. })
         ));
         assert_eq!(serde_json::to_string(&state).unwrap(), before);

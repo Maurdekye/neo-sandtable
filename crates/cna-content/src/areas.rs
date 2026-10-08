@@ -115,13 +115,35 @@ mod tests {
     fn resolved_domains_and_unresolved_regions_remain_distinct() {
         let dir = crate::repo_data_dir().join("map");
         let map = MapContent::load(&dir).unwrap();
-        let areas = AreasContent::load(&dir.join("areas.toml"), &map).unwrap();
+        let path = dir.join("areas.toml");
+        let areas = AreasContent::load(&path, &map).unwrap();
+        let generated: AreasFile = read_toml(&path).unwrap();
         assert_eq!(areas.areas["alexandria"].hex_ids.len(), 2);
         assert_eq!(areas.areas["tripoli"].location_ids, ["box_tripoli"]);
-        assert_eq!(areas.areas["libya"].membership_status, "unresolved");
-        assert!(areas.areas["libya"].requires_land);
+        // Counts verified against Cartographer's frozen generated artifact, SHA256 5c8d7778.
+        for (id, count) in [
+            ("libya", 3878),
+            ("egypt", 3078),
+            ("map_c_libya", 912),
+            ("map_c_or_d_egypt", 1797),
+        ] {
+            let area = &areas.areas[id];
+            let source = generated.areas.iter().find(|a| a.id == id).unwrap();
+            assert_eq!(area.membership_status, "resolved");
+            assert!(area.requires_land);
+            assert_eq!(area.hex_ids.len(), count);
+            assert_eq!(area.hex_ids, source.hex_ids);
+            assert_eq!(area.src, source.src);
+            assert!(area.location_ids.is_empty());
+            assert!(area.hex_ids.iter().all(|h| map.canonical(h) == Some(h)));
+        }
         assert!(!areas.areas["alexandria"].requires_land);
-        assert!(areas.areas["libya"].hex_ids.is_empty());
+        let mut unresolved = areas.areas["libya"].clone();
+        unresolved.id = "test_unresolved_libya".into();
+        unresolved.membership_status = "unresolved".into();
+        unresolved.hex_ids.clear();
+        assert_eq!(unresolved.membership_status, "unresolved");
+        assert!(unresolved.hex_ids.is_empty());
         assert!(areas.locations["offmap_abu_seier"].off_map);
     }
 }
