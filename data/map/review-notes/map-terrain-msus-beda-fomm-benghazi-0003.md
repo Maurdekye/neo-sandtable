@@ -1,0 +1,15 @@
+# Msus/Beda Fomm/Benghazi terrain: final frozen 79 cells
+
+Actual compatible public base: eb65befcd4ba4e5c44ddb34e1840c78dd3ba8434. Immutable allocation SHA256: d53f94aec895c9368b9acd9f39dab3ef68a1e00470076a078f11fdcc54353dfa. Sealed source receipt SHA256: 6d0b91934d94f36cf84d87b80a68b5250ade81bdd551a77922d97b8f883aefba.
+
+Every full native2021 cell and printed boundary was directly inspected at native/4x against actual TEC;32 cells additionally enlarged6x, with three unmarked native regional contexts. Source pixels remain outside the repo. Each raw note records observed predominant land substrate, explicit minor substrate, concrete boundary evidence and deferral reason. Source accuracy, parent visual agreement and1979 equivalence remain unmeasured.
+
+74 accepted classes:49 clear,12 rough,four gravel,one salt marsh,two heavy vegetation,one mountain,five Sea;69 newly known land. Five competing-substrate cells A5031,A4932,A4133,A3627,B3505 remain Unknown; A3627 has directly established marine-coastal land, the others noncoastal land. No terrain mask accompanies any deferral. All79 domains are directly established;153 new masks(74terrain79domain). Whole marine cells:A5330,A4325,A3527,A5331,A4225. Coastal land:A5230,A4326,A3627,A4226.
+
+Actual TEC vegetation clump substrate in A5131/A5231 is separated from marginal ink; explicit minor clear is retained. A5032 has clearly predominant mountain substrate, minor surrounding rough and small southern clear; this is distinct from printed contour fringes. A4932 retains Unknown for competing mountain/rough with smaller clear. All other mixed rough/marsh/clear decisions retain individual minor notes. A3527/A4225 shores lie outside their printed boundaries; A4226 contains a narrow inside marine fragment. Adjacent patches outside boundaries supply no inside-cell minor or place/side facts.
+
+Exact selection: B3101,A5330,A5230,A5131,A5031,A4932,A4832,A4732,A4631,A4531,A4430,A4325,A4326,A4327,A4328,A4329,A4330,A4233,A4133,A4032,A3933,A3828,A3829,A3830,A3831,A3832,A3833,A3728,A3627,A3527,A2833,B4502,B4503,B4504,B4505,B4506,B4507,B4401,B4407,B4301,B4308,B4208,B4109,B4009,B3909,B3808,B3701,B3708,B3601,B3607,B3502,B3503,B3504,B3505,B3506,B3507,B3402,B3303,B3202,B3102,B3001,B2901,A5331,A5231,A5132,A5032,A4933,A4833,A4733,A4632,A4532,A4431,A4433,A4331,A4333,A4225,A4226,A4227,A4228.
+
+Only this raw/note and mechanical terrain/layer/area outputs belong to the snapshot. All prior raw including Unknown, rows/masks/geometry/pointflags/edges/places/features/definitions remain preserved. Accepted Sea removes only itself from existing generated land-required memberships; Unknown remains geometric. No lake, edge/side/line, place/port/facility anchor or extent, country/frontier, control/setup/action permissions are supplied.
+
+Initial gate logs/hashes and authored handoff are separate scratch receipts. Parent final union/gates/publication and own bounded actual-public inclusion have separate attribution; this note claims no publication or whole allocation completion.
