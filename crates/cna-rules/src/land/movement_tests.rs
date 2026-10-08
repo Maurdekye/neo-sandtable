@@ -602,6 +602,9 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
             };
             moves += 1;
             json!([{"unit":LEG,"path":[to]}])
+        } else if p.kind == logistics::truck_convoy::KIND {
+            // The fixed convoy batch declares an explicit empty order list as its pass.
+            json!([])
         } else if p.kind == "cna.arrivals.batch" {
             crate::baseline::arrival_orders(&c, &g.state, &p)
                 .expect("mandatory arrival batch has a source-conserving plan")
@@ -1039,6 +1042,9 @@ fn profiling_answer(
     ) {
         // A mandatory continuation needs a legal remaining path, not a schema placeholder.
         crate::baseline::random_orders(c, state, request, rng)
+    } else if request.kind == logistics::truck_convoy::KIND {
+        // The fixed convoy batch declares an explicit empty order list as its pass.
+        json!([])
     } else if request.kind == logistics::attrition::KIND {
         crate::baseline::logistics_orders(c, state, request, rng)
             .expect("mandatory attrition baseline must allocate every casualty group")
