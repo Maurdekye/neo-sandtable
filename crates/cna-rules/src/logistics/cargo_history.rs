@@ -761,6 +761,7 @@ pub fn restore(state: &mut State, snapshot: &CargoSnapshot) {
 }
 
 pub mod motion;
+pub mod relocation;
 
 #[cfg(test)]
 mod tests;
