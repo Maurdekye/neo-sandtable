@@ -15,6 +15,8 @@ How much water may a real second- or third-line truck pool receive as activity r
 ## Ruling
 At the fixed Water Distribution stock-issue round, issue to an owned resolved pool only up to its unmet current OpStage demand. Demand is the checked sum of its Light, Medium and Heavy Truck Points, doubled for hot weather. Existing activity reserve reduces that need. Baseline issues exactly unmet need when authorized finite stocks can cover it.
 
+The cap applies only to new issues: preserve an existing reserve at or above current demand across stage changes or count reductions, issue nothing until it falls below demand, and never discard it or convert it to cargo.
+
 Activity reserve remains independent of aggregate cargo capacity. This issue has no packing field or packing check. Larger carried quantities remain water cargo and cannot be converted to activity reserve by this procedure. Stock issue costs no CPA, draws no well die and introduces no paid-water ledger. Owner answers validate on disposable drafts; stock and reserve effects occur only at the existing batch finish.
 
 ## Rationale
