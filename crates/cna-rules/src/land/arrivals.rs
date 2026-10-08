@@ -422,6 +422,7 @@ fn place(state: &mut State, id: &UnitId, destination: Location, cx: &mut Cx<'_>)
     unit.cp_spent_quarters = 0;
     unit.voluntary_cp_quarters = 0;
     let side = unit.side;
+    state.land.movement.on_road.remove(id);
     state.land.arrivals.withdrawn_units.remove(id);
     let arrival_stage = stage(state);
     state
@@ -1750,6 +1751,7 @@ mod tests {
     #[test]
     fn a_real_arrival_uses_its_exact_stage_and_recovery_preserves_private_choices() {
         let (c, mut game) = fixture();
+        assert!(game.state.land.movement.on_road.is_empty());
         let id = UnitId::new("cw.polish_bde.polish_brigade_hq");
         at(&mut game, 1, 2);
         let earlier = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
@@ -1761,11 +1763,34 @@ mod tests {
         ));
         let mut game = earlier;
         at(&mut game, 1, 3);
+        // Regression input only: a newly placed arrival must discard stale membership.
+        game.state.land.movement.on_road.insert(id.clone());
         game = evaluate(&Cna::dev(), &c, &game, &Command::Advance)
             .unwrap()
             .game;
         assert!(game.state.decisions.pending.iter().any(|p| p.kind == BATCH));
+        assert!(game.state.land.movement.on_road.contains(&id));
+        let pending = game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.kind == BATCH && p.seat.side == Side::Commonwealth)
+            .unwrap()
+            .clone();
+        let action = plan(&c, &game, &pending);
+        game = response(&c, &game, &pending, action).unwrap();
+        assert!(matches!(
+            game.state.land.units[&id].location,
+            Location::NotArrived
+        ));
+        assert!(game.state.land.movement.on_road.contains(&id));
+        let checkpoint: Game<Cna> = serde_json::from_value(json!(game)).unwrap();
         let game = drain(&c, game);
+        let resumed = drain(&c, checkpoint);
+        assert_eq!(json!(game), json!(resumed));
+        assert!(!game.state.land.movement.on_road.contains(&id));
+        assert!(!resumed.state.land.movement.on_road.contains(&id));
         let u = &game.state.land.units[&id];
         assert!(in_withdrawal_city(&c, &u.location));
         assert_eq!(u.cp_spent_quarters, 0);

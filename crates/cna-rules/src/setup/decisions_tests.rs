@@ -78,6 +78,7 @@ fn finish(c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
 fn private_choices_publish_faces_only_after_the_entire_window_and_preserve_trucks() {
     let c = content();
     let initial = State::new(&c).unwrap();
+    assert!(initial.land.movement.on_road.is_empty());
     let expected =
         initial
             .land
@@ -89,7 +90,7 @@ fn private_choices_publish_faces_only_after_the_entire_window_and_preserve_truck
                 sum.heavy += t.heavy;
                 sum
             });
-    let game = opened(&c);
+    let mut game = opened(&c);
     assert!(
         game.state
             .decisions
@@ -110,10 +111,13 @@ fn private_choices_publish_faces_only_after_the_entire_window_and_preserve_truck
         panic!();
     };
     let unit = unit.clone();
+    // Regression input only: placement must discard stale ON membership at closure.
+    game.state.land.movement.on_road.insert(unit.clone());
     let action = first(&p.space.schema);
     let enemy_before = Cna::dev().view(&c, &game.state, Perspective::Side(Side::Commonwealth));
     let game = submit(&c, &game, &p, action).unwrap();
     assert!(!game.state.setup.closed);
+    assert!(game.state.land.movement.on_road.contains(&unit));
     assert!(matches!(
         game.state.land.units[&unit].location,
         Location::AwaitingSetup { .. }
@@ -146,6 +150,8 @@ fn private_choices_publish_faces_only_after_the_entire_window_and_preserve_truck
     let restored: Game<Cna> = serde_json::from_str(&saved).unwrap();
     let game = finish(&c, game);
     let resumed = finish(&c, restored);
+    assert!(!game.state.land.movement.on_road.contains(&unit));
+    assert!(!resumed.state.land.movement.on_road.contains(&unit));
     assert_eq!(
         serde_json::to_value(&game).unwrap(),
         serde_json::to_value(&resumed).unwrap()

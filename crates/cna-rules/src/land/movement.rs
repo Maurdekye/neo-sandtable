@@ -56,8 +56,9 @@ pub struct MovementState {
     pub ended: bool,
     /// Truthful answers already disclosed to the phasing side in this segment.
     pub controls: BTreeMap<HexId, bool>,
-    /// Units explicitly off the network; retained between segments until they use it again.
-    pub off_road: BTreeSet<UnitId>,
+    /// Units on the network after an executed edge; absent membership means OFF.
+    #[serde(default)]
+    pub on_road: BTreeSet<UnitId>,
     /// Actual supply pools share road occupancy only after using the network; absence means OFF.
     /// Cases: land:9.29, land:9.33, land:9.34
     #[serde(default)]
@@ -723,9 +724,9 @@ fn run(
             }
             state.land.units.get_mut(id).unwrap().location = Location::Hex { hex: to.clone() };
             if costs.iter().all(|c| c.on_network) {
-                state.land.movement.off_road.remove(id);
+                state.land.movement.on_road.insert(id.clone());
             } else {
-                state.land.movement.off_road.insert(id.clone());
+                state.land.movement.on_road.remove(id);
             }
         }
         total = total
@@ -1434,10 +1435,10 @@ pub fn execute_nonphasing(
         Err(e) => return Err(e),
     };
     let controls = draft.land.movement.controls.clone();
-    let off_road = draft.land.movement.off_road.clone();
+    let on_road = draft.land.movement.on_road.clone();
     draft.land.movement = s.land.movement.clone();
     draft.land.movement.controls.clear(); // The enemy moved publicly; stale disclosed absence is invalid.
-    draft.land.movement.off_road = off_road;
+    draft.land.movement.on_road = on_road;
     draft.land.reaction.controls = controls;
     *s = draft;
     cx.events.extend(events);

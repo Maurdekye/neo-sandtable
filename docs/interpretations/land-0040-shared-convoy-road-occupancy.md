@@ -31,4 +31,6 @@ One checked occupancy function serves convoy execution and both formation planni
 
 ## Related question: set-up and arrival units (decided)
 
-Owner decision, 2026-10-08 (batch review 4): units placed at set-up or on arrival also start off the network. Like a pool, a unit counts against road space only after an executed move whose last edge used the network leaves it in that hex. Land implements this for units as a follow-up; until it lands, the unit off_road default is unchanged.
+Owner decision, 2026-10-08 (batch review 4): units placed at set-up or on arrival also start off the network. Like a pool, a unit counts against road space only after an executed move whose last edge used the network leaves it in that hex. The implementation uses serde-default MovementState.on_road alongside pool_on_road: absent unit membership means OFF. Fixed initial placements, buffered set-up placements and canonical arrivals start OFF, clearing any stale membership at committed placement. Executed movement updates every represented member from its last edge; a zero-edge order preserves posture. Planning restores the complete movement state, including posture.
+
+Older checkpoints without on_road load all units OFF, as explicitly approved by the owner. The old inverse off_road field is not an alias: its presence cannot manufacture ON membership. New checkpoints preserve explicit on_road membership. This changes initial road occupancy and can change campaign choices and preset counts; it does not change the five-point limit or terrain prices.

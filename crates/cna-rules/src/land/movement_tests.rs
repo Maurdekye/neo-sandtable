@@ -365,6 +365,8 @@ fn terrain_end_limit_rejects_whole_list_and_vehicle_congestion_uses_plain_cost()
         .collect();
     for id in &others {
         place(&mut s, id, "C4021");
+        // Stationary counters in this congestion fixture previously used the road.
+        s.land.movement.on_road.insert(id.as_str().into());
     }
     let g = start(&c, s, true);
     assert!(
@@ -447,6 +449,7 @@ fn complete_move_reopens_for_other_units_and_enemy_receives_only_faces() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
     let other = "it.libyan_tank_command.lxii_l_tank_bn";
     place(&mut s, other, "C4020");
+    s.land.movement.on_road.insert(other.into());
     let g = start(&c, s, true);
     let t = respond(
         &c,
@@ -725,6 +728,7 @@ fn stack_orders_move_all_counters_and_detachment_updates_parent_cp() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
     let other = "it.libyan_tank_command.lxii_l_tank_bn";
     place(&mut s, other, "C4020");
+    s.land.movement.on_road.insert(other.into());
     let g = start(&c, s, true);
     let t = respond(
         &c,
@@ -772,6 +776,7 @@ fn invalid_second_order_or_fuel_shortage_rejects_every_move() {
     let (c, mut s, _o) = setup(TANK, Some("road"), false, None);
     let other = "it.libyan_tank_command.lxii_l_tank_bn";
     place(&mut s, other, "C4020");
+    s.land.movement.on_road.insert(other.into());
     let g = start(&c, s, true);
     let before = serde_json::to_value(&g).unwrap();
     assert!(
@@ -1107,6 +1112,12 @@ fn planning_rebuilds_occupancy_after_a_nearby_move_and_checkpoint() {
     assert_eq!(others.len(), 5);
     for other in &others {
         place(&mut congested, other, "C4021");
+        // This congestion fixture represents counters already ON the network.
+        congested
+            .land
+            .movement
+            .on_road
+            .insert(other.as_str().into());
     }
     let paths = reachable(&c, &congested, &id, true);
     let dest = paths.iter().find(|r| r.hex.as_str() == "C4021").unwrap();
@@ -3400,6 +3411,7 @@ fn raw_counter_paths_are_exact_for_all_perspectives_and_attached_contents_stay_p
                 state.land.units[&id.into()].location.hex(),
                 Some(&"C4022".into())
             );
+            assert!(state.land.movement.on_road.contains(&id.into()));
         }
         for perspective in Perspective::all() {
             let mut paths = events
@@ -3742,5 +3754,163 @@ fn reaction_continuation_retains_visible_start_path_when_child_rejoins_parent() 
         done.events
             .iter()
             .all(|e| !matches!(e.event, GameEvent::UnitMoved { .. }))
+    );
+}
+
+/// Cases: land:9.34
+/// Interpretations: interp:land-0040
+#[test]
+fn unit_network_posture_defaults_off_and_legacy_inverse_is_not_an_alias() {
+    for scenario in ["graziani", "italian_campaign"] {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), scenario).unwrap();
+        let mut s = State::new(&c).unwrap();
+        assert!(s.land.movement.on_road.is_empty());
+        let id = s.land.units.keys().next().unwrap().clone();
+        s.land.movement.on_road.insert(id.clone());
+        let current = serde_json::to_value(&s).unwrap();
+        assert!(current["land"]["movement"].get("off_road").is_none());
+        let restored: State = serde_json::from_value(current.clone()).unwrap();
+        assert_eq!(restored.land.movement.on_road, s.land.movement.on_road);
+        for inverse in [json!([]), json!([id, "legacy.unknown.unit"])] {
+            let mut legacy = current.clone();
+            let movement = legacy["land"]["movement"].as_object_mut().unwrap();
+            movement.remove("on_road");
+            movement.insert("off_road".into(), inverse);
+            let restored: State = serde_json::from_value(legacy).unwrap();
+            assert!(restored.land.movement.on_road.is_empty());
+            for side in Side::ALL {
+                for hex in restored
+                    .land
+                    .units
+                    .values()
+                    .filter_map(|u| u.location.hex())
+                {
+                    assert_eq!(
+                        stacking::road_halves(&c, &restored, hex, side, &[]).unwrap(),
+                        0
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// Cases: land:8.13, land:9.34, land:13.21
+/// Interpretations: interp:land-0040
+#[test]
+fn unit_network_posture_tracks_executed_last_edge_and_preview_is_pure() {
+    for kind in [NonPhasingMove::Reaction, NonPhasingMove::Retreat] {
+        let (mut c, s, _road) = setup(TANK, Some("road"), false, None);
+        let g = start(&c, s, true);
+        let mut state = g.state.clone();
+        let mut rng = CampaignRng::from_state(&g.rng);
+        let mut events = vec![];
+        let id: UnitId = TANK.into();
+        let mut overlays = vec![];
+        for (target, road, expected, cp) in [
+            ("C4021", true, true, 2),
+            ("C4022", false, false, 8),
+            ("C4023", true, true, 2),
+        ] {
+            overlays.push(Overlay::new(&mut c, road.then_some("road"), false, None));
+            let order = Order {
+                unit: id.clone(),
+                path: vec![target.into()],
+                with_stack: false,
+                close_assault: vec![],
+            };
+            let before = serde_json::to_value(&state).unwrap();
+            let (preview, price) =
+                preview_nonphasing(&c, &state, &order, seat(&g), true, kind).unwrap();
+            assert_eq!(price.cp_quarters, cp);
+            assert_eq!(preview.land.movement.on_road.contains(&id), expected);
+            assert_eq!(serde_json::to_value(&state).unwrap(), before);
+            let actual = execute_nonphasing(
+                &c,
+                &mut state,
+                &order,
+                seat(&g),
+                true,
+                kind,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut events,
+                },
+            )
+            .unwrap();
+            assert_eq!(actual.cp_quarters, cp);
+            assert_eq!(state.land.movement.on_road.contains(&id), expected);
+            assert_eq!(state.land.units[&id].location.hex(), Some(&target.into()));
+            let recovered: State =
+                serde_json::from_value(serde_json::to_value(&state).unwrap()).unwrap();
+            assert_eq!(recovered.land.movement.on_road, state.land.movement.on_road);
+        }
+    }
+}
+
+/// Cases: land:8.13, land:9.34
+/// Interpretations: interp:land-0040
+#[test]
+fn unit_network_posture_search_and_zero_edge_pass_preserve_membership() {
+    for on_road in [false, true] {
+        let (c, mut s, _road) = setup(TANK, Some("road"), false, None);
+        if on_road {
+            s.land.movement.on_road.insert(TANK.into());
+        }
+        let g = start(&c, s, true);
+        let before = serde_json::to_value(&g).unwrap();
+        assert!(
+            reachable(&c, &g.state, &TANK.into(), true)
+                .iter()
+                .any(|r| r.hex == HexId::from("C4021"))
+        );
+        assert_eq!(serde_json::to_value(&g).unwrap(), before);
+        let t = respond(&c, &g, seat(&g), Value::Null, true).unwrap();
+        assert_eq!(
+            t.game.state.land.movement.on_road.contains(&TANK.into()),
+            on_road
+        );
+        assert_eq!(
+            t.game.state.land.units[&TANK.into()].location.hex(),
+            Some(&"C4020".into())
+        );
+        assert_eq!(t.game.state.land.units[&TANK.into()].cp_spent_quarters, 0);
+    }
+}
+
+/// Cases: land:8.13, land:9.34, land:19.12
+/// Interpretations: interp:land-0040
+#[test]
+fn unit_network_posture_off_edge_clears_all_represented_members() {
+    let (c, mut s, _overlay) = setup(LEG, None, false, None);
+    let attached = "cw.2_nz_div.22nd_nz_bn";
+    place(&mut s, attached, "C4020");
+    s.land.units.get_mut(&attached.into()).unwrap().attached_to = Some(LEG.into());
+    s.land.units.get_mut(&attached.into()).unwrap().detached = false;
+    for id in [LEG, attached] {
+        s.land.movement.on_road.insert(id.into());
+    }
+    let g = start(&c, s, true);
+    let t = respond(
+        &c,
+        &g,
+        seat(&g),
+        json!([{"unit":LEG,"path":["C4021"]}]),
+        true,
+    )
+    .unwrap();
+    for id in [LEG, attached] {
+        assert!(!t.game.state.land.movement.on_road.contains(&id.into()));
+        assert_eq!(
+            t.game.state.land.units[&id.into()].location.hex(),
+            Some(&"C4021".into())
+        );
+        assert_eq!(t.game.state.land.units[&id.into()].cp_spent_quarters, 8);
+    }
+    assert!(
+        !t.events
+            .iter()
+            .any(|e| Perspective::Side(Side::Axis).can_see(&e.audience)
+                && matches!(&e.event, GameEvent::UnitMoved { unit_id, .. } if unit_id == attached))
     );
 }

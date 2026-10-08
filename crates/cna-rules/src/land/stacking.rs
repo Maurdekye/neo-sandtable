@@ -64,7 +64,7 @@ pub fn road_occupancy_halves(
     let units = checked_road_sum(
         formation::roots(content, state, hex, side)
             .iter()
-            .filter(|id| !excluded_units.contains(id) && !state.land.movement.off_road.contains(id))
+            .filter(|id| !excluded_units.contains(id) && state.land.movement.on_road.contains(id))
             .map(|id| formation::stacking_halves(content, state, id)),
     )?;
     combine_road_occupancy(content, state, hex, side, excluded_pool, units)
@@ -182,7 +182,7 @@ impl Counter {
             immobile_plus: class.is_some_and(|c| c.cpa == 0 && c.cpa_plus)
                 && state.land.units[id].transport_trucks.total() == 0,
             garrison: content.units.units[id].sheet.contains("garrison"),
-            on_network: !state.land.movement.off_road.contains(id),
+            on_network: state.land.movement.on_road.contains(id),
         }
     }
 }

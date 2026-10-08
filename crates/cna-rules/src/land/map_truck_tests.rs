@@ -250,10 +250,7 @@ fn convoy_posture_old_checkpoint_default_and_zero_edge_are_preserved() {
             None
         )
         .unwrap(),
-        crate::land::formation::roots(&c, &s, &"C4020".into(), Side::Axis)
-            .iter()
-            .map(|id| crate::land::formation::stacking_halves(&c, &s, id))
-            .sum::<i32>()
+        0
     );
     crate::land::convoy_move::record_pool_posture(&mut s, &id, true).unwrap();
     let plan =
@@ -317,6 +314,8 @@ fn formations_and_real_pools_share_one_road_occupancy_in_planning_and_truth() {
     };
     s.land.units.clear();
     s.land.units.insert(id.clone(), unit);
+    // This fixture represents a counter already left on the road by movement.
+    s.land.movement.on_road.insert(id.clone());
     s.logistics.truck_pools.clear();
     let pool = add_pool(&mut s, Side::Axis, "C4021", 5);
     crate::land::convoy_move::record_pool_posture(&mut s, &pool, true).unwrap();
@@ -346,7 +345,7 @@ fn formations_and_real_pools_share_one_road_occupancy_in_planning_and_truth() {
         0
     );
     s.land.movement.pool_on_road.remove(&pool);
-    s.land.movement.off_road.insert(id);
+    s.land.movement.on_road.remove(&id);
     assert_eq!(
         crate::land::stacking::road_halves(&c, &s, &hex, Side::Axis, &[]).unwrap(),
         0

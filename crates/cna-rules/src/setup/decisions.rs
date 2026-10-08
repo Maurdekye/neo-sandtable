@@ -734,6 +734,7 @@ pub(crate) fn finish(
             .get_mut(&id)
             .ok_or_else(|| invariant("buffered unit disappeared"))?
             .location = location;
+        state.land.movement.on_road.remove(&id);
     }
     for (id, location) in std::mem::take(&mut state.setup.dump_locations) {
         state
