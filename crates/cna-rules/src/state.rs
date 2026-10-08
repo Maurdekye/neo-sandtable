@@ -203,6 +203,9 @@ pub enum DumpLocation {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LogisticsState {
+    /// One immutable private convoy list and its exact closure/wait progress.
+    #[serde(default)]
+    pub truck_convoy: crate::logistics::truck_convoy::TruckConvoyProcedure,
     /// Exact newly arrived units, closed batches and unresolved well operations.
     #[serde(default)]
     pub arrival_supply: crate::logistics::arrivals::ArrivalSupplyWindow,
@@ -622,7 +625,7 @@ impl State {
             .enumerate()
             .map(|(source, p)| (p.id.clone(), source))
             .collect();
-        Ok(State {
+        let mut state = State {
             cursor: Cursor::start(&content.bounds),
             turn: TurnState::default(),
             land,
@@ -635,7 +638,20 @@ impl State {
                 ..crate::setup::SetupState::default()
             },
             result: None,
-        })
+        };
+        // Cases: land:6.13, airlog:53.25
+        // The entire State exists before any location-free real-id creation seed.
+        let initial_pools: Vec<_> = state
+            .logistics
+            .truck_pools
+            .iter()
+            .map(|pool| pool.id.clone())
+            .collect();
+        for id in initial_pools {
+            crate::logistics::pool_fuel::seed_created_pool(&mut state, &id)
+                .map_err(|error| format!("initial pool physical history: {error:?}"))?;
+        }
+        Ok(state)
     }
 
     pub fn units_of(&self, side: Side) -> impl Iterator<Item = &LandUnit> {

@@ -45,8 +45,16 @@ impl Cna {
             "opstage.organization.supply_distribution" => {
                 crate::logistics::batches::finish_distribution(content, state, cx)
             }
-            "opstage.organization.tactical_shipping" | "opstage.truck_convoy_movement" => {
+            "opstage.organization.tactical_shipping" => {
                 crate::logistics::coastal::finish_with_profile(content, state, self.strict, cx)
+            }
+            "opstage.truck_convoy_movement" => {
+                // Existing coastal adjudication closes before the fixed convoy batch.
+                crate::logistics::coastal::finish_with_profile(content, state, self.strict, cx)?;
+                if !state.decisions.pending.is_empty() {
+                    return Ok(());
+                }
+                crate::logistics::truck_convoy::finish(content, state, self.strict, cx)
             }
             "opstage.organization.attrition" => {
                 crate::logistics::attrition::finish(content, state, cx)
@@ -172,7 +180,11 @@ impl Cna {
             "opstage.organization.attrition" => {
                 crate::logistics::attrition::enter(content, state, cx)
             }
-            "opstage.weather" => crate::logistics::weather::determine(content, state, cx),
+            "opstage.weather" => {
+                // Cases: land:6.13, airlog:53.25
+                crate::logistics::pool_fuel::seed_pool_opstage(state)?;
+                crate::logistics::weather::determine(content, state, cx)
+            }
             "opstage.movement_and_combat.combat.close_assault" => {
                 self.unimplemented(content, anchor)?;
                 crate::land::combat::finish_pins(content, state, cx);
@@ -301,6 +313,14 @@ impl Cna {
                     cx,
                 )
             }
+            crate::logistics::truck_convoy::KIND => crate::logistics::truck_convoy::answer(
+                content,
+                state,
+                pending,
+                action,
+                self.strict,
+                cx,
+            ),
             kind if kind.starts_with(crate::logistics::convoys::PREFIX) => {
                 crate::logistics::convoys::answer_with_profile(
                     content,

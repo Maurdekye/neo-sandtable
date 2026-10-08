@@ -346,6 +346,9 @@ pub fn logistics_orders_with_profile(
     rng: &mut CampaignRng,
     strict: bool,
 ) -> Result<Option<Value>, cna_core::engine::EngineError> {
+    if request.kind == super::truck_convoy::KIND {
+        return Ok(Some(super::truck_convoy::baseline()));
+    }
     let Some(mut answer) = logistics_orders(content, state, request, rng) else {
         return Ok(None);
     };

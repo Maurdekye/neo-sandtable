@@ -1165,9 +1165,12 @@ pub(crate) fn inspect(
         if !sees_side(perspective, pool.side) {
             return Err(hidden());
         }
-        return Ok(
-            json!({"truck_pool":pool,"setup_destination":state.setup.pool_locations.get(&pool.id)}),
-        );
+        // Identity/privacy is checked before any convoy history or source query.
+        let movement =
+            crate::logistics::truck_convoy::own_report(content, state, pool.side, &pool.id)?;
+        return Ok(json!({"truck_pool":pool,
+            "setup_destination":state.setup.pool_locations.get(&pool.id),
+            "convoy_movement":movement}));
     }
     if let Some(dump) = state
         .logistics

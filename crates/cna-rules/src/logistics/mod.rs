@@ -94,6 +94,7 @@ pub use ready::{close_assault_ammo_action, ready_ammo_capacity};
 mod segment;
 pub mod stores;
 mod supply;
+pub mod truck_convoy;
 pub use segment::{
     FuelAccountSnapshot, FuelCohortSelection, FuelDraw, FuelFundingAccount, FuelSegmentLedger,
     FuelTruckKind, SegmentFuelPlan, SegmentFuelSpent, SegmentKey, TruckFuelCohort,
