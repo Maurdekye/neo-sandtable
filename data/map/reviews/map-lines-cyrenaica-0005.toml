@@ -1,0 +1,547 @@
+[batch]
+id = "map-lines-cyrenaica-0005"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "C1011,C1012,C1013,C1014,C0908,C0909,C0910,C0911,C0912,C0913,C0914,C0808,C0809,C0810,C0811,C0812,C0813,C0814,C0708,C0709,C0710,C0711,C0712,C0713,C0714,C0608,C0609,C0610,C0611,C0612,C0613,C0614,C0508,C0509,C0510,C0511,C0512,C0513,C0514,C0408,C0409,C0410,C0411,C0412,C0413,C0414,C0308,C0309,C0310,C0311,C0312,C0313,C0314,C0208,C0209,C0210,C0211,C0212,C0213,C0214,C0108,C0109,C0110,C0111,C0112,C0113,C0114"
+notes = "Final exact67 fresh cells from immutable C08..14 allocation under standing terrain GO. Six complete-cell native2x sheets plus31full-cell4x details directly reviewed against TEC; sealed scratch observations unchanged after preceding actual-public inclusion audit.62accepted21clear4rough1salt_marsh36desert;5land-domain predominance abstentions. All visible minor land substrates recorded in individual notes. Linear ragged contour strokes stay separate from substrate. No marine cells or new facility/edge/lake/national/action evidence. C1014 preexisting village_bir is preserved separately by existing place replay. No classifier, independent accuracy or original1979 equivalence claim. Source crops outside repository."
+
+[[hex]]
+hex_id = "C1011"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C1012"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C1013"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C1014"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside. The preexisting village_bir flag is a separate published facility record; this review adds no facility evidence or amendment."
+
+[[hex]]
+hex_id = "C0908"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: broad beige rough terrain visibly predominates, with smaller cream clear regions recorded as minor land substrate. Neighboring darker ground stays outside the boundary. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0909"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: broad beige rough terrain visibly predominates, with smaller cream clear regions recorded as minor land substrate. Neighboring darker ground stays outside the boundary. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0910"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0911"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0912"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0913"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0914"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0808"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "A smooth dark olive mountain body sits within substantial beige rough ground and a smaller cream clear margin. The two larger land classes are too comparable for confident predominance. This isolated filled mountain body is distinguished from the separate linear ragged contour strokes. Keep Unknown with established land domain; record all visible substrates without a predominant/minor assignment. No marine water inside."
+
+[[hex]]
+hex_id = "C0809"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: broad beige rough terrain visibly predominates, with smaller cream clear regions recorded as minor land substrate. Neighboring darker ground stays outside the boundary. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0810"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0811"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0812"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0813"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0814"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x review: broad olive patch with yellow branching, matching TEC salt-marsh pattern, visibly predominates over smaller cream clear margins. Record clear as minor. Linear ragged dark contour strokes along the west are separate decoration; no mountain substrate inferred from them. No marine water inside."
+
+[[hex]]
+hex_id = "C0708"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Beige rough ground and cream clear ground divide the complete interior into substantial competing regions; no confident predominant class. Darker neighboring mountain ground is outside the northeast side. Keep Unknown with established land domain; record all visible substrates without a predominant/minor assignment. No marine water inside."
+
+[[hex]]
+hex_id = "C0709"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: broad beige rough terrain visibly predominates, with smaller cream clear regions recorded as minor land substrate. Neighboring darker ground stays outside the boundary. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0710"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0711"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0712"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0713"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0714"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0608"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0609"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0610"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Every complete printed boundary and interior directly reviewed against native source/TEC: cream clear land predominates. No distinct minor land substrate confidently identified. Labels, point markers, transport ink and linear ragged contour decoration remain separate. No marine water inside."
+
+[[hex]]
+hex_id = "C0611"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Yellow desert and broad cream clear land both occupy the complete boundary; their semantic footprints are too comparable for confident predominant terrain. Keep Unknown with established land domain; record all visible substrates without a predominant/minor assignment. No marine water inside."
+
+[[hex]]
+hex_id = "C0612"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: the continuous yellow desert region visibly predominates over smaller cream clear bays, recorded as minor land substrate. The distinct solid desert fill is read against TEC and source shape, not classified by a numerical color majority. No marine water inside."
+
+[[hex]]
+hex_id = "C0613"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: the continuous yellow desert region visibly predominates over smaller cream clear bays, recorded as minor land substrate. The distinct solid desert fill is read against TEC and source shape, not classified by a numerical color majority. No marine water inside."
+
+[[hex]]
+hex_id = "C0614"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: the continuous yellow desert region visibly predominates over smaller cream clear bays, recorded as minor land substrate. The distinct solid desert fill is read against TEC and source shape, not classified by a numerical color majority. No marine water inside."
+
+[[hex]]
+hex_id = "C0508"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: the continuous yellow desert region visibly predominates over smaller cream clear bays, recorded as minor land substrate. The distinct solid desert fill is read against TEC and source shape, not classified by a numerical color majority. No marine water inside."
+
+[[hex]]
+hex_id = "C0509"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Yellow desert in the southern interior and the broad northern cream clear region have comparable footprints; no confident predominant substrate. Keep Unknown with established land domain; record all visible substrates without a predominant/minor assignment. No marine water inside."
+
+[[hex]]
+hex_id = "C0510"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Yellow desert lobes extend north into substantial cream clear bays. Full-boundary review does not establish a confident predominant class. Keep Unknown with established land domain; record all visible substrates without a predominant/minor assignment. No marine water inside."
+
+[[hex]]
+hex_id = "C0511"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full4x interior/boundary review: the continuous yellow desert region visibly predominates over smaller cream clear bays, recorded as minor land substrate. The distinct solid desert fill is read against TEC and source shape, not classified by a numerical color majority. No marine water inside."
+
+[[hex]]
+hex_id = "C0512"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0513"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0514"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0408"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0409"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0410"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0411"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0412"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0413"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0414"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0308"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0309"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0310"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0311"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0312"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0313"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0314"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0208"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0209"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0210"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0211"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0212"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0213"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0214"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0108"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0109"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0110"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0111"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0112"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0113"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
+
+[[hex]]
+hex_id = "C0114"
+status = "accepted"
+terrain = "desert"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete native interior and each printed side show continuous yellow desert substrate against TEC; no distinct minor land substrate inside. Neighboring cream margins at the source edge lie outside the printed cell. Transport ink is separate; no marine water inside."
