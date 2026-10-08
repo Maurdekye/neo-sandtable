@@ -168,6 +168,15 @@ correctness, and it says nothing about how hard the remaining cases are. The 94-
 implemented and tested is worth watching on its own, as are the 13 `test_only_citation` warnings,
 where a case is cited only from test code and so counts as neither.
 
+It also reads only Rust. A case whose values are already transcribed into `data/` but which no
+engine code cites yet still counts as missing — on `aa5c46c`, **58 of the 655** are cited by
+records under `data/scenarios`, `data/units`, `data/map` or `data/tables`. Read those as *data
+ready, engine pending*: real progress, but not implementation, because a `src` citation says the
+numbers were transcribed faithfully and nothing about whether a procedure consumes them. The
+headline figure is therefore a floor on data-backed work, not a mis-measurement of the engine.
+(When checking this yourself, exclude `data/rules/` — that is the registry, and scanning it for
+citations finds its own cross-references.)
+
 Separately, the sequence has 50 steps and 24 of them dispatch to a procedure; the rest fall
 through to `Cna::unimplemented`, which `full` turns into `Unsupported`. Two that do dispatch,
 `opstage.movement_and_combat.combat.close_assault` and `end_of_game`, call `unimplemented`
