@@ -148,17 +148,36 @@ cases are not implemented. Write every procedure so that it is correct under `fu
 - **One procedure, one owner:** the area owners are in `docs/ownership.md`. Changes to `seq.rs`,
   `state.rs` (shared fields), `lib.rs` and `view.rs` go through the lead.
 
-## 5. What exists so far
+## 5. How far along the sequence of play is
 
-- Sequence of play for the full Land + Air + Logistics game, with skipping by system.
-- Initial state from the scenario: every deployed unit placed or awaiting its owner's set-up
-  choice, the rest not yet arrived; dumps, dummy dumps, truck pools, air forces including Malta.
-- Initiative (`land:7`): the scenario fixes Game-Turn 1, later turns are rolled; each OpStage
-  the holder declares Player A or B.
-- Views: board view, `observe`, `inspect`, all filtered by `land:3.6`.
-- End of game: reported without victory determination (not implemented yet).
+The sequence has **50 steps**. 24 of them dispatch to a procedure; 26 fall through to
+`Cna::unimplemented`, which the `full` profile turns into `Unsupported`. Two of the 24 —
+`opstage.movement_and_combat.combat.close_assault` and `end_of_game` — dispatch but still call
+`unimplemented` themselves, so `full` refuses there too.
 
-The first open procedures, in sequence order: scenario set-up placement (`setup`: units and
-dumps with area placements, first-line truck distribution, `scen:59`), weather (`land:29`),
-organization (`land:19`), and movement with capability points, stacking and zones of control
-(`land:6`, `8`, `9`, `10`).
+To size what is left, ask the registry how many procedural cases apply to the scenario at each
+step (`Registry::procedural_at(anchor, "graziani")`). For Graziani that is **1030 case-slots**
+across the 50 steps; a case anchored at several timings counts once per timing, so these are
+slots, not distinct cases. Roughly **500 of them sit at steps with no procedure**.
+
+Treat that as the *shape* of the remaining work, not a completion percentage: a step with a
+procedure is not necessarily complete, and the slot count says nothing about how hard a case is.
+
+Working, broadly: the sequence itself with skipping by system; scenario set-up, including area
+placements and first-line truck distribution; initiative and the per-OpStage declaration;
+weather; movement with capability points, stacking and zones of control; barrage, position,
+force assignment and retreat-before-assault; breakdown windows; truck convoys and coastal
+shipping; water, supply and stores distribution; attrition; land and logistics arrivals; air
+designation and land-support mission assignment; the views (`observe`, `inspect`, board), all
+filtered by `land:3.6`.
+
+Not yet wired into the sequence, in rough order of remaining size: organization construction and
+reorganization, the Malta and strategic-air steps, most of the land-support air phases (air
+combat, flak, deployment, completion, return, maintenance), anti-armor and close assault, repair
+and towing, patrol, CW fleet and rail movement, naval-convoy recon, lanes and bombing, training,
+end of turn, and victory determination.
+
+**Air is the long pole for D2.** It is about 6.5k lines against 29k for Land and 33k for
+Logistics, and ten of its twelve steps are unwired — together a little under half of everything
+still missing. Modules exist for air combat, flak and maintenance, but they are small and their
+steps do not dispatch yet, so "a file exists" is not the same as "the step runs".
