@@ -862,3 +862,38 @@ All 192 map files reproduce byte-identically through two complete terrain,
 layer and area replays. Full final joint gates and actual main publication
 have separate receipts. Allocation coverage does not resolve explicit
 Unknowns or grant a place, facility, movement-side or action permission.
+
+
+### Derna/Mechili terrain, first snapshot, 2026-10-08
+
+Three immutable reviews directly inspect 225 previously unobserved
+canonical B-section cells in the existing Libyan work allocation. Every
+full native 2021 cell and boundary was compared with the actual TEC.
+The records supply 199 classifications: 73 clear, 46 gravel, 53 rough,
+13 mountain, one salt marsh and 13 Sea; 26 remain explicitly Unknown.
+Adopted map-0003 selects the clearly predominant land substrate, with
+visible minor substrates and abstention reasons retained per cell.
+Only directly established marine water supplies Sea/coastal evidence.
+All records cite land:8.37 and adopted map-0002/map-0003; original
+raw/note bytes, source pins, authors and author dates are preserved.
+Parent audits establish provenance and mechanical preservation; visual
+accuracy, independent observer agreement and 1979 equivalence are unmeasured.
+
+The union adds 409 cell masks: 199 terrain and 210 marine-only
+coastal-domain observations. Fifteen inland water-identity Unknowns
+have empty flags and no masks. Eleven substrate-balance or obscured
+land Unknowns have only domain masks; none has a terrain mask.
+Thirteen directly reviewed Sea cells remove themselves only from
+generated Libya, with no additions or other area-field changes.
+All prior observations including Unknown, existing point/facility flags,
+geometry, frontier, places, edges and strips are preserved. Existing
+B5925/B4921 place anchors gain no new facility or extent facts.
+
+Libya known land grows from 916 to 1,102; map_c_libya stays at 824.
+Whole-map totals become 1,963 classified cells, 5,060 unclassified and
+4,013 cell masks. Edge-kind masks, lines and sides remain 31,968,
+393 and 409. All 198 map files reproduce byte-identically through
+two complete terrain/layer/area replays. Required full final joint
+gates, actual publication and independent inclusion have separate
+receipts; source coverage never grants a complete setup/control domain,
+place extent, movement-side fact or action permission.

@@ -461,3 +461,21 @@ Their directly reviewed noncoastal land domains receive only domain masks.
 No deferred cell receives a terrain mask. All earlier Unknowns remain
 unchanged. These terrain records add no lake, edge, port, place or
 facility evidence; those layers retain separate authorization.
+
+
+### Derna/Mechili first terrain snapshot deferrals, 2026-10-08
+
+B4124, B4125, B4224, B4615, B4715, B4814, B4914, B5013, B5014, B5114, B5127, B5128, B5129, B5229, B5330
+retain unknown terrain and marine coastal domains because their inland
+water/land patterns do not establish water identity. Empty flags supply
+no terrain or coastal-domain masks; individual notes preserve visible
+known-land evidence.
+
+B3525, B3624, B4516, B4614, B5221, B5315, B5712, B5916, B5917, B6011, B6112
+retain Unknown terrain because predominant land substrate is unresolved
+or obscured within the full printed boundary. Direct domain evidence
+supplies only coastal-domain masks, never terrain masks. Of these,
+B6011, B6112 retain directly reviewed marine coastal land;
+all other listed domain-only deferrals retain noncoastal land evidence.
+Prior Unknowns remain unchanged. Source notes preserve the observed
+substrates and reasons; no lake/edge/port/place/facility fact is added.
