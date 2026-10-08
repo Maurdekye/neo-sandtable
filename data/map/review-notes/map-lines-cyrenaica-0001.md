@@ -1,0 +1,13 @@
+# Cyrenaica terrain review 0001
+
+Exactly 75 fresh cells in the assigned map_c_libya C08..14 share were reviewed. Selection is the first75 of the source-free allocation pinned to bdc4924b8936712d01897c006e491fcc5c8dcbb1; allocation SHA256 e7dfff04ece764cbfc4ad371f6f321bbee5b31e255a4ae8bcd2b71eefb69acd7. Allocation is geographic work ownership, not scenario legality.
+
+Every complete cell and its printed boundary was directly inspected against native2021source and TEC.png on seven unmarked2x sheets. Twenty full-cell4x details resolve boundary/substrate questions. Separate geometric locators aided registration; classifications came from visible source patterns, never RGB counts or classifier labels. This is a single observer review, without an independent accuracy estimate or original1979 equivalence claim. Pixels and crop receipts remain in the worker scratch outside the repository.
+
+67 accepted cells comprise57 clear, three rough and seven sea. Rough cells are C4413,C4611,C4709. Minor clear is retained for C4413/C4611; minor rough occurs in clear coastal C4708. No other distinct minor land substrate was identified inside the accepted full cells. Broad ochre contour bands, point symbols, labels and transport ink are separate from substrate. Source-bound individual decisions and the exact75-cell selection appear in reviews/map-lines-cyrenaica-0001.toml.
+
+C4708(clear) and C4709(rough) are accepted coastal land. C4710,C4711,C4712,C4713,C4714 retain observed coastal domain but unknown substrate: overlapping contour ink and the small shoreline rim prevent confident TEC identity. C3808,C4008,C4108 retain Unknown and empty flags: visible cream ground establishes land, while a green-gray interior band leaves inland identity/water-domain uncertainty unresolved. Neither deferred group adds terrain coverage; the inland group also adds no coastal coverage.
+
+C4808,C4809,C4810,C4811,C4812,C4813,C4814 are entirely marine water. The enlarged C4808 boundary excludes the shore/training graphics visible outside its west and southwest sides. Cell observations add no edge, lake, pipeline, facility or national membership evidence, and no movement, control-halo or action legality claim. Parent assembles publication; this worker acquires no main ticket.
+
+Map-lead authorization09:20:53 permits mechanical areas.toml regeneration after terrain/layer replay. Exactly the seven accepted sea cells leave derived Libya and map_c_libya membership; no other membership or field changes. Area definitions, frontier source walls and geometry remain byte-preserved. Original75 allocation is frozen at the base, including these newly identified sea cells.

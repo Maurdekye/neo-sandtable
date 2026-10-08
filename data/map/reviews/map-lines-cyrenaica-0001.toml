@@ -1,0 +1,611 @@
+[batch]
+id = "map-lines-cyrenaica-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "C4411,C4311,C4312,C4410,C4412,C4511,C4512,C4210,C4211,C4212,C4310,C4313,C4409,C4413,C4510,C4513,C4610,C4611,C4612,C4110,C4111,C4112,C4113,C4209,C4213,C4309,C4314,C4408,C4414,C4509,C4514,C4609,C4613,C4710,C4711,C4712,C4713,C4009,C4010,C4011,C4012,C4013,C4109,C4114,C4208,C4214,C4308,C4508,C4608,C4614,C4709,C4714,C4809,C4810,C4811,C4812,C4813,C3909,C3910,C3911,C3912,C3913,C3914,C4008,C4014,C4108,C4708,C4808,C4814,C3808,C3809,C3810,C3811,C3812,C3813"
+notes = "Exactly75 fresh allocated map_c_libya C08..14 cells directly inspected in complete native2021source crops enlarged2x against TEC;20 full-cell boundary/substrate details enlarged4x.67accepted:57clear3rough7sea;8deferred. Adopted predominant-land map-0003 and marine coastal map-0002; each visible minor substrate recorded. Five coastal substrate abstentions and three inland identity abstentions supply no terrain masks; latter keep empty flags with visible-known-land notes. Contour ink is separate from substrate. No edge, facility, national membership or scenario legality observation; no classifier, independent observer, population error or original1979 equivalence claim. Source crops remain outside repo."
+
+[[hex]]
+hex_id = "C4411"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4311"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4312"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4410"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4412"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4511"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4512"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4210"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4211"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4212"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4310"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4313"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4409"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4413"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "The large irregular beige interior patch matches TEC rough and clearly exceeds the small cream clear region at the eastern margin. Minor substrate: clear. Ochre edge bands are contour ink."
+
+[[hex]]
+hex_id = "C4510"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4513"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4610"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4611"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "A broad diagonal beige rough body occupies the upper-left and central land; the smaller cream region lies to the right. Rough clearly predominates; minor substrate: clear. Transport and ochre contour ink are separate."
+
+[[hex]]
+hex_id = "C4612"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4110"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4111"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4112"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4113"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4209"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4213"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4309"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4314"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4408"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4414"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4509"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4514"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4609"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4613"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4710"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Marine water and a narrow land rim occur inside the full cell. Ochre contour ink overlaps the small pale/beige shoreline fragment; an unambiguous TEC land substrate cannot be distinguished confidently. No terrain mask; coastal domain is directly observed. No invented minor substrate."
+
+[[hex]]
+hex_id = "C4711"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Marine water and a narrow land rim occur inside the full cell. Ochre contour ink overlaps the small pale/beige shoreline fragment; an unambiguous TEC land substrate cannot be distinguished confidently. No terrain mask; coastal domain is directly observed. No invented minor substrate."
+
+[[hex]]
+hex_id = "C4712"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Marine water and a narrow land rim occur inside the full cell. Ochre contour ink overlaps the small pale/beige shoreline fragment; an unambiguous TEC land substrate cannot be distinguished confidently. No terrain mask; coastal domain is directly observed. No invented minor substrate."
+
+[[hex]]
+hex_id = "C4713"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Marine water and a narrow land rim occur inside the full cell. Ochre contour ink overlaps the small pale/beige shoreline fragment; an unambiguous TEC land substrate cannot be distinguished confidently. No terrain mask; coastal domain is directly observed. No invented minor substrate."
+
+[[hex]]
+hex_id = "C4009"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4010"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4011"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4012"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4013"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4109"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4114"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4208"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4214"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4308"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4508"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4608"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4614"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4709"
+status = "accepted"
+terrain = "rough"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Marine water occupies the upper cell; a broad irregular beige rough land strip occupies the lower portion inside the full boundary. Rough is readable and predominant among land; no other minor land substrate identified. Pale shoreline edging and ochre contour ink are separate."
+
+[[hex]]
+hex_id = "C4714"
+status = "deferred"
+terrain = "unclassified"
+flags = ["coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Marine water and a narrow land rim occur inside the full cell. Ochre contour ink overlaps the small pale/beige shoreline fragment; an unambiguous TEC land substrate cannot be distinguished confidently. No terrain mask; coastal domain is directly observed. No invented minor substrate."
+
+[[hex]]
+hex_id = "C4809"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell contains marine water only. Nearby text and crop-edge graphics are not a land substrate."
+
+[[hex]]
+hex_id = "C4810"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell contains marine water only. Nearby text and crop-edge graphics are not a land substrate."
+
+[[hex]]
+hex_id = "C4811"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell contains marine water only. Nearby text and crop-edge graphics are not a land substrate."
+
+[[hex]]
+hex_id = "C4812"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell contains marine water only. Nearby text and crop-edge graphics are not a land substrate."
+
+[[hex]]
+hex_id = "C4813"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell contains marine water only. Nearby text and crop-edge graphics are not a land substrate."
+
+[[hex]]
+hex_id = "C3909"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3910"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3911"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3912"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3913"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3914"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4008"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream ground establishes visible known land. A green-gray diagonal band enters the full interior; its exact inland identity and water-domain effect remain uncertain against this source/key. Retain Unknown with empty flags under the assigned uncertainty policy; no coastal or terrain mask. No marine water observed; no invented minor substrate."
+
+[[hex]]
+hex_id = "C4014"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C4108"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream ground establishes visible known land. A green-gray diagonal band enters the full interior; its exact inland identity and water-domain effect remain uncertain against this source/key. Retain Unknown with empty flags under the assigned uncertainty policy; no coastal or terrain mask. No marine water observed; no invented minor substrate."
+
+[[hex]]
+hex_id = "C4708"
+status = "accepted"
+terrain = "clear"
+flags = ["land", "coastal"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Marine water enters the northern interior. Cream clear land clearly predominates over a smaller irregular beige rough patch at the east margin. Minor substrate: rough. Point symbols, transport and ochre contours do not change terrain."
+
+[[hex]]
+hex_id = "C4808"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Full printed boundary contains marine water only. Land and training art visible in the surrounding crop remain outside its west/southwest sides. No land fragment occurs within this cell."
+
+[[hex]]
+hex_id = "C4814"
+status = "accepted"
+terrain = "sea"
+flags = ["sea"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell contains marine water only. Nearby text and crop-edge graphics are not a land substrate."
+
+[[hex]]
+hex_id = "C3808"
+status = "deferred"
+terrain = "unclassified"
+flags = []
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream ground establishes visible known land. A green-gray diagonal band enters the full interior; its exact inland identity and water-domain effect remain uncertain against this source/key. Retain Unknown with empty flags under the assigned uncertainty policy; no coastal or terrain mask. No marine water observed; no invented minor substrate."
+
+[[hex]]
+hex_id = "C3809"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3810"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3811"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3812"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
+
+[[hex]]
+hex_id = "C3813"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Complete printed cell directly inspected: cream clear land predominates, with no distinct minor land substrate identified inside its boundary. Contour bands, labels, point symbols and transport ink are separate where present. No marine water inside the cell."
