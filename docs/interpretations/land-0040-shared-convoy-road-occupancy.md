@@ -19,7 +19,7 @@ Case9.29 excludes first-line attached trucks from extra stacking and excludes in
 
 Count stationary on-network real pools against the same five-point road limit used by both moving formations and moving pools. Apply the convoy chart to each pool's actual truck points, then add represented on-network formation values. Exclude the mover, off-road counters and off-road pools. Attached first-line trucks do not receive a second convoy contribution. Ordinary terrain stacking remains unchanged and does not count these pools.
 
-The approved checkpoint representation is a serde-default set of real pool ids in Land movement state. Missing membership means on-network. Only an executed edge changes membership; a zero-edge order preserves it. Full removal or deletion clears membership, and a future split inherits its parent's membership.
+The approved checkpoint representation is a serde-default set of real pool ids in Land movement state. The set is MovementState.pool_on_road; missing membership means OFF. Setup and arrivals therefore start OFF. An executed network edge inserts membership and an executed OFF edge removes it; a zero-edge order preserves it. Full removal or deletion clears membership, and a future split inherits its parent's membership.
 
 ## Alternatives and rationale
 
@@ -28,3 +28,7 @@ A separate five-point convoy quota would allow stationary convoys to leave all f
 ## Affected behaviour and tests
 
 One checked occupancy function serves convoy execution and both formation planning and execution. Over-capacity transit is repriced without network benefits and may become prohibited terrain. Tests pin combined values, off-road/excluded/foreign pools, checked overflow, old-checkpoint default and planning/truth parity. Caller activation still requires exact lead readback and the complete convoy transaction proofs.
+
+## Related open question
+
+Should setup and arrival units also start OFF? This is reserved for the lead's batch4 owner decision. Existing unit off_road semantics remain unchanged in this slice.

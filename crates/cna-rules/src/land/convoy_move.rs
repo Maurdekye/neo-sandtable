@@ -194,7 +194,8 @@ pub fn adjudicate_pool_edge(
     Ok(PoolEdge::Pass(cost))
 }
 
-/// Once at trusted phase departure; not a Respond eligibility oracle or Engaged charge.
+/// Once when a trusted order executes its first edge; zero-edge stops pay no Contact.
+/// Not a Respond eligibility oracle or Engaged charge.
 /// Cases: land:8.15, land:8.62, land:8.65, land:8.68, land:10.23, land:10.26
 /// Interpretations: interp:land-0039
 pub fn pool_departure_cp(
@@ -226,9 +227,9 @@ pub fn pool_departure_cp(
 pub fn record_pool_posture(s: &mut State, id: &str, on_network: bool) -> Result<(), EngineError> {
     pool(s, id)?;
     if on_network {
-        s.land.movement.pool_off_road.remove(id);
+        s.land.movement.pool_on_road.insert(id.into());
     } else {
-        s.land.movement.pool_off_road.insert(id.into());
+        s.land.movement.pool_on_road.remove(id);
     }
     Ok(())
 }

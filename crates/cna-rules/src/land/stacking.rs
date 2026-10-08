@@ -78,8 +78,14 @@ fn combine_road_occupancy(
     excluded_pool: Option<&str>,
     units: i32,
 ) -> Result<i32, EngineError> {
+    validate_pool_ids(state, side)?;
+    units
+        .checked_add(pool_road_halves(content, state, hex, side, excluded_pool)?)
+        .ok_or_else(road_invariant)
+}
+
+fn validate_pool_ids(state: &State, side: Side) -> Result<(), EngineError> {
     let mut ids = BTreeSet::new();
-    let mut total = units;
     for pool in state
         .logistics
         .truck_pools
@@ -89,9 +95,28 @@ fn combine_road_occupancy(
         if pool.id.is_empty() || !ids.insert(&pool.id) {
             return Err(road_invariant());
         }
+    }
+    Ok(())
+}
+
+// Identity uniqueness is validated by the execution caller or once per planning query.
+fn pool_road_halves(
+    content: &CnaContent,
+    state: &State,
+    hex: &HexId,
+    side: Side,
+    excluded_pool: Option<&str>,
+) -> Result<i32, EngineError> {
+    let mut total = 0_i32;
+    for pool in state
+        .logistics
+        .truck_pools
+        .iter()
+        .filter(|p| p.side == side)
+    {
         if excluded_pool == Some(pool.id.as_str())
             || pool.location.as_ref().and_then(|l| l.hex()) != Some(hex)
-            || state.land.movement.pool_off_road.contains(&pool.id)
+            || !state.land.movement.pool_on_road.contains(&pool.id)
         {
             continue;
         }
@@ -211,7 +236,9 @@ fn stacking_limit(content: &CnaContent, hex: &HexId) -> Result<(F, i32), Rejecti
     };
     Ok((terrain, limit))
 }
-/// A single-query memo of fixed friendly counters. Enemy strength is never inspected.
+/// A single-query memo of fixed friendly counters and checked road occupancy.
+/// Pool identity uniqueness is checked once; each hex contribution is cached with its counters.
+/// Enemy strength is never inspected.
 /// The base state is captured after the selected component's detachment; only its moving
 /// subtree changes during this search. A later query rebuilds this structure from scratch.
 /// Cases: land:9.12, land:9.21, land:9.25, land:9.31, land:9.33
@@ -221,7 +248,12 @@ pub(super) struct PlanningStacks<'a> {
     side: Side,
     excluded: &'a [UnitId],
     moving: Vec<Counter>,
-    fixed: RefCell<BTreeMap<HexId, Vec<Counter>>>,
+    pool_ids: Result<(), EngineError>,
+    fixed: RefCell<BTreeMap<HexId, FixedCounters>>,
+}
+struct FixedCounters {
+    counters: Vec<Counter>,
+    road_halves: Result<i32, EngineError>,
 }
 impl<'a> PlanningStacks<'a> {
     pub(super) fn new(
@@ -242,6 +274,7 @@ impl<'a> PlanningStacks<'a> {
             side,
             excluded: moving,
             moving: counters,
+            pool_ids: validate_pool_ids(base, side),
             fixed: RefCell::new(BTreeMap::new()),
         }
     }
@@ -249,26 +282,33 @@ impl<'a> PlanningStacks<'a> {
         if self.fixed.borrow().contains_key(hex) {
             return;
         }
-        let counters = formation::roots(self.content, self.base, hex, self.side)
+        let counters: Vec<_> = formation::roots(self.content, self.base, hex, self.side)
             .into_iter()
             .filter(|id| !self.excluded.contains(id))
             .map(|id| Counter::new(self.content, self.base, &id))
             .collect();
-        self.fixed.borrow_mut().insert(hex.clone(), counters);
+        let road_halves = self.pool_ids.clone().and_then(|()| {
+            let units =
+                checked_road_sum(counters.iter().filter(|c| c.on_network).map(|c| c.halves))?;
+            let pools = pool_road_halves(self.content, self.base, hex, self.side, None)?;
+            units.checked_add(pools).ok_or_else(road_invariant)
+        });
+        self.fixed.borrow_mut().insert(
+            hex.clone(),
+            FixedCounters {
+                counters,
+                road_halves,
+            },
+        );
     }
     pub(super) fn moving_halves(&self) -> Result<i32, EngineError> {
         checked_road_sum(self.moving.iter().map(|c| c.halves))
     }
     pub(super) fn road_halves(&self, hex: &HexId) -> Result<i32, EngineError> {
         self.ensure(hex);
-        let units = checked_road_sum(
-            self.fixed.borrow()[hex]
-                .iter()
-                .filter(|c| c.on_network)
-                .map(|c| c.halves),
-        )?;
-        combine_road_occupancy(self.content, self.base, hex, self.side, None, units)
+        self.fixed.borrow()[hex].road_halves.clone()
     }
+
     pub(super) fn validate_end(&self, hex: &HexId, strict: bool) -> Result<(), Rejection> {
         self.ensure(hex);
         let fixed = self.fixed.borrow();
@@ -276,7 +316,7 @@ impl<'a> PlanningStacks<'a> {
             self.content,
             hex,
             strict,
-            fixed[hex].iter().chain(self.moving.iter()),
+            fixed[hex].counters.iter().chain(self.moving.iter()),
         )
     }
 }

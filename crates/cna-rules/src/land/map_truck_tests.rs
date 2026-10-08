@@ -170,6 +170,7 @@ fn convoy_preparation_reprices_shared_road_and_preserves_state() {
     s.logistics.truck_pools.clear();
     let moving = add_pool(&mut s, Side::Axis, "C4020", 5);
     let fixed = add_pool(&mut s, Side::Axis, "C4021", 50);
+    crate::land::convoy_move::record_pool_posture(&mut s, &fixed, true).unwrap();
     add_pool(&mut s, Side::Commonwealth, "C4020", 500);
     let before = serde_json::to_value(&s).unwrap();
     let plan = crate::land::convoy_move::prepare_pool_route(
@@ -193,7 +194,7 @@ fn convoy_preparation_reprices_shared_road_and_preserves_state() {
         let stacks = crate::land::stacking::PlanningStacks::new(&c, &s, Side::Axis, &[], &origin);
         assert_eq!(stacks.road_halves(&"C4021".into()).unwrap(), 10);
     }
-    s.land.movement.pool_off_road.insert(fixed);
+    s.land.movement.pool_on_road.remove(&fixed);
     let plan = crate::land::convoy_move::prepare_pool_route(
         &c,
         &s,
@@ -233,18 +234,34 @@ fn convoy_posture_old_checkpoint_default_and_zero_edge_are_preserved() {
     let (c, _overlay) = fixture("clear", Some("road"), true, None);
     let mut s = State::new(&content()).unwrap();
     let mut old = serde_json::to_value(&s.land.movement).unwrap();
-    old.as_object_mut().unwrap().remove("pool_off_road");
+    old.as_object_mut().unwrap().remove("pool_on_road");
     let old: crate::land::movement::MovementState = serde_json::from_value(old).unwrap();
-    assert!(old.pool_off_road.is_empty());
+    assert!(old.pool_on_road.is_empty());
     s.logistics.truck_pools.clear();
     let id = add_pool(&mut s, Side::Axis, "C4020", 1);
-    crate::land::convoy_move::record_pool_posture(&mut s, &id, false).unwrap();
+    assert!(!s.land.movement.pool_on_road.contains(&id));
+    assert_eq!(
+        crate::land::stacking::road_occupancy_halves(
+            &c,
+            &s,
+            &"C4020".into(),
+            Side::Axis,
+            &[],
+            None
+        )
+        .unwrap(),
+        crate::land::formation::roots(&c, &s, &"C4020".into(), Side::Axis)
+            .iter()
+            .map(|id| crate::land::formation::stacking_halves(&c, &s, id))
+            .sum::<i32>()
+    );
+    crate::land::convoy_move::record_pool_posture(&mut s, &id, true).unwrap();
     let plan =
         crate::land::convoy_move::prepare_pool_route(&c, &s, Side::Axis, &id, &[], true).unwrap();
     assert!(plan.costs.is_empty());
-    assert!(s.land.movement.pool_off_road.contains(&id));
-    crate::land::convoy_move::record_pool_posture(&mut s, &id, true).unwrap();
-    assert!(!s.land.movement.pool_off_road.contains(&id));
+    assert!(s.land.movement.pool_on_road.contains(&id));
+    crate::land::convoy_move::record_pool_posture(&mut s, &id, false).unwrap();
+    assert!(!s.land.movement.pool_on_road.contains(&id));
 }
 
 /// Cases: land:10.23, land:10.24, land:10.26, land:10.29
@@ -302,6 +319,7 @@ fn formations_and_real_pools_share_one_road_occupancy_in_planning_and_truth() {
     s.land.units.insert(id.clone(), unit);
     s.logistics.truck_pools.clear();
     let pool = add_pool(&mut s, Side::Axis, "C4021", 5);
+    crate::land::convoy_move::record_pool_posture(&mut s, &pool, true).unwrap();
     let unit_halves = crate::land::formation::stacking_halves(&c, &s, &id);
     assert!(unit_halves > 0);
     let hex: HexId = "C4021".into();
@@ -312,6 +330,8 @@ fn formations_and_real_pools_share_one_road_occupancy_in_planning_and_truth() {
     {
         let stacks = crate::land::stacking::PlanningStacks::new(&c, &s, Side::Axis, &[], &hex);
         assert_eq!(stacks.road_halves(&hex).unwrap(), unit_halves + 1);
+        assert_eq!(stacks.road_halves(&hex).unwrap(), unit_halves + 1);
+        assert_eq!(stacks.road_halves(&"C4020".into()).unwrap(), 0);
     }
     assert_eq!(
         crate::land::stacking::road_occupancy_halves(
@@ -325,7 +345,7 @@ fn formations_and_real_pools_share_one_road_occupancy_in_planning_and_truth() {
         .unwrap(),
         0
     );
-    s.land.movement.pool_off_road.insert(pool);
+    s.land.movement.pool_on_road.remove(&pool);
     s.land.movement.off_road.insert(id);
     assert_eq!(
         crate::land::stacking::road_halves(&c, &s, &hex, Side::Axis, &[]).unwrap(),
@@ -435,4 +455,39 @@ fn incomplete_masks_refuse_full_and_flag_dev_without_network_discount() {
         )
         .is_err()
     );
+}
+
+/// Cases: land:9.29, land:9.33
+#[test]
+fn planning_and_truth_reject_duplicate_pool_identity_and_checked_pool_overflow() {
+    let c = content();
+    let mut s = State::new(&c).unwrap();
+    s.land.units.clear();
+    s.logistics.truck_pools.clear();
+    let id = add_pool(&mut s, Side::Axis, "C4021", 1);
+    crate::land::convoy_move::record_pool_posture(&mut s, &id, true).unwrap();
+    s.logistics.truck_pools[0].trucks.light = i32::MAX;
+    s.logistics.truck_pools[0].trucks.medium = 1;
+    let hex: HexId = "C4021".into();
+    {
+        let stacks = crate::land::stacking::PlanningStacks::new(&c, &s, Side::Axis, &[], &hex);
+        assert!(matches!(
+            stacks.road_halves(&hex),
+            Err(EngineError::Invariant { .. })
+        ));
+        assert!(matches!(
+            stacks.road_halves(&hex),
+            Err(EngineError::Invariant { .. })
+        ));
+        assert!(crate::land::stacking::road_halves(&c, &s, &hex, Side::Axis, &[]).is_err());
+    }
+    let duplicate = s.logistics.truck_pools[0].clone();
+    s.logistics.truck_pools.push(duplicate);
+    let other: HexId = "C4020".into();
+    let stacks = crate::land::stacking::PlanningStacks::new(&c, &s, Side::Axis, &[], &hex);
+    assert!(matches!(
+        stacks.road_halves(&other),
+        Err(EngineError::Invariant { .. })
+    ));
+    assert!(crate::land::stacking::road_halves(&c, &s, &other, Side::Axis, &[]).is_err());
 }

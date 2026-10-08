@@ -58,10 +58,10 @@ pub struct MovementState {
     pub controls: BTreeMap<HexId, bool>,
     /// Units explicitly off the network; retained between segments until they use it again.
     pub off_road: BTreeSet<UnitId>,
-    /// Actual supply pools share road occupancy; absence means on the network.
+    /// Actual supply pools share road occupancy only after using the network; absence means OFF.
     /// Cases: land:9.29, land:9.33, land:9.34
     #[serde(default)]
-    pub pool_off_road: BTreeSet<String>,
+    pub pool_on_road: BTreeSet<String>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

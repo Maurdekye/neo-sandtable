@@ -13,7 +13,7 @@ Does the convoy departure reference to the earlier movement section exempt suppl
 
 ## Evidence
 
-Case10.23 applies the departure rules to truck convoys. Cases8.15,8.62 and8.65 distinguish leaving enemy control from an Engaged combat formation's greater cost. Case8.68 limits where the placement procedure applies; it does not grant convoys a departure exemption. Cases10.26 and10.29 give friendly combat coverage its explicit control-negating effect. The printed cross-reference is stale relative to the retype's current section numbering.
+Case10.23 applies departure rules to a unit, which includes convoys; it does not explicitly name convoys. Cases8.15,8.62 and8.65 distinguish leaving enemy control from an Engaged combat formation's greater cost. Case8.68 limits where the placement procedure applies; it does not grant convoys a departure exemption. Cases10.26 and10.29 give friendly combat coverage its explicit control-negating effect. The printed cross-reference is stale relative to the retype's current section numbering.
 
 ## Ruling
 
