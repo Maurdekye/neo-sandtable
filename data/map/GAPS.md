@@ -369,3 +369,23 @@ excluded according to the lead's game-state ruling. Historical pipeline
 records remain unchanged; consumer and required-layer compatibility changes
 are a later atomic task. No lake absence, complete Bardia-Matruh strip,
 control halo or unit action legality follows from this inventory.
+
+### First Cyrenaica terrain wave, 2026-10-08
+
+The three 75-cell reviews preserve 15 explicit terrain Unknowns:
+C3808, C4008, C4108, C4206, C4305, C4403, C4606, C4702, C4703,
+C4710, C4711, C4712, C4713, C4714 and C5004. Reasons remain in each
+immutable raw cell record: substrate balance, contour/shoreline obscuration
+or unresolved water identity. C3808, C4008 and C4108 have empty flags and no
+terrain or coastal-domain masks. Five coastal land fragments C4710..C4714
+and C5004 retain their directly reviewed marine coastal domain while their
+land substrate remains unknown. No guessed classes replace these deferrals.
+
+The first wave adds 189 known-land cells inside the source-reviewed Libya
+partition. Existing country definitions and frontier evidence are unchanged;
+new verified Sea is excluded only by regenerating derived memberships.
+Unknown geometric members still prevent a complete FULL free-placement domain.
+C4807 major-city terrain does not resolve the withheld Tobruk port anchor or
+establish a closed city extent, capacity, water, garrison or fortification fact.
+Subsequent Cyrenaican cells, later campaign areas and lake/side consumers
+remain separate paced work; this terrain wave certifies no new edge or action.

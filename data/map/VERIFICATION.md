@@ -697,3 +697,38 @@ checks cover missing walls, unknown coastal bypasses, incorrect orientation,
 uncited/duplicate incidences, Sea coverage and seam aliases. Publication gates,
 byte replay and compatible consumer checks have separate exact-commit receipts.
 Old map inputs and movement feature/mask bytes remain unchanged.
+
+### First Cyrenaica terrain wave, 2026-10-08
+
+Three observers directly inspected disjoint sets of 75 complete cells each on
+native 2021 views against the TEC. The immutable reviews are
+`map-terrain-cyrenaica-0001`, `map-lines-cyrenaica-0001` and
+`map-lines-2-cyrenaica-0001`. Their 225 observations contain 210 accepted
+classes and 15 explicit deferrals: 154 clear, 31 rough, three gravel, one
+major city and 21 marine Sea. Adopted map-0003 governs predominant land
+substrates; minor substrates remain in individual review evidence. Contour
+ink alone supplies no substrate class.
+
+The assembler checked the exact allocations, disjointness, citations, prior
+rows and raw/note blobs, and preserved all three original author identities
+and dates. This is a data/provenance audit, not independent visual agreement.
+Population source error and original 1979 equivalence remain unmeasured.
+C4807 city terrain establishes no Tobruk port, closed city extent or capacity.
+
+The union adds 432 cell masks: 210 terrain and 222 coastal-domain masks.
+Three uncertain inland water identities have neither mask. Prior cell masks,
+places, movement features and strips remain unchanged. There are now 1,070
+classified cells, 5,953 unclassified cells and 2,179 cell masks; existing
+31,968 edge-kind masks, 393 lines and 409 sides are preserved.
+
+Replaying the existing area generator removes exactly the 21 newly verified
+Sea cells from Libya and map_c_libya, with no additions or other region-field
+changes. Their geometric counts become 3,857 and 891; known-land counts grow
+from 36 to 225 and from 35 to 224 respectively. Egypt's regions are unchanged.
+Unknown terrain stays in the geometric partition, with existing DEV/FULL
+known-land consumer semantics. These counts supersede the preceding frontier
+counts for this terrain union; they do not establish a complete setup domain.
+All 166 map files reproduce byte-identically through two terrain, layer and
+area replays. Initial worker Rust runs found obsolete live-count fixtures;
+owner fixture correction, full combined gates and exact main publication are
+separate receipts and must not be inferred from the map audit.
