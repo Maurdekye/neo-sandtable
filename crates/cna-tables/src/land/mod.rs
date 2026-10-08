@@ -3,10 +3,12 @@
 pub mod administration;
 pub mod anti_armor;
 pub mod assault;
+pub mod attachment;
 pub mod barrage;
 pub mod breakdown;
 pub mod capability;
 pub mod combat;
+pub mod convoy_bombing;
 pub mod engineering;
 pub mod fleet;
 mod grid;
@@ -23,6 +25,8 @@ pub mod weather;
 crate::tables_group! {
     /// Land tables currently bound; the loader test records the remaining tables explicitly.
     LandTables {
+        maximum_attachment: attachment::MaximumAttachment,
+        axis_convoy_bombing: convoy_bombing::AxisConvoyBombing,
         cw_fleet_reinforcement: fleet::CommonwealthFleetReinforcement,
         axis_supply_availability: simplified_supply::AxisSupplyAvailability,
         cw_supply_availability: simplified_supply::CommonwealthSupplyAvailability,
