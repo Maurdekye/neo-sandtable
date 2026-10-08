@@ -432,3 +432,17 @@ masks are supplied. All prior Unknown records remain unchanged.
 This terrain-only cycle supplies no lake, movement-side, port, place or
 facility evidence. The final 134 cells in this C-Libya allocation remain
 separate checked-publication work under the standing terrain authorization.
+
+
+### Standing C-Libya final-cycle deferrals, 2026-10-08
+
+C0509, C0510, C0606, C0611, C0708, C0803, C0808, C0903 and C0904
+retain unknown terrain. Their individual native-source notes record
+uncertain substrate class or predominance. All nine have reviewed
+noncoastal land domains and receive only domain masks. No terrain mask
+is supplied, and earlier Unknown decisions remain unchanged.
+
+This final 134-cell terrain snapshot completes source coverage of the
+original C-Libya allocations after publication and inclusion verification.
+Explicit Unknowns remain gaps. It adds no lake, edge, port, place or
+facility evidence; those layers retain their separate authorization rules.
