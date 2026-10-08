@@ -34,3 +34,14 @@ Which procedures and data implement it, and which tests pin it.
 
 Changing an adopted interpretation never edits it in place: add a new file that supersedes it,
 which produces a new rules-profile version. Existing campaigns keep the profile they started with.
+
+## A ruling must be on main before it goes to the owner
+
+A consequential ruling enters an owner review batch only once its file is on `main`, even at
+status `proposed` with no implementation behind it. A draft that lives only in an agent's scratch
+folder cannot carry an owner review that anyone else can see: the batch gets approved, the
+adoption pass finds no file to mark, and the agent waiting on the answer never learns it arrived.
+That happened to `air-0018` in batch 4 and cost most of a day.
+
+So: land the file first, then put it in the batch. When proposing candidates, state the `main` SHA
+each file is on.

@@ -113,6 +113,18 @@ cargo test --workspace
 npm --prefix web ci && npm --prefix web run lint && npm --prefix web run test && npm --prefix web run build
 ```
 
+A change that touches **only Markdown under `docs/`** runs the content checks instead:
+
+```sh
+python tools/content/check_verbatim.py
+python tools/content/check_utf8.py
+```
+
+The Rust and web gates cannot be affected by such a change, and the landing lock is shared: making
+everyone else wait through a full matrix for a prose edit costs the queue more than it protects.
+Any other change — including one that touches `data/`, a chart, a schema or a single line of code —
+runs the whole list above. If you are unsure which case you are in, you are in the second one.
+
 ## 4. Areas and owners
 
 Each area has one owning agent at a time, recorded in `docs/ownership.md`. You may read anything,
