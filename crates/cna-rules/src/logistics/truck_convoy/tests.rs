@@ -727,6 +727,399 @@ fn content() -> &'static CnaContent {
     static C: OnceLock<CnaContent> = OnceLock::new();
     C.get_or_init(|| CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap())
 }
+
+/// A real control primitive distinguishes hidden strength at departure, while
+/// the destination remains legal in both worlds. This is a component fixture.
+fn departure_control_fixture() -> (State, State, String) {
+    let (base, id) = loaded_fixture();
+    let high = content()
+        .map
+        .neighbors(&"C4020".into())
+        .iter()
+        .filter(|h| h.id != "C4021".into())
+        .find_map(|h| {
+            let mut candidate = base.clone();
+            for u in candidate
+                .land
+                .units
+                .values_mut()
+                .filter(|u| u.side == Side::Commonwealth)
+            {
+                u.location = Location::Hex { hex: h.id.clone() };
+                u.cohesion_quarters = 0;
+            }
+            let controls = |hex: &str| {
+                crate::land::zoc::controlled(
+                    content(),
+                    &candidate,
+                    Side::Commonwealth,
+                    &hex.into(),
+                    false,
+                )
+                .unwrap()
+            };
+            (controls("C4020") && !controls("C4021")).then_some(candidate)
+        })
+        .expect("source-passable departure control must leave the first destination legal");
+    let mut low = high.clone();
+    for u in low
+        .land
+        .units
+        .values_mut()
+        .filter(|u| u.side == Side::Commonwealth)
+    {
+        u.cohesion_quarters = -104;
+    }
+    assert_eq!(
+        convoy_move::pool_departure_cp(content(), &high, &id, false).unwrap(),
+        8
+    );
+    assert_eq!(
+        convoy_move::pool_departure_cp(content(), &low, &id, false).unwrap(),
+        0
+    );
+    assert!(matches!(
+        convoy_move::adjudicate_pool_edge(
+            content(),
+            &high,
+            &id,
+            &"C4020".into(),
+            &"C4021".into(),
+            false
+        )
+        .unwrap(),
+        convoy_move::PoolEdge::Pass(_)
+    ));
+    (low, high, id)
+}
+
+fn accepted_orders(state: State, orders: Value) -> Game<Cna> {
+    let game = Game::<Cna> {
+        state,
+        rng: CampaignRng::from_seed([3; 32]).state(),
+    };
+    let opened = evaluate(&Cna::dev(), content(), &game, &Command::Advance).unwrap();
+    let command = respond(&opened.game.state.decisions.pending[0], orders);
+    evaluate(&Cna::dev(), content(), &opened.game, &command)
+        .unwrap()
+        .game
+}
+
+/// Cases: land:10.23, land:10.29, land:8.65, airlog:53.12, airlog:52.42
+#[test]
+fn actual_dispatcher_blocked_suffix_retains_exact_prefix_contact_and_later_order() {
+    let (_, mut state, id) = departure_control_fixture();
+    let later = super::super::pools::add_truck_pool(
+        &mut state.logistics,
+        None,
+        Side::Axis,
+        Placement::Hex {
+            hex: "C4020".into(),
+        },
+        Some(Location::Hex {
+            hex: "C4020".into(),
+        }),
+        Trucks {
+            light: 0,
+            medium: 5,
+            heavy: 0,
+        },
+        Supplies {
+            fuel: 40,
+            ..Supplies::default()
+        },
+    )
+    .unwrap();
+    state
+        .logistics
+        .truck_pools
+        .iter_mut()
+        .find(|p| p.id == later)
+        .unwrap()
+        .activity_water = WaterPoints::new(5);
+    pool_fuel::seed_created_pool(&mut state, &later).unwrap();
+    let cost = convoy_move::prepare_pool_route(
+        content(),
+        &state,
+        Side::Axis,
+        &id,
+        &["C4021".into()],
+        false,
+    )
+    .unwrap()
+    .costs[0]
+        .cp_quarters;
+    let prefix = accepted_orders(
+        state.clone(),
+        json!([
+            {"operation":"move","pool":id,"path":["C4021"]},
+            {"operation":"move","pool":later,"path":["C4021"]}
+        ]),
+    );
+    let full = accepted_orders(
+        state,
+        json!([
+            {"operation":"move","pool":id,"path":["C4021","C4020"]},
+            {"operation":"move","pool":later,"path":["C4021"]}
+        ]),
+    );
+    let mut a = prefix.state;
+    let mut b = checkpoint(&full).state;
+    let mut ra = CampaignRng::from_state(&prefix.rng);
+    let mut rb = CampaignRng::from_state(&full.rng);
+    let mut ea = vec![];
+    let mut eb = vec![];
+    dispatched_finish(Cna::dev(), &mut a, &mut ra, &mut ea).unwrap();
+    dispatched_finish(Cna::dev(), &mut b, &mut rb, &mut eb).unwrap();
+    assert!(a.logistics.truck_convoy.resolved && b.logistics.truck_convoy.resolved);
+    assert_eq!(
+        serde_json::to_value(&a).unwrap(),
+        serde_json::to_value(&b).unwrap()
+    );
+    assert_eq!(ra.state(), rb.state());
+    for pool_id in [&id, &later] {
+        let p = b
+            .logistics
+            .truck_pools
+            .iter()
+            .find(|p| &p.id == pool_id)
+            .unwrap();
+        assert_eq!(
+            p.location.as_ref().and_then(Location::hex),
+            Some(&"C4021".into())
+        );
+        assert_eq!(p.activity_water.get(), 0);
+    }
+    assert_eq!(b.logistics.pool_fuel_segments[&id].cp_quarters, cost + 8);
+    assert_eq!(
+        own_report(content(), &b, Side::Axis, &id).unwrap()["spent_cp_quarters"],
+        cost + 8
+    );
+    let stop_notes: Vec<_> = eb.iter().filter(|e| matches!(
+        &e.event, cna_protocol::GameEvent::Note { text }
+            if text == "Convoy stops before an edge it may not enter; the rest of this order is discarded."
+    )).collect();
+    assert_eq!(stop_notes.len(), 1);
+    assert_eq!(stop_notes[0].audience, Audience::Side(Side::Axis));
+    let without_stop: Vec<_> = eb.into_iter().filter(|e| !matches!(
+        &e.event, cna_protocol::GameEvent::Note { text }
+            if text == "Convoy stops before an edge it may not enter; the rest of this order is discarded."
+    )).collect();
+    assert_eq!(ea, without_stop);
+}
+
+/// Cases: land:3.6, land:8.65, airlog:49.18, airlog:52.42, airlog:53.12
+#[test]
+fn actual_dispatcher_hidden_contact_fuel_stop_has_no_first_edge_effects() {
+    let (mut low, mut high, id) = departure_control_fixture();
+    let cost =
+        convoy_move::prepare_pool_route(content(), &low, Side::Axis, &id, &["C4021".into()], false)
+            .unwrap()
+            .costs[0]
+            .cp_quarters;
+    let fuel = pool_fuel::plan_pool_segment_fuel(content(), &low, &id, cost)
+        .unwrap()
+        .funding
+        .iter()
+        .map(|p| p.increment.get())
+        .sum::<i32>();
+    let more = pool_fuel::plan_pool_segment_fuel(content(), &high, &id, cost + 8)
+        .unwrap()
+        .funding
+        .iter()
+        .map(|p| p.increment.get())
+        .sum::<i32>();
+    let fuel = (fuel + 9) / 10;
+    assert!(more > fuel * 10);
+    for state in [&mut low, &mut high] {
+        state
+            .logistics
+            .truck_pools
+            .iter_mut()
+            .find(|p| p.id == id)
+            .unwrap()
+            .cargo
+            .fuel = fuel;
+    }
+    let rules = Cna::dev();
+    let a = Game::<Cna> {
+        state: low,
+        rng: CampaignRng::from_seed([3; 32]).state(),
+    };
+    let b = Game::<Cna> {
+        state: high,
+        rng: a.rng.clone(),
+    };
+    crate::testkit::assert_action_indistinguishable(
+        &rules,
+        content(),
+        &a,
+        &b,
+        &Command::Advance,
+        Side::Axis,
+    );
+    let a = evaluate(&rules, content(), &a, &Command::Advance)
+        .unwrap()
+        .game;
+    let b = evaluate(&rules, content(), &b, &Command::Advance)
+        .unwrap()
+        .game;
+    let command = respond(
+        &a.state.decisions.pending[0],
+        json!([{"operation":"move","pool":id,"path":["C4021"]}]),
+    );
+    crate::testkit::assert_action_indistinguishable(
+        &rules,
+        content(),
+        &a,
+        &b,
+        &command,
+        Side::Axis,
+    );
+    let accepted = evaluate(&rules, content(), &b, &command).unwrap().game;
+    let mut state = checkpoint(&accepted).state;
+    let before = serde_json::to_value(&state).unwrap();
+    let mut rng = CampaignRng::from_state(&accepted.rng);
+    let mut events = vec![];
+    dispatched_finish(rules, &mut state, &mut rng, &mut events).unwrap();
+    let after = serde_json::to_value(&state).unwrap();
+    assert_eq!(
+        after["logistics"]["truck_pools"],
+        before["logistics"]["truck_pools"]
+    );
+    assert_eq!(
+        after["logistics"]["cargo_history"],
+        before["logistics"]["cargo_history"]
+    );
+    assert_eq!(
+        after["logistics"]["pool_fuel_segments"],
+        before["logistics"]["pool_fuel_segments"]
+    );
+    assert_eq!(
+        after["logistics"]["pool_fuel_accounts"],
+        before["logistics"]["pool_fuel_accounts"]
+    );
+    assert_eq!(after["land"]["breakdown"], before["land"]["breakdown"]);
+    assert_eq!(after["land"]["movement"], before["land"]["movement"]);
+    assert_eq!(rng.state(), accepted.rng);
+    assert!(state.logistics.truck_convoy.resolved);
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].audience, Audience::Side(Side::Axis));
+    assert!(
+        matches!(&events[0].event, cna_protocol::GameEvent::Note { text }
+        if text == "Convoy stops before unfunded travel.")
+    );
+}
+/// Cases: land:3.6, land:8.65, airlog:53.25, airlog:52.42
+#[test]
+fn actual_dispatcher_hidden_contact_respects_physical_and_retained_cargo_ceilings() {
+    for physical_ceiling in [true, false] {
+        let (mut low, mut high, id) = departure_control_fixture();
+        let cpa = ceiling(content(), pool(&low, Side::Axis, &id).unwrap().trucks).unwrap();
+        let cost = convoy_move::prepare_pool_route(
+            content(),
+            &low,
+            Side::Axis,
+            &id,
+            &["C4021".into()],
+            false,
+        )
+        .unwrap()
+        .costs[0]
+            .cp_quarters;
+        let spent = if physical_ceiling { cpa - cost } else { 1 };
+        assert!(spent > 0);
+        for state in [&mut low, &mut high] {
+            // Canonical prior charge and physical timing, not unpaid positive CP.
+            pool_fuel::spend_pool_segment_fuel(content(), state, &id, spent).unwrap();
+            let groups: Vec<_> = pool_fuel::pool_segment_fuel_cohorts(state, &id)
+                .unwrap()
+                .iter()
+                .map(motion::PhysicalTrucks::from)
+                .collect();
+            cargo_history::advance(
+                state,
+                Side::Axis,
+                &CargoSite::Pool(id.clone()),
+                cargo_history::CarrierTiming {
+                    spent_cp_quarters: 0,
+                    cpa_quarters: cpa,
+                },
+                spent,
+            )
+            .unwrap();
+            motion::advance(
+                state,
+                Side::Axis,
+                &CargoSite::Pool(id.clone()),
+                &groups,
+                spent,
+            )
+            .unwrap();
+            if !physical_ceiling {
+                // Bounded retained parcel fixture: its original carrier's lower
+                // ceiling is valid and does not become the current truck CPA.
+                let history = state
+                    .logistics
+                    .cargo_history
+                    .histories
+                    .get_mut(&CargoSite::Pool(id.clone()))
+                    .unwrap();
+                assert_eq!(history.lots.len(), 1);
+                history.lots[0].ceiling_cp_quarters = spent + cost;
+            }
+        }
+        let rules = Cna::dev();
+        let a = Game::<Cna> {
+            state: low,
+            rng: CampaignRng::from_seed([3; 32]).state(),
+        };
+        let b = Game::<Cna> {
+            state: high,
+            rng: a.rng.clone(),
+        };
+        let a = evaluate(&rules, content(), &a, &Command::Advance)
+            .unwrap()
+            .game;
+        let b = evaluate(&rules, content(), &b, &Command::Advance)
+            .unwrap()
+            .game;
+        let command = respond(
+            &a.state.decisions.pending[0],
+            json!([{"operation":"move","pool":id,"path":["C4021"]}]),
+        );
+        crate::testkit::assert_action_indistinguishable(
+            &rules,
+            content(),
+            &a,
+            &b,
+            &command,
+            Side::Axis,
+        );
+        let accepted = evaluate(&rules, content(), &b, &command).unwrap().game;
+        let mut state = checkpoint(&accepted).state;
+        let before = serde_json::to_value(&state).unwrap();
+        let mut rng = CampaignRng::from_state(&accepted.rng);
+        let mut events = vec![];
+        dispatched_finish(rules, &mut state, &mut rng, &mut events).unwrap();
+        let mut after = serde_json::to_value(&state).unwrap();
+        after["logistics"]["truck_convoy"] = before["logistics"]["truck_convoy"].clone();
+        assert_eq!(after, before);
+        assert_eq!(rng.state(), accepted.rng);
+        assert!(state.logistics.truck_convoy.resolved);
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].audience, Audience::Side(Side::Axis));
+        let expected = if physical_ceiling {
+            "Convoy stops before travel exceeding its current CPA."
+        } else {
+            "Convoy stops at the retained cargo CPA ceiling (53.25)."
+        };
+        assert!(
+            matches!(&events[0].event, cna_protocol::GameEvent::Note { text } if text == expected)
+        );
+    }
+}
+
 fn fixture() -> (State, String) {
     let mut state = State::new(content()).unwrap();
     state.cursor.block = Block::PlayerHalf;
@@ -756,6 +1149,161 @@ fn fixture() -> (State, String) {
     )
     .unwrap();
     (state, id)
+}
+
+/// Cases: scen:60.7, airlog:53.25, land:6.13, land:29.1
+#[test]
+fn actual_state_creation_and_weather_entry_seed_without_location_or_funding() {
+    let created = State::new(content()).unwrap();
+    assert!(!created.logistics.truck_pools.is_empty());
+    assert!(created.logistics.pool_fuel_segments.is_empty());
+    assert!(created.logistics.pool_fuel_accounts.is_empty());
+    for pool in &created.logistics.truck_pools {
+        let groups = pool_fuel::unfunded_pool_physical_cohorts(&created, &pool.id).unwrap();
+        let timing = motion::query(
+            &created,
+            pool.side,
+            &CargoSite::Pool(pool.id.clone()),
+            &groups,
+        )
+        .unwrap();
+        assert!(timing.iter().all(|g| g.spent_cp_quarters == 0));
+        assert!(!created.land.movement.pool_on_road.contains(&pool.id));
+    }
+    for strict in [false, true] {
+        let (mut state, id) = loaded_fixture();
+        pool_fuel::spend_pool_segment_fuel(content(), &mut state, &id, 8).unwrap();
+        let groups: Vec<_> = pool_fuel::pool_segment_fuel_cohorts(&state, &id)
+            .unwrap()
+            .iter()
+            .map(motion::PhysicalTrucks::from)
+            .collect();
+        motion::advance(
+            &mut state,
+            Side::Axis,
+            &CargoSite::Pool(id.clone()),
+            &groups,
+            8,
+        )
+        .unwrap();
+        state.land.movement.pool_on_road.insert(id.clone());
+        let accounts = serde_json::to_value(&state.logistics.pool_fuel_accounts).unwrap();
+        let funding = serde_json::to_value(&state.logistics.pool_fuel_segments).unwrap();
+        state.cursor.block = Block::OpStage;
+        state.cursor.op_stage = Some(2);
+        state.cursor.half = None;
+        state.cursor.index = crate::seq::OPSTAGE
+            .iter()
+            .position(|step| step.anchor == "opstage.weather")
+            .unwrap();
+        state.cursor.entered = false;
+        let mut expected = state.clone();
+        let mut actual_rng = CampaignRng::from_seed([13; 32]);
+        let mut expected_rng = actual_rng.clone();
+        let mut actual_events = vec![];
+        let mut expected_events = vec![];
+        pool_fuel::seed_pool_opstage(&mut expected).unwrap();
+        super::super::weather::determine(
+            content(),
+            &mut expected,
+            &mut Cx {
+                rng: &mut expected_rng,
+                events: &mut expected_events,
+            },
+        )
+        .unwrap();
+        Cna { strict }
+            .enter_step(
+                content(),
+                &mut state,
+                &mut Cx {
+                    rng: &mut actual_rng,
+                    events: &mut actual_events,
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            serde_json::to_value(&state).unwrap(),
+            serde_json::to_value(&expected).unwrap()
+        );
+        assert_eq!(actual_rng.state(), expected_rng.state());
+        assert_eq!(actual_events, expected_events);
+        assert_eq!(
+            serde_json::to_value(&state.logistics.pool_fuel_accounts).unwrap(),
+            accounts
+        );
+        assert_eq!(
+            serde_json::to_value(&state.logistics.pool_fuel_segments).unwrap(),
+            funding
+        );
+        assert!(state.land.movement.pool_on_road.contains(&id));
+        assert!(
+            motion::query(&state, Side::Axis, &CargoSite::Pool(id.clone()), &groups)
+                .unwrap()
+                .iter()
+                .all(|g| g.spent_cp_quarters == 0)
+        );
+        assert_eq!(
+            state
+                .logistics
+                .truck_pools
+                .iter()
+                .find(|p| p.id == id)
+                .unwrap()
+                .activity_water
+                .get(),
+            20
+        );
+    }
+}
+
+/// Cases: land:6.13, land:29.1, airlog:53.25
+#[test]
+fn actual_weather_entry_rejects_corrupt_prior_motion_before_dice_or_events() {
+    for strict in [false, true] {
+        let (mut state, id) = loaded_fixture();
+        state.cursor.block = Block::OpStage;
+        state.cursor.op_stage = Some(2);
+        state.cursor.half = None;
+        state.cursor.index = crate::seq::OPSTAGE
+            .iter()
+            .position(|step| step.anchor == "opstage.weather")
+            .unwrap();
+        state
+            .logistics
+            .cargo_history
+            .motion
+            .entries
+            .iter_mut()
+            .find(|e| e.site == CargoSite::Pool(id.clone()))
+            .unwrap()
+            .cohorts[0]
+            .count += 1;
+        let before = serde_json::to_value(&state).unwrap();
+        let mut rng = CampaignRng::from_seed([13; 32]);
+        let dice = rng.state();
+        let mut events = vec![EngineEvent::new(
+            Audience::Side(Side::Axis),
+            cna_protocol::GameEvent::Note {
+                text: "prior committed event".into(),
+            },
+        )];
+        let log = events.clone();
+        let error = Cna { strict }
+            .enter_step(
+                content(),
+                &mut state,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut events,
+                },
+            )
+            .unwrap_err();
+        assert!(matches!(error, EngineError::Invariant { .. }));
+        assert_eq!(serde_json::to_value(&state).unwrap(), before);
+        assert_eq!(rng.state(), dice);
+        assert_eq!(events, log);
+    }
 }
 
 /// Cases: airlog:53.25, land:3.6
