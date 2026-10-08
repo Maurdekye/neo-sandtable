@@ -1,0 +1,13 @@
+# Msus/Beda Fomm/Benghazi terrain batch 0001
+
+This frozen 79-cell snapshot fills terrain evidence in existing published Libya under standing terrain GO2026-10-08T11:06:15.889Z, the approved ItalianCampaign60.23 phase. Allocation SHA256 `f45404d1b627d2bde593938121392403588ef4a4dd0b3cbc1c1239d48737d64f` identifies work ordering only. Actual compatible public base `c1092efc1bcb20f524700dc68891b7fd49f21527` follows preceding snapshot bounded inclusion. All selected cells are raw-fresh, including prior Unknown checks. No place extent, country ruling, complete setup domain or action permission supplied.
+
+Direct source views: 20 registered whole-cell locator sheets and their unmarked native4x twins; actual TEC; 18 whole-cell native10x rechecks; unmarked native3x continuous marine-coast context. Every full printed boundary inspected. Registered vertices are locators only; no classified overlay.. Every whole printed cell and full boundary was inspected. Accepted classes: `{"clear": 42, "rough": 12, "mountain": 13, "heavy_vegetation": 2, "sea": 4}`. Unknown cells: `B5503,B5603,B5604,B5408,B3315,B5705`. Adopted map-0003 chooses clearly predominant LAND and records visible minors individually; map-0002 permits only directly established marine domains. Deferrals supply no terrain mask; all boundary/domain reasons and minor substrates are retained in individual records. Transport, contour, channel and facility graphics stay separate. Source/native2021 build/TEC pins and land:8.37 plus interp:map-0002/map-0003 citations are in raw.
+
+Single observer; no classifier acceptance, independent visual agreement, measured accuracy or original1979 equivalence. All source images remain outside repo. Mechanical union replay preserves earlier raw including Unknown, masks, geometry, point flags and other features. Accepted Sea is excluded only from existing generated frontier-region land-required memberships that contained it, with no additions or other field/definition changes; Unknown remains geometric. No new edge/lake/pipeline/place/port/facility-anchor/frontier/code fact is supplied.
+
+Checks, authored handoff and actual public inclusion receipts remain separate. This source note claims neither checks nor publication.
+
+Exact ordered selection:
+
+`B3111,B3010,B2907,B2908,B2909,B2910,B2806,B5702,B5602,B5503,B5403,B5304,B5204,B5205,B5206,B5207,B5208,B5209,B3614,B3514,B3413,B3313,B3212,B3112,B3011,B2911,B2807,B2808,B2809,B2810,B5802,B5703,B5603,B5504,B5404,B5305,B5306,B5307,B5308,B5309,B3515,B3414,B3314,B3213,B3113,B3012,B2912,B2811,B2709,B2710,B2711,B5803,B5704,B5604,B5505,B5405,B5406,B5407,B5408,B3415,B3315,B3214,B3114,B3013,B2913,B2812,B2712,B2610,B2611,B5904,B5804,B5705,B5605,B5506,B5507,B5508,B3316,B3215,B3115`
