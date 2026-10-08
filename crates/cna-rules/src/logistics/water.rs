@@ -19,6 +19,8 @@ use serde_json::Value;
 pub const KIND: &str = "cna.logistics.water";
 pub const ISSUE_PREFIX: &str = "cna.logistics.water.issue:";
 
+pub mod pools;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WaterRequirements {
     pub infantry: i32,
@@ -150,6 +152,7 @@ pub(super) fn prepare(
     // Validate both sides before any consumption or events.
     for side in [Side::Axis, Side::Commonwealth] {
         candidates(content, state, side, strict)?;
+        pools::candidates(content, state, side)?;
     }
     super::stores::feed_prisoners(content, state, cx, false)?;
     if !strict {

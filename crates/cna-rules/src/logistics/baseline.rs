@@ -339,6 +339,38 @@ fn batch_orders(
 /// mandatory attrition, which chooses one of its legal casualty candidates.
 /// The caller's RNG belongs to the controller; adjudication dice remain untouched.
 /// Cases: airlog:51.11, airlog:51.23, airlog:52.13, airlog:52.41, airlog:52.42, airlog:52.6, land:3.6
+pub fn logistics_orders_with_profile(
+    content: &CnaContent,
+    state: &State,
+    request: &DecisionRequest,
+    rng: &mut CampaignRng,
+    strict: bool,
+) -> Result<Option<Value>, cna_core::engine::EngineError> {
+    let Some(mut answer) = logistics_orders(content, state, request, rng) else {
+        return Ok(None);
+    };
+    if request.kind != super::batches::WATER || answer.is_null() {
+        return Ok(Some(answer));
+    }
+    let mut draft = state.clone();
+    super::batches::apply_water_answer(content, &mut draft, request.seat.side, &answer, strict)
+        .map_err(|error| match error {
+            cna_core::engine::Rejection::Engine(error) => error,
+            _ => cna_core::engine::EngineError::Invariant {
+                detail: "baseline water list is invalid".into(),
+            },
+        })?;
+    let pools = water::pools::baseline(content, &mut draft, request.seat.side)?;
+    answer
+        .as_object_mut()
+        .ok_or_else(|| cna_core::engine::EngineError::Invariant {
+            detail: "baseline water list is not an object".into(),
+        })?
+        .insert("pool_allocations".into(), json!(pools));
+    Ok(Some(answer))
+}
+
+/// Legacy controller API; automatic pool reserve issue uses the fallible profile API.
 pub fn logistics_orders(
     content: &CnaContent,
     state: &State,

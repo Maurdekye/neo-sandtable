@@ -223,6 +223,15 @@ struct WaterOrder {
 struct WaterAnswer {
     allocations: Vec<WaterOrder>,
     wells: Vec<WellOrder>,
+    #[serde(default)]
+    pool_allocations: Vec<PoolWaterOrder>,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PoolWaterOrder {
+    pool: String,
+    activity: i32,
+    draws: Vec<RationDraw>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -480,7 +489,8 @@ fn open_water(
     }
     let ids = water::candidates(content, state, side, strict)?;
     let well_ids = wells::candidates(content, state, side);
-    if ids.is_empty() && well_ids.is_empty() {
+    let pool_ids = water::pools::candidates(content, state, side)?;
+    if ids.is_empty() && well_ids.is_empty() && pool_ids.is_empty() {
         open_list(
             state,
             cx,
@@ -557,6 +567,53 @@ fn open_water(
         }
     }
     let packing = packing_schema(content, state, &well_ids);
+    let mut pool_max = 0;
+    let mut pool_sources = BTreeMap::new();
+    let mut pool_options = vec![];
+    for id in &pool_ids {
+        let need =
+            water::pools::activity_need(content, state, side, id).map_err(water_answer_error)?;
+        pool_max = pool_max.max(need);
+        let mut choice = option(id.clone(), id.clone());
+        choice.detail = Some(format!("{need} activity water needed"));
+        pool_options.push(choice);
+        for source in water::pools::sources(content, state, side, id).map_err(water_answer_error)? {
+            pool_sources.entry(source.source).or_insert(source.amount);
+        }
+    }
+    let pool_sources: Vec<_> = pool_sources
+        .into_iter()
+        .map(|(source, amount)| SupplyDraw { source, amount })
+        .collect();
+    let mut pool_field = field(
+        "pool_allocations",
+        "Stock issue to real convoy activity reserves",
+        list(
+            ActionSchema::Record {
+                fields: vec![
+                    field(
+                        "pool",
+                        "Owned resolved pool",
+                        ActionSchema::Choice {
+                            options: pool_options,
+                        },
+                    ),
+                    field(
+                        "activity",
+                        "Current stage unmet activity water",
+                        integer(i64::from(pool_max)),
+                    ),
+                    field(
+                        "draws",
+                        "Same-location friendly water stock",
+                        stores::draw_schema(&pool_sources, 0, pool_max),
+                    ),
+                ],
+            },
+            pool_ids.len(),
+        ),
+    );
+    pool_field.optional = true;
     let schema = ActionSchema::Record {
         fields: vec![
             field(
@@ -564,6 +621,7 @@ fn open_water(
                 "Issue available stocks to all selected units",
                 allocations,
             ),
+            pool_field,
             field(
                 "wells",
                 "Accepted attempts resolve after both seats close; at most one draw per unit and one identical attempt per well in this list",
@@ -626,6 +684,14 @@ fn operation(order: &WellOrder) -> Result<(&str, UnitId), Rejection> {
         .ok_or_else(|| illegal("unknown well operation"))?;
     Ok((op, UnitId::new(id)))
 }
+fn water_answer_error(error: Rejection) -> EngineError {
+    match error {
+        Rejection::Engine(error) => error,
+        _ => EngineError::Invariant {
+            detail: "accepted water list failed at closure".into(),
+        },
+    }
+}
 fn apply_water(
     content: &CnaContent,
     state: &mut State,
@@ -653,7 +719,7 @@ fn apply_water(
 }
 /// Validate private stocks and reserve CP, without consulting undiscovered well conditions or dice.
 /// Cases: airlog:52.13, airlog:52.16, airlog:52.17, airlog:52.41, airlog:52.42, land:3.6
-fn apply_water_answer(
+pub(super) fn apply_water_answer(
     content: &CnaContent,
     state: &mut State,
     side: Side,
@@ -665,17 +731,38 @@ fn apply_water_answer(
     }
     let orders: WaterAnswer = serde_json::from_value(action.clone())
         .map_err(|_| illegal("invalid water allocation lists"))?;
-    if orders.allocations.is_empty() && orders.wells.is_empty() {
+    if orders.allocations.is_empty()
+        && orders.wells.is_empty()
+        && orders.pool_allocations.is_empty()
+    {
         return Ok(());
     }
     let count = water::candidates(content, state, side, strict)
         .map_err(Rejection::Engine)?
         .len();
     let wells_count = wells::candidates(content, state, side).len();
-    if orders.allocations.len() > count || orders.wells.len() > wells_count.saturating_mul(3) {
+    let pools = water::pools::candidates(content, state, side).map_err(Rejection::Engine)?;
+    if orders.allocations.len() > count
+        || orders.wells.len() > wells_count.saturating_mul(3)
+        || orders.pool_allocations.len() > pools.len()
+    {
         return Err(illegal("too many water allocations or well attempts"));
     }
     apply_water(content, state, side, orders.allocations, strict)?;
+    let mut used_pools = BTreeSet::new();
+    for order in orders.pool_allocations {
+        if !pools.contains(&order.pool) || !used_pools.insert(order.pool.clone()) {
+            return Err(illegal("pool is foreign, repeated or has no unmet demand"));
+        }
+        water::pools::issue(
+            content,
+            state,
+            side,
+            &order.pool,
+            order.activity,
+            &draws(order.draws)?,
+        )?;
+    }
     let mut seen = BTreeSet::new();
     let mut attempts = BTreeSet::new();
     for o in &orders.wells {
@@ -882,11 +969,8 @@ pub fn finish_water(
     match draft.logistics.water_window.round {
         WaterRound::Supply => {
             for side in SIDES {
-                apply_water_answer(content, &mut draft, side, &submitted[&side], strict).map_err(
-                    |_| EngineError::Invariant {
-                        detail: "accepted water list failed at closure".into(),
-                    },
-                )?;
+                apply_water_answer(content, &mut draft, side, &submitted[&side], strict)
+                    .map_err(water_answer_error)?;
             }
             let mut order = SIDES;
             let has_orders = draft

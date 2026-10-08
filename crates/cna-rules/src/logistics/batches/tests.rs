@@ -16,6 +16,8 @@ use cna_tables::{
 };
 use serde_json::json;
 use std::sync::OnceLock;
+#[path = "pool_water_tests.rs"]
+mod pool_water_tests;
 const AX: &str = "it.1_libyan_div.viii_libyan_bn";
 const CW: &str = "cw.2_nz_div.21st_nz_bn";
 fn content() -> &'static CnaContent {
