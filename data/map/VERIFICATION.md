@@ -973,7 +973,7 @@ single-observer source evidence plus a parent provenance/preservation audit;
 no independent visual agreement, measured error rate or 1979 equivalence
 is established.
 
-The union contains 204 accepted classes: 147 clear, 17 rough, 13 mountain,
+The union contains 204 accepted classes: 147 clear, 17 rough, 14 mountain,
 6 salt marsh, 3 heavy vegetation and 17 Sea. It adds 187 known-land cells and
 retains 33 explicit Unknowns. Of 419 new cell masks, 204 cover terrain and
 215 cover directly established marine domains. The 22 empty-flag Unknowns
@@ -994,3 +994,39 @@ masks. Edge-kind masks, lines and sides remain 31,968, 393 and 409. All 216
 map files replay byte-identically twice. Final joint gates, publication and
 independent inclusion are recorded separately. Later 472 source observations
 stay outside this checked snapshot until preceding publication and inclusion.
+
+
+### Msus/Beda Fomm/Benghazi second terrain union, 2026-10-08
+
+Three disjoint frozen 79-cell selections add 237 directly reviewed cells.
+Native 2021 full interiors and printed boundaries were inspected against
+the actual TEC under land:8.37 and adopted map-0002/map-0003. Source/build/key
+hashes, observed minor substrates and individual reasons are retained in
+unique raw reviews and matching notes. Single-observer source evidence and
+parent provenance/preservation checks establish no measured accuracy,
+independent visual agreement or 1979 equivalence.
+
+Accepted classes, counted from the immutable raw union: 160 clear, 5 gravel, 1 heavy vegetation, 1 mountain, 31 rough, 4 salt marsh, 14 sea.
+These 216 classes add 202 known-land cells and 14 Sea cells; 21 observations
+remain Unknown. The 438 new cell masks comprise 216 terrain and 222 domain
+masks. Fifteen empty-flag Unknowns are entirely unmasked; six have domain
+masks only. All prior observations, masks, point/facility flags, geometry,
+places and features are preserved.
+
+Only these newly accepted Sea cells remove themselves from generated Libya:
+A3128, A3227, A3427, A3825, A3926, A4025, A4425, A4525, A5229, A5532, A5632, B5905, B6005, B6006.
+No memberships are added and no other area fields or definitions change.
+All Unknowns remain geometric members and requires_land is unchanged.
+No lake, edge, port/place, facility anchor, closed extent, complete setup
+domain or action permission is established.
+
+Libya known land becomes 1,850; map_c_libya remains 824. Whole-map totals
+become 2,751 classified, 4,272 unclassified and 5,621 cell masks. Edge-kind
+masks, lines and sides remain 31,968, 393 and 409. All 222 map files replay
+byte-identically twice. Final gates, publication and independent inclusion
+are recorded separately. The remaining 235 source observations stay outside
+this checked snapshot until preceding publication and inclusion.
+
+The preceding first-union paragraph now correctly reports 14 mountain cells;
+the earlier 13 was a prose tally error. Raw classes, generated data and
+other first-union counts were unchanged.
