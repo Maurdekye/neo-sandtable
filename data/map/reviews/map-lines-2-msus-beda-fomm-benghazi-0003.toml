@@ -1,0 +1,635 @@
+[batch]
+id = "map-lines-2-msus-beda-fomm-benghazi-0003"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+terrain_key_sha256 = "e0ab25e590efae1e564df71a6a229dcdf4e3f0c18bfd82ea2a656ef34baa39c7"
+observer = "map-lines-2"
+observed_on = "2026-10-08"
+verification = "visual_single_pass"
+selection = "B2418,B2318,B2217,B2117,B2016,B1916,B1814,B1815,B2520,B2419,B2319,B2218,B2118,B2017,B1917,B1816,B1715,B1716,B2420,B2320,B2219,B2119,B2018,B1918,B1817,B1717,B1615,B1616,B2321,B2220,B2120,B2019,B1919,B1818,B1718,B1617,B1516,B1517,B2221,B2121,B2020,B1920,B1819,B1719,B1618,B1518,B1416,B1417,B2122,B2021,B1921,B1820,B1720,B1619,B1519,B1418,B1317,B1318,B2022,B1922,B1821,B1721,B1620,B1520,B1419,B1319,B1217,B1218,B1923,B1822,B1722,B1621,B1521,B1420,B1320,B1219,B1118,B1119"
+notes = "Exact frozen Msus/Beda Fomm/Benghazi batch0003 under standing terrain GO on actual compatible publiceb65befcd4ba4e5c44ddb34e1840c78dd3ba8434; preceding snapshot bounded inclusion verified. 20 unmarked native4x whole-cell sheets; registered locator twins pages01/03/05/06/07/10/16/18; six whole-cell native10x boundary/substrate twins; actual TEC. Every full printed cell and boundary inspected directly.. Adopted map-0003 clearly predominant LAND and observed minors; map-0002 marine-only domains. Unknowns retained where predominance uncertain. Contour/transport/channel/label/facility graphics separate. Single observer; no classifier, source accuracy, independent agreement or1979 equivalence; allocation supplies no place/country/action facts. Source views outside repo."
+
+[[hex]]
+hex_id = "B2418"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2318"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Muted-beige rough substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. Visible minor land substrates: clear. Rough clearly predominates across the central/eastern footprint with a substantial but smaller peripheral clear region; gray transport ink is separate. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2217"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2117"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2016"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1916"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1814"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1815"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2520"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2419"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2319"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Substantial rough and clear regions compete throughout the printed footprint; a clearly predominant substrate is not confidently resolved. Retain Unknown. Visible land substrates: clear, rough. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2218"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2118"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2017"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1917"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1816"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1715"
+status = "deferred"
+terrain = "unclassified"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Substantial rough and clear regions compete inside the full printed footprint; predominance is not confidently resolved. Gray-green channel wash along the northwest boundary is separate symbol ink. Retain Unknown. Visible land substrates: clear, rough. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1716"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Muted-beige rough substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. Visible minor land substrates: clear. Rough clearly predominates with a smaller clear region along the northern and southeastern printed sides. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2420"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2320"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. Visible minor land substrates: rough. Clear clearly predominates; a narrow rough fragment remains INSIDE the west printed boundary and is recorded as minor rough. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2219"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2119"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2018"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1918"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1817"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The rough patch east of the east printed boundary is outside this cell; it is not an inside minor substrate. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1717"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1615"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Muted-beige rough substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. Visible minor land substrates: clear. Rough clearly predominates with a narrow clear region along the southeast printed side. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1616"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2321"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2220"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2120"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2019"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1919"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1818"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1718"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1617"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1516"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Rough visible west of the western printed boundary is outside the full cell. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1517"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2221"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2121"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2020"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1920"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1819"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1719"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1618"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1518"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1416"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1417"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2122"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2021"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1921"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1820"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1720"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1619"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1519"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1418"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1317"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1318"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B2022"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1922"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1821"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1721"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. A thin yellow stroke below the southeast printed boundary is outside this cell. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1620"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Clear ground overwhelmingly predominates. An isolated thin yellow stroke lies inside the east part of the printed cell; it does not confidently establish the TEC salt-marsh substrate pattern, so no distinct minor substrate is asserted. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1520"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1419"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1319"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1217"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1218"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1923"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1822"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. Gray-green channel wash is separate symbol ink matching the TEC wadi family against clear ground; no marine water, second land substrate or edge-kind record is inferred. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1722"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1621"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The thin yellow stroke west of the west printed boundary lies outside this cell. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1521"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1420"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1320"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1219"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1118"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
+
+[[hex]]
+hex_id = "B1119"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Cream clear substrate clearly predominates within the LAND footprint of the complete printed cell, matching direct native source/TEC review. No distinct minor land substrate confidently identified. The full boundary contains no observed marine water. Transport, contour, channel, grid, labels and facility graphics remain separate; other layers unreviewed."
