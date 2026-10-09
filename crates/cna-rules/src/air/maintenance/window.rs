@@ -167,11 +167,27 @@ pub fn enter(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>, strict: b
     Ok(())
 }
 
-fn supply_error(error: AirSupplyError) -> EngineError {
+fn supply_error(error: AirSupplyError) -> Rejection {
     match error {
-        AirSupplyError::Canonical(e) => e,
-        AirSupplyError::Supply(SupplyError::Unsupported { case }) => unsupported(case, "finite refit supply source unavailable"),
-        _ => invalid("invalid or insufficient own finite refit stock allocation"),
+        AirSupplyError::Canonical(e) => Rejection::Engine(e),
+        AirSupplyError::Supply(SupplyError::Unsupported { case }) =>
+            Rejection::Engine(unsupported(case, "finite refit supply source unavailable")),
+        AirSupplyError::Supply(SupplyError::Invalid | SupplyError::Insufficient) =>
+            illegal("invalid or insufficient own finite refit stock allocation"),
+        AirSupplyError::Supply(SupplyError::UnknownFuelRate) =>
+            Rejection::Engine(invalid("unexpected fuel-rate lookup for finite Air maintenance")),
+    }
+}
+
+/// An ordinary refusal is valid during Respond. After plans were accepted it
+/// denotes an inconsistent adjudication draft; trusted engine errors keep their
+/// exact source case and diagnostic at both boundaries.
+fn adjudication_error(error: Rejection) -> EngineError {
+    match error {
+        Rejection::Engine(error) => error,
+        Rejection::Illegal { message } =>
+            invalid(format!("accepted finite refit plan became invalid: {message}")),
+        other => invalid(format!("unexpected finite refit adjudication refusal: {other}")),
     }
 }
 fn nationality(nation: &str) -> Result<Nationality, EngineError> {
@@ -209,22 +225,24 @@ struct Validated {
 }
 
 /// Owner-only validation and stock preview, on disposable state. No RNG.
+/// Choice failures are Illegal; canonical/content failures are Engine and are
+/// never inferred from an Invariant diagnostic or relabelled as a bad answer.
 fn validate(content: &CnaContent, state: &State, owner: Side, current: MaintenancePeriod,
-    plan: &RefitPlan) -> Result<Validated, EngineError>
+    plan: &RefitPlan) -> Result<Validated, Rejection>
 {
     if first_bar(content, current) && !plan.cohorts.is_empty() {
-        return Err(unsupported("scen:59.36", "aircraft maintenance barred in first scenario OpStage"));
+        return Err(unsupported("scen:59.36", "aircraft maintenance barred in first scenario OpStage").into());
     }
     let paid = dues_stage(current)?;
     let mut demands = BTreeMap::<SgsuId, SupplyDemand>::new();
     let mut limits = BTreeMap::new();
     let mut operation = BTreeSet::new();
     for id in &plan.dues {
-        if !operation.insert(id.clone()) { return Err(invalid("duplicate SGSU dues choice")); }
+        if !operation.insert(id.clone()) { return Err(illegal("duplicate SGSU dues choice")); }
         let s = state.air.runtime.sgsus.get(id).filter(|s| s.side().ok() == Some(owner))
-            .ok_or_else(|| invalid("unknown own SGSU"))?;
+            .ok_or_else(|| illegal("unknown own SGSU"))?;
         if !matches!(&s.position, SgsuPosition::Facility(_)) {
-            return Err(unsupported("airlog:35.14", "SGSU ground-position stock access has no reviewed finite Air consumer"));
+            return Err(unsupported("airlog:35.14", "SGSU ground-position stock access has no reviewed finite Air consumer").into());
         }
         let demand = demands.entry(id.clone()).or_default();
         if s.stores_paid_game_turn != Some(paid.game_turn) { demand.stores = StoresPoints::new(1); }
@@ -239,18 +257,18 @@ fn validate(content: &CnaContent, state: &State, owner: Side, current: Maintenan
     for cohort in &plan.cohorts {
         if cohort.priority.is_empty() { continue; }
         let s = state.air.runtime.sgsus.get(&cohort.servicer)
-            .filter(|s| s.side().ok() == Some(owner)).ok_or_else(|| invalid("unknown own refit SGSU"))?;
+            .filter(|s| s.side().ok() == Some(owner)).ok_or_else(|| illegal("unknown own refit SGSU"))?;
         let SgsuPosition::Facility(site_id) = &s.position else {
-            return Err(unsupported("airlog:36.17", "finite refit needs exact facility SGSU"));
+            return Err(unsupported("airlog:36.17", "finite refit needs exact facility SGSU").into());
         };
         let site = state.air.runtime.facilities.get(site_id).ok_or_else(|| invalid("missing SGSU site"))?;
         let props = site.properties(content, site_id)?;
         if props.theatre != FacilityTheatre::Africa || !matches!(props.location, Location::Hex { .. }) {
-            return Err(unsupported("airlog:36.5", "unlimited/exempt aircraft refit requires reviewed consumer extension"));
+            return Err(unsupported("airlog:36.5", "unlimited/exempt aircraft refit requires reviewed consumer extension").into());
         }
-        if !site.operational() { return Err(invalid("own refit facility is unavailable")); }
+        if !site.operational() { return Err(illegal("own refit facility is unavailable")); }
         if !s.operation_paid(paid) && !operation.contains(&cohort.servicer) {
-            return Err(invalid("refit SGSU dues not paid for actual period"));
+            return Err(illegal("refit SGSU dues not paid for actual period"));
         }
         let limit = capacity(content, state, &s.nationality)?;
         limits.insert(cohort.servicer.clone(), limit);
@@ -258,27 +276,27 @@ fn validate(content: &CnaContent, state: &State, owner: Side, current: Maintenan
         let mut by_nation = BTreeMap::<Nationality, Vec<PlaneId>>::new();
         for id in &cohort.priority {
             let p = state.air.runtime.aircraft.get(id).filter(|p| owned(&p.force, owner))
-                .ok_or_else(|| invalid("unknown own refit plane"))?;
+                .ok_or_else(|| illegal("unknown own refit plane"))?;
             if p.squadron.as_deref() != Some(cohort.assigned_squadron.as_str())
                 || p.facility.as_deref() != Some(site_id.0.as_str()) {
-                return Err(invalid("plane assignment or actual refit site differs"));
+                return Err(illegal("plane assignment or actual refit site differs"));
             }
             let family = designation::squadron_family(state, &cohort.assigned_squadron)
                 .ok_or_else(|| unsupported("airlog:38.32", "maintenance class has no committed designation"))?;
             if matches!((current, family), (MaintenancePeriod::Tactical { .. }, Family::Convoy | Family::MaltaRaid)
                 | (MaintenancePeriod::Strategic { .. }, Family::LandSupport)) {
-                return Err(invalid("plane maintenance class differs from fixed period"));
+                return Err(illegal("plane maintenance class differs from fixed period"));
             }
             let aircraft = content.units.aircraft.get(&p.aircraft)
                 .ok_or_else(|| unsupported("airlog:38.35", "refit aircraft source missing"))?;
             if !props.kind.accepts(aircraft.role == "flying_boat") {
-                return Err(invalid("refit aircraft incompatible with facility"));
+                return Err(illegal("refit aircraft incompatible with facility"));
             }
             by_nation.entry(nationality(&aircraft.nation)?).or_default().push(id.clone());
         }
         if methods.insert(cohort.assigned_squadron.clone(), cohort.method)
             .is_some_and(|previous| previous != cohort.method) {
-            return Err(unsupported("airlog:38.39", "mixed-method assigned-squadron refit needs a reviewed procedure shape"));
+            return Err(unsupported("airlog:38.39", "mixed-method assigned-squadron refit needs a reviewed procedure shape").into());
         }
         for (nationality, priority) in by_nation {
             // Wire list partitioning cannot manufacture extra squadron dice
@@ -309,9 +327,29 @@ fn validate(content: &CnaContent, state: &State, owner: Side, current: Maintenan
     for (id, consumers) in active {
         let site = state.air.runtime.facilities.get(&id).ok_or_else(|| invalid("active refit site missing"))?;
         if let FacilityCapacity::Levels(levels) = site.current_capacity {
-            if levels < 0 || consumers.len() > usize::try_from(levels).map_err(|_| invalid("negative site levels"))? {
-                return Err(invalid("active servicing SGSUs exceed damaged facility capacity"));
+            let levels = usize::try_from(levels).map_err(|_| invalid("negative site levels"))?;
+            if consumers.len() > levels {
+                return Err(illegal("active servicing SGSUs exceed damaged facility capacity"));
             }
+        }
+    }
+    // Validate committed history as trusted data before checking answer-owned
+    // duplicates/capacity. Never classify account_refit's Invariant by message.
+    let historical = refit::account_refit(current, &previous, &[], &limits)?;
+    let mut attempts = historical.attempted;
+    let mut seen: BTreeSet<_> = attempts.values().flatten().cloned().collect();
+    for cohort in &plan.cohorts {
+        for id in &cohort.priority {
+            if !seen.insert(id.clone()) {
+                return Err(illegal("PlaneId already attempted in this maintenance period"));
+            }
+            attempts.entry(cohort.servicer.clone()).or_default().insert(id.clone());
+        }
+    }
+    for (id, ids) in attempts {
+        let limit = limits.get(&id).ok_or_else(|| invalid("missing trusted actual-SGSU refit capacity"))?;
+        if u64::try_from(ids.len()).map_err(|_| invalid("attempt count overflow"))? > u64::from(*limit) {
+            return Err(illegal("refit attempts exceed SGSU ready+reserve"));
         }
     }
     let accounting = refit::account_refit(current, &previous, &plan.cohorts, &limits)?;
@@ -335,7 +373,7 @@ fn validate(content: &CnaContent, state: &State, owner: Side, current: Maintenan
     let mut supply_draft = state.clone();
     for selected in &plan.draws {
         if !draw_ids.insert(selected.servicer.clone()) || !demands.contains_key(&selected.servicer) {
-            return Err(invalid("duplicate or uncosted refit consumer draws"));
+            return Err(illegal("duplicate or uncosted refit consumer draws"));
         }
     }
     for (id, demand) in &demands {
@@ -373,10 +411,7 @@ pub fn answer(content: &CnaContent, state: &mut State, pending: &Pending, action
     let plan = if action.is_null() { RefitPlan::default() } else {
         serde_json::from_value(action.clone()).map_err(|_| illegal("invalid own refit plan"))?
     };
-    validate(content, state, owner, current, &plan).map_err(|e| match e {
-        EngineError::Unsupported { .. } => Rejection::from(e),
-        _ => illegal("own refit choices, dues or finite stock are not legal"),
-    })?;
+    validate(content, state, owner, current, &plan)?;
     state.air.runtime.maintenance.waiting.insert(owner, plan);
     state.air.runtime.maintenance.closed.insert(owner);
     Ok("Recorded the private finite refit and SGSU dues plan.".into())
@@ -399,7 +434,7 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>)
     let mut validated = Vec::new();
     for side in Side::ALL {
         let plan = window.waiting.get(&side).ok_or_else(|| invalid("closed refit batch missing plan"))?;
-        validated.push((side, validate(content, &draft, side, current, plan)?));
+        validated.push((side, validate(content, &draft, side, current, plan).map_err(adjudication_error)?));
     }
     for (side, v) in &mut validated {
         for receipt in draft.air.runtime.maintenance.debits.get(side).into_iter().flatten() {
@@ -413,7 +448,8 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>)
             let draws = v.plans.draws.iter().find(|d| &d.servicer == id).map(|d| d.draws.as_slice()).unwrap_or(&[]);
             let use_ = if v.plans.dues.contains(id) { AirSupplyUse::SgsuOperation } else { AirSupplyUse::AircraftServicing };
             air_supply::spend(content, &mut draft, *side, id, use_,
-                AirSupplyDebit { demand: *demand, draws, prior: &v.prior }).map_err(supply_error)?;
+                AirSupplyDebit { demand: *demand, draws, prior: &v.prior })
+                .map_err(supply_error).map_err(adjudication_error)?;
             for draw in draws {
                 let total = v.prior.entry(draw.source.clone()).or_default();
                 *total = FuelTenths::new(total.get().checked_add(draw.amount.fuel.get())

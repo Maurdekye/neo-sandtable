@@ -99,6 +99,104 @@ fn finish_game(game: &mut Game<Cna>) {
     assert!(events.is_empty()); game.rng = rng.state();
 }
 
+fn rejected_response(content: &CnaContent, game: &Game<Cna>, action: Value) -> Rejection {
+    let before = serde_json::to_vec(game).unwrap();
+    let rejection = match evaluate(&Cna::dev(), content, game,
+        &command(game, Side::Axis, action)) {
+        Err(rejection) => rejection,
+        Ok(_) => panic!("invalid maintenance response was accepted"),
+    };
+    // Includes pending answers, closed markers, stock, aircraft and RNG.
+    assert_eq!(serde_json::to_vec(game).unwrap(), before);
+    rejection
+}
+
+/// Cases: airlog:35.14, airlog:36.12, airlog:36.17, airlog:38.35, land:3.6
+#[test]
+fn respond_preserves_exact_canonical_and_source_errors_without_side_effects() {
+    let game = opened(false);
+    let proposed = plan(&game.state, true);
+    let id = FacilityId("airfield_benina".into());
+    let mut malformed = game.clone();
+    // Corrupt a trusted own record, not an answer-supplied capacity. Test both
+    // direct facility properties and the dues-only AirSupplyError::Canonical.
+    malformed.state.air.runtime.facilities.get_mut(&id).unwrap()
+        .current_capacity = FacilityCapacity::Levels(i32::MAX);
+    let expected = malformed.state.air.runtime.facilities[&id]
+        .properties(content(), &id).unwrap_err();
+    assert!(matches!(&expected, EngineError::Invariant { detail }
+        if detail == "air facility: capacity disagrees with source ceiling"));
+    for dues_only in [false, true] {
+        let mut candidate = proposed.clone();
+        if dues_only {
+            candidate.cohorts.clear();
+            candidate.draws[0].draws[0].amount.stores = StoresPoints::new(1);
+        }
+        assert_eq!(rejected_response(content(), &malformed,
+            serde_json::to_value(candidate).unwrap()), Rejection::Engine(expected.clone()));
+    }
+    let mut source = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let aircraft = &game.state.air.runtime.aircraft[&proposed.cohorts[0].priority[0]].aircraft;
+    source.units.aircraft.remove(aircraft).unwrap();
+    assert_eq!(rejected_response(&source, &game, serde_json::to_value(proposed).unwrap()),
+        Rejection::Engine(unsupported("airlog:38.35", "refit aircraft source missing")));
+}
+
+/// Cases: airlog:35.14, airlog:36.17, airlog:38.33, airlog:38.36, land:3.6
+#[test]
+fn respond_ordinary_stock_foreign_missing_dues_and_duplicate_choices_are_illegal() {
+    let game = opened(false);
+    for refusal in 0..5 {
+        let mut own = game.clone();
+        let mut candidate = plan(&own.state, true);
+        match refusal {
+            0 => own.state.logistics.air_dumps.get_mut("refit.stock").unwrap().supplies.stores = 0,
+            1 => own.state.logistics.air_dumps.get_mut("refit.stock").unwrap().side = Side::Commonwealth,
+            2 => candidate.cohorts[0].priority[0] = PlaneId("missing.own.choice".into()),
+            3 => candidate.dues.clear(),
+            _ => candidate.cohorts[0].priority[1] = candidate.cohorts[0].priority[0].clone(),
+        }
+        assert!(matches!(rejected_response(content(), &own,
+            serde_json::to_value(candidate).unwrap()), Rejection::Illegal { .. }));
+    }
+}
+
+/// Cases: airlog:35.14, airlog:36.12, airlog:38.35, airlog:38.36, land:3.6
+#[test]
+fn finish_retains_exact_engine_failures_and_promotes_late_ordinary_refusal_to_invariant() {
+    let game = opened(false);
+    let proposed = plan(&game.state, true);
+    let mut accepted = respond(&game, Side::Axis, serde_json::to_value(&proposed).unwrap());
+    accepted = respond(&accepted, Side::Commonwealth, Value::Null);
+    let mut source = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let aircraft = &game.state.air.runtime.aircraft[&proposed.cohorts[0].priority[0]].aircraft;
+    source.units.aircraft.remove(aircraft).unwrap();
+    for failure in 0..3 {
+        let mut failed = accepted.clone();
+        let id = FacilityId("airfield_benina".into());
+        let expected = match failure {
+            0 => {
+                failed.state.air.runtime.facilities.get_mut(&id).unwrap()
+                    .current_capacity = FacilityCapacity::Levels(i32::MAX);
+                failed.state.air.runtime.facilities[&id].properties(content(), &id).unwrap_err()
+            }
+            1 => unsupported("airlog:38.35", "refit aircraft source missing"),
+            _ => {
+                failed.state.logistics.air_dumps.get_mut("refit.stock").unwrap().supplies.stores = 0;
+                invalid("accepted finite refit plan became invalid: invalid or insufficient own finite refit stock allocation")
+            }
+        };
+        let before = serde_json::to_vec(&failed).unwrap();
+        let mut rng = CampaignRng::from_state(&failed.rng);
+        let before_rng = rng.state(); let mut events = Vec::new();
+        let actual = finish(if failure == 1 { &source } else { content() },
+            &mut failed.state, &mut Cx { rng: &mut rng, events: &mut events });
+        assert_eq!(actual, Err(expected));
+        assert_eq!(serde_json::to_vec(&failed).unwrap(), before);
+        assert_eq!(rng.state(), before_rng); assert!(events.is_empty());
+    }
+}
+
 /// Cases: airlog:35.14, airlog:38.33, airlog:38.34, airlog:38.36, land:3.6
 #[test]
 fn respond_only_buffers_then_actual_finish_debits_rolls_and_checkpoints_once() {
@@ -193,7 +291,7 @@ fn late_stock_or_capacity_failure_preserves_whole_state_rng_and_events() {
     let proposed = plan(&first.state, true);
     assert!(matches!(validate(content(), &first.state, Side::Axis,
         period(&first.state).unwrap(), &proposed),
-        Err(EngineError::Unsupported { case, .. }) if case == "scen:59.36"));
+        Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "scen:59.36"));
 }
 
 /// Cases: airlog:35.14, airlog:38.32, interp:airlog-0025
@@ -310,7 +408,7 @@ fn actual_foreign_servicer_uses_aircraft_nationality_and_damaged_active_capacity
             .current_capacity = FacilityCapacity::Levels(6); Ok(())
     }).unwrap();
     assert!(matches!(validate(content(), &game.state, Side::Axis, current, &split),
-        Err(EngineError::Unsupported { case, .. }) if case == "airlog:38.36"));
+        Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "airlog:38.36"));
     let offmap = game.state.air.runtime.facilities.iter().find_map(|(id, s)|
         s.properties(content(), id).ok().filter(|p| p.theatre == FacilityTheatre::CommonwealthOffMap)
             .map(|_| id.clone())).unwrap();
@@ -322,6 +420,6 @@ fn actual_foreign_servicer_uses_aircraft_nationality_and_damaged_active_capacity
     }).unwrap();
     let before = serde_json::to_vec(&game).unwrap();
     assert!(matches!(validate(content(), &game.state, Side::Axis, current, &plan(&game.state, true)),
-        Err(EngineError::Unsupported { case, .. }) if case == "airlog:36.5"));
+        Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "airlog:36.5"));
     assert_eq!(serde_json::to_vec(&game).unwrap(), before);
 }
