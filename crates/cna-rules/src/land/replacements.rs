@@ -24,6 +24,16 @@ pub struct ReplacementState {
     pub sides: Vec<SideReplacements>,
 }
 
+/// A live arrival constraint, never reconstructed from mobile pools or counters.
+/// Cases: land:20.78A, land:20.78B
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CWArrivalLimit {
+    pub game_turn: u16,
+    pub total_trucks: i32,
+    pub alexandria_trucks: i32,
+    pub infantry_city: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SideReplacements {
     pub side: Side,
@@ -31,6 +41,10 @@ pub struct SideReplacements {
     pub budgets: Vec<ProductionBudget>,
     pub orders: Vec<ScheduledReplacement>,
     pub counters: Vec<ReplacementCounter>,
+    /// One live entry per scheduled Commonwealth arrival GT; omission is Unknown.
+    /// Cases: land:20.78A, land:20.78B
+    #[serde(default)]
+    pub cw_arrival_limits: Vec<CWArrivalLimit>,
     pub planning: ReplacementProcedure,
     pub arrival: ReplacementProcedure,
     pub training: ReplacementProcedure,
@@ -161,12 +175,12 @@ pub struct ReplacementPhysical {
     pub supplies: Supplies,
     pub tank_fuel: FuelTenths,
     pub water: WaterPoints,
-    pub activity: ReplacementActivity,
+    pub activity: Option<ReplacementActivity>,
     pub funding: Option<FuelFundingAccount>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReplacementActivity { pub stage: OpStageKey, pub required: bool, pub paid: bool }
+pub struct ReplacementActivity { pub stage: OpStageKey, pub required: WaterPoints, pub paid: WaterPoints }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ReplacementProcedure {
@@ -310,7 +324,7 @@ pub(crate) fn finite_limit(
 impl SideReplacements {
     pub(crate) fn new(side: Side) -> Self {
         Self {
-            side, next_serial: 0, budgets: vec![], orders: vec![], counters: vec![],
+            side, next_serial: 0, budgets: vec![], orders: vec![], counters: vec![], cw_arrival_limits: vec![],
             planning: ReplacementProcedure::default(), arrival: ReplacementProcedure::default(),
             training: ReplacementProcedure::default(), reorganization: ReplacementProcedure::default(),
         }
@@ -373,10 +387,11 @@ impl SideReplacements {
     pub(crate) fn allocate_id(&mut self) -> Result<String, EngineError> {
         let prefix = format!("{}.replacement-", crate::state::side_key(self.side));
         let mut seen = BTreeSet::new();
+        let mut serials = BTreeSet::new();
         for id in self.orders.iter().map(|o| &o.id).chain(self.counters.iter().map(|c| &c.id)) {
             let serial = id.strip_prefix(&prefix).and_then(|s| s.parse::<u64>().ok())
                 .filter(|&s| s > 0 && s <= self.next_serial);
-            if serial.is_none() || !seen.insert(id) { return Err(invariant("stored replacement identity is invalid or reused")); }
+            if serial.is_none_or(|n| *id != format!("{prefix}{n}") || !serials.insert(n)) || !seen.insert(id) { return Err(invariant("stored replacement identity is invalid or reused")); }
         }
         let serial = self.next_serial.checked_add(1).ok_or_else(|| invariant("replacement identities exhausted"))?;
         let id = format!("{}.replacement-{serial}", crate::state::side_key(self.side));
@@ -390,3 +405,24 @@ impl SideReplacements {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod arrival_tests;
+
+mod scheduling;
+mod windows;
+mod arrival;
+pub(crate) use windows::{DISTRIBUTION, SCHEDULE, answer, enter_schedule, finish_planning, planning_complete};
+pub(crate) use arrival::{ARRIVAL, answer_arrival, arrivals_complete, enter_arrival, finish_arrivals};
+
+/// The actual closing cursor step is the pruning witness; mobile stock is irrelevant.
+/// Cases: land:20.78A, land:20.78B
+pub(crate) fn discard_completed_limits(state: &mut crate::State) -> Result<(), EngineError> {
+    if !matches!(state.cursor.anchor(), "end_of_turn" | "end_of_game") {
+        return Err(invariant("arrival limits may be discarded only at actual GT/game close"));
+    }
+    let completed = state.cursor.game_turn;
+    for own in &mut state.land.replacements.sides {
+        own.cw_arrival_limits.retain(|limit| limit.game_turn > completed);
+    }
+    Ok(())
+}

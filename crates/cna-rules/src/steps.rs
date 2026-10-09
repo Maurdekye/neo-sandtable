@@ -39,6 +39,17 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<(), EngineError> {
         match state.cursor.anchor() {
+            "end_of_turn" | "end_of_game" => {
+                crate::land::replacements::discard_completed_limits(state)
+            }
+            "naval_convoy.schedule" => {
+                crate::land::replacements::finish_planning(content, state, cx)?;
+                if !crate::land::replacements::planning_complete(state) {
+                    return Ok(());
+                }
+                // Priority shipping remains explicitly held by the existing 20.63 guard.
+                crate::logistics::convoys::schedule(content, state, self.strict, cx)
+            }
             "logistics.stores_expenditure" => {
                 crate::logistics::batches::finish_stores(content, state, cx)
             }
@@ -80,6 +91,10 @@ impl Cna {
             }
             "setup" => crate::setup::finish(content, state, cx, self.strict),
             "opstage.convoy_arrival" => {
+                crate::land::replacements::finish_arrivals(content, state, self.strict)?;
+                if !crate::land::replacements::arrivals_complete(state) {
+                    return Ok(());
+                }
                 crate::land::arrivals::finish(content, state, self.strict, cx)?;
                 if !state.decisions.pending.is_empty()
                     || !crate::land::arrivals::ready_for_supply(state)
@@ -140,9 +155,14 @@ impl Cna {
                 crate::logistics::coastal::enter_axis(content, state, self.strict, cx)
             }
             "naval_convoy.schedule" => {
-                crate::logistics::convoys::schedule(content, state, self.strict, cx)
+                crate::land::replacements::enter_schedule(content, state, cx)?;
+                if crate::land::replacements::planning_complete(state) {
+                    crate::logistics::convoys::schedule(content, state, self.strict, cx)?;
+                }
+                Ok(())
             }
             "opstage.convoy_arrival" => {
+                crate::land::replacements::enter_arrival(content, state, self.strict, cx)?;
                 crate::land::arrivals::enter(content, state, self.strict, cx)
             }
             "opstage.movement_and_combat.combat.barrage" => {
@@ -206,6 +226,12 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<String, Rejection> {
         match pending.kind.as_str() {
+            crate::land::replacements::SCHEDULE | crate::land::replacements::DISTRIBUTION => {
+                crate::land::replacements::answer(content, state, pending, action)
+            }
+            crate::land::replacements::ARRIVAL => {
+                crate::land::replacements::answer_arrival(content, state, pending, action, self.strict)
+            }
             crate::air::designation::KIND => {
                 crate::air::designation::answer(state, pending, action)
             }
