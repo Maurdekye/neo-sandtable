@@ -31,13 +31,24 @@ const fn witness(
 const ALEXANDRIA: &[&str] = &["land:8.37", "scen:60.41", "scen:60.5"];
 const CAIRO: &[&str] = &["land:8.37", "land:17.32", "scen:60.43"];
 // Stable per-cell identity reviewed by the map owner; no prefix/name/extent resolver.
-const WITNESSES: [CityWitness; 9] = [
+const WITNESSES: [CityWitness; 10] = [
     witness(
         "city-alexandria-e3613",
         "E3613",
         None,
         "alexandria-positive-0001",
         ALEXANDRIA,
+        3,
+    ),
+    // E3713 membership: owner q0a0db88df999, zz-map-terrain-gap-0011 and
+    // graziani-owner-20261009-0001. land:8.37 TEC note 4 assigns Alexandria
+    // intrinsic level three; authenticate this cell's own reviewed map tuple.
+    witness(
+        "city-alexandria-e3713",
+        "E3713",
+        None,
+        "graziani-owner-20261009-0001",
+        &["land:8.37", "interp:map-0002", "interp:map-0003"],
         3,
     ),
     witness(

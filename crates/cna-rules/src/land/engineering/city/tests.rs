@@ -29,11 +29,12 @@ fn add_unknown(content: &mut CnaContent, id: &str, hex: &str) {
 /// Cases: land:25.12, land:8.37
 /// Interpretations: interp:land-0002
 #[test]
-fn all_nine_published_witnesses_resolve_without_name_identity() {
+fn all_ten_published_witnesses_resolve_without_name_identity() {
     let mut c = fixture();
     // Source expectations are independent of the implementation witness table.
     for (id, hex, level) in [
         ("city-alexandria-e3613", "E3613", 3),
+        ("city-alexandria-e3713", "E3713", 3),
         ("city-alexandria-e3714", "E3714", 3),
         ("city-bardia-c4321", "C4321", 2),
         ("city-benghazi-a4827", "A4827", 2),
@@ -50,15 +51,21 @@ fn all_nine_published_witnesses_resolve_without_name_identity() {
         p.src.push("land:25.12".into());
         assert_eq!(query(&c, hex), Ok(level));
     }
-    for id in ["city-alexandria-e3613", "city-alexandria-e3714"] {
+    for id in [
+        "city-alexandria-e3613",
+        "city-alexandria-e3713",
+        "city-alexandria-e3714",
+    ] {
         assert_eq!(c.places.places[id].place_group, None);
     }
 }
-/// Cases: land:25.12
+/// Cases: land:25.12, land:8.37
 #[test]
 fn absent_future_and_neighbor_identity_never_defaults_to_an_ordinary_city() {
     let mut c = fixture();
-    for hex in ["E3713", "C4320", "A4826"] {
+    // Reviewed Alexandria membership has intrinsic level three (TEC note 4).
+    assert_eq!(query(&c, "E3713"), Ok(3));
+    for hex in ["C4320", "A4826"] {
         expect_unknown(&c, hex, "missing positive city identity");
     }
     c.places.places.remove("city-alexandria-e3613");
@@ -191,7 +198,7 @@ fn public_content_snapshot(c: &CnaContent) -> String {
         )
     )
 }
-/// Cases: land:25.12
+/// Cases: land:25.12, land:8.37
 #[test]
 fn unrelated_places_and_current_state_cannot_change_the_source_query() {
     let mut c = fixture();
@@ -204,7 +211,7 @@ fn unrelated_places_and_current_state_cannot_change_the_source_query() {
     p.hex_id = "NO_HEX".into();
     let content_before = public_content_snapshot(&c);
     assert_eq!(query(&c, "C4321"), Ok(2));
-    expect_unknown(&c, "E3713", "missing positive city identity");
+    assert_eq!(query(&c, "E3713"), Ok(3));
     expect_invariant(&c, "NO_HEX", "requested hex is not existing map geometry");
     assert_eq!(public_content_snapshot(&c), content_before);
     assert_eq!(serde_json::to_value(&state).unwrap(), state_before);
