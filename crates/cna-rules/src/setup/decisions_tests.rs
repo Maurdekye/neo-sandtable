@@ -171,13 +171,22 @@ fn actual_legacy_close_never_credits_existing_unknown_aircraft_and_empty_source_
     let game = before_fresh_close(&c);
     let mut value = serde_json::to_value(&game).unwrap();
     value["state"]["setup"].as_object_mut().unwrap().remove("initial_air_import");
-    let mut old: Game<Cna> = serde_json::from_value(value).unwrap();
-    crate::air::inventory::initialize(&c, &mut old.state).unwrap();
-    let before = serde_json::to_value(&old.state.air).unwrap();
-    let closed = evaluate(&Cna::dev(), &c, &old, &Command::Advance).unwrap();
+    let old: Game<Cna> = serde_json::from_value(value).unwrap();
+    let mut closed = evaluate(&Cna::dev(), &c, &old, &Command::Advance).unwrap();
     assert!(closed.game.state.setup.closed);
     assert!(matches!(closed.game.state.setup.initial_air_import, super::super::InitialAirImport::LegacyUnknown));
-    assert_eq!(serde_json::to_value(&closed.game.state.air).unwrap(), before);
+    assert_eq!(closed.game.state.air.runtime, crate::air::state::AirRuntime::default());
+    // Generic legacy import is legal only AFTER the genuine no-credit close.
+    // A recovered closed checkpoint then re-finishes without reopening setup.
+    crate::air::inventory::initialize(&c, &mut closed.game.state).unwrap();
+    let mut recovered: Game<Cna> = serde_json::from_value(serde_json::to_value(&closed.game).unwrap()).unwrap();
+    let before = serde_json::to_value(&recovered).unwrap();
+    let mut rng = CampaignRng::from_state(&recovered.rng);
+    let mut events = vec![];
+    super::finish(&c, &mut recovered.state, &mut Cx { rng: &mut rng, events: &mut events }, false).unwrap();
+    assert_eq!(serde_json::to_value(&recovered).unwrap(), before);
+    assert_eq!(rng.state(), recovered.rng);
+    assert!(events.is_empty());
     assert!(closed.game.state.air.runtime.preparation.initial_choices.is_empty());
     assert!(closed.game.state.air.runtime.preparation.current.values().all(|p| matches!(p, CurrentPreparation::UnknownLegacy)));
 
