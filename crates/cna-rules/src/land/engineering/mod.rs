@@ -53,6 +53,8 @@ impl UnitActivity {
 pub struct EngineeringState {
     pub observed_opening: Option<ActivityStage>,
     pub activity: BTreeMap<UnitId, UnitActivity>,
+    facility_project_serial: u64,
+    facility_projects: BTreeMap<projects::ProjectId, projects::FacilityProject>,
 }
 
 /// Called only at the approved public boundary, after any prior-stage CP reset.
@@ -260,3 +262,6 @@ pub use companion::{MinefieldCompanionBenefit, minefield_companion_qualifies};
 
 mod city;
 pub use city::source_city_fortification_level;
+
+mod projects;
+pub use projects::{ProjectId, begin_facility_project, complete_facility_project};
