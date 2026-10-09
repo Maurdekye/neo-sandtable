@@ -318,7 +318,10 @@ pub(super) fn finish_distribution(state: &mut State, owner: Side, plan: &Distrib
     if serde_json::to_value(accepted).ok() != serde_json::to_value(plan).ok() {
         return Err(invariant("distribution does not match accepted answer"));
     }
-    validate_distribution(owner, determined, plan).map_err(|_| invariant("accepted distribution is no longer valid"))?;
+    validate_distribution(owner, determined, plan).map_err(|rejection| match rejection {
+        Rejection::Engine(error) => error,
+        _ => invariant("accepted distribution is no longer valid"),
+    })?;
     let mut draft = own.clone();
     if owner == Side::Commonwealth {
         let mut totals = std::collections::BTreeMap::<u16, i32>::new();

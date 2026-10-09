@@ -10,6 +10,29 @@ use cna_tables::land::training::TrainingSubject;
 pub(super) const ANCHOR: &str = "opstage.convoy_arrival";
 pub(crate) const ARRIVAL: &str = "cna.replacements.arrival";
 
+#[cfg(test)]
+mod recipient_nation_tests {
+    use super::*;
+
+    /// Cases: land:20.41, land:20.67
+    #[test]
+    fn same_side_italian_recipient_does_not_accept_german_infantry() {
+        let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut state = State::new(&content).unwrap();
+        let id = UnitId::new("it.1_libyan_div.viii_libyan_bn");
+        assert_eq!(content.units.units[&id].side, Side::Axis);
+        assert_eq!(content.units.units[&id].nationality, "italian");
+        // Explicit reduced-fixture placement isolates nationality from the side/live gates;
+        // it establishes no scenario deployment or motion entitlement.
+        state.land.units.get_mut(&id).unwrap().location = cities(&content, false).unwrap()[0].1.clone();
+        state.land.units.get_mut(&id).unwrap().toe = Some(cna_content::units::Toe::Normal(cna_content::units::NormalToe::N));
+        let before = serde_json::to_vec(&state).unwrap();
+        assert!(recipient(&content, &state, Side::Axis, &id, &ReplacementKind::Infantry { nation: ReplacementNation::Italian }).is_ok());
+        assert!(matches!(recipient(&content, &state, Side::Axis, &id, &ReplacementKind::Infantry { nation: ReplacementNation::German }), Err(Rejection::Illegal { message }) if message.contains("nation")));
+        assert_eq!(serde_json::to_vec(&state).unwrap(), before);
+    }
+}
+
 fn stage(state: &State) -> Result<OpStageKey, EngineError> {
     let op_stage = state.cursor.op_stage.filter(|op| (1..=3).contains(op))
         .ok_or_else(|| invariant("replacement arrival outside an OpStage"))?;

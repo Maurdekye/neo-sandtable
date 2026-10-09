@@ -315,3 +315,223 @@ fn absent_legacy_subsystem_is_empty_and_serials_survive_checkpoint_without_reuse
     assert!(restored.allocate_id().is_err());
     assert_eq!(serde_json::to_vec(&restored).unwrap(), before);
 }
+
+fn open_schedule(c: &crate::CnaContent, state: &mut crate::State) {
+    state.decisions.pending.clear();
+    state.land.replacements.sides.clear();
+    let mut rng = CampaignRng::from_seed([51; 32]);
+    let mut events = vec![];
+    windows::enter_schedule(c, state, &mut Cx { rng: &mut rng, events: &mut events }).unwrap();
+}
+
+fn production_command(state: &crate::State, owner: Side, kind: &str, action: serde_json::Value) -> cna_core::engine::Command {
+    let pending = state.decisions.pending.iter().find(|p| p.seat.side == owner && p.kind == kind).unwrap();
+    cna_core::engine::Command::Respond(cna_core::decision::DecisionResponse {
+        decision_id: pending.id.clone(), seat: pending.seat, controller_epoch: 0,
+        decision_revision: pending.revision, idempotency_key: format!("{}-production", pending.id),
+        action, public_explanation: None,
+    })
+}
+
+// Side-level visibility intentionally includes all that side's seats. These controls use
+// an exact seat perspective so a teammate cannot inherit Logistics' private authority.
+pub(super) fn seat_snapshot(c: &crate::CnaContent, state: &crate::State, seat: SeatId, targets: &BTreeSet<String>) -> serde_json::Value {
+    use cna_core::{engine::Ruleset, visibility::Perspective};
+    let rules = crate::Cna::dev();
+    let perspective = Perspective::Seat(seat);
+    let inspected: serde_json::Map<String, serde_json::Value> = targets.iter().map(|id| {
+        let result = rules.inspect(c, state, perspective, id).unwrap_or_else(|error| serde_json::json!({"rejected":format!("{error:?}")}));
+        (id.clone(), result)
+    }).collect();
+    serde_json::json!({
+        "observe":rules.observe(c, state, perspective), "view":rules.view(c, state, perspective),
+        "inspect":inspected,
+        "pending":rules.pending(c, state).into_iter().filter(|p| p.seat == seat).collect::<Vec<_>>()
+    })
+}
+
+pub(super) fn assert_private_transition(c: &crate::CnaContent, owner: Side,
+    a: &cna_core::engine::Transition<crate::Cna>, b: &cna_core::engine::Transition<crate::Cna>) {
+    use cna_core::visibility::Perspective;
+    let targets = crate::testkit::inspect_targets(&[&a.game.state, &b.game.state]);
+    for observer in Side::ALL {
+        for role in Role::ALL {
+            let seat = SeatId::new(observer, role);
+            if seat == SeatId::new(owner, Role::Logistics) { continue; }
+            assert_eq!(seat_snapshot(c, &a.game.state, seat, &targets), seat_snapshot(c, &b.game.state, seat, &targets), "private replacement fact leaked to {seat}");
+            let visible = |t: &cna_core::engine::Transition<crate::Cna>| t.events.iter()
+                .filter(|e| Perspective::Seat(seat).can_see(&e.audience))
+                .map(|e| serde_json::json!({"event":e.event,"hex":e.hex,"unit_id":e.unit_id})).collect::<Vec<_>>();
+            assert_eq!(visible(a), visible(b), "private replacement stream leaked to {seat}");
+        }
+    }
+    assert_eq!(a.progress, b.progress);
+}
+
+/// Cases: land:20.61, land:20.66, land:20.73, land:3.6
+#[test]
+fn actual_scheduling_respond_is_buffer_only_for_finite_and_random_production() {
+    use cna_core::engine::{Game, evaluate};
+    for (gt, owner, action) in [
+        (9, Side::Axis, serde_json::json!({"requests":[{"family":"axis_equipment","nation":"italian","item":"Infantry","points":5,"arrival_turn":11}]})),
+        (4, Side::Commonwealth, serde_json::Value::Null),
+    ] {
+        let mut c = content();
+        c.bounds.end_gt = 14; // Reduced future-calendar procedure fixture, not Graziani entitlement.
+        let mut state = scheduling_state(&c, gt);
+        open_schedule(&c, &mut state);
+        let game = Game::<crate::Cna> { state, rng: CampaignRng::from_seed([52; 32]).state() };
+        let before_land = serde_json::to_vec(&game.state.land.units).unwrap();
+        let before_other = serde_json::to_vec(side(&game.state, if owner == Side::Axis { Side::Commonwealth } else { Side::Axis }).unwrap()).unwrap();
+        let before_logistics = serde_json::to_vec(&game.state.logistics).unwrap();
+        let before = side(&game.state, owner).unwrap().clone();
+        let result = evaluate(&crate::Cna::dev(), &c, &game, &production_command(&game.state, owner, windows::SCHEDULE, action)).unwrap();
+        let after = side(&result.game.state, owner).unwrap();
+        assert!(matches!(after.planning.phase, ProcedurePhase::Awaiting { submitted: Some(ReplacementPlan::Schedule(_)) }));
+        let mut without_answer = after.clone();
+        without_answer.planning = before.planning.clone();
+        assert_eq!(serde_json::to_vec(&without_answer).unwrap(), serde_json::to_vec(&before).unwrap());
+        assert_eq!(serde_json::to_vec(&result.game.state.land.units).unwrap(), before_land);
+        assert_eq!(serde_json::to_vec(side(&result.game.state, if owner == Side::Axis { Side::Commonwealth } else { Side::Axis }).unwrap()).unwrap(), before_other);
+        assert_eq!(serde_json::to_vec(&result.game.state.logistics).unwrap(), before_logistics);
+        assert_eq!(result.game.rng, game.rng);
+        assert!(!result.events.iter().any(|event| matches!(event.event, cna_protocol::GameEvent::DiceRolled { .. })));
+    }
+}
+
+/// Cases: land:20.61, land:20.74, land:3.6
+#[test]
+fn actual_private_orders_and_zero_nonzero_distribution_have_fixed_observer_streams() {
+    use cna_core::engine::{Command, Game, evaluate};
+    let mut c = content();
+    c.bounds.end_gt = 14;
+    let mut state = scheduling_state(&c, 9);
+    open_schedule(&c, &mut state);
+    let base = Game::<crate::Cna> { state, rng: CampaignRng::from_seed([53; 32]).state() };
+    let empty = production_command(&base.state, Side::Axis, windows::SCHEDULE, serde_json::Value::Null);
+    let positive = production_command(&base.state, Side::Axis, windows::SCHEDULE,
+        serde_json::json!({"requests":[{"family":"axis_equipment","nation":"italian","item":"Infantry","points":5,"arrival_turn":11}]}));
+    let answered_a = evaluate(&crate::Cna::dev(), &c, &base, &empty).unwrap();
+    let answered_b = evaluate(&crate::Cna::dev(), &c, &base, &positive).unwrap();
+    assert_private_transition(&c, Side::Axis, &answered_a, &answered_b);
+    let a = evaluate(&crate::Cna::dev(), &c, &answered_a.game, &Command::Advance).unwrap();
+    let b = evaluate(&crate::Cna::dev(), &c, &answered_b.game, &Command::Advance).unwrap();
+    assert_private_transition(&c, Side::Axis, &a, &b);
+    let public_windows = |state: &crate::State| state.decisions.pending.iter().map(|p| (p.seat, p.kind.clone(), p.summary.clone())).collect::<Vec<_>>();
+    assert_eq!(public_windows(&a.game.state), public_windows(&b.game.state));
+    assert_eq!(a.game.state.decisions.pending.len(), 1);
+    let targets = crate::testkit::inspect_targets(&[&a.game.state, &b.game.state]);
+    let owner = SeatId::new(Side::Axis, Role::Logistics);
+    assert_ne!(seat_snapshot(&c, &a.game.state, owner, &targets), seat_snapshot(&c, &b.game.state, owner, &targets));
+    let pass_a = production_command(&a.game.state, Side::Axis, windows::DISTRIBUTION, serde_json::Value::Null);
+    let pass_b = production_command(&b.game.state, Side::Axis, windows::DISTRIBUTION, serde_json::Value::Null);
+    let buffered_a = evaluate(&crate::Cna::dev(), &c, &a.game, &pass_a).unwrap();
+    let buffered_b = evaluate(&crate::Cna::dev(), &c, &b.game, &pass_b).unwrap();
+    assert_private_transition(&c, Side::Axis, &buffered_a, &buffered_b);
+    // Stop at the owned finish boundary: subsequent Axis shipping remains Unsupported.
+    let mut orders_a = buffered_a.game.state.clone();
+    let mut orders_b = buffered_b.game.state.clone();
+    finish_distribution(&mut orders_a, Side::Axis, &DistributionPlan { batches: vec![] }).unwrap();
+    let ProcedurePhase::Distributing { submitted: Some(plan), .. } = side(&orders_b, Side::Axis).unwrap().planning.phase.clone() else { unreachable!() };
+    finish_distribution(&mut orders_b, Side::Axis, &plan).unwrap();
+    assert!(side(&orders_a, Side::Axis).unwrap().orders.is_empty());
+    assert_eq!(side(&orders_b, Side::Axis).unwrap().orders.iter().map(|order| order.points).sum::<i32>(), 5);
+    let targets = crate::testkit::inspect_targets(&[&orders_a, &orders_b]);
+    for observer in Side::ALL {
+        for role in Role::ALL {
+            let seat = SeatId::new(observer, role);
+            if seat != owner { assert_eq!(seat_snapshot(&c, &orders_a, seat, &targets), seat_snapshot(&c, &orders_b, seat, &targets)); }
+        }
+    }
+}
+
+/// Cases: land:20.73, land:20.74, land:3.6
+#[test]
+fn actual_raw_rolls_are_private_to_logistics_including_from_same_side_teammates() {
+    use cna_core::engine::{Command, Game, evaluate};
+    let mut c = content();
+    c.bounds.end_gt = 12;
+    let mut state = scheduling_state(&c, 4);
+    open_schedule(&c, &mut state);
+    let mut game = Game::<crate::Cna> { state, rng: CampaignRng::from_seed([54; 32]).state() };
+    for owner in Side::ALL {
+        let cmd = production_command(&game.state, owner, windows::SCHEDULE, serde_json::Value::Null);
+        game = evaluate(&crate::Cna::dev(), &c, &game, &cmd).unwrap().game;
+    }
+    let mut other = game.clone();
+    other.rng = CampaignRng::from_seed([55; 32]).state();
+    let a = evaluate(&crate::Cna::dev(), &c, &game, &Command::Advance).unwrap();
+    let b = evaluate(&crate::Cna::dev(), &c, &other, &Command::Advance).unwrap();
+    assert_private_transition(&c, Side::Commonwealth, &a, &b);
+    let owner = SeatId::new(Side::Commonwealth, Role::Logistics);
+    let dice = |t: &cna_core::engine::Transition<crate::Cna>| t.events.iter().filter(|e| matches!(e.event, cna_protocol::GameEvent::DiceRolled { .. })).map(|e| {
+        assert_eq!(e.audience, Audience::Seat(owner));
+        serde_json::to_value(&e.event).unwrap()
+    }).collect::<Vec<_>>();
+    assert_eq!(dice(&a).len(), 16);
+    assert_ne!(dice(&a), dice(&b));
+    let targets = crate::testkit::inspect_targets(&[&a.game.state, &b.game.state]);
+    assert_ne!(seat_snapshot(&c, &a.game.state, owner, &targets), seat_snapshot(&c, &b.game.state, owner, &targets));
+}
+
+fn distribution_game(c: &crate::CnaContent, points: i32) -> cna_core::engine::Game<crate::Cna> {
+    use cna_core::decision::{ActionSchema, ActionSpace, Secrecy, Trigger};
+    let mut state = scheduling_state(c, 4);
+    state.decisions.pending.clear();
+    side_mut(&mut state, Side::Axis).unwrap().planning.phase = ProcedurePhase::Resolved;
+    side_mut(&mut state, Side::Commonwealth).unwrap().planning.phase = ProcedurePhase::Distributing {
+        determined: vec![DeterminedProduction {
+            row: ProductionRowRef::CommonwealthInfantry { column: "gt_3_to_30".into() },
+            kind: ProducedKind::Points { kind: ReplacementKind::Infantry { nation: ReplacementNation::Commonwealth } },
+            points, arrival_turn: 8,
+        }], submitted: None,
+    };
+    let mut rng = CampaignRng::from_seed([56; 32]);
+    let mut events = vec![];
+    // A checkpoint-corruption control uses the real Respond dispatcher and declared pass.
+    crate::steps::open(&mut state, &mut Cx { rng: &mut rng, events: &mut events },
+        SeatId::new(Side::Commonwealth, Role::Logistics), windows::DISTRIBUTION, "Distribution fixture".into(),
+        &["land:20.74"], Trigger::Scheduled, Secrecy::SecretSimultaneous,
+        ActionSpace::new(ActionSchema::Record { fields: vec![] }).with_pass("Deterministic distribution"));
+    cna_core::engine::Game { state, rng: rng.state() }
+}
+
+/// Cases: land:20.74
+#[test]
+fn canonical_distribution_error_keeps_exact_variant_detail_at_respond_and_advance() {
+    use cna_core::engine::{Command, Rejection, evaluate};
+    let c = content();
+    let game = distribution_game(&c, -1);
+    let before = serde_json::to_vec(&game).unwrap();
+    let expected = Rejection::Engine(invariant("corrupt determined production"));
+    let cmd = production_command(&game.state, Side::Commonwealth, windows::DISTRIBUTION, serde_json::Value::Null);
+    assert_eq!(evaluate(&crate::Cna::dev(), &c, &game, &cmd).err(), Some(expected.clone()));
+    assert_eq!(serde_json::to_vec(&game).unwrap(), before);
+    let mut accepted = game.clone();
+    accepted.state.decisions.pending.clear();
+    let ProcedurePhase::Distributing { submitted, .. } = &mut side_mut(&mut accepted.state, Side::Commonwealth).unwrap().planning.phase else { unreachable!() };
+    *submitted = Some(DistributionPlan { batches: vec![] });
+    let checkpoint: cna_core::engine::Game<crate::Cna> = serde_json::from_slice(&serde_json::to_vec(&accepted).unwrap()).unwrap();
+    let before = serde_json::to_vec(&checkpoint).unwrap();
+    assert_eq!(evaluate(&crate::Cna::dev(), &c, &checkpoint, &Command::Advance).err(), Some(expected));
+    assert_eq!(serde_json::to_vec(&checkpoint).unwrap(), before);
+}
+
+/// Cases: land:20.74
+#[test]
+fn late_ordinary_distribution_refusal_is_adjudication_invariant_with_whole_game_rollback() {
+    use cna_core::engine::{Command, Rejection, evaluate};
+    let c = content();
+    let game = distribution_game(&c, 2);
+    let cmd = production_command(&game.state, Side::Commonwealth, windows::DISTRIBUTION, serde_json::Value::Null);
+    let mut accepted = evaluate(&crate::Cna::dev(), &c, &game, &cmd).unwrap().game;
+    assert_eq!(accepted.rng, game.rng);
+    let ProcedurePhase::Distributing { determined, submitted: Some(plan) } = &mut side_mut(&mut accepted.state, Side::Commonwealth).unwrap().planning.phase else { unreachable!() };
+    determined[0].points = 3; // Corrupt the trusted history after the valid buffered answer.
+    assert!(matches!(validate_distribution(Side::Commonwealth, determined, plan), Err(Rejection::Illegal { .. })));
+    let before = serde_json::to_vec(&accepted).unwrap();
+    assert_eq!(evaluate(&crate::Cna::dev(), &c, &accepted, &Command::Advance).err(),
+        Some(Rejection::Engine(invariant("accepted distribution is no longer valid"))));
+    assert_eq!(serde_json::to_vec(&accepted).unwrap(), before);
+    assert!(matches!(side(&accepted.state, Side::Commonwealth).unwrap().planning.phase, ProcedurePhase::Distributing { submitted: Some(_), .. }));
+}

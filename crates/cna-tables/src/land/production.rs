@@ -422,6 +422,13 @@ impl AxisReplacementPool {
     ) -> Option<&AxisProductionEntry> {
         self.equipment.get(&(nation, chart_item.to_owned()))
     }
+    /// Bound native equipment rows; no entitlement or scheduling decision.
+    /// Cases: land:20.66
+    pub fn equipment_rows(
+        &self,
+    ) -> impl Iterator<Item = (&str, AxisProductionNation, &AxisProductionEntry)> + '_ {
+        self.equipment.iter().map(|((nation, item), entry)| (item.as_str(), *nation, entry))
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -687,5 +694,12 @@ impl CommonwealthProduction {
     /// Cases: land:20.78
     pub fn equipment(&self, chart_item: &str) -> Option<&CommonwealthProductionEntry> {
         self.equipment.get(chart_item)
+    }
+    /// Bound native equipment rows; no entitlement or scheduling decision.
+    /// Cases: land:20.78
+    pub fn equipment_rows(
+        &self,
+    ) -> impl Iterator<Item = (&str, &CommonwealthProductionEntry)> + '_ {
+        self.equipment.iter().map(|(item, entry)| (item.as_str(), entry))
     }
 }

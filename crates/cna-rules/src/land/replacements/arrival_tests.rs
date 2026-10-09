@@ -269,3 +269,173 @@ fn duplicate_orders_and_existing_pool_adapter_and_wrong_nation_cannot_gain_deliv
     let merge = ArrivalPlan { choices: vec![ArrivalChoice::Trucks { order: id, location: cairo, pool_target: ProductionPoolTarget::Existing { pool: "no-fabricated-funding".into() } }] };
     assert!(matches!(arrival::prepare(&content, &state, SeatId::new(Side::Commonwealth, Role::Logistics), &merge, &quota(), false), Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "land:20.78A"));
 }
+
+/// Cases: land:20.41, land:20.43, land:19.11, land:3.31
+#[test]
+fn actual_logistics_initial_assignment_accepts_front_and_rear_recipients_without_unit_commands() {
+    use cna_core::{dice::CampaignRng, engine::{Game, evaluate}};
+    use cna_tables::land::training::TrainingSubject;
+    let (content, mut state, front, cairo, _) = fixture();
+    assert_eq!(crate::ownership::seat_for_unit(&content, &state, &front), Role::FrontLine);
+    let rear = UnitId::new("cw.selby_force.matruh_garrison_hq");
+    assert_eq!(crate::ownership::seat_for_unit(&content, &state, &rear), Role::RearArea);
+    // Real source HQ, placed explicitly for this reduced initial-assignment fixture.
+    // It grants neither a new scenario arrival nor command/absorption rights.
+    state.land.units.get_mut(&rear).unwrap().location = cairo.clone();
+    let foot = foot_order(&mut state);
+    let row = ProductionRowRef::CommonwealthEquipment { item: "A9 Cruiser".into() };
+    let kind = super::scheduling::kind(&content, &row).unwrap();
+    let own = side_mut(&mut state, Side::Commonwealth).unwrap();
+    let tank = own.allocate_id().unwrap();
+    own.orders.push(ScheduledReplacement { id: tank.clone(), row, kind, points: 1,
+        due: OpStageKey { game_turn: 4, op_stage: 1 }, lane: None });
+    own.cw_arrival_limits.push(quota());
+    open_window(&content, &mut state);
+    let location = arrival::cities(&content, false).unwrap().iter().position(|(_, loc)| loc == &cairo).unwrap();
+    let game = Game::<crate::Cna> { state, rng: CampaignRng::from_seed([61; 32]).state() };
+    let before_units = serde_json::to_vec(&game.state.land.units).unwrap();
+    let before_logistics = serde_json::to_vec(&game.state.logistics).unwrap();
+    let own = command(&game.state, Side::Commonwealth, serde_json::json!({"choices":[
+        {"order":foot,"recipient":front,"location":location},
+        {"order":tank,"recipient":rear,"location":location}
+    ]}));
+    let answer = evaluate(&crate::Cna::dev(), &content, &game, &own).unwrap();
+    assert_eq!(serde_json::to_vec(&answer.game.state.land.units).unwrap(), before_units);
+    assert_eq!(serde_json::to_vec(&answer.game.state.logistics).unwrap(), before_logistics);
+    assert!(side(&answer.game.state, Side::Commonwealth).unwrap().counters.is_empty());
+    assert_eq!(answer.game.rng, game.rng);
+    let pass = command(&answer.game.state, Side::Axis, serde_json::Value::Null);
+    let mut finished = evaluate(&crate::Cna::dev(), &content, &answer.game, &pass).unwrap().game;
+    // The actual owned finish repeats all recipient/source/quota preflight on this draft.
+    arrival::finish_arrivals(&content, &mut finished.state, false).unwrap();
+    assert_eq!(finished.rng, game.rng);
+    assert_eq!(serde_json::to_vec(&finished.state.land.units).unwrap(), before_units);
+    assert_eq!(serde_json::to_vec(&finished.state.logistics).unwrap(), before_logistics);
+    let counters = &side(&finished.state, Side::Commonwealth).unwrap().counters;
+    assert_eq!(counters.len(), 2);
+    for (id, recipient, subject) in [(foot, front, TrainingSubject::InfantryExceptCommando), (tank, rear, TrainingSubject::TankOrRecce)] {
+        let counter = counters.iter().find(|counter| counter.id == id).unwrap();
+        assert_eq!(counter.recipient, recipient);
+        let Training::Training { required_stages, completed, candidate, last_counted } = &counter.training else { panic!("arrival must not credit training") };
+        assert_eq!(i32::from(*required_stages), content.tables.land.training.op_stages(subject));
+        assert_eq!(*completed, 0);
+        assert!(candidate.is_none() && last_counted.is_none());
+        assert!(counter.physical.funding.is_none() && counter.physical.activity.is_none() && counter.carriage.is_none());
+        assert_eq!(counter.physical.cp_quarters, 0);
+        assert_eq!(counter.physical.cohesion_quarters, 0);
+    }
+}
+
+/// Cases: land:20.41, land:20.42, land:20.43
+#[test]
+fn actual_recipient_rejections_preserve_game_rng_pending_orders_and_unit_facts() {
+    use cna_core::{dice::CampaignRng, engine::{Game, evaluate}};
+    let (content, state, recipient, cairo, _) = fixture();
+    let foreign = state.land.units.values().find(|unit| unit.side == Side::Axis).unwrap().id.clone();
+    let wrong_type = state.land.units.keys().find(|id| {
+        let source = &content.units.units[*id];
+        source.side == Side::Commonwealth && source.class.as_ref().and_then(|class| content.units.classes.get(class)).is_some_and(|class| class.unit_type == "tank")
+    }).unwrap().clone();
+    for control in ["missing", "foreign", "wrong_type", "eliminated", "withdrawn", "zero_non_hq"] {
+        let mut variant = state.clone();
+        let id = match control {
+            "missing" => UnitId::new("missing.replacement-recipient"),
+            "foreign" => foreign.clone(),
+            "wrong_type" => {
+                variant.land.units.get_mut(&wrong_type).unwrap().location = cairo.clone();
+                wrong_type.clone()
+            }
+            "eliminated" => {
+                variant.land.units.get_mut(&recipient).unwrap().location = Location::Eliminated;
+                recipient.clone()
+            }
+            "withdrawn" => {
+                variant.land.arrivals.withdrawn_units.insert(recipient.clone());
+                recipient.clone()
+            }
+            "zero_non_hq" => {
+                variant.land.units.get_mut(&recipient).unwrap().toe = Some(cna_content::units::Toe::Under { under: 0 });
+                assert_eq!(crate::view::toe_points(&content, &variant.land.units[&recipient]), Some(0));
+                recipient.clone()
+            }
+            _ => unreachable!(),
+        };
+        let order = foot_order(&mut variant);
+        side_mut(&mut variant, Side::Commonwealth).unwrap().cw_arrival_limits.push(quota());
+        open_window(&content, &mut variant);
+        let location = arrival::cities(&content, false).unwrap().iter().position(|(_, loc)| loc == &cairo).unwrap();
+        let game = Game::<crate::Cna> { state: variant, rng: CampaignRng::from_seed([63; 32]).state() };
+        let before = serde_json::to_vec(&game).unwrap();
+        let cmd = command(&game.state, Side::Commonwealth, serde_json::json!({"choices":[{"order":order,"recipient":id,"location":location}]}));
+        assert!(matches!(evaluate(&crate::Cna::dev(), &content, &game, &cmd), Err(Rejection::Illegal { .. })), "{control} recipient accepted");
+        assert_eq!(serde_json::to_vec(&game).unwrap(), before, "{control} changed Game/RNG/pending");
+    }
+}
+
+/// Cases: land:20.43, land:17.6, land:4.45
+#[test]
+fn layforce_uses_exact_commando_duration_and_sas_refuses_unverified_training() {
+    use cna_core::{dice::CampaignRng, engine::{Game, evaluate}};
+    use cna_tables::land::training::TrainingSubject;
+    let (content, mut state, _, cairo, _) = fixture();
+    let layforce = UnitId::new("cw.unassigned_inf.a_bn_special_service_bde");
+    let sas = UnitId::new("cw.unassigned_inf.special_air_service_bde");
+    let unclassified = UnitId::new("cw.unassigned_inf.1st_sherwood_foresters");
+    // These future real source units are placed solely to isolate training classification;
+    // this fixture does not adjudicate their printed reinforcement dates.
+    for id in [&layforce, &sas, &unclassified] { state.land.units.get_mut(id).unwrap().location = cairo.clone(); }
+    let order = foot_order(&mut state);
+    let plan = ArrivalPlan { choices: vec![ArrivalChoice::Points { order: order.clone(), recipient: layforce.clone(), location: cairo.clone() }] };
+    let prepared = arrival::prepare(&content, &state, SeatId::new(Side::Commonwealth, Role::Logistics), &plan, &quota(), false).unwrap();
+    let mut accepted = state.clone();
+    accept(&mut accepted, &plan);
+    arrival::finish(&content, &mut accepted, &prepared).unwrap();
+    let Training::Training { required_stages, completed, candidate, last_counted } = &side(&accepted, Side::Commonwealth).unwrap().counters[0].training else { panic!("unexpected arrival credit") };
+    assert_eq!(i32::from(*required_stages), content.tables.land.training.op_stages(TrainingSubject::Commando));
+    assert_eq!(*completed, 0);
+    assert!(candidate.is_none() && last_counted.is_none());
+    side_mut(&mut state, Side::Commonwealth).unwrap().cw_arrival_limits.push(quota());
+    open_window(&content, &mut state);
+    let location = arrival::cities(&content, false).unwrap().iter().position(|(_, loc)| loc == &cairo).unwrap();
+    let game = Game::<crate::Cna> { state, rng: CampaignRng::from_seed([64; 32]).state() };
+    let before = serde_json::to_vec(&game).unwrap();
+    for id in [sas, unclassified] {
+        let cmd = command(&game.state, Side::Commonwealth, serde_json::json!({"choices":[{"order":order,"recipient":id,"location":location}]}));
+        assert!(matches!(evaluate(&crate::Cna::dev(), &content, &game, &cmd), Err(Rejection::Engine(EngineError::Unsupported { case, detail })) if case == "land:20.43" && detail.contains("verified non-commando")));
+        assert_eq!(serde_json::to_vec(&game).unwrap(), before);
+    }
+}
+
+/// Cases: land:20.41, land:3.6
+#[test]
+fn actual_private_due_orders_are_hidden_from_same_side_non_logistics_and_opponent() {
+    use cna_core::{dice::CampaignRng, engine::{Game, evaluate}, ids::SeatId};
+    let (content, mut a, _, cairo, _) = fixture();
+    let one = truck_order(&mut a, 1);
+    side_mut(&mut a, Side::Commonwealth).unwrap().cw_arrival_limits.push(quota());
+    let mut b = a.clone();
+    let two = truck_order(&mut b, 1);
+    open_window(&content, &mut a);
+    open_window(&content, &mut b);
+    let ga = Game::<crate::Cna> { state: a, rng: CampaignRng::from_seed([65; 32]).state() };
+    let gb = Game::<crate::Cna> { state: b, rng: ga.rng.clone() };
+    let targets = crate::testkit::inspect_targets(&[&ga.state, &gb.state]);
+    for observer in Side::ALL {
+        for role in Role::ALL {
+            let seat = SeatId::new(observer, role);
+            if seat != SeatId::new(Side::Commonwealth, Role::Logistics) {
+                assert_eq!(super::tests::seat_snapshot(&content, &ga.state, seat, &targets), super::tests::seat_snapshot(&content, &gb.state, seat, &targets));
+            }
+        }
+    }
+    let owner = SeatId::new(Side::Commonwealth, Role::Logistics);
+    assert_ne!(super::tests::seat_snapshot(&content, &ga.state, owner, &targets), super::tests::seat_snapshot(&content, &gb.state, owner, &targets));
+    let location = arrival::cities(&content, false).unwrap().iter().position(|(_, loc)| loc == &cairo).unwrap();
+    let ca = command(&ga.state, Side::Commonwealth, serde_json::json!({"choices":[{"order":one,"location":location}]}));
+    let cb = command(&gb.state, Side::Commonwealth, serde_json::json!({"choices":[{"order":one,"location":location},{"order":two,"location":location}]}));
+    let ta = evaluate(&crate::Cna::dev(), &content, &ga, &ca).unwrap();
+    let tb = evaluate(&crate::Cna::dev(), &content, &gb, &cb).unwrap();
+    super::tests::assert_private_transition(&content, Side::Commonwealth, &ta, &tb);
+    assert_eq!(ta.game.rng, ga.rng);
+    assert_eq!(tb.game.rng, gb.rng);
+}
