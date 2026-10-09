@@ -6,6 +6,10 @@ use cna_content::units::Aircraft;
 use cna_core::{dice::Die, engine::EngineError};
 use cna_tables::airlog::air::{AircraftRefit, Nationality};
 
+/// Finite actual-SGSU refit accounting. Runtime attachment and live dispatch
+/// require the Air owner's shared-field contract; no load producer is added.
+pub mod refit;
+
 fn invalid(detail: impl Into<String>) -> EngineError {
     EngineError::Invariant {
         detail: format!("air maintenance: {}", detail.into()),
