@@ -1,5 +1,6 @@
 //! Breakdown exposure and proportional allocation; all rolls belong to adjudication.
 mod allocation;
+pub(crate) mod allocation_reason;
 pub mod baseline;
 pub mod cohorts;
 pub mod core;

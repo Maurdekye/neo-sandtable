@@ -268,23 +268,29 @@ fn partition(
     let working = sub(old.trucks, lost)?;
     let working_transport = sub(old.transport_trucks, transport)?;
     let strength = super::super::formation::strength(c, s, &id);
-    let unresolved =
-        if super::super::formation::class(c, &id).is_some_and(|k| k.unit_type == "infantry") {
-            losses::unresolved_points(
-                c,
-                strength,
-                old.transport_trucks,
-                working_transport,
-                transport,
-                Trucks::default(),
-            )
-        } else {
-            0
-        };
-    let passengers = if old.transport_trucks.total() > 0
-        && super::super::formation::class(c, &id).is_some_and(|k| k.unit_type == "infantry")
-    {
-        (strength - unresolved - capacity(c, working_transport)).max(0)
+    let infantry =
+        super::super::formation::class(c, &id).is_some_and(|k| k.unit_type == "infantry");
+    let obligation = if infantry {
+        losses::passenger_obligation(c, strength, old.transport_trucks).ok()?
+    } else {
+        losses::PassengerObligation {
+            carried: 0,
+            walking: strength,
+        }
+    };
+    let unresolved = if infantry {
+        losses::unresolved_points(
+            c,
+            obligation.carried,
+            working_transport,
+            transport,
+            Trucks::default(),
+        )
+    } else {
+        0
+    };
+    let passengers = if infantry {
+        (obligation.carried - unresolved - capacity(c, working_transport)).max(0)
     } else {
         0
     };
@@ -311,7 +317,7 @@ fn partition(
     u.transport_trucks = working_transport;
     if passengers + unresolved > 0 {
         u.toe = Some(cna_content::units::Toe::Under {
-            under: strength - passengers - unresolved,
+            under: obligation.walking + obligation.carried - passengers - unresolved,
         });
     }
     if let Some(cna_content::units::Toe::Weapons(ws)) = &mut u.toe {
@@ -481,5 +487,270 @@ mod tests {
         let selected =
             plan(&c, &s, &outcome).expect("mandatory baseline must find legal mixed cargo");
         losses::apply(&c, &mut s, &outcome, &selected).unwrap();
+    }
+    // Captured scalars copied; ALL location/weather/cohort/context fields below are synthetic.
+    fn captured_quantities_synthetic_context() -> (CnaContent, State, RolledCheck) {
+        use super::super::{Category, CheckGroup, Equipment};
+        use cna_core::ids::UnitId;
+        use std::collections::{BTreeMap, BTreeSet};
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut s = State::new(&c).unwrap();
+        let id: UnitId = "cw.2_nz_div.19th_nz_bn".into();
+        let u = s.land.units.get_mut(&id).unwrap();
+        u.location = crate::state::Location::Hex {
+            hex: "C4021".into(),
+        }; // synthetic, not captured
+        u.detached = true;
+        u.attached_to = None;
+        // Synthetic native representation: cw.m's printed maximum is the captured six TOE.
+        // Under { under: 6 } is INVALID at maximum and formation::strength hides that error as zero.
+        // Normal(N) is chosen only for this ordinary fixture, not claimed as the captured TOE variant.
+        u.toe = Some(cna_content::units::Toe::Normal(
+            cna_content::units::NormalToe::N,
+        ));
+        assert_eq!(crate::logistics::toe_strength(&c, u).unwrap().get(), 6);
+        u.trucks = Trucks {
+            light: 3,
+            medium: 6,
+            heavy: 1,
+        };
+        u.transport_trucks = Trucks {
+            medium: 2,
+            ..Trucks::default()
+        };
+        s.turn.weather = Some(crate::state::WeatherState {
+            kind: cna_tables::land::weather::WeatherKind::Normal,
+            storm_sections: vec![],
+        }); // synthetic, not captured
+        let stock = s.logistics.unit_supply.entry(id.clone()).or_default();
+        stock.carried = Supplies {
+            stores: 12,
+            water: 53,
+            ..Supplies::default()
+        };
+        stock.tank_fuel = cna_core::quantity::FuelTenths::new(0);
+        stock.activity_water = cna_core::quantity::WaterPoints::new(0);
+        // The existing validator initializes ordinary unfunded cohorts from this synthetic context.
+        // No captured cohort/account history is claimed; we do not create histories just for capture.
+        let outcome = RolledCheck {
+            group: CheckGroup {
+                category: Category::Truck,
+                bar: -2,
+                column: 3,
+                shift: -2,
+                assets: vec![
+                    Asset {
+                        unit: id.clone(),
+                        equipment: Equipment::LightTruck,
+                        points: 3,
+                        cohort: None,
+                    },
+                    Asset {
+                        unit: id.clone(),
+                        equipment: Equipment::MediumTruck,
+                        points: 6,
+                        cohort: None,
+                    },
+                    Asset {
+                        unit: id.clone(),
+                        equipment: Equipment::HeavyTruck,
+                        points: 1,
+                        cohort: None,
+                    },
+                ],
+            },
+            percent: 10,
+            broken: 1,
+            destination: "C4021".into(),
+            origins: BTreeMap::from([(id, "C4020".into())]),
+            require_origin: BTreeSet::new(),
+        }; // column/origins are synthetic; percent/broken/assets/require_origin match capture
+        (c, s, outcome)
+    }
+
+    // Rules407 additive SOURCE control: all passenger holdings linked to THIS source unit.
+    // This is a small ordinary test State, never a captured/replayed full campaign.
+    fn assert_source_unit_toe_conserved(
+        c: &CnaContent,
+        s: &State,
+        id: &cna_core::ids::UnitId,
+        before: i32,
+    ) {
+        let active = crate::land::formation::strength(c, s, id);
+        let marked: i32 = s
+            .land
+            .breakdown
+            .markers
+            .values()
+            .filter_map(|marker| marker.passengers.get(id).copied())
+            .sum();
+        let unresolved: i32 = s
+            .land
+            .breakdown
+            .unresolved_passengers
+            .get(id)
+            .into_iter()
+            .flatten()
+            .map(|entry| entry.points)
+            .sum();
+        assert_eq!(active + marked + unresolved, before);
+    }
+
+    /// Cases: land:8.92, land:8.95, land:21.43
+    /// Interpretations: interp:land-0041 (provisional).
+    #[test]
+    fn partial_carriage_nontransport_breakdown_keeps_six_toe_and_foot_cpa() {
+        let (c, mut s, outcome) = captured_quantities_synthetic_context();
+        let id = outcome.group.assets[0].unit.clone();
+        let obligation =
+            losses::passenger_obligation(&c, 6, s.land.units[&id].transport_trucks).unwrap();
+        assert_eq!((obligation.carried, obligation.walking), (2, 4));
+        let allowance = crate::land::formation::individual_allowance(&c, &s, &id).unwrap();
+        assert!(!allowance.motorized);
+        assert_eq!(allowance.cpa, 10);
+        let plan = plan(&c, &s, &outcome).expect("legal partial carriage partition");
+        assert_eq!(plan.losses, vec![1, 0, 0]);
+        assert_eq!(
+            plan.partitions[0].origin_passengers + plan.partitions[0].destination_passengers,
+            0
+        );
+        assert_eq!(
+            plan.partitions[0].origin_transport.total()
+                + plan.partitions[0].destination_transport.total(),
+            0
+        );
+        losses::apply(&c, &mut s, &outcome, &plan).unwrap();
+        assert_eq!(crate::land::formation::strength(&c, &s, &id), 6);
+        assert_eq!(s.land.units[&id].transport_trucks.medium, 2);
+        assert_eq!(s.land.units[&id].trucks.light, 2);
+        assert_eq!(
+            s.logistics.unit_supply[&id].carried,
+            Supplies {
+                stores: 12,
+                water: 53,
+                ..Supplies::default()
+            }
+        );
+        assert!(!s.land.breakdown.unresolved_passengers.contains_key(&id));
+        assert!(
+            !crate::land::formation::individual_allowance(&c, &s, &id)
+                .unwrap()
+                .motorized
+        );
+        assert_source_unit_toe_conserved(&c, &s, &id, 6);
+    }
+
+    /// Small ordinary boundary control, not captured campaign history or RNG.
+    #[test]
+    fn sufficient_medium_carriage_preserves_broken_passenger_accounting() {
+        let (c, mut s, mut outcome) = captured_quantities_synthetic_context();
+        let id = outcome.group.assets[0].unit.clone();
+        s.land.units.get_mut(&id).unwrap().toe = Some(cna_content::units::Toe::Under { under: 2 });
+        let u = s.land.units.get_mut(&id).unwrap();
+        u.trucks = Trucks {
+            medium: 2,
+            ..Trucks::default()
+        };
+        u.transport_trucks = u.trucks;
+        s.logistics
+            .unit_supply
+            .insert(id.clone(), Default::default());
+        outcome.group.assets = vec![Asset {
+            unit: id.clone(),
+            equipment: super::super::Equipment::MediumTruck,
+            points: 2,
+            cohort: None,
+        }];
+        outcome.broken = 1;
+        outcome.percent = 50;
+        let p = plan(&c, &s, &outcome).unwrap();
+        assert_eq!(p.partitions[0].destination_passengers, 1);
+        losses::apply(&c, &mut s, &outcome, &p).unwrap();
+        assert_eq!(crate::land::formation::strength(&c, &s, &id), 1);
+        assert_eq!(
+            s.land
+                .breakdown
+                .markers
+                .values()
+                .map(|m| m.passengers.get(&id).copied().unwrap_or(0))
+                .sum::<i32>(),
+            1
+        );
+        assert_source_unit_toe_conserved(&c, &s, &id, 2);
+    }
+
+    /// Existing land-0028 stays controlling; walkers never become unresolved merely for having no seat.
+    #[test]
+    fn half_point_split_separates_carried_unresolved_from_preexisting_walkers() {
+        for (strength, expected_walking) in [(1, 0), (3, 2)] {
+            let (c, mut s, mut outcome) = captured_quantities_synthetic_context();
+            let id = outcome.group.assets[0].unit.clone();
+            let u = s.land.units.get_mut(&id).unwrap();
+            u.toe = Some(cna_content::units::Toe::Under { under: strength });
+            u.trucks = Trucks {
+                light: 2,
+                ..Trucks::default()
+            };
+            u.transport_trucks = u.trucks;
+            s.logistics
+                .unit_supply
+                .insert(id.clone(), Default::default());
+            outcome.group.assets = vec![Asset {
+                unit: id.clone(),
+                equipment: super::super::Equipment::LightTruck,
+                points: 2,
+                cohort: None,
+            }];
+            outcome.broken = 1;
+            outcome.percent = 50;
+            let o = losses::passenger_obligation(&c, strength, s.land.units[&id].transport_trucks)
+                .unwrap();
+            assert_eq!((o.carried, o.walking), (1, expected_walking));
+            let p = plan(&c, &s, &outcome).unwrap();
+            assert_eq!(
+                p.partitions[0].origin_passengers + p.partitions[0].destination_passengers,
+                0
+            );
+            losses::apply(&c, &mut s, &outcome, &p).unwrap();
+            assert_eq!(
+                crate::land::formation::strength(&c, &s, &id),
+                expected_walking
+            );
+            assert_eq!(s.land.breakdown.unresolved_passengers[&id][0].points, 1);
+            assert_source_unit_toe_conserved(&c, &s, &id, strength);
+        }
+    }
+
+    /// Rules407: an unseated broken passenger must reject without ANY State byte change.
+    /// Cases: land:21.43, land:21.45
+    /// Interpretations: interp:land-0028, interp:land-0041 (provisional).
+    #[test]
+    fn partial_carriage_rejects_unseated_broken_passenger_without_state_change() {
+        let (c, mut s, outcome) = captured_quantities_synthetic_context();
+        let id = outcome.group.assets[0].unit.clone();
+        let mut proposed = plan(&c, &s, &outcome).expect("ordinary valid partial carriage plan");
+        assert_eq!(proposed.partitions.len(), 1);
+        assert_eq!(proposed.partitions[0].unit, id);
+        assert_eq!(
+            proposed.partitions[0].origin_transport.total()
+                + proposed.partitions[0].destination_transport.total(),
+            0
+        );
+        assert_eq!(
+            proposed.partitions[0].origin_passengers
+                + proposed.partitions[0].destination_passengers,
+            0
+        );
+        // Exactly one malformed field: one passenger has no broken transport seat.
+        proposed.partitions[0].destination_passengers = 1;
+        assert_source_unit_toe_conserved(&c, &s, &id, 6);
+        let before = serde_json::to_vec(&s).unwrap();
+        let rejected = losses::apply(&c, &mut s, &outcome, &proposed).unwrap_err();
+        assert!(
+            matches!(rejected, cna_core::engine::Rejection::Illegal { message }
+        if message == "passenger allocation exceeds transported infantry")
+        );
+        assert_eq!(serde_json::to_vec(&s).unwrap(), before);
+        assert_source_unit_toe_conserved(&c, &s, &id, 6);
     }
 }

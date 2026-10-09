@@ -124,27 +124,66 @@ fn passenger_capacity(c: &CnaContent, t: Trucks) -> i64 {
         })
         .sum()
 }
-/// Whole-point capacity lost only by separating previously sufficient half-point carriage.
-/// The affected men remain unresolved; no partition receives a fabricated half TOE point.
-/// Cases: land:21.43, land:21.45
-/// Interpretations: interp:land-0028
-pub(super) fn unresolved_points(
+// Rules401 / lead m84413195a551: partial carriage is legal; not a State/wire field.
+pub(super) struct PassengerObligation {
+    pub carried: i32,
+    pub walking: i32,
+}
+impl std::fmt::Debug for PassengerObligation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("PassengerObligation(<redacted>)")
+    }
+}
+/// Whole TOE already riding; the rest walk at the body's non-motorized CPA.
+/// Cases: land:8.92, land:8.95, land:21.43, land:21.45
+/// Interpretations: interp:land-0041 (provisional).
+pub(super) fn passenger_obligation(
     c: &CnaContent,
     strength: i32,
-    old: Trucks,
+    transport: Trucks,
+) -> Result<PassengerObligation, super::allocation_reason::AllocationReason> {
+    use super::allocation_reason::{AllocationReason, PassengerReason};
+    if strength < 0
+        || [transport.light, transport.medium, transport.heavy]
+            .iter()
+            .any(|n| *n < 0)
+    {
+        return Err(AllocationReason::Passenger(PassengerReason::InvalidInput));
+    }
+    let halves = passenger_capacity(c, transport);
+    if halves < 0 {
+        return Err(AllocationReason::Passenger(PassengerReason::InvalidInput));
+    }
+    // Captured native chart: halves per truck POINT, not physical truck count.
+    // min(strength) makes this conversion bounded by a validated nonnegative i32.
+    let carried = i32::try_from(i64::from(strength).min(halves / 2))
+        .map_err(|_| AllocationReason::Passenger(PassengerReason::Arithmetic))?;
+    Ok(PassengerObligation {
+        carried,
+        walking: strength - carried,
+    })
+}
+
+/// Only split-induced loss of WHOLE carried TOE; pre-existing walkers are not unresolved.
+/// Cases: land:21.43, land:21.45
+/// Interpretations: interp:land-0028, interp:land-0041 (provisional).
+pub(super) fn unresolved_points(
+    c: &CnaContent,
+    carried: i32,
     working: Trucks,
     origin: Trucks,
     destination: Trucks,
 ) -> i32 {
-    if strength <= 0 || passenger_capacity(c, old) < i64::from(strength) * 2 {
-        return 0;
-    }
     let whole = [working, origin, destination]
         .into_iter()
         .map(|t| passenger_capacity(c, t) / 2)
         .sum::<i64>();
-    i32::try_from((i64::from(strength) - whole).max(0)).unwrap_or(0)
+    // Existing valid transport subtraction/partition checks keep whole nonnegative;
+    // shortage is between0 and carried, so no lossy conversion/default branch.
+    i32::try_from((i64::from(carried) - whole).max(0))
+        .expect("whole carried shortage fits its nonnegative i32 obligation")
 }
+
 pub(super) fn marker_fuel_capacity(c: &CnaContent, assets: &[Asset]) -> Result<i32, Rejection> {
     use cna_tables::airlog::trucks::TruckType;
     let mut capacity = 0i64;
@@ -409,11 +448,19 @@ pub fn apply(
         let strength = super::super::formation::strength(c, &draft, &p.unit);
         let infantry =
             super::super::formation::class(c, &p.unit).is_some_and(|k| k.unit_type == "infantry");
+        let obligation = if infantry {
+            passenger_obligation(c, strength, old.transport_trucks)
+                .map_err(|_| illegal("passenger accounting is unresolved"))?
+        } else {
+            PassengerObligation {
+                carried: 0,
+                walking: strength,
+            }
+        };
         let unresolved = if infantry {
             unresolved_points(
                 c,
-                strength,
-                old.transport_trucks,
+                obligation.carried,
                 working_transport,
                 p.origin_transport,
                 p.destination_transport,
@@ -423,7 +470,12 @@ pub fn apply(
         };
         if p.origin_passengers < 0
             || p.destination_passengers < 0
-            || passengers > strength - unresolved
+            || passengers
+                > (if infantry {
+                    obligation.carried - unresolved
+                } else {
+                    strength
+                })
             || i64::from(p.origin_passengers) * 2 > passenger_capacity(c, p.origin_transport)
             || i64::from(p.destination_passengers) * 2
                 > passenger_capacity(c, p.destination_transport)
@@ -438,9 +490,8 @@ pub fn apply(
                 "only infantry may be recorded as embarked passengers",
             ));
         }
-        if old.transport_trucks.total() > 0
-            && super::super::formation::class(c, &p.unit).is_some_and(|k| k.unit_type == "infantry")
-            && i64::from(strength - passengers - unresolved) * 2
+        if infantry
+            && i64::from(obligation.carried - passengers - unresolved) * 2
                 > passenger_capacity(c, working_transport)
         {
             return Err(illegal(
@@ -492,7 +543,7 @@ pub fn apply(
         }
         if passengers + unresolved > 0 {
             u.toe = Some(Toe::Under {
-                under: strength - passengers - unresolved,
+                under: obligation.walking + obligation.carried - passengers - unresolved,
             });
         }
         if unresolved > 0 {
