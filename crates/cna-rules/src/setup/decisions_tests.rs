@@ -172,7 +172,7 @@ fn actual_legacy_close_never_credits_existing_unknown_aircraft_and_empty_source_
     let mut value = serde_json::to_value(&game).unwrap();
     value["state"]["setup"].as_object_mut().unwrap().remove("initial_air_import");
     let mut old: Game<Cna> = serde_json::from_value(value).unwrap();
-    crate::air::inventory::initialize(&c, &mut old.state.air).unwrap();
+    crate::air::inventory::initialize(&c, &mut old.state).unwrap();
     let before = serde_json::to_value(&old.state.air).unwrap();
     let closed = evaluate(&Cna::dev(), &c, &old, &Command::Advance).unwrap();
     assert!(closed.game.state.setup.closed);
