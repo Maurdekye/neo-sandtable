@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     FacilityCapacity, FacilityId, FacilityKind, FacilityOrigin, FacilityProperties, FacilityState,
-    FacilityWork, invalid,
+    FacilityWork, SiteIncarnation, invalid,
 };
 use crate::{CnaContent, air::inventory, state::AirState};
 
@@ -25,6 +25,9 @@ pub struct StartedFacilityWork {
     side: Side,
     work: FacilityWork,
     target: FacilityId,
+    /// Legacy receipts load without an invented physical-site identity.
+    #[serde(default)]
+    incarnation: Option<SiteIncarnation>,
 }
 
 impl StartedFacilityWork {
@@ -37,6 +40,55 @@ impl StartedFacilityWork {
     pub fn target(&self) -> &FacilityId {
         &self.target
     }
+    pub fn incarnation(&self) -> Option<SiteIncarnation> {
+        self.incarnation
+    }
+}
+
+/// Resolve identity before Engineering examines its whole-State Active ledger.
+/// No facility, owner, project or availability is queried here.
+/// Canonical hex/source validation belongs to validate/start, after that guard.
+/// Cases: land:24.77, land:24.79
+pub fn target_id(work: &FacilityWork) -> FacilityId {
+    match work {
+        FacilityWork::Create { kind, hex } => constructed_id(*kind, hex),
+        FacilityWork::RepairOne { id } | FacilityWork::Upgrade { id } => id.clone(),
+    }
+}
+
+fn interrupted(case: &str, detail: &str) -> EngineError {
+    EngineError::Unsupported {
+        case: case.into(),
+        detail: detail.into(),
+    }
+}
+
+/// Pure canonical metadata, not permission to adopt an old Active project.
+/// Cases: land:24.76, land:24.79
+pub fn current_site_incarnation(
+    content: &CnaContent,
+    air: &AirState,
+    id: &FacilityId,
+) -> Result<Option<SiteIncarnation>, EngineError> {
+    inventory::check(content, air)?;
+    let site = air
+        .runtime
+        .facilities
+        .get(id)
+        .ok_or_else(|| invalid("incarnation target is not canonical"))?;
+    site.properties(content, id)?;
+    Ok(site.incarnation)
+}
+
+fn allocate_incarnation(
+    runtime: &mut crate::air::state::AirRuntime,
+) -> Result<SiteIncarnation, EngineError> {
+    let next = runtime
+        .site_incarnation_serial
+        .checked_add(1)
+        .ok_or_else(|| invalid("facility incarnation serial overflow"))?;
+    runtime.site_incarnation_serial = next;
+    Ok(SiteIncarnation(next))
 }
 
 fn water(kind: FacilityKind) -> bool {
@@ -50,14 +102,14 @@ fn constructed_target(properties: &FacilityProperties) -> Result<FacilityId, Eng
     let crate::state::Location::Hex { hex } = &properties.location else {
         return Err(invalid("constructed target is not on map"));
     };
-    Ok(FacilityId(format!(
+    Ok(constructed_id(properties.kind, hex))
+}
+
+fn constructed_id(kind: FacilityKind, hex: &impl std::fmt::Display) -> FacilityId {
+    FacilityId(format!(
         "constructed.{}.{hex}",
-        if water(properties.kind) {
-            "water"
-        } else {
-            "air"
-        }
-    )))
+        if water(kind) { "water" } else { "air" }
+    ))
 }
 
 /// The limit concerns surviving sites, including one currently under work.
@@ -126,8 +178,9 @@ pub fn validate_work(
 }
 
 /// Start only a newly authorized unique Engineering project in its disposable
-/// finish draft. The caller verifies actual ACTIVE ProjectId/exact side/work/
-/// target and site incarnation; this helper does not authenticate any of them.
+/// finish draft AFTER whole-State ledger integrity/no Active SITE and source
+/// entitlement checks. The caller records the exact returned token/side/work/
+/// target as a new Active ProjectId; this helper cannot authenticate its ledger.
 /// Engineering owns costs and duration. Repair does not suspend a surviving
 /// airfield. New construction and upgrades suspend the one canonical site.
 /// Cases: land:24.71, land:24.76, land:24.79, airlog:36.12, airlog:36.2,
@@ -141,12 +194,21 @@ pub fn start_work(
 ) -> Result<StartedFacilityWork, EngineError> {
     let target = validate_work(content, air, side, work)?;
     let properties = work.source_properties(content, air, side)?;
-    inventory::update(content, air, |runtime| {
+    let allocate = match work {
+        FacilityWork::Create { .. } => Some(inventory::SiteAllocation::Create(target.clone())),
+        _ if air.runtime.facilities[&target].incarnation.is_none() => {
+            Some(inventory::SiteAllocation::Establish(target.clone()))
+        }
+        _ => None,
+    };
+    let edit = |runtime: &mut crate::air::state::AirRuntime| {
         match work {
             FacilityWork::Create { kind, .. } => {
+                let incarnation = Some(allocate_incarnation(runtime)?);
                 runtime.facilities.insert(
                     target.clone(),
                     FacilityState {
+                        incarnation,
                         origin: FacilityOrigin::Constructed {
                             kind: *kind,
                             location: properties.location.clone(),
@@ -159,19 +221,41 @@ pub fn start_work(
                 );
             }
             FacilityWork::Upgrade { .. } => {
+                if runtime.facilities[&target].incarnation.is_none() {
+                    let token = allocate_incarnation(runtime)?;
+                    runtime
+                        .facilities
+                        .get_mut(&target)
+                        .expect("validated target")
+                        .incarnation = Some(token);
+                }
                 runtime
                     .facilities
                     .get_mut(&target)
                     .expect("validated target")
                     .project_unavailable = true;
             }
-            FacilityWork::RepairOne { .. } => {}
+            FacilityWork::RepairOne { .. } => {
+                if runtime.facilities[&target].incarnation.is_none() {
+                    let token = allocate_incarnation(runtime)?;
+                    runtime
+                        .facilities
+                        .get_mut(&target)
+                        .expect("validated target")
+                        .incarnation = Some(token);
+                }
+            }
         }
         Ok(())
-    })?;
+    };
+    match allocate {
+        Some(allocation) => inventory::update_site(content, air, allocation, edit)?,
+        None => inventory::update(content, air, edit)?,
+    }
     Ok(StartedFacilityWork {
         side,
         work: work.clone(),
+        incarnation: air.runtime.facilities[&target].incarnation,
         target,
     })
 }
@@ -197,10 +281,24 @@ pub fn complete_work(
         .runtime
         .facilities
         .get(&started.target)
-        .ok_or_else(|| invalid("completed work target is not canonical"))?;
+        .ok_or_else(|| {
+            interrupted("land:24.76", "project target was removed; interruption policy required")
+        })?;
     let properties = site.properties(content, &started.target)?;
     if site.owner != started.side {
-        return Err(invalid("project no longer owns its target"));
+        return Err(interrupted(
+            "airlog:36.15",
+            "project target was captured; interruption policy required",
+        ));
+    }
+    if site.removed(&properties) {
+        return Err(interrupted(
+            "land:24.76",
+            "project target was destroyed; interruption policy required",
+        ));
+    }
+    if started.incarnation.is_none() || started.incarnation != site.incarnation {
+        return Err(invalid("receipt has missing or obsolete facility incarnation"));
     }
     class_available(content, air, &properties, Some(&started.target))?;
     match &started.work {

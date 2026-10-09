@@ -4,7 +4,7 @@
 //! pilot reassignment or reinforcement arrivals. Those steps still stop under
 //! the full profile until their procedures exist.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use cna_core::engine::EngineError;
 use cna_protocol::Side;
@@ -291,7 +291,10 @@ fn import_bases(content: &CnaContent, air: &mut AirState) -> Result<(), EngineEr
     if air.runtime.bases_initialized {
         return Err(invalid("base import cannot be repeated"));
     }
-    if !air.runtime.facilities.is_empty() || !air.runtime.sgsus.is_empty() {
+    if !air.runtime.facilities.is_empty()
+        || !air.runtime.sgsus.is_empty()
+        || air.runtime.site_incarnation_serial != 0
+    {
         return Err(invalid("uninitialized base maps contain records"));
     }
     for source in facilities::catalog(content)?.facilities {
@@ -300,6 +303,7 @@ fn import_bases(content: &CnaContent, air: &mut AirState) -> Result<(), EngineEr
         }
         let id = FacilityId(source.id);
         let site = FacilityState {
+            incarnation: None,
             origin: FacilityOrigin::Scenario,
             owner: source.side,
             current_capacity: source
@@ -346,8 +350,17 @@ fn import_bases(content: &CnaContent, air: &mut AirState) -> Result<(), EngineEr
 /// Cases: airlog:35.11, airlog:35.14, airlog:36.0, airlog:44.14
 fn base_mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError> {
     let mut draft = air.clone();
+    let mut tokens = BTreeSet::new();
     for (id, site) in &air.runtime.facilities {
         site.properties(content, id)?;
+        if let Some(token) = site.incarnation {
+            if token.serial() == 0
+                || token.serial() > air.runtime.site_incarnation_serial
+                || !tokens.insert(token)
+            {
+                return Err(invalid("invalid or duplicate facility incarnation"));
+            }
+        }
     }
     for (id, unit) in &air.runtime.sgsus {
         if id.0.is_empty()
@@ -586,9 +599,111 @@ pub fn update<F>(content: &CnaContent, air: &mut AirState, edit: F) -> Result<()
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
+    update_inner(content, air, None, edit)
+}
+
+/// Internal permission for exactly one canonical physical-site allocation.
+/// It is not serialized, answer-provided or a project authentication receipt.
+pub(super) enum SiteAllocation {
+    Establish(FacilityId),
+    Create(FacilityId),
+}
+
+/// Same aggregate mutation path, restricted to the trusted new-project seam.
+pub(super) fn update_site<F>(
+    content: &CnaContent,
+    air: &mut AirState,
+    allocation: SiteAllocation,
+    edit: F,
+) -> Result<(), EngineError>
+where
+    F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
+{
+    update_inner(content, air, Some(allocation), edit)
+}
+
+fn check_site_transition(
+    content: &CnaContent,
+    old: &AirRuntime,
+    new: &AirRuntime,
+    allocation: Option<&SiteAllocation>,
+) -> Result<(), EngineError> {
+    let target = match allocation {
+        Some(SiteAllocation::Establish(id) | SiteAllocation::Create(id)) => Some(id),
+        None => None,
+    };
+    let expected = if target.is_some() {
+        old.site_incarnation_serial
+            .checked_add(1)
+            .ok_or_else(|| invalid("facility incarnation serial overflow"))?
+    } else {
+        old.site_incarnation_serial
+    };
+    if new.site_incarnation_serial != expected {
+        return Err(invalid("facility serial changed outside canonical allocation"));
+    }
+    for (id, site) in &new.facilities {
+        if target == Some(id) {
+            if site.incarnation.map(|token| token.serial()) != Some(expected) {
+                return Err(invalid("new facility token does not match allocation"));
+            }
+            match allocation.expect("target has allocation") {
+                SiteAllocation::Establish(_) => {
+                    let before = old.facilities.get(id).ok_or_else(|| {
+                        invalid("legacy establishment cannot create a facility")
+                    })?;
+                    if before.incarnation.is_some() || before.origin != site.origin {
+                        return Err(invalid("legacy establishment changed physical identity"));
+                    }
+                }
+                SiteAllocation::Create(_) => {
+                    if !matches!(site.origin, FacilityOrigin::Constructed { .. }) {
+                        return Err(invalid("new physical instance must be constructed"));
+                    }
+                    if let Some(before) = old.facilities.get(id) {
+                        let properties = before.properties(content, id)?;
+                        if !matches!(before.origin, FacilityOrigin::Constructed { .. })
+                            || !before.removed(&properties)
+                            || before.project_unavailable
+                        {
+                            return Err(invalid("replacement cannot revive a surviving site"));
+                        }
+                    }
+                }
+            }
+        } else {
+            let before = old.facilities.get(id).ok_or_else(|| {
+                invalid("generic inventory callback cannot create a facility")
+            })?;
+            if before.incarnation != site.incarnation || before.origin != site.origin {
+                return Err(invalid("facility incarnation cannot be cleared, reused or changed"));
+            }
+            let old_properties = before.properties(content, id)?;
+            let new_properties = site.properties(content, id)?;
+            if before.removed(&old_properties) && !site.removed(&new_properties) {
+                return Err(invalid("removed facility needs a fresh canonical instance"));
+            }
+        }
+    }
+    if target.is_some_and(|id| !new.facilities.contains_key(id)) {
+        return Err(invalid("allocated facility is absent"));
+    }
+    Ok(())
+}
+
+fn update_inner<F>(
+    content: &CnaContent,
+    air: &mut AirState,
+    allocation: Option<SiteAllocation>,
+    edit: F,
+) -> Result<(), EngineError>
+where
+    F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
+{
     check(content, air)?;
     let mut draft = air.clone();
     edit(&mut draft.runtime)?;
+    check_site_transition(content, &air.runtime, &draft.runtime, allocation.as_ref())?;
     if [
         (&air.runtime.plane_serial, &draft.runtime.plane_serial),
         (&air.runtime.pilot_serial, &draft.runtime.pilot_serial),

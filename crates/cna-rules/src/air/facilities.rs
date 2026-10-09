@@ -93,11 +93,27 @@ pub struct FacilityProperties {
     pub theatre: FacilityTheatre,
 }
 
+/// Private physical-site identity, distinct from its stable map/catalog ID.
+/// Restored values are validated by the canonical inventory, never authority.
+/// Cases: land:24.76, land:24.79, airlog:36.2, airlog:36.15
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct SiteIncarnation(u64);
+
+impl SiteIncarnation {
+    pub(crate) fn serial(self) -> u64 {
+        self.0
+    }
+}
+
 /// Mutable facility truth. A completed upgrade changes the kind; the original
 /// scenario identity/location remain intact. Zero capacity has source-specific
 /// meaning, derived by `removed` rather than an independent destroyed flag.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FacilityState {
+    /// Missing in old checkpoints: unknown identity, not a valid zero token.
+    #[serde(default)]
+    pub incarnation: Option<SiteIncarnation>,
     pub origin: FacilityOrigin,
     pub owner: Side,
     pub current_capacity: FacilityCapacity,
@@ -392,6 +408,7 @@ mod tests {
         let capacity = FacilityCapacity::Levels(kind.standard_levels());
         (
             FacilityState {
+                incarnation: None,
                 origin: FacilityOrigin::Scenario,
                 owner: Side::Axis,
                 current_capacity: capacity,
@@ -751,6 +768,7 @@ mod work_source_tests {
 
     fn strip(kind: FacilityKind) -> FacilityState {
         FacilityState {
+            incarnation: None,
             origin: FacilityOrigin::Constructed {
                 kind,
                 location: Location::Hex {

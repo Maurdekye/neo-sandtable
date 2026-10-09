@@ -24,6 +24,208 @@ fn fixture() -> (CnaContent, State, HexId) {
     (content, state, hex)
 }
 
+/// Cases: land:24.76, land:24.79, airlog:36.14
+#[test]
+fn old_campaign_and_receipt_load_none_without_adopting_old_project_identity() {
+    let (content, mut state, _) = fixture();
+    let id = FacilityId("airfield_benina".into());
+    let original_planes = state.air.runtime.aircraft.clone();
+    let original_pilots = state.air.runtime.pilots.clone();
+    inventory::update(&content, &mut state.air, |runtime| {
+        runtime.facilities.get_mut(&id).unwrap().current_capacity = FacilityCapacity::Levels(2);
+        Ok(())
+    })
+    .unwrap();
+    let receipt = start_work(
+        &content,
+        &mut state.air,
+        Side::Axis,
+        &FacilityWork::RepairOne { id: id.clone() },
+    )
+    .unwrap();
+    // Full persisted campaign State AND a pre-change serialized receipt.
+    let mut old = serde_json::to_value((&state, &receipt)).unwrap();
+    let runtime = old[0]["air"]["runtime"].as_object_mut().unwrap();
+    runtime.remove("site_incarnation_serial");
+    for site in runtime.get_mut("facilities").unwrap().as_object_mut().unwrap().values_mut() {
+        site.as_object_mut().unwrap().remove("incarnation");
+    }
+    old[1].as_object_mut().unwrap().remove("incarnation");
+    let (mut restored, legacy_receipt): (State, StartedFacilityWork) =
+        serde_json::from_value(old).unwrap();
+    inventory::initialize(&content, &mut restored).unwrap();
+    inventory::check(&content, &restored.air).unwrap();
+    assert_eq!(legacy_receipt.incarnation(), None);
+    assert_eq!(restored.air.runtime.site_incarnation_serial, 0);
+    assert!(restored.air.runtime.facilities.values().all(|s| s.incarnation.is_none()));
+    assert_eq!(original_planes, restored.air.runtime.aircraft);
+    assert_eq!(original_pilots, restored.air.runtime.pilots);
+    let before = serde_json::to_vec(&restored).unwrap();
+    assert!(matches!(
+        complete_work(&content, &mut restored.air, &legacy_receipt),
+        Err(EngineError::Invariant { .. })
+    ));
+    assert_eq!(before, serde_json::to_vec(&restored).unwrap());
+    // A genuinely NEW begin's no-Active ledger guard belongs to Engineering.
+    // This test-only caller has no existing project and establishes once.
+    let new = start_work(
+        &content,
+        &mut restored.air,
+        Side::Axis,
+        &FacilityWork::RepairOne { id: id.clone() },
+    )
+    .unwrap();
+    let token = new.incarnation().unwrap();
+    assert_eq!(current_site_incarnation(&content, &restored.air, &id).unwrap(), Some(token));
+    assert_eq!(restored.air.runtime.site_incarnation_serial, 1);
+    complete_work(&content, &mut restored.air, &new).unwrap();
+    let again = start_work(
+        &content,
+        &mut restored.air,
+        Side::Axis,
+        &FacilityWork::RepairOne { id },
+    )
+    .unwrap();
+    assert_eq!(again.incarnation(), Some(token));
+    assert_eq!(restored.air.runtime.site_incarnation_serial, 1);
+    let bytes = serde_json::to_vec(&restored).unwrap();
+    let decoded: State = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(bytes, serde_json::to_vec(&decoded).unwrap());
+}
+
+/// Cases: land:24.76, land:24.77, land:24.79
+#[test]
+fn source_free_identity_lookup_never_queries_site_or_hex_availability() {
+    let (content, mut state, _) = fixture();
+    let missing = FacilityId("missing.site".into());
+    for work in [
+        FacilityWork::RepairOne { id: missing.clone() },
+        FacilityWork::Upgrade { id: missing.clone() },
+    ] {
+        assert_eq!(target_id(&work), missing);
+    }
+    let work = FacilityWork::Create {
+        kind: FacilityKind::LandingStrip,
+        hex: "unknown".into(),
+    };
+    let before = serde_json::to_vec(&state).unwrap();
+    assert_eq!(target_id(&work), FacilityId("constructed.air.unknown".into()));
+    assert!(start_work(&content, &mut state.air, Side::Axis, &work).is_err());
+    assert_eq!(before, serde_json::to_vec(&state).unwrap());
+}
+
+/// Cases: land:24.76, land:24.79, airlog:36.2
+#[test]
+fn generic_callbacks_cannot_mint_clear_reuse_or_rollback_site_tokens() {
+    let (content, mut state, hex) = fixture();
+    let receipt = start_work(
+        &content,
+        &mut state.air,
+        Side::Axis,
+        &FacilityWork::Create { kind: FacilityKind::LandingStrip, hex },
+    )
+    .unwrap();
+    let id = receipt.target().clone();
+    let before = serde_json::to_vec(&state).unwrap();
+    for edit in 0..5 {
+        let result = inventory::update(&content, &mut state.air, |runtime| {
+            match edit {
+                0 => runtime.site_incarnation_serial = 0,
+                1 => runtime.site_incarnation_serial += 1,
+                2 => runtime.facilities.get_mut(&id).unwrap().incarnation = None,
+                3 => {
+                    runtime.site_incarnation_serial += 1;
+                    runtime.facilities.get_mut(&id).unwrap().incarnation =
+                        Some(SiteIncarnation(runtime.site_incarnation_serial));
+                }
+                _ => {
+                    let token = runtime.facilities[&id].incarnation;
+                    runtime.facilities.get_mut(&FacilityId("airfield_benina".into()))
+                        .unwrap().incarnation = token;
+                }
+            }
+            Ok(())
+        });
+        assert!(matches!(result, Err(EngineError::Invariant { .. })));
+        assert_eq!(before, serde_json::to_vec(&state).unwrap());
+    }
+    for token in [0, 2] {
+        let mut corrupt = state.air.clone();
+        corrupt.runtime.facilities.get_mut(&id).unwrap().incarnation = Some(SiteIncarnation(token));
+        assert!(matches!(inventory::check(&content, &corrupt), Err(EngineError::Invariant { .. })));
+    }
+    let mut duplicate = state.air.clone();
+    duplicate.runtime.facilities.get_mut(&FacilityId("airfield_benina".into()))
+        .unwrap().incarnation = receipt.incarnation();
+    assert!(matches!(inventory::check(&content, &duplicate), Err(EngineError::Invariant { .. })));
+}
+
+/// Cases: land:24.76, land:24.79, airlog:36.2
+#[test]
+fn deletion_retires_token_and_recreation_overflow_or_interruption_is_atomic() {
+    let (content, mut state, hex) = fixture();
+    let work = FacilityWork::Create { kind: FacilityKind::LandingStrip, hex };
+    let old = start_work(&content, &mut state.air, Side::Axis, &work).unwrap();
+    let id = old.target().clone();
+    let retired = state.air.runtime.facilities[&id].clone();
+    inventory::update(&content, &mut state.air, |runtime| {
+        runtime.facilities.remove(&id);
+        Ok(())
+    })
+    .unwrap();
+    let before = serde_json::to_vec(&state).unwrap();
+    assert!(matches!(complete_work(&content, &mut state.air, &old),
+        Err(EngineError::Unsupported { ref case, .. }) if case == "land:24.76"));
+    assert_eq!(before, serde_json::to_vec(&state).unwrap());
+    assert!(matches!(inventory::update(&content, &mut state.air, |runtime| {
+        runtime.facilities.insert(id.clone(), retired);
+        Ok(())
+    }), Err(EngineError::Invariant { .. })));
+    assert_eq!(before, serde_json::to_vec(&state).unwrap());
+    let new = start_work(&content, &mut state.air, Side::Axis, &work).unwrap();
+    assert_eq!(new.target(), old.target());
+    assert_ne!(new.incarnation(), old.incarnation());
+    complete_work(&content, &mut state.air, &new).unwrap();
+    inventory::update(&content, &mut state.air, |runtime| {
+        runtime.facilities.get_mut(&id).unwrap().current_capacity = FacilityCapacity::Levels(0);
+        Ok(())
+    })
+    .unwrap();
+    let before = serde_json::to_vec(&state).unwrap();
+    assert!(matches!(inventory::update(&content, &mut state.air, |runtime| {
+        runtime.facilities.get_mut(&id).unwrap().current_capacity = FacilityCapacity::Levels(1);
+        Ok(())
+    }), Err(EngineError::Invariant { .. })));
+    assert_eq!(before, serde_json::to_vec(&state).unwrap());
+    // A valid restored spent allocator can reach u64::MAX; no wrap or reset.
+    state.air.runtime.site_incarnation_serial = u64::MAX;
+    inventory::check(&content, &state.air).unwrap();
+    let before = serde_json::to_vec(&state).unwrap();
+    assert!(matches!(start_work(&content, &mut state.air, Side::Axis, &work),
+        Err(EngineError::Invariant { .. })));
+    assert_eq!(before, serde_json::to_vec(&state).unwrap());
+}
+
+/// Cases: land:3.62, land:24.76, land:24.79
+#[test]
+fn legacy_metadata_establishment_alone_is_private_and_does_not_duplicate_inventory() {
+    let (content, a, _) = fixture();
+    let mut before_begin = a.clone();
+    let id = FacilityId("airfield_benina".into());
+    inventory::update(&content, &mut before_begin.air, |runtime| {
+        runtime.facilities.get_mut(&id).unwrap().current_capacity = FacilityCapacity::Levels(2);
+        Ok(())
+    })
+    .unwrap();
+    let mut after_begin = before_begin.clone();
+    start_work(&content, &mut after_begin.air, Side::Axis, &FacilityWork::RepairOne { id }).unwrap();
+    assert_eq!(before_begin.air.forces, after_begin.air.forces);
+    assert_eq!(before_begin.air.squadrons, after_begin.air.squadrons);
+    assert_eq!(before_begin.air.runtime.aircraft, after_begin.air.runtime.aircraft);
+    assert_eq!(before_begin.air.runtime.pilots, after_begin.air.runtime.pilots);
+    assert_indistinguishable(&Cna::dev(), &content, &before_begin, &after_begin, Side::Commonwealth);
+}
+
 // TEST-ONLY stand-in for the required, still-unimplemented Engineering caller.
 // It is not a live project field/API or proof of caller integration. Every
 // completion authenticates unique ACTIVE id + exact side/work/target and commits
@@ -104,6 +306,8 @@ fn create_derives_all_capacities_ids_and_active_project_checkpoint_completion() 
         let target = FacilityId(format!("constructed.{class}.{hex}"));
         assert_eq!(project.target, target);
         let site = &state.air.runtime.facilities[&target];
+        assert_eq!(project.receipt.incarnation(), site.incarnation);
+        assert!(site.incarnation.is_some());
         assert_eq!(site.current_capacity, FacilityCapacity::Levels(levels));
         assert!(site.project_unavailable);
         assert!(!site.operational());
@@ -223,6 +427,7 @@ fn upgrades_keep_site_identity_suspend_aa_and_complete_under_exact_active_projec
             .unwrap();
         let target = create.target.clone();
         let origin = state.air.runtime.facilities[&target].origin.clone();
+        let incarnation = create.receipt.incarnation();
         let mut project = Project::start(
             &content,
             &mut state,
@@ -255,6 +460,8 @@ fn upgrades_keep_site_identity_suspend_aa_and_complete_under_exact_active_projec
             .complete(&content, &mut state, "project.upgrade.2")
             .unwrap();
         let site = &state.air.runtime.facilities[&target];
+        assert_eq!(site.incarnation, incarnation);
+        assert_eq!(project.receipt.incarnation(), incarnation);
         assert_eq!(site.origin, origin);
         assert_eq!(site.upgraded_kind, Some(target_kind));
         assert_eq!(site.current_capacity, FacilityCapacity::Levels(levels));
@@ -367,11 +574,11 @@ fn failed_completions_preserve_active_project_air_bytes_and_do_not_infer_cancell
         .unwrap();
         let before = serde_json::to_vec(&changed).unwrap();
         let project_before = serde_json::to_vec(&upgrade).unwrap();
-        assert!(
-            upgrade
-                .complete(&content, &mut changed, "project.upgrade.2")
-                .is_err()
-        );
+        let error = upgrade
+            .complete(&content, &mut changed, "project.upgrade.2")
+            .unwrap_err();
+        assert!(matches!(error, EngineError::Unsupported { ref case, .. }
+            if case == if captured { "airlog:36.15" } else { "land:24.76" }));
         assert_eq!(before, serde_json::to_vec(&changed).unwrap());
         assert_eq!(project_before, serde_json::to_vec(&upgrade).unwrap());
         assert!(changed.air.runtime.facilities[&id].project_unavailable);
@@ -459,6 +666,13 @@ fn reconstruction_preserves_scenario_tombstones_and_requires_caller_incarnation_
         work,
     );
     assert_eq!(new.target, target);
+    assert_ne!(new.receipt.incarnation(), old.receipt.incarnation());
+    let direct_before = serde_json::to_vec(&state).unwrap();
+    assert!(matches!(
+        complete_work(&content, &mut state.air, &old.receipt),
+        Err(EngineError::Invariant { .. })
+    ));
+    assert_eq!(direct_before, serde_json::to_vec(&state).unwrap());
     let before = serde_json::to_vec(&state).unwrap();
     assert!(
         old.complete(&content, &mut state, "project.constructed.1")

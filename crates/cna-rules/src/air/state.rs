@@ -56,6 +56,9 @@ pub struct AirRuntime {
     /// after this marker is true must never trigger reconstruction.
     #[serde(default)]
     pub(crate) bases_initialized: bool,
+    /// Retired site tokens remain spent even after all facilities disappear.
+    #[serde(default)]
+    pub(crate) site_incarnation_serial: u64,
     pub facilities: BTreeMap<super::facilities::FacilityId, super::facilities::FacilityState>,
     pub sgsus: BTreeMap<super::sgsu::SgsuId, super::sgsu::SgsuState>,
     pub designation: super::designation::DesignationState,

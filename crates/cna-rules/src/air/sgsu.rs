@@ -117,6 +117,7 @@ mod tests {
 
     fn site() -> FacilityState {
         FacilityState {
+            incarnation: None,
             origin: FacilityOrigin::Scenario,
             owner: Side::Commonwealth,
             current_capacity: FacilityCapacity::Levels(6),
