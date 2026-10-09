@@ -152,6 +152,9 @@ pub struct LandUnit {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LandState {
+    /// Finite planned production and real replacement bodies, never repair receipts.
+    #[serde(default)]
+    pub replacements: crate::land::replacements::ReplacementState,
     /// Owner-private off-map journeys and physical Transit group membership.
     #[serde(default)]
     pub off_map: crate::land::offmap::OffMapState,
