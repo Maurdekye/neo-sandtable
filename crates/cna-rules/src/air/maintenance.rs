@@ -9,6 +9,7 @@ use cna_tables::airlog::air::{AircraftRefit, Nationality};
 /// Finite actual-SGSU refit accounting. Runtime attachment and live dispatch
 /// require the Air owner's shared-field contract; no load producer is added.
 pub mod refit;
+pub mod window;
 
 fn invalid(detail: impl Into<String>) -> EngineError {
     EngineError::Invariant {

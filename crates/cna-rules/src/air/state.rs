@@ -68,6 +68,9 @@ pub struct AirRuntime {
     /// Missing preparation is legacy unknown with NO free initial credit.
     #[serde(default)]
     pub(crate) preparation: super::preparation::PreparationState,
+    /// Finite refit/dues only. This does not establish any aircraft load.
+    #[serde(default)]
+    pub maintenance: super::maintenance::refit::MaintenanceState,
     pub aircraft: BTreeMap<PlaneId, AircraftState>,
     pub pilots: BTreeMap<PilotId, PilotState>,
     /// Side-local monotone serials keep the other side's assets from affecting

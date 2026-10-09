@@ -116,6 +116,89 @@ pub struct MaintenanceState {
     pub finished: bool,
 }
 
+fn period_key(period: MaintenancePeriod) -> (u16, u8) {
+    match period {
+        MaintenancePeriod::Tactical { game_turn, op_stage } => (game_turn, op_stage),
+        MaintenancePeriod::Strategic { game_turn } => (game_turn, 4),
+    }
+}
+
+/// Structural receipts only: retained histories may name retired aircraft or
+/// dumps. Current source/side/site eligibility belongs to the actual finish.
+/// Cases: airlog:38.33, airlog:38.36, interp:airlog-0022
+pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
+    let Some(period) = window.period else {
+        return if window == &MaintenanceState::default() { Ok(()) }
+            else { Err(invalid("maintenance state without a period")) };
+    };
+    period.check()?;
+    if (window.finished && (!window.waiting.is_empty() || window.closed.len() != Side::ALL.len()))
+        || (!window.finished && window.waiting.keys().copied().collect::<BTreeSet<_>>() != window.closed) {
+        return Err(invalid("maintenance answer/finish markers disagree"));
+    }
+    let mut attempted = BTreeSet::new();
+    for receipt in window.receipts.values().flatten() {
+        receipt.period.check()?;
+        if period_key(receipt.period) > period_key(period) {
+            return Err(invalid("future maintenance receipt"));
+        }
+        let ids: BTreeSet<_> = receipt.cohort.priority.iter().cloned().collect();
+        if receipt.cohort.servicer.0.is_empty() || receipt.cohort.assigned_squadron.is_empty()
+            || ids.iter().any(|id| id.0.is_empty())
+            || ids.len() != receipt.cohort.priority.len()
+            || !receipt.successful.is_subset(&ids) {
+            return Err(invalid("invalid maintenance outcome IDs"));
+        }
+        for id in ids {
+            if !attempted.insert((period_key(receipt.period), id)) {
+                return Err(invalid("duplicate period attempt in maintenance history"));
+            }
+        }
+    }
+    for receipt in window.debits.values().flatten() {
+        let expected: Vec<_> = receipt.draws.iter().map(|draw|
+            (draw.source.clone(), draw.amount.fuel)).collect();
+        if expected != receipt.fuel_rounding || receipt.draws.iter().any(|draw|
+            !matches!(&draw.source, SupplySource::AirDump(_))
+                || draw.amount.fuel.get() < 0 || draw.amount.stores.get() < 0
+                || draw.amount.water.get() < 0 || draw.amount.ammo.get() != 0) {
+            return Err(invalid("finite maintenance debit/rounding history differs"));
+        }
+    }
+    Ok(())
+}
+
+/// Histories stay append-only; completed periods cannot be reopened or moved
+/// backward through the generic inventory callback. This is not an entitlement
+/// to create a receipt: the trusted finish derives every debit/outcome.
+/// Cases: airlog:38.33, airlog:38.36, interp:airlog-0022
+pub(crate) fn check_transition(old: &MaintenanceState, new: &MaintenanceState)
+    -> Result<(), EngineError>
+{
+    check(new)?;
+    if let Some(previous) = old.period {
+        let current = new.period.ok_or_else(|| invalid("maintenance period cannot be cleared"))?;
+        if period_key(current) < period_key(previous)
+            || (current == previous && old.finished && !new.finished)
+            || (current != previous && !old.finished) {
+            return Err(invalid("maintenance period or completed marker rolled backward"));
+        }
+        if current == previous && old.finished && new != old {
+            return Err(invalid("completed maintenance period is immutable"));
+        }
+    }
+    for side in Side::ALL {
+        let prior = old.receipts.get(&side).map(Vec::as_slice).unwrap_or(&[]);
+        let next = new.receipts.get(&side).map(Vec::as_slice).unwrap_or(&[]);
+        let old_debits = old.debits.get(&side).map(Vec::as_slice).unwrap_or(&[]);
+        let new_debits = new.debits.get(&side).map(Vec::as_slice).unwrap_or(&[]);
+        if !next.starts_with(prior) || !new_debits.starts_with(old_debits) {
+            return Err(invalid("maintenance attempt/debit history rewritten"));
+        }
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RefitAccounting {
     pub attempted: BTreeMap<SgsuId, BTreeSet<PlaneId>>,

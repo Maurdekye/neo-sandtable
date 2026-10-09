@@ -72,6 +72,10 @@ impl Cna {
             }
             crate::air::designation::ANCHOR => crate::air::designation::finish(content, state),
             crate::air::missions::ANCHOR => crate::air::missions::finish(content, state),
+            crate::air::maintenance::window::TACTICAL
+            | crate::air::maintenance::window::STRATEGIC => {
+                crate::air::maintenance::window::finish(content, state, cx)
+            }
             "opstage.organization.water_distribution" => {
                 crate::logistics::batches::finish_water(content, state, cx, self.strict)
             }
@@ -132,6 +136,10 @@ impl Cna {
     ) -> Result<(), EngineError> {
         let anchor = state.cursor.anchor();
         match anchor {
+            crate::air::maintenance::window::TACTICAL
+            | crate::air::maintenance::window::STRATEGIC => {
+                crate::air::maintenance::window::enter(content, state, cx, self.strict)
+            }
             crate::air::designation::ANCHOR => crate::air::designation::enter(content, state, cx),
             crate::air::missions::ANCHOR => {
                 crate::air::missions::enter(content, state, cx, self.strict)
@@ -236,6 +244,9 @@ impl Cna {
                 action,
                 self.strict,
             ),
+            crate::air::maintenance::window::KIND => {
+                crate::air::maintenance::window::answer(content, state, pending, action)
+            }
             crate::air::designation::KIND => {
                 crate::air::designation::answer(state, pending, action)
             }

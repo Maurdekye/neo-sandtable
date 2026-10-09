@@ -840,6 +840,7 @@ fn mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError
 /// or supply entitlement is inferred from these consistency checks.
 /// Cases: airlog:34.0, airlog:35.24
 pub fn check(content: &CnaContent, air: &AirState) -> Result<(), EngineError> {
+    super::maintenance::refit::check(&air.runtime.maintenance)?;
     if !air.runtime.initialized || !air.runtime.bases_initialized {
         return Err(invalid("inventory and bases must be imported"));
     }
@@ -975,6 +976,7 @@ where
     let before_edit = draft.runtime.clone();
     edit(&mut draft.runtime)?;
     check_site_transition(content, &air.runtime, &draft.runtime, allocation.as_ref())?;
+    super::maintenance::refit::check_transition(&air.runtime.maintenance, &draft.runtime.maintenance)?;
     if [
         (&air.runtime.plane_serial, &draft.runtime.plane_serial),
         (&air.runtime.pilot_serial, &draft.runtime.pilot_serial),

@@ -103,13 +103,18 @@ fn standalone_receipts_checkpoint_with_structured_source_and_no_dues_or_load_def
             successful: BTreeSet::new(),
         }])]),
         debits: BTreeMap::from([(Side::Axis, vec![DebitReceipt {
-            servicer: SgsuId("a".into()), draws: Vec::new(),
+            servicer: SgsuId("a".into()), draws: vec![SupplyDraw {
+                source: SupplySource::AirDump("exact.dump".into()),
+                amount: crate::logistics::SupplyDemand { fuel: FuelTenths::new(3), ..Default::default() },
+            }],
             fuel_rounding: vec![(SupplySource::AirDump("exact.dump".into()), FuelTenths::new(3))],
         }])]),
         finished: true,
+        closed: Side::ALL.into_iter().collect(),
         ..Default::default()
     };
     let encoded = serde_json::to_vec(&state).unwrap();
+    check(&state).unwrap();
     assert_eq!(serde_json::from_slice::<MaintenanceState>(&encoded).unwrap(), state);
     assert!(!String::from_utf8(encoded).unwrap().contains("fuelled"));
 }
