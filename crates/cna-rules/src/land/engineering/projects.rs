@@ -3,7 +3,7 @@
 //! No answer handler or public view may use this ledger as hidden acceptance.
 //! Cases: land:24.71, land:24.74, land:24.75, land:24.76, land:24.79
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use cna_core::engine::EngineError;
 use cna_protocol::Side;
@@ -46,9 +46,20 @@ fn corrupt(detail: impl Into<String>) -> EngineError {
 /// Completed history remains valid after its physical site is replaced.
 fn check_ledger(state: &State) -> Result<(), EngineError> {
     let mut active_sites = BTreeSet::new();
+    let mut token_sites = BTreeMap::new();
     for (id, project) in &state.engineering.facility_projects {
         if id.0 == 0 || id.0 > state.engineering.facility_project_serial || id != &project.id {
             return Err(corrupt("invalid project identity or allocator"));
+        }
+        if project.incarnation.serial() == 0
+            || project.incarnation.serial() > state.air.runtime.site_incarnation_serial
+        {
+            return Err(corrupt("invalid project incarnation or Air allocator"));
+        }
+        if token_sites.insert(project.incarnation, &project.target)
+            .is_some_and(|old| old != &project.target)
+        {
+            return Err(corrupt("one incarnation references different SITE identities"));
         }
         if project.side != project.started.side()
             || &project.work != project.started.work()

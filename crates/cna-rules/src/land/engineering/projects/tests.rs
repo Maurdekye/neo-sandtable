@@ -145,7 +145,7 @@ fn reachable_removed_captured_and_missing_active_targets_are_unsupported_before_
 fn corrupt_ledger_or_missing_active_receipt_token_never_adopts_current_identity() {
     let (mut original, work) = fixture();
     let id = begin(&mut original, &work);
-    for corruption in 0..6 {
+    for corruption in 0..7 {
         let mut state = original.clone();
         let project = state.engineering.facility_projects.get_mut(&id).unwrap();
         match corruption {
@@ -160,9 +160,34 @@ fn corrupt_ledger_or_missing_active_receipt_token_never_adopts_current_identity(
                 project.started = serde_json::from_value(legacy).unwrap();
                 assert_eq!(project.started.incarnation(), None);
             }
+            6 => state.air.runtime.site_incarnation_serial = 0,
             _ => unreachable!(),
         }
         assert_invariant_unchanged(&mut state, |s| complete_facility_project(content(), s, &id));
+    }
+}
+
+/// Cases: land:24.76, land:24.79
+#[test]
+fn completed_history_rejects_zero_or_beyond_allocator_tokens_even_with_matching_receipt() {
+    let (mut original, work) = fixture();
+    let id = begin(&mut original, &work);
+    complete_facility_project(content(), &mut original, &id).unwrap();
+    for raw in [0, u64::MAX] {
+        let mut state = original.clone();
+        let project = state.engineering.facility_projects.get_mut(&id).unwrap();
+        project.incarnation = serde_json::from_value(Value::from(raw)).unwrap();
+        let mut receipt = serde_json::to_value(&project.started).unwrap();
+        receipt["incarnation"] = Value::from(raw);
+        project.started = serde_json::from_value(receipt).unwrap();
+        assert_eq!(project.started.incarnation(), Some(project.incarnation));
+        let before = bytes(&state);
+        assert!(matches!(
+            begin_facility_project(content(), &mut state, Side::Axis, &work),
+            Err(EngineError::Invariant { detail })
+                if detail.ends_with("invalid project incarnation or Air allocator")
+        ));
+        assert_eq!(bytes(&state), before);
     }
 }
 
