@@ -6,7 +6,7 @@ import os
 import json
 from pathlib import Path
 import tomllib
-from apply_terrain import load_reviews, sha256
+from apply_terrain import load_reviews, reviewed_cell_layers, sha256
 from generate_grid import extract, IMAGE, write_csv
 from geometry import Grid, DIRECTIONS
 from line_reviews import load_line_reviews
@@ -45,10 +45,7 @@ def publish(repo, sources):
         h = grid.hexes[name]
         if h["terrain"] != entry["terrain"] or not set(entry["flags"]) <= set(h["flags"].split("|")):
             raise ValueError("Published surface differs from reviewed decisions")
-        layers = ["terrain"] if entry["status"] == "accepted" else []
-        if set(entry["flags"]) & {"land", "sea", "coastal"}:
-            layers.append("coastal")
-        for layer in layers:
+        for layer in reviewed_cell_layers(entry):
             coverage.append(dict(layer=layer, hex_id=name, neighbour_id="",
                                  src=";".join(entry["src"]), review_batch=batch_for[name]))
     coverage.extend(edge_coverage)

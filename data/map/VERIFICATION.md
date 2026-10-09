@@ -1066,3 +1066,40 @@ the wall-time guard as contention-sensitive and directed the consumer owner
 to correct it separately. That failure is retained, not a map source/data
 correction or a measured source error rate. Parent final publication still
 requires the specifically authorized one complete green gate.
+
+### Owner-adjudicated Graziani land classes, 2026-10-09
+
+The single review `graziani-owner-20261009-0001` resolves exactly 29 prior
+corridor land-class deferrals under the owner's amended map-0003 and delegated
+map-0006 binding. Native full-cell views, centres, minor substrates and source
+pins are retained locally. The two antialiased boundary centres use the
+lead-approved squared-RGB comparison among immediately observed palettes:
+D2516 rough 3,117 versus clear 4,757; D2530 rough 2,456 versus clear 5,662.
+Both retain clear as minor. E3713 is the owner's additional Alexandria city
+hex, retaining coastal identity and the same city name as its neighbours.
+This does not establish a closed city extent or additional port capacity.
+
+Classes are 15 rough, two clear, one mountain, three salt marsh, two delta,
+five swamp and one major city. All prior review bytes are preserved. Whole-map
+classified terrain increases from 3,039 to 3,068; 3,955 cells remain Unknown.
+Coverage gains exactly 29 terrain masks. Existing edge-kind coverage, line
+features, hexsides, aliases, sections and generated areas are unchanged.
+
+E3413, E3414, E3514 and E3614 retain unresolved water domains and have no
+coastal mask, despite known land classes swamp, swamp, clear and delta.
+The raw eight-neighbour blue flood-fill from native seed (12200, 1600) remains
+preserved. A regional search linked strict-blue components only through at
+most three consecutive dark pixels and found no individually documented
+chain for these four cells. The wider dark-ink sensitivity experiment is
+diagnostic only. This negative bounded result is not a lake-enclosure proof;
+no lake/river-side masks or inferred coastal absence are added.
+
+Two source-bound stdlib replays reproduce every map file byte-identically.
+Exactly these 29 hex rows change, and 75 map unit checks pass, including
+wrong/missing prior-batch targets, duplicate rejection, independent terrain
+and coastal coverage, the historical D3414 deferral and the owner city row.
+Rust, web, native admission and publication remain separately sequenced
+checks; these source checks do not claim them. Single-observer source evidence
+and hash/replay checks supply no measured classification error rate or 1979
+equivalence. The inherited parent rust-slow CI failures remain separate engine
+findings and do not become a CI-green claim for this candidate.

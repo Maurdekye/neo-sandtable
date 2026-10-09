@@ -3947,7 +3947,7 @@
 <polygon points="1524.20,500.00 1515.54,505.00 1506.88,500.00 1506.88,490.00 1515.54,485.00 1524.20,490.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3021: clear</title></polygon>
 <polygon points="1541.53,500.00 1532.86,505.00 1524.20,500.00 1524.20,490.00 1532.86,485.00 1541.53,490.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3022: clear</title></polygon>
 <polygon points="1558.85,500.00 1550.19,505.00 1541.53,500.00 1541.53,490.00 1550.19,485.00 1558.85,490.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3023: clear</title></polygon>
-<polygon points="1576.17,500.00 1567.51,505.00 1558.85,500.00 1558.85,490.00 1567.51,485.00 1576.17,490.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>C3024: unclassified</title></polygon>
+<polygon points="1576.17,500.00 1567.51,505.00 1558.85,500.00 1558.85,490.00 1567.51,485.00 1576.17,490.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>C3024: rough</title></polygon>
 <polygon points="1593.49,500.00 1584.83,505.00 1576.17,500.00 1576.17,490.00 1584.83,485.00 1593.49,490.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3025: clear</title></polygon>
 <polygon points="1610.81,500.00 1602.15,505.00 1593.49,500.00 1593.49,490.00 1602.15,485.00 1610.81,490.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3026: clear</title></polygon>
 <polygon points="1628.13,500.00 1619.47,505.00 1610.81,500.00 1610.81,490.00 1619.47,485.00 1628.13,490.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3027: clear</title></polygon>
@@ -3980,7 +3980,7 @@
 <polygon points="1515.54,485.00 1506.88,490.00 1498.22,485.00 1498.22,475.00 1506.88,470.00 1515.54,475.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3121: clear</title></polygon>
 <polygon points="1532.86,485.00 1524.20,490.00 1515.54,485.00 1515.54,475.00 1524.20,470.00 1532.86,475.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3122: clear</title></polygon>
 <polygon points="1550.19,485.00 1541.53,490.00 1532.86,485.00 1532.86,475.00 1541.53,470.00 1550.19,475.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3123: clear</title></polygon>
-<polygon points="1567.51,485.00 1558.85,490.00 1550.19,485.00 1550.19,475.00 1558.85,470.00 1567.51,475.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>C3124: unclassified</title></polygon>
+<polygon points="1567.51,485.00 1558.85,490.00 1550.19,485.00 1550.19,475.00 1558.85,470.00 1567.51,475.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>C3124: rough</title></polygon>
 <polygon points="1584.83,485.00 1576.17,490.00 1567.51,485.00 1567.51,475.00 1576.17,470.00 1584.83,475.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>C3125: rough</title></polygon>
 <polygon points="1602.15,485.00 1593.49,490.00 1584.83,485.00 1584.83,475.00 1593.49,470.00 1602.15,475.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3126: clear</title></polygon>
 <polygon points="1619.47,485.00 1610.81,490.00 1602.15,485.00 1602.15,475.00 1610.81,470.00 1619.47,475.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3127: clear</title></polygon>
@@ -4219,7 +4219,7 @@
 <polygon points="1662.77,380.00 1654.11,385.00 1645.45,380.00 1645.45,370.00 1654.11,365.00 1662.77,370.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3829: clear</title></polygon>
 <polygon points="1680.09,380.00 1671.43,385.00 1662.77,380.00 1662.77,370.00 1671.43,365.00 1680.09,370.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3830: clear</title></polygon>
 <polygon points="1697.41,380.00 1688.75,385.00 1680.09,380.00 1680.09,370.00 1688.75,365.00 1697.41,370.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>C3831: rough</title></polygon>
-<polygon points="1714.73,380.00 1706.07,385.00 1697.41,380.00 1697.41,370.00 1706.07,365.00 1714.73,370.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>C3832: unclassified</title></polygon>
+<polygon points="1714.73,380.00 1706.07,385.00 1697.41,380.00 1697.41,370.00 1706.07,365.00 1714.73,370.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>C3832: rough</title></polygon>
 <polygon points="1732.05,380.00 1723.39,385.00 1714.73,380.00 1714.73,370.00 1723.39,365.00 1732.05,370.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3833: clear</title></polygon>
 <polygon points="1169.13,365.00 1160.47,370.00 1151.81,365.00 1151.81,355.00 1160.47,350.00 1169.13,355.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>C3901: clear</title></polygon>
 <polygon points="1186.45,365.00 1177.79,370.00 1169.13,365.00 1169.13,355.00 1177.79,350.00 1186.45,355.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>C3902: unclassified</title></polygon>
@@ -5143,7 +5143,7 @@
 <polygon points="2199.70,650.00 2191.04,655.00 2182.38,650.00 2182.38,640.00 2191.04,635.00 2199.70,640.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2027: clear</title></polygon>
 <polygon points="2217.03,650.00 2208.36,655.00 2199.70,650.00 2199.70,640.00 2208.36,635.00 2217.03,640.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2028: clear</title></polygon>
 <polygon points="2234.35,650.00 2225.69,655.00 2217.03,650.00 2217.03,640.00 2225.69,635.00 2234.35,640.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2029: clear</title></polygon>
-<polygon points="2251.67,650.00 2243.01,655.00 2234.35,650.00 2234.35,640.00 2243.01,635.00 2251.67,640.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2030: unclassified</title></polygon>
+<polygon points="2251.67,650.00 2243.01,655.00 2234.35,650.00 2234.35,640.00 2243.01,635.00 2251.67,640.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2030: clear</title></polygon>
 <polygon points="2268.99,650.00 2260.33,655.00 2251.67,650.00 2251.67,640.00 2260.33,635.00 2268.99,640.00" fill="#e6b24b" stroke="#657281" stroke-width="0.35"><title>D2031: desert</title></polygon>
 <polygon points="2286.31,650.00 2277.65,655.00 2268.99,650.00 2268.99,640.00 2277.65,635.00 2286.31,640.00" fill="#e6b24b" stroke="#657281" stroke-width="0.35"><title>D2032: desert</title></polygon>
 <polygon points="2303.63,650.00 2294.97,655.00 2286.31,650.00 2286.31,640.00 2294.97,635.00 2303.63,640.00" fill="#e6b24b" stroke="#657281" stroke-width="0.35"><title>D2033: desert</title></polygon>
@@ -5166,7 +5166,7 @@
 <polygon points="2017.84,635.00 2009.18,640.00 2000.52,635.00 2000.52,625.00 2009.18,620.00 2017.84,625.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2117: rough</title></polygon>
 <polygon points="2035.16,635.00 2026.50,640.00 2017.84,635.00 2017.84,625.00 2026.50,620.00 2035.16,625.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2118: rough</title></polygon>
 <polygon points="2052.48,635.00 2043.82,640.00 2035.16,635.00 2035.16,625.00 2043.82,620.00 2052.48,625.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D2119: salt_marsh</title></polygon>
-<polygon points="2069.80,635.00 2061.14,640.00 2052.48,635.00 2052.48,625.00 2061.14,620.00 2069.80,625.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2120: unclassified</title></polygon>
+<polygon points="2069.80,635.00 2061.14,640.00 2052.48,635.00 2052.48,625.00 2061.14,620.00 2069.80,625.00" fill="#6f6256" stroke="#657281" stroke-width="0.35"><title>D2120: mountain</title></polygon>
 <polygon points="2087.12,635.00 2078.46,640.00 2069.80,635.00 2069.80,625.00 2078.46,620.00 2087.12,625.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D2121: salt_marsh</title></polygon>
 <polygon points="2104.44,635.00 2095.78,640.00 2087.12,635.00 2087.12,625.00 2095.78,620.00 2104.44,625.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D2122: salt_marsh</title></polygon>
 <polygon points="2121.76,635.00 2113.10,640.00 2104.44,635.00 2104.44,625.00 2113.10,620.00 2121.76,625.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D2123: salt_marsh</title></polygon>
@@ -5178,7 +5178,7 @@
 <polygon points="2225.69,635.00 2217.03,640.00 2208.36,635.00 2208.36,625.00 2217.03,620.00 2225.69,625.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D2129: salt_marsh</title></polygon>
 <polygon points="2243.01,635.00 2234.35,640.00 2225.69,635.00 2225.69,625.00 2234.35,620.00 2243.01,625.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D2130: salt_marsh</title></polygon>
 <polygon points="2260.33,635.00 2251.67,640.00 2243.01,635.00 2243.01,625.00 2251.67,620.00 2260.33,625.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2131: clear</title></polygon>
-<polygon points="2277.65,635.00 2268.99,640.00 2260.33,635.00 2260.33,625.00 2268.99,620.00 2277.65,625.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2132: unclassified</title></polygon>
+<polygon points="2277.65,635.00 2268.99,640.00 2260.33,635.00 2260.33,625.00 2268.99,620.00 2277.65,625.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D2132: salt_marsh</title></polygon>
 <polygon points="2294.97,635.00 2286.31,640.00 2277.65,635.00 2277.65,625.00 2286.31,620.00 2294.97,625.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2133: clear</title></polygon>
 <polygon points="1749.37,620.00 1740.71,625.00 1732.05,620.00 1732.05,610.00 1740.71,605.00 1749.37,610.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2201: unclassified</title></polygon>
 <polygon points="1766.69,620.00 1758.03,625.00 1749.37,620.00 1749.37,610.00 1758.03,605.00 1766.69,610.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2202: unclassified</title></polygon>
@@ -5231,7 +5231,7 @@
 <polygon points="2000.52,605.00 1991.86,610.00 1983.20,605.00 1983.20,595.00 1991.86,590.00 2000.52,595.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2316: unclassified</title></polygon>
 <polygon points="2017.84,605.00 2009.18,610.00 2000.52,605.00 2000.52,595.00 2009.18,590.00 2017.84,595.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2317: rough</title></polygon>
 <polygon points="2035.16,605.00 2026.50,610.00 2017.84,605.00 2017.84,595.00 2026.50,590.00 2035.16,595.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2318: clear</title></polygon>
-<polygon points="2052.48,605.00 2043.82,610.00 2035.16,605.00 2035.16,595.00 2043.82,590.00 2052.48,595.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2319: unclassified</title></polygon>
+<polygon points="2052.48,605.00 2043.82,610.00 2035.16,605.00 2035.16,595.00 2043.82,590.00 2052.48,595.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2319: rough</title></polygon>
 <polygon points="2069.80,605.00 2061.14,610.00 2052.48,605.00 2052.48,595.00 2061.14,590.00 2069.80,595.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2320: rough</title></polygon>
 <polygon points="2087.12,605.00 2078.46,610.00 2069.80,605.00 2069.80,595.00 2078.46,590.00 2087.12,595.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2321: clear</title></polygon>
 <polygon points="2104.44,605.00 2095.78,610.00 2087.12,605.00 2087.12,595.00 2095.78,590.00 2104.44,595.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2322: rough</title></polygon>
@@ -5294,21 +5294,21 @@
 <polygon points="1948.56,575.00 1939.90,580.00 1931.24,575.00 1931.24,565.00 1939.90,560.00 1948.56,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2513: clear</title></polygon>
 <polygon points="1965.88,575.00 1957.22,580.00 1948.56,575.00 1948.56,565.00 1957.22,560.00 1965.88,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2514: clear</title></polygon>
 <polygon points="1983.20,575.00 1974.54,580.00 1965.88,575.00 1965.88,565.00 1974.54,560.00 1983.20,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2515: clear</title></polygon>
-<polygon points="2000.52,575.00 1991.86,580.00 1983.20,575.00 1983.20,565.00 1991.86,560.00 2000.52,565.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2516: unclassified</title></polygon>
+<polygon points="2000.52,575.00 1991.86,580.00 1983.20,575.00 1983.20,565.00 1991.86,560.00 2000.52,565.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2516: rough</title></polygon>
 <polygon points="2017.84,575.00 2009.18,580.00 2000.52,575.00 2000.52,565.00 2009.18,560.00 2017.84,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2517: clear</title></polygon>
 <polygon points="2035.16,575.00 2026.50,580.00 2017.84,575.00 2017.84,565.00 2026.50,560.00 2035.16,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2518: clear</title></polygon>
 <polygon points="2052.48,575.00 2043.82,580.00 2035.16,575.00 2035.16,565.00 2043.82,560.00 2052.48,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2519: clear</title></polygon>
 <polygon points="2069.80,575.00 2061.14,580.00 2052.48,575.00 2052.48,565.00 2061.14,560.00 2069.80,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2520: clear</title></polygon>
 <polygon points="2087.12,575.00 2078.46,580.00 2069.80,575.00 2069.80,565.00 2078.46,560.00 2087.12,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2521: clear</title></polygon>
 <polygon points="2104.44,575.00 2095.78,580.00 2087.12,575.00 2087.12,565.00 2095.78,560.00 2104.44,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2522: clear</title></polygon>
-<polygon points="2121.76,575.00 2113.10,580.00 2104.44,575.00 2104.44,565.00 2113.10,560.00 2121.76,565.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2523: unclassified</title></polygon>
+<polygon points="2121.76,575.00 2113.10,580.00 2104.44,575.00 2104.44,565.00 2113.10,560.00 2121.76,565.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2523: rough</title></polygon>
 <polygon points="2139.08,575.00 2130.42,580.00 2121.76,575.00 2121.76,565.00 2130.42,560.00 2139.08,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2524: clear</title></polygon>
 <polygon points="2156.40,575.00 2147.74,580.00 2139.08,575.00 2139.08,565.00 2147.74,560.00 2156.40,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2525: clear</title></polygon>
 <polygon points="2173.72,575.00 2165.06,580.00 2156.40,575.00 2156.40,565.00 2165.06,560.00 2173.72,565.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2526: rough</title></polygon>
 <polygon points="2191.04,575.00 2182.38,580.00 2173.72,575.00 2173.72,565.00 2182.38,560.00 2191.04,565.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2527: rough</title></polygon>
 <polygon points="2208.36,575.00 2199.70,580.00 2191.04,575.00 2191.04,565.00 2199.70,560.00 2208.36,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2528: clear</title></polygon>
 <polygon points="2225.69,575.00 2217.03,580.00 2208.36,575.00 2208.36,565.00 2217.03,560.00 2225.69,565.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2529: clear</title></polygon>
-<polygon points="2243.01,575.00 2234.35,580.00 2225.69,575.00 2225.69,565.00 2234.35,560.00 2243.01,565.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2530: unclassified</title></polygon>
+<polygon points="2243.01,575.00 2234.35,580.00 2225.69,575.00 2225.69,565.00 2234.35,560.00 2243.01,565.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2530: rough</title></polygon>
 <polygon points="2260.33,575.00 2251.67,580.00 2243.01,575.00 2243.01,565.00 2251.67,560.00 2260.33,565.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2531: rough</title></polygon>
 <polygon points="2277.65,575.00 2268.99,580.00 2260.33,575.00 2260.33,565.00 2268.99,560.00 2277.65,565.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2532: rough</title></polygon>
 <polygon points="2294.97,575.00 2286.31,580.00 2277.65,575.00 2277.65,565.00 2286.31,560.00 2294.97,565.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2533: rough</title></polygon>
@@ -5374,7 +5374,7 @@
 <polygon points="2191.04,545.00 2182.38,550.00 2173.72,545.00 2173.72,535.00 2182.38,530.00 2191.04,535.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2727: clear</title></polygon>
 <polygon points="2208.36,545.00 2199.70,550.00 2191.04,545.00 2191.04,535.00 2199.70,530.00 2208.36,535.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2728: clear</title></polygon>
 <polygon points="2225.69,545.00 2217.03,550.00 2208.36,545.00 2208.36,535.00 2217.03,530.00 2225.69,535.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2729: rough</title></polygon>
-<polygon points="2243.01,545.00 2234.35,550.00 2225.69,545.00 2225.69,535.00 2234.35,530.00 2243.01,535.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2730: unclassified</title></polygon>
+<polygon points="2243.01,545.00 2234.35,550.00 2225.69,545.00 2225.69,535.00 2234.35,530.00 2243.01,535.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2730: rough</title></polygon>
 <polygon points="2260.33,545.00 2251.67,550.00 2243.01,545.00 2243.01,535.00 2251.67,530.00 2260.33,535.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2731: clear</title></polygon>
 <polygon points="2277.65,545.00 2268.99,550.00 2260.33,545.00 2260.33,535.00 2268.99,530.00 2277.65,535.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2732: clear</title></polygon>
 <polygon points="2294.97,545.00 2286.31,550.00 2277.65,545.00 2277.65,535.00 2286.31,530.00 2294.97,535.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2733: clear</title></polygon>
@@ -5401,13 +5401,13 @@
 <polygon points="2095.78,530.00 2087.12,535.00 2078.46,530.00 2078.46,520.00 2087.12,515.00 2095.78,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2821: clear</title></polygon>
 <polygon points="2113.10,530.00 2104.44,535.00 2095.78,530.00 2095.78,520.00 2104.44,515.00 2113.10,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2822: clear</title></polygon>
 <polygon points="2130.42,530.00 2121.76,535.00 2113.10,530.00 2113.10,520.00 2121.76,515.00 2130.42,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2823: clear</title></polygon>
-<polygon points="2147.74,530.00 2139.08,535.00 2130.42,530.00 2130.42,520.00 2139.08,515.00 2147.74,520.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2824: unclassified</title></polygon>
+<polygon points="2147.74,530.00 2139.08,535.00 2130.42,530.00 2130.42,520.00 2139.08,515.00 2147.74,520.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D2824: salt_marsh</title></polygon>
 <polygon points="2165.06,530.00 2156.40,535.00 2147.74,530.00 2147.74,520.00 2156.40,515.00 2165.06,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2825: clear</title></polygon>
 <polygon points="2182.38,530.00 2173.72,535.00 2165.06,530.00 2165.06,520.00 2173.72,515.00 2182.38,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2826: clear</title></polygon>
 <polygon points="2199.70,530.00 2191.04,535.00 2182.38,530.00 2182.38,520.00 2191.04,515.00 2199.70,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2827: clear</title></polygon>
 <polygon points="2217.03,530.00 2208.36,535.00 2199.70,530.00 2199.70,520.00 2208.36,515.00 2217.03,520.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2828: rough</title></polygon>
 <polygon points="2234.35,530.00 2225.69,535.00 2217.03,530.00 2217.03,520.00 2225.69,515.00 2234.35,520.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2829: rough</title></polygon>
-<polygon points="2251.67,530.00 2243.01,535.00 2234.35,530.00 2234.35,520.00 2243.01,515.00 2251.67,520.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2830: unclassified</title></polygon>
+<polygon points="2251.67,530.00 2243.01,535.00 2234.35,530.00 2234.35,520.00 2243.01,515.00 2251.67,520.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2830: rough</title></polygon>
 <polygon points="2268.99,530.00 2260.33,535.00 2251.67,530.00 2251.67,520.00 2260.33,515.00 2268.99,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2831: clear</title></polygon>
 <polygon points="2286.31,530.00 2277.65,535.00 2268.99,530.00 2268.99,520.00 2277.65,515.00 2286.31,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2832: clear</title></polygon>
 <polygon points="2303.63,530.00 2294.97,535.00 2286.31,530.00 2286.31,520.00 2294.97,515.00 2303.63,520.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2833: clear</title></polygon>
@@ -5427,7 +5427,7 @@
 <polygon points="1965.88,515.00 1957.22,520.00 1948.56,515.00 1948.56,505.00 1957.22,500.00 1965.88,505.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2914: clear</title></polygon>
 <polygon points="1983.20,515.00 1974.54,520.00 1965.88,515.00 1965.88,505.00 1974.54,500.00 1983.20,505.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2915: clear</title></polygon>
 <polygon points="2000.52,515.00 1991.86,520.00 1983.20,515.00 1983.20,505.00 1991.86,500.00 2000.52,505.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2916: rough</title></polygon>
-<polygon points="2017.84,515.00 2009.18,520.00 2000.52,515.00 2000.52,505.00 2009.18,500.00 2017.84,505.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D2917: unclassified</title></polygon>
+<polygon points="2017.84,515.00 2009.18,520.00 2000.52,515.00 2000.52,505.00 2009.18,500.00 2017.84,505.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D2917: rough</title></polygon>
 <polygon points="2035.16,515.00 2026.50,520.00 2017.84,515.00 2017.84,505.00 2026.50,500.00 2035.16,505.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2918: clear</title></polygon>
 <polygon points="2052.48,515.00 2043.82,520.00 2035.16,515.00 2035.16,505.00 2043.82,500.00 2052.48,505.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2919: clear</title></polygon>
 <polygon points="2069.80,515.00 2061.14,520.00 2052.48,515.00 2052.48,505.00 2061.14,500.00 2069.80,505.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D2920: clear</title></polygon>
@@ -5561,7 +5561,7 @@
 <polygon points="2000.52,455.00 1991.86,460.00 1983.20,455.00 1983.20,445.00 1991.86,440.00 2000.52,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3316: clear</title></polygon>
 <polygon points="2017.84,455.00 2009.18,460.00 2000.52,455.00 2000.52,445.00 2009.18,440.00 2017.84,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3317: clear</title></polygon>
 <polygon points="2035.16,455.00 2026.50,460.00 2017.84,455.00 2017.84,445.00 2026.50,440.00 2035.16,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3318: clear</title></polygon>
-<polygon points="2052.48,455.00 2043.82,460.00 2035.16,455.00 2035.16,445.00 2043.82,440.00 2052.48,445.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D3319: unclassified</title></polygon>
+<polygon points="2052.48,455.00 2043.82,460.00 2035.16,455.00 2035.16,445.00 2043.82,440.00 2052.48,445.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D3319: rough</title></polygon>
 <polygon points="2069.80,455.00 2061.14,460.00 2052.48,455.00 2052.48,445.00 2061.14,440.00 2069.80,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3320: clear</title></polygon>
 <polygon points="2087.12,455.00 2078.46,460.00 2069.80,455.00 2069.80,445.00 2078.46,440.00 2087.12,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3321: clear</title></polygon>
 <polygon points="2104.44,455.00 2095.78,460.00 2087.12,455.00 2087.12,445.00 2095.78,440.00 2104.44,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3322: clear</title></polygon>
@@ -5589,14 +5589,14 @@
 <polygon points="1922.58,440.00 1913.92,445.00 1905.26,440.00 1905.26,430.00 1913.92,425.00 1922.58,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3411: clear</title></polygon>
 <polygon points="1939.90,440.00 1931.24,445.00 1922.58,440.00 1922.58,430.00 1931.24,425.00 1939.90,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3412: clear</title></polygon>
 <polygon points="1957.22,440.00 1948.56,445.00 1939.90,440.00 1939.90,430.00 1948.56,425.00 1957.22,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3413: clear</title></polygon>
-<polygon points="1974.54,440.00 1965.88,445.00 1957.22,440.00 1957.22,430.00 1965.88,425.00 1974.54,430.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D3414: unclassified</title></polygon>
+<polygon points="1974.54,440.00 1965.88,445.00 1957.22,440.00 1957.22,430.00 1965.88,425.00 1974.54,430.00" fill="#c4aab7" stroke="#657281" stroke-width="0.35"><title>D3414: salt_marsh</title></polygon>
 <polygon points="1991.86,440.00 1983.20,445.00 1974.54,440.00 1974.54,430.00 1983.20,425.00 1991.86,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3415: clear</title></polygon>
 <polygon points="2009.18,440.00 2000.52,445.00 1991.86,440.00 1991.86,430.00 2000.52,425.00 2009.18,430.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D3416: rough</title></polygon>
 <polygon points="2026.50,440.00 2017.84,445.00 2009.18,440.00 2009.18,430.00 2017.84,425.00 2026.50,430.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D3417: rough</title></polygon>
 <polygon points="2043.82,440.00 2035.16,445.00 2026.50,440.00 2026.50,430.00 2035.16,425.00 2043.82,430.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D3418: rough</title></polygon>
 <polygon points="2061.14,440.00 2052.48,445.00 2043.82,440.00 2043.82,430.00 2052.48,425.00 2061.14,430.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D3419: rough</title></polygon>
 <polygon points="2078.46,440.00 2069.80,445.00 2061.14,440.00 2061.14,430.00 2069.80,425.00 2078.46,430.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D3420: rough</title></polygon>
-<polygon points="2095.78,440.00 2087.12,445.00 2078.46,440.00 2078.46,430.00 2087.12,425.00 2095.78,430.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>D3421: unclassified</title></polygon>
+<polygon points="2095.78,440.00 2087.12,445.00 2078.46,440.00 2078.46,430.00 2087.12,425.00 2095.78,430.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>D3421: rough</title></polygon>
 <polygon points="2113.10,440.00 2104.44,445.00 2095.78,440.00 2095.78,430.00 2104.44,425.00 2113.10,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3422: clear</title></polygon>
 <polygon points="2130.42,440.00 2121.76,445.00 2113.10,440.00 2113.10,430.00 2121.76,425.00 2130.42,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3423: clear</title></polygon>
 <polygon points="2147.74,440.00 2139.08,445.00 2130.42,440.00 2130.42,430.00 2139.08,425.00 2147.74,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>D3424: clear</title></polygon>
@@ -6464,7 +6464,7 @@
 <polygon points="2840.56,620.00 2831.90,625.00 2823.24,620.00 2823.24,610.00 2831.90,605.00 2840.56,610.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E2231: unclassified</title></polygon>
 <polygon points="2857.88,620.00 2849.22,625.00 2840.56,620.00 2840.56,610.00 2849.22,605.00 2857.88,610.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E2232: unclassified</title></polygon>
 <polygon points="2875.20,620.00 2866.54,625.00 2857.88,620.00 2857.88,610.00 2866.54,605.00 2875.20,610.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E2233: unclassified</title></polygon>
-<polygon points="2312.29,605.00 2303.63,610.00 2294.97,605.00 2294.97,595.00 2303.63,590.00 2312.29,595.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E2301: unclassified</title></polygon>
+<polygon points="2312.29,605.00 2303.63,610.00 2294.97,605.00 2294.97,595.00 2303.63,590.00 2312.29,595.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>E2301: rough</title></polygon>
 <polygon points="2329.61,605.00 2320.95,610.00 2312.29,605.00 2312.29,595.00 2320.95,590.00 2329.61,595.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E2302: clear</title></polygon>
 <polygon points="2346.93,605.00 2338.27,610.00 2329.61,605.00 2329.61,595.00 2338.27,590.00 2346.93,595.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>E2303: rough</title></polygon>
 <polygon points="2364.25,605.00 2355.59,610.00 2346.93,605.00 2346.93,595.00 2355.59,590.00 2364.25,595.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>E2304: rough</title></polygon>
@@ -6502,7 +6502,7 @@
 <polygon points="2338.27,590.00 2329.61,595.00 2320.95,590.00 2320.95,580.00 2329.61,575.00 2338.27,580.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E2402: clear</title></polygon>
 <polygon points="2355.59,590.00 2346.93,595.00 2338.27,590.00 2338.27,580.00 2346.93,575.00 2355.59,580.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E2403: clear</title></polygon>
 <polygon points="2372.91,590.00 2364.25,595.00 2355.59,590.00 2355.59,580.00 2364.25,575.00 2372.91,580.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E2404: clear</title></polygon>
-<polygon points="2390.23,590.00 2381.57,595.00 2372.91,590.00 2372.91,580.00 2381.57,575.00 2390.23,580.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E2405: unclassified</title></polygon>
+<polygon points="2390.23,590.00 2381.57,595.00 2372.91,590.00 2372.91,580.00 2381.57,575.00 2390.23,580.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>E2405: rough</title></polygon>
 <polygon points="2407.55,590.00 2398.89,595.00 2390.23,590.00 2390.23,580.00 2398.89,575.00 2407.55,580.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E2406: clear</title></polygon>
 <polygon points="2424.87,590.00 2416.21,595.00 2407.55,590.00 2407.55,580.00 2416.21,575.00 2424.87,580.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>E2407: rough</title></polygon>
 <polygon points="2442.19,590.00 2433.53,595.00 2424.87,590.00 2424.87,580.00 2433.53,575.00 2442.19,580.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E2408: unclassified</title></polygon>
@@ -6772,11 +6772,11 @@
 <polygon points="2424.87,470.00 2416.21,475.00 2407.55,470.00 2407.55,460.00 2416.21,455.00 2424.87,460.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3207: clear</title></polygon>
 <polygon points="2442.19,470.00 2433.53,475.00 2424.87,470.00 2424.87,460.00 2433.53,455.00 2442.19,460.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3208: clear</title></polygon>
 <polygon points="2459.51,470.00 2450.85,475.00 2442.19,470.00 2442.19,460.00 2450.85,455.00 2459.51,460.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>E3209: rough</title></polygon>
-<polygon points="2476.83,470.00 2468.17,475.00 2459.51,470.00 2459.51,460.00 2468.17,455.00 2476.83,460.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3210: unclassified</title></polygon>
+<polygon points="2476.83,470.00 2468.17,475.00 2459.51,470.00 2459.51,460.00 2468.17,455.00 2476.83,460.00" fill="#a77c57" stroke="#657281" stroke-width="0.35"><title>E3210: rough</title></polygon>
 <polygon points="2494.15,470.00 2485.49,475.00 2476.83,470.00 2476.83,460.00 2485.49,455.00 2494.15,460.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3211: clear</title></polygon>
 <polygon points="2511.47,470.00 2502.81,475.00 2494.15,470.00 2494.15,460.00 2502.81,455.00 2511.47,460.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3212: clear</title></polygon>
 <polygon points="2528.79,470.00 2520.13,475.00 2511.47,470.00 2511.47,460.00 2520.13,455.00 2528.79,460.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3213: clear</title></polygon>
-<polygon points="2546.11,470.00 2537.45,475.00 2528.79,470.00 2528.79,460.00 2537.45,455.00 2546.11,460.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3214: unclassified</title></polygon>
+<polygon points="2546.11,470.00 2537.45,475.00 2528.79,470.00 2528.79,460.00 2537.45,455.00 2546.11,460.00" fill="#86a79d" stroke="#657281" stroke-width="0.35"><title>E3214: delta</title></polygon>
 <polygon points="2563.44,470.00 2554.77,475.00 2546.11,470.00 2546.11,460.00 2554.77,455.00 2563.44,460.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3215: unclassified</title></polygon>
 <polygon points="2580.76,470.00 2572.10,475.00 2563.44,470.00 2563.44,460.00 2572.10,455.00 2580.76,460.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3216: unclassified</title></polygon>
 <polygon points="2598.08,470.00 2589.42,475.00 2580.76,470.00 2580.76,460.00 2589.42,455.00 2598.08,460.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3217: unclassified</title></polygon>
@@ -6801,8 +6801,8 @@
 <polygon points="2433.53,455.00 2424.87,460.00 2416.21,455.00 2416.21,445.00 2424.87,440.00 2433.53,445.00" fill="#a9d3e9" stroke="#657281" stroke-width="0.35"><title>E3308: sea</title></polygon>
 <polygon points="2450.85,455.00 2442.19,460.00 2433.53,455.00 2433.53,445.00 2442.19,440.00 2450.85,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3309: clear</title></polygon>
 <polygon points="2468.17,455.00 2459.51,460.00 2450.85,455.00 2450.85,445.00 2459.51,440.00 2468.17,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3310: clear</title></polygon>
-<polygon points="2485.49,455.00 2476.83,460.00 2468.17,455.00 2468.17,445.00 2476.83,440.00 2485.49,445.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3311: unclassified</title></polygon>
-<polygon points="2502.81,455.00 2494.15,460.00 2485.49,455.00 2485.49,445.00 2494.15,440.00 2502.81,445.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3312: unclassified</title></polygon>
+<polygon points="2485.49,455.00 2476.83,460.00 2468.17,455.00 2468.17,445.00 2476.83,440.00 2485.49,445.00" fill="#849977" stroke="#657281" stroke-width="0.35"><title>E3311: swamp</title></polygon>
+<polygon points="2502.81,455.00 2494.15,460.00 2485.49,455.00 2485.49,445.00 2494.15,440.00 2502.81,445.00" fill="#849977" stroke="#657281" stroke-width="0.35"><title>E3312: swamp</title></polygon>
 <polygon points="2520.13,455.00 2511.47,460.00 2502.81,455.00 2502.81,445.00 2511.47,440.00 2520.13,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3313: clear</title></polygon>
 <polygon points="2537.45,455.00 2528.79,460.00 2520.13,455.00 2520.13,445.00 2528.79,440.00 2537.45,445.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3314: clear</title></polygon>
 <polygon points="2554.77,455.00 2546.11,460.00 2537.45,455.00 2537.45,445.00 2546.11,440.00 2554.77,445.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3315: unclassified</title></polygon>
@@ -6829,9 +6829,9 @@
 <polygon points="2459.51,440.00 2450.85,445.00 2442.19,440.00 2442.19,430.00 2450.85,425.00 2459.51,430.00" fill="#a9d3e9" stroke="#657281" stroke-width="0.35"><title>E3409: sea</title></polygon>
 <polygon points="2476.83,440.00 2468.17,445.00 2459.51,440.00 2459.51,430.00 2468.17,425.00 2476.83,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3410: clear</title></polygon>
 <polygon points="2494.15,440.00 2485.49,445.00 2476.83,440.00 2476.83,430.00 2485.49,425.00 2494.15,430.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3411: clear</title></polygon>
-<polygon points="2511.47,440.00 2502.81,445.00 2494.15,440.00 2494.15,430.00 2502.81,425.00 2511.47,430.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3412: unclassified</title></polygon>
-<polygon points="2528.79,440.00 2520.13,445.00 2511.47,440.00 2511.47,430.00 2520.13,425.00 2528.79,430.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3413: unclassified</title></polygon>
-<polygon points="2546.11,440.00 2537.45,445.00 2528.79,440.00 2528.79,430.00 2537.45,425.00 2546.11,430.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3414: unclassified</title></polygon>
+<polygon points="2511.47,440.00 2502.81,445.00 2494.15,440.00 2494.15,430.00 2502.81,425.00 2511.47,430.00" fill="#849977" stroke="#657281" stroke-width="0.35"><title>E3412: swamp</title></polygon>
+<polygon points="2528.79,440.00 2520.13,445.00 2511.47,440.00 2511.47,430.00 2520.13,425.00 2528.79,430.00" fill="#849977" stroke="#657281" stroke-width="0.35"><title>E3413: swamp</title></polygon>
+<polygon points="2546.11,440.00 2537.45,445.00 2528.79,440.00 2528.79,430.00 2537.45,425.00 2546.11,430.00" fill="#849977" stroke="#657281" stroke-width="0.35"><title>E3414: swamp</title></polygon>
 <polygon points="2563.44,440.00 2554.77,445.00 2546.11,440.00 2546.11,430.00 2554.77,425.00 2563.44,430.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3415: unclassified</title></polygon>
 <polygon points="2580.76,440.00 2572.10,445.00 2563.44,440.00 2563.44,430.00 2572.10,425.00 2580.76,430.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3416: unclassified</title></polygon>
 <polygon points="2598.08,440.00 2589.42,445.00 2580.76,440.00 2580.76,430.00 2589.42,425.00 2598.08,430.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3417: unclassified</title></polygon>
@@ -6855,7 +6855,7 @@
 <polygon points="2485.49,425.00 2476.83,430.00 2468.17,425.00 2468.17,415.00 2476.83,410.00 2485.49,415.00" fill="#a9d3e9" stroke="#657281" stroke-width="0.35"><title>E3511: sea</title></polygon>
 <polygon points="2502.81,425.00 2494.15,430.00 2485.49,425.00 2485.49,415.00 2494.15,410.00 2502.81,415.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3512: clear</title></polygon>
 <polygon points="2520.13,425.00 2511.47,430.00 2502.81,425.00 2502.81,415.00 2511.47,410.00 2520.13,415.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3513: clear</title></polygon>
-<polygon points="2537.45,425.00 2528.79,430.00 2520.13,425.00 2520.13,415.00 2528.79,410.00 2537.45,415.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3514: unclassified</title></polygon>
+<polygon points="2537.45,425.00 2528.79,430.00 2520.13,425.00 2520.13,415.00 2528.79,410.00 2537.45,415.00" fill="#ead8ab" stroke="#657281" stroke-width="0.35"><title>E3514: clear</title></polygon>
 <polygon points="2554.77,425.00 2546.11,430.00 2537.45,425.00 2537.45,415.00 2546.11,410.00 2554.77,415.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3515: unclassified</title></polygon>
 <polygon points="2572.10,425.00 2563.44,430.00 2554.77,425.00 2554.77,415.00 2563.44,410.00 2572.10,415.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3516: unclassified</title></polygon>
 <polygon points="2589.42,425.00 2580.76,430.00 2572.10,425.00 2572.10,415.00 2580.76,410.00 2589.42,415.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3517: unclassified</title></polygon>
@@ -6879,7 +6879,7 @@
 <polygon points="2494.15,410.00 2485.49,415.00 2476.83,410.00 2476.83,400.00 2485.49,395.00 2494.15,400.00" fill="#a9d3e9" stroke="#657281" stroke-width="0.35"><title>E3611: sea</title></polygon>
 <polygon points="2511.47,410.00 2502.81,415.00 2494.15,410.00 2494.15,400.00 2502.81,395.00 2511.47,400.00" fill="#a9d3e9" stroke="#657281" stroke-width="0.35"><title>E3612: sea</title></polygon>
 <polygon points="2528.79,410.00 2520.13,415.00 2511.47,410.00 2511.47,400.00 2520.13,395.00 2528.79,400.00" fill="#7b759b" stroke="#657281" stroke-width="0.35"><title>E3613: major_city</title></polygon>
-<polygon points="2546.11,410.00 2537.45,415.00 2528.79,410.00 2528.79,400.00 2537.45,395.00 2546.11,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3614: unclassified</title></polygon>
+<polygon points="2546.11,410.00 2537.45,415.00 2528.79,410.00 2528.79,400.00 2537.45,395.00 2546.11,400.00" fill="#86a79d" stroke="#657281" stroke-width="0.35"><title>E3614: delta</title></polygon>
 <polygon points="2563.44,410.00 2554.77,415.00 2546.11,410.00 2546.11,400.00 2554.77,395.00 2563.44,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3615: unclassified</title></polygon>
 <polygon points="2580.76,410.00 2572.10,415.00 2563.44,410.00 2563.44,400.00 2572.10,395.00 2580.76,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3616: unclassified</title></polygon>
 <polygon points="2598.08,410.00 2589.42,415.00 2580.76,410.00 2580.76,400.00 2589.42,395.00 2598.08,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3617: unclassified</title></polygon>
@@ -6899,7 +6899,7 @@
 <polygon points="2840.56,410.00 2831.90,415.00 2823.24,410.00 2823.24,400.00 2831.90,395.00 2840.56,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3631: unclassified</title></polygon>
 <polygon points="2857.88,410.00 2849.22,415.00 2840.56,410.00 2840.56,400.00 2849.22,395.00 2857.88,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3632: unclassified</title></polygon>
 <polygon points="2875.20,410.00 2866.54,415.00 2857.88,410.00 2857.88,400.00 2866.54,395.00 2875.20,400.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3633: unclassified</title></polygon>
-<polygon points="2520.13,395.00 2511.47,400.00 2502.81,395.00 2502.81,385.00 2511.47,380.00 2520.13,385.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3713: unclassified</title></polygon>
+<polygon points="2520.13,395.00 2511.47,400.00 2502.81,395.00 2502.81,385.00 2511.47,380.00 2520.13,385.00" fill="#7b759b" stroke="#657281" stroke-width="0.35"><title>E3713: major_city</title></polygon>
 <polygon points="2537.45,395.00 2528.79,400.00 2520.13,395.00 2520.13,385.00 2528.79,380.00 2537.45,385.00" fill="#7b759b" stroke="#657281" stroke-width="0.35"><title>E3714: major_city</title></polygon>
 <polygon points="2554.77,395.00 2546.11,400.00 2537.45,395.00 2537.45,385.00 2546.11,380.00 2554.77,385.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3715: unclassified</title></polygon>
 <polygon points="2572.10,395.00 2563.44,400.00 2554.77,395.00 2554.77,385.00 2563.44,380.00 2572.10,385.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E3716: unclassified</title></polygon>
@@ -7026,6 +7026,7 @@
 <polygon points="2805.92,290.00 2797.26,295.00 2788.60,290.00 2788.60,280.00 2797.26,275.00 2805.92,280.00" fill="#eceff3" stroke="#657281" stroke-width="0.35"><title>E4429: unclassified</title></polygon>
 <circle cx="1480.90" cy="435.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Bir Sceferzen: village_bir</title></circle>
 <circle cx="2520.13" cy="405.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: major_city</title></circle>
+<circle cx="2511.47" cy="390.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: major_city</title></circle>
 <circle cx="2528.79" cy="390.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Alexandria: major_city</title></circle>
 <circle cx="1506.88" cy="300.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Bardia: major_city</title></circle>
 <circle cx="476.31" cy="225.00" r="2.5" fill="#1b5368" stroke="white" stroke-width="0.5"><title>Benghazi: major_city</title></circle>

@@ -22,6 +22,15 @@ note = "Verified positive city hex only. No place_group or complete-city members
 review_batch = "alexandria-positive-0001"
 
 [[places]]
+id = "city-alexandria-e3713"
+name = "Alexandria"
+hex_id = "E3713"
+type = "major_city"
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Owner-adjudicated additional hex of the same Alexandria city represented at E3613 and E3714, retaining the shared city name and coastal identity. No closed city extent, facility capacity or additional port is inferred."
+review_batch = "graziani-owner-20261009-0001"
+
+[[places]]
 id = "city-alexandria-e3714"
 name = "Alexandria"
 hex_id = "E3714"

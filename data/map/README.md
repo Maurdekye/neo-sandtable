@@ -123,6 +123,15 @@ source changes require re-review. No raster pixels or image crops are stored.
 Optional `batch.supersedes` names an earlier batch: only explicitly listed hexes
 from that batch are amended; others are retained. Filename sorting defines replay
 order. Silent duplicate decisions, invalid targets and duplicate batch ids fail.
+An optional per-cell `supersedes` overrides the batch target and must name that
+cell's current earlier controlling batch. This permits one owner adjudication
+to resolve several prior batches without altering their original evidence.
+`minor_classes`, native centre coordinates/RGB and method-specific distances
+retain structured review evidence; they do not create additional terrain classes.
+Optional `coastal_status = "unresolved"` records independent water-domain doubt:
+an accepted land class receives terrain coverage but no coastal coverage. It
+cannot assert sea or coastal flags. Legacy omitted status preserves the existing
+domain evidence. Known land alone never resolves an explicitly unknown coast.
 Optional `[[place]]` records pin a locally verified facility using `id,name,hex_id,
 type,src,note`. These share the batch's exact source hashes and observer metadata.
 

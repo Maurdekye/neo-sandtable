@@ -1,5 +1,22 @@
 # Map gaps
 
+## Owner adjudication update, 2026-10-09
+
+Review `graziani-owner-20261009-0001` resolves the 29 corridor land-class
+deferrals listed in the earlier gap checkpoints below. Those earlier raw
+reviews remain unchanged; amended map-0003 supplies the centre tie-break,
+map-0006 binds the wetland patterns, and the owner includes E3713 in Alexandria.
+The classes are 15 rough, two clear, one mountain, three salt marsh, two delta,
+five swamp and one major city. Other historical terrain deferrals remain gaps.
+
+E3413, E3414, E3514 and E3614 still have unresolved water domains. Their land
+classes are swamp, swamp, clear and delta respectively. The strict blue-mask
+result and bounded printed-ink search yielded no individually documented sea
+chain for these cells. This does not establish lake enclosure or coastal
+absence. They have terrain coverage only, without coastal coverage or lake
+hexside masks. All lake, river-side, route and facility-extent gaps remain
+separate. This candidate record is not proof of native gates or publication.
+
 ## Geometry and source authority
 
 - **Original seams (`land:4.1`):** original 01xx/39xx overlap conflicts with the

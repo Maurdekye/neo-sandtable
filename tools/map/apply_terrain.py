@@ -21,6 +21,15 @@ def sha256(path):
         return hashlib.file_digest(f, "sha256").hexdigest()
 
 
+def reviewed_cell_layers(entry):
+    """Land class and coastal-domain knowledge have independent provenance."""
+    layers = ["terrain"] if entry["status"] == "accepted" else []
+    if (entry.get("coastal_status", "known") == "known"
+            and set(entry["flags"]) & {"land", "sea", "coastal"}):
+        layers.append("coastal")
+    return layers
+
+
 def load_reviews(folder, records, source_hash, grid_hash, tec):
     permitted = {r["id"] for r in tec["row"] if r["group"] == "hex_terrain"}
     permitted.add("sea")
@@ -47,9 +56,14 @@ def load_reviews(folder, records, source_hash, grid_hash, tec):
         seen = set()
         for entry in review["hex"]:
             name = entry["hex_id"]
-            if name not in by_id or name in seen or (name in decisions and not supersedes):
+            target = entry.get("supersedes", supersedes)
+            if "supersedes" in entry and (not isinstance(target, str) or not target):
+                raise ValueError("Entry amendment needs a nonempty prior batch")
+            if target and (target not in batches or target == batch_id):
+                raise ValueError("Superseded batch must precede this review")
+            if name not in by_id or name in seen or (name in decisions and not target):
                 raise ValueError(f"Invalid or duplicated review id: {name}")
-            if supersedes and reviewed_by.get(name) != supersedes:
+            if target and reviewed_by.get(name) != target:
                 raise ValueError("Amendment must target a cell from the superseded batch")
             seen.add(name)
             status = entry["status"]
@@ -68,6 +82,13 @@ def load_reviews(folder, records, source_hash, grid_hash, tec):
                 raise ValueError("Unknown terrain-review flag")
             if "sea" in flags and ("land" in flags or "coastal" in flags):
                 raise ValueError("Conflicting water-domain flags")
+            coastal_status = entry.get("coastal_status", "known")
+            if not isinstance(coastal_status, str) or coastal_status not in {"known", "unresolved"}:
+                raise ValueError("Unknown coastal review status")
+            if coastal_status == "unresolved" and flags & {"sea", "coastal"}:
+                raise ValueError("Unresolved coastal domain cannot assert sea or coastal flag")
+            if "coastal_status" in entry and coastal_status == "known" and not flags:
+                raise ValueError("Known coastal domain requires observed surface flags")
             if status == "accepted" and entry["terrain"] == "sea" and flags != {"sea"}:
                 raise ValueError("Pure sea record must have only sea flag")
             if status == "accepted" and entry["terrain"] != "sea" and "land" not in flags:

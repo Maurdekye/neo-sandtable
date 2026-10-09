@@ -88,7 +88,9 @@ class LayerTests(unittest.TestCase):
         self.assertEqual({a for layer,a,b in data.coverage if layer=="terrain"},
                          {h for h,r in data.grid.hexes.items() if r["terrain"]!="unclassified"})
         self.assertEqual({a for layer,a,b in data.coverage if layer=="coastal"},
-                         {h for h,r in data.grid.hexes.items() if {"land","sea","coastal"}.intersection(r["flags"].split("|"))})
+                         {h for h,r in data.grid.hexes.items()
+                          if {"land","sea","coastal"}.intersection(r["flags"].split("|"))}
+                         - {"E3413", "E3414", "E3514", "E3614"})
         with self.assertRaises(UnknownCoverage): Layers(self.folder).feature("side","escarpment","C4026","C4025")
         with self.assertRaises(UnknownCoverage): Layers(self.folder).feature("line","road","C4026","C4025")
 
@@ -99,5 +101,16 @@ class LayerTests(unittest.TestCase):
         self.assertEqual(window["canonical_count"],2933)
         self.assertEqual(len(set(window["hex_ids"])),2933)
         self.assertTrue({"C4807","C4321","C4022","D3714","E3613","E3714","C4233","D1233"} <= set(window["hex_ids"]))
+
+    def test_owner_land_classes_keep_unresolved_water_uncovered(self):
+        data = Layers(MAP)
+        for name, terrain in [("E3413", "swamp"), ("E3414", "swamp"),
+                              ("E3514", "clear"), ("E3614", "delta")]:
+            with self.subTest(hex_id=name):
+                self.assertEqual(data.grid.hexes[name]["terrain"], terrain)
+                self.assertIn(("terrain", name, ""), data.coverage)
+                self.assertNotIn(("coastal", name, ""), data.coverage)
+                self.assertNotIn("coastal", data.grid.hexes[name]["flags"].split("|"))
+        self.assertIn(("coastal", "E3713", ""), data.coverage)
 
 if __name__ == "__main__": unittest.main()

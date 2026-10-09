@@ -1,0 +1,376 @@
+[batch]
+id = "graziani-owner-20261009-0001"
+coordinate_profile = "vassal-2021"
+source_image_sha256 = "904c884d0933e6dc21599243b038a4364d46a5f2151ac9bc8eda852d5c9b6011"
+build_file_sha256 = "bd50ebff16fb2704fbfb28235a7e99acc5c6c5da6cb84bffcfa283659b9780ac"
+observer = "cartographer; map-terrain"
+observed_on = "2026-10-09"
+verification = "visual_single_pass"
+selection = "Exactly 29 owner-adjudicated Graziani corridor deferrals"
+notes = "Owner question q0a0db88df999 via neo-sandtable; lead approved antialiased centres and bounded printed-ink bridge audit. Prior batches are retained. Four water domains remain unresolved despite known land classes. Local crop/mask evidence stays outside the repository; no source accuracy, 1979 equivalence, facility capacity or full city extent claim."
+
+[[hex]]
+hex_id = "C3024"
+supersedes = "zz-map-terrain-gap-0001"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [7725, 2391]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough, within the upper/central rough body. Cream clear remains visible on the left, right and lower interior."
+
+[[hex]]
+hex_id = "C3124"
+supersedes = "zz-map-terrain-gap-0001"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [7682, 2318]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough. The blue place label is away from that pixel; clear upper/left ground remains a minor class."
+
+[[hex]]
+hex_id = "C3832"
+supersedes = "zz-map-terrain-gap-0002"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [8407, 1807]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is within the solid beige rough island; clear upper/right/lower ground is retained. Ochre hexside fringe is contour/feature ink, not mountain substrate."
+
+[[hex]]
+hex_id = "D2030"
+supersedes = "zz-map-terrain-gap-0004"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+minor_classes = ["desert"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [11055, 3120]
+centre_rgb = [251, 250, 239]
+note = "The calibrated centre is readable cream clear immediately left of the projecting golden desert region. Desert in the lower/right interior is retained."
+
+[[hex]]
+hex_id = "D2120"
+supersedes = "zz-map-terrain-gap-0005"
+status = "accepted"
+terrain = "mountain"
+flags = ["land"]
+minor_classes = ["rough", "clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [10160, 3047]
+centre_rgb = [151, 136, 66]
+note = "The calibrated centre is inside the bounded flat olive mountain island. The surrounding beige rough and cream clear interior are retained; marginal gray contour ink is separate."
+
+[[hex]]
+hex_id = "D2132"
+supersedes = "zz-map-terrain-gap-0004"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [11183, 3047]
+centre_rgb = [186, 175, 129]
+note = "The calibrated centre is beige within the connected beige/yellow salt-marsh pattern. The full native view establishes its yellow network; a beige pattern gap is not rough or clear. Clear margins remain minor."
+
+[[hex]]
+hex_id = "D2319"
+supersedes = "zz-map-terrain-gap-0005"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [10075, 2902]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough within the middle/right body. Clear upper/left/lower interior remains minor."
+
+[[hex]]
+hex_id = "D2516"
+supersedes = "zz-map-terrain-gap-0006"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [9819, 2756]
+centre_rgb = [220, 214, 189]
+rough_squared_rgb_distance = 3117
+clear_squared_rgb_distance = 4757
+note = "Antialiased substrate boundary, not graphic ink. Lead-approved nearest observed palette is rough; clear retained as minor."
+
+[[hex]]
+hex_id = "D2523"
+supersedes = "zz-map-terrain-gap-0007"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [10416, 2756]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough in the lower/right body; cream clear upper/left interior is retained."
+
+[[hex]]
+hex_id = "D2530"
+supersedes = "zz-map-terrain-gap-0005"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [11013, 2756]
+centre_rgb = [216, 211, 185]
+rough_squared_rgb_distance = 2456
+clear_squared_rgb_distance = 5662
+note = "Antialiased substrate boundary, not graphic ink. Lead-approved nearest observed palette is rough; clear retained as minor."
+
+[[hex]]
+hex_id = "D2730"
+supersedes = "zz-map-terrain-gap-0008"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [11013, 2610]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough in the upper/left region. Readable clear right/lower ground remains minor."
+
+[[hex]]
+hex_id = "D2824"
+supersedes = "zz-map-terrain-gap-0006"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [10544, 2537]
+centre_rgb = [186, 175, 129]
+note = "The calibrated centre is beige within the beige/yellow salt-marsh network, identified from its full native pattern rather than a single colour. Clear left/upper/lower ground remains minor."
+
+[[hex]]
+hex_id = "D2830"
+supersedes = "zz-map-terrain-gap-0008"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [11055, 2537]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is beige rough in the middle/left body; clear upper/right/lower interior remains minor. Ochre graphics outside the target boundary do not add mountain substrate."
+
+[[hex]]
+hex_id = "D2917"
+supersedes = "zz-map-terrain-gap-0009"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [9905, 2464]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough in the upper/left/central body. Clear upper-right/lower/right ground remains minor; ochre border/outside graphics are separate."
+
+[[hex]]
+hex_id = "D3319"
+supersedes = "zz-map-terrain-gap-0007"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [10075, 2172]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough in the central/upper patch. Clear lower/right interior remains minor. The ochre marginal fringe is not mountain terrain."
+
+[[hex]]
+hex_id = "D3414"
+supersedes = "zz-map-terrain-gap-0009"
+status = "accepted"
+terrain = "salt_marsh"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [9691, 2099]
+centre_rgb = [186, 175, 129]
+note = "The calibrated centre is beige within the diagnostic yellow-network salt-marsh body. Clear interior remains minor; ochre contour margins are not a mountain class."
+
+[[hex]]
+hex_id = "D3421"
+supersedes = "zz-map-terrain-gap-0007"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [10288, 2099]
+centre_rgb = [173, 172, 162]
+selected_substrate_native_xy = [10288, 2101]
+substrate_distance_squared_pixels = 4
+note = "The calibrated centre is gray paired-road ink. Light painted pixels between the paired lines are road interior, not readable clear ground. The nearest readable off-road substrate is rough two native pixels below the centre; clear upper-right/lower interior remains minor."
+
+[[hex]]
+hex_id = "E2301"
+supersedes = "zz-map-terrain-gap-0010"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [11357, 2901]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough in the middle/right patch. Clear left/lower/upper interior remains minor; track and gray marginal escarpment graphics are separate."
+
+[[hex]]
+hex_id = "E2405"
+supersedes = "zz-map-terrain-gap-0010"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [11741, 2828]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough within the central island. Clear surrounding margins remain minor."
+
+[[hex]]
+hex_id = "E3210"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "rough"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003"]
+centre_native_xy = [12167, 2244]
+centre_rgb = [194, 185, 149]
+note = "The calibrated centre is plain beige rough in the diagonal central patch. Tied transport ink passes above the centre rather than through it; clear margins remain minor."
+
+[[hex]]
+hex_id = "E3214"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "delta"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [12508, 2244]
+centre_rgb = [164, 178, 171]
+note = "Flat gray-green centre; mixed clear land retained."
+
+[[hex]]
+hex_id = "E3311"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "swamp"
+flags = ["land"]
+minor_classes = []
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [12210, 2171]
+centre_rgb = [251, 250, 239]
+note = "Centre is cream background inside the horizontal-line/reed patterned body, not independent clear terrain."
+
+[[hex]]
+hex_id = "E3312"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "swamp"
+flags = ["land"]
+minor_classes = []
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [12295, 2171]
+centre_rgb = [251, 250, 239]
+note = "Centre is patterned-body background; transport crossings do not change substrate."
+
+[[hex]]
+hex_id = "E3412"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "swamp"
+flags = ["land"]
+minor_classes = []
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [12337, 2098]
+centre_rgb = [251, 250, 239]
+note = "Centre is cream background within the reed pattern; neighbouring blue outside the hex does not establish coastal contact."
+
+[[hex]]
+hex_id = "E3413"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "swamp"
+flags = ["land"]
+minor_classes = []
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [12423, 2098]
+centre_rgb = [86, 139, 95]
+coastal_status = "unresolved"
+note = "Centre lies on the green reed/wetland pattern; No individually documented <=3-dark-pixel chain to the sea seed was found in the bounded bridge audit; water domain remains unresolved, not enclosed-lake certified. Land classification is independent."
+
+[[hex]]
+hex_id = "E3414"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "swamp"
+flags = ["land"]
+minor_classes = []
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [12508, 2098]
+centre_rgb = [251, 250, 239]
+coastal_status = "unresolved"
+note = "Centre is patterned wetland background; No individually documented <=3-dark-pixel chain to the sea seed was found in the bounded bridge audit; water domain remains unresolved, not enclosed-lake certified. Land classification is independent."
+
+[[hex]]
+hex_id = "E3514"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "clear"
+flags = ["land"]
+minor_classes = ["delta"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [12465, 2025]
+centre_rgb = [251, 250, 239]
+coastal_status = "unresolved"
+note = "Centre is unpatterned clear in mixed clear/delta land; minor delta retained, no clear-predominance claim. No individually documented <=3-dark-pixel chain to the sea seed was found in the bounded bridge audit; water domain remains unresolved, not enclosed-lake certified. Land classification is independent."
+
+[[hex]]
+hex_id = "E3614"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "delta"
+flags = ["land"]
+minor_classes = ["clear"]
+src = ["land:8.37", "interp:map-0003", "interp:map-0006"]
+centre_native_xy = [12508, 1952]
+centre_rgb = [164, 178, 171]
+coastal_status = "unresolved"
+note = "Centre is flat gray-green delta; minor clear retained. Blue band and separate pool are distinct from land class. No individually documented <=3-dark-pixel chain to the sea seed was found in the bounded bridge audit; water domain remains unresolved, not enclosed-lake certified. Land classification is independent."
+
+[[hex]]
+hex_id = "E3713"
+supersedes = "zz-map-terrain-gap-0011"
+status = "accepted"
+terrain = "major_city"
+flags = ["land", "coastal"]
+minor_classes = []
+src = ["land:8.37", "interp:map-0003", "interp:map-0002"]
+centre_native_xy = [12380, 1879]
+centre_rgb = [138, 181, 207]
+note = "Explicit owner city membership overrides centre reading; city identity Alexandria, coastal retained."
+
+[[place]]
+id = "city-alexandria-e3713"
+name = "Alexandria"
+hex_id = "E3713"
+type = "major_city"
+src = ["land:8.37", "interp:map-0002", "interp:map-0003"]
+note = "Owner-adjudicated additional hex of the same Alexandria city represented at E3613 and E3714, retaining the shared city name and coastal identity. No closed city extent, facility capacity or additional port is inferred."

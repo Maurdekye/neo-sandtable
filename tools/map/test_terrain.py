@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 import tomllib
-from apply_terrain import load_reviews, load_places
+from apply_terrain import load_reviews, load_places, reviewed_cell_layers
 from propose_terrain import decide
 
 MAP = Path(__file__).resolve().parents[2] / "data/map"
@@ -69,12 +69,67 @@ class TerrainTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Amendment must target"):
                 self.load(folder)
 
+    def test_one_review_amends_cells_from_distinct_prior_batches(self):
+        # A single owner adjudication may resolve deferrals from several batches.
+        header = '\n'.join(f'{k} = {v!r}' for k, v in self.batch.items()
+                           if isinstance(v, str) and k != 'id')
+        def review(batch, entries):
+            return '[batch]\nid = ' + repr(batch) + '\n' + header + '\n' + entries
+        def entry(name, target=None):
+            result = '\n[[hex]]\nhex_id = ' + repr(name) + '\n'
+            if target is not None:
+                result += 'supersedes = ' + repr(target) + '\n'
+            return result + 'status = "accepted"\nterrain = "clear"\nflags = ["land"]\nsrc = ["land:8.37"]\n'
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            (folder / 'a.toml').write_text(review('first', entry('C2818')))
+            (folder / 'b.toml').write_text(review('second', entry('C2819')))
+            valid = review('owner', entry('C2818', 'first') + entry('C2819', 'second'))
+            (folder / 'c.toml').write_text(valid)
+            self.assertEqual(set(self.load(folder)), {'C2818', 'C2819'})
+            for bad, error in [
+                (valid.replace("supersedes = 'second'", "supersedes = 'first'"), 'Amendment must target'),
+                (valid.replace("supersedes = 'first'", "supersedes = 'future'"), 'must precede'),
+                (valid.replace("supersedes = 'first'", "supersedes = ''"), 'nonempty prior batch'),
+                (valid.replace("supersedes = 'first'\n", ''), 'duplicated review id'),
+                (valid + entry('C2818', 'first'), 'duplicated review id'),
+            ]:
+                with self.subTest(error=error):
+                    (folder / 'c.toml').write_text(bad)
+                    with self.assertRaisesRegex(ValueError, error):
+                        self.load(folder)
+
     def test_sea_and_coastal_flags_conflict(self):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)
             data = (MAP / "reviews/graziani-0001.toml").read_text().replace('flags = ["sea"]', 'flags = ["sea", "coastal"]', 1)
             (folder / "a.toml").write_text(data)
             with self.assertRaisesRegex(ValueError, "Conflicting water-domain"):
+                self.load(folder)
+
+    def test_land_class_does_not_resolve_unknown_coastal_domain(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            original = (MAP / 'reviews/graziani-0001.toml').read_text()
+            land = original.replace('terrain = "clear"',
+                                    'coastal_status = "unresolved"\nterrain = "clear"', 1)
+            (folder / 'a.toml').write_text(land)
+            unknown = next(entry for entry in self.load(folder).values()
+                           if entry.get('coastal_status') == 'unresolved')
+            self.assertEqual(unknown['terrain'], 'clear')
+            self.assertEqual(reviewed_cell_layers(unknown), ['terrain'])
+            legacy = self.load(MAP / 'reviews')['C4022']
+            self.assertEqual(reviewed_cell_layers(legacy), ['terrain', 'coastal'])
+            for value, error in [('"typo"', 'Unknown coastal review status'),
+                                 ('false', 'Unknown coastal review status'),
+                                 ('[]', 'Unknown coastal review status')]:
+                (folder / 'a.toml').write_text(land.replace('"unresolved"', value))
+                with self.subTest(value=value), self.assertRaisesRegex(ValueError, error):
+                    self.load(folder)
+            coastal = original.replace('flags = ["sea"]',
+                                       'coastal_status = "unresolved"\nflags = ["sea"]', 1)
+            (folder / 'a.toml').write_text(coastal)
+            with self.assertRaisesRegex(ValueError, 'cannot assert sea or coastal'):
                 self.load(folder)
 
     def test_reviewed_port_requires_coastal_hex(self):
@@ -111,13 +166,30 @@ class TerrainTests(unittest.TestCase):
         decisions=self.load(MAP/"reviews")
         self.assertEqual(decisions["D3315"]["proposed_terrain"],"clear")
         self.assertEqual(decisions["D3315"]["terrain"],"salt_marsh")
-        self.assertEqual(decisions["D3414"]["terrain"],"unclassified")
-        self.assertEqual(decisions["D3414"]["status"],"deferred")
+        self.assertEqual(decisions["D3414"]["terrain"],"salt_marsh")
+        self.assertEqual(decisions["D3414"]["status"],"accepted")
         self.assertIn("interp:map-0003", decisions["D3414"]["src"])
+        # Preserve the historical decision rather than rewriting its evidence.
+        prior = tomllib.loads((MAP / "reviews/zz-map-terrain-gap-0009.toml").read_text())
+        old = next(e for e in prior["hex"] if e["hex_id"] == "D3414")
+        self.assertEqual((old["status"], old["terrain"]), ("deferred", "unclassified"))
         places=tomllib.loads((MAP/"places.toml").read_text())["places"]
         city={p["hex_id"] for p in places if p["type"]=="major_city"}
         self.assertTrue({"A4827","E1930","E1931","E1829","E1830","E1730"} <= city)
         self.assertTrue(all(decisions[h]["terrain"]=="major_city" for h in city))
+
+    def test_owner29_terrain_and_water_provenance_stay_independent(self):
+        decisions = self.load(MAP / "reviews")
+        for name, terrain in [("E3413", "swamp"), ("E3414", "swamp"),
+                              ("E3514", "clear"), ("E3614", "delta")]:
+            with self.subTest(hex_id=name):
+                self.assertEqual(decisions[name]["terrain"], terrain)
+                self.assertEqual(reviewed_cell_layers(decisions[name]), ["terrain"])
+                self.assertEqual(decisions[name]["coastal_status"], "unresolved")
+        for name in ["D2516", "D2530"]:
+            self.assertEqual(decisions[name]["terrain"], "rough")
+            self.assertEqual(decisions[name]["minor_classes"], ["clear"])
+        self.assertEqual(decisions["E3713"]["flags"], ["land", "coastal"])
 
     def test_contour_color_causes_abstention(self):
         # Ochre splashes of a hexside symbol must not be called mountain terrain.
