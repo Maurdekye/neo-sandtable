@@ -1,5 +1,51 @@
 # Map gaps
 
+## Graziani corridor lake-side uncertainty, 2026-10-09
+
+The corridor lake review accounts for all 2,541 adjacent physical pairs
+touching its 834 cells, including crossing sides. Final source adjudication
+confirmed no lake sides. Of the 27 provisional or uncertain pairs revisited,
+13 have established marine or harbour identity and 14 remain Unknown:
+
+| First endpoint | Second endpoint |
+|---|---|
+| E3314 | E3414 |
+| E3315 | E3414 |
+| E3413 | E3414 |
+| E3413 | E3514 |
+| E3414 | E3514 |
+| E3414 | E3515 |
+| E3614 | E3715 |
+| E3413 | E3513 |
+| E3513 | E3514 |
+| E3513 | E3613 |
+| E3514 | E3613 |
+| E3613 | E3614 |
+| E3613 | E3714 |
+| E3614 | E3714 |
+
+Under adopted map-0004, qualifying printed inland water must cover the
+shared-side midpoint and more than half its length. Under map-0006,
+measured connection to the open-sea seed establishes marine identity;
+an enclosed water body may establish a lake, while a narrow river or canal
+band does not. Any connection across printed dark ink needs an individually
+documented gap of at most three native pixels, without crossing land fill.
+Raw pixel disconnection, label strokes, grid cuts and missing glyphs alone
+do not establish enclosure or lake identity. No such bridge was added.
+Western Alexandria water identity or side contact remains unresolved on
+the listed pairs; Unknown is the final source result for this review.
+
+The current engine treats these 14 pairs as non-lake. If a listed side is
+later adjudicated as Lake, its rules consequence is ZOC blocking under
+land:10.21a. Lake has no TEC movement-cost entry in land:8.37; no additional
+crossing cost is assigned. Thus the unresolved lake effect is ZOC only.
+This documentation adds no lake observations, absence masks, schema or
+consumer behaviour. Original first-pass records and current adjudication
+overlays remain unchanged. Revisit when Alexandria-area play needs these
+sides, a later map phase confirms a lake, or the delegated owner adjudicates
+the western water body. Lake compatibility and the pipeline-completeness
+transition are deferred pending that need and separate sequencing.
+
 ## Owner adjudication update, 2026-10-09
 
 Review `graziani-owner-20261009-0001` resolves the 29 corridor land-class

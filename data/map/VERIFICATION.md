@@ -1103,3 +1103,29 @@ checks; these source checks do not claim them. Single-observer source evidence
 and hash/replay checks supply no measured classification error rate or 1979
 equivalence. The inherited parent rust-slow CI failures remain separate engine
 findings and do not become a CI-green claim for this candidate.
+
+### Graziani corridor lake source survey, 2026-10-09
+
+The first pass inspected all 2,541 canonical adjacent physical pairs touching
+the 834-cell corridor: 2,326 internal and 215 crossing pairs. Its immutable
+historical buckets remain seven provisional candidates, 20 uncertainties
+and 2,514 unmasked controls. A final, separate current-adjudication overlay
+for the 27 candidate or uncertain pairs records zero confirmed lake sides,
+13 marine not-lake sides and 14 Unknowns under adopted map-0004/map-0006.
+Reinspection adds no unique pairs and rewrites no historical observation.
+
+Native source review, exact identity and geometry reconstruction, predecessor
+hash preservation and actual-source RGB/sample checks were independently
+reviewed. Raw disconnected blue components alone do not prove enclosure;
+no printed-ink bridge or domain enlargement was used. Classification error
+rates and original 1979 equivalence remain unmeasured. All first-pass pairs
+are accounted for, but the 14 Unknowns prevent an exhaustive supported lake
+count. Their exact identities and current non-lake engine treatment are in
+[GAPS.md](GAPS.md#graziani-corridor-lake-side-uncertainty-2026-10-09).
+
+The lead closes this source scope with documentation only. No lake masks,
+new SideKind, ZOC implementation or pipeline-completeness change is added.
+Lake's potential effect is ZOC blocking (land:10.21a), with no Lake movement
+cost in the land:8.37 TEC. Compatibility work is deferred until an applicable
+play need, a confirmed lake or delegated water adjudication supplies a reason
+to revisit it. This survey supplies no route, setup or action certification.
