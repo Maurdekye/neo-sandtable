@@ -2,11 +2,16 @@
 mod air;
 mod decisions;
 mod facilities;
+mod initial_air;
 pub mod placement;
 mod pools;
 mod preload;
 mod stacking;
 pub(crate) use decisions::{KIND_DUMP, KIND_TRUCKS, KIND_UNIT, answer, enter, finish};
+pub(crate) use initial_air::{
+    FreshAirSetupClose, InitialAirImport, initial_air_seed, original_aircraft_counts,
+    validate_initial_air_close,
+};
 
 use crate::state::Location;
 use cna_core::ids::{DecisionId, UnitId};
@@ -16,6 +21,9 @@ use std::collections::BTreeMap;
 /// Pending setup routing and owner-private destinations, never static unit characteristics.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SetupState {
+    /// Original-aircraft provenance; absent old checkpoints have no initial credit.
+    #[serde(default)]
+    pub(crate) initial_air_import: InitialAirImport,
     pub started: bool,
     pub closed: bool,
     pub tasks: BTreeMap<DecisionId, SetupTask>,

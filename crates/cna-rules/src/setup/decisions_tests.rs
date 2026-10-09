@@ -72,6 +72,123 @@ fn finish(c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
     panic!("setup failed to finish");
 }
 
+// Reach the genuine final-close boundary by answering actual source windows.
+// No started/closed/provenance flags are assigned by this helper.
+fn before_fresh_close(c: &CnaContent) -> Game<Cna> {
+    let mut game = opened(c);
+    for _ in 0..500 {
+        assert!(!game.state.setup.closed);
+        if let Some(p) = game.state.decisions.pending.first().cloned() {
+            let air = serde_json::to_value(&game.state.air.runtime).unwrap();
+            game = submit(c, &game, &p, first(&p.space.schema)).unwrap();
+            // Respond may arrange setup aggregates; canonical admission is finish-only.
+            assert_eq!(serde_json::to_value(&game.state.air.runtime).unwrap(), air);
+        } else if game.state.setup.air_started
+            && game.state.setup.pools_started
+            && game.state.setup.preload_started
+        {
+            assert!(game.state.setup.tasks.is_empty());
+            return game;
+        } else {
+            game = evaluate(&Cna::dev(), c, &game, &Command::Advance).unwrap().game;
+        }
+    }
+    panic!("actual source setup did not reach final close");
+}
+
+fn assert_direct_original_inventory(c: &CnaContent, state: &State) {
+    use crate::air::preparation::{CurrentPreparation, InitialChoice};
+    assert!(matches!(state.setup.initial_air_import, super::super::InitialAirImport::Imported));
+    let preparation = &state.air.runtime.preparation;
+    assert!(preparation.initialized);
+    assert_eq!(preparation.current.len(), state.air.runtime.aircraft.len());
+    assert_eq!(preparation.initial_choices.len(), state.air.runtime.aircraft.len());
+    let mut counts = super::super::original_aircraft_counts(c).unwrap();
+    for rows in counts.values_mut() {
+        for count in rows.values_mut() {
+            *count = 0;
+        }
+    }
+    for (id, plane) in &state.air.runtime.aircraft {
+        assert_eq!(preparation.current[id], CurrentPreparation::InitialUnspecified);
+        assert_eq!(preparation.initial_choices[id], InitialChoice::Unselected);
+        *counts.get_mut(&plane.force).unwrap().get_mut(&plane.aircraft).unwrap() += 1;
+    }
+    assert_eq!(counts, super::super::original_aircraft_counts(c).unwrap());
+    crate::air::inventory::check(c, &state.air).unwrap();
+}
+
+/// Cases: scen:59.2, scen:59.32, scen:59.36, airlog:34.0, airlog:35.24
+/// Interpretations: interp:air-0018
+#[test]
+fn actual_fresh_setup_close_admits_original_ids_once_across_checkpoint_and_retry() {
+    let c = content();
+    let game = before_fresh_close(&c);
+    assert!(matches!(game.state.setup.initial_air_import, super::super::InitialAirImport::PendingOriginal { .. }));
+    assert_eq!(game.state.air.runtime, crate::air::state::AirRuntime::default());
+    let restored: Game<Cna> = serde_json::from_value(serde_json::to_value(&game).unwrap()).unwrap();
+    let closed = evaluate(&Cna::dev(), &c, &game, &Command::Advance).unwrap();
+    let resumed = evaluate(&Cna::dev(), &c, &restored, &Command::Advance).unwrap();
+    assert_eq!(serde_json::to_value(&closed.game).unwrap(), serde_json::to_value(&resumed.game).unwrap());
+    assert_eq!(serde_json::to_value(&closed.events).unwrap(), serde_json::to_value(&resumed.events).unwrap());
+    assert_direct_original_inventory(&c, &closed.game.state);
+    let mut again = closed.game.clone();
+    let before = serde_json::to_value(&again.state.air).unwrap();
+    let mut rng = CampaignRng::from_state(&again.rng);
+    let mut events = vec![];
+    super::finish(&c, &mut again.state, &mut Cx { rng: &mut rng, events: &mut events }, false).unwrap();
+    assert_eq!(serde_json::to_value(&again.state.air).unwrap(), before);
+    assert_eq!(rng.state(), again.rng);
+    assert!(events.is_empty());
+}
+
+/// Cases: scen:59.32, scen:60.37, airlog:56.21
+/// Interpretations: interp:air-0018
+#[test]
+fn late_convoy_failure_rolls_back_actual_fresh_close_and_can_retry_without_new_ids() {
+    let mut c = content();
+    let game = before_fresh_close(&c);
+    let before = serde_json::to_value(&game).unwrap();
+    // This is a genuine late convoy clock gap, after the Air import hook;
+    // no aircraft/source snapshot or authentication predicate is weakened.
+    let date = c.scenario.meta.campaign_start_date.take();
+    let error = evaluate(&Cna::dev(), &c, &game, &Command::Advance).unwrap_err();
+    assert!(matches!(error, Rejection::Engine(EngineError::Unsupported { case, .. }) if case == "airlog:56.21"));
+    assert_eq!(serde_json::to_value(&game).unwrap(), before);
+    assert_eq!(game.state.air.runtime, crate::air::state::AirRuntime::default());
+    c.scenario.meta.campaign_start_date = date;
+    let resumed: Game<Cna> = serde_json::from_value(before).unwrap();
+    let closed = evaluate(&Cna::dev(), &c, &resumed, &Command::Advance).unwrap();
+    assert_direct_original_inventory(&c, &closed.game.state);
+}
+
+/// Cases: scen:59.32, airlog:34.0
+/// Interpretations: interp:air-0018
+#[test]
+fn actual_legacy_close_never_credits_existing_unknown_aircraft_and_empty_source_is_explicit() {
+    use crate::air::preparation::CurrentPreparation;
+    let c = content();
+    let game = before_fresh_close(&c);
+    let mut value = serde_json::to_value(&game).unwrap();
+    value["state"]["setup"].as_object_mut().unwrap().remove("initial_air_import");
+    let mut old: Game<Cna> = serde_json::from_value(value).unwrap();
+    crate::air::inventory::initialize(&c, &mut old.state.air).unwrap();
+    let before = serde_json::to_value(&old.state.air).unwrap();
+    let closed = evaluate(&Cna::dev(), &c, &old, &Command::Advance).unwrap();
+    assert!(closed.game.state.setup.closed);
+    assert!(matches!(closed.game.state.setup.initial_air_import, super::super::InitialAirImport::LegacyUnknown));
+    assert_eq!(serde_json::to_value(&closed.game.state.air).unwrap(), before);
+    assert!(closed.game.state.air.runtime.preparation.initial_choices.is_empty());
+    assert!(closed.game.state.air.runtime.preparation.current.values().all(|p| matches!(p, CurrentPreparation::UnknownLegacy)));
+
+    let mut empty = content();
+    empty.scenario.air.clear();
+    let closed = finish(&empty, opened(&empty));
+    assert_direct_original_inventory(&empty, &closed.state);
+    assert!(closed.state.air.runtime.aircraft.is_empty());
+    assert!(closed.state.air.runtime.preparation.current.is_empty());
+}
+
 /// Cases: scen:59.2, scen:59.42, land:3.62
 /// Interpretations: interp:scen-0005
 #[test]
@@ -238,6 +355,8 @@ fn opposing_hidden_buffers_do_not_change_answer_validation_and_collision_retries
     state.logistics.dumps.clear();
     state.logistics.truck_pools.clear();
     state.air.forces.clear();
+    // Rules466: deliberately reduced fixture, not original-aircraft authentication.
+    state.setup.initial_air_import = super::super::InitialAirImport::LegacyUnknown;
     for id in &selected {
         let u = state.land.units.get_mut(id).unwrap();
         u.location = Location::AwaitingSetup {
@@ -476,6 +595,12 @@ fn convoy_planning_barrier_stays_in_setup_after_both_close_paths() {
     let c = content();
     let game = finish(&c, opened(&c));
     assert!(game.state.setup.closed);
+    // Rules461: actual fresh closure now authenticates original inventory.
+    assert!(matches!(
+        game.state.setup.initial_air_import,
+        super::super::InitialAirImport::Imported
+    ));
+    assert!(game.state.air.runtime.initialized());
     assert!(game.state.logistics.convoys_initialized);
     assert_eq!(game.state.cursor.block, crate::seq::Block::Setup);
     assert!(
@@ -508,6 +633,8 @@ fn convoy_planning_barrier_stays_in_setup_after_both_close_paths() {
     no_choices.land.undistributed_trucks.clear();
     no_choices.logistics.truck_pools.clear();
     no_choices.air.forces.clear();
+    // Rules466: deliberately reduced fixture, not original-aircraft authentication.
+    no_choices.setup.initial_air_import = super::super::InitialAirImport::LegacyUnknown;
     for d in no_choices.logistics.dumps.values_mut() {
         if matches!(d.location, DumpLocation::AwaitingSetup { .. }) {
             d.location = DumpLocation::Hex {
@@ -576,6 +703,8 @@ fn a_friendly_setup_choice_revises_other_groups_and_rejects_the_stale_answer() {
     state.logistics.dumps.clear();
     state.logistics.truck_pools.clear();
     state.air.forces.clear();
+    // Rules466: deliberately reduced fixture, not original-aircraft authentication.
+    state.setup.initial_air_import = super::super::InitialAirImport::LegacyUnknown;
     for id in &ids[..7] {
         state.land.units.get_mut(id).unwrap().location = Location::Hex {
             hex: "E1730".into(),
@@ -644,6 +773,8 @@ fn starting_pool_splits_keep_identity_counts_and_private_locations_across_recove
     initial.land.undistributed_trucks.clear();
     initial.logistics.dumps.clear();
     initial.air.forces.clear();
+    // Rules466: deliberately reduced fixture, not original-aircraft authentication.
+    initial.setup.initial_air_import = super::super::InitialAirImport::LegacyUnknown;
     let original = initial
         .logistics
         .truck_pools
@@ -794,6 +925,8 @@ fn optional_initial_cargo_shares_capacity_with_troops_and_never_spends_dump_supp
     initial.logistics.dumps.clear();
     initial.logistics.truck_pools.clear();
     initial.air.forces.clear();
+    // Rules466: deliberately reduced fixture, not original-aircraft authentication.
+    initial.setup.initial_air_import = super::super::InitialAirImport::LegacyUnknown;
     let side = target_side(&initial, &unit);
     let mut game = evaluate(
         &Cna::dev(),
@@ -1065,6 +1198,12 @@ fn every_placement_at_real_setup_closure_has_an_owner_unit_update() {
     assert!(!placed.is_empty());
     let t = evaluate(&Cna::dev(), &c, &game, &Command::Advance).unwrap();
     assert!(t.game.state.setup.closed);
+    // Exact new fresh-close expectation; placement disclosure assertions below stay unchanged.
+    assert!(matches!(
+        t.game.state.setup.initial_air_import,
+        super::super::InitialAirImport::Imported
+    ));
+    assert!(t.game.state.air.runtime.initialized());
     for (id, location) in placed {
         let side = t.game.state.land.units[&id].side;
         let expected = Cna::dev()
@@ -1128,6 +1267,8 @@ fn closure_events_disclose_faces_only_and_sort_dump_markers_by_public_id() {
     state.logistics.dumps.clear();
     state.logistics.truck_pools.clear();
     state.air.forces.clear();
+    // Rules466: deliberately reduced fixture, not original-aircraft authentication.
+    state.setup.initial_air_import = super::super::InitialAirImport::LegacyUnknown;
     let ids: Vec<_> = state
         .units_of(Side::Axis)
         .take(2)

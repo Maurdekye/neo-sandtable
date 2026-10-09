@@ -600,6 +600,8 @@ impl State {
             )?;
         }
 
+        // Validate checked source totals before the existing aggregate builder.
+        crate::setup::original_aircraft_counts(content)?;
         let mut air = AirState::default();
         for force in &content.scenario.air {
             air.forces.insert(
@@ -622,6 +624,7 @@ impl State {
             }
         }
 
+        let initial_air_import = crate::setup::initial_air_seed(content, &air)?;
         let logistics_pool_sources = logistics
             .truck_pools
             .iter()
@@ -637,6 +640,7 @@ impl State {
             engineering: crate::land::engineering::EngineeringState::default(),
             decisions: Decisions::default(),
             setup: crate::setup::SetupState {
+                initial_air_import,
                 pool_sources: logistics_pool_sources,
                 ..crate::setup::SetupState::default()
             },

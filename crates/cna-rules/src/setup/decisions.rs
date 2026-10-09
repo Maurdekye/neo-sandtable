@@ -757,7 +757,14 @@ pub(crate) fn finish(
         cx.emit(EngineEvent::public(GameEvent::Note{text:"The blind placement window was adjudicated; affected placement choices are reopened.".into()}));
         return Ok(());
     }
+    let initial_air = super::initial_air::authorize_close(content, state)?;
     state.setup.closed = true;
+    if let Some(authority) = initial_air {
+        // Cases: scen:59.32, scen:59.36, airlog:34.0, airlog:35.24
+        // Admit original IDs directly before generic legacy import. evaluate's
+        // whole-State draft also rolls this back if convoy initialization fails.
+        crate::air::inventory::import_initial_setup(content, state, authority)?;
+    }
     cx.emit(EngineEvent::public(GameEvent::Note {
         text: "The simultaneous setup placement window is closed.".into(),
     }));
