@@ -8,6 +8,119 @@ use cna_core::{
     ids::SeatId,
 };
 use serde_json::Value;
+use std::{future::Future, pin::Pin, sync::Arc};
+use crate::host::{HostForcedLease, HostForcedSubmission, HostIdentity, HostRefusal,
+    PreparedRoute, RouteCancellation, RouteSettlementAck};
+use crate::operation::Allowance;
+
+type RetainedBegin = Pin<Box<dyn Future<Output = Result<Box<dyn HostForcedLease>, HostRefusal>> + Send>>;
+
+struct BeginAbortOnDrop { handle: Arc<RouteCancellation>, armed: bool }
+impl Drop for BeginAbortOnDrop {
+    fn drop(&mut self) { if self.armed { self.handle.request(); } }
+}
+
+/// Concrete retained owner/capture representations, not heap payloads or an RSS estimate.
+/// Variable request/identity payloads retain their separate producer/COMMAND charges.
+pub(crate) fn retained_begin_metadata_bytes() -> usize {
+    std::mem::size_of::<ForcedAnswerSupervisor>()
+        + std::mem::size_of::<BeginAbortOnDrop>()
+        + std::mem::size_of::<(Arc<dyn HostForcedSubmission>, HostIdentity, SubmitRequest, PreparedRoute, Allowance)>()
+}
+
+/// Foreground caller ownership, allocated BEFORE polling/enqueueing begin. The containing
+/// runner must retain this value on every uncertain return; it is never a detached task.
+/// The preallocated handle survives loss of the begin reply/token. Dropping it asks abort
+/// but cannot release a credit, canonical receipt, child or reader.
+pub struct ForcedAnswerSupervisor {
+    handle: Arc<RouteCancellation>,
+    allowance: Allowance,
+    begin: Option<RetainedBegin>,
+    lease: Option<Box<dyn HostForcedLease>>,
+    settled: Option<RouteSettlementAck>,
+}
+
+impl ForcedAnswerSupervisor {
+    pub fn new(host: Arc<dyn HostForcedSubmission>, identity: HostIdentity,
+        request: SubmitRequest, route: PreparedRoute) -> Result<Self, HostRefusal>
+    {
+        if route.owner() != &identity { return Err(HostRefusal::IdentityChanged); }
+        // Fixed owner/future metadata was charged at successful prepare. A post-prepare
+        // overflow/expiry must not refuse BEFORE owning the terminal registration future.
+        let allowance = route.allowance();
+        let handle = route.cancellation();
+        // The actor adapter registers the SAME handle/writer wake before its first enqueue.
+        // The caller retains both the future and handle before that future can be polled.
+        let begin = Box::pin(async move { host.begin(identity, request, route, allowance).await });
+        Ok(Self { handle, allowance, begin: Some(begin), lease: None, settled: None })
+    }
+
+    pub fn cancellation(&self) -> Arc<RouteCancellation> { self.handle.clone() }
+    pub fn lease(&self) -> Option<&dyn HostForcedLease> { self.lease.as_deref() }
+    pub fn settled(&self) -> Option<RouteSettlementAck> { self.settled }
+
+    /// One original whole-answer deadline; timeout borrows rather than drops begin.
+    /// A lost reply leaves ownership here and in the actor's registered association.
+    pub async fn begin(&mut self) -> Result<(), HostRefusal> {
+        if self.lease.is_some() { return Ok(()); }
+        if self.settled.is_some() { return Err(HostRefusal::StoppedBeforeWork); }
+        let mut abort = BeginAbortOnDrop { handle: self.handle.clone(), armed: true };
+        let pending = self.begin.as_mut().ok_or(HostRefusal::Unknown)?;
+        match tokio::time::timeout_at(self.allowance.deadline(), pending.as_mut()).await {
+            Ok(result) => {
+                self.begin = None;
+                match result {
+                    Ok(lease) => { self.lease = Some(lease); abort.armed = false; Ok(()) }
+                    Err(error) => { self.handle.request(); Err(error) }
+                }
+            }
+            Err(_) => { self.handle.request(); Err(HostRefusal::Expired) }
+        }
+    }
+
+    /// Called only after the original supervision has actually disposed of its owned work.
+    /// Even if begin never delivered a token, the pre-enqueue association receives this wake.
+    /// Actual actor ACK is retained separately; no timeout or Drop substitutes for it.
+    pub fn request_settlement_after_supervision(&self) {
+        self.handle.request(); // late first poll may only establish terminal association
+        self.handle.request_settlement_after_supervision();
+    }
+
+    /// Expiry can close the caller's wait but leaves this foreground owner intact. The
+    /// containing runner must retain it and report Unsettled, never healthy finish/re-admit.
+    pub async fn settlement_ack(&mut self) -> Result<RouteSettlementAck, HostRefusal> {
+        if let Some(ack) = self.settled { return Ok(ack); }
+        if !self.handle.settlement_requested() {
+            return Err(HostRefusal::Ownership("supervision settlement not requested".into()));
+        }
+        // A caller may be canceled before begin was ever polled. Drive its first bounded
+        // poll here so the adapter registers the SAME pending capability before observing
+        // abort/expiry. No new task is spawned; actual actor ACK remains the only witness.
+        if let Some(pending) = self.begin.as_mut() {
+            let completion = std::future::poll_fn(|cx| {
+                std::task::Poll::Ready(pending.as_mut().poll(cx))
+            }).await;
+            if let std::task::Poll::Ready(result) = completion {
+                self.begin = None;
+                if let Ok(lease) = result { self.lease = Some(lease); }
+            }
+        }
+        let ack = match self.handle.acknowledged_settlement() {
+            Some(ack) => ack,
+            None => tokio::time::timeout_at(self.allowance.deadline(), self.handle.settlement_ack())
+                .await.map_err(|_| HostRefusal::Expired)?,
+        };
+        self.settled = Some(ack);
+        // Only the actual retained actor witness permits forgetting begin/lease futures.
+        self.begin = None;
+        self.lease = None;
+        Ok(ack)
+    }
+}
+
+impl Drop for ForcedAnswerSupervisor {
+    fn drop(&mut self) { if self.settled.is_none() { self.handle.request(); } }
+}
 
 fn empty(schema: &ActionSchema) -> bool {
     match schema {
@@ -121,6 +234,131 @@ mod tests {
     use serde_json::json;
     use std::sync::{Arc, Mutex};
     use tokio::sync::{Semaphore, watch};
+
+    struct LostBegin {
+        retained: Mutex<Option<PreparedRoute>>,
+        installed: tokio::sync::Notify,
+    }
+    struct BeginDelivery;
+    #[async_trait]
+    impl crate::host::HostDeliveryRoute for BeginDelivery {
+        async fn append(&self, _: &str, ordinal: u64, _: &crate::transcript::UnconfirmedEntry)
+            -> Result<u64, String> { Ok(ordinal) }
+    }
+    #[async_trait]
+    impl HostForcedSubmission for LostBegin {
+        async fn begin(&self, _: HostIdentity, _: SubmitRequest, route: PreparedRoute, _: Allowance)
+            -> Result<Box<dyn HostForcedLease>, HostRefusal>
+        {
+            *self.retained.lock().unwrap() = Some(route);
+            {
+                let retained = self.retained.lock().unwrap();
+                let route = retained.as_ref().unwrap();
+                route.register_writer_wake(std::thread::current(), std::mem::size_of::<std::thread::Thread>())?;
+                route.install("undelivered-token".into(), Arc::new(BeginDelivery))?;
+            }
+            self.installed.notify_one();
+            std::future::pending().await // actor installed, but token/reply is lost
+        }
+    }
+
+    #[tokio::test]
+    async fn canceled_begin_wait_keeps_foreground_future_until_actual_actor_ack() {
+        let host = Arc::new(LostBegin { retained: Mutex::new(None), installed: Default::default() });
+        let route = crate::host::test_prepared_route("lost-begin-op");
+        let identity = route.owner().clone();
+        let request = SubmitRequest { decision_id: identity.decision_id.clone(), epoch: identity.epoch,
+            revision: Some(identity.revision), idempotency_key: "original-request-key".into(),
+            action: Value::Null, public_explanation: None };
+        let mut owner = ForcedAnswerSupervisor::new(host.clone(), identity, request, route).unwrap();
+        tokio::select! {
+            _ = owner.begin() => panic!("lost begin cannot return a lease"),
+            _ = host.installed.notified() => {},
+        }
+        assert!(owner.begin.is_some(), "canceled borrowed wait must retain begin future");
+        assert!(owner.lease().is_none());
+        assert!(owner.cancellation().requested());
+        assert!(!owner.cancellation().settlement_requested());
+        assert_eq!(owner.settlement_ack().await,
+            Err(HostRefusal::Ownership("supervision settlement not requested".into())));
+        assert!(owner.begin.is_some());
+        // Original supervisor's actual cleanup precedes settlement request, never the timer.
+        owner.request_settlement_after_supervision();
+        let route = host.retained.lock().unwrap().take().unwrap();
+        route.acknowledge_settlement(&owner.cancellation(), false).unwrap();
+        let ack = owner.settlement_ack().await.unwrap();
+        assert_eq!(owner.settlement_ack().await.unwrap(), ack);
+        assert!(owner.begin.is_none());
+        assert_eq!(owner.settled(), Some(ack));
+    }
+
+    #[tokio::test]
+    async fn post_prepare_overflow_retains_caller_and_actor_association_before_refusal() {
+        let host = Arc::new(LostBegin { retained: Mutex::new(None), installed: Default::default() });
+        let route = crate::host::test_prepared_route("overflow-before-caller");
+        let identity = route.owner().clone();
+        route.operation().overflow();
+        let request = SubmitRequest { decision_id: identity.decision_id.clone(), epoch: identity.epoch,
+            revision: Some(identity.revision), idempotency_key: "overflow-original-key".into(),
+            action: Value::Null, public_explanation: None };
+        let mut owner = ForcedAnswerSupervisor::new(host.clone(), identity, request, route).unwrap();
+        assert_eq!(owner.begin().await, Err(HostRefusal::CaptureOverflow));
+        assert!(host.retained.lock().unwrap().is_some());
+        assert!(owner.cancellation().acknowledged_settlement().is_none());
+        owner.request_settlement_after_supervision();
+        let retained = host.retained.lock().unwrap().take().unwrap();
+        retained.acknowledge_settlement(&owner.cancellation(), false).unwrap();
+        assert!(owner.settlement_ack().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn expired_unpolled_begin_reaches_terminal_registration_without_renewal() {
+        let host = Arc::new(LostBegin { retained: Mutex::new(None), installed: Default::default() });
+        let route = crate::host::test_prepared_route_with_allowance("expired-unpolled", std::time::Duration::from_millis(100));
+        let deadline = route.allowance().deadline();
+        let identity = route.owner().clone();
+        let request = SubmitRequest { decision_id: identity.decision_id.clone(), epoch: identity.epoch,
+            revision: Some(identity.revision), idempotency_key: "expired-original-key".into(),
+            action: Value::Null, public_explanation: None };
+        tokio::time::sleep_until(deadline).await;
+        let mut owner = ForcedAnswerSupervisor::new(host.clone(), identity, request, route).unwrap();
+        assert_eq!(owner.allowance.deadline(), deadline);
+        owner.request_settlement_after_supervision();
+        assert_eq!(owner.settlement_ack().await, Err(HostRefusal::Expired));
+        assert!(host.retained.lock().unwrap().is_some(), "expired wait must drive terminal registration");
+        assert!(owner.cancellation().acknowledged_settlement().is_none());
+        assert!(owner.settled().is_none(), "timeout is not actor ACK");
+        let retained = host.retained.lock().unwrap().take().unwrap();
+        retained.acknowledge_settlement(&owner.cancellation(), false).unwrap();
+        assert!(owner.settlement_ack().await.is_ok());
+        assert_eq!(owner.allowance.deadline(), deadline, "terminal observation did not renew allowance");
+    }
+
+    #[tokio::test]
+    async fn canceled_before_first_begin_poll_retains_registration_until_actual_ack() {
+        let host = Arc::new(LostBegin { retained: Mutex::new(None), installed: Default::default() });
+        let route = crate::host::test_prepared_route("never-polled-begin");
+        let identity = route.owner().clone();
+        let request = SubmitRequest { decision_id: identity.decision_id.clone(), epoch: identity.epoch,
+            revision: Some(identity.revision), idempotency_key: "unpolled-original-key".into(),
+            action: Value::Null, public_explanation: None };
+        let mut owner = ForcedAnswerSupervisor::new(host.clone(), identity, request, route).unwrap();
+        assert!(host.retained.lock().unwrap().is_none());
+        owner.request_settlement_after_supervision();
+        {
+            let mut wait = Box::pin(owner.settlement_ack());
+            std::future::poll_fn(|cx| {
+                assert!(wait.as_mut().poll(cx).is_pending());
+                std::task::Poll::Ready(())
+            }).await;
+            // Cancel this borrowed wait; the foreground owner/actor association still exist.
+        }
+        assert!(host.retained.lock().unwrap().is_some());
+        assert!(owner.settled().is_none());
+        let retained = host.retained.lock().unwrap().take().unwrap();
+        retained.acknowledge_settlement(&owner.cancellation(), false).unwrap();
+        assert!(owner.settlement_ack().await.is_ok());
+    }
 
     #[test]
     fn force_requires_explicit_pass_and_proven_empty_action_domain() {

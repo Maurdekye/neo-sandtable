@@ -130,15 +130,46 @@ pub(crate) enum RouteState {
 pub struct RouteCancellation {
     requested: AtomicBool,
     changed: Notify,
+    settlement_requested: AtomicBool,
+    settlement_changed: Notify,
+    settlement: Mutex<RouteSettlementState>,
+    acknowledged: Notify,
+}
+
+struct RouteSettlementState {
+    writer_wake: Option<std::thread::Thread>,
+    acknowledging: bool,
+    ack: Option<RouteSettlementAck>,
+}
+
+/// Actor disposition only. This does not witness child, reader or storage joins.
+/// The constructor is private; the actor can obtain it only through its SAME route.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RouteSettlementAck { uncertain: bool }
+
+impl RouteSettlementAck {
+    pub fn uncertain(self) -> bool { self.uncertain }
 }
 
 impl RouteCancellation {
     pub(crate) fn new() -> Self {
-        Self { requested: AtomicBool::new(false), changed: Notify::new() }
+        Self {
+            requested: AtomicBool::new(false), changed: Notify::new(),
+            settlement_requested: AtomicBool::new(false), settlement_changed: Notify::new(),
+            settlement: Mutex::new(RouteSettlementState { writer_wake: None, acknowledging: false, ack: None }),
+            acknowledged: Notify::new(),
+        }
+    }
+    fn wake_writer(&self) {
+        let wake = self.settlement.lock().expect("route settlement").writer_wake.clone();
+        // A concrete Thread handle cannot hide arbitrary closure captures. Its unpark runs
+        // outside exclusion; it requests writer attention, never admission or settlement.
+        if let Some(wake) = wake { wake.unpark(); }
     }
     pub fn request(&self) {
-        self.requested.store(true, Ordering::Release);
+        if self.requested.swap(true, Ordering::AcqRel) { return; }
         self.changed.notify_one();
+        self.wake_writer();
     }
     pub fn requested(&self) -> bool { self.requested.load(Ordering::Acquire) }
     pub async fn notified(&self) {
@@ -147,6 +178,40 @@ impl RouteCancellation {
             tokio::pin!(notified);
             notified.as_mut().enable();
             if self.requested() { return; }
+            notified.await;
+        }
+    }
+
+    /// Trusted caller only, AFTER actual original supervision disposition. A deadline or
+    /// dropped begin future calls `request`, never this method. No credit is released here.
+    pub fn request_settlement_after_supervision(&self) {
+        if self.settlement_requested.swap(true, Ordering::AcqRel) { return; }
+        self.settlement_changed.notify_waiters();
+        self.wake_writer();
+    }
+    pub fn settlement_requested(&self) -> bool {
+        self.settlement_requested.load(Ordering::Acquire)
+    }
+    pub async fn settlement_notified(&self) {
+        loop {
+            let notified = self.settlement_changed.notified();
+            tokio::pin!(notified);
+            notified.as_mut().enable();
+            if self.settlement_requested() { return; }
+            notified.await;
+        }
+    }
+    pub fn acknowledged_settlement(&self) -> Option<RouteSettlementAck> {
+        self.settlement.lock().expect("route settlement").ack
+    }
+    /// Retained ACK is independent of delivery of the begin reply or token. The caller owns
+    /// this wait across cancellation; an elapsed allowance is never substituted for an ACK.
+    pub async fn settlement_ack(&self) -> RouteSettlementAck {
+        loop {
+            let notified = self.acknowledged.notified();
+            tokio::pin!(notified);
+            notified.as_mut().enable();
+            if let Some(ack) = self.acknowledged_settlement() { return ack; }
             notified.await;
         }
     }
@@ -162,6 +227,7 @@ pub struct PreparedRoute {
     pub(crate) state: Arc<Mutex<RouteState>>,
     pub(crate) changed: Arc<Notify>,
     pub(crate) cancel: Arc<RouteCancellation>,
+    pub(crate) operation: Operation,
 }
 
 impl PreparedRoute {
@@ -170,11 +236,74 @@ impl PreparedRoute {
     pub fn boundary(&self) -> u64 { self.boundary }
     pub fn allowance(&self) -> Allowance { self.allowance }
     pub fn cancellation(&self) -> Arc<RouteCancellation> { self.cancel.clone() }
+    /// The SAME cumulative meter and operation credit, never a new identity-only meter.
+    pub fn operation(&self) -> Operation { self.operation.clone() }
+
+    /// Adapter registers its existing parked writer BEFORE enqueueing begin. Its closure
+    /// retains only a concrete Thread handle. At most one retained handle and three temporary
+    /// clones exist: registration's prior-sticky wake, first abort, first settlement. Their
+    /// actual handle bytes fit the existing PREPARE_BYTES reservation charged at prepare.
+    /// Variable metadata is not passed/stored here; its declared size cannot grant admission
+    /// or excuse its own producer's original-domain byte accounting.
+    /// This is the SAME capability association, not a registry keyed by model-supplied text.
+    pub fn register_writer_wake(&self, writer: std::thread::Thread, metadata_bytes: usize)
+        -> Result<(), HostRefusal>
+    {
+        let mut state = self.cancel.settlement.lock().expect("route settlement");
+        if state.writer_wake.is_some() || state.ack.is_some() {
+            return Err(HostRefusal::IdentityChanged);
+        }
+        state.writer_wake = Some(writer);
+        drop(state);
+        if self.cancel.requested() || self.cancel.settlement_requested() { self.cancel.wake_writer(); }
+        // Even an oversized declared variable body refuses WITHOUT retaining that body,
+        // while this fixed precharged cleanup association can still receive terminal ACK.
+        if metadata_bytes > crate::operation::PREPARE_BYTES {
+            self.operation.overflow();
+            self.cancel.request();
+            return Err(HostRefusal::CaptureOverflow);
+        }
+        // Register cleanup BEFORE reporting a cap/deadline refusal. The actor/pending owner
+        // retains this SAME route on error; no effect may be enqueued/admitted by this result.
+        match self.operation.check() {
+            Ok(()) => Ok(()),
+            Err(error) => { self.cancel.request(); Err(operation_refusal(error)) }
+        }
+    }
+
+    /// The actor calls this only AFTER its actual final transition. It keeps canonical
+    /// receipt/credit/prefix ownership until that transition; request ACKs free nothing.
+    /// Lost replies and duplicate settlement use this retained witness, without another begin.
+    pub fn acknowledge_settlement(&self, handle: &Arc<RouteCancellation>, uncertain: bool)
+        -> Result<RouteSettlementAck, HostRefusal>
+    {
+        if !Arc::ptr_eq(&self.cancel, handle) || !handle.settlement_requested() {
+            return Err(HostRefusal::IdentityChanged);
+        }
+        let ack = RouteSettlementAck { uncertain };
+        let mut state = handle.settlement.lock().expect("route settlement");
+        if state.writer_wake.is_none() { return Err(HostRefusal::IdentityChanged); }
+        if let Some(previous) = state.ack {
+            return if previous == ack { Ok(previous) } else { Err(HostRefusal::IdentityChanged) };
+        }
+        if state.acknowledging {
+            return Err(HostRefusal::Ownership("settlement transition in progress".into()));
+        }
+        state.acknowledging = true;
+        drop(state);
+        // Route disposition precedes observable ACK. This never settles Operation itself.
+        self.release(uncertain);
+        let mut state = handle.settlement.lock().expect("route settlement");
+        state.ack = Some(ack);
+        drop(state);
+        handle.acknowledged.notify_waiters();
+        Ok(ack)
+    }
 
     /// Called by the single writer within its coherent begin transition BEFORE replying. This
     /// changes issue routing, never an already-issued append's author or payload.
     pub fn install(&self, token: String, delivery: Arc<dyn HostDeliveryRoute>) -> Result<(), HostRefusal> {
-        self.allowance.check().map_err(operation_refusal)?;
+        self.operation.check().map_err(operation_refusal)?;
         if self.cancel.requested() || token.is_empty() { return Err(HostRefusal::StoppedBeforeWork); }
         let mut state = self.state.lock().expect("prepared route");
         if !matches!(*state, RouteState::Prepared) { return Err(HostRefusal::IdentityChanged); }
@@ -235,4 +364,136 @@ pub trait HostForcedLease: Send + Sync {
         -> Result<Vec<DecisionRequest>, HostRefusal>;
     async fn abort(&self) -> Result<(), HostRefusal>;
     async fn settle(&self) -> Result<(), HostRefusal>;
+}
+
+#[cfg(test)]
+pub(crate) fn test_prepared_route(operation_id: &str) -> PreparedRoute {
+    test_prepared_route_with_allowance(operation_id, std::time::Duration::from_secs(5))
+}
+
+#[cfg(test)]
+pub(crate) fn test_prepared_route_with_allowance(operation_id: &str, duration: std::time::Duration) -> PreparedRoute {
+    let allowance = Allowance::required(Some(tokio::time::Instant::now()
+        + duration)).unwrap();
+    let operation = Operation::new(operation_id.into(), 1, allowance).unwrap();
+    operation.charge(std::mem::size_of::<RouteCancellation>() + crate::operation::PREPARE_BYTES).unwrap();
+    PreparedRoute {
+        stream: "test-stream".into(), owner: HostIdentity { seat: crate::toy::AXIS,
+            epoch: 7, decision_id: "test-decision".into(), revision: 1,
+            operation_id: operation_id.into() }, boundary: 0, allowance,
+        state: Arc::new(Mutex::new(RouteState::Prepared)), changed: Arc::new(Notify::new()),
+        cancel: Arc::new(RouteCancellation::new()),
+        operation,
+    }
+}
+
+#[cfg(test)]
+mod settlement_tests {
+    use super::*;
+
+    struct Delivery;
+    #[async_trait]
+    impl HostDeliveryRoute for Delivery {
+        async fn append(&self, _: &str, ordinal: u64, _: &UnconfirmedEntry) -> Result<u64, String> {
+            Ok(ordinal)
+        }
+    }
+
+    #[tokio::test]
+    async fn lost_begin_reply_retains_tokenless_actual_settlement_ack() {
+        let route = test_prepared_route("same-op");
+        let handle = route.cancellation(); // retained BEFORE install/possible begin reply
+        route.register_writer_wake(std::thread::current(), std::mem::size_of::<std::thread::Thread>()).unwrap();
+        route.install("private-token".into(), Arc::new(Delivery)).unwrap();
+        handle.request(); // begin reply lost/timeout: abort ONLY, no ACK or route release
+        assert!(handle.acknowledged_settlement().is_none());
+        assert!(!handle.settlement_requested());
+        assert!(matches!(*route.state.lock().unwrap(), RouteState::Installed { .. }));
+        assert_eq!(route.acknowledge_settlement(&handle, false), Err(HostRefusal::IdentityChanged));
+        // Test's original work has now actually settled; this explicit phase is required.
+        handle.request_settlement_after_supervision();
+        let ack = route.acknowledge_settlement(&handle, false).unwrap();
+        assert_eq!(handle.settlement_ack().await, ack);
+        assert_eq!(route.acknowledge_settlement(&handle, false).unwrap(), ack);
+        assert_eq!(route.acknowledge_settlement(&handle, true), Err(HostRefusal::IdentityChanged));
+        assert!(matches!(*route.state.lock().unwrap(), RouteState::Released));
+        assert!(route.operation().check().is_ok(), "actor ACK is not an Operation/child join");
+    }
+
+    #[test]
+    fn same_text_identity_is_not_the_same_capability_and_registration_keeps_fixed_thread_only() {
+        let route = test_prepared_route("same-text");
+        let other = test_prepared_route("same-text");
+        let handle = route.cancellation();
+        handle.request(); // request BEFORE registration must not lose the writer wake
+        route.register_writer_wake(std::thread::current(), std::mem::size_of::<std::thread::Thread>()).unwrap();
+        assert_eq!(handle.settlement.lock().unwrap().writer_wake.as_ref().unwrap().id(), std::thread::current().id());
+        assert!(std::mem::size_of::<std::thread::Thread>() * 4 <= crate::operation::PREPARE_BYTES);
+        assert_eq!(route.register_writer_wake(std::thread::current(), 8), Err(HostRefusal::IdentityChanged));
+        handle.request_settlement_after_supervision();
+        let stale = other.cancellation();
+        stale.request_settlement_after_supervision();
+        assert_eq!(route.acknowledge_settlement(&stale, false), Err(HostRefusal::IdentityChanged));
+        assert!(handle.acknowledged_settlement().is_none());
+        route.acknowledge_settlement(&handle, true).unwrap();
+        assert!(handle.acknowledged_settlement().unwrap().uncertain());
+    }
+
+    #[tokio::test]
+    async fn overflow_before_enqueue_refuses_effect_but_keeps_terminal_wake_and_ack() {
+        let route = test_prepared_route("pre-enqueue-overflow");
+        let handle = route.cancellation();
+        let operation = route.operation();
+        let remaining = crate::operation::OPERATION_BYTES - operation.captured_bytes();
+        operation.charge(remaining).unwrap();
+        assert_eq!(operation.charge(1), Err(crate::operation::OperationError::CaptureOverflow));
+        let before = operation.captured_bytes();
+        assert_eq!(route.register_writer_wake(std::thread::current(), std::mem::size_of::<std::thread::Thread>()), Err(HostRefusal::CaptureOverflow));
+        assert_eq!(operation.captured_bytes(), before, "cleanup metadata was precharged");
+        assert!(handle.requested());
+        assert!(handle.settlement.lock().unwrap().writer_wake.is_some());
+        assert_eq!(route.install("never-delivered".into(), Arc::new(Delivery)),
+            Err(HostRefusal::CaptureOverflow));
+        assert!(matches!(*route.state.lock().unwrap(), RouteState::Prepared));
+        assert!(handle.acknowledged_settlement().is_none());
+        handle.request_settlement_after_supervision();
+        let ack = route.acknowledge_settlement(&handle, false).unwrap();
+        assert_eq!(handle.settlement_ack().await, ack);
+        assert_eq!(route.acknowledge_settlement(&handle, false).unwrap(), ack);
+        assert_eq!(operation.check(), Err(crate::operation::OperationError::CaptureOverflow));
+    }
+
+    #[tokio::test]
+    async fn oversized_metadata_refuses_before_install_and_retains_only_terminal_thread_wake() {
+        let route = test_prepared_route("oversized-metadata");
+        let handle = route.cancellation();
+        let bytes = route.operation().captured_bytes();
+        assert_eq!(route.register_writer_wake(std::thread::current(), crate::operation::PREPARE_BYTES + 1),
+            Err(HostRefusal::CaptureOverflow));
+        assert_eq!(route.operation().captured_bytes(), bytes, "no oversized body was retained");
+        assert!(handle.requested());
+        assert!(handle.settlement.lock().unwrap().writer_wake.is_some());
+        assert_eq!(route.install("refused".into(), Arc::new(Delivery)), Err(HostRefusal::CaptureOverflow));
+        assert!(matches!(*route.state.lock().unwrap(), RouteState::Prepared));
+        assert!(handle.acknowledged_settlement().is_none());
+        handle.request_settlement_after_supervision();
+        let ack = route.acknowledge_settlement(&handle, false).unwrap();
+        assert_eq!(handle.settlement_ack().await, ack);
+    }
+
+    #[tokio::test]
+    async fn expired_before_registration_keeps_terminal_ack_but_never_installs() {
+        let route = test_prepared_route_with_allowance("expired-registration", std::time::Duration::from_millis(100));
+        let handle = route.cancellation();
+        tokio::time::sleep_until(route.allowance().deadline()).await;
+        assert_eq!(route.register_writer_wake(std::thread::current(), std::mem::size_of::<std::thread::Thread>()),
+            Err(HostRefusal::Expired));
+        assert!(handle.requested());
+        assert!(handle.settlement.lock().unwrap().writer_wake.is_some());
+        assert_eq!(route.install("never-started".into(), Arc::new(Delivery)), Err(HostRefusal::Expired));
+        assert!(matches!(*route.state.lock().unwrap(), RouteState::Prepared));
+        handle.request_settlement_after_supervision();
+        let ack = route.acknowledge_settlement(&handle, false).unwrap();
+        assert_eq!(handle.settlement_ack().await, ack);
+    }
 }
