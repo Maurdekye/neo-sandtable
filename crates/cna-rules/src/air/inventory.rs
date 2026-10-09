@@ -248,11 +248,27 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
         state.air = draft;
         return Ok(());
     }
-    if state.air.runtime != AirRuntime::default() {
+    state.air = initial_inventory(content, &state.air, InitialAdmission::Legacy)?;
+    Ok(())
+}
+
+// The fresh variant is reachable only from the consumed setup-close authority.
+// Ordinary initialization and checkpoint migration always use Legacy.
+enum InitialAdmission {
+    Legacy,
+    FreshSetup,
+}
+
+fn initial_inventory(
+    content: &CnaContent,
+    air: &AirState,
+    admission: InitialAdmission,
+) -> Result<AirState, EngineError> {
+    if air.runtime != AirRuntime::default() {
         return Err(invalid("uninitialized runtime contains records"));
     }
     let mut runtime = AirRuntime::default();
-    for (force, pool) in &state.air.forces {
+    for (force, pool) in &air.forces {
         side(force)?;
         if pool.sgsu_available < 0 {
             return Err(invalid("negative SGSU reserve"));
@@ -260,7 +276,7 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
         import_planes(&mut runtime, force, None, None, &pool.planes)?;
         import_pilots(&mut runtime, force, None, None, &pool.pilots)?;
     }
-    for (id, squadron) in &state.air.squadrons {
+    for (id, squadron) in &air.squadrons {
         if id != &squadron.id
             || side(&squadron.force)? != squadron.side
             || squadron.facility.is_empty()
@@ -294,12 +310,54 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
         )?;
     }
     runtime.initialized = true;
-    let mut draft = state.air.clone();
+    let mut draft = air.clone();
     draft.runtime = runtime;
     import_bases(content, &mut draft)?;
-    migrate_preparation(content, &mut draft.runtime)?;
+    match admission {
+        InitialAdmission::Legacy => migrate_preparation(content, &mut draft.runtime)?,
+        InitialAdmission::FreshSetup => {
+            // These are newly allocated original identities. No UnknownLegacy
+            // record is converted, and no selected load is inferred.
+            for id in draft.runtime.aircraft.keys() {
+                draft
+                    .runtime
+                    .preparation
+                    .initial_choices
+                    .insert(id.clone(), InitialChoice::Unselected);
+                draft
+                    .runtime
+                    .preparation
+                    .current
+                    .insert(id.clone(), CurrentPreparation::InitialUnspecified);
+            }
+            draft.runtime.preparation.initialized = true;
+        }
+    }
     check(content, &draft)?;
+    Ok(draft)
+}
+
+/// Admit original aircraft directly at the authenticated successful setup close.
+/// The authority is private to setup's final finish branch and consumed once;
+/// repeated source/provenance checks also reject stale or altered authority.
+/// No mode, load, supply payment or operational eligibility is granted here.
+/// Cases: scen:59.2, scen:59.32, scen:59.36, airlog:34.0, airlog:35.24
+/// Interpretations: interp:air-0018
+pub(crate) fn import_initial_setup(
+    content: &CnaContent,
+    state: &mut State,
+    authority: crate::setup::FreshAirSetupClose,
+) -> Result<(), EngineError> {
+    if !state.setup.closed || !state.setup.tasks.is_empty() {
+        return Err(invalid("fresh inventory requires completed setup closure"));
+    }
+    crate::setup::validate_initial_air_close(content, state, authority.original_aircraft())?;
+    let draft = initial_inventory(content, &state.air, InitialAdmission::FreshSetup)?;
+    // Both assignments are infallible. All Air and setup validation above took
+    // place before either is published; the enclosing whole-State draft also
+    // discards this import if the subsequent convoy close fails.
     state.air = draft;
+    state.setup.initial_air_import = crate::setup::InitialAirImport::Imported;
     Ok(())
 }
 
@@ -945,3 +1003,6 @@ mod tests;
 
 #[cfg(test)]
 mod preparation_tests;
+
+#[cfg(test)]
+mod initial_setup_tests;
