@@ -173,7 +173,8 @@ fn command(
     })
 }
 
-/// Cases: land:20.41, land:20.78A, land:20.78B, land:3.6
+/// Cases: land:20.41, land:20.78, land:3.6
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 #[test]
 fn real_respond_buffers_without_quota_stock_or_counter_changes_and_hides_own_orders() {
     use cna_core::engine::{Game, evaluate};
@@ -239,7 +240,8 @@ fn real_respond_buffers_without_quota_stock_or_counter_changes_and_hides_own_ord
     assert!(evaluate(&crate::Cna::dev(), &content, &game, &wrong).is_err());
 }
 
-/// Cases: land:20.41, land:20.78A, land:20.78B, land:3.6
+/// Cases: land:20.41, land:20.78, land:3.6
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 #[test]
 fn zero_due_uses_same_public_window_and_missing_legacy_limit_never_becomes_zero() {
     use cna_core::engine::{Game, evaluate};
@@ -304,7 +306,8 @@ fn zero_due_uses_same_public_window_and_missing_legacy_limit_never_becomes_zero(
     assert_eq!(serde_json::to_vec(&due_game).unwrap(), before);
 }
 
-/// Cases: land:20.41, land:20.78A
+/// Cases: land:20.41, land:20.78
+/// Chart clauses: 20.78A (trucks).
 #[test]
 fn real_advance_late_pool_failure_preserves_whole_game_rng_and_accepted_buffers() {
     use cna_core::engine::{Command, Game, evaluate};
@@ -360,7 +363,8 @@ fn real_advance_late_pool_failure_preserves_whole_game_rng_and_accepted_buffers(
     ));
 }
 
-/// Cases: land:20.41, land:20.43, land:20.78A, land:20.78B
+/// Cases: land:20.41, land:20.43, land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 #[test]
 fn initial_logistics_assignment_is_pure_and_finish_creates_unabsorbed_uncredited_points() {
     let (content, mut state, recipient, cairo, _) = fixture();
@@ -441,7 +445,8 @@ fn initial_logistics_assignment_is_pure_and_finish_creates_unabsorbed_uncredited
     assert_eq!(serde_json::to_vec(&restored).unwrap(), finished);
 }
 
-/// Cases: land:20.78A, land:20.78B
+/// Cases: land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 #[test]
 fn quotas_use_retained_gt_total_and_city_after_previous_equipment_has_gone() {
     let (content, mut state, recipient, cairo, alexandria) = fixture();
@@ -540,7 +545,8 @@ fn quotas_use_retained_gt_total_and_city_after_previous_equipment_has_gone() {
     assert_eq!(serde_json::to_vec(&state).unwrap(), before);
 }
 
-/// Cases: land:20.41, land:20.78A
+/// Cases: land:20.41, land:20.78
+/// Chart clauses: 20.78A (trucks).
 #[test]
 fn late_pool_identity_exhaustion_rolls_back_preceding_counter_and_order_removal() {
     let (content, mut state, recipient, cairo, _) = fixture();
@@ -588,7 +594,8 @@ fn late_pool_identity_exhaustion_rolls_back_preceding_counter_and_order_removal(
     assert_eq!(side(&state, Side::Commonwealth).unwrap().orders.len(), 2);
 }
 
-/// Cases: land:20.41, land:20.63, land:20.78A
+/// Cases: land:20.41, land:20.63, land:20.78
+/// Chart clauses: 20.78A (trucks).
 #[test]
 fn duplicate_orders_and_existing_pool_adapter_and_wrong_nation_cannot_gain_delivery() {
     let (content, mut state, recipient, cairo, _) = fixture();

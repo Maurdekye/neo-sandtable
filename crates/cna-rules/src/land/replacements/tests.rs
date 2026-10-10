@@ -371,7 +371,8 @@ fn content() -> crate::CnaContent {
     crate::CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap()
 }
 
-/// Cases: land:20.74, land:20.78A, land:20.78B
+/// Cases: land:20.74, land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 #[test]
 fn each_scheduled_gt_retains_all_stage_trucks_and_prunes_only_at_actual_gt_close() {
     let c = content();

@@ -230,7 +230,8 @@ pub(super) struct PreparedArrival {
 
 /// The limit is trusted caller-owned live state, never an actor quota assertion.
 /// Validate complete due-order conservation and the cumulative GT constraints.
-/// Cases: land:20.41, land:20.76, land:20.78A, land:20.78B
+/// Cases: land:20.41, land:20.76, land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 pub(super) fn prepare(
     content: &CnaContent,
     state: &State,
@@ -383,7 +384,8 @@ pub(super) fn prepare(
 
 /// Publish real unabsorbed counters or genuine new pools with no fabricated stock/funding.
 /// Counter identity transitions from its due order; no second serial or UnitId is minted.
-/// Cases: land:20.41, land:20.43, land:20.76, land:20.78A, land:20.78B
+/// Cases: land:20.41, land:20.43, land:20.76, land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 pub(super) fn finish(
     content: &CnaContent,
     state: &mut State,
@@ -593,7 +595,8 @@ fn decode(
 
 /// Fixed public stage/Logistics schedule, including no-due and zero/pass cases.
 /// The schema contains only that seat's due orders; no teammate order disclosure.
-/// Cases: land:20.41, land:20.76, land:20.78A, land:20.78B, land:3.6
+/// Cases: land:20.41, land:20.76, land:20.78, land:3.6
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 pub(crate) fn enter_arrival(
     content: &CnaContent,
     state: &mut State,
@@ -640,7 +643,8 @@ pub(crate) fn enter_arrival(
 }
 
 /// Buffer only; no produced-total/city update, order removal, stock or counter change.
-/// Cases: land:20.41, land:20.78A, land:20.78B
+/// Cases: land:20.41, land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 pub(crate) fn answer_arrival(
     content: &CnaContent,
     state: &mut State,
@@ -703,7 +707,8 @@ pub(crate) fn arrivals_complete(state: &State) -> bool {
 
 /// Whole-side atomic finish: retained quota/city and actual bodies publish together.
 /// Required legacy limits are never defaulted or reconstructed after movement/loss.
-/// Cases: land:20.41, land:20.43, land:20.78A, land:20.78B
+/// Cases: land:20.41, land:20.43, land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 pub(crate) fn finish_arrivals(
     content: &CnaContent,
     state: &mut State,

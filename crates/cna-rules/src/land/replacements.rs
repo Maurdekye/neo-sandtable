@@ -25,7 +25,8 @@ pub struct ReplacementState {
 }
 
 /// A live arrival constraint, never reconstructed from mobile pools or counters.
-/// Cases: land:20.78A, land:20.78B
+/// Cases: land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CWArrivalLimit {
     pub game_turn: u16,
@@ -42,7 +43,8 @@ pub struct SideReplacements {
     pub orders: Vec<ScheduledReplacement>,
     pub counters: Vec<ReplacementCounter>,
     /// One live entry per scheduled Commonwealth arrival GT; omission is Unknown.
-    /// Cases: land:20.78A, land:20.78B
+    /// Cases: land:20.78
+    /// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
     #[serde(default)]
     pub cw_arrival_limits: Vec<CWArrivalLimit>,
     pub planning: ReplacementProcedure,
@@ -631,7 +633,8 @@ pub(crate) use windows::{
 };
 
 /// The actual closing cursor step is the pruning witness; mobile stock is irrelevant.
-/// Cases: land:20.78A, land:20.78B
+/// Cases: land:20.78
+/// Chart clauses: 20.78A (trucks) and 20.78B (infantry).
 pub(crate) fn discard_completed_limits(state: &mut crate::State) -> Result<(), EngineError> {
     if !matches!(state.cursor.anchor(), "end_of_turn" | "end_of_game") {
         return Err(invariant(
