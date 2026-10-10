@@ -229,9 +229,13 @@ impl Cna {
             crate::land::replacements::SCHEDULE | crate::land::replacements::DISTRIBUTION => {
                 crate::land::replacements::answer(content, state, pending, action)
             }
-            crate::land::replacements::ARRIVAL => {
-                crate::land::replacements::answer_arrival(content, state, pending, action, self.strict)
-            }
+            crate::land::replacements::ARRIVAL => crate::land::replacements::answer_arrival(
+                content,
+                state,
+                pending,
+                action,
+                self.strict,
+            ),
             crate::air::designation::KIND => {
                 crate::air::designation::answer(state, pending, action)
             }

@@ -11,11 +11,11 @@ use cna_core::engine::EngineError;
 use cna_core::ids::{HexId, UnitId};
 use cna_core::quantity::{FuelTenths, WaterPoints};
 use cna_protocol::Side;
-use cna_tables::land::production::{
-    AxisProductionNation, AxisReplacementPool, CommonwealthProduction,
-    ProductionMaximum, ProductionPeriod,
-};
 use cna_tables::airlog::trucks::TruckType;
+use cna_tables::land::production::{
+    AxisProductionNation, AxisReplacementPool, CommonwealthProduction, ProductionMaximum,
+    ProductionPeriod,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -53,16 +53,32 @@ pub struct SideReplacements {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum ReplacementNation { Commonwealth, German, Italian }
+pub enum ReplacementNation {
+    Commonwealth,
+    German,
+    Italian,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ProductionRowRef {
-    AxisTruck { kind: FuelTruckKind },
-    AxisEquipment { nation: ReplacementNation, item: String },
-    CommonwealthTruck { column: String, kind: FuelTruckKind },
-    CommonwealthInfantry { column: String },
-    CommonwealthEquipment { item: String },
+    AxisTruck {
+        kind: FuelTruckKind,
+    },
+    AxisEquipment {
+        nation: ReplacementNation,
+        item: String,
+    },
+    CommonwealthTruck {
+        column: String,
+        kind: FuelTruckKind,
+    },
+    CommonwealthInfantry {
+        column: String,
+    },
+    CommonwealthEquipment {
+        item: String,
+    },
 }
 
 impl ProductionRowRef {
@@ -77,14 +93,26 @@ impl ProductionRowRef {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ProductionBucket {
-    GameTurn { gt: u16 },
-    HalfMonth { year: u16, month: u8, half: CalendarHalf },
-    Month { year: u16, month: u8 },
+    GameTurn {
+        gt: u16,
+    },
+    HalfMonth {
+        year: u16,
+        month: u8,
+        half: CalendarHalf,
+    },
+    Month {
+        year: u16,
+        month: u8,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum CalendarHalf { First, Second }
+pub enum CalendarHalf {
+    First,
+    Second,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PeriodCommitment {
@@ -101,15 +129,29 @@ pub struct ProductionBudget {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct OpStageKey { pub game_turn: u16, pub op_stage: u8 }
+pub struct OpStageKey {
+    pub game_turn: u16,
+    pub op_stage: u8,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ReplacementKind {
-    Infantry { nation: ReplacementNation },
-    Gun { nation: ReplacementNation, weapon: String },
-    Tank { nation: ReplacementNation, weapon: String },
-    Recce { nation: ReplacementNation, weapon: String },
+    Infantry {
+        nation: ReplacementNation,
+    },
+    Gun {
+        nation: ReplacementNation,
+        weapon: String,
+    },
+    Tank {
+        nation: ReplacementNation,
+        weapon: String,
+    },
+    Recce {
+        nation: ReplacementNation,
+        weapon: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -142,7 +184,10 @@ pub struct ReplacementCounter {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Carriage { pub pool: String, pub trucks: Trucks }
+pub struct Carriage {
+    pub pool: String,
+    pub trucks: Trucks,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "state", rename_all = "snake_case")]
@@ -180,7 +225,11 @@ pub struct ReplacementPhysical {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReplacementActivity { pub stage: OpStageKey, pub required: WaterPoints, pub paid: WaterPoints }
+pub struct ReplacementActivity {
+    pub stage: OpStageKey,
+    pub required: WaterPoints,
+    pub paid: WaterPoints,
+}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ReplacementProcedure {
@@ -189,15 +238,23 @@ pub struct ReplacementProcedure {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ProcedureKey { pub anchor: String, pub segment: SegmentKey }
+pub struct ProcedureKey {
+    pub anchor: String,
+    pub segment: SegmentKey,
+}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(tag = "phase", rename_all = "snake_case")]
 pub enum ProcedurePhase {
     #[default]
     Idle,
-    Awaiting { submitted: Option<ReplacementPlan> },
-    Distributing { determined: Vec<DeterminedProduction>, submitted: Option<DistributionPlan> },
+    Awaiting {
+        submitted: Option<ReplacementPlan>,
+    },
+    Distributing {
+        determined: Vec<DeterminedProduction>,
+        submitted: Option<DistributionPlan>,
+    },
     Resolved,
 }
 
@@ -210,41 +267,79 @@ pub struct DeterminedProduction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ReplacementPlan { Schedule(SchedulePlan), Distribution(DistributionPlan), Arrival(ArrivalPlan) }
+pub enum ReplacementPlan {
+    Schedule(SchedulePlan),
+    Distribution(DistributionPlan),
+    Arrival(ArrivalPlan),
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SchedulePlan { pub requests: Vec<ProductionRequest> }
+pub struct SchedulePlan {
+    pub requests: Vec<ProductionRequest>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProductionRequest { pub row: ProductionRowRef, pub quantity: ProductionQuantity, pub arrival_turn: u16 }
+pub struct ProductionRequest {
+    pub row: ProductionRowRef,
+    pub quantity: ProductionQuantity,
+    pub arrival_turn: u16,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ProductionQuantity { Fixed { points: i32 }, Roll }
+pub enum ProductionQuantity {
+    Fixed { points: i32 },
+    Roll,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DistributionPlan { pub batches: Vec<DistributionBatch> }
+pub struct DistributionPlan {
+    pub batches: Vec<DistributionBatch>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DistributionBatch { pub row: ProductionRowRef, pub kind: ProducedKind, pub points: i32, pub due: OpStageKey }
+pub struct DistributionBatch {
+    pub row: ProductionRowRef,
+    pub kind: ProducedKind,
+    pub points: i32,
+    pub due: OpStageKey,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ArrivalPlan { pub choices: Vec<ArrivalChoice> }
+pub struct ArrivalPlan {
+    pub choices: Vec<ArrivalChoice>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ArrivalChoice {
-    Points { order: String, recipient: UnitId, location: Location },
-    Trucks { order: String, location: Location, pool_target: ProductionPoolTarget },
+    Points {
+        order: String,
+        recipient: UnitId,
+        location: Location,
+    },
+    Trucks {
+        order: String,
+        location: Location,
+        pool_target: ProductionPoolTarget,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ProductionPoolTarget { Create, Existing { pool: String } }
+pub enum ProductionPoolTarget {
+    Create,
+    Existing { pool: String },
+}
 
 fn invariant(detail: impl Into<String>) -> EngineError {
-    EngineError::Invariant { detail: format!("replacements: {}", detail.into()) }
+    EngineError::Invariant {
+        detail: format!("replacements: {}", detail.into()),
+    }
 }
 
 fn gap(case: &str, detail: impl Into<String>) -> EngineError {
-    EngineError::Unsupported { case: case.into(), detail: detail.into() }
+    EngineError::Unsupported {
+        case: case.into(),
+        detail: detail.into(),
+    }
 }
 
 fn truck(kind: FuelTruckKind) -> TruckType {
@@ -265,19 +360,33 @@ pub(crate) struct FiniteLimit {
     period: ProductionPeriod,
 }
 
-fn numeric_limit(row: &ProductionRowRef, pool_index: usize, pool: i32, maximum: ProductionMaximum) -> Result<FiniteLimit, EngineError> {
+fn numeric_limit(
+    row: &ProductionRowRef,
+    pool_index: usize,
+    pool: i32,
+    maximum: ProductionMaximum,
+) -> Result<FiniteLimit, EngineError> {
     match maximum {
-        ProductionMaximum::Points { points, period: ProductionPeriod::Unreadable } => {
-            Err(gap("land:20.66", format!("printed period for maximum {points} is unreadable")))
-        }
+        ProductionMaximum::Points {
+            points,
+            period: ProductionPeriod::Unreadable,
+        } => Err(gap(
+            "land:20.66",
+            format!("printed period for maximum {points} is unreadable"),
+        )),
         ProductionMaximum::Points { points, period } if pool > 0 && points > 0 => Ok(FiniteLimit {
             row: row.clone(),
-            pool_index: pool_index.try_into().map_err(|_| invariant("pool index overflow"))?,
+            pool_index: pool_index
+                .try_into()
+                .map_err(|_| invariant("pool index overflow"))?,
             pool,
             maximum: points,
             period,
         }),
-        ProductionMaximum::PrintedDash => Err(gap("land:20.78", "printed dash has no numeric production maximum")),
+        ProductionMaximum::PrintedDash => Err(gap(
+            "land:20.78",
+            "printed dash has no numeric production maximum",
+        )),
         _ => Err(invariant("invalid printed production limits")),
     }
 }
@@ -295,9 +404,13 @@ pub(crate) fn finite_limit(
     arrival_gt: u16,
 ) -> Result<FiniteLimit, EngineError> {
     if let ProductionRowRef::CommonwealthEquipment { item } = row {
-        let entry = commonwealth.equipment(item).ok_or_else(|| invariant("unknown Commonwealth production row"))?;
+        let entry = commonwealth
+            .equipment(item)
+            .ok_or_else(|| invariant("unknown Commonwealth production row"))?;
         if !entry.dates.contains(arrival_gt.into()) {
-            return Err(invariant("Commonwealth row unavailable at arrival chart date"));
+            return Err(invariant(
+                "Commonwealth row unavailable at arrival chart date",
+            ));
         }
         return numeric_limit(row, 0, entry.pool_points, entry.maximum);
     }
@@ -307,26 +420,44 @@ pub(crate) fn finite_limit(
             let nation = match nation {
                 ReplacementNation::German => AxisProductionNation::German,
                 ReplacementNation::Italian => AxisProductionNation::Italian,
-                ReplacementNation::Commonwealth => return Err(invariant("Commonwealth is not an Axis chart nation")),
+                ReplacementNation::Commonwealth => {
+                    return Err(invariant("Commonwealth is not an Axis chart nation"));
+                }
             };
-            axis.equipment(nation, item).ok_or_else(|| invariant("unknown Axis production row"))?
+            axis.equipment(nation, item)
+                .ok_or_else(|| invariant("unknown Axis production row"))?
         }
         _ => return Err(invariant("random production has no finite printed pool")),
     };
-    let line = entry.availability_at(planning_gt.into()).ok_or_else(|| invariant("Axis row unavailable at planning chart date"))?;
+    let line = entry
+        .availability_at(planning_gt.into())
+        .ok_or_else(|| invariant("Axis row unavailable at planning chart date"))?;
     if line.french_tunis_exception {
-        return Err(gap("land:20.66", "French Tunis call-up is not ordinary delayed shipping"));
+        return Err(gap(
+            "land:20.66",
+            "French Tunis call-up is not ordinary delayed shipping",
+        ));
     }
-    let pool = *entry.pools.get(line.pool_index).ok_or_else(|| invariant("printed pool index absent"))?;
+    let pool = *entry
+        .pools
+        .get(line.pool_index)
+        .ok_or_else(|| invariant("printed pool index absent"))?;
     numeric_limit(row, line.pool_index, pool, line.maximum)
 }
 
 impl SideReplacements {
     pub(crate) fn new(side: Side) -> Self {
         Self {
-            side, next_serial: 0, budgets: vec![], orders: vec![], counters: vec![], cw_arrival_limits: vec![],
-            planning: ReplacementProcedure::default(), arrival: ReplacementProcedure::default(),
-            training: ReplacementProcedure::default(), reorganization: ReplacementProcedure::default(),
+            side,
+            next_serial: 0,
+            budgets: vec![],
+            orders: vec![],
+            counters: vec![],
+            cw_arrival_limits: vec![],
+            planning: ReplacementProcedure::default(),
+            arrival: ReplacementProcedure::default(),
+            training: ReplacementProcedure::default(),
+            reorganization: ReplacementProcedure::default(),
         }
     }
 
@@ -341,44 +472,109 @@ impl SideReplacements {
         points: i32,
     ) -> Result<(), EngineError> {
         for (i, budget) in self.budgets.iter().enumerate() {
-            if budget.row.side() != self.side || budget.pool_committed < 0
-                || self.budgets[..i].iter().any(|old| old.row == budget.row && old.pool_index == budget.pool_index)
-            { return Err(invariant("invalid or duplicate stored finite pool")); }
+            if budget.row.side() != self.side
+                || budget.pool_committed < 0
+                || self.budgets[..i]
+                    .iter()
+                    .any(|old| old.row == budget.row && old.pool_index == budget.pool_index)
+            {
+                return Err(invariant("invalid or duplicate stored finite pool"));
+            }
             let mut sum = 0_i32;
             for (j, period) in budget.periods.iter().enumerate() {
-                if period.committed <= 0 || budget.periods[..j].iter().any(|old| old.bucket == period.bucket) {
+                if period.committed <= 0
+                    || budget.periods[..j]
+                        .iter()
+                        .any(|old| old.bucket == period.bucket)
+                {
                     return Err(invariant("invalid or duplicate stored production period"));
                 }
-                sum = sum.checked_add(period.committed).ok_or_else(|| invariant("stored production period overflow"))?;
+                sum = sum
+                    .checked_add(period.committed)
+                    .ok_or_else(|| invariant("stored production period overflow"))?;
             }
-            if sum > budget.pool_committed { return Err(invariant("period commitments exceed finite pool debit")); }
+            if sum > budget.pool_committed {
+                return Err(invariant("period commitments exceed finite pool debit"));
+            }
         }
         if points <= 0 || row.side() != self.side || *row != limit.row {
             return Err(invariant("positive same-side production required"));
         }
-        let compatible = matches!((&bucket, limit.period),
-            (ProductionBucket::GameTurn { gt: 1..=111 }, ProductionPeriod::GameTurn)
-            | (ProductionBucket::HalfMonth { year: 1..=9999, month: 1..=12, .. }, ProductionPeriod::HalfCalendarMonth)
-            | (ProductionBucket::Month { year: 1..=9999, month: 1..=12 }, ProductionPeriod::CalendarMonth));
-        if !compatible { return Err(invariant("bucket does not match printed production period")); }
-        let mut budget = self.budgets.iter().find(|b| b.row == *row && b.pool_index == limit.pool_index)
-            .cloned().unwrap_or(ProductionBudget { row: row.clone(), pool_index: limit.pool_index, pool_committed: 0, periods: vec![] });
-        if budget.pool_committed < 0 || budget.pool_committed > limit.pool
+        let compatible = matches!(
+            (&bucket, limit.period),
+            (
+                ProductionBucket::GameTurn { gt: 1..=111 },
+                ProductionPeriod::GameTurn
+            ) | (
+                ProductionBucket::HalfMonth {
+                    year: 1..=9999,
+                    month: 1..=12,
+                    ..
+                },
+                ProductionPeriod::HalfCalendarMonth
+            ) | (
+                ProductionBucket::Month {
+                    year: 1..=9999,
+                    month: 1..=12
+                },
+                ProductionPeriod::CalendarMonth
+            )
+        );
+        if !compatible {
+            return Err(invariant("bucket does not match printed production period"));
+        }
+        let mut budget = self
+            .budgets
+            .iter()
+            .find(|b| b.row == *row && b.pool_index == limit.pool_index)
+            .cloned()
+            .unwrap_or(ProductionBudget {
+                row: row.clone(),
+                pool_index: limit.pool_index,
+                pool_committed: 0,
+                periods: vec![],
+            });
+        if budget.pool_committed < 0
+            || budget.pool_committed > limit.pool
             || budget.periods.iter().any(|p| p.committed < 0)
-        { return Err(invariant("corrupt prior production budget")); }
-        let old = budget.periods.iter().find(|p| p.bucket == bucket).map_or(0, |p| p.committed);
-        let pool_total = budget.pool_committed.checked_add(points).ok_or_else(|| invariant("finite pool arithmetic overflow"))?;
-        let period_total = old.checked_add(points).ok_or_else(|| invariant("period arithmetic overflow"))?;
-        if pool_total > limit.pool || period_total > limit.maximum { return Err(invariant("determined production exceeds finite availability")); }
+        {
+            return Err(invariant("corrupt prior production budget"));
+        }
+        let old = budget
+            .periods
+            .iter()
+            .find(|p| p.bucket == bucket)
+            .map_or(0, |p| p.committed);
+        let pool_total = budget
+            .pool_committed
+            .checked_add(points)
+            .ok_or_else(|| invariant("finite pool arithmetic overflow"))?;
+        let period_total = old
+            .checked_add(points)
+            .ok_or_else(|| invariant("period arithmetic overflow"))?;
+        if pool_total > limit.pool || period_total > limit.maximum {
+            return Err(invariant(
+                "determined production exceeds finite availability",
+            ));
+        }
         budget.pool_committed = pool_total;
         if let Some(period) = budget.periods.iter_mut().find(|p| p.bucket == bucket) {
             period.committed = period_total;
         } else {
-            budget.periods.push(PeriodCommitment { bucket, committed: period_total });
+            budget.periods.push(PeriodCommitment {
+                bucket,
+                committed: period_total,
+            });
         }
-        if let Some(old) = self.budgets.iter_mut().find(|b| b.row == *row && b.pool_index == limit.pool_index) {
+        if let Some(old) = self
+            .budgets
+            .iter_mut()
+            .find(|b| b.row == *row && b.pool_index == limit.pool_index)
+        {
             *old = budget;
-        } else { self.budgets.push(budget); }
+        } else {
+            self.budgets.push(budget);
+        }
         Ok(())
     }
 
@@ -388,12 +584,28 @@ impl SideReplacements {
         let prefix = format!("{}.replacement-", crate::state::side_key(self.side));
         let mut seen = BTreeSet::new();
         let mut serials = BTreeSet::new();
-        for id in self.orders.iter().map(|o| &o.id).chain(self.counters.iter().map(|c| &c.id)) {
-            let serial = id.strip_prefix(&prefix).and_then(|s| s.parse::<u64>().ok())
+        for id in self
+            .orders
+            .iter()
+            .map(|o| &o.id)
+            .chain(self.counters.iter().map(|c| &c.id))
+        {
+            let serial = id
+                .strip_prefix(&prefix)
+                .and_then(|s| s.parse::<u64>().ok())
                 .filter(|&s| s > 0 && s <= self.next_serial);
-            if serial.is_none_or(|n| *id != format!("{prefix}{n}") || !serials.insert(n)) || !seen.insert(id) { return Err(invariant("stored replacement identity is invalid or reused")); }
+            if serial.is_none_or(|n| *id != format!("{prefix}{n}") || !serials.insert(n))
+                || !seen.insert(id)
+            {
+                return Err(invariant(
+                    "stored replacement identity is invalid or reused",
+                ));
+            }
         }
-        let serial = self.next_serial.checked_add(1).ok_or_else(|| invariant("replacement identities exhausted"))?;
+        let serial = self
+            .next_serial
+            .checked_add(1)
+            .ok_or_else(|| invariant("replacement identities exhausted"))?;
         let id = format!("{}.replacement-{serial}", crate::state::side_key(self.side));
         if self.orders.iter().any(|o| o.id == id) || self.counters.iter().any(|c| c.id == id) {
             return Err(invariant("replacement identity collision"));
@@ -404,25 +616,32 @@ impl SideReplacements {
 }
 
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod arrival_tests;
+#[cfg(test)]
+mod tests;
 
+mod arrival;
 mod scheduling;
 mod windows;
-mod arrival;
-pub(crate) use windows::{DISTRIBUTION, SCHEDULE, answer, enter_schedule, finish_planning, planning_complete};
-pub(crate) use arrival::{ARRIVAL, answer_arrival, arrivals_complete, enter_arrival, finish_arrivals};
+pub(crate) use arrival::{
+    ARRIVAL, answer_arrival, arrivals_complete, enter_arrival, finish_arrivals,
+};
+pub(crate) use windows::{
+    DISTRIBUTION, SCHEDULE, answer, enter_schedule, finish_planning, planning_complete,
+};
 
 /// The actual closing cursor step is the pruning witness; mobile stock is irrelevant.
 /// Cases: land:20.78A, land:20.78B
 pub(crate) fn discard_completed_limits(state: &mut crate::State) -> Result<(), EngineError> {
     if !matches!(state.cursor.anchor(), "end_of_turn" | "end_of_game") {
-        return Err(invariant("arrival limits may be discarded only at actual GT/game close"));
+        return Err(invariant(
+            "arrival limits may be discarded only at actual GT/game close",
+        ));
     }
     let completed = state.cursor.game_turn;
     for own in &mut state.land.replacements.sides {
-        own.cw_arrival_limits.retain(|limit| limit.game_turn > completed);
+        own.cw_arrival_limits
+            .retain(|limit| limit.game_turn > completed);
     }
     Ok(())
 }

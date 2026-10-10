@@ -427,7 +427,9 @@ impl AxisReplacementPool {
     pub fn equipment_rows(
         &self,
     ) -> impl Iterator<Item = (&str, AxisProductionNation, &AxisProductionEntry)> + '_ {
-        self.equipment.iter().map(|((nation, item), entry)| (item.as_str(), *nation, entry))
+        self.equipment
+            .iter()
+            .map(|((nation, item), entry)| (item.as_str(), *nation, entry))
     }
 }
 
@@ -700,6 +702,8 @@ impl CommonwealthProduction {
     pub fn equipment_rows(
         &self,
     ) -> impl Iterator<Item = (&str, &CommonwealthProductionEntry)> + '_ {
-        self.equipment.iter().map(|(item, entry)| (item.as_str(), entry))
+        self.equipment
+            .iter()
+            .map(|(item, entry)| (item.as_str(), entry))
     }
 }
