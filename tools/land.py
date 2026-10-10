@@ -104,17 +104,26 @@ def lock_commit(who: str) -> str:
     return git("commit-tree", EMPTY_TREE, "-m", f"{PREFIX}{who} since {stamp}").stdout.strip()
 
 
-def push_ref(ref: str, new: str, expected: str) -> bool:
+def push(ref: str, new: str, expected: str) -> subprocess.CompletedProcess[str]:
     """Point `ref` at `new` ("" deletes it) only if it is still `expected` ("" = absent)."""
-    push = git("push", f"--force-with-lease={ref}:{expected}", "origin", f"{new}:{ref}", check=False)
-    return push.returncode == 0
+    return git("push", f"--force-with-lease={ref}:{expected}", "origin", f"{new}:{ref}", check=False)
+
+
+def push_ref(ref: str, new: str, expected: str) -> bool:
+    return push(ref, new, expected).returncode == 0
+
+
+def git_said(proc: subprocess.CompletedProcess[str]) -> str:
+    """Git's own error, so a sign-in or network failure is not reported as a lost race."""
+    return proc.stderr.strip() or f"(git exited with code {proc.returncode} and printed nothing)"
 
 
 def take_ticket(who: str) -> str:
     ref = f"{QUEUE}{now():%Y%m%dT%H%M%S%f}-{who}"
     sha = git("commit-tree", EMPTY_TREE, "-m", f"landing-queue ticket for {who}").stdout.strip()
-    if not push_ref(ref, sha, ""):
-        raise SystemExit(f"could not place a queue ticket for {who}; check the remote")
+    pushed = push(ref, sha, "")
+    if pushed.returncode != 0:
+        raise SystemExit(f"could not place a queue ticket for {who}; git said:\n{git_said(pushed)}")
     return ref
 
 
@@ -151,11 +160,24 @@ def acquire(who: str, wait: int) -> int:
             continue
         head = queue[0]
         if not lock and head[0] == ticket:
-            if push_ref(REF, lock_commit(who), ""):
+            pushed = push(REF, lock_commit(who), "")
+            if pushed.returncode == 0:
                 drop_tickets(who, queue)
                 print(f"lock acquired by {who}")
                 return 0
-            continue  # someone without a ticket (an older land.py) took it first
+            # Usually someone without a ticket (an older land.py) took it first and the next look
+            # shows them; a refusal that keeps coming back (sign-in, network) must not loop past
+            # --wait, so show git's reason and wait like any other turn.
+            print(f"could not take the free lock; git said:\n{git_said(pushed)}", file=sys.stderr)
+            if time.monotonic() > deadline:
+                print(
+                    "stopped waiting at the head of the queue; still queued, run acquire again to "
+                    "resume (or leave to give up); nothing was pushed",
+                    file=sys.stderr,
+                )
+                return 1
+            time.sleep(POLL_SECONDS)
+            continue
         if not lock:
             if idle_head and idle_head[0] == head[0]:
                 if time.monotonic() - idle_head[1] > GRACE_SECONDS:
@@ -203,10 +225,11 @@ def release(who: str) -> int:
     if info[0] != who:
         print(f"the lock belongs to {info[0]}, not {who}; not releasing", file=sys.stderr)
         return 1
-    if push_ref(REF, "", lock):
+    pushed = push(REF, "", lock)
+    if pushed.returncode == 0:
         print(f"lock released by {who}")
         return 0
-    print("release failed (the lock changed); run status", file=sys.stderr)
+    print(f"release failed; run status. git said:\n{git_said(pushed)}", file=sys.stderr)
     return 1
 
 
@@ -222,10 +245,11 @@ def refresh(who: str) -> int:
     if not info or info[0] != who:
         print(f"{who} does not hold the lock; nothing to refresh", file=sys.stderr)
         return 1
-    if push_ref(REF, lock_commit(who), lock):
+    pushed = push(REF, lock_commit(who), lock)
+    if pushed.returncode == 0:
         print(f"lock refreshed for {who}")
         return 0
-    print("refresh failed (the lock changed); run status", file=sys.stderr)
+    print(f"refresh failed; run status. git said:\n{git_said(pushed)}", file=sys.stderr)
     return 1
 
 
