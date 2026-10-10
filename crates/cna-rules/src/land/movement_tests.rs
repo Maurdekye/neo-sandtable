@@ -494,10 +494,10 @@ fn complete_move_reopens_for_other_units_and_enemy_receives_only_faces() {
     let t = respond(&c, &t.game, seat(&t.game), Value::Null, true).unwrap();
     assert!(t.game.state.decisions.pending.is_empty());
 }
-/// Cases: land:8.37, airlog:49.12, airlog:52.42
-/// Interpretations: interp:units-0005
+/// Cases: land:8.37, airlog:49.12, airlog:52.42, airlog:52.43
+/// Interpretations: interp:units-0005, interp:units-0006
 #[test]
-fn unknown_surface_and_numeric_hq_water_gaps_follow_profiles() {
+fn unknown_surface_and_numeric_hq_water_house_rule_follow_profiles() {
     let (mut c, s, _o) = setup(LEG, None, false, None);
     let original = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
     c.map = original.map;
@@ -532,17 +532,79 @@ fn unknown_surface_and_numeric_hq_water_gaps_follow_profiles() {
     s.land.units.get_mut(&TANK.into()).unwrap().location = Location::Eliminated;
     place(&mut s, actual.as_str(), "C4020");
     s.turn.player_a = Some(Side::Commonwealth);
-    let g = start(&c, s, false);
+    let strength = logistics::toe_strength(&c, &s.land.units[&actual])
+        .unwrap()
+        .get();
+    let due = logistics::activity_water_due(&c, &s, &actual).unwrap();
+    assert!(strength > 0 && due >= strength);
+    s.logistics
+        .unit_supply
+        .get_mut(&actual)
+        .unwrap()
+        .activity_water = WaterPoints::new(due);
     let action = json!([{"unit":actual,"path":["C4021"]}]);
-    assert!(
-        respond(&c, &g, seat(&g), action.clone(), false)
-            .expect_err("expected rejection")
-            .to_string()
-            .contains("airlog:52.42")
-    );
-    assert!(
-        matches!(respond(&c,&g,seat(&g),action,true),Err(Rejection::Engine(EngineError::Unsupported {case,..})) if case=="airlog:52.42")
-    );
+    for strict in [false, true] {
+        let g = start(&c, s.clone(), strict);
+        let owner = seat(&g);
+        assert!(available(&c, &g.state, owner).contains(&actual));
+        let mut dry = g.clone();
+        dry.state
+            .logistics
+            .unit_supply
+            .get_mut(&actual)
+            .unwrap()
+            .activity_water = WaterPoints::ZERO;
+        assert!(!available(&c, &dry.state, owner).contains(&actual));
+        assert!(reachable(&c, &dry.state, &actual, strict).is_empty());
+        assert_eq!(available(&c, &dry.state, owner).len(), 0);
+        // Water causality is asserted at the canonical restriction and payment boundaries,
+        // independently of the earlier response-list eligibility rejection.
+        assert!(logistics::activity_water_due(&c, &dry.state, &actual).unwrap() > 0);
+        assert!(
+            logistics::movement_restrictions(&c, &g.state, &actual)
+                .unwrap()
+                .may_move
+        );
+        assert!(
+            !logistics::movement_restrictions(&c, &dry.state, &actual)
+                .unwrap()
+                .may_move
+        );
+        let mut payment = dry.state.clone();
+        let payment_before = serde_json::to_value(&payment).unwrap();
+        assert_eq!(
+            logistics::spend_activity_water(&c, &mut payment, &actual),
+            Err(logistics::SupplyError::Insufficient)
+        );
+        assert_eq!(serde_json::to_value(&payment).unwrap(), payment_before);
+        let before = serde_json::to_value(&dry.state).unwrap();
+        let rng_before = dry.rng.clone();
+        let error = respond(&c, &dry, owner, action.clone(), strict).unwrap_err();
+        assert!(matches!(&error, Rejection::Illegal { .. }));
+        assert!(matches!(
+            &error,
+            Rejection::Illegal { message } if message == "too many movement orders"
+        ));
+        assert_eq!(serde_json::to_value(&dry.state).unwrap(), before);
+        assert_eq!(dry.rng, rng_before);
+        let moved = respond(&c, &g, owner, action.clone(), strict).unwrap();
+        assert_eq!(
+            moved.game.state.land.units[&actual].location.hex(),
+            Some(&"C4021".into())
+        );
+        assert_eq!(
+            moved.game.state.logistics.unit_supply[&actual].activity_water,
+            WaterPoints::ZERO
+        );
+        let ledger = moved.game.state.logistics.rations[&actual]
+            .activity_water_ledger
+            .as_ref()
+            .unwrap();
+        assert_eq!(
+            (ledger.body_required, ledger.body_paid),
+            (strength, strength)
+        );
+    }
 }
 /// Cases: land:8.11, land:19.44
 #[test]
@@ -5888,4 +5950,134 @@ fn step1_new_node_restores_successful_and_failed_sibling_full_state_bytes() {
         serde_json::to_vec(&kernel).unwrap() == before && g.rng == rng,
         "supported-history catalog query changed State/RNG"
     );
+}
+
+/// Cases: land:4.46, land:8.11, airlog:49.12, airlog:49.13, airlog:52.42
+/// Interpretations: interp:units-0007, interp:airlog-0001, interp:airlog-0015
+#[test]
+fn not_applicable_cwa_hq_moves_with_separate_truck_fuel_and_water_in_both_profiles() {
+    let (c, mut s, _overlay) = setup(TANK, Some("road"), false, None);
+    let actual = s
+        .land
+        .units
+        .keys()
+        .find(|id| {
+            c.units.units[*id].class.as_deref() == Some("cw.a")
+                && matches!(
+                    s.land.units[*id].toe,
+                    Some(cna_content::units::Toe::Normal(
+                        cna_content::units::NormalToe::N
+                    ))
+                )
+        })
+        .unwrap()
+        .clone();
+    s.land.units.get_mut(&TANK.into()).unwrap().location = Location::Eliminated;
+    place(&mut s, actual.as_str(), "C4020");
+    s.turn.player_a = Some(Side::Commonwealth);
+    for trucks in [
+        cna_content::units::Trucks::default(),
+        cna_content::units::Trucks {
+            light: 1,
+            medium: 1,
+            heavy: 1,
+        },
+    ] {
+        let mut input = s.clone();
+        input.land.units.get_mut(&actual).unwrap().trucks = trucks;
+        input.land.units.get_mut(&actual).unwrap().transport_trucks = Default::default();
+        input
+            .logistics
+            .rations
+            .get_mut(&actual)
+            .unwrap()
+            .activity_water_ledger = None;
+        input
+            .logistics
+            .rations
+            .get_mut(&actual)
+            .unwrap()
+            .activity_used_stage = None;
+        assert_eq!(
+            logistics::toe_strength(&c, &input.land.units[&actual])
+                .unwrap()
+                .get(),
+            0
+        );
+        let due = logistics::activity_water_due(&c, &input, &actual).unwrap();
+        assert_eq!(due, trucks.light + trucks.medium + trucks.heavy);
+        input
+            .logistics
+            .unit_supply
+            .get_mut(&actual)
+            .unwrap()
+            .activity_water = WaterPoints::new(due);
+        // One road edge is 2 quarter-CP: canonical ceiling gives the 1-CP truck row.
+        // Every first-line truck point uses factor one; zero trucks must cost zero.
+        let truck_points = trucks.light + trucks.medium + trucks.heavy;
+        let expected_fuel = FuelTenths::new(
+            c.tables
+                .airlog
+                .fuel_consumption
+                .fuel_for(1, 1)
+                .unwrap()
+                .get()
+                * truck_points,
+        );
+        if truck_points == 0 {
+            assert_eq!(expected_fuel, FuelTenths::ZERO);
+        } else {
+            assert!(expected_fuel.get() > 0);
+        }
+        assert_eq!(
+            logistics::movement_fuel_cost(&c, &input, &actual, 2).unwrap(),
+            expected_fuel
+        );
+        input
+            .logistics
+            .unit_supply
+            .get_mut(&actual)
+            .unwrap()
+            .tank_fuel = logistics::fuel_capacity(&c, &input, &actual).unwrap();
+        let action = json!([{"unit":actual,"path":["C4021"]}]);
+        for strict in [false, true] {
+            let g = start(&c, input.clone(), strict);
+            let owner = seat(&g);
+            assert!(available(&c, &g.state, owner).contains(&actual));
+            assert!(
+                reachable(&c, &g.state, &actual, strict)
+                    .iter()
+                    .any(|r| r.hex == HexId::from("C4021"))
+            );
+            let before_fuel = g.state.logistics.unit_supply[&actual].tank_fuel;
+            let moved = respond(&c, &g, owner, action.clone(), strict).unwrap();
+            assert_eq!(
+                moved.game.state.land.units[&actual].location.hex(),
+                Some(&"C4021".into())
+            );
+            assert_eq!(moved.game.state.land.units[&actual].cp_spent_quarters, 2);
+            assert_eq!(
+                moved.game.state.logistics.unit_supply[&actual]
+                    .tank_fuel
+                    .get(),
+                before_fuel.get() - expected_fuel.get()
+            );
+            assert_eq!(
+                moved.game.state.logistics.unit_supply[&actual].activity_water,
+                WaterPoints::ZERO
+            );
+            let ledger = moved.game.state.logistics.rations[&actual]
+                .activity_water_ledger
+                .as_ref()
+                .unwrap();
+            assert_eq!((ledger.body_required, ledger.body_paid), (0, 0));
+            assert_eq!(ledger.truck_required, ledger.truck_paid);
+            assert_eq!(
+                ledger.truck_required.light
+                    + ledger.truck_required.medium
+                    + ledger.truck_required.heavy,
+                due
+            );
+        }
+    }
 }

@@ -534,31 +534,155 @@ fn empty_arrival_roster_has_two_fixed_forced_pass_rounds_and_no_repeated_stage()
 /// Cases: airlog:52.42, land:3.6
 #[test]
 fn unknown_arriving_hq_is_full_unsupported_or_dev_private_unassessed() {
-    let (c, mut s) = fixture();
+    let (mut c, mut s) = fixture();
     let id = s
         .land
         .units
         .keys()
         .find(|id| {
-            matches!(
-                water::requirements(&c, &s, id),
-                Err(SupplyError::Unsupported {
-                    case: "airlog:52.42"
-                })
-            )
+            c.units.units[*id].class.as_deref() == Some("cw.e")
+                && matches!(
+                    c.units.units[*id].toe,
+                    Some(cna_content::units::Toe::Normal(
+                        cna_content::units::NormalToe::N
+                    ))
+                )
         })
         .unwrap()
         .clone();
+    assert_eq!(s.land.units[&id].toe, c.units.units[&id].toe);
+    assert!(c.units.classes["cw.e"].max_toe.is_some());
+    // Deliberately omit a known public numeric maximum; do not invent a replacement count.
+    c.units.classes.get_mut("cw.e").unwrap().max_toe = None;
+    assert_eq!(
+        water::requirements(&c, &s, &id),
+        Err(SupplyError::Unsupported {
+            case: "airlog:52.42"
+        })
+    );
     s.land.units.get_mut(&id).unwrap().location = Location::Hex {
         hex: "C4020".into(),
     };
     let before = s.land.units[&id].clone();
     let side = before.side;
+    // Prove the owner-domain source refusal before this side publishes any requests/events.
+    // enter itself stages the window before open_side; its caller owns whole-draft rollback.
+    let mut preflight = s.clone();
+    preflight.logistics.arrival_supply = ArrivalSupplyWindow {
+        stage: Some(water::WaterStage::current(&s)),
+        units: [id.clone()].into(),
+        ..Default::default()
+    };
+    let preflight_before = serde_json::to_value(&preflight).unwrap();
+    let mut preflight_rng = CampaignRng::from_seed([1; 32]);
+    let preflight_rng_before = preflight_rng.state();
+    let mut preflight_events = vec![];
+    assert!(matches!(
+        open_side(&c, &mut preflight, side, true, &mut Cx {
+            rng: &mut preflight_rng,
+            events: &mut preflight_events,
+        }),
+        Err(EngineError::Unsupported { case, .. }) if case == "airlog:52.42"
+    ));
+    assert_eq!(serde_json::to_value(&preflight).unwrap(), preflight_before);
+    assert_eq!(preflight_rng.state(), preflight_rng_before);
+    assert!(preflight_events.is_empty());
     let mut strict = s.clone();
+    // enter stages the window and opens Axis's empty fixed request before the CW error.
+    assert_eq!(side, Side::Commonwealth);
+    let mut expected = s.clone();
+    expected.logistics.arrival_supply = preflight.logistics.arrival_supply.clone();
+    let mut expected_rng = CampaignRng::from_seed([1; 32]);
+    let mut expected_events = vec![];
+    open_side(
+        &c,
+        &mut expected,
+        Side::Axis,
+        true,
+        &mut Cx {
+            rng: &mut expected_rng,
+            events: &mut expected_events,
+        },
+    )
+    .unwrap();
+    assert_eq!(expected.decisions.pending.len(), 1);
+    let request = &expected.decisions.pending[0];
+    assert_eq!(request.seat, SeatId::new(Side::Axis, Role::Logistics));
+    assert_eq!(request.secrecy, Secrecy::SecretSimultaneous);
+    assert!(request.space.pass.is_some());
+    assert!(
+        matches!(&request.space.schema, ActionSchema::Choice { options } if options.is_empty())
+    );
+    assert_eq!(expected_events.len(), 1);
+    assert!(matches!(
+        &expected_events[0].event,
+        GameEvent::DecisionOpened { .. }
+    ));
+    assert_eq!(expected_events[0].audience, Audience::Seat(request.seat));
+    // Apart from the exact window and decision bookkeeping, every State field remains exact.
+    let mut expected_without_windows = expected.clone();
+    expected_without_windows.logistics.arrival_supply = s.logistics.arrival_supply.clone();
+    expected_without_windows.decisions = s.decisions.clone();
+    assert_eq!(
+        serde_json::to_value(&expected_without_windows).unwrap(),
+        serde_json::to_value(&s).unwrap()
+    );
+    let mut strict_events = vec![];
     let mut rng = CampaignRng::from_seed([1; 32]);
     assert!(
-        matches!(enter(&c,&mut strict,true,&mut Cx{rng:&mut rng,events:&mut vec![]},&[id.clone()].into()),Err(EngineError::Unsupported{case,..})if case=="airlog:52.42")
+        matches!(enter(&c,&mut strict,true,&mut Cx{rng:&mut rng,events:&mut strict_events},&[id.clone()].into()),Err(EngineError::Unsupported{case,..})if case=="airlog:52.42")
     );
+    assert_eq!(
+        serde_json::to_value(&strict).unwrap(),
+        serde_json::to_value(&expected).unwrap()
+    );
+    assert_eq!(rng.state(), expected_rng.state());
+    assert_eq!(rng.state(), preflight_rng_before);
+    assert_eq!(
+        serde_json::to_value(&strict_events).unwrap(),
+        serde_json::to_value(&expected_events).unwrap()
+    );
+    // A post-Land-barrier fixture records only the existing handoff flags and exact arrived id.
+    // Advance begins at this entered convoy-arrival step with no outstanding Land decisions.
+    let mut dispatch_state = s.clone();
+    assert_eq!(dispatch_state.cursor.anchor(), "opstage.convoy_arrival");
+    assert!(dispatch_state.cursor.entered);
+    assert!(dispatch_state.decisions.pending.is_empty());
+    assert!(dispatch_state.land.arrivals.tasks.is_empty());
+    let key = format!(
+        "{}:{}",
+        dispatch_state.cursor.game_turn,
+        dispatch_state.cursor.op_stage.unwrap()
+    );
+    dispatch_state.land.arrivals.entered.insert(key.clone());
+    dispatch_state
+        .land
+        .arrivals
+        .supply_finished
+        .insert(key.clone());
+    dispatch_state
+        .land
+        .arrivals
+        .newly_arrived
+        .insert(key.clone(), [id.clone()].into());
+    assert!(crate::land::arrivals::ready_for_supply(&dispatch_state));
+    assert_eq!(
+        dispatch_state.land.arrivals.newly_arrived[&key],
+        BTreeSet::from([id.clone()])
+    );
+    assert!(dispatch_state.logistics.arrival_supply.stage.is_none());
+    let dispatch = Game::<Cna> {
+        state: dispatch_state,
+        rng: rng.state(),
+    };
+    let dispatch_before = serde_json::to_value(&dispatch).unwrap();
+    let error = evaluate(&Cna::full(), &c, &dispatch, &Command::Advance).unwrap_err();
+    assert!(matches!(
+        error,
+        Rejection::Engine(EngineError::Unsupported { case, detail })
+            if case == "airlog:52.42" && detail == "required logistics content is unavailable"
+    ));
+    assert_eq!(serde_json::to_value(&dispatch).unwrap(), dispatch_before);
     let mut events = vec![];
     enter(
         &c,

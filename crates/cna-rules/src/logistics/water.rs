@@ -115,8 +115,9 @@ pub(super) fn candidates(
     Ok(ids)
 }
 /// Limited Intelligence overrides the registry's default open distribution window.
-/// Unknown HQ vehicle composition stays unsupported in full, unassessed in dev.
+/// Uncovered HQ source gaps stay unsupported in full, unassessed in dev.
 /// Cases: airlog:52.0, airlog:52.41, airlog:52.42, land:3.6
+/// Interpretations: interp:units-0006
 pub fn enter(
     content: &CnaContent,
     state: &mut State,
@@ -135,6 +136,7 @@ pub(super) fn prepare(
 ) -> Result<(), EngineError> {
     // Full-profile source gaps are public-content preflights, independent of private inventory.
     // Cases: airlog:52.42, land:3.6
+    // Interpretations: interp:units-0005, interp:units-0006, interp:units-0007
     if strict
         && content.units.units.values().any(|row| {
             row.class
@@ -143,6 +145,12 @@ pub(super) fn prepare(
                 .is_some_and(|class| class.unit_type == "headquarters" && !class.max_toe_paren)
                 && row.toe.is_some()
                 && !matches!(row.toe, Some(cna_content::units::Toe::Weapons(_)))
+                && !super::supply::house_rule_hq_strength_from_toe(
+                    content,
+                    &row.id,
+                    row.toe.as_ref(),
+                )
+                .is_ok_and(|points| points.is_some())
         })
     {
         return Err(engine(SupplyError::Unsupported {

@@ -201,48 +201,226 @@ fn rejected_draw_is_atomic_and_checkpoint_and_enemy_views_keep_quantities_privat
     ));
 }
 /// Cases: airlog:52.42, land:3.6
-/// Interpretations: interp:units-0005
+/// Interpretations: interp:units-0005, interp:units-0006
 #[test]
-fn unknown_hq_composition_blocks_full_but_dev_reports_privately_and_continues() {
-    let mut state = State::new(content()).unwrap();
-    state.cursor.op_stage = Some(1);
-    state.turn.weather = Some(WeatherState {
-        kind: WeatherKind::Normal,
-        storm_sections: vec![],
-    });
-    let mut rng = CampaignRng::from_seed([9; 32]);
-    let mut events = vec![];
-    let before = serde_json::to_value(&state).unwrap();
-    let rng_before = rng.state();
-    assert!(
-        matches!(enter(content(), &mut state, &mut Cx { rng: &mut rng, events: &mut events }, true), Err(EngineError::Unsupported { case, .. }) if case == "airlog:52.42")
+fn covered_numeric_hq_water_enters_both_profiles_with_private_allocation_windows() {
+    for strict in [false, true] {
+        let mut state = State::new(content()).unwrap();
+        state.cursor.op_stage = Some(1);
+        state.turn.weather = Some(WeatherState {
+            kind: WeatherKind::Normal,
+            storm_sections: vec![],
+        });
+        let mut rng = CampaignRng::from_seed([9; 32]);
+        let mut events = vec![];
+        enter(
+            content(),
+            &mut state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+            strict,
+        )
+        .unwrap();
+        assert!(
+            events
+                .iter()
+                .filter(|e| matches!(e.event, GameEvent::Note { .. }))
+                .all(|e| matches!(e.audience, Audience::Side(_)))
+        );
+        assert!(events.iter().all(|e| !matches!(&e.event, GameEvent::Note { text } if text.contains("vehicle water need is unknown"))));
+        assert!(
+            state
+                .decisions
+                .pending
+                .iter()
+                .all(|p| p.secrecy == Secrecy::SecretSimultaneous)
+        );
+    }
+}
+
+/// Cases: airlog:52.42, land:3.6
+/// Interpretations: interp:units-0005, interp:units-0006
+#[test]
+fn missing_public_hq_strength_preflights_full_independently_and_dev_notes_stay_private() {
+    let mut c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let (mut state, _) = setup();
+    let id = state
+        .land
+        .units
+        .keys()
+        .find(|id| c.units.units[*id].class.as_deref() == Some("cw.e"))
+        .unwrap()
+        .clone();
+    // A deliberately omitted numeric maximum remains unknown, unlike cw.a's cited dash.
+    assert!(c.units.classes["cw.e"].max_toe.is_some());
+    c.units.classes.get_mut("cw.e").unwrap().max_toe = None;
+    // A synthetic public source gap, not an invented equipment count or real campaign capture.
+    let toe = cna_content::units::Toe::Normal(cna_content::units::NormalToe::N);
+    c.units.units.get_mut(&id).unwrap().toe = Some(toe.clone());
+    let u = state.land.units.get_mut(&id).unwrap();
+    u.toe = Some(toe);
+    u.location = Location::Hex {
+        hex: "C4020".into(),
+    };
+    let side = u.side;
+    let enemy = if side == Side::Commonwealth {
+        Side::Axis
+    } else {
+        Side::Commonwealth
+    };
+    let mut hidden = state.clone();
+    hidden.land.units.get_mut(&id).unwrap().location = Location::Eliminated;
+    let supply = hidden.logistics.unit_supply.entry(id.clone()).or_default();
+    supply.activity_water = cna_core::quantity::WaterPoints::new(999);
+    supply.tank_fuel = cna_core::quantity::FuelTenths::new(999);
+    hidden
+        .logistics
+        .rations
+        .entry(id.clone())
+        .or_default()
+        .activity_used_stage = Some(WaterStage::current(&state));
+    for mut input in [state.clone(), hidden] {
+        let before = serde_json::to_value(&input).unwrap();
+        let mut rng = CampaignRng::from_seed([9; 32]);
+        let rng_before = rng.state();
+        let mut events = vec![];
+        assert!(
+            matches!(enter(&c, &mut input, &mut Cx { rng: &mut rng, events: &mut events }, true),
+            Err(EngineError::Unsupported { case, .. }) if case == "airlog:52.42")
+        );
+        assert_eq!(serde_json::to_value(&input).unwrap(), before);
+        assert_eq!(rng.state(), rng_before);
+        assert!(events.is_empty());
+    }
+    let mut paired = state.clone();
+    let supply = paired.logistics.unit_supply.entry(id.clone()).or_default();
+    supply.activity_water = cna_core::quantity::WaterPoints::new(999);
+    supply.tank_fuel = cna_core::quantity::FuelTenths::new(999);
+    assert_eq!(
+        Cna::dev().observe(&c, &state, Perspective::Side(enemy)),
+        Cna::dev().observe(&c, &paired, Perspective::Side(enemy))
     );
-    assert_eq!(serde_json::to_value(&state).unwrap(), before);
-    assert_eq!(rng.state(), rng_before);
-    assert!(events.is_empty());
-    enter(
-        content(),
-        &mut state,
-        &mut Cx {
-            rng: &mut rng,
-            events: &mut events,
-        },
-        false,
-    )
-    .unwrap();
-    assert!(
-        events
-            .iter()
-            .filter(|e| matches!(e.event, GameEvent::Note { .. }))
-            .all(|e| matches!(e.audience, Audience::Side(_)))
+    let mut notes = vec![];
+    let mut post_entry = vec![];
+    for mut input in [state, paired] {
+        let mut rng = CampaignRng::from_seed([9; 32]);
+        let mut events = vec![];
+        enter(
+            &c,
+            &mut input,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+            false,
+        )
+        .unwrap();
+        let unknown: Vec<_> = events.iter().filter(|e| matches!(&e.event, GameEvent::Note { text } if text.contains("vehicle water need is unknown"))).collect();
+        assert_eq!(unknown.len(), 1);
+        assert!(unknown.iter().all(|e| e.audience == Audience::Side(side)));
+        assert!(
+            events
+                .iter()
+                .filter(|e| matches!(e.event, GameEvent::Note { .. }))
+                .all(|e| matches!(e.audience, Audience::Side(_)))
+        );
+        assert!(
+            input
+                .decisions
+                .pending
+                .iter()
+                .all(|p| p.secrecy == Secrecy::SecretSimultaneous)
+        );
+        assert!(
+            Cna::dev().observe(&c, &input, Perspective::Side(enemy))["logistics"]["rations"]
+                .as_object()
+                .unwrap()
+                .is_empty()
+        );
+        crate::testkit::assert_face_only(&Cna::dev().inspect(
+            &c,
+            &input,
+            Perspective::Side(enemy),
+            id.as_str(),
+        ));
+        notes.push(unknown[0].event.clone());
+        post_entry.push((input, events));
+    }
+    assert_eq!(notes[0], notes[1]);
+    let targets = std::collections::BTreeSet::from([id.to_string()]);
+    assert_eq!(
+        crate::testkit::visible_to(&Cna::dev(), &c, &post_entry[0].0, enemy, &targets),
+        crate::testkit::visible_to(&Cna::dev(), &c, &post_entry[1].0, enemy, &targets),
     );
-    assert!(
-        state
-            .decisions
-            .pending
-            .iter()
-            .all(|p| p.secrecy == Secrecy::SecretSimultaneous)
-    );
+    for perspective in Perspective::all().filter(|p| p.side() == Some(enemy)) {
+        let projected =
+            |events: &[EngineEvent]| -> Vec<serde_json::Value> {
+                events.iter().filter(|e| perspective.can_see(&e.audience))
+                .map(|e| serde_json::json!({"event": e.event, "hex": e.hex, "unit_id": e.unit_id}))
+                .collect()
+            };
+        assert_eq!(
+            projected(&post_entry[0].1),
+            projected(&post_entry[1].1),
+            "{perspective}"
+        );
+    }
+}
+
+/// Cases: airlog:52.42, land:4.46
+/// Interpretations: interp:units-0005, interp:units-0006
+#[test]
+fn public_hq_preflight_resolves_normal_under_over_and_refuses_invalid_source_counts() {
+    let original = State::new(content()).unwrap();
+    let id = original
+        .land
+        .units
+        .keys()
+        .find(|id| content().units.units[*id].class.as_deref() == Some("cw.e"))
+        .unwrap()
+        .clone();
+    let maximum = content().units.classes["cw.e"].max_toe.unwrap();
+    for (toe, accepted) in [
+        (
+            cna_content::units::Toe::Normal(cna_content::units::NormalToe::N),
+            true,
+        ),
+        (cna_content::units::Toe::Under { under: maximum - 1 }, true),
+        (cna_content::units::Toe::Over { over: maximum + 1 }, true),
+        (cna_content::units::Toe::Under { under: maximum }, false),
+        (cna_content::units::Toe::Over { over: maximum }, false),
+        (cna_content::units::Toe::Under { under: -1 }, false),
+    ] {
+        let mut c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        c.units.units.get_mut(&id).unwrap().toe = Some(toe);
+        let (mut state, _) = setup();
+        // Keep private current TOE/readiness fixed while varying only public authored TOE.
+        let before = serde_json::to_value(&state).unwrap();
+        let mut rng = CampaignRng::from_seed([9; 32]);
+        let rng_before = rng.state();
+        let mut events = vec![];
+        let result = prepare(
+            &c,
+            &mut state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+            true,
+        );
+        if accepted {
+            result.unwrap();
+        } else {
+            assert!(
+                matches!(result, Err(EngineError::Unsupported { case, .. }) if case == "airlog:52.42")
+            );
+            assert_eq!(serde_json::to_value(&state).unwrap(), before);
+            assert_eq!(rng.state(), rng_before);
+            assert!(events.is_empty());
+        }
+    }
 }
 
 /// Cases: airlog:52.6

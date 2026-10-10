@@ -169,8 +169,9 @@ pub fn stores_required(
 }
 
 /// Normal-weather activity demand; the weather multiplier is applied by the caller.
-/// Unidentified HQ vehicles cannot be replaced by a guessed composition.
+/// Numeric vehicle HQ points use the owner's house rule, not guessed equipment.
 /// Cases: airlog:52.41, airlog:52.42, land:4.48
+/// Interpretations: interp:units-0005, interp:units-0006, interp:units-0007
 pub(super) fn activity_points(
     content: &CnaContent,
     state: &State,
@@ -182,12 +183,26 @@ pub(super) fn activity_points(
     } else if let Some(Toe::Weapons(_)) = unit.toe {
         toe_strength(content, unit)?.get()
     } else if class(content, id)?.unit_type == "headquarters" {
-        if !class(content, id)?.max_toe_paren && unit.toe.is_some() {
-            return Err(SupplyError::Unsupported {
-                case: "airlog:52.42",
-            });
+        // Preserve the water source-gap case; fuel's missing-rate error stays fuel-specific.
+        let points = super::supply::house_rule_hq_strength(content, unit).map_err(|error| {
+            if error == SupplyError::UnknownFuelRate {
+                SupplyError::Unsupported {
+                    case: "airlog:52.42",
+                }
+            } else {
+                error
+            }
+        })?;
+        if let Some(points) = points {
+            points
+        } else {
+            if !class(content, id)?.max_toe_paren && unit.toe.is_some() {
+                return Err(SupplyError::Unsupported {
+                    case: "airlog:52.42",
+                });
+            }
+            0
         }
-        0
     } else {
         toe_strength(content, unit)?.get()
     };

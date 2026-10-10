@@ -447,7 +447,12 @@ fn numeric_headquarters_use_exact_truck_factor_one_pricing_and_funding() {
         .land
         .units
         .values()
-        .filter(|u| house_rule_hq_strength(content(), u).is_ok_and(|n| n.is_some()))
+        .filter(|u| {
+            house_rule_hq_strength(content(), u).is_ok_and(|n| n.is_some())
+                && content().units.classes[content().units.units[&u.id].class.as_ref().unwrap()]
+                    .max_toe
+                    .is_some()
+        })
         .map(|u| u.id.clone())
         .collect();
     assert_eq!(ids.len(), 9);
@@ -582,26 +587,29 @@ fn headquarters_identified_weapons_parenthesized_toe_and_absent_composition_keep
         movement_fuel_cost(content(), &state, &id, 28),
         Err(SupplyError::UnknownFuelRate)
     );
+    let mut missing = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    assert!(missing.units.classes["cw.e"].max_toe.is_some());
+    missing.units.classes.get_mut("cw.e").unwrap().max_toe = None;
     let missing_strength = state
         .land
         .units
         .values()
-        .find(|u| content().units.units[&u.id].class.as_deref() == Some("cw.a"))
+        .find(|u| missing.units.units[&u.id].class.as_deref() == Some("cw.e"))
         .unwrap()
         .id
         .clone();
     state.land.units.get_mut(&missing_strength).unwrap().toe =
         Some(Toe::Normal(cna_content::units::NormalToe::N));
     assert_eq!(
-        house_rule_hq_strength(content(), &state.land.units[&missing_strength]),
+        house_rule_hq_strength(&missing, &state.land.units[&missing_strength]),
         Err(SupplyError::UnknownFuelRate)
     );
     assert_eq!(
-        movement_fuel_cost(content(), &state, &missing_strength, 28),
+        movement_fuel_cost(&missing, &state, &missing_strength, 28),
         Err(SupplyError::UnknownFuelRate)
     );
     assert_eq!(
-        crate::logistics::fuel_capacity(content(), &state, &missing_strength),
+        crate::logistics::fuel_capacity(&missing, &state, &missing_strength),
         Err(SupplyError::UnknownFuelRate)
     );
     let paren = state
@@ -629,6 +637,103 @@ fn headquarters_identified_weapons_parenthesized_toe_and_absent_composition_keep
         movement_fuel_cost(content(), &state, &paren, 28).unwrap(),
         FuelTenths::ZERO
     );
+}
+
+/// Cases: land:4.46, land:4.48, airlog:49.12, airlog:49.13, airlog:52.42
+/// Interpretations: interp:units-0007
+#[test]
+fn not_applicable_hq_keeps_explicit_equipment_invalid_counts_and_truck_errors() {
+    let (mut state, _) = state();
+    let id = state
+        .land
+        .units
+        .keys()
+        .find(|id| content().units.units[*id].class.as_deref() == Some("cw.a"))
+        .unwrap()
+        .clone();
+    state.land.units.get_mut(&id).unwrap().trucks = Trucks::default();
+    for toe in [
+        Toe::Under { under: -1 },
+        Toe::Under { under: 0 },
+        Toe::Over { over: 1 },
+    ] {
+        state.land.units.get_mut(&id).unwrap().toe = Some(toe);
+        let before = serde_json::to_value(&state).unwrap();
+        assert_eq!(
+            toe_strength(content(), &state.land.units[&id]),
+            Err(SupplyError::Invalid)
+        );
+        assert_eq!(
+            movement_fuel_cost(content(), &state, &id, 28),
+            Err(SupplyError::Invalid)
+        );
+        assert_eq!(
+            crate::logistics::fuel_capacity(content(), &state, &id),
+            Err(SupplyError::Invalid)
+        );
+        assert_eq!(
+            super::super::rations::activity_points(content(), &state, &id),
+            Err(SupplyError::Invalid)
+        );
+        assert_eq!(serde_json::to_value(&state).unwrap(), before);
+    }
+    let weapon = content()
+        .units
+        .weapons
+        .values()
+        .find(|w| w.nation == "cw" && w.fuel_rate.is_some_and(|r| r > 0))
+        .unwrap();
+    state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: weapon.id.clone(),
+        n: 2,
+    }]));
+    assert_eq!(
+        house_rule_hq_strength(content(), &state.land.units[&id]),
+        Ok(None)
+    );
+    assert_eq!(
+        toe_strength(content(), &state.land.units[&id])
+            .unwrap()
+            .get(),
+        2
+    );
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &id, 28)
+            .unwrap()
+            .get(),
+        content()
+            .tables
+            .airlog
+            .fuel_consumption
+            .fuel_for(weapon.fuel_rate.unwrap(), 7)
+            .unwrap()
+            .get()
+            * 2
+    );
+    assert_eq!(
+        super::super::rations::activity_points(content(), &state, &id).unwrap(),
+        2
+    );
+    state.land.units.get_mut(&id).unwrap().toe = None;
+    state.land.units.get_mut(&id).unwrap().trucks.light = -1;
+    let before = serde_json::to_value(&state).unwrap();
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &id, 28),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(
+        crate::logistics::fuel_capacity(content(), &state, &id),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(
+        super::super::rations::activity_points(content(), &state, &id),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(
+        movement_fuel_cost(content(), &state, &id, -1),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(serde_json::to_value(&state).unwrap(), before);
 }
 
 /// Cases: airlog:49.13, airlog:49.16

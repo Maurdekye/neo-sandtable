@@ -458,6 +458,26 @@ fn full_source_preflights_depend_on_public_content_not_hidden_current_inventory(
         ("opstage.organization.water_distribution", "airlog:52.42"),
         ("opstage.organization.supply_distribution", "airlog:50.17"),
     ] {
+        // Only the water branch needs a deliberately unresolved public numeric maximum.
+        // The independent ready-ammunition source and supply50.17 branch remain unchanged.
+        let mut water_content;
+        let c = if case == "airlog:52.42" {
+            water_content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+            assert!(water_content.units.units.values().any(|row| {
+                row.class.as_deref() == Some("cw.e")
+                    && matches!(
+                        row.toe,
+                        Some(cna_content::units::Toe::Normal(
+                            cna_content::units::NormalToe::N
+                        ))
+                    )
+            }));
+            assert!(water_content.units.classes["cw.e"].max_toe.is_some());
+            water_content.units.classes.get_mut("cw.e").unwrap().max_toe = None;
+            &water_content
+        } else {
+            content()
+        };
         let a = game(anchor);
         let mut b = a.clone();
         for unit in b
@@ -480,14 +500,39 @@ fn full_source_preflights_depend_on_public_content_not_hidden_current_inventory(
         let cmd = Command::Advance;
         crate::testkit::assert_action_indistinguishable(
             &Cna::full(),
-            content(),
+            c,
             &a,
             &b,
             &cmd,
             Side::Commonwealth,
         );
         for g in [&a, &b] {
-            let err = evaluate(&Cna::full(), content(), g, &cmd).unwrap_err();
+            let before = serde_json::to_value(g).unwrap();
+            // Canonical entry must reject before modifying its draft, RNG or event buffer.
+            let mut draft = g.state.clone();
+            let draft_before = serde_json::to_value(&draft).unwrap();
+            let mut rng = CampaignRng::from_state(&g.rng);
+            let rng_before = rng.state();
+            let mut events = vec![];
+            let mut cx = cna_core::engine::Cx {
+                rng: &mut rng,
+                events: &mut events,
+            };
+            let entry = if case == "airlog:52.42" {
+                water::enter(c, &mut draft, &mut cx, true)
+            } else {
+                batches::enter_distribution_with_policy(c, &mut draft, &mut cx, true)
+            };
+            assert!(
+                matches!(entry, Err(cna_core::engine::EngineError::Unsupported {
+                case: ref actual, ..
+            }) if actual == case)
+            );
+            assert_eq!(serde_json::to_value(&draft).unwrap(), draft_before);
+            assert_eq!(rng.state(), rng_before);
+            assert!(events.is_empty());
+            let err = evaluate(&Cna::full(), c, g, &cmd).unwrap_err();
+            assert_eq!(serde_json::to_value(g).unwrap(), before);
             assert!(format!("{err:?}").contains(case), "{err:?}");
         }
     }

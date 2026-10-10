@@ -104,23 +104,34 @@ impl SupplyDemand {
 
 /// Current strength from the mutable TOE and the printed class maximum.
 /// Missing composition is rejected rather than replaced by full strength.
+/// The cited cw.a not-applicable body is zero for Normal N or absent TOE (units-0007).
 /// U/O indicators contain the actual arrival strength, never a deficit or increment.
 /// Cases: land:4.45, airlog:49.12, airlog:50.13
 pub fn toe_strength(
     content: &CnaContent,
     unit: &LandUnit,
 ) -> Result<ToeStrengthPoints, SupplyError> {
+    toe_strength_from_toe(content, &unit.id, unit.toe.as_ref())
+}
+fn toe_strength_from_toe(
+    content: &CnaContent,
+    id: &UnitId,
+    toe: Option<&Toe>,
+) -> Result<ToeStrengthPoints, SupplyError> {
+    if not_applicable_hq_body(content, id, toe) {
+        return Ok(ToeStrengthPoints::new(0));
+    }
     let max = || {
         content
             .units
             .units
-            .get(&unit.id)
+            .get(id)
             .and_then(|oa| oa.class.as_ref())
             .and_then(|id| content.units.classes.get(id))
             .and_then(|class| class.max_toe)
             .ok_or(SupplyError::Unsupported { case: "land:4.46" })
     };
-    let strength = match &unit.toe {
+    let strength = match toe {
         Some(Toe::Normal(_)) => max()?,
         Some(Toe::Under { under }) => {
             let maximum = max().map_err(|_| SupplyError::Invalid)?;
@@ -150,23 +161,61 @@ pub fn toe_strength(
     Ok(ToeStrengthPoints::new(strength))
 }
 
-/// The adopted house rate covers only numeric, unparenthesized HQ points without equipment.
+/// The cited cw.a chart maximum is not applicable, distinct from a missing source maximum.
+/// Explicit equipment and malformed U/O fields retain their canonical validation paths.
+/// Cases: land:4.46, airlog:49.12, airlog:49.13, airlog:52.42
+/// Interpretations: interp:units-0007
+fn not_applicable_hq_body(content: &CnaContent, id: &UnitId, toe: Option<&Toe>) -> bool {
+    content
+        .units
+        .units
+        .get(id)
+        .and_then(|row| row.class.as_ref())
+        .and_then(|id| content.units.classes.get(id))
+        .is_some_and(|class| {
+            class.id == "cw.a"
+                && class.nation == "cw"
+                && class.code == "a"
+                && class.unit_type == "headquarters"
+                && !class.max_toe_paren
+                && class.max_toe.is_none()
+        })
+        && matches!(
+            toe,
+            None | Some(Toe::Normal(cna_content::units::NormalToe::N))
+        )
+}
+
+/// Numeric, unparenthesized HQ points use the adopted house rate; known cw.a body points are zero.
 /// Explicit weapons and attached trucks retain their independent printed rates.
 /// Cases: airlog:49.12, airlog:49.13
-/// Interpretations: interp:units-0005
+/// Interpretations: interp:units-0005, interp:units-0007
 pub(super) fn house_rule_hq_strength(
     content: &CnaContent,
     unit: &LandUnit,
 ) -> Result<Option<i32>, SupplyError> {
+    house_rule_hq_strength_from_toe(content, &unit.id, unit.toe.as_ref())
+}
+/// Source-only counterpart for public-content preflight, sharing the mutable-unit resolver.
+/// Cases: airlog:49.12, airlog:52.42, land:4.46
+/// Interpretations: interp:units-0005, interp:units-0006, interp:units-0007
+pub(super) fn house_rule_hq_strength_from_toe(
+    content: &CnaContent,
+    id: &UnitId,
+    toe: Option<&Toe>,
+) -> Result<Option<i32>, SupplyError> {
+    if not_applicable_hq_body(content, id, toe) {
+        return Ok(Some(0));
+    }
     let class = content
         .units
         .units
-        .get(&unit.id)
+        .get(id)
         .and_then(|row| row.class.as_ref())
         .and_then(|id| content.units.classes.get(id));
     if class.is_some_and(|c| c.unit_type == "headquarters" && !c.max_toe_paren)
         && matches!(
-            unit.toe,
+            toe,
             Some(
                 Toe::Normal(cna_content::units::NormalToe::N)
                     | Toe::Under { .. }
@@ -174,7 +223,7 @@ pub(super) fn house_rule_hq_strength(
             )
         )
     {
-        return toe_strength(content, unit)
+        return toe_strength_from_toe(content, id, toe)
             .map(|n| Some(n.get()))
             .map_err(|error| {
                 if error == (SupplyError::Unsupported { case: "land:4.46" }) {
@@ -192,7 +241,7 @@ pub(super) fn house_rule_hq_strength(
 /// costs are added exactly before a source draw is rounded. Non-movement CP must
 /// be excluded by the movement caller. Special patrols need their own procedure.
 /// Cases: airlog:49.12, airlog:49.13, land:4.48
-/// Interpretations: interp:airlog-0001, interp:units-0005
+/// Interpretations: interp:airlog-0001, interp:units-0005, interp:units-0007
 /// Numeric HQ points use the adopted factor-one house rate; other unidentified equipment stays unresolved.
 pub fn movement_fuel_cost(
     content: &CnaContent,

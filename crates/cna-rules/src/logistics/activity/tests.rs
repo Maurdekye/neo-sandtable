@@ -254,22 +254,24 @@ fn hot_partial_truck_credit_is_exact_and_transfer_errors_are_atomic() {
 /// Cases: airlog:52.42
 #[test]
 fn unknown_hq_is_not_treated_as_zero_and_legacy_paid_markers_remain_paid() {
+    let mut c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    // Explicitly omit a numeric source maximum; this is not cw.a's printed dash.
+    assert!(c.units.classes["cw.e"].max_toe.is_some());
+    c.units.classes.get_mut("cw.e").unwrap().max_toe = None;
     let mut s = fixture(false);
     let id = s
         .land
         .units
         .values()
-        .find(|u| {
-            u.toe.is_some()
-                && rations::class(content(), &u.id)
-                    .is_ok_and(|c| c.unit_type == "headquarters" && !c.max_toe_paren)
-        })
+        .find(|u| c.units.units[&u.id].class.as_deref() == Some("cw.e"))
         .unwrap()
         .id
         .clone();
+    // An ordinary synthetic missing-maximum HQ remains outside computable house billing.
+    s.land.units.get_mut(&id).unwrap().toe = Some(Toe::Normal(cna_content::units::NormalToe::N));
     let before = s.clone();
     assert_eq!(
-        consume_activity_water_forced(content(), &mut s, &id),
+        consume_activity_water_forced(&c, &mut s, &id),
         Err(SupplyError::Unsupported {
             case: "airlog:52.42"
         })
@@ -291,6 +293,325 @@ fn unknown_hq_is_not_treated_as_zero_and_legacy_paid_markers_remain_paid() {
             .consumed,
         WaterPoints::ZERO
     );
+}
+
+/// Cases: airlog:52.41, airlog:52.42, airlog:52.43
+/// Interpretations: interp:units-0005, interp:units-0006, interp:airlog-0015
+#[test]
+fn nine_numeric_headquarters_pay_actual_strength_heat_and_separate_trucks_once_per_stage() {
+    let original = fixture(false);
+    let ids: Vec<_> = original
+        .land
+        .units
+        .values()
+        .filter(|u| {
+            super::super::supply::house_rule_hq_strength(content(), u)
+                .unwrap()
+                .is_some()
+                && rations::class(content(), &u.id).unwrap().max_toe.is_some()
+        })
+        .map(|u| u.id.clone())
+        .collect();
+    assert_eq!(ids.len(), 9);
+    assert_eq!(
+        ids.iter()
+            .filter(|id| id.as_str().starts_with("cw."))
+            .count(),
+        6
+    );
+    assert_eq!(
+        ids.iter()
+            .filter(|id| id.as_str().starts_with("it."))
+            .count(),
+        3
+    );
+    for id in ids {
+        let maximum = rations::class(content(), &id).unwrap().max_toe.unwrap();
+        assert!(maximum > 0);
+        for (toe, strength) in [
+            (Toe::Normal(cna_content::units::NormalToe::N), maximum),
+            (Toe::Under { under: maximum - 1 }, maximum - 1),
+            (Toe::Over { over: maximum + 1 }, maximum + 1),
+        ] {
+            for hot in [false, true] {
+                // Authored HQ identities/counts in ordinary synthetic weather and location.
+                let mut s = fixture(hot);
+                let u = s.land.units.get_mut(&id).unwrap();
+                u.location = Location::Hex {
+                    hex: "C4020".into(),
+                };
+                u.toe = Some(toe.clone());
+                u.trucks = Trucks {
+                    light: 2,
+                    medium: 1,
+                    heavy: 1,
+                };
+                u.transport_trucks = Trucks::default();
+                s.logistics.rations.remove(&id);
+                set_reserve(&mut s, id.as_str(), 0);
+                let multiplier = if hot { 2 } else { 1 };
+                let due = (strength + 4) * multiplier;
+                assert_eq!(
+                    super::super::toe_strength(content(), &s.land.units[&id])
+                        .unwrap()
+                        .get(),
+                    strength
+                );
+                assert_eq!(
+                    rations::activity_points(content(), &s, &id).unwrap(),
+                    strength + 4
+                );
+                assert_eq!(activity_water_due(content(), &s, &id).unwrap(), due);
+                let dry = serde_json::to_value(&s).unwrap();
+                assert_eq!(
+                    spend_activity_water(content(), &mut s, &id),
+                    Err(SupplyError::Insufficient)
+                );
+                assert_eq!(serde_json::to_value(&s).unwrap(), dry);
+                set_reserve(&mut s, id.as_str(), due);
+                spend_activity_water(content(), &mut s, &id).unwrap();
+                let l = s.logistics.rations[&id]
+                    .activity_water_ledger
+                    .as_ref()
+                    .unwrap();
+                assert_eq!(
+                    (l.body_required, l.body_paid),
+                    (strength * multiplier, strength * multiplier)
+                );
+                assert_eq!(
+                    l.truck_required,
+                    TruckWater {
+                        light: 2 * multiplier,
+                        medium: multiplier,
+                        heavy: multiplier
+                    }
+                );
+                assert_eq!(l.truck_paid, l.truck_required);
+                assert_eq!(
+                    s.logistics.unit_supply[&id].activity_water,
+                    WaterPoints::ZERO
+                );
+                assert_eq!(activity_water_due(content(), &s, &id).unwrap(), 0);
+                let paid = serde_json::to_value(&s).unwrap();
+                spend_activity_water(content(), &mut s, &id).unwrap();
+                assert_eq!(serde_json::to_value(&s).unwrap(), paid);
+                s.cursor.op_stage = Some(2);
+                assert_eq!(activity_water_due(content(), &s, &id).unwrap(), due);
+            }
+        }
+    }
+}
+
+/// Cases: land:4.46, airlog:49.12, airlog:49.13, airlog:52.42, airlog:52.43
+/// Interpretations: interp:units-0007, interp:airlog-0015
+#[test]
+fn eighteen_not_applicable_hqs_have_zero_body_and_pay_only_separate_trucks() {
+    let original = fixture(false);
+    let ids: Vec<_> = original
+        .land
+        .units
+        .values()
+        .filter(|u| content().units.units[&u.id].class.as_deref() == Some("cw.a"))
+        .map(|u| u.id.clone())
+        .collect();
+    assert_eq!(ids.len(), 18);
+    assert_eq!(
+        ids.iter()
+            .filter(|id| matches!(
+                original.land.units[*id].toe,
+                Some(Toe::Normal(cna_content::units::NormalToe::N))
+            ))
+            .count(),
+        17
+    );
+    assert_eq!(
+        ids.iter()
+            .filter(|id| original.land.units[*id].toe.is_none())
+            .count(),
+        1
+    );
+    for id in ids {
+        for toe in [
+            original.land.units[&id].toe.clone(),
+            None,
+            Some(Toe::Normal(cna_content::units::NormalToe::N)),
+        ] {
+            for hot in [false, true] {
+                for trucks in [
+                    Trucks::default(),
+                    Trucks {
+                        light: 2,
+                        medium: 1,
+                        heavy: 1,
+                    },
+                ] {
+                    let mut s = fixture(hot);
+                    let u = s.land.units.get_mut(&id).unwrap();
+                    u.toe = toe.clone();
+                    u.location = Location::Hex {
+                        hex: "C4020".into(),
+                    };
+                    u.trucks = trucks;
+                    u.transport_trucks = Trucks::default();
+                    s.logistics.rations.remove(&id);
+                    set_reserve(&mut s, id.as_str(), 0);
+                    let n = trucks.light + trucks.medium + trucks.heavy;
+                    let multiplier = if hot { 2 } else { 1 };
+                    let due = n * multiplier;
+                    assert_eq!(
+                        super::super::toe_strength(content(), &s.land.units[&id])
+                            .unwrap()
+                            .get(),
+                        0
+                    );
+                    assert_eq!(rations::activity_points(content(), &s, &id).unwrap(), n);
+                    assert_eq!(activity_water_due(content(), &s, &id).unwrap(), due);
+                    for quarters in [0, 1, 4, 28, 196, 396] {
+                        let cp = quarters / 4 + i32::from(quarters % 4 != 0);
+                        let expected = if cp == 0 {
+                            0
+                        } else {
+                            content()
+                                .tables
+                                .airlog
+                                .fuel_consumption
+                                .fuel_for(1, cp)
+                                .unwrap()
+                                .get()
+                                * n
+                        };
+                        assert_eq!(
+                            super::super::movement_fuel_cost(content(), &s, &id, quarters)
+                                .unwrap()
+                                .get(),
+                            expected
+                        );
+                    }
+                    let characteristics = &content().tables.airlog.truck_characteristics;
+                    let capacity = [
+                        (cna_tables::airlog::trucks::TruckType::Light, trucks.light),
+                        (cna_tables::airlog::trucks::TruckType::Medium, trucks.medium),
+                        (cna_tables::airlog::trucks::TruckType::Heavy, trucks.heavy),
+                    ]
+                    .into_iter()
+                    .map(|(kind, count)| {
+                        characteristics.truck(kind).fuel_capacity_points * count * 10
+                    })
+                    .sum::<i32>();
+                    assert_eq!(
+                        super::super::fuel_capacity(content(), &s, &id)
+                            .unwrap()
+                            .get(),
+                        capacity
+                    );
+                    if due > 0 {
+                        let dry = serde_json::to_value(&s).unwrap();
+                        assert_eq!(
+                            spend_activity_water(content(), &mut s, &id),
+                            Err(SupplyError::Insufficient)
+                        );
+                        assert_eq!(serde_json::to_value(&s).unwrap(), dry);
+                    }
+                    set_reserve(&mut s, id.as_str(), due);
+                    spend_activity_water(content(), &mut s, &id).unwrap();
+                    let ledger = s.logistics.rations[&id]
+                        .activity_water_ledger
+                        .as_ref()
+                        .unwrap();
+                    assert_eq!((ledger.body_required, ledger.body_paid), (0, 0));
+                    assert_eq!(
+                        ledger.truck_required,
+                        TruckWater {
+                            light: trucks.light * multiplier,
+                            medium: trucks.medium * multiplier,
+                            heavy: trucks.heavy * multiplier,
+                        }
+                    );
+                    assert_eq!(ledger.truck_paid, ledger.truck_required);
+                    assert_eq!(
+                        s.logistics.unit_supply[&id].activity_water,
+                        WaterPoints::ZERO
+                    );
+                    let paid = serde_json::to_value(&s).unwrap();
+                    spend_activity_water(content(), &mut s, &id).unwrap();
+                    assert_eq!(serde_json::to_value(&s).unwrap(), paid);
+                    s.cursor.op_stage = Some(2);
+                    assert_eq!(activity_water_due(content(), &s, &id).unwrap(), due);
+                }
+            }
+        }
+    }
+}
+
+/// Cases: airlog:52.41, airlog:52.42, land:4.46
+/// Interpretations: interp:units-0005, interp:units-0006
+#[test]
+fn numeric_hq_water_keeps_parenthesized_and_weapon_paths_and_rejects_invalid_strength() {
+    let mut s = fixture(false);
+    let id = s
+        .land
+        .units
+        .values()
+        .find(|u| content().units.units[&u.id].class.as_deref() == Some("it.g"))
+        .unwrap()
+        .id
+        .clone();
+    let maximum = rations::class(content(), &id).unwrap().max_toe.unwrap();
+    for toe in [
+        Toe::Under { under: -1 },
+        Toe::Under { under: maximum },
+        Toe::Over { over: maximum },
+    ] {
+        s.land.units.get_mut(&id).unwrap().toe = Some(toe);
+        let before = serde_json::to_value(&s).unwrap();
+        assert_eq!(
+            spend_activity_water(content(), &mut s, &id),
+            Err(SupplyError::Invalid)
+        );
+        assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    }
+    let weapon = content()
+        .units
+        .weapons
+        .values()
+        .find(|w| w.nation == "it" && w.kind == "gun")
+        .unwrap();
+    let u = s.land.units.get_mut(&id).unwrap();
+    u.toe = Some(Toe::Weapons(vec![cna_content::units::WeaponPoints {
+        weapon: weapon.id.clone(),
+        n: 2,
+    }]));
+    u.trucks = Trucks {
+        light: 1,
+        ..Trucks::default()
+    };
+    assert_eq!(
+        super::super::supply::house_rule_hq_strength(content(), u),
+        Ok(None)
+    );
+    assert_eq!(rations::activity_points(content(), &s, &id).unwrap(), 3);
+    let paren = s
+        .land
+        .units
+        .values()
+        .find(|u| {
+            rations::class(content(), &u.id)
+                .is_ok_and(|c| c.unit_type == "headquarters" && c.max_toe_paren)
+        })
+        .unwrap()
+        .id
+        .clone();
+    let u = s.land.units.get_mut(&paren).unwrap();
+    u.toe = Some(Toe::Normal(cna_content::units::NormalToe::N));
+    u.trucks = Trucks {
+        medium: 1,
+        ..Trucks::default()
+    };
+    assert_eq!(
+        super::super::supply::house_rule_hq_strength(content(), u),
+        Ok(None)
+    );
+    assert_eq!(rations::activity_points(content(), &s, &paren).unwrap(), 1);
 }
 
 /// Cases: land:21.25, land:21.29, airlog:52.42, airlog:52.43
