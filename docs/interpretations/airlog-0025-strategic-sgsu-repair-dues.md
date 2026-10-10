@@ -1,11 +1,11 @@
 # airlog-0025 - SGSU dues for strategic refit
 
 - **Cases:** airlog:35.14, airlog:38.32, airlog:48.0
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full, pending reviewed maintenance caller activation
 - **Decided by:** neo-sandtable (lead), 2026-10-09, Rules461 provisional implementation ruling
-- **Owner review:** pending NEXT consequential owner batch
-- **Implementation:** provisional reading authorized; no new dues payment or maintenance caller is implemented here
+- **Owner review:** reviewed 2026-10-10 by the owner (batch review 5)
+- **Implementation:** reading adopted by the owner (batch review 5, 2026-10-10); no new dues payment or maintenance caller is implemented here
 
 ## Question
 

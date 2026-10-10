@@ -1,11 +1,11 @@
 # airlog-0022 - Refit attempts and squadron Stores
 
 - **Cases:** airlog:35.23, airlog:38.23, airlog:38.33, airlog:38.34, airlog:38.35, airlog:38.36, airlog:36.5
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full, pending reviewed maintenance caller activation
 - **Decided by:** neo-sandtable (lead), 2026-10-09, Rules461 provisional implementation ruling
-- **Owner review:** pending NEXT consequential owner batch
-- **Implementation:** provisional reading authorized; this file implements the recorded decision, not a live maintenance procedure
+- **Owner review:** reviewed 2026-10-10 by the owner (batch review 5)
+- **Implementation:** reading adopted by the owner (batch review 5, 2026-10-10); this file implements the recorded decision, not a live maintenance procedure
 
 ## Question
 

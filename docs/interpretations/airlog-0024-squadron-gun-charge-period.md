@@ -1,11 +1,11 @@
 # airlog-0024 - Squadron gun loading charge per maintenance period
 
 - **Cases:** airlog:38.23, airlog:38.41, airlog:38.42, airlog:38.43, airlog:38.44, airlog:38.47
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full, pending reviewed maintenance caller activation
 - **Decided by:** neo-sandtable (lead), 2026-10-09, Rules461 provisional implementation ruling
-- **Owner review:** pending NEXT consequential owner batch
-- **Implementation:** provisional reading authorized; paid preparation admission/consumption remains a separate reviewed contract
+- **Owner review:** reviewed 2026-10-10 by the owner (batch review 5)
+- **Implementation:** reading adopted by the owner (batch review 5, 2026-10-10); paid preparation admission/consumption remains a separate reviewed contract
 
 ## Question
 

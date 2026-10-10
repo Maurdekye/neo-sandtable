@@ -1,11 +1,11 @@
 # airlog-0023 - Owning-player refit success priority
 
 - **Cases:** airlog:38.34, airlog:38.35, airlog:38.38, airlog:38.39
-- **Status:** proposed
+- **Status:** adopted
 - **Profile version:** cna-2021-dev; cna-2021-full, pending reviewed maintenance caller activation
 - **Decided by:** neo-sandtable (lead), 2026-10-09, Rules461 provisional implementation ruling
-- **Owner review:** pending NEXT consequential owner batch
-- **Implementation:** provisional reading authorized; live cohort/finish selection is not implemented by this document
+- **Owner review:** reviewed 2026-10-10 by the owner (batch review 5)
+- **Implementation:** reading adopted by the owner (batch review 5, 2026-10-10); live cohort/finish selection is not implemented by this document
 
 ## Question
 

@@ -1,10 +1,10 @@
 # land-0041 — Partial infantry carriage in breakdown accounting
 
 - **Cases:** land:8.92, land:8.95, land:21.43, land:21.45; airlog:54.2
-- **Status:** provisional — decided by neo-sandtable 2026-10-09 (lead reading m84413195a551, rulings m6a98c6d494ae)
+- **Status:** adopted
 - **Profile version:** cna-full-v1 / cna-dev-v1; invariant correction in BOTH profiles, not an optional variant
 - **Decided by:** neo-sandtable, 2026-10-09; lead reading m84413195a551 and exact rulings m6a98c6d494ae (Rules408 relay m4e4ff758acd7)
-- **Owner review:** pending next owner batch; lead-decided provisional interpretation, not owner-adopted
+- **Owner review:** reviewed 2026-10-10 by the owner (batch review 5)
 
 ## Question
 How should a valid infantry body with transport for only part of its strength survive a truck breakdown, without treating its walkers as passengers missing from a broken truck?
@@ -27,4 +27,4 @@ The all-strength requirement incorrectly made ordinary pre-existing walkers cons
 ## Affected behaviour and tests
 Owned baseline passenger selection, losses passenger validator and unresolved whole-point helper share E/W. Existing Land individual_allowance already gates truck CPA on sufficient total capacity; no Land change is needed. Nonignored tests cover partial carriage in an explicitly synthetic context, sufficient carriage, full/partial half-splits, source-unit conservation and malformed-passenger rejection without state mutation.
 
-0041 is RESERVED by lead m6a98c6d494ae. The lead reports current main highest0040 and no other scratch0041 outside rules-airlog; that is lead-attributed inventory, not a fresh remote query here. Later Land proposals use0042+. This file joins the next owner batch. Owner adoption remains pending; the provisional status is unchanged by engine implementation.
+0041 is RESERVED by lead m6a98c6d494ae. The lead reports current main highest0040 and no other scratch0041 outside rules-airlog; that is lead-attributed inventory, not a fresh remote query here. Later Land proposals use0042+. The owner adopted this reading in batch review 5 (2026-10-10).
