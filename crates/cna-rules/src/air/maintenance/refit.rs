@@ -11,7 +11,8 @@ use crate::air::{sgsu::{SgsuId, SgsuOpStage}, state::PlaneId};
 use crate::logistics::{SupplyDraw, SupplySource};
 
 /// Derived from the public cursor by the eventual caller, never an answer.
-/// Cases: airlog:38.23, airlog:38.33, interp:airlog-0022
+/// Cases: airlog:38.23, airlog:38.33
+/// Interpretations: interp:airlog-0022
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "period", rename_all = "snake_case")]
 pub enum MaintenancePeriod {
@@ -32,7 +33,8 @@ impl MaintenancePeriod {
     /// Names the existing SGSU dues receipt, without creating a new payment.
     /// Strategic callers supply the actual completed stage; no legacy credit
     /// or invented fourth OpStage is inferred from an absent receipt.
-    /// Cases: airlog:35.14, interp:airlog-0025
+    /// Cases: airlog:35.14
+    /// Interpretations: interp:airlog-0025
     pub fn dues_stage(self, last_completed: Option<SgsuOpStage>)
         -> Result<SgsuOpStage, EngineError>
     {
@@ -125,7 +127,8 @@ fn period_key(period: MaintenancePeriod) -> (u16, u8) {
 
 /// Structural receipts only: retained histories may name retired aircraft or
 /// dumps. Current source/side/site eligibility belongs to the actual finish.
-/// Cases: airlog:38.33, airlog:38.36, interp:airlog-0022
+/// Cases: airlog:38.33, airlog:38.36
+/// Interpretations: interp:airlog-0022
 pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
     let Some(period) = window.period else {
         return if window == &MaintenanceState::default() { Ok(()) }
@@ -171,7 +174,8 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
 /// Histories stay append-only; completed periods cannot be reopened or moved
 /// backward through the generic inventory callback. This is not an entitlement
 /// to create a receipt: the trusted finish derives every debit/outcome.
-/// Cases: airlog:38.33, airlog:38.36, interp:airlog-0022
+/// Cases: airlog:38.33, airlog:38.36
+/// Interpretations: interp:airlog-0022
 pub(crate) fn check_transition(old: &MaintenanceState, new: &MaintenanceState)
     -> Result<(), EngineError>
 {
@@ -210,7 +214,8 @@ pub struct RefitAccounting {
 /// The caller separately validates physical sites, nationality, assignments,
 /// dues, exemptions and stock; limits cannot originate in an answer.
 /// One global ID union spans ALL servicers, including unsuccessful attempts.
-/// Cases: airlog:38.33, airlog:38.36, interp:airlog-0022
+/// Cases: airlog:38.33, airlog:38.36
+/// Interpretations: interp:airlog-0022
 pub fn account_refit(
     period: MaintenancePeriod,
     previous: &[RefitReceipt],
@@ -283,7 +288,8 @@ fn include_cohort(
 
 /// Apply the predeclared priority to a trusted squadron success count. Per-plane
 /// mode uses its actual individual roll results instead; no default thresholds.
-/// Cases: airlog:38.34, interp:airlog-0023
+/// Cases: airlog:38.34
+/// Interpretations: interp:airlog-0023
 pub fn successful_ids(priority: &[PlaneId], count: u32)
     -> Result<BTreeSet<PlaneId>, EngineError>
 {

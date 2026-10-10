@@ -420,8 +420,8 @@ pub fn answer(content: &CnaContent, state: &mut State, pending: &Pending, action
 /// Whole-State plus disposable RNG commit. Validate both plans/allocations
 /// before rolling; any later inventory error leaves state/RNG/events unchanged.
 /// Resolved reentry returns before stock, RNG or receipt changes.
-/// Cases: airlog:35.14, airlog:38.33, airlog:38.34, airlog:38.36, interp:airlog-0022,
-/// interp:airlog-0023, interp:airlog-0025
+/// Cases: airlog:35.14, airlog:38.33, airlog:38.34, airlog:38.36
+/// Interpretations: interp:airlog-0022, interp:airlog-0023, interp:airlog-0025
 pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>)
     -> Result<(), EngineError>
 {

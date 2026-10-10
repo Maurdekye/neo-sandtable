@@ -231,7 +231,8 @@ fn respond_only_buffers_then_actual_finish_debits_rolls_and_checkpoints_once() {
     inventory::check(content(), &a.state.air).unwrap();
 }
 
-/// Cases: airlog:35.14, airlog:38.36, airlog:38.39, interp:airlog-0022
+/// Cases: airlog:35.14, airlog:38.36, airlog:38.39
+/// Interpretations: interp:airlog-0022
 #[test]
 fn wire_partition_cannot_add_squadron_rolls_or_stores_and_per_plane_uses_bound_rolls() {
     let game = opened(false); let whole = plan(&game.state, true);
@@ -294,7 +295,8 @@ fn late_stock_or_capacity_failure_preserves_whole_state_rng_and_events() {
         Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "scen:59.36"));
 }
 
-/// Cases: airlog:35.14, airlog:38.32, interp:airlog-0025
+/// Cases: airlog:35.14, airlog:38.32
+/// Interpretations: interp:airlog-0025
 #[test]
 fn strategic_requires_stage_three_and_cannot_use_stage_two_or_unknown_legacy_dues() {
     let mut game = opened(true);
@@ -318,7 +320,8 @@ fn strategic_requires_stage_three_and_cannot_use_stage_two_or_unknown_legacy_due
     assert_eq!(game.state.air.runtime.maintenance, old);
 }
 
-/// Cases: airlog:38.33, airlog:38.36, interp:airlog-0022
+/// Cases: airlog:38.33, airlog:38.36
+/// Interpretations: interp:airlog-0022
 #[test]
 fn actual_advance_dispatches_finish_and_period_history_cannot_be_reset_or_reopened() {
     let game = opened(false);

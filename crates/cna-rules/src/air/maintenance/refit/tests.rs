@@ -15,7 +15,8 @@ fn limits() -> BTreeMap<SgsuId, u32> {
     BTreeMap::from([(SgsuId("a".into()), 3), (SgsuId("b".into()), 3)])
 }
 
-/// Cases: airlog:38.33, airlog:38.36, interp:airlog-0022
+/// Cases: airlog:38.33, airlog:38.36
+/// Interpretations: interp:airlog-0022
 #[test]
 fn failed_attempts_consume_period_capacity_and_cannot_retry_at_another_servicer() {
     // Deliberately tiny trusted bound for accounting, not a printed SGSU rating.
@@ -38,7 +39,8 @@ fn failed_attempts_consume_period_capacity_and_cannot_retry_at_another_servicer(
     assert!(account_refit(next, &prior, &[cohort("a", "first", &["p1"])], &limits()).is_ok());
 }
 
-/// Cases: airlog:38.34, airlog:38.35, airlog:38.36, interp:airlog-0022
+/// Cases: airlog:38.34, airlog:38.35, airlog:38.36
+/// Interpretations: interp:airlog-0022
 #[test]
 fn nationality_partitions_share_one_squadron_store_and_split_is_exact_unsupported() {
     let partitions = vec![cohort("a", "mixed", &["p1"]), cohort("a", "mixed", &["p2"])];
@@ -56,7 +58,8 @@ fn nationality_partitions_share_one_squadron_store_and_split_is_exact_unsupporte
         .unwrap().newly_charged_squadrons.is_empty());
 }
 
-/// Cases: airlog:38.34, interp:airlog-0023
+/// Cases: airlog:38.34
+/// Interpretations: interp:airlog-0023
 #[test]
 fn success_priority_keeps_owner_order_and_rejects_duplicate_or_excess_results() {
     let priority = vec![PlaneId("z".into()), PlaneId("a".into()), PlaneId("m".into())];
@@ -74,7 +77,8 @@ fn success_priority_keeps_owner_order_and_rejects_duplicate_or_excess_results() 
         Err(EngineError::Invariant { .. })));
 }
 
-/// Cases: airlog:35.14, interp:airlog-0025
+/// Cases: airlog:35.14
+/// Interpretations: interp:airlog-0025
 #[test]
 fn strategic_dues_require_actual_completed_stage_without_a_fourth_or_legacy_credit() {
     let strategic = MaintenancePeriod::Strategic { game_turn: 2 };
