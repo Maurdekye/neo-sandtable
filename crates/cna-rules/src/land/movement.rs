@@ -691,8 +691,20 @@ fn run(
             let next = previous
                 .checked_add(cp)
                 .ok_or_else(|| illegal("CP expenditure overflow"))?;
-            let spent = logistics::spend_segment_fuel_report(content, state, id, next)
-                .map_err(|e| supply_error(e, strict))?;
+            let spent = if !truth {
+                if let Some(pricing) = planning_group.and_then(|g| g.query_fuel.as_ref()) {
+                    let prepared = pricing
+                        .iter()
+                        .find(|(unit, _)| unit == id)
+                        .and_then(|(_, prepared)| prepared.as_ref());
+                    logistics::spend_query_segment_fuel_report(content, state, id, next, prepared).1
+                } else {
+                    logistics::spend_segment_fuel_report(content, state, id, next)
+                }
+            } else {
+                logistics::spend_segment_fuel_report(content, state, id, next)
+            }
+            .map_err(|e| supply_error(e, strict))?;
             fuel = fuel
                 .checked_add(spent.increment.get())
                 .ok_or_else(|| illegal("fuel expenditure overflow"))?;
@@ -1448,6 +1460,8 @@ pub fn execute_nonphasing(
 // Search nodes contain only the fields `run(..., truth=false)` can change. One working
 // world is reused across edges; unrelated units, air state and decision schemas are not copied.
 struct PlanningGroup<'a> {
+    // None is the exact real/legacy path, with no preparation or query helper.
+    query_fuel: Option<Vec<(UnitId, Option<logistics::PreparedMovementFuel<'a>>)>>,
     members: &'a [UnitId],
     allowance: capability::Allowance,
     stacks: stacking::PlanningStacks<'a>,
@@ -1463,7 +1477,54 @@ impl PlanningGroup<'_> {
             .any(|h| self.enemy_positions.contains(&h.id))
     }
 }
+#[derive(Clone)]
+struct Step1PlanningHistorySnapshot {
+    entries: Vec<(
+        crate::logistics::cargo_history::CargoSite,
+        Option<crate::logistics::cargo_history::CargoHistory>,
+    )>,
+}
+
+impl Step1PlanningHistorySnapshot {
+    // `sites` must be the exact complete potentially-touched query write-set from
+    // the final Airlog contract, established before ANY branch exploration.
+    // A last successful edge's actual draws alone are not a complete write-set.
+    // Do not infer this roster from only the old stocks/dumps vectors: all-source
+    // withdrawals can retire Unit, Pool, Dump and AirDump histories.
+    fn capture(state: &State, sites: &[crate::logistics::cargo_history::CargoSite]) -> Self {
+        Self {
+            entries: sites
+                .iter()
+                .map(|site| {
+                    (
+                        site.clone(),
+                        state.logistics.cargo_history.histories.get(site).cloned(),
+                    )
+                })
+                .collect(),
+        }
+    }
+
+    fn restore(&self, state: &mut State) {
+        for (site, history) in &self.entries {
+            match history {
+                Some(history) => {
+                    state
+                        .logistics
+                        .cargo_history
+                        .histories
+                        .insert(site.clone(), history.clone());
+                }
+                None => {
+                    state.logistics.cargo_history.histories.remove(site);
+                }
+            }
+        }
+    }
+}
+
 struct PlanningNode {
+    cargo_histories: Step1PlanningHistorySnapshot,
     fuel_accounts: logistics::FuelAccountSnapshot,
     units: Vec<crate::state::LandUnit>,
     unit_supply: Vec<(UnitId, Option<crate::state::UnitSupply>)>,
@@ -1473,8 +1534,15 @@ struct PlanningNode {
     movement: MovementState,
 }
 impl PlanningNode {
-    fn capture(state: &State, changed: &[UnitId], stocks: &[UnitId], dumps: &[String]) -> Self {
+    fn capture(
+        state: &State,
+        changed: &[UnitId],
+        stocks: &[UnitId],
+        dumps: &[String],
+        histories: &[logistics::cargo_history::CargoSite],
+    ) -> Self {
         Self {
+            cargo_histories: Step1PlanningHistorySnapshot::capture(state, histories),
             fuel_accounts: logistics::snapshot_fuel_accounts(state, changed),
             units: changed
                 .iter()
@@ -1500,6 +1568,7 @@ impl PlanningNode {
         }
     }
     fn restore(&self, state: &mut State) {
+        self.cargo_histories.restore(state);
         logistics::restore_fuel_accounts(state, &self.fuel_accounts);
         for unit in &self.units {
             state.land.units.insert(unit.id.clone(), unit.clone());
@@ -1663,7 +1732,20 @@ fn reachable_inner(
         return vec![];
     };
     let base = draft.clone();
+    // Immutable pricing prepared after original eligibility/group checks.
+    // Full current all-source access/funding remains inside each actual spend.
+    let query_fuel = members
+        .iter()
+        .map(|member| {
+            (
+                member.clone(),
+                logistics::PreparedMovementFuel::new(content, &draft, member),
+            )
+        })
+        .collect();
+    let histories = logistics::query_withdrawal_history_sites(&draft.logistics);
     let group = PlanningGroup {
+        query_fuel: Some(query_fuel),
         members: &members,
         allowance,
         stacks: stacking::PlanningStacks::new(content, &base, seat.side, &members, &origin),
@@ -1766,7 +1848,7 @@ fn reachable_inner(
         .collect::<Vec<_>>();
     let mut frontier = BTreeMap::from([(
         origin.clone(),
-        PlanningNode::capture(&draft, &changed, &stocks, &dumps),
+        PlanningNode::capture(&draft, &changed, &stocks, &dumps, &histories),
     )]);
     while let Some((cost, hex)) = queue.pop_first() {
         if hex != origin && best.get(&hex).is_none_or(|r| r.cp_quarters != cost) {
@@ -1864,7 +1946,7 @@ fn reachable_inner(
                     queue.insert((r.cp_quarters, to.id.clone()));
                     frontier.insert(
                         to.id.clone(),
-                        PlanningNode::capture(&draft, &changed, &stocks, &dumps),
+                        PlanningNode::capture(&draft, &changed, &stocks, &dumps, &histories),
                     );
                     best.insert(to.id.clone(), r);
                 }
@@ -1877,3 +1959,437 @@ fn reachable_inner(
 #[cfg(test)]
 #[path = "movement_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+struct LegacyStep1PlanningNode {
+    fuel_accounts: logistics::FuelAccountSnapshot,
+    units: Vec<crate::state::LandUnit>,
+    unit_supply: Vec<(UnitId, Option<crate::state::UnitSupply>)>,
+    dumps: Vec<(String, crate::state::Dump)>,
+    fuel_segments: Vec<(UnitId, Option<logistics::FuelSegmentLedger>)>,
+    rations: Vec<(UnitId, Option<logistics::Rations>)>,
+    movement: MovementState,
+}
+#[cfg(test)]
+impl LegacyStep1PlanningNode {
+    fn capture(state: &State, changed: &[UnitId], stocks: &[UnitId], dumps: &[String]) -> Self {
+        Self {
+            fuel_accounts: logistics::snapshot_fuel_accounts(state, changed),
+            units: changed
+                .iter()
+                .filter_map(|id| state.land.units.get(id).cloned())
+                .collect(),
+            unit_supply: stocks
+                .iter()
+                .map(|id| (id.clone(), state.logistics.unit_supply.get(id).cloned()))
+                .collect(),
+            dumps: dumps
+                .iter()
+                .map(|id| (id.clone(), state.logistics.dumps[id].clone()))
+                .collect(),
+            fuel_segments: changed
+                .iter()
+                .map(|id| (id.clone(), state.logistics.fuel_segments.get(id).cloned()))
+                .collect(),
+            rations: changed
+                .iter()
+                .map(|id| (id.clone(), state.logistics.rations.get(id).cloned()))
+                .collect(),
+            movement: state.land.movement.clone(),
+        }
+    }
+    fn restore(&self, state: &mut State) {
+        logistics::restore_fuel_accounts(state, &self.fuel_accounts);
+        for unit in &self.units {
+            state.land.units.insert(unit.id.clone(), unit.clone());
+        }
+        for (id, stock) in &self.unit_supply {
+            match stock {
+                Some(stock) => {
+                    state
+                        .logistics
+                        .unit_supply
+                        .insert(id.clone(), stock.clone());
+                }
+                None => {
+                    state.logistics.unit_supply.remove(id);
+                }
+            }
+        }
+        for (id, dump) in &self.dumps {
+            state.logistics.dumps.insert(id.clone(), dump.clone());
+        }
+        for (id, ledger) in &self.fuel_segments {
+            match ledger {
+                Some(ledger) => {
+                    state
+                        .logistics
+                        .fuel_segments
+                        .insert(id.clone(), ledger.clone());
+                }
+                None => {
+                    state.logistics.fuel_segments.remove(id);
+                }
+            }
+        }
+        for (id, rations) in &self.rations {
+            match rations {
+                Some(rations) => {
+                    state.logistics.rations.insert(id.clone(), rations.clone());
+                }
+                None => {
+                    state.logistics.rations.remove(id);
+                }
+            }
+        }
+        state.land.movement.clone_from(&self.movement);
+    }
+}
+#[cfg(test)]
+fn reachable_inner_legacy_for_step1(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Vec<Reachable> {
+    let Some(unit) = state.land.units.get(id) else {
+        return vec![];
+    };
+    let seat = SeatId::new(unit.side, ownership::seat_for_unit(content, state, id));
+    if (state.land.movement.mode == WindowMode::Segment
+        && state.cursor.anchor() != "opstage.movement_and_combat.movement")
+        || (state.land.movement.mode == WindowMode::Segment
+            && state.cursor.phasing(state.turn.player_a) != Some(unit.side))
+        || !eligible(content, state, id, seat)
+    {
+        return vec![];
+    }
+    let moving = state
+        .land
+        .reaction
+        .continuation
+        .as_ref()
+        .filter(|_| continuing(state, id))
+        .map_or_else(
+            || formation::members(content, state, id),
+            |k| k.members.clone(),
+        );
+    let Some(allowance) = moving
+        .iter()
+        .filter_map(|m| formation::individual_allowance(content, state, m))
+        .min_by_key(|a| a.cpa)
+    else {
+        return vec![];
+    };
+    // Every entered edge costs at least one quarter CP. Do not search a graph when even
+    // that lower bound is impossible for a represented member or its fuel holdings.
+    for member in &moving {
+        if moving_limits(content, state, member, strict)
+            .and_then(|limit| {
+                validate_window_cp(state, &state.land.units[member], allowance, 1, limit)
+            })
+            .is_err()
+        {
+            return vec![];
+        }
+        let previous = state
+            .logistics
+            .fuel_segments
+            .get(member)
+            .filter(|ledger| {
+                ledger.segment.game_turn == state.cursor.game_turn
+                    && ledger.segment.op_stage == state.cursor.op_stage
+                    && ledger.segment.half == state.cursor.half
+                    && ledger.segment.cycle == state.cursor.cycle
+            })
+            .map_or(0, |ledger| ledger.cp_quarters);
+        if previous
+            .checked_add(1)
+            .is_none_or(|next| logistics::plan_segment_fuel(content, state, member, next).is_err())
+        {
+            return vec![];
+        }
+    }
+    let origin = unit.location.hex().unwrap().clone();
+    let initial_cp = unit.cp_spent_quarters;
+    let mut best: BTreeMap<HexId, Reachable> = BTreeMap::new();
+    let mut queue = BTreeSet::from([(0i32, origin.clone())]);
+    let mut changed = moving;
+    if let Some(parent) = ownership::parent_for_unit(content, state, id) {
+        changed.push(parent.clone());
+    }
+    let mut draft = state.clone();
+    let Ok(members) = unit_stack(
+        content,
+        &mut draft,
+        &Order {
+            unit: id.clone(),
+            path: vec![],
+            with_stack: state
+                .land
+                .reaction
+                .continuation
+                .as_ref()
+                .filter(|_| continuing(state, id))
+                .is_some_and(|k| k.with_stack),
+            close_assault: vec![],
+        },
+        seat,
+        strict,
+    ) else {
+        return vec![];
+    };
+    let Ok(limits) = members
+        .iter()
+        .map(|id| moving_limits(content, &draft, id, strict))
+        .collect::<Result<Vec<_>, _>>()
+    else {
+        return vec![];
+    };
+    let base = draft.clone();
+    let group = PlanningGroup {
+        query_fuel: None,
+        members: &members,
+        allowance,
+        stacks: stacking::PlanningStacks::new(content, &base, seat.side, &members, &origin),
+        limits,
+        enemy_positions: state
+            .stacks()
+            .into_keys()
+            .filter(|(_, side)| *side == seat.side.opponent())
+            .map(|(h, _)| h)
+            .collect(),
+    };
+    // Fuel can debit the current members' tanks and friendly stocks at each captured
+    // segment origin. Activity water changes members and a stationary detached parent.
+    // These source identities are query-local; no other holding can change in this search.
+    let mut origins: BTreeSet<_> = members
+        .iter()
+        .map(|m| {
+            state
+                .logistics
+                .fuel_segments
+                .get(m)
+                .filter(|l| {
+                    l.segment.game_turn == state.cursor.game_turn
+                        && l.segment.op_stage == state.cursor.op_stage
+                        && l.segment.half == state.cursor.half
+                        && l.segment.cycle == state.cursor.cycle
+                })
+                .and_then(|l| l.origin.hex())
+                .cloned()
+                .unwrap_or_else(|| origin.clone())
+        })
+        .collect();
+    // Incoming physical cohorts retain their original funding account and sources.
+    // Restore both credit and the corresponding holdings when exploring another branch.
+    let accounts: BTreeSet<_> = members
+        .iter()
+        .flat_map(|id| {
+            state
+                .logistics
+                .fuel_segments
+                .get(id)
+                .into_iter()
+                .flat_map(|l| {
+                    std::iter::once(id.clone()).chain(l.cohorts.iter().map(|g| g.account.clone()))
+                })
+        })
+        .collect();
+    for account in accounts
+        .iter()
+        .filter_map(|id| state.logistics.fuel_accounts.get(id))
+    {
+        if let Some(hex) = account.origin.hex() {
+            origins.insert(hex.clone());
+        }
+    }
+    let mut stocks: BTreeSet<_> = changed.iter().cloned().collect();
+    stocks.extend(accounts.iter().cloned());
+    stocks.extend(
+        state
+            .units_of(seat.side)
+            .filter(|u| u.location.hex().is_some_and(|h| origins.contains(h)))
+            .map(|u| u.id.clone()),
+    );
+    let mut dumps:BTreeSet<_>=state.logistics.dumps.iter().filter(|(_,d)|d.side==seat.side&&matches!(&d.location,crate::state::DumpLocation::Hex{hex} if origins.contains(hex))).map(|(id,_)|id.clone()).collect();
+    for id in &members {
+        if let Some(l) = state.logistics.fuel_segments.get(id) {
+            for draw in &l.draws {
+                match &draw.source {
+                    logistics::SupplySource::UnitStock(id) => {
+                        stocks.insert(id.clone());
+                    }
+                    logistics::SupplySource::Dump(id) => {
+                        dumps.insert(id.clone());
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    for account in accounts
+        .iter()
+        .filter_map(|id| state.logistics.fuel_accounts.get(id))
+    {
+        for draw in &account.draws {
+            match &draw.source {
+                logistics::SupplySource::UnitStock(id) => {
+                    stocks.insert(id.clone());
+                }
+                logistics::SupplySource::Dump(id) => {
+                    dumps.insert(id.clone());
+                }
+                _ => {}
+            }
+        }
+    }
+    let stocks = stocks.into_iter().collect::<Vec<_>>();
+    let dumps = dumps
+        .into_iter()
+        .filter(|id| state.logistics.dumps.contains_key(id))
+        .collect::<Vec<_>>();
+    let mut frontier = BTreeMap::from([(
+        origin.clone(),
+        LegacyStep1PlanningNode::capture(&draft, &changed, &stocks, &dumps),
+    )]);
+    while let Some((cost, hex)) = queue.pop_first() {
+        if hex != origin && best.get(&hex).is_none_or(|r| r.cp_quarters != cost) {
+            continue;
+        }
+        let Some(node) = frontier.remove(&hex) else {
+            continue;
+        };
+        node.restore(&mut draft);
+        if group
+            .members
+            .iter()
+            .zip(&group.limits)
+            .any(|(member, limit)| {
+                validate_window_cp(
+                    &draft,
+                    &draft.land.units[member],
+                    group.allowance,
+                    1,
+                    *limit,
+                )
+                .is_err()
+            })
+        {
+            continue;
+        }
+        if hex != origin
+            && group
+                .members
+                .iter()
+                .any(|id| draft.land.units[id].reserve.status == super::reserve::Status::First)
+        {
+            continue;
+        }
+        let prior = best.get(&hex).cloned();
+        if prior.as_ref().is_some_and(|r| {
+            r.control_unknown
+                || (state.land.movement.controls.get(&hex) == Some(&true)
+                    && effective_control(
+                        content,
+                        &draft,
+                        seat.side,
+                        &hex,
+                        &formation::members(content, &draft, id),
+                        true,
+                    ))
+        }) {
+            continue;
+        }
+        for to in content.map.neighbors(&hex) {
+            if to.id == origin
+                || best
+                    .get(&to.id)
+                    .is_some_and(|r| r.cp_quarters <= cost.saturating_add(1))
+                || map::terrain(content, &to.id, strict).is_err()
+            {
+                continue;
+            }
+            node.restore(&mut draft);
+            if let Ok(mut r) = run(
+                content,
+                &mut draft,
+                &Order {
+                    unit: id.clone(),
+                    path: vec![to.id.clone()],
+                    with_stack: state
+                        .land
+                        .reaction
+                        .continuation
+                        .as_ref()
+                        .filter(|_| continuing(state, id))
+                        .is_some_and(|k| k.with_stack),
+                    close_assault: vec![],
+                },
+                seat,
+                strict,
+                false,
+                false,
+                &mut Vec::new(),
+                Some(&group),
+            ) {
+                let mut path = prior.as_ref().map_or_else(Vec::new, |p| p.path.clone());
+                path.extend(r.path);
+                r.path = path;
+                r.cp_quarters = draft.land.units[id].cp_spent_quarters - initial_cp;
+                r.fuel_tenths += prior.as_ref().map_or(0, |p| p.fuel_tenths);
+                r.control_unknown |= prior.as_ref().is_some_and(|p| p.control_unknown);
+                if best
+                    .get(&to.id)
+                    .is_none_or(|old| r.cp_quarters < old.cp_quarters)
+                {
+                    for member in formation::members(content, &draft, id) {
+                        draft.land.movement.moved.remove(&member);
+                    }
+                    queue.insert((r.cp_quarters, to.id.clone()));
+                    frontier.insert(
+                        to.id.clone(),
+                        LegacyStep1PlanningNode::capture(&draft, &changed, &stocks, &dumps),
+                    );
+                    best.insert(to.id.clone(), r);
+                }
+            }
+        }
+    }
+    best.into_values().filter(|r| r.end_valid).collect()
+}
+#[cfg(test)]
+pub(crate) fn reachable_legacy_for_step1(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Vec<Reachable> {
+    if state.land.movement.mode == WindowMode::Segment
+        && state
+            .land
+            .reaction
+            .window
+            .as_ref()
+            .is_some_and(|w| w.eligible.contains(id) && !w.reacted.contains(id))
+    {
+        return nonphasing_reachable_legacy_for_step1(
+            content,
+            state,
+            id,
+            strict,
+            NonPhasingMove::Reaction,
+        );
+    }
+    reachable_inner_legacy_for_step1(content, state, id, strict)
+}
+#[cfg(test)]
+pub(crate) fn nonphasing_reachable_legacy_for_step1(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    strict: bool,
+    kind: NonPhasingMove,
+) -> Vec<Reachable> {
+    reachable_inner_legacy_for_step1(c, &nonphasing_draft(s, kind), id, strict)
+}

@@ -1240,3 +1240,166 @@ pub(crate) fn inspect(
     }
     Err(hidden())
 }
+
+#[cfg(test)]
+pub(crate) fn inspect_legacy_for_step1(
+    content: &CnaContent,
+    state: &State,
+    perspective: Perspective,
+    target: &str,
+    strict: bool,
+) -> Result<Value, Rejection> {
+    let hidden = || illegal(format!("{target}: unknown or not visible"));
+    let face_only = "printed face only: what the counter contains is not visible (land:3.62)";
+    if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
+        if !sees_side(perspective, unit.side) {
+            // An enemy counter on the map shows its face; anything else about enemy units,
+            // including whether an attached unit exists, is answered like an unknown id.
+            if is_map_counter(content, state, unit) {
+                return Ok(json!({ "unit": counter_face(content, unit), "visibility": face_only }));
+            }
+            return Err(hidden());
+        }
+        let view = unit_view(content, unit);
+        return Ok(json!({
+            "unit": view,
+            "reachable": if state.cursor.anchor()==crate::land::combat::retreat::ANCHOR {
+                crate::land::combat::retreat::reachable_legacy_for_step1(content,state,&unit.id,strict)
+            } else {crate::land::movement::reachable_legacy_for_step1(content,state,&unit.id,strict)},
+            "fuel_truck_cohorts": crate::logistics::segment_fuel_cohorts(state,&unit.id).ok(),
+            "reaction_cpa_options": state.land.reaction.window.as_ref().and_then(|w|w.cpa_options.get(&unit.id)),
+            "reaction_division_paths": crate::land::reaction::plans_legacy_for_step1(content,state,&unit.id,strict),
+            "retreated_before_assault": state.land.combat.retreat.retreated.contains(&unit.id),
+            "movement_allowance": crate::land::formation::allowance(content,state,&unit.id).map(|a| json!({"cpa":a.cpa,"motorized":a.motorized})),
+            "command_role": crate::ownership::seat_for_unit(content,state,&unit.id),
+            "gun_position": state.land.combat.positions.get(&unit.id),
+            "moved_this_segment": state.land.movement.moved.contains(&unit.id),
+            "repeat_movement_allowed": crate::land::cycles::movement_allowed(state, &unit.id),
+            "reserve": unit.reserve,
+            "engaged": unit.engaged,
+            "unresolved_embarked":state.land.breakdown.unresolved_passengers.get(&unit.id),
+            "breakdown_points_quarters":state.land.breakdown.accumulated_quarters.get(&unit.id).copied().unwrap_or(0),
+            "light_truck_extra_breakdown_quarters":state.land.breakdown.light_extra_quarters.get(&unit.id).copied().unwrap_or(0),
+            "assault_intentions": state.land.assault_intentions.get(&unit.id),
+            "movement_restrictions": crate::land::formation::members(content,state,&unit.id).into_iter().map(|id| {
+                let assessment=crate::logistics::movement_restrictions(content,state,&id).map(|r|json!({
+                    "may_move":r.may_move,"may_exceed_cpa":r.may_exceed_cpa,"may_enter_enemy_zoc":r.may_enter_enemy_zoc,
+                })).unwrap_or_else(|e|match e {
+                    crate::logistics::SupplyError::Unsupported {case}=>json!({"assessment_error":"Water requirement is unknown.","case":case}),
+                    _=>json!({"assessment_error":"Water requirement could not be assessed."}),
+                });
+                json!({"unit":id,"restrictions":assessment})
+            }).collect::<Vec<_>>(),
+            "location": unit.location,
+            "transit": crate::land::offmap::transit_for_unit(state, &unit.id),
+            "setup_destination": state.setup.unit_locations.get(&unit.id),
+            "attached_to": unit.attached_to,
+            "assigned_to": crate::ownership::assigned_parent_for_unit(content,state,&unit.id),
+            "trucks": unit.trucks,
+            "box_handling": unit.box_handling,
+            "box_movement_block": crate::logistics::box_handling::blocks_movement(state,&crate::logistics::box_handling::Carrier::Unit(unit.id.clone())),
+            "toe": format!("{:?}", unit.toe),
+            "rations": state.logistics.rations.get(&unit.id).cloned().unwrap_or_default(),
+            "supplies": state.logistics.unit_supply.get(&unit.id).cloned().unwrap_or_default(),
+        }));
+    }
+    if let Some(ship) = state.logistics.coastal_ships.get(target) {
+        if !sees_side(perspective, Side::Axis) {
+            return Err(hidden());
+        }
+        return Ok(json!({"coastal_ship": ship, "id":target,
+            "capacity_tons":content.units.coastal_ships.get(target).and_then(|s|s.capacity_tons)}));
+    }
+    if let Some(squadron) = state.air.squadrons.get(target) {
+        if !sees_side(perspective, squadron.side) {
+            return Err(hidden());
+        }
+        return Ok(json!({"squadron":squadron,
+            "designation":{"game_turn":state.cursor.game_turn,
+                "family":crate::air::designation::squadron_family(state,target)}}));
+    }
+    if let Some(marker) = state.land.breakdown.markers.get(target) {
+        if !sees_side(perspective, marker.side) {
+            return Ok(json!({ "unit": marker_face(marker), "visibility": face_only }));
+        }
+        return Ok(json!({"broken_vehicles":marker}));
+    }
+    if let Some(pool) = state.logistics.truck_pools.iter().find(|p| p.id == target) {
+        if !sees_side(perspective, pool.side) {
+            return Err(hidden());
+        }
+        // Identity/privacy is checked before any convoy history or source query.
+        let movement =
+            crate::logistics::truck_convoy::own_report(content, state, pool.side, &pool.id)?;
+        return Ok(json!({"truck_pool":pool,
+            "setup_destination":state.setup.pool_locations.get(&pool.id),
+            "convoy_movement":movement}));
+    }
+    if let Some(dump) = state
+        .logistics
+        .dumps
+        .values()
+        .find(|d| !d.marker.is_empty() && d.marker == target)
+    {
+        if sees_side(perspective, dump.side) {
+            return Ok(
+                json!({"dump":dump, "setup_destination":state.setup.dump_locations.get(&dump.id)}),
+            );
+        }
+        if let Some(marker) = crate::logistics::dump_markers::marker(dump, perspective) {
+            return Ok(json!({"marker":marker}));
+        }
+        return Err(hidden());
+    }
+    if let Some(dump) = state.logistics.dumps.get(target) {
+        if !sees_side(perspective, dump.side) {
+            return Err(hidden());
+        }
+        return Ok(
+            json!({ "dump": dump, "setup_destination": state.setup.dump_locations.get(&dump.id) }),
+        );
+    }
+    let hex = HexId::new(target);
+    if let Some(canonical) = content.map.canonical(&hex) {
+        let record = content.map.get(canonical);
+        let mut stacks = Vec::new();
+        for ((h, side), members) in state.stacks() {
+            if &h != canonical {
+                continue;
+            }
+            if sees_side(perspective, side) {
+                stacks.push(json!({
+                    "side": side,
+                    "broken_vehicles":state.land.breakdown.markers.values().filter(|m|m.side==side&&&m.hex==canonical).collect::<Vec<_>>(),
+                    "units": members.iter().map(|u| unit_view(content, u)).collect::<Vec<_>>(),
+                }));
+            } else {
+                let mut counters: Vec<wire::UnitView> = members
+                    .iter()
+                    .filter(|u| is_map_counter(content, state, u))
+                    .map(|u| counter_face(content, u))
+                    .collect();
+                counters.extend(
+                    state
+                        .land
+                        .breakdown
+                        .markers
+                        .values()
+                        .filter(|m| m.side == side && &m.hex == canonical)
+                        .map(marker_face),
+                );
+                counters.sort_by(|a, b| a.id.cmp(&b.id));
+                stacks.push(json!({ "side": side, "counters": counters, "visibility": face_only }));
+            }
+        }
+        return Ok(json!({
+            "hex": canonical,
+            // Cases: airlog:52.14, airlog:52.16
+            "well": crate::logistics::wells::condition(state,canonical,perspective),
+            "terrain": record.and_then(|r| r.terrain.clone()),
+            "flags": record.map(|r| r.flags.clone()).unwrap_or_default(),
+            "stacks": stacks,
+        }));
+    }
+    Err(hidden())
+}

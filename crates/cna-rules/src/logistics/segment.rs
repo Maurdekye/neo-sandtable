@@ -472,6 +472,22 @@ pub(super) fn cohort_costs<A: Clone + Ord>(
     total_cp_quarters: i32,
     body_increment: i32,
 ) -> Result<BTreeMap<A, i32>, SupplyError> {
+    cohort_costs_with_chart(
+        |cp| chart(content, cp),
+        ledger,
+        id,
+        total_cp_quarters,
+        body_increment,
+    )
+}
+
+fn cohort_costs_with_chart<A: Clone + Ord>(
+    mut price_chart: impl FnMut(i32) -> Result<i32, SupplyError>,
+    ledger: &mut FuelSegmentLedger<A>,
+    id: &A,
+    total_cp_quarters: i32,
+    body_increment: i32,
+) -> Result<BTreeMap<A, i32>, SupplyError> {
     let delta = total_cp_quarters
         .checked_sub(ledger.cp_quarters)
         .filter(|n| *n >= 0)
@@ -483,7 +499,7 @@ pub(super) fn cohort_costs<A: Clone + Ord>(
     for cohort in &mut ledger.cohorts {
         let next = add(cohort.cp_quarters, delta)?;
         let increase = mul(
-            chart(content, next)? - chart(content, cohort.cp_quarters)?,
+            price_chart(next)? - price_chart(cohort.cp_quarters)?,
             cohort.count,
         )?;
         if increase < 0 {
@@ -922,3 +938,125 @@ pub fn remove_selected_segment_fuel_cohorts(
 
 #[cfg(test)]
 mod tests;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum QueryFuelPath {
+    Legacy,
+    PreparedAllSources,
+}
+
+fn plan_query_segment_fuel(
+    pricing: &super::supply::PreparedMovementFuel<'_>,
+    state: &State,
+    id: &UnitId,
+    total_cp_quarters: i32,
+) -> Result<SegmentFuelPlan, SupplyError> {
+    let content = pricing.content();
+    let mut ledger = ledger_for(state, id)?;
+    let before_body = pricing.body_cost(state, ledger.cp_quarters)?;
+    let after_body = pricing.body_cost(state, total_cp_quarters)?;
+    let body_increment = after_body
+        .checked_sub(before_body)
+        .filter(|n| *n >= 0)
+        .ok_or(SupplyError::Invalid)?;
+    let costs = cohort_costs_with_chart(
+        |cp| pricing.chart(cp),
+        &mut ledger,
+        id,
+        total_cp_quarters,
+        body_increment,
+    )?;
+    // Original full planning, ALL funding accounts/sources, credit-first ordered
+    // selection, source validity/access, used balances and canonical draw totals.
+    // No account/origin/cohort/Tank certificate or cache of moving source access.
+    fund_plan(
+        ledger,
+        total_cp_quarters,
+        costs,
+        |account_id, ledger| {
+            if account_id == id {
+                own_account(state, id, ledger)
+            } else {
+                account_for(state, account_id, ledger)
+            }
+        },
+        |account, used| capacities(content, state, id, account, used),
+    )
+}
+
+fn commit_query_fuel_plan(
+    state: &mut State,
+    id: &UnitId,
+    plan: SegmentFuelPlan,
+) -> Result<SegmentFuelSpent, SupplyError> {
+    if plan.increment.is_zero() {
+        // Exactly the old ledger-only write; no account/source/overlay/withdrawal.
+        state
+            .logistics
+            .fuel_segments
+            .insert(id.clone(), plan.ledger);
+        return Ok(SegmentFuelSpent {
+            increment: plan.increment,
+            draws: plan.draws,
+        });
+    }
+    // Base is the COMPLETE actual current LogisticsState, not sparse defaults.
+    // Writes are copied on first mutation and visible to later accounts in this
+    // same transaction. Error drops ALL staged stock/history changes.
+    let mut overlay = super::supply::WithdrawalOverlay::new(&state.logistics);
+    for funding in &plan.funding {
+        super::supply::withdraw_into_state(
+            &mut overlay,
+            Some(id),
+            SupplyDemand {
+                fuel: funding.increment,
+                ..SupplyDemand::default()
+            },
+            &funding.draws,
+            &funding.sources,
+            &funding.prior,
+        )?;
+    }
+    let writes = overlay.finish();
+    // The private writes cannot escape this synchronous function. No callback,
+    // node restore, or State change between their original base and application.
+    writes.apply(&mut state.logistics);
+    for funding in plan.funding {
+        state
+            .logistics
+            .fuel_accounts
+            .insert(funding.id, funding.account);
+    }
+    state
+        .logistics
+        .fuel_segments
+        .insert(id.clone(), plan.ledger);
+    Ok(SegmentFuelSpent {
+        increment: plan.increment,
+        draws: plan.draws,
+    })
+}
+
+// Land's exact reviewed truth=false query route ONLY. Real spending and a missing
+// or changed prepared dependency use the unchanged spend_segment_fuel_report.
+/// Cases: airlog:49.13, airlog:49.15, airlog:49.16, airlog:53.25
+/// Interpretations: interp:airlog-0001, interp:airlog-0018, interp:airlog-0020
+pub(crate) fn spend_query_segment_fuel_report(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    total_cp_quarters: i32,
+    prepared: Option<&super::supply::PreparedMovementFuel<'_>>,
+) -> (QueryFuelPath, Result<SegmentFuelSpent, SupplyError>) {
+    let Some(pricing) =
+        prepared.filter(|p| p.id() == id && std::ptr::eq(p.content(), content) && p.matches(state))
+    else {
+        return (
+            QueryFuelPath::Legacy,
+            spend_segment_fuel_report(content, state, id, total_cp_quarters),
+        );
+    };
+    let result = plan_query_segment_fuel(pricing, state, id, total_cp_quarters)
+        .and_then(|plan| commit_query_fuel_plan(state, id, plan));
+    (QueryFuelPath::PreparedAllSources, result)
+}

@@ -503,6 +503,17 @@ pub(super) fn withdraw_into(
     sources: &BTreeMap<SupplySource, SupplyDemand>,
     prior: &BTreeMap<SupplySource, FuelTenths>,
 ) -> Result<(), SupplyError> {
+    withdraw_into_state(next, unit_id, demand, draws, sources, prior)
+}
+
+pub(super) fn withdraw_into_state(
+    next: &mut impl WithdrawalState,
+    unit_id: Option<&UnitId>,
+    demand: SupplyDemand,
+    draws: &[SupplyDraw],
+    sources: &BTreeMap<SupplySource, SupplyDemand>,
+    prior: &BTreeMap<SupplySource, FuelTenths>,
+) -> Result<(), SupplyError> {
     if !demand.valid() {
         return Err(SupplyError::Invalid);
     }
@@ -533,8 +544,7 @@ pub(super) fn withdraw_into(
         match source {
             SupplySource::Unlimited => {}
             SupplySource::Tank => {
-                next.unit_supply
-                    .get_mut(unit_id.ok_or(SupplyError::Invalid)?)
+                next.unit_supply_mut(unit_id.ok_or(SupplyError::Invalid)?)
                     .ok_or(SupplyError::Invalid)?
                     .tank_fuel -= amount.fuel
             }
@@ -542,11 +552,7 @@ pub(super) fn withdraw_into(
                 if !amount.ammo.is_zero() || !amount.stores.is_zero() || !amount.water.is_zero() {
                     return Err(SupplyError::Invalid);
                 }
-                let pool = next
-                    .truck_pools
-                    .iter_mut()
-                    .find(|p| p.id == id)
-                    .ok_or(SupplyError::Invalid)?;
+                let pool = next.pool_mut(&id).ok_or(SupplyError::Invalid)?;
                 pool.tank_fuel = FuelTenths::new(
                     pool.tank_fuel
                         .get()
@@ -556,14 +562,13 @@ pub(super) fn withdraw_into(
                 );
             }
             SupplySource::ReadyAmmo => {
-                next.unit_supply
-                    .get_mut(unit_id.ok_or(SupplyError::Invalid)?)
+                next.unit_supply_mut(unit_id.ok_or(SupplyError::Invalid)?)
                     .ok_or(SupplyError::Invalid)?
                     .ready_ammo -= amount.ammo
             }
             source => {
                 if let SupplySource::AirDump(id) = &source
-                    && !next.air_dumps.get(id).is_some_and(|d| &d.id == id)
+                    && !next.air_dump_matches(id)
                 {
                     return Err(SupplyError::Invalid);
                 }
@@ -575,8 +580,7 @@ pub(super) fn withdraw_into(
                         .ok_or(SupplyError::Invalid)?,
                 );
                 let withdrawal = after.ceil_points() - before.ceil_points();
-                // Rounded fuel already paid for remains usable after its old source
-                // leaves the origin or changes hands. No fresh stock is taken then.
+                // Rounded fuel credit survives source departure exactly as before.
                 if withdrawal.is_zero()
                     && amount.ammo.is_zero()
                     && amount.stores.is_zero()
@@ -597,8 +601,7 @@ pub(super) fn withdraw_into(
                     }
                     _ => return Err(SupplyError::Invalid),
                 };
-                super::cargo_history::retire_debit(
-                    next,
+                next.retire_debit(
                     &site,
                     Supplies {
                         fuel: withdrawal.get(),
@@ -607,38 +610,7 @@ pub(super) fn withdraw_into(
                         water: amount.water.get(),
                     },
                 )?;
-                let stock = match source {
-                    SupplySource::UnitStock(id) => {
-                        &mut next
-                            .unit_supply
-                            .get_mut(&id)
-                            .ok_or(SupplyError::Invalid)?
-                            .carried
-                    }
-                    SupplySource::PoolStock(id) => {
-                        &mut next
-                            .truck_pools
-                            .iter_mut()
-                            .find(|p| p.id == id)
-                            .ok_or(SupplyError::Invalid)?
-                            .cargo
-                    }
-                    SupplySource::Dump(id) => {
-                        &mut next
-                            .dumps
-                            .get_mut(&id)
-                            .ok_or(SupplyError::Invalid)?
-                            .supplies
-                    }
-                    SupplySource::AirDump(id) => {
-                        &mut next
-                            .air_dumps
-                            .get_mut(&id)
-                            .ok_or(SupplyError::Invalid)?
-                            .supplies
-                    }
-                    _ => return Err(SupplyError::Invalid),
-                };
+                let stock = next.stock_mut(&site).ok_or(SupplyError::Invalid)?;
                 deduct_stock(stock, amount, withdrawal)?;
             }
         }
@@ -778,4 +750,1007 @@ pub fn spend_for_unit_with_content(
         .collect();
     state.logistics = apply_draws(state, id, demand, draws, &sources, &BTreeMap::new())?;
     Ok(())
+}
+
+pub(super) trait WithdrawalState {
+    fn unit_supply_mut(&mut self, id: &UnitId) -> Option<&mut crate::state::UnitSupply>;
+    fn pool_mut(&mut self, id: &str) -> Option<&mut crate::state::TruckPool>;
+    fn air_dump_matches(&self, id: &str) -> bool;
+    fn stock_mut(&mut self, site: &super::cargo_history::CargoSite) -> Option<&mut Supplies>;
+    fn retire_debit(
+        &mut self,
+        site: &super::cargo_history::CargoSite,
+        amount: Supplies,
+    ) -> Result<(), SupplyError>;
+}
+
+impl WithdrawalState for LogisticsState {
+    fn unit_supply_mut(&mut self, id: &UnitId) -> Option<&mut crate::state::UnitSupply> {
+        self.unit_supply.get_mut(id)
+    }
+    fn pool_mut(&mut self, id: &str) -> Option<&mut crate::state::TruckPool> {
+        self.truck_pools.iter_mut().find(|pool| pool.id == id)
+    }
+    fn air_dump_matches(&self, id: &str) -> bool {
+        self.air_dumps.get(id).is_some_and(|dump| dump.id == id)
+    }
+    fn stock_mut(&mut self, site: &super::cargo_history::CargoSite) -> Option<&mut Supplies> {
+        use super::cargo_history::CargoSite;
+        match site {
+            CargoSite::Unit(id) => self.unit_supply.get_mut(id).map(|s| &mut s.carried),
+            CargoSite::Pool(id) => self
+                .truck_pools
+                .iter_mut()
+                .find(|p| &p.id == id)
+                .map(|p| &mut p.cargo),
+            CargoSite::Dump(id) => self.dumps.get_mut(id).map(|d| &mut d.supplies),
+            CargoSite::AirDump(id) => self.air_dumps.get_mut(id).map(|d| &mut d.supplies),
+            _ => None,
+        }
+    }
+    fn retire_debit(
+        &mut self,
+        site: &super::cargo_history::CargoSite,
+        amount: Supplies,
+    ) -> Result<(), SupplyError> {
+        super::cargo_history::retire_debit(self, site, amount)
+    }
+}
+
+// All reads start from the actual original LogisticsState. These maps contain
+// ONLY records copied on first mutation, not fabricated defaults/sparse guards.
+#[derive(Default)]
+struct WithdrawalEdits {
+    unit_supply: BTreeMap<UnitId, crate::state::UnitSupply>,
+    pools: BTreeMap<usize, crate::state::TruckPool>,
+    dumps: BTreeMap<String, crate::state::Dump>,
+    air_dumps: BTreeMap<String, super::air_supply::AirDump>,
+    histories: BTreeMap<super::cargo_history::CargoSite, super::cargo_history::CargoHistory>,
+}
+
+pub(super) struct WithdrawalOverlay<'a> {
+    base: &'a LogisticsState,
+    edits: WithdrawalEdits,
+}
+
+impl<'a> WithdrawalOverlay<'a> {
+    pub(super) fn new(base: &'a LogisticsState) -> Self {
+        Self {
+            base,
+            edits: WithdrawalEdits::default(),
+        }
+    }
+
+    fn pool_index(&self, id: &str) -> Option<usize> {
+        // Preserve the original FIRST matching vector entry, even with duplicates.
+        // Withdrawal cannot change pool IDs/order or insert/remove pools.
+        self.base.truck_pools.iter().position(|pool| pool.id == id)
+    }
+
+    // Called synchronously after ALL original withdrawals succeed. The private
+    // overlay is never exposed across node restore/other State mutation.
+    pub(super) fn finish(self) -> PreparedWithdrawal {
+        PreparedWithdrawal { edits: self.edits }
+    }
+}
+
+pub(super) struct PreparedWithdrawal {
+    edits: WithdrawalEdits,
+}
+
+impl PreparedWithdrawal {
+    pub(super) fn apply(self, logistics: &mut LogisticsState) {
+        for (id, record) in self.edits.unit_supply {
+            logistics.unit_supply.insert(id, record);
+        }
+        for (index, record) in self.edits.pools {
+            logistics.truck_pools[index] = record;
+        }
+        for (id, record) in self.edits.dumps {
+            logistics.dumps.insert(id, record);
+        }
+        for (id, record) in self.edits.air_dumps {
+            logistics.air_dumps.insert(id, record);
+        }
+        for (site, history) in self.edits.histories {
+            // Canonical retire_debit retains even an empty history entry.
+            logistics.cargo_history.histories.insert(site, history);
+        }
+    }
+}
+
+impl WithdrawalState for WithdrawalOverlay<'_> {
+    fn unit_supply_mut(&mut self, id: &UnitId) -> Option<&mut crate::state::UnitSupply> {
+        if !self.edits.unit_supply.contains_key(id) {
+            let old = self.base.unit_supply.get(id)?.clone();
+            self.edits.unit_supply.insert(id.clone(), old);
+        }
+        self.edits.unit_supply.get_mut(id)
+    }
+    fn pool_mut(&mut self, id: &str) -> Option<&mut crate::state::TruckPool> {
+        let index = self.pool_index(id)?;
+        self.edits
+            .pools
+            .entry(index)
+            .or_insert_with(|| self.base.truck_pools[index].clone());
+        self.edits.pools.get_mut(&index)
+    }
+    fn air_dump_matches(&self, id: &str) -> bool {
+        self.edits
+            .air_dumps
+            .get(id)
+            .or_else(|| self.base.air_dumps.get(id))
+            .is_some_and(|dump| dump.id == id)
+    }
+    fn stock_mut(&mut self, site: &super::cargo_history::CargoSite) -> Option<&mut Supplies> {
+        use super::cargo_history::CargoSite;
+        match site {
+            CargoSite::Unit(id) => self.unit_supply_mut(id).map(|s| &mut s.carried),
+            CargoSite::Pool(id) => self.pool_mut(id).map(|p| &mut p.cargo),
+            CargoSite::Dump(id) => {
+                if !self.edits.dumps.contains_key(id) {
+                    self.edits
+                        .dumps
+                        .insert(id.clone(), self.base.dumps.get(id)?.clone());
+                }
+                self.edits.dumps.get_mut(id).map(|d| &mut d.supplies)
+            }
+            CargoSite::AirDump(id) => {
+                if !self.edits.air_dumps.contains_key(id) {
+                    self.edits
+                        .air_dumps
+                        .insert(id.clone(), self.base.air_dumps.get(id)?.clone());
+                }
+                self.edits.air_dumps.get_mut(id).map(|d| &mut d.supplies)
+            }
+            _ => None,
+        }
+    }
+    fn retire_debit(
+        &mut self,
+        site: &super::cargo_history::CargoSite,
+        amount: Supplies,
+    ) -> Result<(), SupplyError> {
+        if !self.edits.histories.contains_key(site)
+            && let Some(history) = self.base.cargo_history.histories.get(site)
+        {
+            self.edits.histories.insert(site.clone(), history.clone());
+        }
+        super::cargo_history::retire_debit_entry(self.edits.histories.get_mut(site), amount)
+    }
+}
+
+// SCRATCH SOURCE ONLY. Insert into owned supply.rs; export crate-private.
+// Compute ONCE from the full query root BEFORE any branch. This is a conservative
+// complete history write roster, not a current-edge draw/side/location filter.
+pub(crate) fn query_withdrawal_history_sites(
+    logistics: &LogisticsState,
+) -> Vec<super::cargo_history::CargoSite> {
+    use super::cargo_history::CargoSite;
+    let mut sites = std::collections::BTreeSet::new();
+    sites.extend(logistics.unit_supply.keys().cloned().map(CargoSite::Unit));
+    sites.extend(
+        logistics
+            .truck_pools
+            .iter()
+            .map(|p| CargoSite::Pool(p.id.clone())),
+    );
+    sites.extend(logistics.dumps.keys().cloned().map(CargoSite::Dump));
+    sites.extend(logistics.air_dumps.keys().cloned().map(CargoSite::AirDump));
+    // A malformed/unmatched existing history can be retired BEFORE stock lookup
+    // fails. Include it even if its physical record is absent at the root.
+    sites.extend(
+        logistics
+            .cargo_history
+            .histories
+            .keys()
+            .filter(|site| {
+                matches!(
+                    site,
+                    CargoSite::Unit(_)
+                        | CargoSite::Pool(_)
+                        | CargoSite::Dump(_)
+                        | CargoSite::AirDump(_)
+                )
+            })
+            .cloned(),
+    );
+    sites.into_iter().collect()
+}
+
+// Contract: this query's fuel withdrawal does not create history entries or
+// physical source identities. Carrier movement changes availability, not this
+// roster; every root source is included regardless of its original location.
+// If any OTHER query operation creates histories, changes source identity/map
+// membership, or retires Ship/BrokenMarker histories, Land must establish its
+// wider write set or retain legacy. This fuel helper is not consent to omit it.
+// Capture Option<CargoHistory> at EACH node for ALL roster sites; restore before
+// sibling/resumed evaluation. No next_id/motion snapshot or normalization.
+
+const PREPARED_FUEL_ROWS: [i32; 13] = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45];
+
+pub(super) struct PreparedFuelRate {
+    whole_fifty: Option<FuelTenths>,
+    cells: [Option<FuelTenths>; 13],
+}
+
+impl PreparedFuelRate {
+    fn new(content: &CnaContent, rate: i32) -> Self {
+        let table = &content.tables.airlog.fuel_consumption;
+        Self {
+            whole_fifty: table.printed(rate, 50),
+            cells: PREPARED_FUEL_ROWS.map(|cp| table.printed(rate, cp)),
+        }
+    }
+
+    // Same first matching column/row, mandatory 50 cell, and checked order as
+    // FuelConsumption::fuel_for. A missing unused cell remains None.
+    fn fuel_for(&self, cp: i32) -> Option<FuelTenths> {
+        if cp < 0 {
+            return None;
+        }
+        let remaining = cp % 50;
+        let whole = self.whole_fifty?.tenths().checked_mul(cp / 50)?;
+        if remaining == 0 {
+            return Some(FuelTenths::new(whole));
+        }
+        let priced_cp = if cp < 5 {
+            remaining
+        } else {
+            (remaining + 4) / 5 * 5
+        };
+        let remainder = if priced_cp == 50 {
+            self.whole_fifty?
+        } else {
+            let index = PREPARED_FUEL_ROWS
+                .iter()
+                .position(|row| *row == priced_cp)?;
+            self.cells[index]?
+        };
+        whole.checked_add(remainder.tenths()).map(FuelTenths::new)
+    }
+
+    fn cost(&self, cp: i32, count: i32) -> Result<i32, SupplyError> {
+        if count < 0 {
+            return Err(SupplyError::Invalid);
+        }
+        self.fuel_for(cp)
+            .ok_or(SupplyError::Unsupported {
+                case: "airlog:49.19",
+            })?
+            .get()
+            .checked_mul(count)
+            .ok_or(SupplyError::Invalid)
+    }
+}
+
+struct PreparedFuelFactor {
+    rate: PreparedFuelRate,
+    count: i32,
+}
+
+// Holds no State, source-access cache, balances, or persistent/shared field.
+// The immutable content borrow prevents dependency changes for its lifetime.
+pub(crate) struct PreparedMovementFuel<'a> {
+    content: &'a CnaContent,
+    id: UnitId,
+    represented_id: UnitId,
+    toe: Option<Toe>,
+    trucks: cna_content::units::Trucks,
+    truck_count: i32,
+    ordered_body: Vec<PreparedFuelFactor>,
+    truck_rate: PreparedFuelRate,
+}
+
+impl<'a> PreparedMovementFuel<'a> {
+    // Preparation never creates a game error. Unsupported composition/errors
+    // are None; the original operation decides errors only if actually visited.
+    /// Cases: airlog:49.12, airlog:49.13, airlog:49.19, land:4.48
+    /// Interpretations: interp:airlog-0001, interp:units-0005
+    pub(crate) fn new(content: &'a CnaContent, state: &State, id: &UnitId) -> Option<Self> {
+        let unit = state.land.units.get(id)?;
+        let oa = content.units.units.get(id)?;
+        let class = oa
+            .class
+            .as_ref()
+            .and_then(|id| content.units.classes.get(id));
+        let house = house_rule_hq_strength(content, unit).ok()?;
+        let mut ordered_body = Vec::new();
+        let mut factor = |rate, count| {
+            ordered_body.push(PreparedFuelFactor {
+                rate: PreparedFuelRate::new(content, rate),
+                count,
+            });
+        };
+        match &unit.toe {
+            Some(Toe::Weapons(weapons)) => {
+                for point in weapons {
+                    let weapon = content.units.weapons.get(&point.weapon)?;
+                    factor(weapon.fuel_rate?, point.n);
+                }
+            }
+            _ if class.is_some_and(|c| c.unit_type == "recce") => {
+                factor(1, toe_strength(content, unit).ok()?.get());
+            }
+            _ if class.is_some_and(|c| matches!(c.unit_type.as_str(), "infantry" | "engineer")) => {
+            }
+            _ if class.is_some_and(|c| c.unit_type == "headquarters" && c.max_toe_paren) => {}
+            _ if house.is_some() => factor(1, house?),
+            _ => return None,
+        }
+        let truck_count = truck_count(unit).ok()?;
+        Some(Self {
+            content,
+            id: id.clone(),
+            represented_id: unit.id.clone(),
+            toe: unit.toe.clone(),
+            trucks: unit.trucks,
+            truck_count,
+            ordered_body,
+            truck_rate: PreparedFuelRate::new(content, 1),
+        })
+    }
+
+    pub(crate) fn id(&self) -> &UnitId {
+        &self.id
+    }
+
+    pub(super) fn content(&self) -> &'a CnaContent {
+        self.content
+    }
+
+    pub(super) fn matches(&self, state: &State) -> bool {
+        state.land.units.get(&self.id).is_some_and(|unit| {
+            unit.id == self.represented_id && unit.toe == self.toe && unit.trucks == self.trucks
+        })
+    }
+
+    // Direct differential seam: None means use movement_fuel_cost, never a
+    // substituted Invalid/Unsupported error. No production logging/serialization.
+    #[cfg(test)]
+    pub(crate) fn movement_cost(
+        &self,
+        state: &State,
+        cp_quarters: i32,
+    ) -> Option<Result<FuelTenths, SupplyError>> {
+        self.matches(state)
+            .then(|| self.full_cost(state, cp_quarters))
+    }
+
+    fn full_cost(&self, state: &State, cp_quarters: i32) -> Result<FuelTenths, SupplyError> {
+        if cp_quarters < 0 {
+            return Err(SupplyError::Invalid);
+        }
+        state.land.units.get(&self.id).ok_or(SupplyError::Invalid)?;
+        self.content
+            .units
+            .units
+            .get(&self.id)
+            .ok_or(SupplyError::Invalid)?;
+        let cp = cp_quarters / 4 + i32::from(cp_quarters % 4 != 0);
+        if cp == 0 {
+            return Ok(FuelTenths::ZERO);
+        }
+        let mut total = 0i32;
+        for factor in &self.ordered_body {
+            total = total
+                .checked_add(factor.rate.cost(cp, factor.count)?)
+                .ok_or(SupplyError::Invalid)?;
+        }
+        total = total
+            .checked_add(self.truck_rate.cost(cp, self.truck_count)?)
+            .ok_or(SupplyError::Invalid)?;
+        Ok(FuelTenths::new(total))
+    }
+
+    pub(super) fn chart(&self, cp_quarters: i32) -> Result<i32, SupplyError> {
+        if cp_quarters < 0 {
+            return Err(SupplyError::Invalid);
+        }
+        if cp_quarters == 0 {
+            return Ok(0);
+        }
+        let cp = cp_quarters / 4 + i32::from(cp_quarters % 4 != 0);
+        self.truck_rate
+            .fuel_for(cp)
+            .map(|n| n.get())
+            .ok_or(SupplyError::Unsupported {
+                case: "airlog:49.19",
+            })
+    }
+
+    pub(super) fn body_cost(&self, state: &State, cp: i32) -> Result<i32, SupplyError> {
+        let unit = state.land.units.get(&self.id).ok_or(SupplyError::Invalid)?;
+        let full = self.full_cost(state, cp)?.get();
+        // Preserve full accumulation BEFORE subtraction, including checked overflow.
+        let truck_charge = self
+            .chart(cp)?
+            .checked_mul(super::segment::truck_total(&unit.trucks)?)
+            .ok_or(SupplyError::Invalid)?;
+        full.checked_sub(truck_charge)
+            .filter(|n| *n >= 0)
+            .ok_or(SupplyError::Invalid)
+    }
+}
+
+// Append to owned logistics/supply.rs. All controls are ordinary/silent, UNRUN.
+#[cfg(test)]
+mod step1_controls {
+    use super::*;
+    use crate::logistics::{
+        self,
+        cargo_history::{CargoHistory, CargoLot, CargoSite},
+    };
+
+    fn fixture() -> (CnaContent, State, UnitId) {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani")
+            .expect("fuel control content load failed");
+        let s = State::new(&c).expect("fuel control State creation failed");
+        let id = "it.libyan_tank_command.trivioli_2nd_regt_hq".into();
+        (c, s, id)
+    }
+
+    fn compare_spend(c: &CnaContent, state: &State, id: &UnitId, cp: i32) -> State {
+        let prepared = PreparedMovementFuel::new(c, state, id);
+        let mut old = state.clone();
+        let mut new = state.clone();
+        let a = logistics::spend_segment_fuel_report(c, &mut old, id, cp);
+        let (path, b) =
+            logistics::spend_query_segment_fuel_report(c, &mut new, id, cp, prepared.as_ref());
+        assert!(
+            path == if prepared.is_some() {
+                logistics::QueryFuelPath::PreparedAllSources
+            } else {
+                logistics::QueryFuelPath::Legacy
+            },
+            "prepared spending route differs"
+        );
+        assert!(
+            a == b,
+            "prepared spending Result/increment/draw order differs"
+        );
+        assert!(
+            serde_json::to_vec(&old).expect("fuel State encoding failed")
+                == serde_json::to_vec(&new).expect("fuel State encoding failed"),
+            "prepared spending State bytes/presence differs"
+        );
+        if a.is_err() {
+            assert!(
+                serde_json::to_vec(&new).expect("fuel State encoding failed")
+                    == serde_json::to_vec(state).expect("fuel State encoding failed"),
+                "failed prepared spending was not atomic"
+            );
+        }
+        new
+    }
+
+    #[test]
+    fn step1_prepared_chart_and_composition_price_match_exact_original() {
+        let (c, s, _) = fixture();
+        for rate in c
+            .tables
+            .airlog
+            .fuel_consumption
+            .rates()
+            .iter()
+            .copied()
+            .chain([i32::MAX])
+        {
+            let p = PreparedFuelRate::new(&c, rate);
+            for cp in [
+                -1,
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                96,
+                97,
+                98,
+                99,
+                100,
+                i32::MAX,
+            ] {
+                assert!(
+                    p.fuel_for(cp) == c.tables.airlog.fuel_consumption.fuel_for(rate, cp),
+                    "prepared chart differs in fraction/50/remainder/missing rate/overflow"
+                );
+            }
+        }
+        // Every authored composition offered by this source fixture, including
+        // unsupported entries, keeps actual original error/fallback behavior.
+        for id in s.land.units.keys() {
+            if let Some(p) = PreparedMovementFuel::new(&c, &s, id) {
+                for cp in [-1, 0, 1, 4, 5, 16, 20, 196, 200, 204, 216, i32::MAX] {
+                    assert!(
+                        p.movement_cost(&s, cp) == Some(movement_fuel_cost(&c, &s, id, cp)),
+                        "prepared ordered body/truck/CP error differs"
+                    );
+                }
+            }
+        }
+        let mut missing = PreparedFuelRate::new(&c, 1);
+        missing.whole_fifty = None;
+        assert!(
+            missing.fuel_for(1).is_none(),
+            "prepared pricing skipped mandatory 50 cell"
+        );
+        let mut missing_fraction = PreparedFuelRate::new(&c, 1);
+        missing_fraction.cells[0] = None;
+        assert!(
+            missing_fraction.fuel_for(1).is_none(),
+            "prepared missing fraction became default"
+        );
+        assert!(
+            missing_fraction.fuel_for(51) == c.tables.airlog.fuel_consumption.fuel_for(1, 51),
+            "prepared remainder used fractional row after 50"
+        );
+    }
+
+    #[test]
+    fn step1_query_spend_keeps_all_source_checks_credit_errors_and_zero_ledger() {
+        let (c, s, id) = fixture();
+        assert!(
+            PreparedMovementFuel::new(&c, &s, &id).is_some(),
+            "actual HQ has no prepared pricing descriptor"
+        );
+        for cp in [-1, 0, 1, 4, 5, 16, 20, 196, 200, 204, 216, i32::MAX] {
+            let _ = compare_spend(&c, &s, &id, cp);
+        }
+        let mut branch = s.clone();
+        for cp in [1, 2, 4, 8, 12, 16] {
+            branch = compare_spend(&c, &branch, &id, cp);
+        }
+        let origin = s.land.units[&id].location.clone();
+        let dump_id = s
+            .logistics
+            .dumps
+            .iter()
+            .find(|(_, d)| {
+                d.active
+                    && !d.dummy
+                    && d.side == s.land.units[&id].side
+                    && matches!((&d.location, &origin),
+                (crate::state::DumpLocation::Hex { hex: a }, Location::Hex { hex: b }) if a == b)
+            })
+            .map(|(key, _)| key.clone())
+            .expect("actual HQ has no original active dump");
+        let paid = compare_spend(&c, &s, &id, 1);
+        assert!(
+            paid.logistics.fuel_segments.get(&id).is_some_and(|l| l
+                .draws
+                .iter()
+                .any(|d| d.source == SupplySource::Dump(dump_id.clone()) && d.fuel.get() > 0)),
+            "actual HQ direct control did not use real dump funding"
+        );
+        let mut departed = paid.clone();
+        departed.logistics.dumps.remove(&dump_id);
+        let _ = compare_spend(&c, &departed, &id, 2);
+        let _ = compare_spend(&c, &departed, &id, 200);
+
+        for fault in 0..7 {
+            let mut bad = s.clone();
+            let u = bad.land.units.get_mut(&id).unwrap();
+            match fault {
+                0 => {
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .ready_ammo = AmmoPoints::new(-1);
+                }
+                1 => {
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .tank_fuel = FuelTenths::new(-1);
+                }
+                2 => {
+                    u.trucks.light = 1;
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .carried
+                        .ammo = -1;
+                }
+                3 => {
+                    u.trucks.light = 1;
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .carried
+                        .stores = -1;
+                }
+                4 => {
+                    u.trucks.light = 1;
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .carried
+                        .water = -1;
+                }
+                5 => {
+                    u.trucks.light = -1;
+                }
+                _ => {
+                    bad.logistics.dumps.get_mut(&dump_id).unwrap().supplies.fuel = -1;
+                }
+            }
+            let _ = compare_spend(&c, &bad, &id, 4);
+            let zero = compare_spend(&c, &bad, &id, 0);
+            // Both paths decide original zero semantics before positive-source validation.
+            assert!(
+                zero.land.units.len() == bad.land.units.len(),
+                "zero spend changed units"
+            );
+        }
+        if let Some(p) = PreparedMovementFuel::new(&c, &s, &id) {
+            let mut changed = s.clone();
+            changed.land.units.get_mut(&id).unwrap().trucks.light += 1;
+            let (path, _) =
+                logistics::spend_query_segment_fuel_report(&c, &mut changed, &id, 4, Some(&p));
+            assert!(
+                path == logistics::QueryFuelPath::Legacy,
+                "changed composition did not fallback"
+            );
+            let mut absent = s.clone();
+            absent.land.units.remove(&id);
+            let (path, _) =
+                logistics::spend_query_segment_fuel_report(&c, &mut absent, &id, 4, Some(&p));
+            assert!(
+                path == logistics::QueryFuelPath::Legacy,
+                "missing unit did not fallback"
+            );
+            let (another_content, _, _) = fixture();
+            let mut same_state = s.clone();
+            let (path, _) = logistics::spend_query_segment_fuel_report(
+                &another_content,
+                &mut same_state,
+                &id,
+                4,
+                Some(&p),
+            );
+            assert!(
+                path == logistics::QueryFuelPath::Legacy,
+                "different content did not fallback"
+            );
+            let mut changed_toe = s.clone();
+            changed_toe.land.units.get_mut(&id).unwrap().toe = None;
+            let (path, _) =
+                logistics::spend_query_segment_fuel_report(&c, &mut changed_toe, &id, 4, Some(&p));
+            assert!(
+                path == logistics::QueryFuelPath::Legacy,
+                "changed TOE did not fallback"
+            );
+        }
+    }
+
+    #[test]
+    fn step1_query_spend_retains_shared_cohort_history_accounts_and_branch_balances() {
+        let (c, mut root, id) = fixture();
+        root.land.units.get_mut(&id).unwrap().trucks.light = 2;
+        let root = compare_spend(&c, &root, &id, 4);
+        let account = root
+            .logistics
+            .fuel_accounts
+            .get(&id)
+            .expect("shared control lacks original funding account")
+            .clone();
+        let other = root
+            .land
+            .units
+            .keys()
+            .find(|other| {
+                *other != &id && root.land.units[*other].side == root.land.units[&id].side
+            })
+            .expect("shared control lacks a same-side identity")
+            .clone();
+        let mut shared = root.clone();
+        let mut ledger = shared.logistics.fuel_segments[&id].clone();
+        let first = ledger
+            .cohorts
+            .first()
+            .expect("shared control has no physical cohort")
+            .clone();
+        assert!(
+            first.count == 2,
+            "shared control physical cohort count differs"
+        );
+        let mut earlier = first.clone();
+        earlier.count = 1;
+        earlier.cp_quarters = 1;
+        let mut later = first;
+        later.count = 1;
+        later.id.push_str("-step1-split");
+        later.account = other.clone();
+        later.cp_quarters = 3;
+        ledger.cohorts = vec![earlier, later];
+        shared.logistics.fuel_segments.insert(id.clone(), ledger);
+        shared
+            .logistics
+            .fuel_accounts
+            .insert(other.clone(), account);
+        let mut a = compare_spend(&c, &shared, &id, 8);
+        a = compare_spend(&c, &a, &id, 12);
+        let _ = compare_spend(&c, &a, &id, 16);
+        // Repeated sibling restoration uses exact root balances/account bytes.
+        let _ = compare_spend(&c, &shared, &id, 16);
+        let mut absent = shared.clone();
+        absent.logistics.fuel_accounts.remove(&other);
+        let _ = compare_spend(&c, &absent, &id, 8);
+        let mut foreign = shared.clone();
+        foreign
+            .logistics
+            .fuel_accounts
+            .get_mut(&other)
+            .unwrap()
+            .side = root.land.units[&id].side.opponent();
+        let _ = compare_spend(&c, &foreign, &id, 8);
+        let mut wrong_origin = shared.clone();
+        wrong_origin
+            .logistics
+            .fuel_accounts
+            .get_mut(&other)
+            .unwrap()
+            .origin = Location::Eliminated;
+        let _ = compare_spend(&c, &wrong_origin, &id, 8);
+        let mut wrong_totals = shared;
+        wrong_totals
+            .logistics
+            .fuel_accounts
+            .get_mut(&other)
+            .unwrap()
+            .paid_cost = FuelTenths::new(i32::MAX);
+        let _ = compare_spend(&c, &wrong_totals, &id, 8);
+    }
+
+    fn compare_withdraw(
+        logistics: &LogisticsState,
+        id: &UnitId,
+        demand: SupplyDemand,
+        draws: &[SupplyDraw],
+        sources: &BTreeMap<SupplySource, SupplyDemand>,
+        prior: &BTreeMap<SupplySource, FuelTenths>,
+    ) {
+        let mut old = logistics.clone();
+        let a = withdraw_into(&mut old, Some(id), demand, draws, sources, prior);
+        let mut new = logistics.clone();
+        let mut overlay = WithdrawalOverlay::new(&new);
+        let b = withdraw_into_state(&mut overlay, Some(id), demand, draws, sources, prior);
+        if b.is_ok() {
+            overlay.finish().apply(&mut new);
+        }
+        assert!(a == b, "withdrawal accessor Result differs");
+        let expected = if a.is_ok() { &old } else { logistics };
+        assert!(
+            serde_json::to_vec(expected).expect("withdrawal encoding failed")
+                == serde_json::to_vec(&new).expect("withdrawal encoding failed"),
+            "overlay commit/late failure bytes/presence differs"
+        );
+    }
+
+    #[test]
+    fn step1_withdrawal_overlay_matches_all_source_variants_and_late_errors() {
+        let (_, s, id) = fixture();
+        let stage = logistics::water::WaterStage::current(&s);
+        let side = s.land.units[&id].side;
+        let mut l = s.logistics;
+        l.unit_supply.insert(
+            id.clone(),
+            crate::state::UnitSupply {
+                tank_fuel: FuelTenths::new(40),
+                ready_ammo: AmmoPoints::new(4),
+                carried: Supplies {
+                    fuel: 4,
+                    ammo: 4,
+                    stores: 4,
+                    water: 4,
+                },
+                ..Default::default()
+            },
+        );
+        let dump_id = l
+            .dumps
+            .keys()
+            .next()
+            .expect("withdrawal fixture has no dump")
+            .clone();
+        l.dumps.get_mut(&dump_id).unwrap().supplies = Supplies {
+            fuel: 4,
+            ammo: 4,
+            stores: 4,
+            water: 4,
+        };
+        let air = "__step1_air_source__".to_string();
+        l.air_dumps.insert(
+            air.clone(),
+            super::super::air_supply::AirDump {
+                id: air.clone(),
+                facility: crate::air::facilities::FacilityId("step1-control".into()),
+                side,
+                supplies: Supplies {
+                    fuel: 4,
+                    ammo: 4,
+                    stores: 4,
+                    water: 4,
+                },
+            },
+        );
+        let pool = l
+            .truck_pools
+            .first()
+            .expect("withdrawal fixture has no pool")
+            .id
+            .clone();
+        l.truck_pools[0].tank_fuel = FuelTenths::new(40);
+        l.truck_pools[0].cargo = Supplies {
+            fuel: 4,
+            ammo: 4,
+            stores: 4,
+            water: 4,
+        };
+        let duplicate = l.truck_pools[0].clone();
+        l.truck_pools.push(duplicate);
+        let sources = [
+            SupplySource::Unlimited,
+            SupplySource::Tank,
+            SupplySource::ReadyAmmo,
+            SupplySource::UnitStock(id.clone()),
+            SupplySource::Dump(dump_id.clone()),
+            SupplySource::PoolTank(pool.clone()),
+            SupplySource::PoolStock(pool.clone()),
+            SupplySource::AirDump(air.clone()),
+        ];
+        for source in sources {
+            let demand = if source == SupplySource::ReadyAmmo {
+                SupplyDemand {
+                    ammo: AmmoPoints::new(1),
+                    ..Default::default()
+                }
+            } else {
+                SupplyDemand {
+                    fuel: FuelTenths::new(1),
+                    ..Default::default()
+                }
+            };
+            let capacities = BTreeMap::from([(source.clone(), demand)]);
+            let draw = SupplyDraw {
+                source: source.clone(),
+                amount: demand,
+            };
+            compare_withdraw(
+                &l,
+                &id,
+                demand,
+                std::slice::from_ref(&draw),
+                &capacities,
+                &BTreeMap::new(),
+            );
+            let mut staged = WithdrawalOverlay::new(&l);
+            for _ in 0..2 {
+                let _ = withdraw_into_state(
+                    &mut staged,
+                    Some(&id),
+                    demand,
+                    std::slice::from_ref(&draw),
+                    &capacities,
+                    &BTreeMap::new(),
+                );
+            }
+            // Multiple operations share one staged record, exactly as the old clone.
+            let mut old = l.clone();
+            for _ in 0..2 {
+                let _ = withdraw_into(
+                    &mut old,
+                    Some(&id),
+                    demand,
+                    std::slice::from_ref(&draw),
+                    &capacities,
+                    &BTreeMap::new(),
+                );
+            }
+            let mut new = l.clone();
+            staged.finish().apply(&mut new);
+            assert!(
+                serde_json::to_vec(&old).unwrap() == serde_json::to_vec(&new).unwrap(),
+                "repeated source draws did not share the staged record"
+            );
+        }
+        let site = CargoSite::Dump(dump_id.clone());
+        let history = CargoHistory {
+            stage,
+            lots: vec![CargoLot {
+                id: "step1-lot".into(),
+                goods: Supplies {
+                    fuel: 4,
+                    ..Default::default()
+                },
+                spent_cp_quarters: 0,
+                ceiling_cp_quarters: 100,
+                continuous_first_line: true,
+            }],
+        };
+        l.cargo_history.histories.insert(site.clone(), history);
+        let demand = SupplyDemand {
+            fuel: FuelTenths::new(1),
+            ..Default::default()
+        };
+        let source = SupplySource::Dump(dump_id.clone());
+        let capacities = BTreeMap::from([(source.clone(), demand)]);
+        let draws = [SupplyDraw {
+            source: source.clone(),
+            amount: demand,
+        }];
+        compare_withdraw(&l, &id, demand, &draws, &capacities, &BTreeMap::new());
+        l.dumps.remove(&dump_id); // history retires BEFORE missing physical stock error
+        compare_withdraw(&l, &id, demand, &draws, &capacities, &BTreeMap::new());
+        let prior = BTreeMap::from([(source.clone(), FuelTenths::new(1))]);
+        compare_withdraw(&l, &id, demand, &draws, &capacities, &prior); // rounded credit, no fresh stock
+        l.cargo_history.histories.get_mut(&site).unwrap().lots[0]
+            .goods
+            .fuel = -1;
+        compare_withdraw(&l, &id, demand, &draws, &capacities, &BTreeMap::new());
+        l.cargo_history
+            .histories
+            .get_mut(&site)
+            .unwrap()
+            .lots
+            .clear();
+        compare_withdraw(&l, &id, demand, &draws, &capacities, &BTreeMap::new());
+        l.cargo_history.histories.remove(&site);
+        compare_withdraw(&l, &id, demand, &draws, &capacities, &BTreeMap::new());
+        // A real first source debit precedes a late missing second source.
+        // Original caller discards the clone; the overlay must discard both edits.
+        let total = SupplyDemand {
+            fuel: FuelTenths::new(2),
+            ..Default::default()
+        };
+        let first = SupplySource::Tank;
+        let missing = SupplySource::Dump("__step1_missing_second__".into());
+        compare_withdraw(
+            &l,
+            &id,
+            total,
+            &[
+                SupplyDraw {
+                    source: first.clone(),
+                    amount: demand,
+                },
+                SupplyDraw {
+                    source: missing.clone(),
+                    amount: demand,
+                },
+            ],
+            &BTreeMap::from([(first, demand), (missing, demand)]),
+            &BTreeMap::new(),
+        );
+        l.air_dumps.get_mut(&air).unwrap().id = "mismatch".into();
+        let source = SupplySource::AirDump(air);
+        compare_withdraw(
+            &l,
+            &id,
+            demand,
+            &[SupplyDraw {
+                source: source.clone(),
+                amount: demand,
+            }],
+            &BTreeMap::from([(source, demand)]),
+            &BTreeMap::new(),
+        );
+    }
 }

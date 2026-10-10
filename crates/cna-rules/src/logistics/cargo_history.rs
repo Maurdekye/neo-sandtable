@@ -511,8 +511,15 @@ pub fn retire_debit(
     site: &CargoSite,
     amount: Supplies,
 ) -> Result<(), SupplyError> {
-    if let Some(h) = logistics.cargo_history.histories.get_mut(site) {
-        retire(h, &amount).map_err(SupplyError::from)?;
+    retire_debit_entry(logistics.cargo_history.histories.get_mut(site), amount)
+}
+
+pub(super) fn retire_debit_entry(
+    entry: Option<&mut CargoHistory>,
+    amount: Supplies,
+) -> Result<(), SupplyError> {
+    if let Some(history) = entry {
+        retire(history, &amount).map_err(SupplyError::from)?;
     }
     Ok(())
 }

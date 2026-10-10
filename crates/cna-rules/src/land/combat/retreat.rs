@@ -485,3 +485,51 @@ pub fn random_orders(
 #[cfg(test)]
 #[path = "retreat_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+pub(crate) fn reachable_legacy_for_step1(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Vec<Reachable> {
+    let Some(unit) = s.land.units.get(id) else {
+        return vec![];
+    };
+    let seat = SeatId::new(unit.side, ownership::seat_for_unit(c, s, id));
+    if !allowed(c, s, id, seat) {
+        return vec![];
+    }
+    let selected: BTreeSet<UnitId> = formation::members(c, s, id).into_iter().collect();
+    movement::nonphasing_reachable_legacy_for_step1(c, s, id, strict, NonPhasingMove::Retreat)
+        .into_iter()
+        .filter(|cost| {
+            // Adjacent members and a one-hex retreat have no four-CP cap. Avoid a second
+            // path evaluation in those common cases; all other members need their own delta.
+            if selected.iter().all(|member| {
+                s.land
+                    .combat
+                    .retreat
+                    .units
+                    .get(member)
+                    .is_some_and(|start| start.adjacent || cost.path.len() == 1)
+            }) {
+                return true;
+            }
+            if s.land
+                .combat
+                .retreat
+                .units
+                .get(id)
+                .is_some_and(|start| !start.adjacent)
+                && cost.cp_quarters > 16
+                && cost.path.len() != 1
+            {
+                return false;
+            }
+            let order = Order::new(id.clone(), cost.path.clone());
+            movement::preview_nonphasing(c, s, &order, seat, strict, NonPhasingMove::Retreat)
+                .is_ok_and(|(next, actual)| capped(s, s, &next, &selected, actual.path.len()))
+        })
+        .collect()
+}

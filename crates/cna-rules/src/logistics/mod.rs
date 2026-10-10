@@ -122,3 +122,10 @@ mod privacy;
 
 #[cfg(test)]
 mod scheduling_tests;
+
+#[cfg(test)]
+pub(crate) use segment::QueryFuelPath;
+pub(crate) use segment::spend_query_segment_fuel_report;
+pub(crate) use supply::PreparedMovementFuel;
+
+pub(crate) use supply::query_withdrawal_history_sites;

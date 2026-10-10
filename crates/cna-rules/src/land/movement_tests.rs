@@ -3954,3 +3954,1938 @@ fn unit_network_posture_off_edge_clears_all_represented_members() {
                 && matches!(&e.event, GameEvent::UnitMoved { unit_id, .. } if unit_id == attached))
     );
 }
+
+fn step1_profile_answer(
+    c: &CnaContent,
+    state: &State,
+    request: &cna_core::decision::DecisionRequest,
+    rng: &mut CampaignRng,
+) -> Value {
+    if matches!(
+        request.kind.as_str(),
+        KIND | super::super::reaction::KIND | super::super::reaction::CONTINUE
+    ) {
+        // A mandatory continuation needs a legal remaining path, not a schema placeholder.
+        crate::baseline::random_orders(c, state, request, rng)
+    } else if request.kind == logistics::truck_convoy::KIND {
+        // The fixed convoy batch declares an explicit empty order list as its pass.
+        json!([])
+    } else if request.kind == logistics::attrition::KIND {
+        crate::baseline::logistics_orders(c, state, request, rng)
+            .expect("mandatory attrition baseline must allocate every casualty group")
+    } else if request.kind == super::super::breakdown::window::KIND {
+        let action = crate::baseline::random_breakdown(c, state, request, rng);
+        assert!(
+            !action.is_null(),
+            "mandatory breakdown baseline must preserve every holding"
+        );
+        action
+    } else if request.kind == "cna.arrivals.batch" {
+        crate::baseline::arrival_orders(c, state, request)
+            .expect("mandatory arrival batch has a source-conserving plan")
+    } else if request.space.pass.is_some()
+        && matches!(&request.space.schema, ActionSchema::Choice { options } if options.is_empty())
+    {
+        Value::Null
+    } else if matches!(request.space.schema, ActionSchema::Choice { .. })
+        || request.space.pass.is_none()
+    {
+        step1_mandatory_answer(&request.space.schema)
+    } else {
+        Value::Null
+    }
+}
+fn step1_mandatory_answer(schema: &ActionSchema) -> Value {
+    match schema {
+        ActionSchema::Choice { options } => json!(options[0].id),
+        ActionSchema::Unit { among } => json!(among[0]),
+        ActionSchema::Integer { max, .. } => json!(max),
+        ActionSchema::Record { fields } => Value::Object(
+            fields
+                .iter()
+                .map(|field| (field.name.clone(), step1_mandatory_answer(&field.schema)))
+                .collect(),
+        ),
+        _ => panic!("golden script has an unsupported answer schema"),
+    }
+}
+
+#[derive(Clone, Copy)]
+enum Step1Category {
+    Foot,
+    Motorized,
+    Hq,
+    Carried,
+}
+
+fn step1_in_category(c: &CnaContent, s: &State, id: &UnitId, category: Step1Category) -> bool {
+    let Some(u) = s.land.units.get(id) else {
+        return false;
+    };
+    let Some(class) = formation::class(c, id) else {
+        return false;
+    };
+    let allowance = formation::individual_allowance(c, s, id);
+    match category {
+        Step1Category::Foot => {
+            class.unit_type == "infantry"
+                && u.transport_trucks.total() == 0
+                && allowance.is_some_and(|a| !a.motorized && a.cpa > 0)
+        }
+        Step1Category::Motorized => {
+            u.transport_trucks.total() == 0 && allowance.is_some_and(|a| a.motorized)
+        }
+        Step1Category::Hq => class.unit_type == "headquarters",
+        Step1Category::Carried => {
+            class.unit_type == "infantry"
+                && c.units.units[id].cpa.unwrap_or(class.cpa) <= 10
+                && u.transport_trucks.total() > 0
+                && formation::strength(c, s, id) > 0
+                && allowance.is_some_and(|a| a.motorized)
+        }
+    }
+}
+
+fn step1_sample(c: &CnaContent, s: &State, side: Side, count: usize) -> Vec<UnitId> {
+    assert!(count >= 4, "golden sample cannot omit a category");
+    let mut candidates: Vec<_> = s
+        .units_of(side)
+        .filter(|u| u.location.hex().is_some())
+        .map(|u| u.id.clone())
+        .collect();
+    candidates.sort();
+    let mut selected = BTreeSet::new();
+    for category in [
+        Step1Category::Foot,
+        Step1Category::Motorized,
+        Step1Category::Hq,
+        Step1Category::Carried,
+    ] {
+        let id = candidates
+            .iter()
+            .find(|id| step1_in_category(c, s, id, category));
+        assert!(id.is_some(), "golden fixture lacks a required category");
+        selected.insert(id.unwrap().clone());
+    }
+    for id in candidates {
+        if selected.len() == count {
+            break;
+        }
+        selected.insert(id);
+    }
+    assert!(
+        selected.len() == count,
+        "golden fixture lacks enough own units"
+    );
+    selected.into_iter().collect()
+}
+
+// Test-only observation of the unchanged RAW search's first pregraph refusal.
+// Preserve its per-member moving_limits -> CP -> segment-fuel ordering.
+enum Step1RawFirstGate {
+    Eligibility,
+    Allowance,
+    MovingLimits(Rejection),
+    CpWindow { member: UnitId, error: Rejection },
+    SegmentFuelOverflow,
+    SegmentFuel(SupplyError),
+}
+
+fn step1_raw_first_gate(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Option<Step1RawFirstGate> {
+    let Some(unit) = s.land.units.get(id) else {
+        return Some(Step1RawFirstGate::Eligibility);
+    };
+    let seat = SeatId::new(unit.side, ownership::seat_for_unit(c, s, id));
+    if (s.land.movement.mode == WindowMode::Segment
+        && s.cursor.anchor() != "opstage.movement_and_combat.movement")
+        || (s.land.movement.mode == WindowMode::Segment
+            && s.cursor.phasing(s.turn.player_a) != Some(unit.side))
+        || !eligible(c, s, id, seat)
+    {
+        return Some(Step1RawFirstGate::Eligibility);
+    }
+    let moving = s
+        .land
+        .reaction
+        .continuation
+        .as_ref()
+        .filter(|_| continuing(s, id))
+        .map_or_else(|| formation::members(c, s, id), |k| k.members.clone());
+    let Some(allowance) = moving
+        .iter()
+        .filter_map(|m| formation::individual_allowance(c, s, m))
+        .min_by_key(|a| a.cpa)
+    else {
+        return Some(Step1RawFirstGate::Allowance);
+    };
+    for member in &moving {
+        let limit = match moving_limits(c, s, member, strict) {
+            Ok(limit) => limit,
+            Err(error) => return Some(Step1RawFirstGate::MovingLimits(error)),
+        };
+        if let Err(error) = validate_window_cp(s, &s.land.units[member], allowance, 1, limit) {
+            return Some(Step1RawFirstGate::CpWindow {
+                member: member.clone(),
+                error,
+            });
+        }
+        let previous = s
+            .logistics
+            .fuel_segments
+            .get(member)
+            .filter(|ledger| {
+                ledger.segment.game_turn == s.cursor.game_turn
+                    && ledger.segment.op_stage == s.cursor.op_stage
+                    && ledger.segment.half == s.cursor.half
+                    && ledger.segment.cycle == s.cursor.cycle
+            })
+            .map_or(0, |ledger| ledger.cp_quarters);
+        let Some(next) = previous.checked_add(1) else {
+            return Some(Step1RawFirstGate::SegmentFuelOverflow);
+        };
+        if let Err(error) = logistics::plan_segment_fuel(c, s, member, next) {
+            return Some(Step1RawFirstGate::SegmentFuel(error));
+        }
+    }
+    None
+}
+
+fn step1_raw_first_gate_description(refusal: Option<Step1RawFirstGate>) -> String {
+    match refusal {
+        Some(Step1RawFirstGate::Eligibility) => "eligibility".into(),
+        Some(Step1RawFirstGate::Allowance) => "allowance".into(),
+        Some(Step1RawFirstGate::MovingLimits(error)) => format!("moving_limits:{error:?}"),
+        Some(Step1RawFirstGate::CpWindow { error, .. }) => format!("cp_window:{error:?}"),
+        Some(Step1RawFirstGate::SegmentFuelOverflow) => "segment_fuel:cp_overflow".into(),
+        Some(Step1RawFirstGate::SegmentFuel(error)) => format!("segment_fuel:{error:?}"),
+        None => "passed_pregraph_gates_but_raw_domain_empty".into(),
+    }
+}
+
+// Classify only the lead-authorized FIRST Axis Carried supply alternative.
+// Use the member that actually refused, not its formation's anchor or planner output.
+fn step1_first_supply_refusal(
+    c: &CnaContent,
+    s: &State,
+    refusal: &Option<Step1RawFirstGate>,
+) -> Result<(), String> {
+    let (member, error) = match refusal {
+        Some(Step1RawFirstGate::SegmentFuel(SupplyError::Insufficient)) => return Ok(()),
+        Some(Step1RawFirstGate::CpWindow { member, error }) => (member, error),
+        _ => return Err("not-authorized-supply-gate".into()),
+    };
+    if !matches!(error, Rejection::Illegal { message }
+        if message == "unit cannot move under its ration or water restrictions")
+    {
+        return Err("cp-error-is-not-exact-ration-water-message".into());
+    }
+    let Some(unit) = s.land.units.get(member) else {
+        return Err("cp-refusing-member-missing".into());
+    };
+    // These are the unchanged canonical movement_restrictions::may_move facts.
+    if !matches!(
+        unit.location,
+        Location::Hex { .. } | Location::OffMap { .. }
+    ) {
+        return Err("cp-refusing-member-not-in-play".into());
+    }
+    let history = s.logistics.rations.get(member).cloned().unwrap_or_default();
+    if history.pasta_saved_cohesion_quarters.is_some() {
+        return Err("cp-pasta-saved-cohesion-present".into());
+    }
+    let pasta_applies = c.units.units.get(member).is_some_and(|oa| {
+        oa.nationality == "italian"
+            && oa.echelon.as_deref().or_else(|| {
+                oa.class
+                    .as_ref()
+                    .and_then(|class| c.units.classes.get(class))
+                    .and_then(|class| class.echelon.as_deref())
+            }) == Some("battalion")
+    });
+    let pasta_missing = pasta_applies && history.pasta_gt != Some(s.cursor.game_turn);
+    if pasta_missing && unit.cohesion_quarters <= -40 {
+        return Err("cp-pasta-missing-at-cohesion-minus-forty-or-below".into());
+    }
+    let due = logistics::activity_water_due(c, s, member)
+        .map_err(|error| format!("cp-activity-water-due:{error:?}"))?;
+    let reserve = s
+        .logistics
+        .unit_supply
+        .get(member)
+        .map_or(0, |s| s.activity_water.get());
+    if reserve < 0 {
+        return Err("cp-negative-activity-water-reserve".into());
+    }
+    if reserve >= due {
+        return Err("cp-activity-water-reserve-not-below-due".into());
+    }
+    Ok(())
+}
+
+enum Step1WitnessMissing {
+    Population,
+    Dump,
+    FirstGate {
+        refusal: Option<Step1RawFirstGate>,
+        subcause: String,
+    },
+    Category {
+        category: Step1Category,
+        has_category: bool,
+    },
+}
+
+fn step1_category_label(category: Step1Category) -> &'static str {
+    match category {
+        Step1Category::Foot => "foot",
+        Step1Category::Motorized => "motorized",
+        Step1Category::Hq => "hq",
+        Step1Category::Carried => "carried",
+    }
+}
+
+fn step1_side_label(side: Side) -> &'static str {
+    match side {
+        Side::Axis => "axis",
+        Side::Commonwealth => "commonwealth",
+    }
+}
+
+fn step1_selection_failure(
+    window: &'static str,
+    side: Side,
+    missing: Step1WitnessMissing,
+    assertion: &'static str,
+) -> ! {
+    if let Step1WitnessMissing::FirstGate { refusal, subcause } = missing {
+        // Only this scripted public fixture's refusing gate/error is reported.
+        panic!(
+            "{assertion}: window={window} side={} category=carried reason=unexpected-first-refusing-gate subcause={subcause} gate={}",
+            step1_side_label(side),
+            step1_raw_first_gate_description(refusal)
+        );
+    }
+    let (category, reason) = match missing {
+        Step1WitnessMissing::FirstGate { .. } => unreachable!(),
+        Step1WitnessMissing::Population => ("sample", "fewer-than-required-on-map-units"),
+        Step1WitnessMissing::Dump => ("dump", "no-positive-new-raw-dump-draw"),
+        Step1WitnessMissing::Category {
+            category,
+            has_category,
+        } => (
+            step1_category_label(category),
+            if has_category {
+                "all-category-raw-domains-empty"
+            } else {
+                "no-on-map-category-candidate"
+            },
+        ),
+    };
+    // Fixed test context only: no IDs, State, Values, stocks or private facts.
+    panic!(
+        "{assertion}: window={window} side={} category={category} reason={reason}",
+        step1_side_label(side)
+    );
+}
+
+fn step1_witness_sample(
+    c: &CnaContent,
+    s: &State,
+    side: Side,
+    count: usize,
+) -> Result<Vec<UnitId>, Step1WitnessMissing> {
+    step1_window_witness_sample(c, s, side, count, false)
+}
+
+fn step1_window_witness_sample(
+    c: &CnaContent,
+    s: &State,
+    side: Side,
+    count: usize,
+    first_movement: bool,
+) -> Result<Vec<UnitId>, Step1WitnessMissing> {
+    step1_window_witness_sample_with_dump(c, s, side, count, first_movement, false)
+}
+
+fn step1_window_witness_sample_with_dump(
+    c: &CnaContent,
+    s: &State,
+    side: Side,
+    count: usize,
+    first_movement: bool,
+    require_dump: bool,
+) -> Result<Vec<UnitId>, Step1WitnessMissing> {
+    assert!(count >= 4, "golden sample cannot omit a category");
+    assert!(
+        !require_dump || count >= 5,
+        "golden sample cannot omit its Dump representative"
+    );
+    let mut candidates: Vec<_> = s
+        .units_of(side)
+        .filter(|u| u.location.hex().is_some())
+        .map(|u| u.id.clone())
+        .collect();
+    candidates.sort();
+    if candidates.len() < count {
+        return Err(Step1WitnessMissing::Population);
+    }
+    let mut domains: BTreeMap<UnitId, bool> = BTreeMap::new();
+    let mut selected = BTreeSet::new();
+    for category in [
+        Step1Category::Foot,
+        Step1Category::Motorized,
+        Step1Category::Hq,
+        Step1Category::Carried,
+    ] {
+        let has_category = candidates
+            .iter()
+            .any(|id| step1_in_category(c, s, id, category));
+        let id = candidates.iter().find(|id| {
+            step1_in_category(c, s, id, category)
+                && *domains
+                    .entry((*id).clone())
+                    .or_insert_with(|| !reachable_legacy_for_step1(c, s, id, false).is_empty())
+        });
+        let id = if let Some(id) = id {
+            id
+        } else if first_movement
+            && side == Side::Axis
+            && matches!(category, Step1Category::Carried)
+            && has_category
+        {
+            // The same nonempty on-map category set was exhausted by the RAW query above.
+            // EVERY candidate must have an exact authorized first supply refusal.
+            let carried: Vec<_> = candidates
+                .iter()
+                .filter(|id| step1_in_category(c, s, id, Step1Category::Carried))
+                .collect();
+            assert!(
+                !carried.is_empty(),
+                "golden supply refusal category set is empty"
+            );
+            for candidate in &carried {
+                let refusal = step1_raw_first_gate(c, s, candidate, false);
+                if let Err(subcause) = step1_first_supply_refusal(c, s, &refusal) {
+                    return Err(Step1WitnessMissing::FirstGate { refusal, subcause });
+                }
+            }
+            // Include a carried unit and all its empty-domain comparisons, never drop it.
+            carried[0]
+        } else {
+            return Err(Step1WitnessMissing::Category {
+                category,
+                has_category,
+            });
+        };
+        selected.insert(id.clone());
+    }
+    if require_dump {
+        // The unchanged RAW best-path/legacy-spend witness decides the first lexical unit.
+        // A category representative may also be the Dump representative; IDs remain unique.
+        let Some(id) = candidates
+            .iter()
+            .find(|id| step1_has_actual_dump_draw(c, s, id))
+        else {
+            return Err(Step1WitnessMissing::Dump);
+        };
+        selected.insert(id.clone());
+    }
+    // Four lexical category representatives, then the optional RAW Dump representative,
+    // then lexical filler. FIRST/setup/nonphasing routes never request the new representative.
+    for id in candidates {
+        if selected.len() == count {
+            break;
+        }
+        selected.insert(id);
+    }
+    assert!(
+        selected.len() == count,
+        "golden fixture lacks enough own units"
+    );
+    Ok(selected.into_iter().collect())
+}
+
+fn step1_require_domains(
+    c: &CnaContent,
+    g: &Game<Cna>,
+    window: &'static str,
+    assertion: &'static str,
+) {
+    let active = g
+        .state
+        .cursor
+        .phasing(g.state.turn.player_a)
+        .unwrap_or_else(|| {
+            panic!("{assertion}: window={window} side=none category=all reason=no-phasing-side")
+        });
+    if let Err(missing) =
+        step1_window_witness_sample(c, &g.state, active, 20, window == "first-movement")
+    {
+        step1_selection_failure(window, active, missing, assertion);
+    }
+}
+
+fn step1_compare(c: &CnaContent, g: &Game<Cna>, id: &UnitId) {
+    let u = &g.state.land.units[id];
+    let owner = SeatId::new(u.side, ownership::seat_for_unit(c, &g.state, id));
+    let opposing = SeatId::new(u.side.opponent(), owner.role);
+    let before = serde_json::to_vec(&g.state).expect("golden State encoding failed");
+    let rng_before = g.rng.clone();
+    for (perspective, target, withheld) in [
+        (Perspective::Seat(owner), id.as_str(), false),
+        (Perspective::Seat(opposing), id.as_str(), true),
+        (Perspective::Seat(owner), "__step1_absent_unit__", true),
+    ] {
+        assert!(
+            !g.state
+                .land
+                .units
+                .contains_key(&"__step1_absent_unit__".into()),
+            "golden absent target exists"
+        );
+        let legacy = crate::view::inspect_legacy_for_step1(c, &g.state, perspective, target, false);
+        let proposed = crate::view::inspect(c, &g.state, perspective, target, false);
+        assert!(legacy == proposed, "golden Result or Value differs");
+        assert!(
+            serde_json::to_vec(&legacy).expect("golden Result encoding failed")
+                == serde_json::to_vec(&proposed).expect("golden Result encoding failed"),
+            "golden serialized bytes differ"
+        );
+        if withheld {
+            assert!(
+                legacy
+                    .as_ref()
+                    .map_or(true, |v| v.get("reachable").is_none()),
+                "legacy disclosed unauthorized reachability"
+            );
+            assert!(
+                proposed
+                    .as_ref()
+                    .map_or(true, |v| v.get("reachable").is_none()),
+                "proposed disclosed unauthorized reachability"
+            );
+        } else {
+            assert!(
+                legacy.as_ref().is_ok_and(|v| v.get("reachable").is_some()),
+                "legacy own detail unavailable"
+            );
+            assert!(
+                proposed
+                    .as_ref()
+                    .is_ok_and(|v| v.get("reachable").is_some()),
+                "proposed own detail unavailable"
+            );
+        }
+        assert!(
+            serde_json::to_vec(&g.state).expect("golden State encoding failed") == before,
+            "golden inspect mutated State"
+        );
+        assert!(g.rng == rng_before, "golden inspect mutated RNG");
+    }
+}
+
+fn step1_script_answer(
+    c: &CnaContent,
+    s: &State,
+    request: &cna_core::decision::DecisionRequest,
+    chooser: &mut CampaignRng,
+    assigned: &mut BTreeSet<String>,
+) -> Value {
+    // Route through real setup handlers, not a fabricated transport State field.
+    if request.kind == crate::setup::KIND_TRUCKS {
+        let mut action = mandatory_profile_answer(&request.space.schema);
+        if let ActionSchema::Record { fields } = &request.space.schema
+            && let Some(ActionSchema::Unit { among }) =
+                fields.iter().find(|f| f.name == "unit").map(|f| &f.schema)
+            && let Some(id) = among
+                .iter()
+                .find(|id| formation::class(c, id).is_some_and(|v| v.unit_type == "infantry"))
+        {
+            action["unit"] = json!(id);
+        }
+        return action;
+    }
+    if request.kind == crate::setup::KIND_PRELOAD
+        && let Some(crate::setup::SetupTask::Preload { asset, operation }) =
+            s.setup.tasks.get(&request.id)
+    {
+        let key = asset.key();
+        if operation == "menu" {
+            let infantry = key.strip_prefix("unit:").is_some_and(|raw| {
+                formation::class(c, &raw.into()).is_some_and(|v| v.unit_type == "infantry")
+            });
+            let offered = matches!(&request.space.schema, ActionSchema::Choice { options }
+                if options.iter().any(|o| o.id == "motorize"));
+            if infantry && offered && assigned.insert(key) {
+                return json!("motorize");
+            }
+            return json!("done");
+        }
+        if operation == "motorize" {
+            return mandatory_profile_answer(&request.space.schema);
+        }
+    }
+    step1_profile_answer(c, s, request, chooser)
+}
+
+struct Step1ScriptedStates {
+    setup_closed: Game<Cna>,
+    first_movement: Game<Cna>,
+    midgame: Game<Cna>,
+}
+
+// Failure-only diagnostic of the LAST genuine movement window checked.
+// No first-window supply exception qualifies the mandatory midgame witnesses.
+fn step1_unmet_midgame(
+    c: &CnaContent,
+    last: Option<(State, bool)>,
+    termination: &'static str,
+) -> ! {
+    let Some((s, physical_move_before_window)) = last else {
+        panic!(
+            "golden script did not reach its required genuine boundary: termination={termination} window=last-movement side=none categories=unchecked dump=unchecked reason=no-movement-window"
+        );
+    };
+    let Some(active) = s.cursor.phasing(s.turn.player_a) else {
+        panic!(
+            "golden script did not reach its required genuine boundary: termination={termination} window=last-movement side=none categories=unchecked dump=unchecked reason=no-phasing-side"
+        );
+    };
+    let mut candidates: Vec<_> = s
+        .units_of(active)
+        .filter(|u| u.location.hex().is_some())
+        .map(|u| u.id.clone())
+        .collect();
+    candidates.sort();
+    let mut domains = BTreeMap::new();
+    let mut missing = Vec::new();
+    for category in [
+        Step1Category::Foot,
+        Step1Category::Motorized,
+        Step1Category::Hq,
+        Step1Category::Carried,
+    ] {
+        let has_category = candidates
+            .iter()
+            .any(|id| step1_in_category(c, &s, id, category));
+        let has_domain = candidates.iter().any(|id| {
+            step1_in_category(c, &s, id, category)
+                && *domains
+                    .entry(id.clone())
+                    .or_insert_with(|| !reachable_legacy_for_step1(c, &s, id, false).is_empty())
+        });
+        if !has_domain {
+            missing.push(format!(
+                "{}:{}",
+                step1_category_label(category),
+                if has_category {
+                    "raw-domains-empty"
+                } else {
+                    "no-on-map-candidate"
+                }
+            ));
+        }
+    }
+    let sample_population = candidates.len() >= 20;
+    let dump = if !missing.is_empty() || !sample_population {
+        "unchecked-category-or-population-witness-missing"
+    } else {
+        let ids = step1_witness_sample(c, &s, active, 20).unwrap_or_else(|missing| {
+            step1_selection_failure(
+                "last-movement",
+                active,
+                missing,
+                "golden last movement diagnostic selection inconsistent",
+            )
+        });
+        if ids.iter().any(|id| step1_has_actual_dump_draw(c, &s, id)) {
+            "positive-new-draw-present"
+        } else {
+            "positive-new-draw-missing"
+        }
+    };
+    let categories = if missing.is_empty() {
+        "all-raw-nonempty".into()
+    } else {
+        missing.join(",")
+    };
+    panic!(
+        "golden script did not reach its required genuine boundary: termination={termination} window=last-movement side={} categories={categories} sample-twenty={sample_population} dump={dump} physical-move-before-window={physical_move_before_window}",
+        step1_side_label(active)
+    );
+}
+
+fn step1_scripted_states(c: &CnaContent) -> Step1ScriptedStates {
+    let mut g: Game<Cna> = Game {
+        state: State::new(c).expect("golden campaign initialization failed"),
+        rng: CampaignRng::from_seed([8; 32]).state(),
+    };
+    let mut chooser = CampaignRng::from_seed([19; 32]);
+    let mut assigned = BTreeSet::new();
+    let mut setup = None;
+    let mut first_movement = None;
+    let mut actual_move = false;
+    let mut last_movement = None;
+    let rules = Cna::dev();
+    for n in 0..8192 {
+        let transition = match evaluate(&rules, c, &g, &Command::Advance) {
+            Ok(transition) => transition,
+            Err(_) => panic!("golden scripted Advance rejected"),
+        };
+        if matches!(transition.progress, Some(Progress::Finished { .. })) {
+            // Canonical completion remains a failure, with the retained LAST-window witnesses.
+            step1_unmet_midgame(c, last_movement, "campaign-finished-before-boundary");
+        }
+        g = transition.game;
+        // This transition, not a buffered final Respond, includes adjudicated
+        // setup::finish locations/pools. Preserve this possibly-empty control.
+        if g.state.setup.closed && setup.is_none() {
+            setup = Some(g.clone())
+        }
+        let movement_window = g.state.setup.closed
+            && g.state.cursor.block == Block::PlayerHalf
+            && g.state.cursor.anchor() == "opstage.movement_and_combat.movement"
+            && rules.pending(c, &g.state).iter().any(|r| r.kind == KIND);
+        if movement_window {
+            last_movement = Some((g.state.clone(), actual_move));
+            match first_movement {
+                None => {
+                    assert!(
+                        g.state.cursor.op_stage == Some(1),
+                        "golden first ordinary movement is not OpStage1"
+                    );
+                    step1_require_domains(
+                        c,
+                        &g,
+                        "first-movement",
+                        "golden first movement lacks nonempty category domains",
+                    );
+                    first_movement = Some(g.clone());
+                }
+                Some(first) if actual_move => {
+                    // Same earliest genuine boundary; move the saved snapshot without a clone.
+                    return Step1ScriptedStates {
+                        setup_closed: setup.unwrap(),
+                        first_movement: first,
+                        midgame: g,
+                    };
+                }
+                Some(first) => first_movement = Some(first),
+            }
+        }
+        let request = rules
+            .pending(c, &g.state)
+            .into_iter()
+            .next()
+            .expect("golden script has no pending request");
+        let action = step1_script_answer(c, &g.state, &request, &mut chooser, &mut assigned);
+        let prior_locations: Vec<_> = g
+            .state
+            .land
+            .units
+            .values()
+            .map(|u| (u.id.clone(), u.location.clone()))
+            .collect();
+        let was_movement = request.kind == KIND;
+        g = match evaluate(
+            &rules,
+            c,
+            &g,
+            &Command::Respond(DecisionResponse {
+                decision_id: request.id,
+                seat: request.seat,
+                controller_epoch: 1,
+                decision_revision: request.revision,
+                idempotency_key: format!("step1-golden-{n}"),
+                action,
+                public_explanation: None,
+            }),
+        ) {
+            Ok(transition) => transition.game,
+            Err(_) => panic!("golden scripted response rejected"),
+        };
+        if was_movement {
+            actual_move |= prior_locations.iter().any(|(id, location)| {
+                g.state.land.units.get(id).is_some_and(|u| {
+                    u.location
+                        .hex()
+                        .zip(location.hex())
+                        .is_some_and(|(to, from)| to != from)
+                })
+            });
+        }
+    }
+    step1_unmet_midgame(c, last_movement, "transition-limit-exhausted");
+}
+
+// Test-only source-gap preflight; no source value or gameplay policy is invented.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Step1SupplyStep {
+    ActivityWaterDue,
+    FuelCapacity,
+    OneCpFuel,
+}
+
+impl Step1SupplyStep {
+    fn label(self) -> &'static str {
+        match self {
+            Self::ActivityWaterDue => "activity-water-due",
+            Self::FuelCapacity => "fuel-capacity",
+            Self::OneCpFuel => "one-cp-fuel",
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct Step1SupplyRefusal {
+    step: Step1SupplyStep,
+    error: logistics::SupplyError,
+}
+
+fn step1_supply_input(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    step: Step1SupplyStep,
+) -> Result<i32, logistics::SupplyError> {
+    match step {
+        Step1SupplyStep::ActivityWaterDue => logistics::activity_water_due(c, s, id),
+        Step1SupplyStep::FuelCapacity => logistics::fuel_capacity(c, s, id).map(|n| n.get()),
+        Step1SupplyStep::OneCpFuel => logistics::movement_fuel_cost(c, s, id, 4).map(|n| n.get()),
+    }
+}
+
+struct Step1SuppliedMidgame {
+    game: Game<Cna>,
+    skipped: BTreeMap<UnitId, Vec<Step1SupplyRefusal>>,
+}
+
+// Every skipped unit retains full unit/Option holdings/Option history, including absence.
+// Each recorded canonical refusing step must retain its exact kind and case before/after.
+fn step1_check_source_skips(
+    c: &CnaContent,
+    original: &State,
+    supplied: &State,
+    skipped: &BTreeMap<UnitId, Vec<Step1SupplyRefusal>>,
+) -> Result<(), String> {
+    for (index, (id, refusals)) in skipped.iter().enumerate() {
+        if refusals.is_empty() {
+            return Err(format!("skipped-unit={index} missing-recorded-refusal"));
+        }
+        for refusal in refusals {
+            if !matches!(
+                &refusal.error,
+                logistics::SupplyError::Unsupported { .. }
+                    | logistics::SupplyError::UnknownFuelRate
+            ) {
+                return Err(format!("skipped-unit={index} unapproved-error-kind"));
+            }
+            for state in [original, supplied] {
+                if step1_supply_input(c, state, id, refusal.step) != Err(refusal.error.clone()) {
+                    return Err(format!(
+                        "skipped-unit={index} step={} exact-refusal-changed",
+                        refusal.step.label()
+                    ));
+                }
+            }
+        }
+        let encode = |state: &State| {
+            serde_json::to_vec(&(
+                state.land.units.get(id),
+                state.logistics.unit_supply.get(id),
+                state.logistics.rations.get(id),
+            ))
+            .expect("golden skipped unit encoding failed")
+        };
+        if encode(original) != encode(supplied) {
+            return Err(format!(
+                "skipped-unit={index} original-unit-supply-history-changed"
+            ));
+        }
+    }
+    Ok(())
+}
+
+// One plain count per recorded failing step/kind/case; no fixture IDs or Values.
+// A unit may refuse more than one preflight step, so group counts are not unique-unit totals.
+fn step1_print_source_skips(skipped: &BTreeMap<UnitId, Vec<Step1SupplyRefusal>>) {
+    let mut counts = BTreeMap::new();
+    for refusals in skipped.values() {
+        for refusal in refusals {
+            let (kind, case) = match &refusal.error {
+                logistics::SupplyError::Unsupported { case } => ("Unsupported", Some(*case)),
+                logistics::SupplyError::UnknownFuelRate => ("UnknownFuelRate", None),
+                _ => panic!("golden skipped count contains an unapproved error"),
+            };
+            *counts.entry((refusal.step, kind, case)).or_insert(0usize) += 1;
+        }
+    }
+    for ((step, kind, case), count) in counts {
+        let case = serde_json::to_string(&case).expect("golden source case encoding failed");
+        println!(
+            "step1 skipped source step={} kind={kind} case={case} count={count}",
+            step.label()
+        );
+    }
+}
+
+// Supplied-only representatives exclude every skipped unit; fixed sample remains twenty.
+// Lexical filler may overlap skipped units: all skips still get an ADDITIONAL comparison.
+fn step1_supplied_sample(
+    c: &CnaContent,
+    s: &State,
+    side: Side,
+    count: usize,
+    skipped: &BTreeMap<UnitId, Vec<Step1SupplyRefusal>>,
+    require_domains_and_dump: bool,
+) -> Result<Vec<UnitId>, Step1WitnessMissing> {
+    assert!(count >= 4, "golden sample cannot omit a category");
+    assert!(
+        !require_domains_and_dump || count >= 5,
+        "golden sample cannot omit its Dump representative"
+    );
+    let mut candidates: Vec<_> = s
+        .units_of(side)
+        .filter(|u| u.location.hex().is_some())
+        .map(|u| u.id.clone())
+        .collect();
+    candidates.sort();
+    if candidates.len() < count {
+        return Err(Step1WitnessMissing::Population);
+    }
+    let mut selected = BTreeSet::new();
+    let mut domains: BTreeMap<UnitId, bool> = BTreeMap::new();
+    for category in [
+        Step1Category::Foot,
+        Step1Category::Motorized,
+        Step1Category::Hq,
+        Step1Category::Carried,
+    ] {
+        let has_category = candidates
+            .iter()
+            .any(|id| !skipped.contains_key(id) && step1_in_category(c, s, id, category));
+        let id = candidates.iter().find(|id| {
+            !skipped.contains_key(*id)
+                && step1_in_category(c, s, id, category)
+                && (!require_domains_and_dump
+                    || ((!matches!(category, Step1Category::Hq)
+                        || logistics::activity_water_due(c, s, id).is_ok())
+                        && *domains.entry((*id).clone()).or_insert_with(|| {
+                            !reachable_legacy_for_step1(c, s, id, false).is_empty()
+                        })))
+        });
+        let Some(id) = id else {
+            return Err(Step1WitnessMissing::Category {
+                category,
+                has_category,
+            });
+        };
+        selected.insert(id.clone());
+    }
+    if require_domains_and_dump {
+        let Some(id) = candidates
+            .iter()
+            .find(|id| !skipped.contains_key(*id) && step1_has_actual_dump_draw(c, s, id))
+        else {
+            return Err(Step1WitnessMissing::Dump);
+        };
+        selected.insert(id.clone());
+    }
+    assert!(
+        selected.len() <= count,
+        "golden supplied mandatory witnesses exceed sample"
+    );
+    for id in candidates {
+        if selected.len() == count {
+            break;
+        }
+        selected.insert(id);
+    }
+    assert!(
+        selected.len() == count,
+        "golden fixture lacks enough own units"
+    );
+    Ok(selected.into_iter().collect())
+}
+
+// Test-only supplied clone of the EARLIEST genuine post-move boundary.
+// All three canonical inputs preflight BEFORE ANY per-unit supply/history/fuel write.
+fn step1_supplied_midgame(
+    c: &CnaContent,
+    original: &Game<Cna>,
+) -> Result<Step1SuppliedMidgame, String> {
+    let s = &original.state;
+    if s.cursor.game_turn == 0 || !matches!(s.cursor.op_stage, Some(1..=3)) {
+        return Err("invalid-supply-stage".into());
+    }
+    let stage = logistics::water::WaterStage::current(s);
+    let mut supplied = original.clone();
+    let mut skipped = BTreeMap::new();
+    let ids: Vec<_> = s
+        .land
+        .units
+        .values()
+        .filter(|unit| unit.location.hex().is_some())
+        .map(|unit| unit.id.clone())
+        .collect();
+    for (index, id) in ids.iter().enumerate() {
+        let unit = &s.land.units[id];
+        let old = s.logistics.unit_supply.get(id).cloned().unwrap_or_default();
+        let steps = [
+            Step1SupplyStep::ActivityWaterDue,
+            Step1SupplyStep::FuelCapacity,
+            Step1SupplyStep::OneCpFuel,
+        ];
+        // Every call reads original State. Even an earlier source gap cannot hide a later Invalid.
+        let computed = steps.map(|step| (step, step1_supply_input(c, s, id, step)));
+        let mut values = [0; 3];
+        let mut refusals = Vec::new();
+        for (slot, (step, result)) in computed.into_iter().enumerate() {
+            match result {
+                Ok(value) => {
+                    if value < 0 {
+                        return Err(format!(
+                            "candidate={index} step={} negative-input",
+                            step.label()
+                        ));
+                    }
+                    values[slot] = value;
+                }
+                Err(
+                    error @ (logistics::SupplyError::Unsupported { .. }
+                    | logistics::SupplyError::UnknownFuelRate),
+                ) => {
+                    refusals.push(Step1SupplyRefusal { step, error });
+                }
+                Err(error) => {
+                    return Err(format!("candidate={index} step={}:{error:?}", step.label()));
+                }
+            }
+        }
+        if !refusals.is_empty() {
+            skipped.insert(id.clone(), refusals);
+            continue; // No unit/Option holding/Option history write has occurred.
+        }
+        let [due, capacity, one_cp] = values;
+        if old.activity_water.get() < 0 || old.tank_fuel.get() < 0 || old.tank_fuel.get() > capacity
+        {
+            return Err(format!(
+                "candidate={index} invalid-reserve-or-tank-capacity"
+            ));
+        }
+        // This independent existing-stock check is NOT one of the three source-gap exemptions.
+        logistics::available_sources(s, id)
+            .map_err(|error| format!("candidate={index} existing-supply-source:{error:?}"))?;
+        let at_dump = s.logistics.dumps.values().any(|dump| {
+            dump.side == unit.side && dump.active && !dump.dummy
+                && matches!(&dump.location, crate::state::DumpLocation::Hex { hex } if Some(hex) == unit.location.hex())
+        });
+        let tank = if at_dump {
+            old.tank_fuel.get() // Tank precedes Dump: preserve its original boundary.
+        } else {
+            old.tank_fuel.get().max(one_cp.min(capacity)) // ONE CP, capped; never a full-tank repair.
+        };
+        let holding = supplied
+            .state
+            .logistics
+            .unit_supply
+            .entry(id.clone())
+            .or_default();
+        holding.activity_water = WaterPoints::new(old.activity_water.get().max(due));
+        holding.tank_fuel = FuelTenths::new(tank);
+        let history = supplied
+            .state
+            .logistics
+            .rations
+            .entry(id.clone())
+            .or_default();
+        // Exactly the four fields explicitly set by step1_plain_actual_hq_fixture.
+        history.water_stage = Some(stage);
+        history.infantry_water_received = 2;
+        history.issued_gt = Some(s.cursor.game_turn);
+        history.pasta_gt = Some(s.cursor.game_turn);
+    }
+    step1_check_source_skips(c, s, &supplied.state, &skipped)?;
+    // Mask only the six authorized inputs; all other State bytes and RNG must remain exact.
+    let mut masked = supplied.state.clone();
+    for id in &ids {
+        if skipped.contains_key(id) {
+            continue;
+        } // Entire optional inputs already proved exact.
+        let old = s.logistics.unit_supply.get(id).cloned().unwrap_or_default();
+        let holding = masked.logistics.unit_supply.get_mut(id).unwrap();
+        holding.activity_water = old.activity_water;
+        holding.tank_fuel = old.tank_fuel;
+        if !s.logistics.unit_supply.contains_key(id) {
+            if *holding != old {
+                return Err("supplied-clone-changed-other-unit-holdings".into());
+            }
+            masked.logistics.unit_supply.remove(id);
+        }
+        let old = s.logistics.rations.get(id).cloned().unwrap_or_default();
+        let history = masked.logistics.rations.get_mut(id).unwrap();
+        history.water_stage = old.water_stage;
+        history.infantry_water_received = old.infantry_water_received;
+        history.issued_gt = old.issued_gt;
+        history.pasta_gt = old.pasta_gt;
+        if !s.logistics.rations.contains_key(id) {
+            if *history != old {
+                return Err("supplied-clone-changed-other-ration-history".into());
+            }
+            masked.logistics.rations.remove(id);
+        }
+    }
+    if serde_json::to_vec(&masked).expect("golden State encoding failed")
+        != serde_json::to_vec(s).expect("golden State encoding failed")
+        || supplied.rng != original.rng
+    {
+        return Err("supplied-clone-changed-nonsupply-State-or-RNG".into());
+    }
+    Ok(Step1SuppliedMidgame {
+        game: supplied,
+        skipped,
+    })
+}
+
+// Failure-only projection of EACH candidate in the same lexical phasing on-map set.
+// No planner, alternative fixture, or extra runtime probe is used; None means no pregraph refusal.
+fn step1_supplied_witness_failure(
+    c: &CnaContent,
+    s: &State,
+    side: Side,
+    missing: Step1WitnessMissing,
+) -> ! {
+    let witness = match missing {
+        Step1WitnessMissing::Population => "population".into(),
+        Step1WitnessMissing::Dump => "positive-new-raw-dump-draw".into(),
+        Step1WitnessMissing::Category {
+            category,
+            has_category,
+        } => format!(
+            "category={} reason={}",
+            step1_category_label(category),
+            if has_category {
+                if matches!(category, Step1Category::Hq)
+                    && s.cursor.phasing(s.turn.player_a) == Some(side)
+                {
+                    "no-unskipped-computable-due-raw-nonempty-hq"
+                } else {
+                    "raw-domains-empty"
+                }
+            } else {
+                "no-unskipped-on-map-candidate"
+            }
+        ),
+        Step1WitnessMissing::FirstGate { .. } => "unexpected-first-window-exception".into(),
+    };
+    let mut candidates: Vec<_> = s
+        .units_of(side)
+        .filter(|unit| unit.location.hex().is_some())
+        .map(|unit| unit.id.clone())
+        .collect();
+    candidates.sort();
+    let gates: Vec<_> = candidates
+        .iter()
+        .enumerate()
+        .map(|(index, id)| {
+            let refusal = step1_raw_first_gate(c, s, id, false);
+            let gate = if refusal.is_none() {
+                "no-pregraph-refusal".into()
+            } else {
+                step1_raw_first_gate_description(refusal)
+            };
+            format!("candidate={index} gate={gate}")
+        })
+        .collect();
+    panic!(
+        "golden supplied midgame witness missing: window=midgame-supplied side={} witness={witness} candidates={} first-gates=[{}]",
+        step1_side_label(side),
+        candidates.len(),
+        gates.join(";")
+    );
+}
+
+#[test]
+fn step1_plain_setup_first_movement_and_midgame_twenty_per_side_byte_golden() {
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani")
+        .expect("golden content load failed");
+    let states = step1_scripted_states(&c);
+    for (g, window, require_domains) in [
+        (&states.setup_closed, "setup-closed", false),
+        (&states.first_movement, "first-movement", true),
+        (&states.midgame, "midgame-unsupplied", false),
+    ] {
+        for side in [Side::Axis, Side::Commonwealth] {
+            let ids =
+                if require_domains && g.state.cursor.phasing(g.state.turn.player_a) == Some(side) {
+                    step1_window_witness_sample(&c, &g.state, side, 20, window == "first-movement")
+                        .unwrap_or_else(|missing| {
+                            step1_selection_failure(
+                                window,
+                                side,
+                                missing,
+                                "golden snapshot lacks required actual query witnesses",
+                            )
+                        })
+                } else {
+                    // Setup-closed and nonphasing side retain exact original lexical fill.
+                    step1_sample(&c, &g.state, side, 20)
+                };
+            for id in ids {
+                step1_compare(&c, g, &id)
+            }
+        }
+    }
+    // Closed-window and nonphasing equality alone cannot pass search coverage.
+    step1_require_domains(
+        &c,
+        &states.first_movement,
+        "first-movement",
+        "golden first movement lost nonempty category domains",
+    );
+    let Step1SuppliedMidgame {
+        game: supplied,
+        skipped,
+    } = step1_supplied_midgame(&c, &states.midgame)
+        .unwrap_or_else(|reason| panic!("golden supplied midgame invalid: {reason}"));
+    // Add EVERY skipped unit in all three existing views, never replacing a base sample ID.
+    step1_print_source_skips(&skipped);
+    for id in skipped.keys() {
+        step1_compare(&c, &supplied, id);
+    }
+    step1_check_source_skips(&c, &states.midgame.state, &supplied.state, &skipped).unwrap_or_else(
+        |reason| panic!("golden additive skipped control changed refusal: {reason}"),
+    );
+    let active = supplied
+        .state
+        .cursor
+        .phasing(supplied.state.turn.player_a)
+        .expect("golden supplied midgame has no phasing side");
+    // Select ONCE on this exact supplied State, retaining the mandatory representatives.
+    let witnessed = step1_supplied_sample(&c, &supplied.state, active, 20, &skipped, true)
+        .unwrap_or_else(|missing| {
+            step1_supplied_witness_failure(&c, &supplied.state, active, missing)
+        });
+    assert!(
+        witnessed
+            .iter()
+            .any(|id| step1_has_actual_dump_draw(&c, &supplied.state, id)),
+        "golden fixture exercised no actual new dump draw: window=midgame-supplied side={} category=any reason=no-positive-new-dump-draw-in-selected-sample",
+        step1_side_label(active)
+    );
+    for side in [Side::Axis, Side::Commonwealth] {
+        let ids = if side == active {
+            witnessed.clone()
+        } else {
+            step1_supplied_sample(&c, &supplied.state, side, 20, &skipped, false).unwrap_or_else(
+                |missing| step1_supplied_witness_failure(&c, &supplied.state, side, missing),
+            )
+        };
+        for id in ids {
+            // Fixed base supplied sample; skipped comparisons are additional, even on overlap.
+            step1_compare(&c, &supplied, &id);
+        }
+    }
+    step1_check_source_skips(&c, &states.midgame.state, &supplied.state, &skipped).unwrap_or_else(
+        |reason| panic!("golden skipped source refusal changed after comparison: {reason}"),
+    );
+}
+
+fn step1_has_actual_dump_draw(c: &CnaContent, s: &State, id: &UnitId) -> bool {
+    let seat = SeatId::new(s.land.units[id].side, ownership::seat_for_unit(c, s, id));
+    let Some(path) = reachable_legacy_for_step1(c, s, id, false)
+        .into_iter()
+        .find(|r| !r.path.is_empty() && r.fuel_tenths > 0)
+    else {
+        return false;
+    };
+    let mut draft = s.clone();
+    // None means the original legacy spend path: no prepared query-fuel context.
+    // This is a read-only fixture simulation, not an authoritative movement action.
+    if run(
+        c,
+        &mut draft,
+        &Order {
+            unit: id.clone(),
+            path: path.path,
+            with_stack: false,
+            close_assault: vec![],
+        },
+        seat,
+        false,
+        false,
+        true,
+        &mut Vec::new(),
+        None,
+    )
+    .is_err()
+    {
+        return false;
+    }
+    draft.logistics.fuel_segments.iter().any(|(unit, ledger)| {
+        ledger.draws.iter().any(|draw| {
+            if !matches!(&draw.source, logistics::SupplySource::Dump(_)) {
+                return false;
+            }
+            let prior = s
+                .logistics
+                .fuel_segments
+                .get(unit)
+                .and_then(|l| l.draws.iter().find(|old| old.source == draw.source))
+                .map_or(0, |old| old.fuel.get());
+            draw.fuel.get() > prior
+        })
+    })
+}
+
+fn step1_plain_actual_hq_fixture() -> (CnaContent, Game<Cna>, UnitId) {
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let mut s = State::new(&c).unwrap();
+    s.turn.weather = Some(crate::state::WeatherState {
+        kind: WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    s.turn.player_a = Some(Side::Axis);
+    s.cursor.block = Block::PlayerHalf;
+    s.cursor.half = Some(Half::A);
+    s.cursor.op_stage = Some(1);
+    s.cursor.index = 1;
+    let ids: Vec<_> = s.land.units.keys().cloned().collect();
+    for id in &ids {
+        s.logistics.unit_supply.insert(
+            id.clone(),
+            UnitSupply {
+                tank_fuel: FuelTenths::new(10000),
+                ready_ammo: cna_core::quantity::AmmoPoints::new(10000),
+                activity_water: WaterPoints::new(10000),
+                ..Default::default()
+            },
+        );
+        s.logistics.rations.insert(
+            id.clone(),
+            logistics::Rations {
+                water_stage: Some(logistics::water::WaterStage::current(&s)),
+                infantry_water_received: 2,
+                issued_gt: Some(s.cursor.game_turn),
+                pasta_gt: Some(s.cursor.game_turn),
+                ..Default::default()
+            },
+        );
+    }
+    let g = start(&c, s, false);
+    let chosen = g
+        .state
+        .units_of(Side::Axis)
+        .filter(|u| {
+            u.location.hex().is_some()
+                && formation::allowance(&c, &g.state, &u.id).is_some_and(|a| a.motorized)
+                && moving_limits(&c, &g.state, &u.id, false).is_ok()
+        })
+        .max_by_key(|u| {
+            (
+                formation::members(&c, &g.state, &u.id).len(),
+                formation::allowance(&c, &g.state, &u.id).unwrap().cpa,
+            )
+        })
+        .unwrap();
+    let owner = SeatId::new(
+        chosen.side,
+        ownership::seat_for_unit(&c, &g.state, &chosen.id),
+    );
+    let id = chosen.id.clone();
+    assert!(
+        id.as_str() == "it.libyan_tank_command.trivioli_2nd_regt_hq",
+        "golden HQ selector changed"
+    );
+    assert!(
+        formation::members(&c, &g.state, &id).len() == 4,
+        "golden HQ members changed"
+    );
+    assert!(
+        formation::allowance(&c, &g.state, &id).is_some_and(|a| a.cpa == 25),
+        "golden HQ CPA changed"
+    );
+    assert!(
+        owner == SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &g.state, &id)),
+        "golden HQ owner changed"
+    );
+    (c, g, id)
+}
+
+#[test]
+fn step1_plain_actual_hq_owner_opponent_absent_byte_golden() {
+    let (c, g, id) = step1_plain_actual_hq_fixture();
+    step1_compare(&c, &g, &id);
+    assert!(
+        !reachable_legacy_for_step1(&c, &g.state, &id, false).is_empty(),
+        "golden HQ has no reachable witness"
+    );
+    assert!(
+        !reachable(&c, &g.state, &id, false).is_empty(),
+        "proposed HQ has no reachable witness"
+    );
+}
+
+// Append to the owned movement_tests module. SOURCE ONLY; no executed proof.
+#[test]
+fn step1_new_history_snapshot_preserves_absence_empty_lots_and_unmatched_sites() {
+    use logistics::cargo_history::{CargoHistory, CargoLot, CargoSite};
+    let (c, mut g, id) = step1_plain_actual_hq_fixture();
+    let present = CargoSite::Unit(id.clone());
+    let absent = CargoSite::Dump("__step1_absent_stock__".into());
+    let unmatched = CargoSite::AirDump("__step1_unmatched_history__".into());
+    let untouched = CargoSite::Ship("__step1_not_fuel_history__".into());
+    let stage = logistics::water::WaterStage::current(&g.state);
+    let history = CargoHistory {
+        stage,
+        lots: vec![CargoLot {
+            id: "step1-control".into(),
+            goods: cna_content::scenario::Supplies {
+                fuel: 2,
+                ..Default::default()
+            },
+            spent_cp_quarters: 4,
+            ceiling_cp_quarters: 100,
+            continuous_first_line: true,
+        }],
+    };
+    g.state
+        .logistics
+        .cargo_history
+        .histories
+        .insert(present.clone(), history.clone());
+    g.state.logistics.cargo_history.histories.insert(
+        unmatched.clone(),
+        CargoHistory {
+            lots: vec![],
+            ..history.clone()
+        },
+    );
+    g.state
+        .logistics
+        .cargo_history
+        .histories
+        .insert(untouched, history.clone());
+    let mut sites = logistics::query_withdrawal_history_sites(&g.state.logistics);
+    // Explicit absent control is safe: no physical record fabricated or queried.
+    sites.push(absent.clone());
+    assert!(
+        sites.contains(&unmatched),
+        "unmatched history omitted from root roster"
+    );
+    let snapshot = Step1PlanningHistorySnapshot::capture(&g.state, &sites);
+    let before = serde_json::to_vec(&g.state).expect("history State encoding failed");
+    let rng = g.rng.clone();
+    g.state.logistics.cargo_history.histories.remove(&present);
+    g.state
+        .logistics
+        .cargo_history
+        .histories
+        .insert(absent, history);
+    g.state
+        .logistics
+        .cargo_history
+        .histories
+        .get_mut(&unmatched)
+        .unwrap()
+        .lots
+        .push(CargoLot {
+            id: "step1-later".into(),
+            goods: Default::default(),
+            spent_cp_quarters: 8,
+            ceiling_cp_quarters: 80,
+            continuous_first_line: false,
+        });
+    snapshot.restore(&mut g.state);
+    assert!(
+        serde_json::to_vec(&g.state).expect("history State encoding failed") == before,
+        "history Option restoration changed bytes or unrelated motion/serials"
+    );
+    assert!(g.rng == rng, "history restoration changed RNG");
+    assert!(
+        !reachable_legacy_for_step1(&c, &g.state, &id, false).is_empty(),
+        "history control lost actual HQ search witness"
+    );
+}
+
+// RAW-only deterministic real-setup tuple. No holdings entry or source State is mutated.
+type Step1HistoryTuple = (HexId, String, UnitId, UnitId, Vec<HexId>);
+
+fn step1_real_setup_history_tuple(
+    c: &CnaContent,
+    g: &Game<Cna>,
+) -> Result<Step1HistoryTuple, &'static str> {
+    use cna_content::scenario::Supplies;
+    let s = &g.state;
+    let side = s.cursor.phasing(s.turn.player_a).ok_or("no-phasing-side")?;
+    let original = serde_json::to_vec(s).expect("history tuple State encoding failed");
+    let rng = g.rng.clone();
+    let mut origins: Vec<_> = s
+        .logistics
+        .dumps
+        .values()
+        .filter(|d| d.side == side && d.active && !d.dummy && d.supplies.fuel > 0)
+        .filter_map(|d| match &d.location {
+            crate::state::DumpLocation::Hex { hex } => Some(hex.clone()),
+            _ => None,
+        })
+        .collect();
+    origins.sort();
+    origins.dedup();
+    let had_dump = !origins.is_empty();
+    let mut had_carrier = false;
+    let mut had_raw_edge = false;
+    let mut selected = None;
+    // Complete tuple order: hex, dump ID, carrier ID, mover ID, then RAW path, all lexical.
+    'origins: for origin in origins {
+        let mut dumps: Vec<_> = s.logistics.dumps.iter()
+            .filter(|(_, d)| d.side == side && d.active && !d.dummy && d.supplies.fuel > 0
+                && matches!(&d.location, crate::state::DumpLocation::Hex { hex } if hex == &origin))
+            .map(|(id, _)| id.clone()).collect();
+        dumps.sort();
+        let mut carriers: Vec<_> = s
+            .units_of(side)
+            .filter(|u| {
+                u.location.hex() == Some(&origin)
+                && (u.trucks.light > 0 || u.trucks.medium > 0 || u.trucks.heavy > 0)
+                // setup/preload::holdings: absence means default empty cargo, no insertion.
+                && s.logistics.unit_supply.get(&u.id)
+                    .map_or(Supplies::default(), |h| h.carried) == Supplies::default()
+                && formation::individual_allowance(c, s, &u.id).is_some_and(|a| a.cpa > 0)
+            })
+            .map(|u| u.id.clone())
+            .collect();
+        carriers.sort();
+        had_carrier |= !carriers.is_empty();
+        if carriers.is_empty() {
+            continue;
+        }
+        let mut movers: Vec<_> = s
+            .units_of(side)
+            .filter(|u| {
+                u.location.hex() == Some(&origin)
+                    && formation::individual_allowance(c, s, &u.id).is_some_and(|a| a.cpa > 0)
+                    && moving_limits(c, s, &u.id, false).is_ok()
+            })
+            .map(|u| u.id.clone())
+            .collect();
+        movers.sort();
+        // RAW domains depend on the source State/mover, not a chosen carrier or new planner.
+        let raw_domains: Vec<_> = movers
+            .into_iter()
+            .map(|id| {
+                let mut paths: Vec<_> = reachable_legacy_for_step1(c, s, &id, false)
+                    .into_iter()
+                    .filter(|r| r.path.len() == 1 && r.fuel_tenths > 0)
+                    .map(|r| r.path)
+                    .collect();
+                paths.sort();
+                paths.dedup();
+                (id, paths)
+            })
+            .collect();
+        had_raw_edge |= raw_domains.iter().any(|(_, paths)| !paths.is_empty());
+        for dump in dumps {
+            for carrier in &carriers {
+                for (id, paths) in &raw_domains {
+                    let owner = SeatId::new(side, ownership::seat_for_unit(c, s, id));
+                    for path in paths {
+                        let mut draft = s.clone();
+                        // Original RAW execution only, on an owned clone; no prepared/new node.
+                        let result = run(
+                            c,
+                            &mut draft,
+                            &Order {
+                                unit: id.clone(),
+                                path: path.clone(),
+                                with_stack: false,
+                                close_assault: vec![],
+                            },
+                            owner,
+                            false,
+                            false,
+                            true,
+                            &mut Vec::new(),
+                            None,
+                        );
+                        let funds_selected_dump = result.is_ok() && draft.logistics.fuel_segments.iter()
+                            .any(|(unit, ledger)| ledger.draws.iter().any(|draw| {
+                                if !matches!(&draw.source, logistics::SupplySource::Dump(actual) if actual == &dump) {
+                                    return false;
+                                }
+                                let prior = s.logistics.fuel_segments.get(unit)
+                                    .and_then(|l| l.draws.iter().find(|old| old.source == draw.source))
+                                    .map_or(0, |old| old.fuel.get());
+                                draw.fuel.get() > prior
+                            }));
+                        if funds_selected_dump {
+                            selected =
+                                Some((origin, dump, carrier.clone(), id.clone(), path.clone()));
+                            break 'origins;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        serde_json::to_vec(s).expect("history tuple State encoding failed") == original
+            && g.rng == rng,
+        "history tuple selection changed source State/RNG or optional holdings"
+    );
+    selected.ok_or(if !had_dump {
+        "no-eligible-own-active-nondummy-positive-fuel-dump-hex"
+    } else if !had_carrier {
+        "no-own-cohex-empty-first-line-carrier-with-positive-CPA"
+    } else if !had_raw_edge {
+        "no-supported-RAW-positive-fuel-one-edge-mover-at-carrier-dump-hex"
+    } else {
+        "no-supported-RAW-path-funded-by-selected-dump"
+    })
+}
+
+// SAME ordinary control replacement. Kernel-only, not campaign history activation.
+#[test]
+fn step1_new_node_restores_successful_and_failed_sibling_full_state_bytes() {
+    use cna_content::scenario::Supplies;
+    use logistics::cargo_history::{self, CargoSite, CarrierTiming, LotSelection};
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani")
+        .expect("history real-setup content load failed");
+    // The same adjudicated setup/script/seed/boundaries as the unchanged broad golden.
+    let states = step1_scripted_states(&c);
+    // FIRST is mandatory preference. Construct supplied midgame ONLY if FIRST lacks a tuple.
+    let (g, (origin, dump, carrier, id, raw_good)) = match step1_real_setup_history_tuple(
+        &c,
+        &states.first_movement,
+    ) {
+        Ok(tuple) => (states.first_movement, tuple),
+        Err(first_missing) => {
+            let supplied = step1_supplied_midgame(&c, &states.midgame)
+                    .unwrap_or_else(|_| panic!(
+                        "history kernel unmet=first:{first_missing}; supplied-midgame-construction-refused"
+                    ));
+            let tuple = step1_real_setup_history_tuple(&c, &supplied.game).unwrap_or_else(
+                |supplied_missing| {
+                    panic!(
+                        "history kernel unmet=first:{first_missing}; supplied:{supplied_missing}"
+                    )
+                },
+            );
+            (supplied.game, tuple)
+        }
+    };
+    let rng = g.rng.clone();
+    let original = serde_json::to_vec(&g.state).expect("history selection State encoding failed");
+    let mut kernel = g.state.clone();
+    let side = kernel.land.units[&id].side;
+    assert!(
+        serde_json::to_vec(&kernel).expect("history selection State encoding failed") == original
+            && g.rng == rng,
+        "history co-location selection changed original State/RNG"
+    );
+    let owner = SeatId::new(side, ownership::seat_for_unit(&c, &kernel, &id));
+    let dump_site = CargoSite::Dump(dump.clone());
+    // Canonically tag ONE existing physical point through the real empty cohex carrier,
+    // then return it to the SAME real dump; no source value, relocation or stock repair.
+    // This reduced handling-record kernel is not a claim of a campaign action.
+    let carrier_site = CargoSite::Unit(carrier.clone());
+    let carrier_timing = CarrierTiming {
+        spent_cp_quarters: kernel.land.units[&carrier].cp_spent_quarters,
+        cpa_quarters: formation::individual_allowance(&c, &kernel, &carrier)
+            .unwrap()
+            .cpa
+            * 4,
+    };
+    let amount = Supplies {
+        fuel: 1,
+        ..Default::default()
+    };
+    let carrier_holding_before = kernel.logistics.unit_supply.get(&carrier).cloned();
+    let physical_before = (
+        kernel.logistics.dumps[&dump].supplies,
+        carrier_holding_before
+            .as_ref()
+            .map_or(Supplies::default(), |h| h.carried),
+    );
+    let selected = cargo_history::select(&kernel, owner.side, &dump_site, amount, None)
+        .expect("history kernel cannot select actual dump point");
+    cargo_history::transfer(
+        &mut kernel,
+        owner.side,
+        &dump_site,
+        &carrier_site,
+        amount,
+        &selected,
+        Some(carrier_timing),
+    )
+    .expect("history kernel canonical load record failed");
+    kernel.logistics.dumps.get_mut(&dump).unwrap().supplies.fuel -= 1;
+    kernel
+        .logistics
+        .unit_supply
+        .entry(carrier.clone())
+        .or_default()
+        .carried
+        .fuel += 1;
+    let tagged = cargo_history::select(&kernel, owner.side, &carrier_site, amount, None)
+        .expect("history kernel cannot select canonical tagged parcel");
+    assert!(
+        tagged.iter().all(|l: &LotSelection| l.lot != "fresh"),
+        "history kernel did not obtain a canonical parcel ID"
+    );
+    cargo_history::transfer(
+        &mut kernel,
+        owner.side,
+        &carrier_site,
+        &dump_site,
+        amount,
+        &tagged,
+        None,
+    )
+    .expect("history kernel canonical unload record failed");
+    kernel
+        .logistics
+        .unit_supply
+        .get_mut(&carrier)
+        .unwrap()
+        .carried
+        .fuel -= 1;
+    kernel.logistics.dumps.get_mut(&dump).unwrap().supplies.fuel += 1;
+    // Canonical paired physical updates may create a holding ONLY during load.
+    // After unload restore its original absence; unrelated holding bytes must be exact.
+    assert!(
+        kernel.logistics.unit_supply[&carrier]
+            == carrier_holding_before.clone().unwrap_or_default(),
+        "history canonical handling changed unrelated carrier holdings"
+    );
+    if carrier_holding_before.is_none() {
+        kernel.logistics.unit_supply.remove(&carrier);
+    }
+    assert!(
+        kernel.logistics.unit_supply.get(&carrier) == carrier_holding_before.as_ref(),
+        "history canonical handling changed carrier holding presence or bytes"
+    );
+    assert!(
+        physical_before
+            == (
+                kernel.logistics.dumps[&dump].supplies,
+                kernel
+                    .logistics
+                    .unit_supply
+                    .get(&carrier)
+                    .map_or(Supplies::default(), |h| h.carried)
+            ),
+        "history kernel invented physical stock"
+    );
+    assert!(
+        kernel.logistics.cargo_history.histories[&dump_site]
+            .lots
+            .iter()
+            .any(|l| l.goods.fuel > 0),
+        "history kernel has no tagged fuel at source"
+    );
+    // Keep all adjudicated stocks/tanks/CP unchanged; RAW selected an actual Dump-funded path.
+    let mut changed = formation::members(&c, &kernel, &id);
+    if let Some(parent) = ownership::parent_for_unit(&c, &kernel, &id) {
+        changed.push(parent.clone());
+    }
+    for member in formation::members(&c, &kernel, &id) {
+        assert!(
+            !kernel.logistics.fuel_segments.contains_key(&member),
+            "history kernel unexpectedly has a prior segment ledger"
+        );
+    }
+    let members = match unit_stack(
+        &c,
+        &mut kernel,
+        &Order {
+            unit: id.clone(),
+            path: vec![],
+            with_stack: false,
+            close_assault: vec![],
+        },
+        owner,
+        false,
+    ) {
+        Ok(members) => members,
+        Err(_) => panic!("history kernel unit stack failed"),
+    };
+    let base = kernel.clone();
+    let allowance = members
+        .iter()
+        .map(|m| formation::individual_allowance(&c, &base, m))
+        .collect::<Option<Vec<_>>>()
+        .expect("history kernel allowance unresolved")
+        .into_iter()
+        .min_by_key(|a| a.cpa)
+        .unwrap();
+    let group = PlanningGroup {
+        query_fuel: Some(
+            members
+                .iter()
+                .map(|m| {
+                    (
+                        m.clone(),
+                        logistics::PreparedMovementFuel::new(&c, &base, m),
+                    )
+                })
+                .collect(),
+        ),
+        members: &members,
+        allowance,
+        stacks: stacking::PlanningStacks::new(&c, &base, owner.side, &members, &origin),
+        limits: match members
+            .iter()
+            .map(|m| moving_limits(&c, &base, m, false))
+            .collect::<Result<Vec<_>, _>>()
+        {
+            Ok(limits) => limits,
+            Err(_) => panic!("history kernel limits unresolved"),
+        },
+        enemy_positions: base
+            .stacks()
+            .into_keys()
+            .filter(|(_, side)| *side == owner.side.opponent())
+            .map(|(h, _)| h)
+            .collect(),
+    };
+    assert!(
+        group
+            .query_fuel
+            .as_ref()
+            .unwrap()
+            .iter()
+            .all(|(_, p)| p.is_some()),
+        "history kernel did not exercise prepared fuel route"
+    );
+    let stocks: Vec<_> = base.logistics.unit_supply.keys().cloned().collect();
+    let dumps: Vec<_> = base.logistics.dumps.keys().cloned().collect();
+    let sites = logistics::query_withdrawal_history_sites(&base.logistics);
+    let node = PlanningNode::capture(&base, &changed, &stocks, &dumps, &sites);
+    let before = serde_json::to_vec(&base).expect("node State encoding failed");
+    let histories =
+        serde_json::to_vec(&base.logistics.cargo_history).expect("node history encoding failed");
+    let catalog = reachable(&c, &base, &id, false);
+    let legacy = reachable_legacy_for_step1(&c, &base, &id, false);
+    assert!(
+        serde_json::to_vec(&catalog).unwrap() == serde_json::to_vec(&legacy).unwrap(),
+        "supported-history catalog differs from raw reference; return private witness"
+    );
+    // The successful path was chosen lexically by RAW before any new catalog was queried.
+    assert!(
+        legacy
+            .iter()
+            .any(|r| r.path == raw_good && r.path.len() == 1 && r.fuel_tenths > 0),
+        "supported-history catalog has no selected RAW positive-fuel edge"
+    );
+    assert!(
+        catalog
+            .iter()
+            .any(|r| r.path == raw_good && r.path.len() == 1 && r.fuel_tenths > 0),
+        "supported-history catalog has no selected RAW positive-fuel edge"
+    );
+    let paths = [raw_good, vec!["__step1_invalid_hex__".into()]];
+    let mut outcomes: [Option<(Vec<u8>, Vec<u8>)>; 2] = [None, None];
+    for order in [[0usize, 1usize], [1usize, 0usize]] {
+        for index in order {
+            node.restore(&mut kernel);
+            assert!(
+                serde_json::to_vec(&kernel).unwrap() == before,
+                "node baseline bytes/presence/unmatched history not restored"
+            );
+            let mut events = vec![];
+            let result = run(
+                &c,
+                &mut kernel,
+                &Order {
+                    unit: id.clone(),
+                    path: paths[index].clone(),
+                    with_stack: false,
+                    close_assault: vec![],
+                },
+                owner,
+                false,
+                false,
+                true,
+                &mut events,
+                Some(&group),
+            );
+            if index == 0 {
+                assert!(
+                    result.is_ok(),
+                    "supported-history edge unexpectedly refused"
+                );
+                let Ok(reached) = &result else { unreachable!() };
+                assert!(
+                    reached.fuel_tenths > 0,
+                    "successful edge did not spend fuel"
+                );
+                let fuel = |s: &State| {
+                    s.logistics.cargo_history.histories[&dump_site]
+                        .lots
+                        .iter()
+                        .map(|l| i64::from(l.goods.fuel))
+                        .sum::<i64>()
+                };
+                assert!(
+                    fuel(&kernel) < fuel(&base),
+                    "successful canonical fuel withdrawal did not debit tagged dump history"
+                );
+            } else {
+                assert!(
+                    matches!(&result, Err(Rejection::Illegal { message })
+                    if message == "not a legal destination"),
+                    "failed sibling error changed"
+                );
+                assert!(
+                    serde_json::to_vec(&kernel).unwrap() == before,
+                    "invalid first edge changed State before refusal"
+                );
+            }
+            assert!(
+                events.is_empty(),
+                "hypothetical sibling emitted authoritative events"
+            );
+            let outcome = (
+                serde_json::to_vec(&result).expect("sibling Result encoding failed"),
+                serde_json::to_vec(&kernel).expect("sibling State encoding failed"),
+            );
+            if let Some(previous) = &outcomes[index] {
+                assert!(
+                    previous == &outcome,
+                    "sibling A-B/B-A outcome depends on exploration order"
+                );
+            } else {
+                outcomes[index] = Some(outcome);
+            }
+            node.restore(&mut kernel);
+            assert!(
+                serde_json::to_vec(&kernel).unwrap() == before,
+                "new node leaked successful/failed sibling full State mutation"
+            );
+            assert!(
+                serde_json::to_vec(&kernel.logistics.cargo_history).unwrap() == histories,
+                "history Options/lots/unmatched/motion/serials not restored"
+            );
+            assert!(g.rng == rng, "sibling control changed RNG");
+        }
+    }
+    assert!(
+        outcomes.iter().all(Option::is_some),
+        "sibling control did not exercise both outcomes"
+    );
+    assert!(
+        serde_json::to_vec(&reachable(&c, &kernel, &id, false)).unwrap()
+            == serde_json::to_vec(&catalog).unwrap(),
+        "supported-history gameplay catalog changed after restored sibling exploration"
+    );
+    assert!(
+        serde_json::to_vec(&kernel).unwrap() == before && g.rng == rng,
+        "supported-history catalog query changed State/RNG"
+    );
+}
