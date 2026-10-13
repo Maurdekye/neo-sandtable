@@ -2,9 +2,9 @@
 //! Cases: scen:59.2, scen:59.32, scen:59.36, airlog:34.0, airlog:35.24
 //! Interpretations: interp:air-0018
 
+use crate::CnaContent;
 use crate::air::state::AirRuntime;
 use crate::state::{AirState, State, side_key};
-use crate::CnaContent;
 use cna_core::engine::EngineError;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -17,7 +17,9 @@ pub(crate) type OriginalAircraftCounts = BTreeMap<String, BTreeMap<String, i32>>
 pub(crate) enum InitialAirImport {
     #[default]
     LegacyUnknown,
-    PendingOriginal { aircraft: OriginalAircraftCounts },
+    PendingOriginal {
+        aircraft: OriginalAircraftCounts,
+    },
     Imported,
 }
 
@@ -34,7 +36,9 @@ impl FreshAirSetupClose {
 }
 
 fn invariant(detail: impl Into<String>) -> EngineError {
-    EngineError::Invariant { detail: detail.into() }
+    EngineError::Invariant {
+        detail: detail.into(),
+    }
 }
 
 fn add(counts: &mut BTreeMap<String, i32>, aircraft: &str, n: i32) -> Result<(), String> {
@@ -42,11 +46,15 @@ fn add(counts: &mut BTreeMap<String, i32>, aircraft: &str, n: i32) -> Result<(),
         return Err("negative original aircraft count".into());
     }
     let old = counts.entry(aircraft.to_owned()).or_default();
-    *old = old.checked_add(n).ok_or("original aircraft count overflow")?;
+    *old = old
+        .checked_add(n)
+        .ok_or("original aircraft count overflow")?;
     Ok(())
 }
 
-pub(crate) fn original_aircraft_counts(content: &CnaContent) -> Result<OriginalAircraftCounts, String> {
+pub(crate) fn original_aircraft_counts(
+    content: &CnaContent,
+) -> Result<OriginalAircraftCounts, String> {
     let mut result = BTreeMap::new();
     for force in &content.scenario.air {
         let mut counts = BTreeMap::new();
@@ -76,7 +84,9 @@ fn aggregate_counts(air: &AirState) -> Result<OriginalAircraftCounts, String> {
         result.insert(force.clone(), counts);
     }
     for squadron in air.squadrons.values() {
-        let counts = result.get_mut(&squadron.force).ok_or("unknown initial squadron force")?;
+        let counts = result
+            .get_mut(&squadron.force)
+            .ok_or("unknown initial squadron force")?;
         for (aircraft, count) in &squadron.planes {
             add(counts, aircraft, count.total)?;
         }
@@ -116,15 +126,23 @@ pub(crate) fn validate_initial_air_close(
         || !state.setup.pools_started
         || !state.setup.preload_started
         || !state.setup.tasks.is_empty()
-        || state.decisions.pending.iter().any(|p| p.kind.starts_with("cna.setup."))
+        || state
+            .decisions
+            .pending
+            .iter()
+            .any(|p| p.kind.starts_with("cna.setup."))
         || !state.setup.unit_locations.is_empty()
         || !state.setup.dump_locations.is_empty()
         || !state.setup.pool_locations.is_empty()
     {
-        return Err(invariant("original aircraft require completed actual setup"));
+        return Err(invariant(
+            "original aircraft require completed actual setup",
+        ));
     }
     if state.air.runtime != AirRuntime::default() {
-        return Err(invariant("original aircraft already have canonical runtime"));
+        return Err(invariant(
+            "original aircraft already have canonical runtime",
+        ));
     }
     if aggregate_counts(&state.air).map_err(invariant)? != *original {
         return Err(invariant("original aircraft counts are not conserved"));
@@ -145,7 +163,9 @@ pub(super) fn authorize_close(
                 return Err(invariant("cannot authenticate a previously closed setup"));
             }
             validate_initial_air_close(content, state, aircraft)?;
-            Ok(Some(FreshAirSetupClose { original: aircraft.clone() }))
+            Ok(Some(FreshAirSetupClose {
+                original: aircraft.clone(),
+            }))
         }
     }
 }
@@ -188,13 +208,19 @@ mod tests {
     fn omitted_checkpoint_provenance_and_forged_flags_never_mint_close_authority() {
         let content = content();
         let mut value = serde_json::to_value(State::new(&content).unwrap()).unwrap();
-        value["setup"].as_object_mut().unwrap().remove("initial_air_import");
+        value["setup"]
+            .as_object_mut()
+            .unwrap()
+            .remove("initial_air_import");
         let mut old: State = serde_json::from_value(value).unwrap();
         old.setup.started = true;
         old.setup.air_started = true;
         old.setup.pools_started = true;
         old.setup.preload_started = true;
-        assert!(matches!(old.setup.initial_air_import, InitialAirImport::LegacyUnknown));
+        assert!(matches!(
+            old.setup.initial_air_import,
+            InitialAirImport::LegacyUnknown
+        ));
         assert!(authorize_close(&content, &old).unwrap().is_none());
         old.setup.closed = true;
         assert!(authorize_close(&content, &old).unwrap().is_none());
@@ -208,7 +234,8 @@ mod tests {
     fn resumed_pending_snapshot_is_read_only_and_checks_both_close_contexts() {
         let content = content();
         let state = completed_fixture(&content);
-        let restored: State = serde_json::from_value(serde_json::to_value(&state).unwrap()).unwrap();
+        let restored: State =
+            serde_json::from_value(serde_json::to_value(&state).unwrap()).unwrap();
         let before = serde_json::to_value(&restored).unwrap();
         let authority = authorize_close(&content, &restored).unwrap().unwrap();
         assert_eq!(serde_json::to_value(&restored).unwrap(), before);
@@ -217,7 +244,9 @@ mod tests {
         draft.setup.closed = true;
         validate_initial_air_close(&content, &draft, authority.original_aircraft()).unwrap();
         draft.setup.initial_air_import = InitialAirImport::Imported;
-        assert!(validate_initial_air_close(&content, &draft, authority.original_aircraft()).is_err());
+        assert!(
+            validate_initial_air_close(&content, &draft, authority.original_aircraft()).is_err()
+        );
         assert!(authorize_close(&content, &draft).is_err());
     }
 
@@ -226,7 +255,11 @@ mod tests {
     fn changed_source_counts_or_canonical_serials_refuse_without_mutation() {
         let content = content();
         let mut state = completed_fixture(&content);
-        state.air.runtime.plane_serial.insert(cna_protocol::Side::Axis, 1);
+        state
+            .air
+            .runtime
+            .plane_serial
+            .insert(cna_protocol::Side::Axis, 1);
         let before = serde_json::to_value(&state).unwrap();
         assert!(authorize_close(&content, &state).is_err());
         assert_eq!(serde_json::to_value(&state).unwrap(), before);
@@ -237,7 +270,8 @@ mod tests {
         assert!(authorize_close(&content, &state).is_err());
         assert_eq!(serde_json::to_value(&state).unwrap(), before);
         let mut state = completed_fixture(&content);
-        let InitialAirImport::PendingOriginal { aircraft } = &mut state.setup.initial_air_import else {
+        let InitialAirImport::PendingOriginal { aircraft } = &mut state.setup.initial_air_import
+        else {
             panic!();
         };
         aircraft.clear();

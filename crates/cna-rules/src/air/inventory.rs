@@ -976,7 +976,10 @@ where
     let before_edit = draft.runtime.clone();
     edit(&mut draft.runtime)?;
     check_site_transition(content, &air.runtime, &draft.runtime, allocation.as_ref())?;
-    super::maintenance::refit::check_transition(&air.runtime.maintenance, &draft.runtime.maintenance)?;
+    super::maintenance::refit::check_transition(
+        &air.runtime.maintenance,
+        &draft.runtime.maintenance,
+    )?;
     if [
         (&air.runtime.plane_serial, &draft.runtime.plane_serial),
         (&air.runtime.pilot_serial, &draft.runtime.pilot_serial),

@@ -90,7 +90,9 @@ fn before_fresh_close(c: &CnaContent) -> Game<Cna> {
             assert!(game.state.setup.tasks.is_empty());
             return game;
         } else {
-            game = evaluate(&Cna::dev(), c, &game, &Command::Advance).unwrap().game;
+            game = evaluate(&Cna::dev(), c, &game, &Command::Advance)
+                .unwrap()
+                .game;
         }
     }
     panic!("actual source setup did not reach final close");
@@ -98,11 +100,17 @@ fn before_fresh_close(c: &CnaContent) -> Game<Cna> {
 
 fn assert_direct_original_inventory(c: &CnaContent, state: &State) {
     use crate::air::preparation::{CurrentPreparation, InitialChoice};
-    assert!(matches!(state.setup.initial_air_import, super::super::InitialAirImport::Imported));
+    assert!(matches!(
+        state.setup.initial_air_import,
+        super::super::InitialAirImport::Imported
+    ));
     let preparation = &state.air.runtime.preparation;
     assert!(preparation.initialized);
     assert_eq!(preparation.current.len(), state.air.runtime.aircraft.len());
-    assert_eq!(preparation.initial_choices.len(), state.air.runtime.aircraft.len());
+    assert_eq!(
+        preparation.initial_choices.len(),
+        state.air.runtime.aircraft.len()
+    );
     let mut counts = super::super::original_aircraft_counts(c).unwrap();
     for rows in counts.values_mut() {
         for count in rows.values_mut() {
@@ -110,9 +118,16 @@ fn assert_direct_original_inventory(c: &CnaContent, state: &State) {
         }
     }
     for (id, plane) in &state.air.runtime.aircraft {
-        assert_eq!(preparation.current[id], CurrentPreparation::InitialUnspecified);
+        assert_eq!(
+            preparation.current[id],
+            CurrentPreparation::InitialUnspecified
+        );
         assert_eq!(preparation.initial_choices[id], InitialChoice::Unselected);
-        *counts.get_mut(&plane.force).unwrap().get_mut(&plane.aircraft).unwrap() += 1;
+        *counts
+            .get_mut(&plane.force)
+            .unwrap()
+            .get_mut(&plane.aircraft)
+            .unwrap() += 1;
     }
     assert_eq!(counts, super::super::original_aircraft_counts(c).unwrap());
     crate::air::inventory::check(c, &state.air).unwrap();
@@ -124,19 +139,40 @@ fn assert_direct_original_inventory(c: &CnaContent, state: &State) {
 fn actual_fresh_setup_close_admits_original_ids_once_across_checkpoint_and_retry() {
     let c = content();
     let game = before_fresh_close(&c);
-    assert!(matches!(game.state.setup.initial_air_import, super::super::InitialAirImport::PendingOriginal { .. }));
-    assert_eq!(game.state.air.runtime, crate::air::state::AirRuntime::default());
+    assert!(matches!(
+        game.state.setup.initial_air_import,
+        super::super::InitialAirImport::PendingOriginal { .. }
+    ));
+    assert_eq!(
+        game.state.air.runtime,
+        crate::air::state::AirRuntime::default()
+    );
     let restored: Game<Cna> = serde_json::from_value(serde_json::to_value(&game).unwrap()).unwrap();
     let closed = evaluate(&Cna::dev(), &c, &game, &Command::Advance).unwrap();
     let resumed = evaluate(&Cna::dev(), &c, &restored, &Command::Advance).unwrap();
-    assert_eq!(serde_json::to_value(&closed.game).unwrap(), serde_json::to_value(&resumed.game).unwrap());
-    assert_eq!(serde_json::to_value(&closed.events).unwrap(), serde_json::to_value(&resumed.events).unwrap());
+    assert_eq!(
+        serde_json::to_value(&closed.game).unwrap(),
+        serde_json::to_value(&resumed.game).unwrap()
+    );
+    assert_eq!(
+        serde_json::to_value(&closed.events).unwrap(),
+        serde_json::to_value(&resumed.events).unwrap()
+    );
     assert_direct_original_inventory(&c, &closed.game.state);
     let mut again = closed.game.clone();
     let before = serde_json::to_value(&again.state.air).unwrap();
     let mut rng = CampaignRng::from_state(&again.rng);
     let mut events = vec![];
-    super::finish(&c, &mut again.state, &mut Cx { rng: &mut rng, events: &mut events }, false).unwrap();
+    super::finish(
+        &c,
+        &mut again.state,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+        false,
+    )
+    .unwrap();
     assert_eq!(serde_json::to_value(&again.state.air).unwrap(), before);
     assert_eq!(rng.state(), again.rng);
     assert!(events.is_empty());
@@ -153,9 +189,14 @@ fn late_convoy_failure_rolls_back_actual_fresh_close_and_can_retry_without_new_i
     // no aircraft/source snapshot or authentication predicate is weakened.
     let date = c.scenario.meta.campaign_start_date.take();
     let error = evaluate(&Cna::dev(), &c, &game, &Command::Advance).unwrap_err();
-    assert!(matches!(error, Rejection::Engine(EngineError::Unsupported { case, .. }) if case == "airlog:56.21"));
+    assert!(
+        matches!(error, Rejection::Engine(EngineError::Unsupported { case, .. }) if case == "airlog:56.21")
+    );
     assert_eq!(serde_json::to_value(&game).unwrap(), before);
-    assert_eq!(game.state.air.runtime, crate::air::state::AirRuntime::default());
+    assert_eq!(
+        game.state.air.runtime,
+        crate::air::state::AirRuntime::default()
+    );
     c.scenario.meta.campaign_start_date = date;
     let resumed: Game<Cna> = serde_json::from_value(before).unwrap();
     let closed = evaluate(&Cna::dev(), &c, &resumed, &Command::Advance).unwrap();
@@ -170,25 +211,63 @@ fn actual_legacy_close_never_credits_existing_unknown_aircraft_and_empty_source_
     let c = content();
     let game = before_fresh_close(&c);
     let mut value = serde_json::to_value(&game).unwrap();
-    value["state"]["setup"].as_object_mut().unwrap().remove("initial_air_import");
+    value["state"]["setup"]
+        .as_object_mut()
+        .unwrap()
+        .remove("initial_air_import");
     let old: Game<Cna> = serde_json::from_value(value).unwrap();
     let mut closed = evaluate(&Cna::dev(), &c, &old, &Command::Advance).unwrap();
     assert!(closed.game.state.setup.closed);
-    assert!(matches!(closed.game.state.setup.initial_air_import, super::super::InitialAirImport::LegacyUnknown));
-    assert_eq!(closed.game.state.air.runtime, crate::air::state::AirRuntime::default());
+    assert!(matches!(
+        closed.game.state.setup.initial_air_import,
+        super::super::InitialAirImport::LegacyUnknown
+    ));
+    assert_eq!(
+        closed.game.state.air.runtime,
+        crate::air::state::AirRuntime::default()
+    );
     // Generic legacy import is legal only AFTER the genuine no-credit close.
     // A recovered closed checkpoint then re-finishes without reopening setup.
     crate::air::inventory::initialize(&c, &mut closed.game.state).unwrap();
-    let mut recovered: Game<Cna> = serde_json::from_value(serde_json::to_value(&closed.game).unwrap()).unwrap();
+    let mut recovered: Game<Cna> =
+        serde_json::from_value(serde_json::to_value(&closed.game).unwrap()).unwrap();
     let before = serde_json::to_value(&recovered).unwrap();
     let mut rng = CampaignRng::from_state(&recovered.rng);
     let mut events = vec![];
-    super::finish(&c, &mut recovered.state, &mut Cx { rng: &mut rng, events: &mut events }, false).unwrap();
+    super::finish(
+        &c,
+        &mut recovered.state,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+        false,
+    )
+    .unwrap();
     assert_eq!(serde_json::to_value(&recovered).unwrap(), before);
     assert_eq!(rng.state(), recovered.rng);
     assert!(events.is_empty());
-    assert!(closed.game.state.air.runtime.preparation.initial_choices.is_empty());
-    assert!(closed.game.state.air.runtime.preparation.current.values().all(|p| matches!(p, CurrentPreparation::UnknownLegacy)));
+    assert!(
+        closed
+            .game
+            .state
+            .air
+            .runtime
+            .preparation
+            .initial_choices
+            .is_empty()
+    );
+    assert!(
+        closed
+            .game
+            .state
+            .air
+            .runtime
+            .preparation
+            .current
+            .values()
+            .all(|p| matches!(p, CurrentPreparation::UnknownLegacy))
+    );
 
     let mut empty = content();
     empty.scenario.air.clear();

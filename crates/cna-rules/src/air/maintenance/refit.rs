@@ -7,7 +7,10 @@ use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
 
 use super::invalid;
-use crate::air::{sgsu::{SgsuId, SgsuOpStage}, state::PlaneId};
+use crate::air::{
+    sgsu::{SgsuId, SgsuOpStage},
+    state::PlaneId,
+};
 use crate::logistics::{SupplyDraw, SupplySource};
 
 /// Derived from the public cursor by the eventual caller, never an answer.
@@ -23,8 +26,10 @@ pub enum MaintenancePeriod {
 impl MaintenancePeriod {
     pub fn check(self) -> Result<(), EngineError> {
         match self {
-            Self::Tactical { game_turn, op_stage }
-                if game_turn > 0 && (1..=3).contains(&op_stage) => Ok(()),
+            Self::Tactical {
+                game_turn,
+                op_stage,
+            } if game_turn > 0 && (1..=3).contains(&op_stage) => Ok(()),
             Self::Strategic { game_turn } if game_turn > 0 => Ok(()),
             _ => Err(invalid("invalid trusted maintenance period")),
         }
@@ -35,16 +40,21 @@ impl MaintenancePeriod {
     /// or invented fourth OpStage is inferred from an absent receipt.
     /// Cases: airlog:35.14
     /// Interpretations: interp:airlog-0025
-    pub fn dues_stage(self, last_completed: Option<SgsuOpStage>)
-        -> Result<SgsuOpStage, EngineError>
-    {
+    pub fn dues_stage(
+        self,
+        last_completed: Option<SgsuOpStage>,
+    ) -> Result<SgsuOpStage, EngineError> {
         self.check()?;
         match self {
-            Self::Tactical { game_turn, op_stage } =>
-                Ok(SgsuOpStage { game_turn, op_stage }),
+            Self::Tactical {
+                game_turn,
+                op_stage,
+            } => Ok(SgsuOpStage {
+                game_turn,
+                op_stage,
+            }),
             Self::Strategic { game_turn } => last_completed
-                .filter(|stage| stage.game_turn == game_turn
-                    && (1..=3).contains(&stage.op_stage))
+                .filter(|stage| stage.game_turn == game_turn && (1..=3).contains(&stage.op_stage))
                 .ok_or_else(|| EngineError::Unsupported {
                     case: "airlog:35.14".into(),
                     detail: "strategic refit has no verified completed-stage dues identity".into(),
@@ -55,7 +65,10 @@ impl MaintenancePeriod {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum RefitMethod { Squadron, PerPlane }
+pub enum RefitMethod {
+    Squadron,
+    PerPlane,
+}
 
 /// Aircraft nationality grouping is resolved from content before rolling.
 /// This assigned-squadron identity also owns the single Stores charge; the
@@ -120,7 +133,10 @@ pub struct MaintenanceState {
 
 fn period_key(period: MaintenancePeriod) -> (u16, u8) {
     match period {
-        MaintenancePeriod::Tactical { game_turn, op_stage } => (game_turn, op_stage),
+        MaintenancePeriod::Tactical {
+            game_turn,
+            op_stage,
+        } => (game_turn, op_stage),
         MaintenancePeriod::Strategic { game_turn } => (game_turn, 4),
     }
 }
@@ -131,12 +147,17 @@ fn period_key(period: MaintenancePeriod) -> (u16, u8) {
 /// Interpretations: interp:airlog-0022
 pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
     let Some(period) = window.period else {
-        return if window == &MaintenanceState::default() { Ok(()) }
-            else { Err(invalid("maintenance state without a period")) };
+        return if window == &MaintenanceState::default() {
+            Ok(())
+        } else {
+            Err(invalid("maintenance state without a period"))
+        };
     };
     period.check()?;
     if (window.finished && (!window.waiting.is_empty() || window.closed.len() != Side::ALL.len()))
-        || (!window.finished && window.waiting.keys().copied().collect::<BTreeSet<_>>() != window.closed) {
+        || (!window.finished
+            && window.waiting.keys().copied().collect::<BTreeSet<_>>() != window.closed)
+    {
         return Err(invalid("maintenance answer/finish markers disagree"));
     }
     let mut attempted = BTreeSet::new();
@@ -146,10 +167,12 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
             return Err(invalid("future maintenance receipt"));
         }
         let ids: BTreeSet<_> = receipt.cohort.priority.iter().cloned().collect();
-        if receipt.cohort.servicer.0.is_empty() || receipt.cohort.assigned_squadron.is_empty()
+        if receipt.cohort.servicer.0.is_empty()
+            || receipt.cohort.assigned_squadron.is_empty()
             || ids.iter().any(|id| id.0.is_empty())
             || ids.len() != receipt.cohort.priority.len()
-            || !receipt.successful.is_subset(&ids) {
+            || !receipt.successful.is_subset(&ids)
+        {
             return Err(invalid("invalid maintenance outcome IDs"));
         }
         for id in ids {
@@ -159,12 +182,20 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
         }
     }
     for receipt in window.debits.values().flatten() {
-        let expected: Vec<_> = receipt.draws.iter().map(|draw|
-            (draw.source.clone(), draw.amount.fuel)).collect();
-        if expected != receipt.fuel_rounding || receipt.draws.iter().any(|draw|
-            !matches!(&draw.source, SupplySource::AirDump(_))
-                || draw.amount.fuel.get() < 0 || draw.amount.stores.get() < 0
-                || draw.amount.water.get() < 0 || draw.amount.ammo.get() != 0) {
+        let expected: Vec<_> = receipt
+            .draws
+            .iter()
+            .map(|draw| (draw.source.clone(), draw.amount.fuel))
+            .collect();
+        if expected != receipt.fuel_rounding
+            || receipt.draws.iter().any(|draw| {
+                !matches!(&draw.source, SupplySource::AirDump(_))
+                    || draw.amount.fuel.get() < 0
+                    || draw.amount.stores.get() < 0
+                    || draw.amount.water.get() < 0
+                    || draw.amount.ammo.get() != 0
+            })
+        {
             return Err(invalid("finite maintenance debit/rounding history differs"));
         }
     }
@@ -176,16 +207,22 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
 /// to create a receipt: the trusted finish derives every debit/outcome.
 /// Cases: airlog:38.33, airlog:38.36
 /// Interpretations: interp:airlog-0022
-pub(crate) fn check_transition(old: &MaintenanceState, new: &MaintenanceState)
-    -> Result<(), EngineError>
-{
+pub(crate) fn check_transition(
+    old: &MaintenanceState,
+    new: &MaintenanceState,
+) -> Result<(), EngineError> {
     check(new)?;
     if let Some(previous) = old.period {
-        let current = new.period.ok_or_else(|| invalid("maintenance period cannot be cleared"))?;
+        let current = new
+            .period
+            .ok_or_else(|| invalid("maintenance period cannot be cleared"))?;
         if period_key(current) < period_key(previous)
             || (current == previous && old.finished && !new.finished)
-            || (current != previous && !old.finished) {
-            return Err(invalid("maintenance period or completed marker rolled backward"));
+            || (current != previous && !old.finished)
+        {
+            return Err(invalid(
+                "maintenance period or completed marker rolled backward",
+            ));
         }
         if current == previous && old.finished && new != old {
             return Err(invalid("completed maintenance period is immutable"));
@@ -229,7 +266,9 @@ pub fn account_refit(
     let mut servicers: BTreeMap<String, SgsuId> = BTreeMap::new();
     for receipt in previous {
         receipt.period.check()?;
-        if receipt.period != period { continue; }
+        if receipt.period != period {
+            continue;
+        }
         let ids: BTreeSet<_> = receipt.cohort.priority.iter().cloned().collect();
         if !receipt.successful.is_subset(&ids) {
             return Err(invalid("refit receipt successes outside attempted IDs"));
@@ -247,7 +286,8 @@ pub fn account_refit(
         }
     }
     for (sgsu, ids) in &attempted {
-        let limit = limits.get(sgsu)
+        let limit = limits
+            .get(sgsu)
             .ok_or_else(|| invalid("missing trusted actual-SGSU refit capacity"))?;
         if u64::try_from(ids.len()).map_err(|_| invalid("attempt count overflow"))?
             > u64::from(*limit)
@@ -255,7 +295,10 @@ pub fn account_refit(
             return Err(invalid("refit attempts exceed SGSU ready+reserve"));
         }
     }
-    Ok(RefitAccounting { attempted, newly_charged_squadrons })
+    Ok(RefitAccounting {
+        attempted,
+        newly_charged_squadrons,
+    })
 }
 
 fn include_cohort(
@@ -267,21 +310,30 @@ fn include_cohort(
     if cohort.assigned_squadron.is_empty() || cohort.servicer.0.is_empty() {
         return Err(invalid("empty trusted refit identity"));
     }
-    if cohort.priority.is_empty() { return Ok(()); }
-    if servicers.get(&cohort.assigned_squadron)
+    if cohort.priority.is_empty() {
+        return Ok(());
+    }
+    if servicers
+        .get(&cohort.assigned_squadron)
         .is_some_and(|prior| prior != &cohort.servicer)
     {
         return Err(EngineError::Unsupported {
             case: "airlog:38.36".into(),
-            detail: "assigned-squadron refit split across SGSUs needs a shared Stores allocation".into(),
+            detail: "assigned-squadron refit split across SGSUs needs a shared Stores allocation"
+                .into(),
         });
     }
     servicers.insert(cohort.assigned_squadron.clone(), cohort.servicer.clone());
     for id in &cohort.priority {
         if !global.insert(id.clone()) {
-            return Err(invalid("PlaneId attempted more than once in maintenance period"));
+            return Err(invalid(
+                "PlaneId attempted more than once in maintenance period",
+            ));
         }
-        attempted.entry(cohort.servicer.clone()).or_default().insert(id.clone());
+        attempted
+            .entry(cohort.servicer.clone())
+            .or_default()
+            .insert(id.clone());
     }
     Ok(())
 }
@@ -290,9 +342,7 @@ fn include_cohort(
 /// mode uses its actual individual roll results instead; no default thresholds.
 /// Cases: airlog:38.34
 /// Interpretations: interp:airlog-0023
-pub fn successful_ids(priority: &[PlaneId], count: u32)
-    -> Result<BTreeSet<PlaneId>, EngineError>
-{
+pub fn successful_ids(priority: &[PlaneId], count: u32) -> Result<BTreeSet<PlaneId>, EngineError> {
     let distinct: BTreeSet<_> = priority.iter().collect();
     let count = usize::try_from(count).map_err(|_| invalid("success count exceeds usize"))?;
     if distinct.len() != priority.len() || count > priority.len() {
