@@ -706,3 +706,47 @@ pub(crate) fn plans_legacy_for_step1(
         })
         .collect()
 }
+
+#[cfg(test)]
+pub(crate) fn plans_reference_for_step2(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)> {
+    let Some(w) = &s.land.reaction.window else {
+        return vec![];
+    };
+    if !w.eligible.contains(id)
+        || formation::members(c, s, id)
+            .iter()
+            .any(|m| w.reacted.contains(m))
+    {
+        return vec![];
+    }
+    super::trucks::reachable_divisions(c, s, id, strict)
+        .into_values()
+        .filter_map(|division| {
+            let draft = match &division {
+                Some(d) => super::trucks::preview_reaction_division(c, s, id, d, strict).ok()?,
+                None => s.clone(),
+            };
+            let order = ReactionOrder {
+                unit: id.clone(),
+                path: vec![],
+                with_stack: false,
+                close_assault: vec![],
+                truck_division: division.clone(),
+            };
+            validate_saved_cpa(c, s, &draft, &order).ok()?;
+            let paths = movement::nonphasing_reachable_reference_for_step2(
+                c,
+                &draft,
+                id,
+                strict,
+                movement::NonPhasingMove::Reaction,
+            );
+            (!paths.is_empty()).then_some((division, paths))
+        })
+        .collect()
+}

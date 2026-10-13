@@ -623,6 +623,10 @@ pub fn spend_segment_fuel_report(
     id: &UnitId,
     total_cp_quarters: i32,
 ) -> Result<SegmentFuelSpent, SupplyError> {
+    #[cfg(test)]
+    let _timing = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::SegmentFuelTotal,
+    );
     let plan = plan_segment_fuel(content, state, id, total_cp_quarters)?;
     if plan.increment.is_zero() {
         state
@@ -634,7 +638,13 @@ pub fn spend_segment_fuel_report(
             draws: plan.draws,
         });
     }
-    let mut next = state.logistics.clone();
+    let mut next = {
+        #[cfg(test)]
+        let _timing = crate::land::movement::step2_query_timing::span(
+            crate::land::movement::step2_query_timing::Bucket::SegmentLogisticsClone,
+        );
+        state.logistics.clone()
+    };
     for funding in &plan.funding {
         withdraw_into(
             &mut next,
@@ -989,6 +999,10 @@ fn commit_query_fuel_plan(
     id: &UnitId,
     plan: SegmentFuelPlan,
 ) -> Result<SegmentFuelSpent, SupplyError> {
+    #[cfg(test)]
+    let _detail = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::Step2HistoryWithdrawalOverlay,
+    );
     if plan.increment.is_zero() {
         // Exactly the old ledger-only write; no account/source/overlay/withdrawal.
         state
@@ -1048,6 +1062,10 @@ pub(crate) fn spend_query_segment_fuel_report(
     total_cp_quarters: i32,
     prepared: Option<&super::supply::PreparedMovementFuel<'_>>,
 ) -> (QueryFuelPath, Result<SegmentFuelSpent, SupplyError>) {
+    #[cfg(test)]
+    let _detail = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::Step2PreparedFuelOverlay,
+    );
     let Some(pricing) =
         prepared.filter(|p| p.id() == id && std::ptr::eq(p.content(), content) && p.matches(state))
     else {
@@ -1059,4 +1077,189 @@ pub(crate) fn spend_query_segment_fuel_report(
     let result = plan_query_segment_fuel(pricing, state, id, total_cp_quarters)
         .and_then(|plan| commit_query_fuel_plan(state, id, plan));
     (QueryFuelPath::PreparedAllSources, result)
+}
+
+fn fund_indexed_query_plan<A: Clone + Ord>(
+    mut ledger: FuelSegmentLedger<A>,
+    total_cp_quarters: i32,
+    costs: BTreeMap<A, i32>,
+    choices: &mut Vec<SupplySource>,
+    mut get_account: impl FnMut(&A, &FuelSegmentLedger<A>) -> Result<FuelFundingAccount, SupplyError>,
+    mut get_capacities: impl FnMut(
+        &FuelFundingAccount,
+        &BTreeMap<SupplySource, i32>,
+    ) -> Result<BTreeMap<SupplySource, SupplyDemand>, SupplyError>,
+) -> Result<SegmentFuelPlan<A>, SupplyError> {
+    let increment = FuelTenths::new(costs.values().try_fold(0, |n, v| add(n, *v))?);
+    let mut combined = draws_map(&ledger.draws, ledger.paid_cost)?;
+    let mut funding = Vec::new();
+    let mut all_draws = Vec::new();
+    let mut used = BTreeMap::new();
+    for (account_id, cost) in costs {
+        let mut account = get_account(&account_id, &ledger)?;
+        let prior = draws_map(&account.draws, account.paid_cost)?;
+        let sources = get_capacities(&account, &used)?;
+        choices.clear();
+        choices.extend(sources.keys().cloned());
+        choices.sort_by(|a, b| {
+            (credit(a, prior.get(a).copied().unwrap_or_default()) == 0)
+                .cmp(&(credit(b, prior.get(b).copied().unwrap_or_default()) == 0))
+                .then_with(|| a.cmp(b))
+        });
+        let mut need = cost;
+        let mut draws = Vec::new();
+        let mut new_prior = prior.clone();
+        for source in choices.iter() {
+            let amount = &sources[source];
+            let take = amount.fuel.get().min(need);
+            if take == 0 {
+                continue;
+            }
+            need -= take;
+            let before = prior.get(source).copied().unwrap_or_default();
+            let after = FuelTenths::new(add(before.get(), take)?);
+            let actual = match source {
+                SupplySource::Unlimited => 0,
+                SupplySource::Tank | SupplySource::PoolTank(_) => take,
+                _ => mul((after.ceil_points() - before.ceil_points()).get(), 10)?,
+            };
+            let old = used.get(source).copied().unwrap_or(0);
+            used.insert(source.clone(), add(old, actual)?);
+            new_prior.insert(source.clone(), after);
+            let old = combined.get(source).copied().unwrap_or_default();
+            combined.insert(source.clone(), FuelTenths::new(add(old.get(), take)?));
+            draws.push(SupplyDraw {
+                source: source.clone(),
+                amount: SupplyDemand {
+                    fuel: FuelTenths::new(take),
+                    ..SupplyDemand::default()
+                },
+            });
+        }
+        if need != 0 {
+            return Err(SupplyError::Insufficient);
+        }
+        account.paid_cost = FuelTenths::new(add(account.paid_cost.get(), cost)?);
+        account.draws = as_draws(new_prior);
+        all_draws.extend(draws.clone());
+        funding.push(AccountPlan {
+            id: account_id,
+            account,
+            prior,
+            sources,
+            draws,
+            increment: FuelTenths::new(cost),
+        });
+    }
+    ledger.cp_quarters = total_cp_quarters;
+    ledger.paid_cost = FuelTenths::new(add(ledger.paid_cost.get(), increment.get())?);
+    ledger.draws = as_draws(combined);
+    Ok(SegmentFuelPlan {
+        ledger,
+        increment,
+        draws: all_draws,
+        funding,
+    })
+}
+
+fn plan_indexed_query_segment_fuel(
+    pricing: &super::supply::PreparedMovementFuel<'_>,
+    state: &State,
+    id: &UnitId,
+    total_cp_quarters: i32,
+    sources: &super::supply::QueryFuelSources<'_>,
+) -> Result<SegmentFuelPlan, SupplyError> {
+    let mut ledger = ledger_for(state, id)?;
+    let before_body = pricing.body_cost(state, ledger.cp_quarters)?;
+    let after_body = pricing.body_cost(state, total_cp_quarters)?;
+    let body_increment = after_body
+        .checked_sub(before_body)
+        .filter(|n| *n >= 0)
+        .ok_or(SupplyError::Invalid)?;
+    let costs = cohort_costs_with_chart(
+        |cp| pricing.chart(cp),
+        &mut ledger,
+        id,
+        total_cp_quarters,
+        body_increment,
+    )?;
+    // Original full planning, ALL funding accounts/sources, credit-first ordered
+    // selection, source validity/access, used balances and canonical draw totals.
+    // No account/origin/cohort/Tank certificate or cache of moving source access.
+    let mut choices = sources.choices();
+    choices.clear();
+    let result = fund_indexed_query_plan(
+        ledger,
+        total_cp_quarters,
+        costs,
+        &mut choices,
+        |account_id, ledger| {
+            if account_id == id {
+                own_account(state, id, ledger)
+            } else {
+                account_for(state, account_id, ledger)
+            }
+        },
+        |account, used| sources.capacities(state, id, account, used),
+    );
+    choices.clear(); // success, zero and every Result error drop active contents
+    result
+}
+
+pub(crate) fn spend_indexed_query_segment_fuel_report(
+    content: &CnaContent,
+    state: &mut State,
+    id: &UnitId,
+    total_cp_quarters: i32,
+    prepared: Option<&super::supply::PreparedMovementFuel<'_>>,
+    sources: &super::supply::QueryFuelSources<'_>,
+) -> (QueryFuelPath, Result<SegmentFuelSpent, SupplyError>) {
+    #[cfg(test)]
+    let _detail = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::Step2PreparedFuelOverlay,
+    );
+    if !sources.content_matches(content) {
+        return spend_query_segment_fuel_report(content, state, id, total_cp_quarters, prepared);
+    }
+    let Some(pricing) =
+        prepared.filter(|p| p.id() == id && std::ptr::eq(p.content(), content) && p.matches(state))
+    else {
+        return (
+            QueryFuelPath::Legacy,
+            spend_segment_fuel_report(content, state, id, total_cp_quarters),
+        );
+    };
+    let result = plan_indexed_query_segment_fuel(pricing, state, id, total_cp_quarters, sources)
+        .and_then(|plan| commit_query_fuel_plan(state, id, plan));
+    (QueryFuelPath::PreparedAllSources, result)
+}
+
+#[cfg(test)]
+mod step2_indexed_plan_controls {
+    use super::*;
+    #[test]
+    fn step2_indexed_complete_plan_matches_canonical_including_errors() {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani")
+            .expect("indexed plan content");
+        let s = State::new(&c).expect("indexed plan State");
+        let id: UnitId = "it.libyan_tank_command.trivioli_2nd_regt_hq".into();
+        let p = super::super::supply::PreparedMovementFuel::new(&c, &s, &id)
+            .expect("indexed plan pricing");
+        let index = super::super::supply::QueryFuelSources::new(&c, &s, std::slice::from_ref(&id));
+        let root = serde_json::to_vec(&s).unwrap();
+        for cp in [-1, 0, 1, 4, 5, 16, 20, 196, 200, 204, 216, i32::MAX] {
+            let a = plan_query_segment_fuel(&p, &s, &id, cp);
+            let b = plan_indexed_query_segment_fuel(&p, &s, &id, cp, &index);
+            assert_eq!(
+                a, b,
+                "complete indexed plan/funding/source/draw Result differs"
+            );
+            assert!(
+                index.choices().is_empty(),
+                "workspace retained active choice entries"
+            );
+        }
+        assert!(plan_indexed_query_segment_fuel(&p, &s, &id, -1, &index).is_err());
+        assert_eq!(serde_json::to_vec(&s).unwrap(), root);
+    }
 }

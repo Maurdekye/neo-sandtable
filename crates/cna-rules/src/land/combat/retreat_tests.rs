@@ -1113,3 +1113,67 @@ fn retreat_advance_keeps_all_roles_when_private_pinning_removes_all_eligibility(
         );
     }
 }
+
+#[test]
+fn step2_retreat_current_base_catalog_and_three_views_are_byte_exact() {
+    let (c, g, _overlay) = fixture();
+    let game = open_game(&c, &g);
+    let id: UnitId = LEG.into();
+    let owner = SeatId::new(
+        game.state.land.units[&id].side,
+        ownership::seat_for_unit(&c, &game.state, &id),
+    );
+    for strict in [false, true] {
+        let before = serde_json::to_vec(&game.state).unwrap();
+        let rng = game.rng.clone();
+        let old = reachable_reference_for_step2(&c, &game.state, &id, strict);
+        let new = reachable(&c, &game.state, &id, strict);
+        assert!(!old.is_empty(), "Step2 retreat reference witness missing");
+        assert!(
+            serde_json::to_vec(&old).unwrap() == serde_json::to_vec(&new).unwrap(),
+            "Step2 retreat catalog bytes differ"
+        );
+        for (perspective, target, withheld) in [
+            (Perspective::Seat(owner), id.as_str(), false),
+            (
+                Perspective::Seat(SeatId::new(owner.side.opponent(), owner.role)),
+                id.as_str(),
+                true,
+            ),
+            (Perspective::Seat(owner), "__step1_absent_unit__", true),
+        ] {
+            assert!(
+                !game
+                    .state
+                    .land
+                    .units
+                    .contains_key(&"__step1_absent_unit__".into()),
+                "Step2 absent target exists"
+            );
+            let old = crate::view::inspect_reference_for_step2(
+                &c,
+                &game.state,
+                perspective,
+                target,
+                strict,
+            );
+            let new = crate::view::inspect(&c, &game.state, perspective, target, strict);
+            assert!(
+                old == new
+                    && serde_json::to_vec(&old).unwrap() == serde_json::to_vec(&new).unwrap(),
+                "Step2 retreat Result bytes differ"
+            );
+            assert!(
+                old.as_ref()
+                    .map_or(true, |value| value.get("reachable").is_none())
+                    == withheld,
+                "Step2 retreat visibility differs"
+            );
+        }
+        assert!(
+            serde_json::to_vec(&game.state).unwrap() == before,
+            "Step2 retreat State changed"
+        );
+        assert!(game.rng == rng, "Step2 retreat RNG changed");
+    }
+}

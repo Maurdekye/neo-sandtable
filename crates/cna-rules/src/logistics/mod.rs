@@ -129,3 +129,6 @@ pub(crate) use segment::spend_query_segment_fuel_report;
 pub(crate) use supply::PreparedMovementFuel;
 
 pub(crate) use supply::query_withdrawal_history_sites;
+
+pub(crate) use segment::spend_indexed_query_segment_fuel_report;
+pub(crate) use supply::QueryFuelSources;

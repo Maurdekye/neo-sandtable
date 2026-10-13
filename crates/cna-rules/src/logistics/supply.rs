@@ -538,7 +538,17 @@ pub(super) fn withdraw_draws(
     sources: &BTreeMap<SupplySource, SupplyDemand>,
     prior: &BTreeMap<SupplySource, FuelTenths>,
 ) -> Result<LogisticsState, SupplyError> {
-    let mut next = logistics.clone();
+    #[cfg(test)]
+    let _timing = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::WithdrawDrawsTotal,
+    );
+    let mut next = {
+        #[cfg(test)]
+        let _timing = crate::land::movement::step2_query_timing::span(
+            crate::land::movement::step2_query_timing::Bucket::SupplyLogisticsClone,
+        );
+        logistics.clone()
+    };
     withdraw_into(&mut next, unit_id, demand, draws, sources, prior)?;
     Ok(next)
 }
@@ -563,6 +573,10 @@ pub(super) fn withdraw_into_state(
     sources: &BTreeMap<SupplySource, SupplyDemand>,
     prior: &BTreeMap<SupplySource, FuelTenths>,
 ) -> Result<(), SupplyError> {
+    #[cfg(test)]
+    let _detail = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::Step2HistoryWithdrawalOverlay,
+    );
     if !demand.valid() {
         return Err(SupplyError::Invalid);
     }
@@ -593,27 +607,26 @@ pub(super) fn withdraw_into_state(
         match source {
             SupplySource::Unlimited => {}
             SupplySource::Tank => {
-                next.unit_supply_mut(unit_id.ok_or(SupplyError::Invalid)?)
-                    .ok_or(SupplyError::Invalid)?
-                    .tank_fuel -= amount.fuel
+                *next
+                    .tank_mut(unit_id.ok_or(SupplyError::Invalid)?)
+                    .ok_or(SupplyError::Invalid)? -= amount.fuel
             }
             SupplySource::PoolTank(id) => {
                 if !amount.ammo.is_zero() || !amount.stores.is_zero() || !amount.water.is_zero() {
                     return Err(SupplyError::Invalid);
                 }
-                let pool = next.pool_mut(&id).ok_or(SupplyError::Invalid)?;
-                pool.tank_fuel = FuelTenths::new(
-                    pool.tank_fuel
-                        .get()
+                let tank = next.pool_tank_mut(&id).ok_or(SupplyError::Invalid)?;
+                *tank = FuelTenths::new(
+                    tank.get()
                         .checked_sub(amount.fuel.get())
                         .filter(|n| *n >= 0)
                         .ok_or(SupplyError::Insufficient)?,
                 );
             }
             SupplySource::ReadyAmmo => {
-                next.unit_supply_mut(unit_id.ok_or(SupplyError::Invalid)?)
-                    .ok_or(SupplyError::Invalid)?
-                    .ready_ammo -= amount.ammo
+                *next
+                    .ready_ammo_mut(unit_id.ok_or(SupplyError::Invalid)?)
+                    .ok_or(SupplyError::Invalid)? -= amount.ammo
             }
             source => {
                 if let SupplySource::AirDump(id) = &source
@@ -802,8 +815,9 @@ pub fn spend_for_unit_with_content(
 }
 
 pub(super) trait WithdrawalState {
-    fn unit_supply_mut(&mut self, id: &UnitId) -> Option<&mut crate::state::UnitSupply>;
-    fn pool_mut(&mut self, id: &str) -> Option<&mut crate::state::TruckPool>;
+    fn tank_mut(&mut self, id: &UnitId) -> Option<&mut FuelTenths>;
+    fn ready_ammo_mut(&mut self, id: &UnitId) -> Option<&mut AmmoPoints>;
+    fn pool_tank_mut(&mut self, id: &str) -> Option<&mut FuelTenths>;
     fn air_dump_matches(&self, id: &str) -> bool;
     fn stock_mut(&mut self, site: &super::cargo_history::CargoSite) -> Option<&mut Supplies>;
     fn retire_debit(
@@ -814,11 +828,17 @@ pub(super) trait WithdrawalState {
 }
 
 impl WithdrawalState for LogisticsState {
-    fn unit_supply_mut(&mut self, id: &UnitId) -> Option<&mut crate::state::UnitSupply> {
-        self.unit_supply.get_mut(id)
+    fn tank_mut(&mut self, id: &UnitId) -> Option<&mut FuelTenths> {
+        self.unit_supply.get_mut(id).map(|s| &mut s.tank_fuel)
     }
-    fn pool_mut(&mut self, id: &str) -> Option<&mut crate::state::TruckPool> {
-        self.truck_pools.iter_mut().find(|pool| pool.id == id)
+    fn ready_ammo_mut(&mut self, id: &UnitId) -> Option<&mut AmmoPoints> {
+        self.unit_supply.get_mut(id).map(|s| &mut s.ready_ammo)
+    }
+    fn pool_tank_mut(&mut self, id: &str) -> Option<&mut FuelTenths> {
+        self.truck_pools
+            .iter_mut()
+            .find(|pool| pool.id == id)
+            .map(|p| &mut p.tank_fuel)
     }
     fn air_dump_matches(&self, id: &str) -> bool {
         self.air_dumps.get(id).is_some_and(|dump| dump.id == id)
@@ -846,14 +866,16 @@ impl WithdrawalState for LogisticsState {
     }
 }
 
-// All reads start from the actual original LogisticsState. These maps contain
-// ONLY records copied on first mutation, not fabricated defaults/sparse guards.
+// Ephemeral field writes; histories remain canonical full histories.
 #[derive(Default)]
 struct WithdrawalEdits {
-    unit_supply: BTreeMap<UnitId, crate::state::UnitSupply>,
-    pools: BTreeMap<usize, crate::state::TruckPool>,
-    dumps: BTreeMap<String, crate::state::Dump>,
-    air_dumps: BTreeMap<String, super::air_supply::AirDump>,
+    tanks: BTreeMap<UnitId, FuelTenths>,
+    ready_ammo: BTreeMap<UnitId, AmmoPoints>,
+    unit_stocks: BTreeMap<UnitId, Supplies>,
+    pool_tanks: BTreeMap<usize, FuelTenths>,
+    pool_stocks: BTreeMap<usize, Supplies>,
+    dumps: BTreeMap<String, Supplies>,
+    air_dumps: BTreeMap<String, Supplies>,
     histories: BTreeMap<super::cargo_history::CargoSite, super::cargo_history::CargoHistory>,
 }
 
@@ -861,7 +883,6 @@ pub(super) struct WithdrawalOverlay<'a> {
     base: &'a LogisticsState,
     edits: WithdrawalEdits,
 }
-
 impl<'a> WithdrawalOverlay<'a> {
     pub(super) fn new(base: &'a LogisticsState) -> Self {
         Self {
@@ -869,88 +890,113 @@ impl<'a> WithdrawalOverlay<'a> {
             edits: WithdrawalEdits::default(),
         }
     }
-
     fn pool_index(&self, id: &str) -> Option<usize> {
-        // Preserve the original FIRST matching vector entry, even with duplicates.
-        // Withdrawal cannot change pool IDs/order or insert/remove pools.
         self.base.truck_pools.iter().position(|pool| pool.id == id)
     }
-
-    // Called synchronously after ALL original withdrawals succeed. The private
-    // overlay is never exposed across node restore/other State mutation.
     pub(super) fn finish(self) -> PreparedWithdrawal {
         PreparedWithdrawal { edits: self.edits }
     }
 }
-
 pub(super) struct PreparedWithdrawal {
     edits: WithdrawalEdits,
 }
-
 impl PreparedWithdrawal {
     pub(super) fn apply(self, logistics: &mut LogisticsState) {
-        for (id, record) in self.edits.unit_supply {
-            logistics.unit_supply.insert(id, record);
+        // Private synchronous contract: every physical field below came from an
+        // existing record, and no base record/identity can change before apply.
+        for (id, value) in self.edits.tanks {
+            logistics
+                .unit_supply
+                .get_mut(&id)
+                .expect("existing withdrawal tank")
+                .tank_fuel = value;
         }
-        for (index, record) in self.edits.pools {
-            logistics.truck_pools[index] = record;
+        for (id, value) in self.edits.ready_ammo {
+            logistics
+                .unit_supply
+                .get_mut(&id)
+                .expect("existing withdrawal ready ammo")
+                .ready_ammo = value;
         }
-        for (id, record) in self.edits.dumps {
-            logistics.dumps.insert(id, record);
+        for (id, value) in self.edits.unit_stocks {
+            logistics
+                .unit_supply
+                .get_mut(&id)
+                .expect("existing withdrawal unit stock")
+                .carried = value;
         }
-        for (id, record) in self.edits.air_dumps {
-            logistics.air_dumps.insert(id, record);
+        for (index, value) in self.edits.pool_tanks {
+            logistics.truck_pools[index].tank_fuel = value;
+        }
+        for (index, value) in self.edits.pool_stocks {
+            logistics.truck_pools[index].cargo = value;
+        }
+        for (id, value) in self.edits.dumps {
+            logistics
+                .dumps
+                .get_mut(&id)
+                .expect("existing withdrawal dump")
+                .supplies = value;
+        }
+        for (id, value) in self.edits.air_dumps {
+            logistics
+                .air_dumps
+                .get_mut(&id)
+                .expect("existing withdrawal air dump")
+                .supplies = value;
         }
         for (site, history) in self.edits.histories {
-            // Canonical retire_debit retains even an empty history entry.
             logistics.cargo_history.histories.insert(site, history);
         }
     }
 }
-
 impl WithdrawalState for WithdrawalOverlay<'_> {
-    fn unit_supply_mut(&mut self, id: &UnitId) -> Option<&mut crate::state::UnitSupply> {
-        if !self.edits.unit_supply.contains_key(id) {
-            let old = self.base.unit_supply.get(id)?.clone();
-            self.edits.unit_supply.insert(id.clone(), old);
-        }
-        self.edits.unit_supply.get_mut(id)
+    fn tank_mut(&mut self, id: &UnitId) -> Option<&mut FuelTenths> {
+        let old = self.base.unit_supply.get(id)?.tank_fuel;
+        Some(self.edits.tanks.entry(id.clone()).or_insert(old))
     }
-    fn pool_mut(&mut self, id: &str) -> Option<&mut crate::state::TruckPool> {
+    fn ready_ammo_mut(&mut self, id: &UnitId) -> Option<&mut AmmoPoints> {
+        let old = self.base.unit_supply.get(id)?.ready_ammo;
+        Some(self.edits.ready_ammo.entry(id.clone()).or_insert(old))
+    }
+    fn pool_tank_mut(&mut self, id: &str) -> Option<&mut FuelTenths> {
         let index = self.pool_index(id)?;
-        self.edits
-            .pools
-            .entry(index)
-            .or_insert_with(|| self.base.truck_pools[index].clone());
-        self.edits.pools.get_mut(&index)
+        Some(
+            self.edits
+                .pool_tanks
+                .entry(index)
+                .or_insert(self.base.truck_pools[index].tank_fuel),
+        )
     }
     fn air_dump_matches(&self, id: &str) -> bool {
-        self.edits
+        self.base
             .air_dumps
             .get(id)
-            .or_else(|| self.base.air_dumps.get(id))
             .is_some_and(|dump| dump.id == id)
     }
     fn stock_mut(&mut self, site: &super::cargo_history::CargoSite) -> Option<&mut Supplies> {
         use super::cargo_history::CargoSite;
         match site {
-            CargoSite::Unit(id) => self.unit_supply_mut(id).map(|s| &mut s.carried),
-            CargoSite::Pool(id) => self.pool_mut(id).map(|p| &mut p.cargo),
-            CargoSite::Dump(id) => {
-                if !self.edits.dumps.contains_key(id) {
+            CargoSite::Unit(id) => {
+                let old = self.base.unit_supply.get(id)?.carried;
+                Some(self.edits.unit_stocks.entry(id.clone()).or_insert(old))
+            }
+            CargoSite::Pool(id) => {
+                let index = self.pool_index(id)?;
+                Some(
                     self.edits
-                        .dumps
-                        .insert(id.clone(), self.base.dumps.get(id)?.clone());
-                }
-                self.edits.dumps.get_mut(id).map(|d| &mut d.supplies)
+                        .pool_stocks
+                        .entry(index)
+                        .or_insert(self.base.truck_pools[index].cargo),
+                )
+            }
+            CargoSite::Dump(id) => {
+                let old = self.base.dumps.get(id)?.supplies;
+                Some(self.edits.dumps.entry(id.clone()).or_insert(old))
             }
             CargoSite::AirDump(id) => {
-                if !self.edits.air_dumps.contains_key(id) {
-                    self.edits
-                        .air_dumps
-                        .insert(id.clone(), self.base.air_dumps.get(id)?.clone());
-                }
-                self.edits.air_dumps.get_mut(id).map(|d| &mut d.supplies)
+                let old = self.base.air_dumps.get(id)?.supplies;
+                Some(self.edits.air_dumps.entry(id.clone()).or_insert(old))
             }
             _ => None,
         }
@@ -966,6 +1012,201 @@ impl WithdrawalState for WithdrawalOverlay<'_> {
             self.edits.histories.insert(site.clone(), history.clone());
         }
         super::cargo_history::retire_debit_entry(self.edits.histories.get_mut(site), amount)
+    }
+}
+
+// Only identities/order are indexed. No stock, history, credit or access result is cached.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum QuerySupplyLocation {
+    Hex(cna_core::ids::HexId),
+    OffMap(String),
+}
+impl QuerySupplyLocation {
+    fn of(location: &Location) -> Option<Self> {
+        match location {
+            Location::Hex { hex } => Some(Self::Hex(hex.clone())),
+            Location::OffMap { id } => Some(Self::OffMap(id.clone())),
+            _ => None,
+        }
+    }
+}
+
+pub(crate) struct QueryFuelSources<'a> {
+    content: &'a CnaContent,
+    stationary: BTreeMap<(cna_protocol::Side, QuerySupplyLocation), Vec<UnitId>>,
+    moving: BTreeMap<cna_protocol::Side, Vec<UnitId>>,
+    dumps: BTreeMap<(cna_protocol::Side, QuerySupplyLocation), Vec<String>>,
+    source_buffer: std::cell::RefCell<Vec<SupplyDraw>>,
+    choice_buffer: std::cell::RefCell<Vec<SupplySource>>,
+}
+
+impl<'a> QueryFuelSources<'a> {
+    // Construct after query detachment from the exact draft, once per search.
+    // run(truth=false) cannot add/remove units/dumps, move stationary units,
+    // change side/dump location, or insert/remove dumps. UnitSupply presence IS dynamic.
+    pub(crate) fn new(content: &'a CnaContent, state: &State, movers: &[UnitId]) -> Self {
+        let mut stationary = BTreeMap::<_, Vec<_>>::new();
+        let mut moving = BTreeMap::<_, Vec<_>>::new();
+        for (id, unit) in &state.land.units {
+            if movers.contains(id) {
+                moving.entry(unit.side).or_default().push(id.clone());
+            } else if let Some(location) = QuerySupplyLocation::of(&unit.location) {
+                stationary
+                    .entry((unit.side, location))
+                    .or_default()
+                    .push(id.clone());
+            }
+        }
+        let mut dumps = BTreeMap::<_, Vec<_>>::new();
+        for (id, dump) in &state.logistics.dumps {
+            let location = match &dump.location {
+                DumpLocation::Hex { hex } => QuerySupplyLocation::Hex(hex.clone()),
+                DumpLocation::OffMap { id } => QuerySupplyLocation::OffMap(id.clone()),
+                DumpLocation::AwaitingSetup { .. } => continue,
+            };
+            dumps
+                .entry((dump.side, location))
+                .or_default()
+                .push(id.clone());
+        }
+        Self {
+            content,
+            stationary,
+            moving,
+            dumps,
+            source_buffer: Default::default(),
+            choice_buffer: Default::default(),
+        }
+    }
+
+    fn fill_sources(
+        &self,
+        state: &State,
+        id: &UnitId,
+        location: &Location,
+        sources: &mut Vec<SupplyDraw>,
+    ) -> Result<(), SupplyError> {
+        sources.clear();
+        let unit = state.land.units.get(id).ok_or(SupplyError::Invalid)?;
+        if !matches!(
+            unit.location,
+            Location::Hex { .. } | Location::OffMap { .. }
+        ) {
+            return Err(SupplyError::Invalid);
+        }
+        let key = QuerySupplyLocation::of(location).ok_or(SupplyError::Invalid)?;
+        if let Some(holdings) = state.logistics.unit_supply.get(id) {
+            if holdings.tank_fuel.get() < 0 || holdings.ready_ammo.get() < 0 {
+                return Err(SupplyError::Invalid);
+            }
+            sources.push(SupplyDraw {
+                source: SupplySource::Tank,
+                amount: SupplyDemand {
+                    fuel: holdings.tank_fuel,
+                    ..SupplyDemand::default()
+                },
+            });
+            sources.push(SupplyDraw {
+                source: SupplySource::ReadyAmmo,
+                amount: SupplyDemand {
+                    ammo: holdings.ready_ammo,
+                    ..SupplyDemand::default()
+                },
+            });
+        }
+        let fixed = self
+            .stationary
+            .get(&(unit.side, key.clone()))
+            .map_or(&[][..], Vec::as_slice);
+        let movers = self.moving.get(&unit.side).map_or(&[][..], Vec::as_slice);
+        let mut fixed = fixed.iter().peekable();
+        let mut movers = movers.iter().peekable();
+        // Merge disjoint sorted rosters: canonical UnitSupply BTreeMap candidate order.
+        while fixed.peek().is_some() || movers.peek().is_some() {
+            let next = match (fixed.peek(), movers.peek()) {
+                (Some(a), Some(b)) if a < b => fixed.next(),
+                (Some(_), Some(_)) => movers.next(),
+                (Some(_), None) => fixed.next(),
+                (None, Some(_)) => movers.next(),
+                (None, None) => None,
+            }
+            .expect("nonempty query roster merge");
+            let Some(holdings) = state.logistics.unit_supply.get(next) else {
+                continue;
+            };
+            let Some(carrier) = state.land.units.get(next) else {
+                continue;
+            };
+            if carrier.side == unit.side
+                && &carrier.location == location
+                && truck_count(carrier)? > 0
+            {
+                sources.push(SupplyDraw {
+                    source: SupplySource::UnitStock(next.clone()),
+                    amount: stock_demand(holdings.carried)?,
+                });
+            }
+        }
+        if let Some(ids) = self.dumps.get(&(unit.side, key)) {
+            for id in ids {
+                let Some(dump) = state.logistics.dumps.get(id) else {
+                    continue;
+                };
+                if dump.side == unit.side
+                    && dump.active
+                    && !dump.dummy
+                    && match (&dump.location, location) {
+                        (DumpLocation::Hex { hex: a }, Location::Hex { hex: b }) => a == b,
+                        (DumpLocation::OffMap { id: a }, Location::OffMap { id: b }) => a == b,
+                        _ => false,
+                    }
+                {
+                    sources.push(SupplyDraw {
+                        source: SupplySource::Dump(id.clone()),
+                        amount: stock_demand(dump.supplies)?,
+                    });
+                }
+            }
+        }
+        // Original opaque-location filtering happens AFTER all local stock validation.
+        if matches!(location, Location::OffMap { id } if !self.content.areas.locations.contains_key(id))
+        {
+            sources.retain(|s| {
+                matches!(
+                    s.source,
+                    SupplySource::Tank | SupplySource::ReadyAmmo | SupplySource::UnitStock(_)
+                )
+            });
+            return Ok(());
+        }
+        add_unlimited_source(self.content, unit.side, location, sources)
+    }
+
+    pub(super) fn capacities(
+        &self,
+        state: &State,
+        id: &UnitId,
+        account: &super::segment::FuelFundingAccount,
+        used: &BTreeMap<SupplySource, i32>,
+    ) -> Result<BTreeMap<SupplySource, SupplyDemand>, SupplyError> {
+        if state.land.units.get(id).ok_or(SupplyError::Invalid)?.side != account.side {
+            return Err(SupplyError::Invalid);
+        }
+        let mut buffer = self.source_buffer.borrow_mut();
+        if let Err(error) = self.fill_sources(state, id, &account.origin, &mut buffer) {
+            buffer.clear();
+            return Err(error);
+        }
+        let sources = buffer.drain(..).map(|s| (s.source, s.amount)).collect();
+        super::segment::source_capacities(sources, account, used)
+    }
+
+    pub(super) fn content_matches(&self, content: &CnaContent) -> bool {
+        std::ptr::eq(self.content, content)
+    }
+
+    pub(super) fn choices(&self) -> std::cell::RefMut<'_, Vec<SupplySource>> {
+        self.choice_buffer.borrow_mut()
     }
 }
 
@@ -1800,6 +2041,597 @@ mod step1_controls {
             }],
             &BTreeMap::from([(source, demand)]),
             &BTreeMap::new(),
+        );
+    }
+    fn compare_indexed_spend(c: &CnaContent, state: &State, id: &UnitId, cp: i32) -> State {
+        let pricing = PreparedMovementFuel::new(c, state, id);
+        let sources = QueryFuelSources::new(c, state, std::slice::from_ref(id));
+        let mut old = state.clone();
+        let mut new = state.clone();
+        let a = logistics::spend_query_segment_fuel_report(c, &mut old, id, cp, pricing.as_ref()).1;
+        let b = logistics::spend_indexed_query_segment_fuel_report(
+            c,
+            &mut new,
+            id,
+            cp,
+            pricing.as_ref(),
+            &sources,
+        )
+        .1;
+        assert_eq!(a, b, "indexed fuel Result/draw order differs");
+        assert_eq!(
+            serde_json::to_vec(&old).unwrap(),
+            serde_json::to_vec(&new).unwrap()
+        );
+        if b.is_err() {
+            assert_eq!(
+                serde_json::to_vec(state).unwrap(),
+                serde_json::to_vec(&new).unwrap()
+            );
+        }
+        new
+    }
+
+    #[test]
+    fn step2_indexed_sources_keep_dynamic_membership_error_order_and_reused_buffers() {
+        let (c, s, id) = fixture();
+        // Mark every unit as mobile in this isolated source-index control: this
+        // tests movement into/out of origins while retaining full canonical key order.
+        let movers: Vec<_> = s.land.units.keys().cloned().collect();
+        let roster = QueryFuelSources::new(&c, &s, &movers);
+        let origin = s
+            .land
+            .units
+            .get(&id)
+            .expect("source-index fixture missing consuming unit")
+            .location
+            .clone();
+        let before = serde_json::to_vec(&s).expect("source-index root State encoding failed");
+        assert!(
+            !s.logistics.unit_supply.contains_key(&id),
+            "source-index fixture requires absent consuming-unit holdings"
+        );
+        let mut buffer = Vec::new();
+        let mut baseline_result_and_buffer = None;
+        let mut absent_result_and_buffer = None;
+        for variant in 0..10 {
+            let mut current = s.clone();
+            match variant {
+                1 => {
+                    current
+                        .logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .ready_ammo = AmmoPoints::new(-1)
+                }
+                2 => {
+                    current.logistics.unit_supply.remove(&id);
+                }
+                3 => {
+                    current
+                        .land
+                        .units
+                        .get_mut(&id)
+                        .expect("source-index invalid-location variant missing consuming unit")
+                        .location = Location::Eliminated;
+                }
+                4 => {
+                    for dump in current.logistics.dumps.values_mut() {
+                        dump.active = false;
+                    }
+                }
+                5 => {
+                    for unit in current.land.units.values_mut() {
+                        unit.location = origin.clone();
+                    }
+                }
+                6 => {
+                    for unit in current.land.units.values_mut() {
+                        unit.location = Location::Eliminated;
+                    }
+                }
+                8 => {
+                    current.logistics.unit_supply.entry(id.clone()).or_default();
+                }
+                _ => {}
+            }
+            let expected = available_sources_at_with_content(&c, &current, &id, &origin);
+            let actual = roster
+                .fill_sources(&current, &id, &origin, &mut buffer)
+                .map(|()| buffer.clone());
+            assert_eq!(actual, expected);
+            if let Ok(sources) = &expected {
+                assert_eq!(
+                    &buffer, sources,
+                    "indexed source buffer content/order differs"
+                );
+            }
+            match variant {
+                0 => baseline_result_and_buffer = Some((expected.clone(), buffer.clone())),
+                1 => {
+                    assert_eq!(actual, Err(SupplyError::Invalid));
+                    assert!(
+                        buffer.is_empty(),
+                        "negative-present error retained source buffer"
+                    );
+                }
+                2 => {
+                    assert!(!current.logistics.unit_supply.contains_key(&id));
+                    absent_result_and_buffer = Some((expected.clone(), buffer.clone()));
+                }
+                // Retain the original baseline AFTER invalid-location variant 6,
+                // and repeat it after the new present-default variant 8.
+                7 | 9 => {
+                    let (baseline_result, baseline_buffer) = baseline_result_and_buffer
+                        .as_ref()
+                        .expect("source-index baseline result/buffer witness missing");
+                    assert_eq!(&expected, baseline_result);
+                    assert_eq!(&buffer, baseline_buffer);
+                }
+                8 => {
+                    assert_eq!(
+                        current.logistics.unit_supply.get(&id),
+                        Some(&crate::state::UnitSupply::default()),
+                        "source-index present-default fixture branch is not default holdings"
+                    );
+                    let present = expected
+                        .as_ref()
+                        .expect("source-index present-default canonical availability unavailable");
+                    let (absent_result, absent_buffer) = absent_result_and_buffer
+                        .as_ref()
+                        .expect("source-index absent result/buffer witness missing");
+                    let absent = absent_result
+                        .as_ref()
+                        .expect("source-index absent canonical availability unavailable");
+                    assert_eq!(absent, absent_buffer);
+                    assert_eq!(
+                        present
+                            .get(..2)
+                            .expect("source-index present-default missing two leading sources"),
+                        &[
+                            SupplyDraw {
+                                source: SupplySource::Tank,
+                                amount: SupplyDemand::default()
+                            },
+                            SupplyDraw {
+                                source: SupplySource::ReadyAmmo,
+                                amount: SupplyDemand::default()
+                            },
+                        ]
+                    );
+                    assert_eq!(
+                        &present[2..],
+                        absent.as_slice(),
+                        "canonical presence witness differs beyond two leading zero sources"
+                    );
+                }
+                _ => {}
+            }
+        }
+        // Full actual rollback after success/error/zero and sibling ABBA reuse.
+        let pricing = PreparedMovementFuel::new(&c, &s, &id);
+        for cp in [4, -1, 0, 16, 4, 4, 16, 0] {
+            let mut old = s.clone();
+            let mut new = s.clone();
+            let a =
+                logistics::spend_query_segment_fuel_report(&c, &mut old, &id, cp, pricing.as_ref())
+                    .1;
+            let b = logistics::spend_indexed_query_segment_fuel_report(
+                &c,
+                &mut new,
+                &id,
+                cp,
+                pricing.as_ref(),
+                &roster,
+            )
+            .1;
+            assert_eq!(a, b);
+            assert_eq!(
+                serde_json::to_vec(&old).expect("source-index old State encoding failed"),
+                serde_json::to_vec(&new).expect("source-index indexed State encoding failed")
+            );
+        }
+        assert_eq!(
+            serde_json::to_vec(&s).expect("source-index final root State encoding failed"),
+            before
+        );
+    }
+    #[test]
+    fn step2_indexed_query_spend_keeps_all_source_checks_credit_errors_and_zero_ledger() {
+        let (c, s, id) = fixture();
+        assert!(
+            PreparedMovementFuel::new(&c, &s, &id).is_some(),
+            "actual HQ has no prepared pricing descriptor"
+        );
+        for cp in [-1, 0, 1, 4, 5, 16, 20, 196, 200, 204, 216, i32::MAX] {
+            let _ = compare_indexed_spend(&c, &s, &id, cp);
+        }
+        let mut branch = s.clone();
+        for cp in [1, 2, 4, 8, 12, 16] {
+            branch = compare_indexed_spend(&c, &branch, &id, cp);
+        }
+        let origin = s.land.units[&id].location.clone();
+        let dump_id = s
+            .logistics
+            .dumps
+            .iter()
+            .find(|(_, d)| {
+                d.active
+                    && !d.dummy
+                    && d.side == s.land.units[&id].side
+                    && matches!((&d.location, &origin),
+                (crate::state::DumpLocation::Hex { hex: a }, Location::Hex { hex: b }) if a == b)
+            })
+            .map(|(key, _)| key.clone())
+            .expect("actual HQ has no original active dump");
+        let paid = compare_indexed_spend(&c, &s, &id, 1);
+        assert!(
+            paid.logistics.fuel_segments.get(&id).is_some_and(|l| l
+                .draws
+                .iter()
+                .any(|d| d.source == SupplySource::Dump(dump_id.clone()) && d.fuel.get() > 0)),
+            "actual HQ direct control did not use real dump funding"
+        );
+        let mut departed = paid.clone();
+        departed.logistics.dumps.remove(&dump_id);
+        let _ = compare_indexed_spend(&c, &departed, &id, 2);
+        let _ = compare_indexed_spend(&c, &departed, &id, 200);
+
+        for fault in 0..7 {
+            let mut bad = s.clone();
+            let u = bad.land.units.get_mut(&id).unwrap();
+            match fault {
+                0 => {
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .ready_ammo = AmmoPoints::new(-1);
+                }
+                1 => {
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .tank_fuel = FuelTenths::new(-1);
+                }
+                2 => {
+                    u.trucks.light = 1;
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .carried
+                        .ammo = -1;
+                }
+                3 => {
+                    u.trucks.light = 1;
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .carried
+                        .stores = -1;
+                }
+                4 => {
+                    u.trucks.light = 1;
+                    bad.logistics
+                        .unit_supply
+                        .entry(id.clone())
+                        .or_default()
+                        .carried
+                        .water = -1;
+                }
+                5 => {
+                    u.trucks.light = -1;
+                }
+                _ => {
+                    bad.logistics.dumps.get_mut(&dump_id).unwrap().supplies.fuel = -1;
+                }
+            }
+            let _ = compare_indexed_spend(&c, &bad, &id, 4);
+            let zero = compare_indexed_spend(&c, &bad, &id, 0);
+            // Both paths decide original zero semantics before positive-source validation.
+            assert!(
+                zero.land.units.len() == bad.land.units.len(),
+                "zero spend changed units"
+            );
+        }
+        if let Some(p) = PreparedMovementFuel::new(&c, &s, &id) {
+            let mut changed = s.clone();
+            changed.land.units.get_mut(&id).unwrap().trucks.light += 1;
+            let (path, _) =
+                logistics::spend_query_segment_fuel_report(&c, &mut changed, &id, 4, Some(&p));
+            assert!(
+                path == logistics::QueryFuelPath::Legacy,
+                "changed composition did not fallback"
+            );
+            let mut absent = s.clone();
+            absent.land.units.remove(&id);
+            let (path, _) =
+                logistics::spend_query_segment_fuel_report(&c, &mut absent, &id, 4, Some(&p));
+            assert!(
+                path == logistics::QueryFuelPath::Legacy,
+                "missing unit did not fallback"
+            );
+            let (another_content, _, _) = fixture();
+            let mut same_state = s.clone();
+            let (path, _) = logistics::spend_query_segment_fuel_report(
+                &another_content,
+                &mut same_state,
+                &id,
+                4,
+                Some(&p),
+            );
+            assert!(
+                path == logistics::QueryFuelPath::Legacy,
+                "different content did not fallback"
+            );
+            let mut changed_toe = s.clone();
+            changed_toe.land.units.get_mut(&id).unwrap().toe = None;
+            let (path, _) =
+                logistics::spend_query_segment_fuel_report(&c, &mut changed_toe, &id, 4, Some(&p));
+            assert!(
+                path == logistics::QueryFuelPath::Legacy,
+                "changed TOE did not fallback"
+            );
+        }
+    }
+
+    #[test]
+    fn step2_indexed_query_spend_retains_shared_cohort_history_accounts_and_branch_balances() {
+        let (c, mut root, id) = fixture();
+        root.land.units.get_mut(&id).unwrap().trucks.light = 2;
+        let root = compare_indexed_spend(&c, &root, &id, 4);
+        let account = root
+            .logistics
+            .fuel_accounts
+            .get(&id)
+            .expect("shared control lacks original funding account")
+            .clone();
+        let other = root
+            .land
+            .units
+            .keys()
+            .find(|other| {
+                *other != &id && root.land.units[*other].side == root.land.units[&id].side
+            })
+            .expect("shared control lacks a same-side identity")
+            .clone();
+        let mut shared = root.clone();
+        let mut ledger = shared.logistics.fuel_segments[&id].clone();
+        let first = ledger
+            .cohorts
+            .first()
+            .expect("shared control has no physical cohort")
+            .clone();
+        assert!(
+            first.count == 2,
+            "shared control physical cohort count differs"
+        );
+        let mut earlier = first.clone();
+        earlier.count = 1;
+        earlier.cp_quarters = 1;
+        let mut later = first;
+        later.count = 1;
+        later.id.push_str("-step1-split");
+        later.account = other.clone();
+        later.cp_quarters = 3;
+        ledger.cohorts = vec![earlier, later];
+        shared.logistics.fuel_segments.insert(id.clone(), ledger);
+        shared
+            .logistics
+            .fuel_accounts
+            .insert(other.clone(), account);
+        let mut a = compare_indexed_spend(&c, &shared, &id, 8);
+        a = compare_indexed_spend(&c, &a, &id, 12);
+        let _ = compare_indexed_spend(&c, &a, &id, 16);
+        // Repeated sibling restoration uses exact root balances/account bytes.
+        let _ = compare_indexed_spend(&c, &shared, &id, 16);
+        let mut absent = shared.clone();
+        absent.logistics.fuel_accounts.remove(&other);
+        let _ = compare_indexed_spend(&c, &absent, &id, 8);
+        let mut foreign = shared.clone();
+        foreign
+            .logistics
+            .fuel_accounts
+            .get_mut(&other)
+            .unwrap()
+            .side = root.land.units[&id].side.opponent();
+        let _ = compare_indexed_spend(&c, &foreign, &id, 8);
+        let mut wrong_origin = shared.clone();
+        wrong_origin
+            .logistics
+            .fuel_accounts
+            .get_mut(&other)
+            .unwrap()
+            .origin = Location::Eliminated;
+        let _ = compare_indexed_spend(&c, &wrong_origin, &id, 8);
+        let mut wrong_totals = shared;
+        wrong_totals
+            .logistics
+            .fuel_accounts
+            .get_mut(&other)
+            .unwrap()
+            .paid_cost = FuelTenths::new(i32::MAX);
+        let _ = compare_indexed_spend(&c, &wrong_totals, &id, 8);
+    }
+
+    #[test]
+    fn step2_indexed_sources_keep_opaque_dump_faults_exclusion_and_new_query_side_changes() {
+        let (c, root, id) = fixture();
+        let origin = root.land.units[&id].location.clone();
+        let owner = root.land.units[&id].side;
+        let dump = root.logistics.dumps.iter().find(|(_,d)| d.side == owner && d.active && !d.dummy
+            && matches!((&d.location,&origin), (DumpLocation::Hex {hex:a}, Location::Hex {hex:b}) if a==b))
+            .map(|(id,_)| id.clone()).expect("source control has no actual local dump");
+        let moving: Vec<_> = root.land.units.keys().cloned().collect();
+        for variant in 0..5 {
+            let mut current = root.clone();
+            let origin = if variant == 0 {
+                let opaque = Location::OffMap {
+                    id: "step2-control-opaque".into(),
+                };
+                current.land.units.get_mut(&id).unwrap().location = opaque.clone();
+                current.logistics.dumps.get_mut(&dump).unwrap().location = DumpLocation::OffMap {
+                    id: "step2-control-opaque".into(),
+                };
+                current
+                    .logistics
+                    .dumps
+                    .get_mut(&dump)
+                    .unwrap()
+                    .supplies
+                    .ammo = -1;
+                opaque
+            } else {
+                match variant {
+                    1 => current.logistics.dumps.get_mut(&dump).unwrap().dummy = true,
+                    2 => {
+                        current
+                            .logistics
+                            .dumps
+                            .get_mut(&dump)
+                            .unwrap()
+                            .supplies
+                            .water = -1
+                    }
+                    3 => current.land.units.get_mut(&id).unwrap().side = owner.opponent(),
+                    _ => {
+                        current.logistics.dumps.get_mut(&dump).unwrap().side = owner.opponent();
+                    }
+                }
+                origin.clone()
+            };
+            // Side/location/identity changes outside run(false) start a NEW query index.
+            let index = QueryFuelSources::new(&c, &current, &moving);
+            let expected = available_sources_at_with_content(&c, &current, &id, &origin);
+            let mut buffer = Vec::new();
+            let actual = index
+                .fill_sources(&current, &id, &origin, &mut buffer)
+                .map(|()| buffer.clone());
+            assert_eq!(actual, expected);
+            if variant == 0 {
+                assert_eq!(actual, Err(SupplyError::Invalid));
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod step2_pending_dump_controls {
+    use super::*;
+
+    #[test]
+    fn step2_indexed_sources_exclude_awaiting_setup_with_located_dump_control() {
+        let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani")
+            .expect("pending dump control content load failed");
+        let root = State::new(&content).expect("pending dump control State creation failed");
+        let id: UnitId = "it.libyan_tank_command.trivioli_2nd_regt_hq".into();
+        let origin = root.land.units[&id].location.clone();
+        let owner = root.land.units[&id].side;
+        let dump_id = root
+            .logistics
+            .dumps
+            .iter()
+            .find(|(_, dump)| {
+                dump.side == owner
+                    && dump.active
+                    && !dump.dummy
+                    && dump.supplies.fuel > 0
+                    && matches!((&dump.location, &origin),
+                    (DumpLocation::Hex { hex: a }, Location::Hex { hex: b }) if a == b)
+            })
+            .map(|(key, _)| key.clone())
+            .expect("actual HQ has no populated located dump");
+        let located_dump = root.logistics.dumps[&dump_id].clone();
+        let hex = match &located_dump.location {
+            DumpLocation::Hex { hex } => hex.clone(),
+            _ => panic!("located dump fixture selection differed"),
+        };
+        let root_bytes = serde_json::to_vec(&root).unwrap();
+        let located_result = available_sources_at_with_content(&content, &root, &id, &origin);
+        let located_index = QueryFuelSources::new(&content, &root, std::slice::from_ref(&id));
+        let mut located_buffer = Vec::new();
+        let indexed_located = located_index
+            .fill_sources(&root, &id, &origin, &mut located_buffer)
+            .map(|()| located_buffer.clone());
+        assert_eq!(
+            indexed_located, located_result,
+            "complete located Result/ordered draws differ"
+        );
+        let mut expected_pending = located_result.expect("located canonical source control failed");
+        assert!(
+            expected_pending
+                .iter()
+                .any(|draw| draw.source == SupplySource::Dump(dump_id.clone())),
+            "located canonical control omitted the actual populated dump"
+        );
+        assert!(
+            located_index
+                .dumps
+                .values()
+                .flatten()
+                .any(|key| key == &dump_id),
+            "located index omitted the actual dump identity"
+        );
+        assert_eq!(
+            serde_json::to_vec(&root).unwrap(),
+            root_bytes,
+            "located source reads changed State"
+        );
+
+        let mut pending = root.clone();
+        pending.logistics.dumps.get_mut(&dump_id).unwrap().location = DumpLocation::AwaitingSetup {
+            placement: cna_content::scenario::Placement::Hex { hex },
+        };
+        let pending_dump = &pending.logistics.dumps[&dump_id];
+        assert_eq!(pending_dump.side, located_dump.side);
+        assert_eq!(pending_dump.active, located_dump.active);
+        assert_eq!(pending_dump.dummy, located_dump.dummy);
+        assert_eq!(pending_dump.supplies, located_dump.supplies);
+        assert!(
+            pending_dump.side == owner
+                && pending_dump.active
+                && !pending_dump.dummy
+                && pending_dump.supplies.fuel > 0,
+            "pending control lost its actual populated eligible fields"
+        );
+        let pending_bytes = serde_json::to_vec(&pending).unwrap();
+        let pending_result = available_sources_at_with_content(&content, &pending, &id, &origin);
+        let pending_index = QueryFuelSources::new(&content, &pending, std::slice::from_ref(&id));
+        assert!(
+            !pending_index
+                .dumps
+                .values()
+                .flatten()
+                .any(|key| key == &dump_id),
+            "pending dump entered the fixed location roster"
+        );
+        let mut pending_buffer = Vec::new();
+        let indexed_pending = pending_index
+            .fill_sources(&pending, &id, &origin, &mut pending_buffer)
+            .map(|()| pending_buffer.clone());
+        assert_eq!(
+            indexed_pending, pending_result,
+            "complete pending Result/ordered draws differ"
+        );
+        expected_pending.retain(|draw| draw.source != SupplySource::Dump(dump_id.clone()));
+        assert_eq!(
+            pending_result,
+            Ok(expected_pending),
+            "pending canonical result differs beyond removal of the located dump"
+        );
+        assert_eq!(
+            serde_json::to_vec(&pending).unwrap(),
+            pending_bytes,
+            "pending source reads changed State"
+        );
+        assert_eq!(
+            serde_json::to_vec(&root).unwrap(),
+            root_bytes,
+            "pending control changed original State"
         );
     }
 }

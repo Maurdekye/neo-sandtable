@@ -6081,3 +6081,477 @@ fn not_applicable_cwa_hq_moves_with_separate_truck_fuel_and_water_in_both_profil
         }
     }
 }
+
+fn step2_compare_profile(c: &CnaContent, g: &Game<Cna>, id: &UnitId, strict: bool) {
+    let u = &g.state.land.units[id];
+    let owner = SeatId::new(u.side, ownership::seat_for_unit(c, &g.state, id));
+    let opposing = SeatId::new(u.side.opponent(), owner.role);
+    let before = serde_json::to_vec(&g.state).expect("golden State encoding failed");
+    let rng_before = g.rng.clone();
+    for (perspective, target, withheld) in [
+        (Perspective::Seat(owner), id.as_str(), false),
+        (Perspective::Seat(opposing), id.as_str(), true),
+        (Perspective::Seat(owner), "__step1_absent_unit__", true),
+    ] {
+        assert!(
+            !g.state
+                .land
+                .units
+                .contains_key(&"__step1_absent_unit__".into()),
+            "golden absent target exists"
+        );
+        let legacy =
+            crate::view::inspect_reference_for_step2(c, &g.state, perspective, target, strict);
+        let proposed = crate::view::inspect(c, &g.state, perspective, target, strict);
+        assert!(legacy == proposed, "golden Result or Value differs");
+        assert!(
+            serde_json::to_vec(&legacy).expect("golden Result encoding failed")
+                == serde_json::to_vec(&proposed).expect("golden Result encoding failed"),
+            "golden serialized bytes differ"
+        );
+        if withheld {
+            assert!(
+                legacy
+                    .as_ref()
+                    .map_or(true, |v| v.get("reachable").is_none()),
+                "legacy disclosed unauthorized reachability"
+            );
+            assert!(
+                proposed
+                    .as_ref()
+                    .map_or(true, |v| v.get("reachable").is_none()),
+                "proposed disclosed unauthorized reachability"
+            );
+        } else {
+            assert!(
+                legacy.as_ref().is_ok_and(|v| v.get("reachable").is_some()),
+                "legacy own detail unavailable"
+            );
+            assert!(
+                proposed
+                    .as_ref()
+                    .is_ok_and(|v| v.get("reachable").is_some()),
+                "proposed own detail unavailable"
+            );
+        }
+        assert!(
+            serde_json::to_vec(&g.state).expect("golden State encoding failed") == before,
+            "golden inspect mutated State"
+        );
+        assert!(g.rng == rng_before, "golden inspect mutated RNG");
+    }
+}
+
+fn step2_compare(c: &CnaContent, g: &Game<Cna>, id: &UnitId) {
+    step2_compare_profile(c, g, id, false);
+}
+
+#[test]
+fn step2_plain_actual_hq_owner_opponent_absent_byte_golden() {
+    let (c, g, id) = step1_plain_actual_hq_fixture();
+    step2_compare(&c, &g, &id);
+    assert!(
+        !reachable_reference_for_step2(&c, &g.state, &id, false).is_empty(),
+        "golden HQ has no reachable witness"
+    );
+    assert!(
+        !reachable(&c, &g.state, &id, false).is_empty(),
+        "proposed HQ has no reachable witness"
+    );
+}
+
+#[test]
+fn step2_plain_setup_first_movement_and_midgame_twenty_per_side_byte_golden() {
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani")
+        .expect("golden content load failed");
+    let states = step1_scripted_states(&c);
+    for (g, window, require_domains) in [
+        (&states.setup_closed, "setup-closed", false),
+        (&states.first_movement, "first-movement", true),
+        (&states.midgame, "midgame-unsupplied", false),
+    ] {
+        for side in [Side::Axis, Side::Commonwealth] {
+            let ids =
+                if require_domains && g.state.cursor.phasing(g.state.turn.player_a) == Some(side) {
+                    step1_window_witness_sample(&c, &g.state, side, 20, window == "first-movement")
+                        .unwrap_or_else(|missing| {
+                            step1_selection_failure(
+                                window,
+                                side,
+                                missing,
+                                "golden snapshot lacks required actual query witnesses",
+                            )
+                        })
+                } else {
+                    // Setup-closed and nonphasing side retain exact original lexical fill.
+                    step1_sample(&c, &g.state, side, 20)
+                };
+            for id in ids {
+                step2_compare(&c, g, &id)
+            }
+        }
+    }
+    // Closed-window and nonphasing equality alone cannot pass search coverage.
+    step1_require_domains(
+        &c,
+        &states.first_movement,
+        "first-movement",
+        "golden first movement lost nonempty category domains",
+    );
+    let Step1SuppliedMidgame {
+        game: supplied,
+        skipped,
+    } = step1_supplied_midgame(&c, &states.midgame)
+        .unwrap_or_else(|reason| panic!("golden supplied midgame invalid: {reason}"));
+    // Add EVERY skipped unit in all three existing views, never replacing a base sample ID.
+    step1_print_source_skips(&skipped);
+    for id in skipped.keys() {
+        step2_compare(&c, &supplied, id);
+    }
+    step1_check_source_skips(&c, &states.midgame.state, &supplied.state, &skipped).unwrap_or_else(
+        |reason| panic!("golden additive skipped control changed refusal: {reason}"),
+    );
+    let active = supplied
+        .state
+        .cursor
+        .phasing(supplied.state.turn.player_a)
+        .expect("golden supplied midgame has no phasing side");
+    // Select ONCE on this exact supplied State, retaining the mandatory representatives.
+    let witnessed = step1_supplied_sample(&c, &supplied.state, active, 20, &skipped, true)
+        .unwrap_or_else(|missing| {
+            step1_supplied_witness_failure(&c, &supplied.state, active, missing)
+        });
+    assert!(
+        witnessed
+            .iter()
+            .any(|id| step1_has_actual_dump_draw(&c, &supplied.state, id)),
+        "golden fixture exercised no actual new dump draw: window=midgame-supplied side={} category=any reason=no-positive-new-dump-draw-in-selected-sample",
+        step1_side_label(active)
+    );
+    for side in [Side::Axis, Side::Commonwealth] {
+        let ids = if side == active {
+            witnessed.clone()
+        } else {
+            step1_supplied_sample(&c, &supplied.state, side, 20, &skipped, false).unwrap_or_else(
+                |missing| step1_supplied_witness_failure(&c, &supplied.state, side, missing),
+            )
+        };
+        for id in ids {
+            // Fixed base supplied sample; skipped comparisons are additional, even on overlap.
+            step2_compare(&c, &supplied, &id);
+        }
+    }
+    step1_check_source_skips(&c, &states.midgame.state, &supplied.state, &skipped).unwrap_or_else(
+        |reason| panic!("golden skipped source refusal changed after comparison: {reason}"),
+    );
+}
+
+#[test]
+fn step2_reaction_current_base_catalog_and_three_views_are_byte_exact() {
+    let (c, g, _overlay, defender) = reaction_fixture();
+    let mover = seat(&g);
+    let transition = respond(
+        &c,
+        &g,
+        mover,
+        json!([{"unit":TANK,"path":["C4021","C4020"]}]),
+        true,
+    )
+    .expect("Step2 existing reaction fixture failed");
+    let game = transition.game;
+    assert!(
+        game.state
+            .land
+            .reaction
+            .window
+            .as_ref()
+            .is_some_and(|window| window.eligible.contains(&defender)),
+        "Step2 reaction witness missing"
+    );
+    for strict in [false, true] {
+        let before = serde_json::to_vec(&game.state).unwrap();
+        let rng = game.rng.clone();
+        let old =
+            super::super::reaction::plans_reference_for_step2(&c, &game.state, &defender, strict);
+        let new = super::super::reaction::plans(&c, &game.state, &defender, strict);
+        assert!(!old.is_empty(), "Step2 reaction reference witness missing");
+        assert!(
+            serde_json::to_vec(&old).unwrap() == serde_json::to_vec(&new).unwrap(),
+            "Step2 reaction catalog bytes differ"
+        );
+        step2_compare_profile(&c, &game, &defender, strict);
+        assert!(
+            serde_json::to_vec(&game.state).unwrap() == before,
+            "Step2 reaction State changed"
+        );
+        assert!(game.rng == rng, "Step2 reaction RNG changed");
+    }
+}
+
+#[test]
+fn step2_plain_edge_success_refusal_and_authoritative_state_events_match_current_base() {
+    let (c, g, id) = step1_plain_actual_hq_fixture();
+    let owner = SeatId::new(
+        g.state.land.units[&id].side,
+        ownership::seat_for_unit(&c, &g.state, &id),
+    );
+    let good = reachable_reference_for_step2(&c, &g.state, &id, false)
+        .into_iter()
+        .find(|path| !path.path.is_empty())
+        .expect("Step2 plain reference edge witness missing");
+    let before = serde_json::to_vec(&g.state).unwrap();
+    let rng = g.rng.clone();
+    for strict in [false, true] {
+        for truth in [false, true] {
+            for path in [good.path.clone(), vec!["__step2_invalid_hex__".into()]] {
+                let order = Order {
+                    unit: id.clone(),
+                    path,
+                    with_stack: false,
+                    close_assault: vec![],
+                };
+                let mut old_state = g.state.clone();
+                let mut new_state = g.state.clone();
+                let mut old_events = Vec::new();
+                let mut new_events = Vec::new();
+                let old = run_reference_for_step2(
+                    &c,
+                    &mut old_state,
+                    &order,
+                    owner,
+                    strict,
+                    truth,
+                    true,
+                    &mut old_events,
+                    None,
+                );
+                let new = run(
+                    &c,
+                    &mut new_state,
+                    &order,
+                    owner,
+                    strict,
+                    truth,
+                    true,
+                    &mut new_events,
+                    None,
+                );
+                assert!(
+                    serde_json::to_vec(&old).unwrap() == serde_json::to_vec(&new).unwrap(),
+                    "Step2 edge Result bytes differ"
+                );
+                assert!(
+                    serde_json::to_vec(&old_state).unwrap()
+                        == serde_json::to_vec(&new_state).unwrap(),
+                    "Step2 edge post-State bytes differ"
+                );
+                assert!(
+                    serde_json::to_vec(&old_events).unwrap()
+                        == serde_json::to_vec(&new_events).unwrap(),
+                    "Step2 edge event bytes differ"
+                );
+                if !truth && !strict && order.path == good.path {
+                    assert!(
+                        old.is_ok(),
+                        "Step2 plain own-known reference success missing"
+                    );
+                }
+                if order.path[0].as_str() == "__step2_invalid_hex__" {
+                    assert!(
+                        matches!(&old, Err(Rejection::Illegal { message })
+                        if message == "not a legal destination"),
+                        "Step2 exact canonical bad-edge refusal changed"
+                    );
+                }
+            }
+        }
+    }
+    assert!(
+        serde_json::to_vec(&g.state).unwrap() == before,
+        "Step2 edge root State changed"
+    );
+    assert!(g.rng == rng, "Step2 edge root RNG changed");
+}
+
+// Local opt-in only; the normal workspace run builds but does not measure this fixture.
+#[test]
+fn step2_diagnostic_trivioli_inspect_cost_once_local() {
+    if std::env::var_os("CNA_STEP2_TIMING_LOCAL").as_deref() != Some(std::ffi::OsStr::new("1")) {
+        return;
+    }
+    let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let mut s = State::new(&c).unwrap();
+    s.turn.weather = Some(crate::state::WeatherState {
+        kind: WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    s.turn.player_a = Some(Side::Axis);
+    s.cursor.block = Block::PlayerHalf;
+    s.cursor.half = Some(Half::A);
+    s.cursor.op_stage = Some(1);
+    s.cursor.index = 1;
+    let ids: Vec<_> = s.land.units.keys().cloned().collect();
+    for id in &ids {
+        s.logistics.unit_supply.insert(
+            id.clone(),
+            UnitSupply {
+                tank_fuel: FuelTenths::new(10000),
+                ready_ammo: cna_core::quantity::AmmoPoints::new(10000),
+                activity_water: WaterPoints::new(10000),
+                ..Default::default()
+            },
+        );
+        s.logistics.rations.insert(
+            id.clone(),
+            logistics::Rations {
+                water_stage: Some(logistics::water::WaterStage::current(&s)),
+                infantry_water_received: 2,
+                issued_gt: Some(s.cursor.game_turn),
+                pasta_gt: Some(s.cursor.game_turn),
+                ..Default::default()
+            },
+        );
+    }
+    let g = start(&c, s, false);
+    let chosen = g
+        .state
+        .units_of(Side::Axis)
+        .filter(|u| {
+            u.location.hex().is_some()
+                && formation::allowance(&c, &g.state, &u.id).is_some_and(|a| a.motorized)
+                && moving_limits(&c, &g.state, &u.id, false).is_ok()
+        })
+        .max_by_key(|u| {
+            (
+                formation::members(&c, &g.state, &u.id).len(),
+                formation::allowance(&c, &g.state, &u.id).unwrap().cpa,
+            )
+        })
+        .unwrap();
+    let owner = SeatId::new(
+        chosen.side,
+        ownership::seat_for_unit(&c, &g.state, &chosen.id),
+    );
+
+    assert!(
+        chosen.id.as_str() == "it.libyan_tank_command.trivioli_2nd_regt_hq",
+        "fixture selector changed"
+    );
+    assert!(
+        formation::members(&c, &g.state, &chosen.id).len() == 4,
+        "fixture members changed"
+    );
+    assert!(
+        formation::allowance(&c, &g.state, &chosen.id).is_some_and(|a| a.cpa == 25),
+        "fixture CPA changed"
+    );
+    let state_before = serde_json::to_value(&g.state).unwrap();
+    let rng_before = g.rng.clone();
+    let session = step2_query_timing::Session::begin();
+    let result = {
+        let _inspect_timing = step2_query_timing::span(step2_query_timing::Bucket::InspectTotal);
+        std::hint::black_box(Cna::dev().inspect(
+            &c,
+            &g.state,
+            Perspective::Seat(owner),
+            chosen.id.as_str(),
+        ))
+    };
+    let report = session.finish();
+    assert!(result.is_ok(), "fixture inspect failed");
+    assert!(
+        serde_json::to_value(&g.state).unwrap() == state_before,
+        "read-only state changed"
+    );
+    assert!(g.rng == rng_before, "read-only RNG changed");
+    step2_query_timing::emit_private(&report);
+}
+
+// Cases: land:8.13, land:8.34, land:8.37
+#[test]
+fn step2_query_terrain_memo_keeps_complete_results_and_query_content_lifetime() {
+    let (c, s, _overlay) = setup(TANK, Some("road"), false, None);
+    let before = serde_json::to_vec(&s).unwrap();
+    for strict in [false, true] {
+        let memo = map::QueryMovementCosts::new(&c, strict);
+        for to in [HexId::new("C4021"), HexId::new("not-a-map-hex")] {
+            let expected = map::terrain(&c, &to, strict);
+            assert_eq!(memo.terrain(&to), expected);
+            assert_eq!(memo.terrain(&to), expected); // same key, including exact Err
+        }
+        assert!(memo.terrain(&HexId::new("not-a-map-hex")).is_err());
+    }
+    assert_eq!(serde_json::to_vec(&s).unwrap(), before);
+}
+
+// Cases: land:8.13, land:8.34, land:8.37, land:8.44, land:18.24
+#[test]
+fn step2_query_price_memo_keeps_dynamic_inputs_errors_and_all_step_fields() {
+    let (c, s, _overlay) = setup(TANK, Some("road"), false, None);
+    fn same(a: Result<map::StepCost, Rejection>, b: Result<map::StepCost, Rejection>) {
+        match (a, b) {
+            (Ok(a), Ok(b)) => assert_eq!(
+                (
+                    a.cp_quarters,
+                    a.breakdown_quarters,
+                    a.light_extra_quarters,
+                    a.on_network,
+                    a.assumed_edges
+                ),
+                (
+                    b.cp_quarters,
+                    b.breakdown_quarters,
+                    b.light_extra_quarters,
+                    b.on_network,
+                    b.assumed_edges
+                )
+            ),
+            (Err(a), Err(b)) => assert_eq!(a, b),
+            _ => panic!("query price Result kind differs"),
+        }
+    }
+    let id: UnitId = TANK.into();
+    for strict in [false, true] {
+        let memo = map::QueryMovementCosts::new(&c, strict);
+        for rain in [false, true] {
+            for network in [false, true] {
+                for (from, to) in [("C4020", "C4021"), ("C4020", "C4020"), ("absent", "C4021")] {
+                    let from = HexId::new(from);
+                    let to = HexId::new(to);
+                    let expected = || {
+                        map::step_cost_with_network(&c, &s, &id, &from, &to, strict, rain, network)
+                    };
+                    same(
+                        memo.step_cost_with_network(&s, &id, &from, &to, rain, network),
+                        expected(),
+                    );
+                    same(
+                        memo.step_cost_with_network(&s, &id, &from, &to, rain, network),
+                        expected(),
+                    );
+                }
+            }
+        }
+        let from = HexId::new("C4020");
+        let to = HexId::new("C4021");
+        for variant in 0..5 {
+            let mut changed = s.clone();
+            let unit = changed.land.units.get_mut(&id).unwrap();
+            match variant {
+                0 => unit.side = unit.side.opponent(),
+                1 => unit.trucks.light = -1,
+                2 => unit.transport_trucks.heavy = unit.trucks.heavy + 1,
+                3 => unit.toe = None,
+                _ => unit.reserve.status = super::super::reserve::Status::ReleasedSecond,
+            }
+            same(
+                memo.step_cost_with_network(&changed, &id, &from, &to, false, true),
+                map::step_cost_with_network(&c, &changed, &id, &from, &to, strict, false, true),
+            );
+        }
+        assert!(
+            memo.step_cost_with_network(&s, &id, &from, &from, false, true)
+                .is_err()
+        );
+    }
+}

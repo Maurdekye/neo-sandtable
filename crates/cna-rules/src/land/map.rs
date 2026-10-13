@@ -166,6 +166,37 @@ fn price(
     recce: bool,
     motorcycle: bool,
 ) -> Result<StepCost, Rejection> {
+    price_with_terrain(
+        content,
+        side,
+        trucks,
+        from,
+        to,
+        strict,
+        rainstorm,
+        use_network,
+        motorized,
+        recce,
+        motorcycle,
+        || terrain(content, to, strict),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn price_with_terrain(
+    content: &CnaContent,
+    side: cna_protocol::Side,
+    trucks: &cna_content::units::Trucks,
+    from: &HexId,
+    to: &HexId,
+    strict: bool,
+    rainstorm: bool,
+    use_network: bool,
+    motorized: bool,
+    recce: bool,
+    motorcycle: bool,
+    read_terrain: impl FnOnce() -> Result<F, Rejection>,
+) -> Result<StepCost, Rejection> {
     let (a, b) = content
         .map
         .get(from)
@@ -184,7 +215,7 @@ fn price(
             "Commonwealth land units may not move west of Marble Arch",
         ));
     }
-    let terrain = terrain(content, to, strict)?;
+    let terrain = read_terrain()?;
     let light = trucks.light > 0;
     let mut unknown = false;
     let mut route = Route::Plain;
@@ -304,3 +335,109 @@ fn price(
 #[cfg(test)]
 #[path = "map_truck_tests.rs"]
 mod truck_tests;
+
+// Private query object. Content is borrowed immutably for the entire lifetime;
+// no table/map memo can outlive that borrow or cross a second query.
+pub(super) struct QueryMovementCosts<'a> {
+    content: &'a CnaContent,
+    strict: bool,
+    terrains: std::cell::RefCell<std::collections::BTreeMap<HexId, Result<F, Rejection>>>,
+    prices:
+        std::cell::RefCell<std::collections::BTreeMap<QueryPriceKey, Result<StepCost, Rejection>>>,
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct QueryPriceKey {
+    from: HexId,
+    to: HexId,
+    side: cna_protocol::Side,
+    trucks: [i32; 3],
+    rainstorm: bool,
+    use_network: bool,
+    motorized: bool,
+    recce: bool,
+    motorcycle: bool,
+}
+
+impl<'a> QueryMovementCosts<'a> {
+    pub(super) fn new(content: &'a CnaContent, strict: bool) -> Self {
+        Self {
+            content,
+            strict,
+            terrains: Default::default(),
+            prices: Default::default(),
+        }
+    }
+
+    pub(super) fn terrain(&self, to: &HexId) -> Result<F, Rejection> {
+        if let Some(result) = self.terrains.borrow().get(to) {
+            return result.clone();
+        }
+        let result = terrain(self.content, to, self.strict);
+        self.terrains
+            .borrow_mut()
+            .insert(to.clone(), result.clone());
+        result
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn step_cost_with_network(
+        &self,
+        state: &State,
+        id: &UnitId,
+        from: &HexId,
+        to: &HexId,
+        rainstorm: bool,
+        use_network: bool,
+    ) -> Result<StepCost, Rejection> {
+        // Current-unit, allowance and class errors keep the canonical precedence.
+        // Allowance reads mutable TOE/transport/reserve, so it is NEVER memoized.
+        let unit = state
+            .land
+            .units
+            .get(id)
+            .ok_or_else(|| illegal("unknown unit"))?;
+        let allowance =
+            formation::individual_allowance(self.content, state, id).ok_or_else(|| {
+                unsupported(
+                    "land:8.91",
+                    "unit transport or movement rating is unresolved",
+                )
+            })?;
+        let class = formation::class(self.content, id)
+            .ok_or_else(|| illegal("unit has no movement class"))?;
+        let key = QueryPriceKey {
+            from: from.clone(),
+            to: to.clone(),
+            side: unit.side,
+            trucks: [unit.trucks.light, unit.trucks.medium, unit.trucks.heavy],
+            rainstorm,
+            use_network,
+            motorized: allowance.motorized,
+            recce: class.unit_type == "recce",
+            motorcycle: class
+                .equipment_note
+                .as_deref()
+                .is_some_and(|s| s.contains("motorcycle")),
+        };
+        if let Some(result) = self.prices.borrow().get(&key) {
+            return result.clone();
+        }
+        let result = price_with_terrain(
+            self.content,
+            key.side,
+            &unit.trucks,
+            from,
+            to,
+            self.strict,
+            rainstorm,
+            use_network,
+            key.motorized,
+            key.recce,
+            key.motorcycle,
+            || self.terrain(to),
+        );
+        self.prices.borrow_mut().insert(key, result.clone());
+        result
+    }
+}

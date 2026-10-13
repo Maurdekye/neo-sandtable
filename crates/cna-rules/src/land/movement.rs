@@ -21,6 +21,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
+#[cfg(test)]
+#[path = "step2_query_timing.rs"]
+pub(crate) mod step2_query_timing;
+
 pub const KIND: &str = "cna.movement.orders";
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -430,9 +434,90 @@ fn run(
     events: &mut Vec<EngineEvent>,
     planning_group: Option<&PlanningGroup<'_>>,
 ) -> Result<Reachable, Rejection> {
+    run_inner(
+        content,
+        state,
+        order,
+        seat,
+        strict,
+        truth,
+        check_end,
+        events,
+        planning_group,
+        None,
+    )
+}
+
+// Query-local immutable map Results and stationary membership; no paths/funding/State are cached.
+struct PlanningReadIndex<'a> {
+    friendly_support: BTreeSet<HexId>,
+    map_costs: map::QueryMovementCosts<'a>,
+    fuel_sources: logistics::QueryFuelSources<'a>,
+}
+impl<'a> PlanningReadIndex<'a> {
+    fn new(
+        content: &'a CnaContent,
+        state: &State,
+        side: Side,
+        moving: &[UnitId],
+        strict: bool,
+    ) -> Self {
+        let friendly_support = state
+            .units_of(side)
+            .filter(|unit| !moving.contains(&unit.id))
+            .filter(|unit| {
+                formation::combat_unit(content, &unit.id)
+                    && formation::strength(content, state, &unit.id) > 0
+                    && unit.cohesion_quarters > -104
+            })
+            .filter_map(|unit| unit.location.hex().cloned())
+            .collect();
+        Self {
+            friendly_support,
+            map_costs: map::QueryMovementCosts::new(content, strict),
+            fuel_sources: logistics::QueryFuelSources::new(content, state, moving),
+        }
+    }
+}
+fn query_effective_control(
+    content: &CnaContent,
+    state: &State,
+    side: Side,
+    hex: &HexId,
+    moving: &[UnitId],
+    control: bool,
+    reads: Option<&PlanningReadIndex<'_>>,
+) -> bool {
+    match reads {
+        Some(reads) => control && !reads.friendly_support.contains(hex),
+        None => effective_control(content, state, side, hex, moving, control),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_inner(
+    content: &CnaContent,
+    state: &mut State,
+    order: &Order,
+    seat: SeatId,
+    strict: bool,
+    truth: bool,
+    check_end: bool,
+    events: &mut Vec<EngineEvent>,
+    planning_group: Option<&PlanningGroup<'_>>,
+    query_reads: Option<&PlanningReadIndex<'_>>,
+) -> Result<Reachable, Rejection> {
+    #[cfg(test)]
+    let _timing = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::EdgeRun,
+    );
     if order.path.is_empty() || order.path.len() > PATH_LIMIT as usize {
         return Err(illegal("path length is invalid"));
     }
+    #[cfg(test)]
+    let _legality_entry = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::Step2Legality,
+    );
     validate_announcements(content, state, order)?;
     let initial_cp = state
         .land
@@ -440,8 +525,8 @@ fn run(
         .get(&order.unit)
         .map_or(0, |u| u.cp_spent_quarters);
     let moving = match planning_group {
-        Some(group) => group.members.to_vec(),
-        None => unit_stack(content, state, order, seat, strict)?,
+        Some(group) => std::borrow::Cow::Borrowed(group.members),
+        None => std::borrow::Cow::Owned(unit_stack(content, state, order, seat, strict)?),
     };
     // Explicit detachment has already happened. A disclosed counter's executed path
     // remains visible even if its destination rejoins a stationary parent.
@@ -454,7 +539,7 @@ fn run(
     } else {
         BTreeSet::new()
     };
-    for id in &moving {
+    for id in moving.iter() {
         if let Some(reason) = logistics::box_handling::blocks_movement(
             state,
             &logistics::box_handling::Carrier::Unit(id.clone()),
@@ -484,12 +569,14 @@ fn run(
             .ok_or_else(|| illegal("movement rating is unresolved"))?
     };
     let limits = if let Some(group) = planning_group {
-        group.limits.clone()
+        std::borrow::Cow::Borrowed(group.limits.as_slice())
     } else {
-        moving
-            .iter()
-            .map(|id| moving_limits(content, state, id, strict))
-            .collect::<Result<Vec<_>, _>>()?
+        std::borrow::Cow::Owned(
+            moving
+                .iter()
+                .map(|id| moving_limits(content, state, id, strict))
+                .collect::<Result<Vec<_>, _>>()?,
+        )
     };
     let own_half = state.land.movement.mode == WindowMode::Segment;
     let start_control = state
@@ -499,13 +586,21 @@ fn run(
         .get(&from)
         .copied()
         .unwrap_or(false);
-    let start_contact = effective_control(content, state, seat.side, &from, &moving, start_control);
+    let start_contact = query_effective_control(
+        content,
+        state,
+        seat.side,
+        &from,
+        &moving,
+        start_control,
+        query_reads,
+    );
     if !continuing(state, &order.unit)
         && state.land.movement.mode != WindowMode::Reaction
         && (start_contact || moving.iter().any(|id| state.land.units[id].engaged))
     {
         let mut highest = 0;
-        for (id, limit) in moving.iter().zip(&limits) {
+        for (id, limit) in moving.iter().zip(limits.iter()) {
             let cp = if state.land.units[id].engaged {
                 16
             } else if start_contact {
@@ -534,6 +629,8 @@ fn run(
         }
         total += highest;
     }
+    #[cfg(test)]
+    drop(_legality_entry);
     // Only authoritative execution needs a rollback snapshot for newly disclosed control.
     let mut last_legal = truth.then(|| {
         (
@@ -546,6 +643,10 @@ fn run(
         )
     });
     for requested in &order.path {
+        #[cfg(test)]
+        let _legality_destination = crate::land::movement::step2_query_timing::span(
+            crate::land::movement::step2_query_timing::Bucket::Step2Legality,
+        );
         let to = content
             .map
             .canonical(requested)
@@ -558,15 +659,27 @@ fn run(
         if occupied {
             return Err(illegal("not a legal destination"));
         }
-        map::terrain(content, &to, strict)?;
+        #[cfg(test)]
+        drop(_legality_destination);
+        #[cfg(test)]
+        let _terrain_cost = crate::land::movement::step2_query_timing::span(
+            crate::land::movement::step2_query_timing::Bucket::Step2MovementPointTerrain,
+        );
+        match query_reads {
+            Some(reads) => reads.map_costs.terrain(&to)?,
+            None => map::terrain(content, &to, strict)?,
+        };
         let local_weather =
             logistics::weather::at_hex(content, state, &to).map_err(Rejection::Engine)?;
         let rain = local_weather == WeatherKind::Rainstorm;
         let mut costs = Vec::new();
-        for id in &moving {
-            costs.push(map::step_cost(
-                content, state, id, &from, &to, strict, rain,
-            )?);
+        for id in moving.iter() {
+            costs.push(match query_reads {
+                Some(reads) => reads
+                    .map_costs
+                    .step_cost_with_network(state, id, &from, &to, rain, true)?,
+                None => map::step_cost(content, state, id, &from, &to, strict, rain)?,
+            });
         }
         let congested = if costs.iter().any(|c| c.on_network)
             && moving.iter().any(|id| {
@@ -601,10 +714,15 @@ fn run(
         };
         if congested {
             costs.clear();
-            for id in &moving {
-                costs.push(map::step_cost_with_network(
-                    content, state, id, &from, &to, strict, rain, false,
-                )?);
+            for id in moving.iter() {
+                costs.push(match query_reads {
+                    Some(reads) => reads
+                        .map_costs
+                        .step_cost_with_network(state, id, &from, &to, rain, false)?,
+                    None => map::step_cost_with_network(
+                        content, state, id, &from, &to, strict, rain, false,
+                    )?,
+                });
             }
         }
         let mut cp = costs.iter().map(|c| c.cp_quarters).max().unwrap();
@@ -613,6 +731,12 @@ fn run(
                 .checked_mul(2)
                 .ok_or_else(|| illegal("CP expenditure overflow"))?;
         }
+        #[cfg(test)]
+        drop(_terrain_cost);
+        #[cfg(test)]
+        let _legality_control = crate::land::movement::step2_query_timing::span(
+            crate::land::movement::step2_query_timing::Bucket::Step2Legality,
+        );
         let known = state.land.movement.controls.get(&to).copied();
         let control = if truth {
             zoc::controlled(content, state, seat.side.opponent(), &to, strict)
@@ -626,8 +750,16 @@ fn run(
         };
         uncertain |= known.is_none()
             && adjacent_presence
-            && effective_control(content, state, seat.side, &to, &moving, true);
-        let controlled = effective_control(content, state, seat.side, &to, &moving, control);
+            && query_effective_control(content, state, seat.side, &to, &moving, true, query_reads);
+        let controlled = query_effective_control(
+            content,
+            state,
+            seat.side,
+            &to,
+            &moving,
+            control,
+            query_reads,
+        );
         if truth {
             state.land.movement.controls.insert(to.clone(), control);
         }
@@ -674,7 +806,9 @@ fn run(
         } else {
             BTreeMap::new()
         };
-        for (id, limit) in moving.iter().zip(&limits) {
+        #[cfg(test)]
+        drop(_legality_control);
+        for (id, limit) in moving.iter().zip(limits.iter()) {
             validate_window_cp(state, &state.land.units[id], group_allowance, cp, *limit)?;
             spend_activity(content, state, id, strict)?;
             let previous = state
@@ -697,7 +831,25 @@ fn run(
                         .iter()
                         .find(|(unit, _)| unit == id)
                         .and_then(|(_, prepared)| prepared.as_ref());
-                    logistics::spend_query_segment_fuel_report(content, state, id, next, prepared).1
+                    match query_reads {
+                        Some(reads) => {
+                            logistics::spend_indexed_query_segment_fuel_report(
+                                content,
+                                state,
+                                id,
+                                next,
+                                prepared,
+                                &reads.fuel_sources,
+                            )
+                            .1
+                        }
+                        None => {
+                            logistics::spend_query_segment_fuel_report(
+                                content, state, id, next, prepared,
+                            )
+                            .1
+                        }
+                    }
                 } else {
                     logistics::spend_segment_fuel_report(content, state, id, next)
                 }
@@ -715,8 +867,8 @@ fn run(
                 own_half,
             )?;
         }
-        let before_from = state.stack_presence(&from, seat.side);
-        let before_to = state.stack_presence(&to, seat.side);
+        let before_from = truth && state.stack_presence(&from, seat.side);
+        let before_to = truth && state.stack_presence(&to, seat.side);
         for (id, cost) in moving.iter().zip(&costs) {
             if truth {
                 super::breakdown::begin_motion(content, state, id, &from, strict);
@@ -797,7 +949,7 @@ fn run(
                             || moving.iter().any(|id| {
                                 state.land.units[id].reserve.status == super::reserve::Status::First
                             }),
-                        moving: moving.clone(),
+                        moving: moving.to_vec(),
                     });
                 }
             }
@@ -850,10 +1002,16 @@ fn run(
             break;
         }
     }
+    #[cfg(test)]
+    let _legality_end = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::Step2Legality,
+    );
     let end = match planning_group {
         Some(group) => group.stacks.validate_end(&from, strict),
         None => stacking::validate_end(content, state, &from, seat.side, strict),
     };
+    #[cfg(test)]
+    drop(_legality_end);
     let end_valid = end.is_ok();
     if check_end
         && !path.is_empty()
@@ -869,7 +1027,7 @@ fn run(
     }
     state.land.movement.moved.extend(moving.iter().cloned());
     if truth {
-        for id in &moving {
+        for id in moving.iter() {
             // Printed map counters are visible under RAW fog; attached contents are not.
             // A side-only copy avoids duplicating the owner's full event for the operator.
             if public_counters.contains(id)
@@ -1541,6 +1699,14 @@ impl PlanningNode {
         dumps: &[String],
         histories: &[logistics::cargo_history::CargoSite],
     ) -> Self {
+        #[cfg(test)]
+        let _timing = crate::land::movement::step2_query_timing::span(
+            crate::land::movement::step2_query_timing::Bucket::NodeCapture,
+        );
+        #[cfg(test)]
+        let _detail = crate::land::movement::step2_query_timing::span(
+            crate::land::movement::step2_query_timing::Bucket::Step2NodeBuild,
+        );
         Self {
             cargo_histories: Step1PlanningHistorySnapshot::capture(state, histories),
             fuel_accounts: logistics::snapshot_fuel_accounts(state, changed),
@@ -1568,6 +1734,10 @@ impl PlanningNode {
         }
     }
     fn restore(&self, state: &mut State) {
+        #[cfg(test)]
+        let _timing = crate::land::movement::step2_query_timing::span(
+            crate::land::movement::step2_query_timing::Bucket::NodeRestore,
+        );
         self.cargo_histories.restore(state);
         logistics::restore_fuel_accounts(state, &self.fuel_accounts);
         for unit in &self.units {
@@ -1619,6 +1789,10 @@ impl PlanningNode {
 /// is labelled; inspect never asks authoritative enemy strength at a hypothetical destination.
 /// Cases: land:3.62, land:8.13, land:8.17, land:10.6
 pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool) -> Vec<Reachable> {
+    #[cfg(test)]
+    let _timing = crate::land::movement::step2_query_timing::span(
+        crate::land::movement::step2_query_timing::Bucket::ReachableTotal,
+    );
     if state.land.movement.mode == WindowMode::Segment
         && state
             .land
@@ -1703,6 +1877,13 @@ fn reachable_inner(
     if let Some(parent) = ownership::parent_for_unit(content, state, id) {
         changed.push(parent.clone());
     }
+    let with_stack = state
+        .land
+        .reaction
+        .continuation
+        .as_ref()
+        .filter(|_| continuing(state, id))
+        .is_some_and(|k| k.with_stack);
     let mut draft = state.clone();
     let Ok(members) = unit_stack(
         content,
@@ -1710,13 +1891,7 @@ fn reachable_inner(
         &Order {
             unit: id.clone(),
             path: vec![],
-            with_stack: state
-                .land
-                .reaction
-                .continuation
-                .as_ref()
-                .filter(|_| continuing(state, id))
-                .is_some_and(|k| k.with_stack),
+            with_stack,
             close_assault: vec![],
         },
         seat,
@@ -1757,6 +1932,7 @@ fn reachable_inner(
             .map(|(h, _)| h)
             .collect(),
     };
+    let query_reads = PlanningReadIndex::new(content, &base, seat.side, &members, strict);
     // Fuel can debit the current members' tanks and friendly stocks at each captured
     // segment origin. Activity water changes members and a stationary detached parent.
     // These source identities are query-local; no other holding can change in this search.
@@ -1857,6 +2033,10 @@ fn reachable_inner(
         let Some(node) = frontier.remove(&hex) else {
             continue;
         };
+        #[cfg(test)]
+        crate::land::movement::step2_query_timing::count(
+            crate::land::movement::step2_query_timing::Counter::FrontierPops,
+        );
         node.restore(&mut draft);
         if group
             .members
@@ -1899,28 +2079,26 @@ fn reachable_inner(
             continue;
         }
         for to in content.map.neighbors(&hex) {
+            #[cfg(test)]
+            crate::land::movement::step2_query_timing::count(
+                crate::land::movement::step2_query_timing::Counter::NeighborAttempts,
+            );
             if to.id == origin
                 || best
                     .get(&to.id)
                     .is_some_and(|r| r.cp_quarters <= cost.saturating_add(1))
-                || map::terrain(content, &to.id, strict).is_err()
+                || query_reads.map_costs.terrain(&to.id).is_err()
             {
                 continue;
             }
             node.restore(&mut draft);
-            if let Ok(mut r) = run(
+            if let Ok(mut r) = run_inner(
                 content,
                 &mut draft,
                 &Order {
                     unit: id.clone(),
                     path: vec![to.id.clone()],
-                    with_stack: state
-                        .land
-                        .reaction
-                        .continuation
-                        .as_ref()
-                        .filter(|_| continuing(state, id))
-                        .is_some_and(|k| k.with_stack),
+                    with_stack,
                     close_assault: vec![],
                 },
                 seat,
@@ -1929,7 +2107,12 @@ fn reachable_inner(
                 false,
                 &mut Vec::new(),
                 Some(&group),
+                Some(&query_reads),
             ) {
+                #[cfg(test)]
+                crate::land::movement::step2_query_timing::count(
+                    crate::land::movement::step2_query_timing::Counter::EdgeSuccess,
+                );
                 let mut path = prior.as_ref().map_or_else(Vec::new, |p| p.path.clone());
                 path.extend(r.path);
                 r.path = path;
@@ -1940,6 +2123,10 @@ fn reachable_inner(
                     .get(&to.id)
                     .is_none_or(|old| r.cp_quarters < old.cp_quarters)
                 {
+                    #[cfg(test)]
+                    crate::land::movement::step2_query_timing::count(
+                        crate::land::movement::step2_query_timing::Counter::Improvements,
+                    );
                     for member in formation::members(content, &draft, id) {
                         draft.land.movement.moved.remove(&member);
                     }
@@ -2392,4 +2579,889 @@ pub(crate) fn nonphasing_reachable_legacy_for_step1(
     kind: NonPhasingMove,
 ) -> Vec<Reachable> {
     reachable_inner_legacy_for_step1(c, &nonphasing_draft(s, kind), id, strict)
+}
+
+// Frozen plain ca4 reference; do not update its algorithm to match the proposal.
+#[cfg(test)]
+#[allow(clippy::too_many_arguments)]
+fn run_reference_for_step2(
+    content: &CnaContent,
+    state: &mut State,
+    order: &Order,
+    seat: SeatId,
+    strict: bool,
+    truth: bool,
+    check_end: bool,
+    events: &mut Vec<EngineEvent>,
+    planning_group: Option<&PlanningGroup<'_>>,
+) -> Result<Reachable, Rejection> {
+    if order.path.is_empty() || order.path.len() > PATH_LIMIT as usize {
+        return Err(illegal("path length is invalid"));
+    }
+    validate_announcements(content, state, order)?;
+    let initial_cp = state
+        .land
+        .units
+        .get(&order.unit)
+        .map_or(0, |u| u.cp_spent_quarters);
+    let moving = match planning_group {
+        Some(group) => group.members.to_vec(),
+        None => unit_stack(content, state, order, seat, strict)?,
+    };
+    // Explicit detachment has already happened. A disclosed counter's executed path
+    // remains visible even if its destination rejoins a stationary parent.
+    let public_counters: BTreeSet<_> = if truth {
+        moving
+            .iter()
+            .filter(|id| view::is_map_counter(content, state, &state.land.units[*id]))
+            .cloned()
+            .collect()
+    } else {
+        BTreeSet::new()
+    };
+    for id in &moving {
+        if let Some(reason) = logistics::box_handling::blocks_movement(
+            state,
+            &logistics::box_handling::Carrier::Unit(id.clone()),
+        ) {
+            return Err(illegal(reason));
+        }
+    }
+    let mut from = state.land.units[&order.unit]
+        .location
+        .hex()
+        .unwrap()
+        .clone();
+    let mut path = Vec::new();
+    let mut total = 0i32;
+    let mut fuel = 0i32;
+    let mut uncertain = false;
+    let group_allowance = if let Some(group) = planning_group {
+        group.allowance
+    } else {
+        moving
+            .iter()
+            .map(|id| formation::individual_allowance(content, state, id))
+            .collect::<Option<Vec<_>>>()
+            .ok_or_else(|| illegal("movement rating is unresolved"))?
+            .into_iter()
+            .min_by_key(|a| a.cpa)
+            .ok_or_else(|| illegal("movement rating is unresolved"))?
+    };
+    let limits = if let Some(group) = planning_group {
+        group.limits.clone()
+    } else {
+        moving
+            .iter()
+            .map(|id| moving_limits(content, state, id, strict))
+            .collect::<Result<Vec<_>, _>>()?
+    };
+    let own_half = state.land.movement.mode == WindowMode::Segment;
+    let start_control = state
+        .land
+        .movement
+        .starting_controls
+        .get(&from)
+        .copied()
+        .unwrap_or(false);
+    let start_contact = effective_control(content, state, seat.side, &from, &moving, start_control);
+    if !continuing(state, &order.unit)
+        && state.land.movement.mode != WindowMode::Reaction
+        && (start_contact || moving.iter().any(|id| state.land.units[id].engaged))
+    {
+        let mut highest = 0;
+        for (id, limit) in moving.iter().zip(&limits) {
+            let cp = if state.land.units[id].engaged {
+                16
+            } else if start_contact {
+                8
+            } else {
+                0
+            };
+            if cp == 0 {
+                continue;
+            }
+            highest = highest.max(cp);
+            validate_window_cp(state, &state.land.units[id], group_allowance, cp, *limit)?;
+            spend_activity(content, state, id, strict)?;
+            capability::charge(
+                state.land.units.get_mut(id).unwrap(),
+                group_allowance,
+                cp,
+                own_half,
+            )?;
+            if truth {
+                super::engagement::break_off(state, id);
+            } else {
+                // Own-known planning prices the mover's breakoff, never updates its opponents.
+                state.land.units.get_mut(id).unwrap().engaged = false;
+            }
+        }
+        total += highest;
+    }
+    // Only authoritative execution needs a rollback snapshot for newly disclosed control.
+    let mut last_legal = truth.then(|| {
+        (
+            state.clone(),
+            from.clone(),
+            path.clone(),
+            total,
+            fuel,
+            events.len(),
+        )
+    });
+    for requested in &order.path {
+        let to = content
+            .map
+            .canonical(requested)
+            .ok_or_else(|| illegal("not a legal destination"))?
+            .clone();
+        let occupied = match planning_group {
+            Some(group) => group.enemy_positions.contains(&to),
+            None => state.stack_presence(&to, seat.side.opponent()),
+        };
+        if occupied {
+            return Err(illegal("not a legal destination"));
+        }
+        map::terrain(content, &to, strict)?;
+        let local_weather =
+            logistics::weather::at_hex(content, state, &to).map_err(Rejection::Engine)?;
+        let rain = local_weather == WeatherKind::Rainstorm;
+        let mut costs = Vec::new();
+        for id in &moving {
+            costs.push(map::step_cost(
+                content, state, id, &from, &to, strict, rain,
+            )?);
+        }
+        let congested = if costs.iter().any(|c| c.on_network)
+            && moving.iter().any(|id| {
+                formation::individual_allowance(content, state, id).is_some_and(|a| a.motorized)
+            }) {
+            if let Some(group) = planning_group {
+                stacking::road_over_limit(
+                    group.stacks.road_halves(&to).map_err(Rejection::Engine)?,
+                    group.stacks.moving_halves().map_err(Rejection::Engine)?,
+                )
+                .map_err(Rejection::Engine)?
+            } else {
+                let moving_sp: i32 = formation::roots(content, state, &from, seat.side)
+                    .iter()
+                    .filter(|id| moving.contains(id))
+                    .map(|id| formation::stacking_halves(content, state, id))
+                    .try_fold(0_i32, |sum, n| sum.checked_add(n))
+                    .ok_or_else(|| {
+                        Rejection::Engine(EngineError::Invariant {
+                            detail: "moving road occupancy overflow".into(),
+                        })
+                    })?;
+                stacking::road_over_limit(
+                    stacking::road_halves(content, state, &to, seat.side, &moving)
+                        .map_err(Rejection::Engine)?,
+                    moving_sp,
+                )
+                .map_err(Rejection::Engine)?
+            }
+        } else {
+            false
+        };
+        if congested {
+            costs.clear();
+            for id in &moving {
+                costs.push(map::step_cost_with_network(
+                    content, state, id, &from, &to, strict, rain, false,
+                )?);
+            }
+        }
+        let mut cp = costs.iter().map(|c| c.cp_quarters).max().unwrap();
+        if local_weather == WeatherKind::Sandstorm {
+            cp = cp
+                .checked_mul(2)
+                .ok_or_else(|| illegal("CP expenditure overflow"))?;
+        }
+        let known = state.land.movement.controls.get(&to).copied();
+        let control = if truth {
+            zoc::controlled(content, state, seat.side.opponent(), &to, strict)
+                .map_err(Rejection::Engine)?
+        } else {
+            known.unwrap_or(false)
+        };
+        let adjacent_presence = match planning_group {
+            Some(group) => group.enemy_adjacent(content, &to),
+            None => zoc::possibly_controlled(content, state, seat.side.opponent(), &to),
+        };
+        uncertain |= known.is_none()
+            && adjacent_presence
+            && effective_control(content, state, seat.side, &to, &moving, true);
+        let controlled = effective_control(content, state, seat.side, &to, &moving, control);
+        if truth {
+            state.land.movement.controls.insert(to.clone(), control);
+        }
+        let cannot_enter = controlled
+            && (state.land.movement.mode == WindowMode::Reaction
+                || start_contact && path.is_empty()
+                || limits.iter().any(|limit| !limit.may_enter_enemy_zoc)
+                || moving.iter().any(|id| {
+                    state.land.units[id].reserve.status == super::reserve::Status::First
+                })
+                || !moving.iter().any(|id| {
+                    formation::combat_unit(content, id)
+                        && formation::strength(content, state, id) > 0
+                }));
+        if cannot_enter {
+            if truth && known.is_none() {
+                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:"Move stops before a newly disclosed controlled destination (land:10.24/10.29).".into()}).at(from.clone()).about(order.unit.clone()));
+                break;
+            }
+            return Err(illegal(
+                if limits.iter().any(|limit| !limit.may_enter_enemy_zoc) {
+                    "half-ration unit may not enter an enemy zone of control"
+                } else {
+                    "destination is prohibited by disclosed control"
+                },
+            ));
+        }
+        let public_reaction = truth
+            && own_half
+            && content
+                .map
+                .neighbors(&to)
+                .iter()
+                .any(|h| state.stack_presence(&h.id, seat.side.opponent()));
+        let reactors = if public_reaction {
+            super::reaction::candidate_options(
+                content,
+                state,
+                &moving,
+                &to,
+                &order.close_assault,
+                strict,
+            )?
+        } else {
+            BTreeMap::new()
+        };
+        for (id, limit) in moving.iter().zip(&limits) {
+            validate_window_cp(state, &state.land.units[id], group_allowance, cp, *limit)?;
+            spend_activity(content, state, id, strict)?;
+            let previous = state
+                .logistics
+                .fuel_segments
+                .get(id)
+                .filter(|l| {
+                    l.segment.game_turn == state.cursor.game_turn
+                        && l.segment.op_stage == state.cursor.op_stage
+                        && l.segment.half == state.cursor.half
+                        && l.segment.cycle == state.cursor.cycle
+                })
+                .map_or(0, |l| l.cp_quarters);
+            let next = previous
+                .checked_add(cp)
+                .ok_or_else(|| illegal("CP expenditure overflow"))?;
+            let spent = if !truth {
+                if let Some(pricing) = planning_group.and_then(|g| g.query_fuel.as_ref()) {
+                    let prepared = pricing
+                        .iter()
+                        .find(|(unit, _)| unit == id)
+                        .and_then(|(_, prepared)| prepared.as_ref());
+                    logistics::spend_query_segment_fuel_report(content, state, id, next, prepared).1
+                } else {
+                    logistics::spend_segment_fuel_report(content, state, id, next)
+                }
+            } else {
+                logistics::spend_segment_fuel_report(content, state, id, next)
+            }
+            .map_err(|e| supply_error(e, strict))?;
+            fuel = fuel
+                .checked_add(spent.increment.get())
+                .ok_or_else(|| illegal("fuel expenditure overflow"))?;
+            capability::charge(
+                state.land.units.get_mut(id).unwrap(),
+                group_allowance,
+                cp,
+                own_half,
+            )?;
+        }
+        let before_from = state.stack_presence(&from, seat.side);
+        let before_to = state.stack_presence(&to, seat.side);
+        for (id, cost) in moving.iter().zip(&costs) {
+            if truth {
+                super::breakdown::begin_motion(content, state, id, &from, strict);
+                if state.land.units[id].trucks.light > 0 {
+                    super::breakdown::record_light_extra(state, id, cost.light_extra_quarters)
+                        .map_err(Rejection::Engine)?;
+                }
+                super::breakdown::record_edge(
+                    state,
+                    id,
+                    &from,
+                    cost.breakdown_quarters,
+                    cp,
+                    local_weather,
+                )
+                .map_err(Rejection::Engine)?;
+            }
+            state.land.units.get_mut(id).unwrap().location = Location::Hex { hex: to.clone() };
+            if costs.iter().all(|c| c.on_network) {
+                state.land.movement.on_road.insert(id.clone());
+            } else {
+                state.land.movement.on_road.remove(id);
+            }
+        }
+        total = total
+            .checked_add(cp)
+            .ok_or_else(|| illegal("CP expenditure overflow"))?;
+        path.push(to.clone());
+        if truth {
+            state.land.movement.controls.insert(to.clone(), control);
+            let end = stacking::validate_end(content, state, &to, seat.side, strict);
+            if let Err(Rejection::Engine(e)) = &end
+                && controlled
+            {
+                return Err(Rejection::Engine(e.clone()));
+            }
+            if controlled && end.is_err() {
+                let disclosed = state.land.movement.controls.clone();
+                let last_legal = last_legal.take().unwrap();
+                *state = last_legal.0;
+                state.land.movement.controls = disclosed;
+                from = last_legal.1;
+                path = last_legal.2;
+                total = last_legal.3;
+                fuel = last_legal.4;
+                events.truncate(last_legal.5);
+                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note {text:"Move stops at the last legal hex before newly disclosed control and stacking prevent continuation.".into()}).at(from.clone()).about(order.unit.clone()));
+                break;
+            }
+            if costs.iter().any(|c| c.assumed_edges) {
+                events.push(EngineEvent::new(Audience::Side(seat.side),GameEvent::Note{text:format!("{from} to {to}: incomplete edge layers; plain terrain assumed (land:8.37).")}).at(to.clone()).about(order.unit.clone()));
+            }
+            if own_half {
+                for target in &order.close_assault {
+                    if content.map.neighbors(&to).iter().any(|h| &h.id == target)
+                        && state
+                            .land
+                            .assault_intentions
+                            .entry(order.unit.clone())
+                            .or_default()
+                            .insert(target.clone())
+                    {
+                        events.push(EngineEvent::public(GameEvent::Note{text:format!("Stack at {to} announces close assault against {target} (land:8.53).") }).at(target.clone()));
+                    }
+                }
+                if public_reaction {
+                    state.land.reaction.controls.clear();
+                    state.land.reaction.window = Some(super::reaction::Window {
+                        trigger_hex: to.clone(),
+                        eligible: reactors
+                            .iter()
+                            .filter(|(_, ratings)| ratings.values().any(|yes| *yes))
+                            .map(|(id, _)| id.clone())
+                            .collect(),
+                        cpa_options: reactors,
+                        reacted: BTreeSet::new(),
+                        mover_stopped: controlled
+                            || moving.iter().any(|id| {
+                                state.land.units[id].reserve.status == super::reserve::Status::First
+                            }),
+                        moving: moving.clone(),
+                    });
+                }
+            }
+            logistics::ports::record_entry(
+                content,
+                state,
+                seat.side,
+                &Location::Hex { hex: to.clone() },
+                strict,
+                events,
+            )
+            .map_err(Rejection::Engine)?;
+            emit_stacks(
+                content,
+                state,
+                seat.side,
+                &from,
+                before_from != state.stack_presence(&from, seat.side),
+                events,
+            );
+            emit_stacks(
+                content,
+                state,
+                seat.side,
+                &to,
+                before_to != state.stack_presence(&to, seat.side),
+                events,
+            );
+            if stacking::validate_end(content, state, &to, seat.side, strict).is_ok() {
+                last_legal = Some((
+                    state.clone(),
+                    to.clone(),
+                    path.clone(),
+                    total,
+                    fuel,
+                    events.len(),
+                ));
+            }
+        }
+        from = to;
+        if truth && own_half && state.land.reaction.window.is_some() {
+            break;
+        }
+        if controlled {
+            if !truth && path.len() != order.path.len() {
+                return Err(illegal(
+                    "path continues beyond a disclosed enemy zone of control",
+                ));
+            }
+            break;
+        }
+    }
+    let end = match planning_group {
+        Some(group) => group.stacks.validate_end(&from, strict),
+        None => stacking::validate_end(content, state, &from, seat.side, strict),
+    };
+    let end_valid = end.is_ok();
+    if check_end
+        && !path.is_empty()
+        && (state.land.movement.mode != WindowMode::Segment || state.land.reaction.window.is_none())
+    {
+        end?;
+    }
+    if truth
+        && !path.is_empty()
+        && (state.land.movement.mode != WindowMode::Segment || state.land.reaction.window.is_none())
+    {
+        super::breakdown::stop(state, &moving, &from);
+    }
+    state.land.movement.moved.extend(moving.iter().cloned());
+    if truth {
+        for id in &moving {
+            // Printed map counters are visible under RAW fog; attached contents are not.
+            // A side-only copy avoids duplicating the owner's full event for the operator.
+            if public_counters.contains(id)
+                || view::is_map_counter(content, state, &state.land.units[id])
+            {
+                events.push(
+                    EngineEvent::new(
+                        Audience::SideOnly(seat.side.opponent()),
+                        GameEvent::UnitMoved {
+                            unit_id: id.to_string(),
+                            path: path.iter().map(ToString::to_string).collect(),
+                            cp_spent: None,
+                        },
+                    )
+                    .at(from.clone())
+                    .about(id.clone()),
+                );
+            }
+            events.push(EngineEvent::new(
+                Audience::Side(seat.side),
+                GameEvent::UnitMoved {
+                    unit_id: id.to_string(),
+                    path: path.iter().map(ToString::to_string).collect(),
+                    cp_spent: (total % 4 == 0).then_some(total / 4),
+                },
+            ));
+            events.push(EngineEvent::new(
+                Audience::Side(seat.side),
+                GameEvent::UnitUpdated {
+                    unit: view::unit_view(content, &state.land.units[id]),
+                },
+            ));
+        }
+    }
+    Ok(Reachable {
+        hex: from,
+        path,
+        cp_quarters: state.land.units[&order.unit].cp_spent_quarters - initial_cp,
+        fuel_tenths: fuel,
+        control_unknown: uncertain,
+        end_valid,
+    })
+}
+
+#[cfg(test)]
+fn reachable_inner_reference_for_step2(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Vec<Reachable> {
+    let Some(unit) = state.land.units.get(id) else {
+        return vec![];
+    };
+    let seat = SeatId::new(unit.side, ownership::seat_for_unit(content, state, id));
+    if (state.land.movement.mode == WindowMode::Segment
+        && state.cursor.anchor() != "opstage.movement_and_combat.movement")
+        || (state.land.movement.mode == WindowMode::Segment
+            && state.cursor.phasing(state.turn.player_a) != Some(unit.side))
+        || !eligible(content, state, id, seat)
+    {
+        return vec![];
+    }
+    let moving = state
+        .land
+        .reaction
+        .continuation
+        .as_ref()
+        .filter(|_| continuing(state, id))
+        .map_or_else(
+            || formation::members(content, state, id),
+            |k| k.members.clone(),
+        );
+    let Some(allowance) = moving
+        .iter()
+        .filter_map(|m| formation::individual_allowance(content, state, m))
+        .min_by_key(|a| a.cpa)
+    else {
+        return vec![];
+    };
+    // Every entered edge costs at least one quarter CP. Do not search a graph when even
+    // that lower bound is impossible for a represented member or its fuel holdings.
+    for member in &moving {
+        if moving_limits(content, state, member, strict)
+            .and_then(|limit| {
+                validate_window_cp(state, &state.land.units[member], allowance, 1, limit)
+            })
+            .is_err()
+        {
+            return vec![];
+        }
+        let previous = state
+            .logistics
+            .fuel_segments
+            .get(member)
+            .filter(|ledger| {
+                ledger.segment.game_turn == state.cursor.game_turn
+                    && ledger.segment.op_stage == state.cursor.op_stage
+                    && ledger.segment.half == state.cursor.half
+                    && ledger.segment.cycle == state.cursor.cycle
+            })
+            .map_or(0, |ledger| ledger.cp_quarters);
+        if previous
+            .checked_add(1)
+            .is_none_or(|next| logistics::plan_segment_fuel(content, state, member, next).is_err())
+        {
+            return vec![];
+        }
+    }
+    let origin = unit.location.hex().unwrap().clone();
+    let initial_cp = unit.cp_spent_quarters;
+    let mut best: BTreeMap<HexId, Reachable> = BTreeMap::new();
+    let mut queue = BTreeSet::from([(0i32, origin.clone())]);
+    let mut changed = moving;
+    if let Some(parent) = ownership::parent_for_unit(content, state, id) {
+        changed.push(parent.clone());
+    }
+    let mut draft = state.clone();
+    let Ok(members) = unit_stack(
+        content,
+        &mut draft,
+        &Order {
+            unit: id.clone(),
+            path: vec![],
+            with_stack: state
+                .land
+                .reaction
+                .continuation
+                .as_ref()
+                .filter(|_| continuing(state, id))
+                .is_some_and(|k| k.with_stack),
+            close_assault: vec![],
+        },
+        seat,
+        strict,
+    ) else {
+        return vec![];
+    };
+    let Ok(limits) = members
+        .iter()
+        .map(|id| moving_limits(content, &draft, id, strict))
+        .collect::<Result<Vec<_>, _>>()
+    else {
+        return vec![];
+    };
+    let base = draft.clone();
+    // Immutable pricing prepared after original eligibility/group checks.
+    // Full current all-source access/funding remains inside each actual spend.
+    let query_fuel = members
+        .iter()
+        .map(|member| {
+            (
+                member.clone(),
+                logistics::PreparedMovementFuel::new(content, &draft, member),
+            )
+        })
+        .collect();
+    let histories = logistics::query_withdrawal_history_sites(&draft.logistics);
+    let group = PlanningGroup {
+        query_fuel: Some(query_fuel),
+        members: &members,
+        allowance,
+        stacks: stacking::PlanningStacks::new(content, &base, seat.side, &members, &origin),
+        limits,
+        enemy_positions: state
+            .stacks()
+            .into_keys()
+            .filter(|(_, side)| *side == seat.side.opponent())
+            .map(|(h, _)| h)
+            .collect(),
+    };
+    // Fuel can debit the current members' tanks and friendly stocks at each captured
+    // segment origin. Activity water changes members and a stationary detached parent.
+    // These source identities are query-local; no other holding can change in this search.
+    let mut origins: BTreeSet<_> = members
+        .iter()
+        .map(|m| {
+            state
+                .logistics
+                .fuel_segments
+                .get(m)
+                .filter(|l| {
+                    l.segment.game_turn == state.cursor.game_turn
+                        && l.segment.op_stage == state.cursor.op_stage
+                        && l.segment.half == state.cursor.half
+                        && l.segment.cycle == state.cursor.cycle
+                })
+                .and_then(|l| l.origin.hex())
+                .cloned()
+                .unwrap_or_else(|| origin.clone())
+        })
+        .collect();
+    // Incoming physical cohorts retain their original funding account and sources.
+    // Restore both credit and the corresponding holdings when exploring another branch.
+    let accounts: BTreeSet<_> = members
+        .iter()
+        .flat_map(|id| {
+            state
+                .logistics
+                .fuel_segments
+                .get(id)
+                .into_iter()
+                .flat_map(|l| {
+                    std::iter::once(id.clone()).chain(l.cohorts.iter().map(|g| g.account.clone()))
+                })
+        })
+        .collect();
+    for account in accounts
+        .iter()
+        .filter_map(|id| state.logistics.fuel_accounts.get(id))
+    {
+        if let Some(hex) = account.origin.hex() {
+            origins.insert(hex.clone());
+        }
+    }
+    let mut stocks: BTreeSet<_> = changed.iter().cloned().collect();
+    stocks.extend(accounts.iter().cloned());
+    stocks.extend(
+        state
+            .units_of(seat.side)
+            .filter(|u| u.location.hex().is_some_and(|h| origins.contains(h)))
+            .map(|u| u.id.clone()),
+    );
+    let mut dumps:BTreeSet<_>=state.logistics.dumps.iter().filter(|(_,d)|d.side==seat.side&&matches!(&d.location,crate::state::DumpLocation::Hex{hex} if origins.contains(hex))).map(|(id,_)|id.clone()).collect();
+    for id in &members {
+        if let Some(l) = state.logistics.fuel_segments.get(id) {
+            for draw in &l.draws {
+                match &draw.source {
+                    logistics::SupplySource::UnitStock(id) => {
+                        stocks.insert(id.clone());
+                    }
+                    logistics::SupplySource::Dump(id) => {
+                        dumps.insert(id.clone());
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    for account in accounts
+        .iter()
+        .filter_map(|id| state.logistics.fuel_accounts.get(id))
+    {
+        for draw in &account.draws {
+            match &draw.source {
+                logistics::SupplySource::UnitStock(id) => {
+                    stocks.insert(id.clone());
+                }
+                logistics::SupplySource::Dump(id) => {
+                    dumps.insert(id.clone());
+                }
+                _ => {}
+            }
+        }
+    }
+    let stocks = stocks.into_iter().collect::<Vec<_>>();
+    let dumps = dumps
+        .into_iter()
+        .filter(|id| state.logistics.dumps.contains_key(id))
+        .collect::<Vec<_>>();
+    let mut frontier = BTreeMap::from([(
+        origin.clone(),
+        PlanningNode::capture(&draft, &changed, &stocks, &dumps, &histories),
+    )]);
+    while let Some((cost, hex)) = queue.pop_first() {
+        if hex != origin && best.get(&hex).is_none_or(|r| r.cp_quarters != cost) {
+            continue;
+        }
+        let Some(node) = frontier.remove(&hex) else {
+            continue;
+        };
+        node.restore(&mut draft);
+        if group
+            .members
+            .iter()
+            .zip(&group.limits)
+            .any(|(member, limit)| {
+                validate_window_cp(
+                    &draft,
+                    &draft.land.units[member],
+                    group.allowance,
+                    1,
+                    *limit,
+                )
+                .is_err()
+            })
+        {
+            continue;
+        }
+        if hex != origin
+            && group
+                .members
+                .iter()
+                .any(|id| draft.land.units[id].reserve.status == super::reserve::Status::First)
+        {
+            continue;
+        }
+        let prior = best.get(&hex).cloned();
+        if prior.as_ref().is_some_and(|r| {
+            r.control_unknown
+                || (state.land.movement.controls.get(&hex) == Some(&true)
+                    && effective_control(
+                        content,
+                        &draft,
+                        seat.side,
+                        &hex,
+                        &formation::members(content, &draft, id),
+                        true,
+                    ))
+        }) {
+            continue;
+        }
+        for to in content.map.neighbors(&hex) {
+            if to.id == origin
+                || best
+                    .get(&to.id)
+                    .is_some_and(|r| r.cp_quarters <= cost.saturating_add(1))
+                || map::terrain(content, &to.id, strict).is_err()
+            {
+                continue;
+            }
+            node.restore(&mut draft);
+            if let Ok(mut r) = run_reference_for_step2(
+                content,
+                &mut draft,
+                &Order {
+                    unit: id.clone(),
+                    path: vec![to.id.clone()],
+                    with_stack: state
+                        .land
+                        .reaction
+                        .continuation
+                        .as_ref()
+                        .filter(|_| continuing(state, id))
+                        .is_some_and(|k| k.with_stack),
+                    close_assault: vec![],
+                },
+                seat,
+                strict,
+                false,
+                false,
+                &mut Vec::new(),
+                Some(&group),
+            ) {
+                let mut path = prior.as_ref().map_or_else(Vec::new, |p| p.path.clone());
+                path.extend(r.path);
+                r.path = path;
+                r.cp_quarters = draft.land.units[id].cp_spent_quarters - initial_cp;
+                r.fuel_tenths += prior.as_ref().map_or(0, |p| p.fuel_tenths);
+                r.control_unknown |= prior.as_ref().is_some_and(|p| p.control_unknown);
+                if best
+                    .get(&to.id)
+                    .is_none_or(|old| r.cp_quarters < old.cp_quarters)
+                {
+                    for member in formation::members(content, &draft, id) {
+                        draft.land.movement.moved.remove(&member);
+                    }
+                    queue.insert((r.cp_quarters, to.id.clone()));
+                    frontier.insert(
+                        to.id.clone(),
+                        PlanningNode::capture(&draft, &changed, &stocks, &dumps, &histories),
+                    );
+                    best.insert(to.id.clone(), r);
+                }
+            }
+        }
+    }
+    best.into_values().filter(|r| r.end_valid).collect()
+}
+
+#[cfg(test)]
+pub(crate) fn reachable_reference_for_step2(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Vec<Reachable> {
+    if state.land.movement.mode == WindowMode::Segment
+        && state
+            .land
+            .reaction
+            .window
+            .as_ref()
+            .is_some_and(|w| w.eligible.contains(id) && !w.reacted.contains(id))
+    {
+        return nonphasing_reachable_reference_for_step2(
+            content,
+            state,
+            id,
+            strict,
+            NonPhasingMove::Reaction,
+        );
+    }
+    reachable_inner_reference_for_step2(content, state, id, strict)
+}
+
+#[cfg(test)]
+pub(crate) fn nonphasing_reachable_reference_for_step2(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    strict: bool,
+    kind: NonPhasingMove,
+) -> Vec<Reachable> {
+    reachable_inner_reference_for_step2(c, &nonphasing_draft(s, kind), id, strict)
+}
+
+#[cfg(test)]
+pub(crate) fn preview_nonphasing_reference_for_step2(
+    c: &CnaContent,
+    s: &State,
+    o: &Order,
+    seat: SeatId,
+    strict: bool,
+    kind: NonPhasingMove,
+) -> Result<(State, Reachable), Rejection> {
+    let mut draft = nonphasing_draft(s, kind);
+    let cost = run_reference_for_step2(
+        c,
+        &mut draft,
+        o,
+        seat,
+        strict,
+        false,
+        true,
+        &mut vec![],
+        None,
+    )?;
+    Ok((draft, cost))
 }
