@@ -206,7 +206,8 @@ fn space(
         .map(|(id, _)| id.clone())
         .collect();
     let plane_max = u32::try_from(planes.len()).unwrap_or(u32::MAX);
-    // Cases: scen:59.36. This public period prohibits refit for both owners;
+    // Cases: scen:59.36
+    // This public period prohibits refit for both owners;
     // SGSU dues and their stock draws keep their existing domains.
     let cohort_max = if first_bar(content, current) {
         0
