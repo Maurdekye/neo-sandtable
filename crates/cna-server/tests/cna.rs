@@ -688,6 +688,15 @@ async fn check_http_real_profile(whole: bool) {
     };
     let result = tokio::time::timeout(limit, async {
         loop {
+            let handle = created.lock().unwrap().as_ref().unwrap().clone();
+            for seat in SeatId::all() {
+                let binding = handle.seat(seat).binding;
+                assert!(
+                    !binding.paused,
+                    "scripted HTTP seat {seat} paused: {:?}",
+                    binding.failure
+                );
+            }
             let detail: Value = client
                 .get(format!("{base}/api/campaigns/{id}"))
                 .send()

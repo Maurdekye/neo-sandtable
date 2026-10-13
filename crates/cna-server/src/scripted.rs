@@ -132,6 +132,74 @@ impl Generator<'_> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum PreviewStop {
+    Budget,
+    Legacy,
+}
+
+/// Count the exact seeded traversal without constructing values or calling hooks.
+/// The real generator retains its original RNG and counters. Invalid domains and
+/// reached opaque leaves defer to it, preserving their existing failure behavior.
+struct ResourcePreview {
+    rng: ChaCha8Rng,
+    nodes_left: u32,
+}
+impl ResourcePreview {
+    fn discard_sample(&mut self, count: u128) -> Result<(), PreviewStop> {
+        sample(&mut self.rng, count)
+            .map(|_| ())
+            .map_err(|_| PreviewStop::Legacy)
+    }
+
+    fn action(&mut self, schema: &ActionSchema, depth: u32) -> Result<(), PreviewStop> {
+        if depth > 32 || self.nodes_left == 0 {
+            return Err(PreviewStop::Budget);
+        }
+        self.nodes_left -= 1;
+        match schema {
+            ActionSchema::Choice { options } => self.discard_sample(options.len() as u128),
+            ActionSchema::Integer { min, max } => {
+                if min > max {
+                    return Err(PreviewStop::Legacy);
+                }
+                self.discard_sample((i128::from(*max) - i128::from(*min) + 1) as u128)
+            }
+            ActionSchema::Bool => self.discard_sample(2),
+            ActionSchema::Unit { among } => self.discard_sample(among.len() as u128),
+            ActionSchema::Hex { among: Some(among) } => self.discard_sample(among.len() as u128),
+            ActionSchema::Hex { among: None }
+            | ActionSchema::Path { .. }
+            | ActionSchema::Text { .. } => Err(PreviewStop::Legacy),
+            ActionSchema::Record { fields } => {
+                for field in fields {
+                    if !field.optional
+                        || sample(&mut self.rng, 2).map_err(|_| PreviewStop::Legacy)? == 1
+                    {
+                        self.action(&field.schema, depth + 1)?;
+                    }
+                }
+                Ok(())
+            }
+            ActionSchema::List { item, min, max } => {
+                if min > max {
+                    return Err(PreviewStop::Legacy);
+                }
+                let length = u64::from(*min)
+                    + sample(&mut self.rng, u128::from(max - min) + 1)
+                        .map_err(|_| PreviewStop::Legacy)?;
+                if length > u64::from(self.nodes_left) {
+                    return Err(PreviewStop::Budget);
+                }
+                for _ in 0..length {
+                    self.action(item, depth + 1)?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 fn requires_candidates(schema: &ActionSchema) -> bool {
     match schema {
         ActionSchema::Hex { among: None }
@@ -175,7 +243,21 @@ pub fn answer(
     // selected before generation, never substituted after an execution failure.
     let pass = request.space.pass.is_some()
         && (unavailable || mode == Mode::PassWhenPossible || sample(&mut generator.rng, 5)? == 0);
-    let action = if pass {
+    let budget_unavailable = !pass
+        && ResourcePreview {
+            rng: generator.rng.clone(),
+            nodes_left: generator.nodes_left,
+        }
+        .action(&request.space.schema, 0)
+            == Err(PreviewStop::Budget);
+    if budget_unavailable && request.space.pass.is_none() {
+        return Err(Error::Invalid(format!(
+            "scripted action domain unavailable for {}: generation budget would be exhausted and no declared pass",
+            request.kind
+        )));
+    }
+    // Resource policy is decided before real generation, not after an error.
+    let action = if pass || budget_unavailable {
         Value::Null
     } else {
         generator.action(&request.space.schema, 0)?
@@ -272,6 +354,10 @@ impl<R: Ruleset> Campaign<R> {
         Ok(Step::Idle)
     }
 }
+
+#[cfg(test)]
+#[path = "scripted_policy_tests.rs"]
+mod policy_tests;
 
 #[cfg(test)]
 mod tests {
