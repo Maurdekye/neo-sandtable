@@ -472,7 +472,7 @@ fn wire_partition_cannot_add_squadron_rolls_or_stores_and_per_plane_uses_bound_r
     let successes: BTreeSet<_> = ids
         .iter()
         .filter_map(|id| {
-            content()
+            if content()
                 .tables
                 .airlog
                 .aircraft_refit
@@ -480,8 +480,11 @@ fn wire_partition_cannot_add_squadron_rolls_or_stores_and_per_plane_uses_bound_r
                     nation,
                     i32::from(expected_rng.two_dice_reading().sum()),
                     true,
-                )
-                .then(|| id.clone())
+                ) {
+                Some(id.clone())
+            } else {
+                None
+            }
         })
         .collect();
     let mut c = respond(&game, Side::Axis, serde_json::to_value(optional).unwrap());
