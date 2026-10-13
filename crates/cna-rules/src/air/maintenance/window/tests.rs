@@ -472,15 +472,11 @@ fn wire_partition_cannot_add_squadron_rolls_or_stores_and_per_plane_uses_bound_r
     let successes: BTreeSet<_> = ids
         .iter()
         .filter_map(|id| {
-            if content()
-                .tables
-                .airlog
-                .aircraft_refit
-                .plane_refitted(
-                    nation,
-                    i32::from(expected_rng.two_dice_reading().sum()),
-                    true,
-                ) {
+            if content().tables.airlog.aircraft_refit.plane_refitted(
+                nation,
+                i32::from(expected_rng.two_dice_reading().sum()),
+                true,
+            ) {
                 Some(id.clone())
             } else {
                 None
