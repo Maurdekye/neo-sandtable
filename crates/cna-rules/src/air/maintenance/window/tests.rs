@@ -476,7 +476,11 @@ fn wire_partition_cannot_add_squadron_rolls_or_stores_and_per_plane_uses_bound_r
                 .tables
                 .airlog
                 .aircraft_refit
-                .plane_refitted(nation, i32::from(expected_rng.two_dice_reading().sum()), true)
+                .plane_refitted(
+                    nation,
+                    i32::from(expected_rng.two_dice_reading().sum()),
+                    true,
+                )
                 .then(|| id.clone())
         })
         .collect();
