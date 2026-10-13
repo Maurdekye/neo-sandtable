@@ -450,7 +450,6 @@ fn run(
 
 // Query-local immutable map Results and stationary membership; no paths/funding/State are cached.
 struct PlanningReadIndex<'a> {
-    friendly_support: BTreeSet<HexId>,
     map_costs: map::QueryMovementCosts<'a>,
     fuel_sources: logistics::QueryFuelSources<'a>,
 }
@@ -458,22 +457,11 @@ impl<'a> PlanningReadIndex<'a> {
     fn new(
         content: &'a CnaContent,
         state: &State,
-        side: Side,
+        _side: Side,
         moving: &[UnitId],
         strict: bool,
     ) -> Self {
-        let friendly_support = state
-            .units_of(side)
-            .filter(|unit| !moving.contains(&unit.id))
-            .filter(|unit| {
-                formation::combat_unit(content, &unit.id)
-                    && formation::strength(content, state, &unit.id) > 0
-                    && unit.cohesion_quarters > -104
-            })
-            .filter_map(|unit| unit.location.hex().cloned())
-            .collect();
         Self {
-            friendly_support,
             map_costs: map::QueryMovementCosts::new(content, strict),
             fuel_sources: logistics::QueryFuelSources::new(content, state, moving),
         }
@@ -486,12 +474,9 @@ fn query_effective_control(
     hex: &HexId,
     moving: &[UnitId],
     control: bool,
-    reads: Option<&PlanningReadIndex<'_>>,
+    _reads: Option<&PlanningReadIndex<'_>>,
 ) -> bool {
-    match reads {
-        Some(reads) => control && !reads.friendly_support.contains(hex),
-        None => effective_control(content, state, side, hex, moving, control),
-    }
+    effective_control(content, state, side, hex, moving, control)
 }
 
 #[allow(clippy::too_many_arguments)]
