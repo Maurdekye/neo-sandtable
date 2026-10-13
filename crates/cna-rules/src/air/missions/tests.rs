@@ -525,9 +525,37 @@ fn actual_advance_closes_private_plans_once_with_equal_streams_and_recovery() {
     );
     assert_eq!(first.events, replay.events);
     assert_eq!(first.game.rng, start.rng);
+    // This Advance also enters the next implemented DEV window: maintenance.
+    // Its public GT1/OpStage1 period is expected bookkeeping; declaration
+    // resolution still changes no other Air state outside tactical intentions.
+    let mut after_air = air_except_tactical(&first.game);
+    let mut before_air = air_except_tactical(&start);
+    after_air["runtime"]
+        .as_object_mut()
+        .unwrap()
+        .remove("maintenance");
+    before_air["runtime"]
+        .as_object_mut()
+        .unwrap()
+        .remove("maintenance");
+    assert_eq!(after_air, before_air);
     assert_eq!(
-        air_except_tactical(&first.game),
-        air_except_tactical(&start)
+        start.state.air.runtime.maintenance,
+        crate::air::maintenance::refit::MaintenanceState::default()
+    );
+    assert_eq!(
+        first.game.state.air.runtime.maintenance,
+        crate::air::maintenance::refit::MaintenanceState {
+            period: Some(
+                crate::air::maintenance::refit::MaintenancePeriod::Tactical {
+                    game_turn: 1,
+                    op_stage: 1,
+                }
+            ),
+            // All receipts, debits, waiting/closed plans remain empty and
+            // finished remains false: entry alone adjudicates nothing.
+            ..crate::air::maintenance::refit::MaintenanceState::default()
+        }
     );
     assert_eq!(first.game.state.air.runtime.tactical.declarations.len(), 1);
     assert!(first.game.state.air.runtime.tactical.resolved);
