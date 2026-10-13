@@ -481,9 +481,44 @@ async fn http_creation_control_and_local_origin_are_checked() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn committed_receipt_survives_publication_failure_and_writer_stop_is_durable() {
-    let dir = tempfile::tempdir().unwrap();
+    // Retain the fault database on failure, including timeout panics. Keeping it is
+    // evidence retention, not a claim that dropping an await joined the writer.
+    struct FailureDb(Option<tempfile::TempDir>);
+    impl FailureDb {
+        fn path(&self) -> &Path {
+            self.0.as_ref().unwrap().path()
+        }
+    }
+    impl Drop for FailureDb {
+        fn drop(&mut self) {
+            if std::thread::panicking()
+                && let Some(dir) = self.0.take()
+            {
+                eprintln!(
+                    "transport failure database retained at {}",
+                    dir.keep().display()
+                );
+            }
+        }
+    }
+    async fn phase<T>(name: &str, seconds: u64, future: impl std::future::Future<Output = T>) -> T {
+        tokio::time::timeout(Duration::from_secs(seconds), future)
+            .await
+            .unwrap_or_else(|_| panic!("transport phase {name} exceeded {seconds}s"))
+    }
+
+    let dir = FailureDb(Some(tempfile::tempdir().unwrap()));
     let handle = sandbox::create(dir.path(), &data(), request("human", false)).unwrap();
-    let d = pending(&handle).await;
+    let d = phase("initial_pending", 5, async {
+        let mut initial = handle.watch_seat("axis.commander".parse().unwrap());
+        loop {
+            if let Some(d) = initial.borrow_and_update().pending.first().cloned() {
+                return d;
+            }
+            initial.changed().await.unwrap();
+        }
+    })
+    .await;
     let id = handle.projection(Perspective::Operator).meta.id;
     let path = dir.path().join(format!("{id}.sqlite"));
     let db = rusqlite::Connection::open(&path).unwrap();
@@ -514,15 +549,21 @@ async fn committed_receipt_survives_publication_failure_and_writer_stop_is_durab
         action: candidate.action,
         public_explanation: None,
     };
-    let receipt = handle.submit_action(d.seat, req.clone()).await.unwrap();
+    let receipt = phase(
+        "first_submit_receipt",
+        30,
+        handle.submit_action(d.seat, req.clone()),
+    )
+    .await
+    .unwrap();
     assert!(!receipt.duplicate);
     let mut lifecycle = handle.watch_status();
-    tokio::time::timeout(
-        Duration::from_secs(5),
+    phase(
+        "durable_stop_watch",
+        5,
         lifecycle.wait_for(|s| matches!(s, CampaignStatus::Stopped { .. })),
     )
     .await
-    .unwrap()
     .unwrap();
     let stored_status: String = db
         .query_row("SELECT status FROM campaign", [], |r| r.get(0))
@@ -535,7 +576,11 @@ async fn committed_receipt_survives_publication_failure_and_writer_stop_is_durab
         .query_row("SELECT revision FROM campaign", [], |r| r.get(0))
         .unwrap();
     assert_eq!(committed, before + 1);
-    assert!(handle.shutdown().await.is_err());
+    assert!(
+        phase("failed_writer_shutdown", 30, handle.shutdown())
+            .await
+            .is_err()
+    );
     db.execute_batch("DROP TRIGGER publication_failure;
         UPDATE perspective_events SET message=(SELECT message FROM publication_backup b
             WHERE b.perspective=perspective_events.perspective AND b.seq=perspective_events.seq)
@@ -543,14 +588,22 @@ async fn committed_receipt_survives_publication_failure_and_writer_stop_is_durab
         DROP TABLE publication_backup;").unwrap();
     let restored = sandbox::recover(&path, &data()).unwrap();
     assert!(matches!(restored.status(), CampaignStatus::Stopped { .. }));
-    let retry = restored.submit_action(d.seat, req).await.unwrap();
+    let retry = phase(
+        "recovered_duplicate_receipt",
+        30,
+        restored.submit_action(d.seat, req),
+    )
+    .await
+    .unwrap();
     assert!(retry.duplicate);
     assert_eq!(retry.decision_id, receipt.decision_id);
     let after_retry: u64 = db
         .query_row("SELECT revision FROM campaign", [], |r| r.get(0))
         .unwrap();
     assert_eq!(after_retry, committed);
-    restored.shutdown().await.unwrap();
+    phase("recovered_writer_shutdown", 30, restored.shutdown())
+        .await
+        .unwrap();
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
