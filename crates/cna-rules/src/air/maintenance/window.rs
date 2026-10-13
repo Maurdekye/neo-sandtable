@@ -889,7 +889,7 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
                     .filter_map(|id| {
                         let passed = content.tables.airlog.aircraft_refit.plane_refitted(
                             *nation,
-                            i32::from(rng.two_dice().sum()),
+                            i32::from(rng.two_dice_reading().sum()),
                             assigned,
                         );
                         passed.then(|| id.clone())
