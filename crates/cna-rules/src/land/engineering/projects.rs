@@ -9,8 +9,8 @@ use cna_core::engine::EngineError;
 use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
 
-use crate::air::facilities::{FacilityId, FacilityWork, SiteIncarnation, work};
 use crate::air::facilities::work::StartedFacilityWork;
+use crate::air::facilities::{FacilityId, FacilityWork, SiteIncarnation, work};
 use crate::{CnaContent, State};
 
 /// Campaign-local, never reused, distinct from a stable facility SITE identity.
@@ -56,10 +56,13 @@ fn check_ledger(state: &State) -> Result<(), EngineError> {
         {
             return Err(corrupt("invalid project incarnation or Air allocator"));
         }
-        if token_sites.insert(project.incarnation, &project.target)
+        if token_sites
+            .insert(project.incarnation, &project.target)
             .is_some_and(|old| old != &project.target)
         {
-            return Err(corrupt("one incarnation references different SITE identities"));
+            return Err(corrupt(
+                "one incarnation references different SITE identities",
+            ));
         }
         if project.side != project.started.side()
             || &project.work != project.started.work()
@@ -92,13 +95,19 @@ pub fn begin_facility_project(
     check_ledger(state)?;
     // Identity only; Air still validates canonical content and availability.
     let target = work::target_id(work);
-    if let Some(active) = state.engineering.facility_projects.values()
+    if let Some(active) = state
+        .engineering
+        .facility_projects
+        .values()
         .find(|project| project.lifecycle == ProjectLifecycle::Active && project.target == target)
     {
         check_active_site(content, state, active)?;
         return Err(corrupt("SITE already has an Active project"));
     }
-    let serial = state.engineering.facility_project_serial.checked_add(1)
+    let serial = state
+        .engineering
+        .facility_project_serial
+        .checked_add(1)
         .ok_or_else(|| corrupt("project identities exhausted"))?;
     let id = ProjectId(serial);
     if state.engineering.facility_projects.contains_key(&id) {
@@ -108,7 +117,8 @@ pub fn begin_facility_project(
     // start_work's NEW-begin legacy establishment is guarded above on the
     // whole State, not by an Air-only boolean or a caller receipt.
     let started = work::start_work(content, &mut draft.air, side, work)?;
-    let incarnation = started.incarnation()
+    let incarnation = started
+        .incarnation()
         .ok_or_else(|| corrupt("new Air receipt has no incarnation"))?;
     if started.side() != side || started.work() != work || started.target() != &target {
         return Err(corrupt("Air start returned a different project"));
@@ -159,7 +169,11 @@ fn check_active_site(
     let incarnation = work::current_site_incarnation(content, &state.air, &project.target)?
         .ok_or_else(|| corrupt("Active target has no incarnation"))?;
     if incarnation != project.incarnation {
-        return Err(interrupted(project, "land:24.76", "target instance was replaced"));
+        return Err(interrupted(
+            project,
+            "land:24.76",
+            "target instance was replaced",
+        ));
     }
     Ok(())
 }
@@ -175,7 +189,10 @@ pub fn complete_facility_project(
     id: &ProjectId,
 ) -> Result<FacilityId, EngineError> {
     check_ledger(state)?;
-    let project = state.engineering.facility_projects.get(id)
+    let project = state
+        .engineering
+        .facility_projects
+        .get(id)
         .ok_or_else(|| corrupt("completion references an unknown project"))?
         .clone();
     if project.lifecycle != ProjectLifecycle::Active {
@@ -187,7 +204,10 @@ pub fn complete_facility_project(
     if target != project.target {
         return Err(corrupt("Air completion returned a different SITE"));
     }
-    draft.engineering.facility_projects.get_mut(id)
+    draft
+        .engineering
+        .facility_projects
+        .get_mut(id)
         .expect("authenticated project in cloned draft")
         .lifecycle = ProjectLifecycle::Completed;
     *state = draft;

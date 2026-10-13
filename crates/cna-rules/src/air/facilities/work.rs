@@ -277,13 +277,12 @@ pub fn complete_work(
     started: &StartedFacilityWork,
 ) -> Result<FacilityId, EngineError> {
     inventory::check(content, air)?;
-    let site = air
-        .runtime
-        .facilities
-        .get(&started.target)
-        .ok_or_else(|| {
-            interrupted("land:24.76", "project target was removed; interruption policy required")
-        })?;
+    let site = air.runtime.facilities.get(&started.target).ok_or_else(|| {
+        interrupted(
+            "land:24.76",
+            "project target was removed; interruption policy required",
+        )
+    })?;
     let properties = site.properties(content, &started.target)?;
     if site.owner != started.side {
         return Err(interrupted(
@@ -298,7 +297,9 @@ pub fn complete_work(
         ));
     }
     if started.incarnation.is_none() || started.incarnation != site.incarnation {
-        return Err(invalid("receipt has missing or obsolete facility incarnation"));
+        return Err(invalid(
+            "receipt has missing or obsolete facility incarnation",
+        ));
     }
     class_available(content, air, &properties, Some(&started.target))?;
     match &started.work {

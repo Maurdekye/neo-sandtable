@@ -640,7 +640,9 @@ fn check_site_transition(
         old.site_incarnation_serial
     };
     if new.site_incarnation_serial != expected {
-        return Err(invalid("facility serial changed outside canonical allocation"));
+        return Err(invalid(
+            "facility serial changed outside canonical allocation",
+        ));
     }
     for (id, site) in &new.facilities {
         if target == Some(id) {
@@ -649,9 +651,10 @@ fn check_site_transition(
             }
             match allocation.expect("target has allocation") {
                 SiteAllocation::Establish(_) => {
-                    let before = old.facilities.get(id).ok_or_else(|| {
-                        invalid("legacy establishment cannot create a facility")
-                    })?;
+                    let before = old
+                        .facilities
+                        .get(id)
+                        .ok_or_else(|| invalid("legacy establishment cannot create a facility"))?;
                     if before.incarnation.is_some() || before.origin != site.origin {
                         return Err(invalid("legacy establishment changed physical identity"));
                     }
@@ -672,11 +675,14 @@ fn check_site_transition(
                 }
             }
         } else {
-            let before = old.facilities.get(id).ok_or_else(|| {
-                invalid("generic inventory callback cannot create a facility")
-            })?;
+            let before = old
+                .facilities
+                .get(id)
+                .ok_or_else(|| invalid("generic inventory callback cannot create a facility"))?;
             if before.incarnation != site.incarnation || before.origin != site.origin {
-                return Err(invalid("facility incarnation cannot be cleared, reused or changed"));
+                return Err(invalid(
+                    "facility incarnation cannot be cleared, reused or changed",
+                ));
             }
             let old_properties = before.properties(content, id)?;
             let new_properties = site.properties(content, id)?;

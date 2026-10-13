@@ -47,7 +47,13 @@ fn old_campaign_and_receipt_load_none_without_adopting_old_project_identity() {
     let mut old = serde_json::to_value((&state, &receipt)).unwrap();
     let runtime = old[0]["air"]["runtime"].as_object_mut().unwrap();
     runtime.remove("site_incarnation_serial");
-    for site in runtime.get_mut("facilities").unwrap().as_object_mut().unwrap().values_mut() {
+    for site in runtime
+        .get_mut("facilities")
+        .unwrap()
+        .as_object_mut()
+        .unwrap()
+        .values_mut()
+    {
         site.as_object_mut().unwrap().remove("incarnation");
     }
     old[1].as_object_mut().unwrap().remove("incarnation");
@@ -57,7 +63,14 @@ fn old_campaign_and_receipt_load_none_without_adopting_old_project_identity() {
     inventory::check(&content, &restored.air).unwrap();
     assert_eq!(legacy_receipt.incarnation(), None);
     assert_eq!(restored.air.runtime.site_incarnation_serial, 0);
-    assert!(restored.air.runtime.facilities.values().all(|s| s.incarnation.is_none()));
+    assert!(
+        restored
+            .air
+            .runtime
+            .facilities
+            .values()
+            .all(|s| s.incarnation.is_none())
+    );
     assert_eq!(original_planes, restored.air.runtime.aircraft);
     assert_eq!(original_pilots, restored.air.runtime.pilots);
     let before = serde_json::to_vec(&restored).unwrap();
@@ -76,7 +89,10 @@ fn old_campaign_and_receipt_load_none_without_adopting_old_project_identity() {
     )
     .unwrap();
     let token = new.incarnation().unwrap();
-    assert_eq!(current_site_incarnation(&content, &restored.air, &id).unwrap(), Some(token));
+    assert_eq!(
+        current_site_incarnation(&content, &restored.air, &id).unwrap(),
+        Some(token)
+    );
     assert_eq!(restored.air.runtime.site_incarnation_serial, 1);
     complete_work(&content, &mut restored.air, &new).unwrap();
     let again = start_work(
@@ -99,8 +115,12 @@ fn source_free_identity_lookup_never_queries_site_or_hex_availability() {
     let (content, mut state, _) = fixture();
     let missing = FacilityId("missing.site".into());
     for work in [
-        FacilityWork::RepairOne { id: missing.clone() },
-        FacilityWork::Upgrade { id: missing.clone() },
+        FacilityWork::RepairOne {
+            id: missing.clone(),
+        },
+        FacilityWork::Upgrade {
+            id: missing.clone(),
+        },
     ] {
         assert_eq!(target_id(&work), missing);
     }
@@ -109,7 +129,10 @@ fn source_free_identity_lookup_never_queries_site_or_hex_availability() {
         hex: "unknown".into(),
     };
     let before = serde_json::to_vec(&state).unwrap();
-    assert_eq!(target_id(&work), FacilityId("constructed.air.unknown".into()));
+    assert_eq!(
+        target_id(&work),
+        FacilityId("constructed.air.unknown".into())
+    );
     assert!(start_work(&content, &mut state.air, Side::Axis, &work).is_err());
     assert_eq!(before, serde_json::to_vec(&state).unwrap());
 }
@@ -122,7 +145,10 @@ fn generic_callbacks_cannot_mint_clear_reuse_or_rollback_site_tokens() {
         &content,
         &mut state.air,
         Side::Axis,
-        &FacilityWork::Create { kind: FacilityKind::LandingStrip, hex },
+        &FacilityWork::Create {
+            kind: FacilityKind::LandingStrip,
+            hex,
+        },
     )
     .unwrap();
     let id = receipt.target().clone();
@@ -140,8 +166,11 @@ fn generic_callbacks_cannot_mint_clear_reuse_or_rollback_site_tokens() {
                 }
                 _ => {
                     let token = runtime.facilities[&id].incarnation;
-                    runtime.facilities.get_mut(&FacilityId("airfield_benina".into()))
-                        .unwrap().incarnation = token;
+                    runtime
+                        .facilities
+                        .get_mut(&FacilityId("airfield_benina".into()))
+                        .unwrap()
+                        .incarnation = token;
                 }
             }
             Ok(())
@@ -152,19 +181,32 @@ fn generic_callbacks_cannot_mint_clear_reuse_or_rollback_site_tokens() {
     for token in [0, 2] {
         let mut corrupt = state.air.clone();
         corrupt.runtime.facilities.get_mut(&id).unwrap().incarnation = Some(SiteIncarnation(token));
-        assert!(matches!(inventory::check(&content, &corrupt), Err(EngineError::Invariant { .. })));
+        assert!(matches!(
+            inventory::check(&content, &corrupt),
+            Err(EngineError::Invariant { .. })
+        ));
     }
     let mut duplicate = state.air.clone();
-    duplicate.runtime.facilities.get_mut(&FacilityId("airfield_benina".into()))
-        .unwrap().incarnation = receipt.incarnation();
-    assert!(matches!(inventory::check(&content, &duplicate), Err(EngineError::Invariant { .. })));
+    duplicate
+        .runtime
+        .facilities
+        .get_mut(&FacilityId("airfield_benina".into()))
+        .unwrap()
+        .incarnation = receipt.incarnation();
+    assert!(matches!(
+        inventory::check(&content, &duplicate),
+        Err(EngineError::Invariant { .. })
+    ));
 }
 
 /// Cases: land:24.76, land:24.79, airlog:36.2
 #[test]
 fn deletion_retires_token_and_recreation_overflow_or_interruption_is_atomic() {
     let (content, mut state, hex) = fixture();
-    let work = FacilityWork::Create { kind: FacilityKind::LandingStrip, hex };
+    let work = FacilityWork::Create {
+        kind: FacilityKind::LandingStrip,
+        hex,
+    };
     let old = start_work(&content, &mut state.air, Side::Axis, &work).unwrap();
     let id = old.target().clone();
     let retired = state.air.runtime.facilities[&id].clone();
@@ -177,10 +219,13 @@ fn deletion_retires_token_and_recreation_overflow_or_interruption_is_atomic() {
     assert!(matches!(complete_work(&content, &mut state.air, &old),
         Err(EngineError::Unsupported { ref case, .. }) if case == "land:24.76"));
     assert_eq!(before, serde_json::to_vec(&state).unwrap());
-    assert!(matches!(inventory::update(&content, &mut state.air, |runtime| {
-        runtime.facilities.insert(id.clone(), retired);
-        Ok(())
-    }), Err(EngineError::Invariant { .. })));
+    assert!(matches!(
+        inventory::update(&content, &mut state.air, |runtime| {
+            runtime.facilities.insert(id.clone(), retired);
+            Ok(())
+        }),
+        Err(EngineError::Invariant { .. })
+    ));
     assert_eq!(before, serde_json::to_vec(&state).unwrap());
     let new = start_work(&content, &mut state.air, Side::Axis, &work).unwrap();
     assert_eq!(new.target(), old.target());
@@ -192,17 +237,22 @@ fn deletion_retires_token_and_recreation_overflow_or_interruption_is_atomic() {
     })
     .unwrap();
     let before = serde_json::to_vec(&state).unwrap();
-    assert!(matches!(inventory::update(&content, &mut state.air, |runtime| {
-        runtime.facilities.get_mut(&id).unwrap().current_capacity = FacilityCapacity::Levels(1);
-        Ok(())
-    }), Err(EngineError::Invariant { .. })));
+    assert!(matches!(
+        inventory::update(&content, &mut state.air, |runtime| {
+            runtime.facilities.get_mut(&id).unwrap().current_capacity = FacilityCapacity::Levels(1);
+            Ok(())
+        }),
+        Err(EngineError::Invariant { .. })
+    ));
     assert_eq!(before, serde_json::to_vec(&state).unwrap());
     // A valid restored spent allocator can reach u64::MAX; no wrap or reset.
     state.air.runtime.site_incarnation_serial = u64::MAX;
     inventory::check(&content, &state.air).unwrap();
     let before = serde_json::to_vec(&state).unwrap();
-    assert!(matches!(start_work(&content, &mut state.air, Side::Axis, &work),
-        Err(EngineError::Invariant { .. })));
+    assert!(matches!(
+        start_work(&content, &mut state.air, Side::Axis, &work),
+        Err(EngineError::Invariant { .. })
+    ));
     assert_eq!(before, serde_json::to_vec(&state).unwrap());
 }
 
@@ -218,12 +268,30 @@ fn legacy_metadata_establishment_alone_is_private_and_does_not_duplicate_invento
     })
     .unwrap();
     let mut after_begin = before_begin.clone();
-    start_work(&content, &mut after_begin.air, Side::Axis, &FacilityWork::RepairOne { id }).unwrap();
+    start_work(
+        &content,
+        &mut after_begin.air,
+        Side::Axis,
+        &FacilityWork::RepairOne { id },
+    )
+    .unwrap();
     assert_eq!(before_begin.air.forces, after_begin.air.forces);
     assert_eq!(before_begin.air.squadrons, after_begin.air.squadrons);
-    assert_eq!(before_begin.air.runtime.aircraft, after_begin.air.runtime.aircraft);
-    assert_eq!(before_begin.air.runtime.pilots, after_begin.air.runtime.pilots);
-    assert_indistinguishable(&Cna::dev(), &content, &before_begin, &after_begin, Side::Commonwealth);
+    assert_eq!(
+        before_begin.air.runtime.aircraft,
+        after_begin.air.runtime.aircraft
+    );
+    assert_eq!(
+        before_begin.air.runtime.pilots,
+        after_begin.air.runtime.pilots
+    );
+    assert_indistinguishable(
+        &Cna::dev(),
+        &content,
+        &before_begin,
+        &after_begin,
+        Side::Commonwealth,
+    );
 }
 
 // TEST-ONLY stand-in for the required, still-unimplemented Engineering caller.
