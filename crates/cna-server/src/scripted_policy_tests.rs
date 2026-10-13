@@ -15,7 +15,7 @@ fn request(kind: &str, schema: ActionSchema, pass: bool) -> DecisionRequest {
         space = space.with_pass("Declared fixture pass");
     }
     DecisionRequest {
-        id: format!("fixture:{kind}").into(),
+        id: format!("fixture:{kind}").as_str().into(),
         seat: SeatId::new(Side::Axis, Role::Air),
         kind: kind.into(),
         revision: 3,
