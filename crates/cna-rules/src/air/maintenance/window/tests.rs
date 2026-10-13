@@ -471,17 +471,14 @@ fn wire_partition_cannot_add_squadron_rolls_or_stores_and_per_plane_uses_bound_r
     let mut expected_rng = CampaignRng::from_state(&game.rng);
     let successes: BTreeSet<_> = ids
         .iter()
-        .filter_map(|id| {
-            if content().tables.airlog.aircraft_refit.plane_refitted(
+        .filter(|_| {
+            content().tables.airlog.aircraft_refit.plane_refitted(
                 nation,
                 i32::from(expected_rng.two_dice_reading().sum()),
                 true,
-            ) {
-                Some(id.clone())
-            } else {
-                None
-            }
+            )
         })
+        .cloned()
         .collect();
     let mut c = respond(&game, Side::Axis, serde_json::to_value(optional).unwrap());
     c = respond(&c, Side::Commonwealth, Value::Null);
