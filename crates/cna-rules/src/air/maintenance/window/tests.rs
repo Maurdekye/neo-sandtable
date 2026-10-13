@@ -228,6 +228,266 @@ fn rejected_response(content: &CnaContent, game: &Game<Cna>, action: Value) -> R
     rejection
 }
 
+fn opened_first_period() -> Game<Cna> {
+    let mut state = base(false);
+    state.cursor.game_turn = content().scenario.meta.start.gt;
+    state.cursor.op_stage = Some(content().scenario.meta.start.opstage);
+    let mut rng = CampaignRng::from_seed([41; 32]);
+    let before_rng = rng.state();
+    let mut events = Vec::new();
+    enter(
+        content(),
+        &mut state,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+        false,
+    )
+    .unwrap();
+    assert_eq!(rng.state(), before_rng);
+    assert_eq!(state.decisions.pending.len(), 2);
+    Game {
+        state,
+        rng: rng.state(),
+    }
+}
+
+fn cohort_maximum(space: &ActionSpace) -> u32 {
+    let ActionSchema::Record { fields } = &space.schema else {
+        panic!("refit record required")
+    };
+    let ActionSchema::List { max, .. } =
+        &fields.iter().find(|f| f.name == "cohorts").unwrap().schema
+    else {
+        panic!("cohort list required")
+    };
+    *max
+}
+
+/// Cases: scen:59.36, airlog:35.14, airlog:38.33
+#[test]
+fn first_period_refit_domain_is_zero_without_changing_dues_draws_or_later_domains() {
+    let first = opened_first_period();
+    let later = opened(false);
+    let strategic = opened(true);
+    assert!(first_bar(content(), period(&first.state).unwrap()));
+    assert!(!first_bar(content(), period(&later.state).unwrap()));
+    assert!(!first_bar(content(), period(&strategic.state).unwrap()));
+    for owner in Side::ALL {
+        let pending = first
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat.side == owner)
+            .unwrap();
+        assert_eq!(pending.kind, KIND);
+        assert_eq!(pending.seat.role, Role::Air);
+        assert!(pending.space.pass.is_some());
+        assert_eq!(cohort_maximum(&pending.space), 0);
+        let positive = u32::try_from(
+            later
+                .state
+                .air
+                .runtime
+                .aircraft
+                .values()
+                .filter(|p| owned(&p.force, owner))
+                .count(),
+        )
+        .unwrap();
+        assert!(positive > 0);
+        let mut expected = space(
+            content(),
+            &later.state,
+            owner,
+            period(&later.state).unwrap(),
+        );
+        assert_eq!(cohort_maximum(&expected), positive);
+        assert_eq!(
+            cohort_maximum(&space(
+                content(),
+                &strategic.state,
+                owner,
+                period(&strategic.state).unwrap()
+            )),
+            positive
+        );
+        let ActionSchema::Record { fields } = &mut expected.schema else {
+            unreachable!()
+        };
+        let ActionSchema::List { max, .. } = &mut fields
+            .iter_mut()
+            .find(|f| f.name == "cohorts")
+            .unwrap()
+            .schema
+        else {
+            unreachable!()
+        };
+        *max = 0;
+        // Full domain equality preserves dues/draws, inner priority and all
+        // own context; the public initial-period cohort bound is the sole delta.
+        assert_eq!(pending.space, expected);
+        assert!(pending.space.check(&Value::Null).is_ok());
+        assert!(
+            pending
+                .space
+                .check(&serde_json::to_value(RefitPlan::default()).unwrap())
+                .is_ok()
+        );
+    }
+    let proposed = plan(&first.state, true);
+    let mut dues_only = proposed.clone();
+    dues_only.cohorts.clear();
+    let own_space = space(
+        content(),
+        &first.state,
+        Side::Axis,
+        period(&first.state).unwrap(),
+    );
+    assert!(
+        own_space
+            .check(&serde_json::to_value(dues_only).unwrap())
+            .is_ok()
+    );
+    assert!(
+        own_space
+            .check(&serde_json::to_value(proposed).unwrap())
+            .is_err()
+    );
+    let recorded = respond(
+        &first,
+        Side::Axis,
+        serde_json::to_value(RefitPlan::default()).unwrap(),
+    );
+    let mut expected_air = first.state.air.clone();
+    expected_air.runtime.maintenance.closed.insert(Side::Axis);
+    expected_air
+        .runtime
+        .maintenance
+        .waiting
+        .insert(Side::Axis, RefitPlan::default());
+    assert_eq!(
+        serde_json::to_value(&recorded.state.air).unwrap(),
+        serde_json::to_value(&expected_air).unwrap()
+    );
+    assert_eq!(
+        serde_json::to_value(&recorded.state.logistics).unwrap(),
+        serde_json::to_value(&first.state.logistics).unwrap()
+    );
+    assert_eq!(recorded.rng, first.rng);
+}
+
+/// Cases: scen:59.36, airlog:38.33
+#[test]
+fn first_period_manual_refit_refusal_is_cited_and_answer_and_finish_fail_atomically() {
+    let game = opened_first_period();
+    let proposed = plan(&game.state, true);
+    let action = serde_json::to_value(&proposed).unwrap();
+    let current = period(&game.state).unwrap();
+    let expected = illegal("scen:59.36: aircraft maintenance barred in first scenario OpStage");
+    let rejection = match validate(content(), &game.state, Side::Axis, current, &proposed) {
+        Err(rejection) => rejection,
+        Ok(_) => panic!("first-period refit was accepted"),
+    };
+    assert_eq!(rejection, expected);
+    assert!(matches!(
+        rejected_response(content(), &game, action.clone()),
+        Rejection::Illegal { .. }
+    ));
+    let pending = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.seat.side == Side::Axis)
+        .unwrap();
+    let mut refused = game.clone();
+    let before = serde_json::to_vec(&refused).unwrap();
+    assert!(matches!(
+        answer(content(), &mut refused.state, pending, &action),
+        Err(Rejection::Illegal { .. })
+    ));
+    assert_eq!(serde_json::to_vec(&refused).unwrap(), before);
+
+    // A forged accepted plan bypasses Respond, so the existing adjudication
+    // contract classifies its ordinary prohibition as a contextual invariant.
+    let mut forged = game.clone();
+    forged
+        .state
+        .air
+        .runtime
+        .maintenance
+        .closed
+        .extend(Side::ALL);
+    forged
+        .state
+        .air
+        .runtime
+        .maintenance
+        .waiting
+        .insert(Side::Axis, proposed);
+    forged
+        .state
+        .air
+        .runtime
+        .maintenance
+        .waiting
+        .insert(Side::Commonwealth, RefitPlan::default());
+    let before = serde_json::to_vec(&forged).unwrap();
+    let mut rng = CampaignRng::from_state(&forged.rng);
+    let before_rng = rng.state();
+    let mut events = Vec::new();
+    assert!(matches!(finish(content(), &mut forged.state,
+        &mut Cx { rng: &mut rng, events: &mut events }),
+        Err(EngineError::Invariant { detail }) if detail.contains("scen:59.36")
+            && detail.contains("accepted finite refit plan became invalid")));
+    assert_eq!(serde_json::to_vec(&forged).unwrap(), before);
+    assert_eq!(rng.state(), before_rng);
+    assert!(events.is_empty());
+}
+
+/// Cases: scen:59.36, land:3.6, airlog:35.14, airlog:38.33
+#[test]
+fn public_first_period_bound_preserves_hidden_enemy_pairs_and_pass_acceptance() {
+    for a in [opened_first_period(), opened(false)] {
+        let mut b = a.clone();
+        b.state
+            .logistics
+            .air_dumps
+            .get_mut("refit.stock")
+            .unwrap()
+            .supplies
+            .stores = 7;
+        inventory::update(content(), &mut b.state.air, |runtime| {
+            for p in runtime.aircraft.values_mut().filter(|p| p.force == "axis") {
+                p.refitted = !p.refitted;
+            }
+            Ok(())
+        })
+        .unwrap();
+        let current = period(&a.state).unwrap();
+        assert_eq!(
+            space(content(), &a.state, Side::Commonwealth, current),
+            space(content(), &b.state, Side::Commonwealth, current)
+        );
+        assert_eq!(
+            serde_json::to_value(&a.state.decisions.pending).unwrap(),
+            serde_json::to_value(&b.state.decisions.pending).unwrap()
+        );
+        assert_indistinguishable(
+            &Cna::dev(),
+            content(),
+            &a.state,
+            &b.state,
+            Side::Commonwealth,
+        );
+        let pass = command(&a, Side::Commonwealth, Value::Null);
+        assert_action_indistinguishable(&Cna::dev(), content(), &a, &b, &pass, Side::Commonwealth);
+    }
+}
+
 /// Cases: airlog:35.14, airlog:36.12, airlog:36.17, airlog:38.35, land:3.6
 #[test]
 fn respond_preserves_exact_canonical_and_source_errors_without_side_effects() {
@@ -558,9 +818,11 @@ fn late_stock_or_capacity_failure_preserves_whole_state_rng_and_events() {
     let mut first = game.clone();
     first.state.cursor.op_stage = Some(1);
     let proposed = plan(&first.state, true);
+    let before_first = serde_json::to_vec(&first).unwrap();
     assert!(matches!(validate(content(), &first.state, Side::Axis,
         period(&first.state).unwrap(), &proposed),
-        Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "scen:59.36"));
+        Err(Rejection::Illegal { message }) if message.contains("scen:59.36")));
+    assert_eq!(serde_json::to_vec(&first).unwrap(), before_first);
 }
 
 /// Cases: airlog:35.14, airlog:38.32

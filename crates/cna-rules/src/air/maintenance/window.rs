@@ -120,7 +120,12 @@ fn list(item: ActionSchema, max: u32) -> ActionSchema {
         max,
     }
 }
-fn space(state: &State, owner: Side) -> ActionSpace {
+fn space(
+    content: &CnaContent,
+    state: &State,
+    owner: Side,
+    current: MaintenancePeriod,
+) -> ActionSpace {
     // Exact own roster and stock explain the ID choices without exposing an
     // opponent's planes, plans, receipts, project flags or stock quantities.
     let roster: BTreeMap<_, _> = state
@@ -201,6 +206,13 @@ fn space(state: &State, owner: Side) -> ActionSpace {
         .map(|(id, _)| id.clone())
         .collect();
     let plane_max = u32::try_from(planes.len()).unwrap_or(u32::MAX);
+    // Cases: scen:59.36. This public period prohibits refit for both owners;
+    // SGSU dues and their stock draws keep their existing domains.
+    let cohort_max = if first_bar(content, current) {
+        0
+    } else {
+        plane_max
+    };
     let sgsu_max = u32::try_from(sgsus.len()).unwrap_or(u32::MAX);
     let dump_max = u32::try_from(dumps.len()).unwrap_or(u32::MAX);
     let amount = ActionSchema::Record {
@@ -257,7 +269,7 @@ fn space(state: &State, owner: Side) -> ActionSpace {
                             field("method", choice(["squadron".into(), "per_plane".into()])),
                         ],
                     },
-                    plane_max,
+                    cohort_max,
                 ),
             ),
             field(
@@ -320,7 +332,7 @@ pub fn enter(
         cx.emit(EngineEvent::new(Audience::Side(side), GameEvent::Note {
             text: format!("Development maintenance supports finite SGSU refit/dues only; missing: {MISSING}. No load or flight permission follows."),
         }));
-        let domain = space(state, side);
+        let domain = space(content, state, side, current);
         open(
             state,
             cx,
@@ -431,11 +443,9 @@ fn validate(
     plan: &RefitPlan,
 ) -> Result<Validated, Rejection> {
     if first_bar(content, current) && !plan.cohorts.is_empty() {
-        return Err(unsupported(
-            "scen:59.36",
-            "aircraft maintenance barred in first scenario OpStage",
-        )
-        .into());
+        return Err(illegal(
+            "scen:59.36: aircraft maintenance barred in first scenario OpStage",
+        ));
     }
     let paid = dues_stage(current)?;
     let mut demands = BTreeMap::<SgsuId, SupplyDemand>::new();
@@ -769,7 +779,9 @@ pub fn answer(
     {
         return Err(illegal("finite refit window is not open"));
     }
-    space(state, owner).check(action).map_err(illegal)?;
+    space(content, state, owner, current)
+        .check(action)
+        .map_err(illegal)?;
     let plan = if action.is_null() {
         RefitPlan::default()
     } else {
