@@ -271,6 +271,13 @@ fn actual_legacy_close_never_credits_existing_unknown_aircraft_and_empty_source_
 
     let mut empty = content();
     empty.scenario.air.clear();
+    // This synthetic empty Air source also removes the Malta aggregate whose
+    // capacity is defined by the removed Malta Air record. Other facilities stay.
+    empty
+        .scenario
+        .facilities
+        .facilities
+        .retain(|facility| facility.id != "malta.initial");
     let closed = finish(&empty, opened(&empty));
     assert_direct_original_inventory(&empty, &closed.state);
     assert!(closed.state.air.runtime.aircraft.is_empty());
