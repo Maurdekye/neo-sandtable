@@ -550,16 +550,16 @@ fn legal_choices(
             .get(&cohort.assigned_squadron)
             .filter(|s| s.side == owner)
             .ok_or_else(|| illegal("unknown own assigned refit squadron"))?;
-        if let Some(family) = designation::squadron_family(state, &squadron.id) {
-            if matches!(
+        if let Some(family) = designation::squadron_family(state, &squadron.id)
+            && matches!(
                 (current, family),
                 (
                     MaintenancePeriod::Tactical { .. },
                     Family::Convoy | Family::MaltaRaid
                 ) | (MaintenancePeriod::Strategic { .. }, Family::LandSupport)
-            ) {
-                return Err(illegal("plane maintenance class differs from fixed period"));
-            }
+            )
+        {
+            return Err(illegal("plane maintenance class differs from fixed period"));
         }
         if !s.operation_paid(dues_stage(current)?) && !plan.dues.contains(&cohort.servicer) {
             return Err(illegal("refit SGSU dues not paid for actual period"));
@@ -626,14 +626,13 @@ fn legal_choices(
             .facilities
             .get(&id)
             .ok_or_else(|| invalid("active refit site missing"))?;
-        if let FacilityCapacity::Levels(levels) = site.current_capacity {
-            if consumers.len()
+        if let FacilityCapacity::Levels(levels) = site.current_capacity
+            && consumers.len()
                 > usize::try_from(levels).map_err(|_| invalid("negative site levels"))?
-            {
-                return Err(illegal(
-                    "active servicing SGSUs exceed damaged facility capacity",
-                ));
-            }
+        {
+            return Err(illegal(
+                "active servicing SGSUs exceed damaged facility capacity",
+            ));
         }
     }
     let historical = refit::account_refit(current, previous, &[], &limits)?;
