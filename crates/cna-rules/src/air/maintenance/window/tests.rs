@@ -1057,10 +1057,26 @@ fn actual_foreign_servicer_uses_aircraft_nationality_and_damaged_active_capacity
         Ok(())
     })
     .unwrap();
+    // Both active slots now fit. Missing foreign SGSU dues are independently
+    // Illegal before the unresolved cross-servicer squadron Stores procedure.
+    let before_split = serde_json::to_vec(&game).unwrap();
+    assert!(matches!(
+        validate(content(), &game.state, Side::Axis, current, &split),
+        Err(Rejection::Illegal { message })
+            if message == "invalid or insufficient own finite refit stock allocation"
+    ));
+    assert_eq!(serde_json::to_vec(&game).unwrap(), before_split);
+    // Preserve the original draw and add the second SGSU's actual dues only.
+    // This tests the missing split procedure without selecting its allocation.
+    let mut foreign_dues = split.draws[0].clone();
+    foreign_dues.servicer = SgsuId("axis.foreign".into());
+    foreign_dues.draws[0].amount.stores = StoresPoints::new(1);
+    split.draws.push(foreign_dues);
     assert!(
         matches!(validate(content(), &game.state, Side::Axis, current, &split),
         Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "airlog:38.36")
     );
+    assert_eq!(serde_json::to_vec(&game).unwrap(), before_split);
     let offmap = game
         .state
         .air
@@ -1342,15 +1358,20 @@ fn second_owner_domain_error_and_actual_entry_fail_without_partial_publication()
     squadron.nationality = "cw".into();
     squadron.facility = site.0.clone();
     state.air.squadrons.insert(squadron.id.clone(), squadron);
-    inventory::update(content(), &mut state.air, |runtime| {
-        let mut s = runtime.sgsus[&SgsuId("axis.foreign".into())].clone();
-        s.force = "commonwealth".into();
-        s.nationality = "cw".into();
-        s.position = SgsuPosition::Facility(site.clone());
-        runtime.sgsus.insert(SgsuId("cw.domain".into()), s);
-        Ok(())
-    })
-    .unwrap();
+    // Restore an already consistent empty test roster and its canonical SGSU
+    // together; generic update checks its input before invoking a callback.
+    let mut s = state.air.runtime.sgsus[&SgsuId("axis.foreign".into())].clone();
+    s.force = "commonwealth".into();
+    s.nationality = "cw".into();
+    s.position = SgsuPosition::Facility(site.clone());
+    state
+        .air
+        .runtime
+        .sgsus
+        .insert(SgsuId("cw.domain".into()), s);
+    inventory::check(content(), &state.air).unwrap();
+    state = serde_json::from_slice(&serde_json::to_vec(&state).unwrap()).unwrap();
+    inventory::check(content(), &state.air).unwrap();
     // Corrupt only the second owner's trusted property. The pure batch builder
     // must return the exact error without yielding the already valid Axis menu.
     state
@@ -1455,22 +1476,49 @@ fn advertised_illegal_choices_precede_missing_designation_method_and_stores_shap
         .properties(content(), &FacilityId("airfield_benina".into()))
         .unwrap()
         .location;
+    // An assigned aircraft still needs its actual physical facility. Preserve
+    // the rejected old setup as a negative canonical/atomicity control.
+    let before_ground = serde_json::to_vec(&ground).unwrap();
+    let mut invalid_ground_air = ground.state.air.clone();
+    let before_invalid = serde_json::to_vec(&invalid_ground_air).unwrap();
+    assert!(matches!(
+        inventory::update(content(), &mut invalid_ground_air, |runtime| {
+            runtime
+                .sgsus
+                .get_mut(&SgsuId("axis.refit".into()))
+                .unwrap()
+                .position = SgsuPosition::Ground(location.clone());
+            for p in runtime
+                .aircraft
+                .values_mut()
+                .filter(|p| p.squadron.as_deref() == Some("axis.refit"))
+            {
+                p.facility = None;
+            }
+            Ok(())
+        }),
+        Err(EngineError::Invariant { detail })
+            if detail == "air inventory: unknown aircraft or missing physical facility"
+    ));
+    assert_eq!(
+        serde_json::to_vec(&invalid_ground_air).unwrap(),
+        before_invalid
+    );
+    assert_eq!(serde_json::to_vec(&ground).unwrap(), before_ground);
+    let parked_aircraft = ground.state.air.runtime.aircraft.clone();
+    // Only the SGSU has the verified ground position; parked planes retain
+    // their original assignment and canonical Benina physical facility.
     inventory::update(content(), &mut ground.state.air, |runtime| {
         runtime
             .sgsus
             .get_mut(&SgsuId("axis.refit".into()))
             .unwrap()
             .position = SgsuPosition::Ground(location.clone());
-        for p in runtime
-            .aircraft
-            .values_mut()
-            .filter(|p| p.squadron.as_deref() == Some("axis.refit"))
-        {
-            p.facility = None;
-        }
         Ok(())
     })
     .unwrap();
+    inventory::check(content(), &ground.state.air).unwrap();
+    assert_eq!(ground.state.air.runtime.aircraft, parked_aircraft);
     let legal_ground_dues = RefitPlan {
         dues: vec![SgsuId("axis.refit".into())],
         ..Default::default()
