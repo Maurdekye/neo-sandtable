@@ -671,10 +671,68 @@ fn unknown_arriving_hq_is_full_unsupported_or_dev_private_unassessed() {
         BTreeSet::from([id.clone()])
     );
     assert!(dispatch_state.logistics.arrival_supply.stage.is_none());
-    let dispatch = Game::<Cna> {
+    let mut dispatch = Game::<Cna> {
         state: dispatch_state,
         rng: rng.state(),
     };
+    let mut replacement_rng = CampaignRng::from_state(&dispatch.rng);
+    let mut replacement_events = vec![];
+    crate::land::replacements::enter_arrival(
+        &c,
+        &mut dispatch.state,
+        true,
+        &mut Cx {
+            rng: &mut replacement_rng,
+            events: &mut replacement_events,
+        },
+    )
+    .unwrap();
+    assert_eq!(replacement_rng.state(), dispatch.rng);
+    assert_eq!(dispatch.state.decisions.pending.len(), 2);
+    assert_eq!(replacement_events.len(), 2);
+    for (side, event) in SIDES.iter().zip(&replacement_events) {
+        assert!(matches!(&event.event, GameEvent::DecisionOpened { .. }));
+        assert_eq!(
+            event.audience,
+            Audience::Seat(SeatId::new(*side, Role::Logistics))
+        );
+    }
+    for side in SIDES {
+        let own = dispatch
+            .state
+            .land
+            .replacements
+            .sides
+            .iter()
+            .find(|own| own.side == side)
+            .unwrap();
+        assert!(own.orders.is_empty());
+        let pending = dispatch
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|pending| {
+                pending.kind == crate::land::replacements::ARRIVAL
+                    && pending.seat == SeatId::new(side, Role::Logistics)
+            })
+            .unwrap()
+            .clone();
+        assert!(pending.space.pass.is_some());
+        assert!(matches!(
+            &pending.space.schema,
+            ActionSchema::Record { fields } if fields.len() == 1
+                && fields[0].name == "choices"
+                && matches!(&fields[0].schema, ActionSchema::List { min: 0, max: 0, .. })
+        ));
+        let replacement_before = serde_json::to_vec(&dispatch).unwrap();
+        let response = command(&pending, Value::Null);
+        let accepted = evaluate(&Cna::full(), &c, &dispatch, &response).unwrap();
+        assert_eq!(serde_json::to_vec(&dispatch).unwrap(), replacement_before);
+        assert_eq!(accepted.game.rng, dispatch.rng);
+        dispatch = accepted.game;
+    }
+    assert!(dispatch.state.decisions.pending.is_empty());
     let dispatch_before = serde_json::to_value(&dispatch).unwrap();
     let error = evaluate(&Cna::full(), &c, &dispatch, &Command::Advance).unwrap_err();
     assert!(matches!(
@@ -1041,6 +1099,64 @@ fn fixed_arrival_rounds_hide_enemy_rosters_and_draws_through_dispatcher_and_reco
         state,
         rng: CampaignRng::from_seed([74; 32]).state(),
     };
+    let mut replacement_rng = CampaignRng::from_state(&a.rng);
+    let mut replacement_events = vec![];
+    crate::land::replacements::enter_arrival(
+        &c,
+        &mut a.state,
+        false,
+        &mut Cx {
+            rng: &mut replacement_rng,
+            events: &mut replacement_events,
+        },
+    )
+    .unwrap();
+    assert_eq!(replacement_rng.state(), a.rng);
+    assert_eq!(a.state.decisions.pending.len(), 2);
+    assert_eq!(replacement_events.len(), 2);
+    for (side, event) in SIDES.iter().zip(&replacement_events) {
+        assert!(matches!(&event.event, GameEvent::DecisionOpened { .. }));
+        assert_eq!(
+            event.audience,
+            Audience::Seat(SeatId::new(*side, Role::Logistics))
+        );
+    }
+    for side in SIDES {
+        let own = a
+            .state
+            .land
+            .replacements
+            .sides
+            .iter()
+            .find(|own| own.side == side)
+            .unwrap();
+        assert!(own.orders.is_empty());
+        let pending = a
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|pending| {
+                pending.kind == crate::land::replacements::ARRIVAL
+                    && pending.seat == SeatId::new(side, Role::Logistics)
+            })
+            .unwrap()
+            .clone();
+        assert!(pending.space.pass.is_some());
+        assert!(matches!(
+            &pending.space.schema,
+            ActionSchema::Record { fields } if fields.len() == 1
+                && fields[0].name == "choices"
+                && matches!(&fields[0].schema, ActionSchema::List { min: 0, max: 0, .. })
+        ));
+        let replacement_before = serde_json::to_vec(&a).unwrap();
+        let response = command(&pending, Value::Null);
+        let accepted = evaluate(&Cna::dev(), &c, &a, &response).unwrap();
+        assert_eq!(serde_json::to_vec(&a).unwrap(), replacement_before);
+        assert_eq!(accepted.game.rng, a.rng);
+        a = accepted.game;
+    }
+    assert!(a.state.decisions.pending.is_empty());
     let mut b = a.clone();
     b.state
         .land
