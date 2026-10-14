@@ -696,7 +696,7 @@ fn legal_choices(
     }
     let mut draft = state.clone();
     let finite_servicers = finite_cohort_servicers(content, state, owner)?;
-    let initial_prior = prior.clone();
+    let mut draw_totals = BTreeMap::new();
     for selected in &plan.draws {
         let mut amount = SupplyDemand::default();
         for draw in &selected.draws {
@@ -748,6 +748,7 @@ fn legal_choices(
             },
         )
         .map_err(supply_error)?;
+        draw_totals.insert(selected.servicer.clone(), amount);
         for draw in &selected.draws {
             let total = prior.entry(draw.source.clone()).or_default();
             *total = FuelTenths::new(
@@ -771,32 +772,55 @@ fn legal_choices(
             )
         })
         .collect::<BTreeMap<_, _>>();
-    let mut split = false;
+    let mut split_squadrons = BTreeSet::new();
     let mut new_charges = BTreeMap::new();
     for cohort in plan.cohorts.iter().filter(|c| !c.priority.is_empty()) {
         if let Some(previous) = charged.get(&cohort.assigned_squadron) {
-            split |= previous != &cohort.servicer;
+            if previous != &cohort.servicer {
+                split_squadrons.insert(cohort.assigned_squadron.clone());
+            }
         } else {
             charged.insert(cohort.assigned_squadron.clone(), cohort.servicer.clone());
             new_charges.insert(cohort.assigned_squadron.clone(), cohort.servicer.clone());
         }
     }
-    if !split && consumers.iter().all(|id| finite_servicers.contains(id)) {
-        let paid = dues_stage(current)?;
-        let mut demands = BTreeMap::<SgsuId, SupplyDemand>::new();
-        for id in &plan.dues {
-            let s = &state.air.runtime.sgsus[id];
-            let demand = demands.entry(id.clone()).or_default();
-            if s.stores_paid_game_turn != Some(paid.game_turn) {
-                demand.stores = StoresPoints::new(1);
-            }
-            if s.fuel_water_paid != Some(paid) {
-                demand.fuel = FuelTenths::new(10);
-                demand.water = WaterPoints::new(1);
-            }
+    // Unknown allocation affects only its own new squadron Stores charge.
+    // Finite SGSU dues and every single-servicer charge remain determinate
+    // even when another consumer is ground/exempt or a squadron is split.
+    let uncertain_stores: BTreeSet<_> = plan
+        .cohorts
+        .iter()
+        .filter(|c| {
+            !c.priority.is_empty()
+                && split_squadrons.contains(&c.assigned_squadron)
+                && new_charges.contains_key(&c.assigned_squadron)
+        })
+        .map(|c| c.servicer.clone())
+        .collect();
+    let paid = dues_stage(current)?;
+    let mut demands: BTreeMap<_, SupplyDemand> = consumers
+        .iter()
+        .filter(|id| finite_servicers.contains(id))
+        .map(|id| (id.clone(), SupplyDemand::default()))
+        .collect();
+    for id in &plan.dues {
+        let Some(demand) = demands.get_mut(id) else {
+            continue;
+        };
+        let s = &state.air.runtime.sgsus[id];
+        if s.stores_paid_game_turn != Some(paid.game_turn) {
+            demand.stores = StoresPoints::new(1);
         }
-        for id in new_charges.values() {
-            let demand = demands.entry(id.clone()).or_default();
+        if s.fuel_water_paid != Some(paid) {
+            demand.fuel = FuelTenths::new(10);
+            demand.water = WaterPoints::new(1);
+        }
+    }
+    for (squadron, id) in &new_charges {
+        if split_squadrons.contains(squadron) {
+            continue;
+        }
+        if let Some(demand) = demands.get_mut(id) {
             demand.stores = StoresPoints::new(
                 demand
                     .stores
@@ -805,42 +829,23 @@ fn legal_choices(
                     .ok_or_else(|| invalid("refit Stores overflow"))?,
             );
         }
-        let mut prior = initial_prior;
-        let mut draft = state.clone();
-        for (id, demand) in demands {
-            let draws = plan
-                .draws
-                .iter()
-                .find(|d| d.servicer == id)
-                .map(|d| d.draws.as_slice())
-                .unwrap_or(&[]);
-            let use_ = if plan.dues.contains(&id) {
-                AirSupplyUse::SgsuOperation
+    }
+    for (id, demand) in demands {
+        let amount = draw_totals.get(&id).copied().unwrap_or_default();
+        // Stated draws were already checked together through the exact finite
+        // facade above. Now compare their costs: only an unresolved new split
+        // Stores allocation is a lower bound, never a chosen allocation.
+        if amount.fuel != demand.fuel
+            || amount.water != demand.water
+            || if uncertain_stores.contains(&id) {
+                amount.stores < demand.stores
             } else {
-                AirSupplyUse::AircraftServicing
-            };
-            air_supply::spend(
-                content,
-                &mut draft,
-                owner,
-                &id,
-                use_,
-                AirSupplyDebit {
-                    demand,
-                    draws,
-                    prior: &prior,
-                },
-            )
-            .map_err(supply_error)?;
-            for draw in draws {
-                let total = prior.entry(draw.source.clone()).or_default();
-                *total = FuelTenths::new(
-                    total
-                        .get()
-                        .checked_add(draw.amount.fuel.get())
-                        .ok_or_else(|| invalid("finite refit rounding overflow"))?,
-                );
+                amount.stores != demand.stores
             }
+        {
+            return Err(illegal(
+                "invalid or insufficient own finite refit stock allocation",
+            ));
         }
     }
     Ok(())

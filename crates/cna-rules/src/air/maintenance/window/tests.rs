@@ -1588,3 +1588,116 @@ fn enemy_consumer_eligibility_does_not_change_own_domains_pass_streams_or_fixed_
         assert_eq!(rng.state(), game.rng);
     }
 }
+
+/// Cases: airlog:35.14, airlog:36.17, airlog:38.33, airlog:38.36, land:3.6
+#[test]
+fn unresolved_consumer_or_split_never_masks_known_finite_dues_and_squadron_costs() {
+    let game = opened(false);
+    let current = period(&game.state).unwrap();
+    let mut split = plan(&game.state, true);
+    let second_id = split.cohorts[0].priority.pop().unwrap();
+    let mut second = split.cohorts[0].clone();
+    second.servicer = SgsuId("axis.foreign".into());
+    second.priority = vec![second_id];
+    split.cohorts.push(second);
+    split.dues.push(SgsuId("axis.foreign".into()));
+    let mut second_draw = split.draws[0].clone();
+    second_draw.servicer = SgsuId("axis.foreign".into());
+    second_draw.draws[0].amount.stores = StoresPoints::new(1);
+    split.draws.push(second_draw);
+    assert_eq!(split.cohorts[0].priority.len(), 1);
+    assert_eq!(split.cohorts[1].priority.len(), 1);
+    assert_ne!(split.cohorts[0].priority[0], split.cohorts[1].priority[0]);
+
+    let mut ground = game.clone();
+    let location = ground.state.air.runtime.facilities[&FacilityId("airfield_benina".into())]
+        .properties(content(), &FacilityId("airfield_benina".into()))
+        .unwrap()
+        .location;
+    inventory::update(content(), &mut ground.state.air, |runtime| {
+        runtime
+            .sgsus
+            .get_mut(&SgsuId("axis.foreign".into()))
+            .unwrap()
+            .position = SgsuPosition::Ground(location.clone());
+        Ok(())
+    })
+    .unwrap();
+    let mut mixed = plan(&ground.state, true);
+    mixed.dues.insert(0, SgsuId("axis.foreign".into()));
+
+    for (own, valid, case) in [
+        (&game, split, "airlog:38.36"),
+        (&ground, mixed, "airlog:35.14"),
+    ] {
+        for refusal in 0..4 {
+            let mut candidate = valid.clone();
+            if refusal == 1 {
+                candidate.draws[0].draws[0].amount.fuel = FuelTenths::new(0);
+            } else if refusal == 2 {
+                // In the mixed plan this pays SGSU Stores but omits the fully
+                // determinate single-servicer assigned-squadron Store.
+                candidate.draws[0].draws[0].amount.stores =
+                    StoresPoints::new(if case == "airlog:35.14" { 1 } else { 0 });
+            } else if refusal == 3 {
+                if case == "airlog:38.36" {
+                    candidate.draws[1].draws[0].amount.stores = StoresPoints::new(0);
+                } else {
+                    candidate.draws.clear();
+                }
+            }
+            let action = serde_json::to_value(&candidate).unwrap();
+            assert!(
+                space(content(), &own.state, Side::Axis, current)
+                    .unwrap()
+                    .check(&action)
+                    .is_ok()
+            );
+            let expected = if refusal == 0 {
+                match validate(content(), &own.state, Side::Axis, current, &candidate) {
+                    Err(Rejection::Engine(error @ EngineError::Unsupported { .. })) => {
+                        assert!(
+                            matches!(&error, EngineError::Unsupported { case: found, .. } if found == case)
+                        );
+                        Rejection::Engine(error)
+                    }
+                    _ => panic!("otherwise-legal missing procedure did not retain Unsupported"),
+                }
+            } else {
+                illegal("invalid or insufficient own finite refit stock allocation")
+            };
+            let before = serde_json::to_vec(own).unwrap();
+            assert_eq!(rejected_response(content(), own, action.clone()), expected);
+            let pending = own
+                .state
+                .decisions
+                .pending
+                .iter()
+                .find(|p| p.seat.side == Side::Axis)
+                .unwrap();
+            let mut direct = own.clone();
+            assert_eq!(
+                answer(content(), &mut direct.state, pending, &action),
+                Err(expected)
+            );
+            assert_eq!(serde_json::to_vec(&direct).unwrap(), before);
+            assert_eq!(serde_json::to_vec(own).unwrap(), before);
+        }
+        if case == "airlog:38.36" {
+            // Moving the unresolved single Store between the two stated
+            // allocations cannot select a new allocation policy in preflight.
+            let mut alternative = valid.clone();
+            alternative.draws[0].draws[0].amount.stores = StoresPoints::new(1);
+            alternative.draws[1].draws[0].amount.stores = StoresPoints::new(2);
+            let action = serde_json::to_value(&alternative).unwrap();
+            assert!(
+                space(content(), &own.state, Side::Axis, current)
+                    .unwrap()
+                    .check(&action)
+                    .is_ok()
+            );
+            assert!(matches!(rejected_response(content(), own, action),
+                Rejection::Engine(EngineError::Unsupported { case, .. }) if case == "airlog:38.36"));
+        }
+    }
+}
