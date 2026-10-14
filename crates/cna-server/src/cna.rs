@@ -1945,10 +1945,70 @@ mod tests {
                 }
                 let mut campaign =
                     Campaign::create(&path, Cna::dev(), content, game, meta, pins.clone()).unwrap();
-                campaign.advance().unwrap();
+                // The checkpoint already entered the window and still owns all
+                // six batch requests. Advancing cannot bypass their barrier.
+                let unchanged = |campaign: &Campaign<Cna>| {
+                    let db = rusqlite::Connection::open(&path).unwrap();
+                    let header: (u64, String, String, String) = db
+                        .query_row(
+                            "SELECT revision, rng, state_hash, status FROM campaign WHERE id=1",
+                            [],
+                            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+                        )
+                        .unwrap();
+                    assert_eq!(header.0, 0);
+                    let durable_pending: Vec<(String, String, Option<u64>)> = db
+                        .prepare("SELECT id, request, resolved_revision FROM decisions ORDER BY id")
+                        .unwrap()
+                        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+                        .unwrap()
+                        .map(Result::unwrap)
+                        .collect();
+                    let empty_counts: Vec<u64> = [
+                        "SELECT COUNT(*) FROM commands",
+                        "SELECT COUNT(*) FROM events",
+                        "SELECT COUNT(*) FROM perspective_events",
+                        "SELECT COUNT(*) FROM transcripts",
+                        "SELECT COUNT(*) FROM perspective_transcripts",
+                    ]
+                    .into_iter()
+                    .map(|sql| db.query_row(sql, [], |r| r.get(0)).unwrap())
+                    .collect();
+                    assert!(empty_counts.iter().all(|count| *count == 0));
+                    let projections: Vec<_> = Perspective::all()
+                        .map(|p| {
+                            (
+                                p,
+                                campaign.view(p).unwrap(),
+                                campaign.current_seq(p).unwrap(),
+                            )
+                        })
+                        .collect();
+                    serde_json::json!({
+                        "game": campaign.game.as_ref(),
+                        "pending": campaign.pending(),
+                        "rng": campaign.game.rng,
+                        "hash": campaign.state_hash().unwrap(),
+                        "header": header,
+                        "durable_pending": durable_pending,
+                        "empty_counts": empty_counts,
+                        "projections": projections,
+                    })
+                };
+                let before_guard = unchanged(&campaign);
+                assert!(matches!(
+                    campaign.advance(),
+                    Err(Error::Invalid(message)) if message == "decisions are pending"
+                ));
+                assert_eq!(unchanged(&campaign), before_guard);
                 let requests = campaign.pending();
                 assert_eq!(requests.len(), 6);
                 assert!(requests.iter().all(|r| r.kind == "cna.arrivals.batch"));
+                for side in Side::ALL {
+                    for role in [Role::Commander, Role::Logistics, Role::Air] {
+                        assert!(requests.iter().any(|r| r.seat == SeatId::new(side, role)));
+                    }
+                }
                 let rng = campaign.game.rng.clone();
                 let units = serde_json::to_value(&campaign.game.state.land.units).unwrap();
                 let mut expected = std::collections::BTreeMap::new();
@@ -2062,6 +2122,9 @@ mod tests {
                 }
                 drop(db);
                 // Complete the remaining private declarations, then adjudicate only under Advance.
+                let remaining = campaign.pending();
+                assert_eq!(remaining.len(), 5);
+                assert!(remaining.iter().all(|r| r.kind == "cna.arrivals.batch"));
                 for request in campaign.pending() {
                     let action = cna_rules::baseline::arrival_orders(
                         &campaign.content,
@@ -2082,6 +2145,7 @@ mod tests {
                         .unwrap();
                     assert_eq!(campaign.game.rng, rng);
                 }
+                assert!(campaign.pending().is_empty());
                 campaign.advance().unwrap();
                 let trucks =
                     campaign
