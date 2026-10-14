@@ -683,6 +683,7 @@ fn charge(
     hex: &HexId,
     firing: bool,
     cx: &mut Cx<'_>,
+    charged: &mut BTreeSet<UnitId>,
 ) -> Result<(), Rejection> {
     let phasing = s.cursor.phasing(s.turn.player_a) == Some(side);
     let total = if phasing && firing { 20 } else { 12 };
@@ -730,12 +731,10 @@ fn charge(
                     ));
                 }
             }
-            super::super::capability::charge(
-                s.land.units.get_mut(&id).unwrap(),
-                allowance,
-                delta,
-                false,
-            )?;
+            super::super::capability::charge_unit(s, &id, allowance, delta, false)?;
+            if delta > 0 {
+                charged.insert(id.clone());
+            }
             s.land.combat.cp_charged.insert(id, total);
         }
     }
@@ -811,14 +810,18 @@ fn resolve(c: &CnaContent, s: &mut State, paid: State, cx: &mut Cx<'_>) -> Resul
             }
         }
     }
+    let mut charged = BTreeSet::new();
     for (side, hex) in &firing {
-        charge(c, &mut paid, *side, hex, true, cx)?;
+        charge(c, &mut paid, *side, hex, true, cx, &mut charged)?;
     }
     for (side, hex) in receiving {
         if !firing.contains(&(side, hex.clone())) {
-            charge(c, &mut paid, side, &hex, false, cx)?;
+            charge(c, &mut paid, side, &hex, false, cx, &mut charged)?;
         }
     }
+    let charged = charged.into_iter().collect::<Vec<_>>();
+    let activity = super::super::engineering::activity_snapshot(&paid, &charged);
+    super::super::engineering::restore_activity(s, &activity).map_err(Rejection::Engine)?;
     s.logistics = paid.logistics;
     s.land.units = paid.land.units;
     s.land.combat.cp_charged = paid.land.combat.cp_charged;

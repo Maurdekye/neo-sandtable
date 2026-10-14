@@ -171,12 +171,12 @@ fn charge_unit(
 ) -> Result<(), Rejection> {
     let allowance = crate::land::formation::individual_allowance(content, state, id)
         .ok_or_else(|| Rejection::Engine(gap("land:20.48", "recipient/parent CPA is unknown")))?;
-    let unit = state
+    state
         .land
         .units
-        .get_mut(id)
+        .get(id)
         .ok_or_else(|| illegal("receiving unit vanished"))?;
-    crate::land::capability::charge(unit, allowance, quarters, false)
+    crate::land::capability::charge_unit(state, id, allowance, quarters, false)
 }
 
 /// One disposable draft validates all recipients/payments/costs before publication.

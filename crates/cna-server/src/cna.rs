@@ -230,18 +230,15 @@ fn movement_policy_with_profile(strict: bool) -> ActionPolicy<Cna> {
             )));
         }
         if request.kind == cna_rules::land::combat::retreat::KIND {
-            return Ok(Some(cna_rules::baseline::random_retreats(
-                content, state, request, &mut rng,
-            )));
+            return cna_rules::baseline::random_retreats(content, state, request, &mut rng)
+                .map(Some);
         }
         if request.kind == cna_rules::land::combat::POSITION_KIND {
             return Ok(Some(cna_rules::baseline::random_positions(
                 request, &mut rng,
             )));
         }
-        Ok(Some(cna_rules::baseline::random_orders(
-            content, state, request, &mut rng,
-        )))
+        cna_rules::baseline::random_orders(content, state, request, &mut rng).map(Some)
     })
 }
 

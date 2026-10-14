@@ -161,7 +161,7 @@ fn disorganized_parent_must_keep_a_truck_and_unrelated_units_cannot_receive() {
 fn reachable_ratings_require_enough_own_trucks_and_room_for_the_actual_cargo() {
     let (c, mut s, from, to, _) = setup();
     s.land.units.get_mut(&to).unwrap().toe = Some(cna_content::units::Toe::Under { under: 1 });
-    let rates = reachable_divisions(&c, &s, &to, true);
+    let rates = reachable_divisions(&c, &s, &to, true).unwrap();
     assert!(rates.contains_key(&10));
     assert!(rates.contains_key(&20), "{:?}", rates.keys());
     assert!(!rates.contains_key(&25));
@@ -180,6 +180,7 @@ fn reachable_ratings_require_enough_own_trucks_and_room_for_the_actual_cargo() {
     };
     assert_eq!(
         reachable_divisions(&c, &s, &to, true)
+            .unwrap()
             .keys()
             .copied()
             .collect::<Vec<_>>(),

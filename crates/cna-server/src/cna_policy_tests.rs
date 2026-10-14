@@ -114,7 +114,7 @@ fn cna_policy_engine_errors_keep_exact_variants_before_sampling_or_any_command()
         let bindings: Vec<_> = SeatId::all().map(|s| campaign.binding(s).clone()).collect();
         let before_rows = rows(&path);
         let injected = error.clone();
-        let policy: ActionPolicy<Cna> = Box::new(move |_, _, _, _| Err(injected.clone()));
+        let policy: ActionPolicy<Cna> = Box::new(move |_, _, _, _| Err(injected.clone().into()));
         assert!(
             matches!(auto_step(&mut campaign, None, &NoSampling, Some(&policy)),
             Err(Error::Rejected(Rejection::Engine(ref found))) if found == &error)
@@ -179,7 +179,7 @@ async fn cna_policy_engine_errors_publish_durable_stops_with_healthy_bindings_an
                     &path,
                     Box::new(move |_, _, _, _| {
                         policy_calls.fetch_add(1, Ordering::SeqCst);
-                        Err(injected.clone())
+                        Err(injected.clone().into())
                     }),
                 )
                 .unwrap()
@@ -244,7 +244,7 @@ fn cna_policy_stop_storage_failure_does_not_claim_persistence_or_submit() {
     )
     .unwrap();
     let error = failures()[1].clone();
-    let policy: ActionPolicy<Cna> = Box::new(move |_, _, _, _| Err(error.clone()));
+    let policy: ActionPolicy<Cna> = Box::new(move |_, _, _, _| Err(error.clone().into()));
     assert!(matches!(
         auto_step(&mut campaign, None, &NoSampling, Some(&policy)),
         Err(Error::Storage(_))
@@ -289,7 +289,8 @@ async fn cna_policy_stop_storage_failure_uses_fatal_actor_path_without_a_durable
             policy_calls.fetch_add(1, Ordering::SeqCst);
             Err(EngineError::Invariant {
                 detail: "original policy failure".into(),
-            })
+            }
+            .into())
         }),
     )
     .unwrap();

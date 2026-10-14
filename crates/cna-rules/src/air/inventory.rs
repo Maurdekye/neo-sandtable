@@ -1258,6 +1258,7 @@ where
         &air.runtime.maintenance,
         &draft.runtime.maintenance,
     )?;
+    super::sgsu::activity::check_and_record_transition(content, &air.runtime, &mut draft.runtime)?;
     if [
         (&air.runtime.plane_serial, &draft.runtime.plane_serial),
         (&air.runtime.pilot_serial, &draft.runtime.pilot_serial),

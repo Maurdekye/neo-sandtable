@@ -406,8 +406,8 @@ fn hidden_combat_members_do_not_grant_their_hq_a_combat_retreat_allowance() {
         &command(&c, &a, seat(), plan(&["C4021", "C4022", "C4023"])),
         Side::Commonwealth,
     );
-    let a_paths = reachable(&c, &a.state, &LEG.into(), false);
-    let b_paths = reachable(&c, &b.state, &LEG.into(), false);
+    let a_paths = reachable(&c, &a.state, &LEG.into(), false).unwrap();
+    let b_paths = reachable(&c, &b.state, &LEG.into(), false).unwrap();
     assert_eq!(
         serde_json::to_value(a_paths).unwrap(),
         serde_json::to_value(b_paths).unwrap()
@@ -455,7 +455,7 @@ fn visible_printed_combat_counter_grants_more_than_four_cp_but_hq_does_not() {
             combat
         );
         let before = serde_json::to_value(&game).unwrap();
-        let paths = reachable(&c, &game.state, &LEG.into(), false);
+        let paths = reachable(&c, &game.state, &LEG.into(), false).unwrap();
         assert_eq!(
             paths
                 .iter()
@@ -606,7 +606,7 @@ fn pure_validator_and_multi_seed_baseline_leave_adjudication_rng_untouched() {
         .find(|r| r.seat == seat())
         .unwrap();
     for seed in 0..32 {
-        let a = random_orders(&c, &g.state, &r, &mut CampaignRng::from_seed([seed; 32]));
+        let a = random_orders(&c, &g.state, &r, &mut CampaignRng::from_seed([seed; 32])).unwrap();
         let t = evaluate(&Cna::dev(), &c, &g, &command(&c, &g, seat(), a)).unwrap();
         assert_eq!(t.game.rng, g.rng);
     }
@@ -652,7 +652,7 @@ fn owner_plan_is_hidden_during_response_and_role_submission_order_does_not_chang
 fn disclosed_hostile_destination_allows_one_hex_stop_and_reachable_respects_cap() {
     let (c, g, _o) = fixture();
     let mut g = open_game(&c, &g);
-    for path in reachable(&c, &g.state, &LEG.into(), false) {
+    for path in reachable(&c, &g.state, &LEG.into(), false).unwrap() {
         assert!(path.cp_quarters <= 16 || path.path.len() == 1);
     }
     g.state.land.reaction.controls.insert("C4021".into(), true);
@@ -764,6 +764,7 @@ fn nonadjacent_cap_uses_each_attached_or_stacked_members_preview_delta() {
         if !with_stack {
             assert!(
                 !reachable(&c, &g.state, &ROOT.into(), false)
+                    .unwrap()
                     .iter()
                     .any(|p| p.path == order.path)
             );
@@ -1126,8 +1127,8 @@ fn step2_retreat_current_base_catalog_and_three_views_are_byte_exact() {
     for strict in [false, true] {
         let before = serde_json::to_vec(&game.state).unwrap();
         let rng = game.rng.clone();
-        let old = reachable_reference_for_step2(&c, &game.state, &id, strict);
-        let new = reachable(&c, &game.state, &id, strict);
+        let old = reachable_reference_for_step2(&c, &game.state, &id, strict).unwrap();
+        let new = reachable(&c, &game.state, &id, strict).unwrap();
         assert!(!old.is_empty(), "Step2 retreat reference witness missing");
         assert!(
             serde_json::to_vec(&old).unwrap() == serde_json::to_vec(&new).unwrap(),

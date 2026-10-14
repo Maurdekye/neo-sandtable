@@ -68,12 +68,7 @@ pub(super) fn candidate_options(
     {
         return Ok(BTreeMap::new());
     }
-    let mover_cpa = moving
-        .iter()
-        .filter_map(|id| formation::individual_allowance(c, s, id))
-        .map(|a| a.cpa)
-        .min()
-        .unwrap_or(0);
+    let mover_cpa = formation::query_members_allowance(c, s, moving)?.cpa;
     let targets: BTreeSet<_> = c.map.neighbors(to).iter().map(|h| h.id.clone()).collect();
     let mut out = BTreeMap::new();
     for u in s
@@ -132,7 +127,7 @@ pub(super) fn candidate_options(
         }
         let pinned_by_announcement = announced.contains(u.location.hex().unwrap())
             && moving.iter().any(|p| formation::can_pin(c, s, p, &u.id));
-        let ratings = super::trucks::reachable_divisions(c, s, &u.id, strict)
+        let ratings = super::trucks::reachable_divisions(c, s, &u.id, strict)?
             .into_keys()
             .map(|cpa| {
                 (
@@ -197,8 +192,7 @@ fn validate_saved_cpa(
     draft: &State,
     order: &ReactionOrder,
 ) -> Result<(), Rejection> {
-    let a = formation::allowance(c, draft, &order.unit)
-        .ok_or_else(|| illegal("reaction movement rating is unresolved"))?;
+    let a = formation::query_allowance(c, draft, &order.unit)?;
     if !a.motorized {
         return Err(illegal("reaction requires motorized transport"));
     }
@@ -233,42 +227,50 @@ pub fn plans(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)> {
+) -> Result<Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)>, Rejection> {
     let Some(w) = &s.land.reaction.window else {
-        return vec![];
+        return Ok(vec![]);
     };
     if !w.eligible.contains(id)
         || formation::members(c, s, id)
             .iter()
             .any(|m| w.reacted.contains(m))
     {
-        return vec![];
+        return Ok(vec![]);
     }
-    super::trucks::reachable_divisions(c, s, id, strict)
-        .into_values()
-        .filter_map(|division| {
-            let draft = match &division {
-                Some(d) => super::trucks::preview_reaction_division(c, s, id, d, strict).ok()?,
-                None => s.clone(),
-            };
-            let order = ReactionOrder {
-                unit: id.clone(),
-                path: vec![],
-                with_stack: false,
-                close_assault: vec![],
-                truck_division: division.clone(),
-            };
-            validate_saved_cpa(c, s, &draft, &order).ok()?;
-            let paths = movement::nonphasing_reachable(
-                c,
-                &draft,
-                id,
-                strict,
-                movement::NonPhasingMove::Reaction,
-            );
-            (!paths.is_empty()).then_some((division, paths))
-        })
-        .collect()
+    let mut out = Vec::new();
+    for division in super::trucks::reachable_divisions(c, s, id, strict)?.into_values() {
+        let draft = match &division {
+            Some(d) => match movement::query_candidate(super::trucks::preview_reaction_division(
+                c, s, id, d, strict,
+            ))? {
+                Some(draft) => draft,
+                None => continue,
+            },
+            None => s.clone(),
+        };
+        let order = ReactionOrder {
+            unit: id.clone(),
+            path: vec![],
+            with_stack: false,
+            close_assault: vec![],
+            truck_division: division.clone(),
+        };
+        if movement::query_candidate(validate_saved_cpa(c, s, &draft, &order))?.is_none() {
+            continue;
+        }
+        let paths = movement::nonphasing_reachable(
+            c,
+            &draft,
+            id,
+            strict,
+            movement::NonPhasingMove::Reaction,
+        )?;
+        if !paths.is_empty() {
+            out.push((division, paths));
+        }
+    }
+    Ok(out)
 }
 fn eligible(s: &State, seat: SeatId, c: &CnaContent) -> Vec<UnitId> {
     s.land.reaction.window.as_ref().map_or_else(Vec::new, |w| {
@@ -570,7 +572,7 @@ pub(super) fn open_continuation(
     if k.mover_stopped && stop {
         return movement::finish_continuation(c, s, strict, cx);
     }
-    let reaches = movement::reachable(c, s, &k.unit, strict);
+    let reaches = movement::reachable(c, s, &k.unit, strict)?;
     if !stop && reaches.is_empty() {
         if strict {
             movement::defer_stop(
@@ -669,42 +671,50 @@ pub(crate) fn plans_legacy_for_step1(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)> {
+) -> Result<Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)>, Rejection> {
     let Some(w) = &s.land.reaction.window else {
-        return vec![];
+        return Ok(vec![]);
     };
     if !w.eligible.contains(id)
         || formation::members(c, s, id)
             .iter()
             .any(|m| w.reacted.contains(m))
     {
-        return vec![];
+        return Ok(vec![]);
     }
-    super::trucks::reachable_divisions(c, s, id, strict)
-        .into_values()
-        .filter_map(|division| {
-            let draft = match &division {
-                Some(d) => super::trucks::preview_reaction_division(c, s, id, d, strict).ok()?,
-                None => s.clone(),
-            };
-            let order = ReactionOrder {
-                unit: id.clone(),
-                path: vec![],
-                with_stack: false,
-                close_assault: vec![],
-                truck_division: division.clone(),
-            };
-            validate_saved_cpa(c, s, &draft, &order).ok()?;
-            let paths = movement::nonphasing_reachable_legacy_for_step1(
-                c,
-                &draft,
-                id,
-                strict,
-                movement::NonPhasingMove::Reaction,
-            );
-            (!paths.is_empty()).then_some((division, paths))
-        })
-        .collect()
+    let mut out = Vec::new();
+    for division in super::trucks::reachable_divisions(c, s, id, strict)?.into_values() {
+        let draft = match &division {
+            Some(d) => match movement::query_candidate(super::trucks::preview_reaction_division(
+                c, s, id, d, strict,
+            ))? {
+                Some(draft) => draft,
+                None => continue,
+            },
+            None => s.clone(),
+        };
+        let order = ReactionOrder {
+            unit: id.clone(),
+            path: vec![],
+            with_stack: false,
+            close_assault: vec![],
+            truck_division: division.clone(),
+        };
+        if movement::query_candidate(validate_saved_cpa(c, s, &draft, &order))?.is_none() {
+            continue;
+        }
+        let paths = movement::nonphasing_reachable_legacy_for_step1(
+            c,
+            &draft,
+            id,
+            strict,
+            movement::NonPhasingMove::Reaction,
+        )?;
+        if !paths.is_empty() {
+            out.push((division, paths));
+        }
+    }
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -713,40 +723,48 @@ pub(crate) fn plans_reference_for_step2(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)> {
+) -> Result<Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)>, Rejection> {
     let Some(w) = &s.land.reaction.window else {
-        return vec![];
+        return Ok(vec![]);
     };
     if !w.eligible.contains(id)
         || formation::members(c, s, id)
             .iter()
             .any(|m| w.reacted.contains(m))
     {
-        return vec![];
+        return Ok(vec![]);
     }
-    super::trucks::reachable_divisions(c, s, id, strict)
-        .into_values()
-        .filter_map(|division| {
-            let draft = match &division {
-                Some(d) => super::trucks::preview_reaction_division(c, s, id, d, strict).ok()?,
-                None => s.clone(),
-            };
-            let order = ReactionOrder {
-                unit: id.clone(),
-                path: vec![],
-                with_stack: false,
-                close_assault: vec![],
-                truck_division: division.clone(),
-            };
-            validate_saved_cpa(c, s, &draft, &order).ok()?;
-            let paths = movement::nonphasing_reachable_reference_for_step2(
-                c,
-                &draft,
-                id,
-                strict,
-                movement::NonPhasingMove::Reaction,
-            );
-            (!paths.is_empty()).then_some((division, paths))
-        })
-        .collect()
+    let mut out = Vec::new();
+    for division in super::trucks::reachable_divisions(c, s, id, strict)?.into_values() {
+        let draft = match &division {
+            Some(d) => match movement::query_candidate(super::trucks::preview_reaction_division(
+                c, s, id, d, strict,
+            ))? {
+                Some(draft) => draft,
+                None => continue,
+            },
+            None => s.clone(),
+        };
+        let order = ReactionOrder {
+            unit: id.clone(),
+            path: vec![],
+            with_stack: false,
+            close_assault: vec![],
+            truck_division: division.clone(),
+        };
+        if movement::query_candidate(validate_saved_cpa(c, s, &draft, &order))?.is_none() {
+            continue;
+        }
+        let paths = movement::nonphasing_reachable_reference_for_step2(
+            c,
+            &draft,
+            id,
+            strict,
+            movement::NonPhasingMove::Reaction,
+        )?;
+        if !paths.is_empty() {
+            out.push((division, paths));
+        }
+    }
+    Ok(out)
 }

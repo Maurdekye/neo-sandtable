@@ -1,7 +1,7 @@
 //! Private activity history for whole-stage engineering eligibility.
 //! Feature effects and construction procedures are implemented separately.
 //! Cases: land:23.22, land:24.38, land:26.13
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use cna_core::engine::EngineError;
 use cna_core::ids::UnitId;
@@ -52,9 +52,210 @@ impl UnitActivity {
 #[serde(default)]
 pub struct EngineeringState {
     pub observed_opening: Option<ActivityStage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub closed_activity: Option<ClosedActivity>,
     pub activity: BTreeMap<UnitId, UnitActivity>,
     facility_project_serial: u64,
     facility_projects: BTreeMap<projects::ProjectId, projects::FacilityProject>,
+}
+
+/// Latest completed interval; opening and final presence are observations only.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClosedActivity {
+    pub stage: ActivityStage,
+    pub observed_opening: Option<ActivityStage>,
+    pub entries: BTreeMap<UnitId, ClosedUnitActivity>,
+    pub required_facility_projects: BTreeSet<ProjectId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClosedUnitActivity {
+    pub activity: UnitActivity,
+    pub closing_location: Option<Location>,
+}
+
+fn valid_stage(stage: ActivityStage) -> bool {
+    stage.game_turn > 0 && (1..=3).contains(&stage.op_stage)
+}
+
+fn physical_location(location: &Location) -> Option<Location> {
+    match location {
+        Location::Hex { .. } | Location::OffMap { .. } => Some(location.clone()),
+        _ => None,
+    }
+}
+
+fn validate_activity_entry(
+    id: &UnitId,
+    entry: &UnitActivity,
+    end: ActivityStage,
+) -> Result<(), EngineError> {
+    if id.0.is_empty()
+        || !valid_stage(entry.stage)
+        || entry.stage > end
+        || entry.gross_cp_quarters < 0
+    {
+        return Err(invariant(
+            "engineering closure has corrupt selected activity",
+        ));
+    }
+    if entry
+        .opening_location
+        .as_ref()
+        .is_some_and(|at| physical_location(at).is_none())
+    {
+        return Err(invariant(
+            "engineering closure has a nonphysical opening observation",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_closed(
+    state: &State,
+    closed: &ClosedActivity,
+    end: ActivityStage,
+) -> Result<(), EngineError> {
+    if !valid_stage(closed.stage)
+        || closed.stage > end
+        || closed
+            .observed_opening
+            .is_some_and(|opening| !valid_stage(opening) || opening > closed.stage)
+    {
+        return Err(invariant(
+            "engineering retained interval has invalid stage metadata",
+        ));
+    }
+    for (id, entry) in &closed.entries {
+        validate_activity_entry(id, &entry.activity, closed.stage)?;
+        if entry
+            .closing_location
+            .as_ref()
+            .is_some_and(|at| physical_location(at).is_none())
+        {
+            return Err(invariant(
+                "engineering retained interval has a nonphysical closing observation",
+            ));
+        }
+    }
+    projects::validate_required_projects(state, &closed.required_facility_projects)
+}
+
+/// Shared old-tail authentication, independent of hidden actor availability.
+/// Cases: land:24.11, land:24.12
+pub(crate) fn closing_stage(state: &State) -> Result<ActivityStage, EngineError> {
+    let stage = ActivityStage::current(state)
+        .ok_or_else(|| invariant("engineering closure outside an Operations Stage"))?;
+    if !valid_stage(stage)
+        || state.cursor.block != Block::PlayerHalf
+        || state.cursor.half != Some(crate::seq::Half::B)
+        || state.cursor.index.checked_add(1) != Some(crate::seq::PLAYER_HALF.len())
+        || !state.cursor.entered
+        || !state.decisions.pending.is_empty()
+    {
+        return Err(invariant(
+            "engineering closure outside the completed old-stage tail",
+        ));
+    }
+    Ok(stage)
+}
+
+/// No progress consumer exists yet. Historical required identities remain blocking.
+/// Cases: land:24.11
+pub fn validate_activity_retirement(
+    state: &State,
+    prior: ActivityStage,
+) -> Result<(), EngineError> {
+    let old = closing_stage(state)?;
+    if !valid_stage(prior) || prior > old {
+        return Err(invariant(
+            "engineering retirement has an invalid prior label",
+        ));
+    }
+    let Some(closed) = &state.engineering.closed_activity else {
+        return Err(EngineError::Unsupported {
+            case: "land:24.11".into(),
+            detail: "retained Air interval has no authenticated Engineering dependency record"
+                .into(),
+        });
+    };
+    validate_closed(state, closed, old)?;
+    if closed.stage != prior {
+        return Err(EngineError::Unsupported {
+            case: "land:24.11".into(),
+            detail: "legacy retained intervals have unresolved pairing".into(),
+        });
+    }
+    if !closed.required_facility_projects.is_empty() {
+        return Err(EngineError::Unsupported {
+            case: "land:24.11".into(),
+            detail: "required project progress has no persisted interval consumer".into(),
+        });
+    }
+    Ok(())
+}
+
+/// Air has captured the new old interval; retire Engineering's OWN prior only.
+/// Cases: land:24.11, land:24.12, land:24.22, land:24.23, land:23.22, land:26.13
+pub fn close_stage(state: &mut State) -> Result<(), EngineError> {
+    let stage = closing_stage(state)?;
+    if state
+        .engineering
+        .observed_opening
+        .is_some_and(|opening| !valid_stage(opening) || opening > stage)
+    {
+        return Err(invariant("engineering closure has invalid opening history"));
+    }
+    let mut entries = BTreeMap::new();
+    for (id, activity) in &state.engineering.activity {
+        validate_activity_entry(id, activity, stage)?;
+        let closing_location = state
+            .land
+            .units
+            .get(id)
+            .and_then(|unit| physical_location(&unit.location));
+        entries.insert(
+            id.clone(),
+            ClosedUnitActivity {
+                activity: activity.clone(),
+                closing_location,
+            },
+        );
+    }
+    let snapshot = ClosedActivity {
+        stage,
+        observed_opening: state.engineering.observed_opening,
+        entries,
+        required_facility_projects: projects::required_facility_projects(state)?,
+    };
+    let air = state
+        .air
+        .runtime
+        .sgsu_activity
+        .previous_closed
+        .as_ref()
+        .ok_or_else(|| invariant("Engineering close has no new Air closure"))?;
+    if air.stage.game_turn != stage.game_turn || air.stage.op_stage != stage.op_stage || !air.closed
+    {
+        return Err(invariant(
+            "Engineering close has an incompatible new Air closure",
+        ));
+    }
+    if let Some(closed) = &state.engineering.closed_activity {
+        validate_closed(state, closed, stage)?;
+        if closed.stage == stage {
+            if closed != &snapshot {
+                return Err(invariant(
+                    "engineering same-stage closure would rewrite history",
+                ));
+            }
+            // An equal duplicate evicts nothing, even with required projects.
+            return Ok(());
+        }
+        validate_activity_retirement(state, closed.stage)?;
+    }
+    state.engineering.closed_activity = Some(snapshot);
+    Ok(())
 }
 
 /// Called only at the approved public boundary, after any prior-stage CP reset.
@@ -253,6 +454,9 @@ pub fn whole_stage_idle_at(state: &State, id: &UnitId, location: &Location) -> b
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod integration_tests;
 
 mod capability;
 pub use capability::{EngineerCapability, source_capability};

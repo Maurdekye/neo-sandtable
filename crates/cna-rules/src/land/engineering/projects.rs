@@ -81,6 +81,39 @@ fn check_ledger(state: &State) -> Result<(), EngineError> {
     Ok(())
 }
 
+/// Capture only the authenticated nonterminal identities at the actual close.
+/// Cases: land:24.11, land:24.71, land:24.79
+pub(super) fn required_facility_projects(
+    state: &State,
+) -> Result<BTreeSet<ProjectId>, EngineError> {
+    check_ledger(state)?;
+    Ok(state
+        .engineering
+        .facility_projects
+        .iter()
+        .filter(|(_, project)| project.lifecycle == ProjectLifecycle::Active)
+        .map(|(id, _)| *id)
+        .collect())
+}
+
+/// Completed is not consumption of an earlier retained interval.
+/// Cases: land:24.11
+pub(super) fn validate_required_projects(
+    state: &State,
+    ids: &BTreeSet<ProjectId>,
+) -> Result<(), EngineError> {
+    check_ledger(state)?;
+    if ids
+        .iter()
+        .any(|id| !state.engineering.facility_projects.contains_key(id))
+    {
+        return Err(corrupt(
+            "retained interval references an unknown required project",
+        ));
+    }
+    Ok(())
+}
+
 /// Begin only a newly adjudicated project on an owning finish draft.
 /// All Active SITE references are checked before Air may establish a legacy
 /// token. New Create instances receive a fresh token in Air, never a reused one.

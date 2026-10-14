@@ -39,28 +39,28 @@ pub fn random_orders(
     state: &State,
     request: &DecisionRequest,
     rng: &mut CampaignRng,
-) -> Value {
+) -> Result<Value, cna_core::engine::Rejection> {
     // Optional field repairs use the declared pass in both scripted modes until
     // a repair-selection policy is added. This makes no eligibility query.
     if request.kind == crate::land::recovery::field::KIND {
-        return Value::Null;
+        return Ok(Value::Null);
     }
     if !matches!(
         request.kind.as_str(),
         movement::KIND | reaction::KIND | reaction::CONTINUE
     ) {
-        return Value::Null;
+        return Ok(Value::Null);
     }
     let ActionSchema::List { item, .. } = &request.space.schema else {
-        return json!([]);
+        return Ok(json!([]));
     };
     let ActionSchema::Record { fields } = item.as_ref() else {
-        return json!([]);
+        return Ok(json!([]));
     };
     let Some(ActionSchema::Unit { among }) =
         fields.iter().find(|f| f.name == "unit").map(|f| &f.schema)
     else {
-        return json!([]);
+        return Ok(json!([]));
     };
     let mut units = among.clone();
     while !units.is_empty() {
@@ -75,15 +75,15 @@ pub fn random_orders(
         }
         let strict = state.land.movement.strict;
         if request.kind == reaction::KIND {
-            let options = reaction::plans(content, state, &id, strict);
+            let options = reaction::plans(content, state, &id, strict)?;
             if options.is_empty() {
                 continue;
             }
             let (division, paths) = &options[index(rng, options.len())];
             let path = &paths[index(rng, paths.len())];
-            return json!([{"unit":id,"path":path.path,"truck_division":division}]);
+            return Ok(json!([{"unit":id,"path":path.path,"truck_division":division}]));
         }
-        let paths: Vec<_> = movement::reachable(content, state, &id, strict)
+        let paths: Vec<_> = movement::reachable(content, state, &id, strict)?
             .into_iter()
             .filter(|r| !r.path.is_empty())
             .collect();
@@ -91,9 +91,9 @@ pub fn random_orders(
             continue;
         }
         let path = &paths[index(rng, paths.len())];
-        return json!([{"unit":id,"path":path.path}]);
+        return Ok(json!([{"unit":id,"path":path.path}]));
     }
-    json!([])
+    Ok(json!([]))
 }
 
 pub use crate::land::combat::random_positions;
