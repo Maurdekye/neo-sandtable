@@ -226,10 +226,10 @@ fn replacement_training_any_cp_and_instructor_loss_remain_interrupted_after_rest
         } else {
             counter_mut(&mut state).physical.cp_quarters = 1;
         }
-        training::invalidate_training(&content, &mut state);
+        training::invalidate_training(&content, &mut state).unwrap();
         state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Under { under: 3 });
         counter_mut(&mut state).physical.cp_quarters = 0;
-        training::invalidate_training(&content, &mut state);
+        training::invalidate_training(&content, &mut state).unwrap();
         assert!(
             training::prepare(
                 &content,
@@ -268,7 +268,7 @@ fn replacement_training_instructor_return_does_not_erase_real_movement_history()
     state.cursor.half = Some(crate::seq::Half::A);
     // The movement kernel's completed-prefix history survives a return to the original hex.
     state.land.movement.moved.insert(id);
-    training::invalidate_training(&content, &mut state);
+    training::invalidate_training(&content, &mut state).unwrap();
     tail(&mut state);
     training::finish_training_stage(&content, &mut state).unwrap();
     assert!(matches!(
@@ -497,7 +497,7 @@ fn replacement_no_candidates_no_counters_is_byte_rng_event_identical() {
     let mut rng = CampaignRng::from_seed([93; 32]);
     let original_rng = rng.state();
     let mut events = vec![];
-    training::invalidate_training(&content, &mut state);
+    training::invalidate_training(&content, &mut state).unwrap();
     training::finish_training_stage(&content, &mut state).unwrap();
     unit_windows::enter_units(
         &content,
@@ -575,4 +575,540 @@ fn replacement_full_absorption_drops_only_consumed_account_without_refund_or_sto
         Err(cna_core::engine::Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "land:20.45")
     );
     assert_eq!(bytes(&state), initial);
+}
+
+/// Cases: land:17.35, land:20.43
+#[test]
+fn replacement_revalidation_retains_exact_errors_and_publishes_no_earlier_interruption() {
+    for missing_source in [true, false] {
+        let (mut content, mut state, id, seat) = fixture(false);
+        candidate(&content, &mut state, seat);
+        let mut later = counter(&state).clone();
+        later.id = "commonwealth.replacement-2".into();
+        counter_mut(&mut state).physical.cp_quarters = 1;
+        side_mut(&mut state, seat.side)
+            .unwrap()
+            .counters
+            .push(later);
+        let expected = if missing_source {
+            content.units.units.remove(&id);
+            invariant("recipient source missing")
+        } else {
+            state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Under { under: -1 });
+            training::strength_error(
+                crate::logistics::SupplyError::Invalid,
+                "instructor current strength",
+            )
+        };
+        let frozen = bytes(&state);
+        assert_eq!(
+            training::invalidate_training(&content, &mut state),
+            Err(expected)
+        );
+        assert_eq!(bytes(&state), frozen);
+        assert!(matches!(
+            counter(&state).training,
+            Training::Training {
+                candidate: Some(TrainingCandidate {
+                    interrupted: false,
+                    ..
+                }),
+                ..
+            }
+        ));
+    }
+}
+
+/// Cases: land:17.35, land:20.43, land:4.46
+#[test]
+fn replacement_instructor_corruption_precedes_later_eligible_and_first_unknown_is_retained() {
+    let (mut content, mut state, id, seat) = fixture(false);
+    let early = UnitId::new("aaa.fixture.instructor");
+    let mut source = content.units.units[&id].clone();
+    source.id = early.clone();
+    let mut unit = state.land.units[&id].clone();
+    unit.id = early.clone();
+    unit.toe = Some(Toe::Under { under: -1 });
+    content.units.units.insert(early.clone(), source);
+    state.land.units.insert(early.clone(), unit);
+    let selected = TrainingPlan {
+        counters: vec![COUNTER.into()],
+    };
+    let frozen = bytes(&state);
+    let expected = training::strength_error(
+        crate::logistics::SupplyError::Invalid,
+        "instructor current strength",
+    );
+    assert_eq!(
+        training::prepare(&content, &state, seat, &selected).unwrap_err(),
+        cna_core::engine::Rejection::Engine(expected)
+    );
+    assert_eq!(bytes(&state), frozen);
+    // The first unknown is relevant/cohex; a later unknown must not overwrite it.
+    content.units.units.get_mut(&early).unwrap().class = None;
+    state.land.units.get_mut(&early).unwrap().toe = Some(Toe::Normal(NormalToe::N));
+    let class = content.units.units[&id].class.clone().unwrap();
+    content.units.classes.get_mut(&class).unwrap().max_toe = None;
+    state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Normal(NormalToe::N));
+    assert_eq!(
+        training::prepare(&content, &state, seat, &selected).unwrap_err(),
+        cna_core::engine::Rejection::Engine(gap("land:17.35", "instructor has no verified class"))
+    );
+}
+
+/// Cases: land:4.46, land:17.35, land:20.3, land:20.43
+#[test]
+fn replacement_strength_queries_preserve_invalid_and_original_unsupported_cases() {
+    let (mut content, mut state, id, seat) = fixture(false);
+    let class = content.units.units[&id].class.clone().unwrap();
+    content.units.classes.get_mut(&class).unwrap().max_toe = None;
+    state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Normal(NormalToe::N));
+    let original = crate::logistics::toe_strength(&content, &state.land.units[&id]).unwrap_err();
+    assert!(matches!(
+        original,
+        crate::logistics::SupplyError::Unsupported { case: "land:4.46" }
+    ));
+    assert_eq!(
+        training::prepare(
+            &content,
+            &state,
+            seat,
+            &TrainingPlan {
+                counters: vec![COUNTER.into()]
+            }
+        )
+        .unwrap_err(),
+        cna_core::engine::Rejection::Engine(gap("land:4.46", "instructor current strength"))
+    );
+    anchor(&mut state, "opstage.organization.reorganization");
+    counter_mut(&mut state).training = Training::Ready;
+    let frozen = bytes(&state);
+    assert_eq!(
+        allocation::prepare(&content, &state, seat, &allocation(&id, 2)).unwrap_err(),
+        cna_core::engine::Rejection::Engine(gap("land:4.46", "recipient live strength"))
+    );
+    assert_eq!(bytes(&state), frozen);
+    state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Under { under: -1 });
+    let frozen = bytes(&state);
+    assert_eq!(
+        allocation::prepare(&content, &state, seat, &allocation(&id, 2)).unwrap_err(),
+        cna_core::engine::Rejection::Engine(training::strength_error(
+            crate::logistics::SupplyError::Invalid,
+            "recipient live strength"
+        ))
+    );
+    assert_eq!(bytes(&state), frozen);
+}
+
+/// Cases: land:17.33, land:17.35, land:20.43, land:3.6
+#[test]
+fn replacement_exact_stop_survives_canonical_respond_advance_and_checkpoint_recovery() {
+    let (mut content, mut state, id, seat) = fixture(false);
+    candidate(&content, &mut state, seat);
+    open_window(&content, &mut state);
+    content.units.units.remove(&id);
+    let game = game(state);
+    let restored: Game<Cna> = serde_json::from_slice(&bytes(&game)).unwrap();
+    let expected = cna_core::engine::Rejection::Engine(invariant("recipient source missing"));
+    for input in [&game, &restored] {
+        let frozen = bytes(input);
+        assert_eq!(
+            evaluate(
+                &Cna::dev(),
+                &content,
+                input,
+                &respond(&input.state, Value::Null)
+            )
+            .unwrap_err(),
+            expected
+        );
+        assert_eq!(bytes(input), frozen);
+    }
+    let mut tail_game = game.clone();
+    tail_game.state.decisions.pending.clear();
+    tail(&mut tail_game.state);
+    let restored: Game<Cna> = serde_json::from_slice(&bytes(&tail_game)).unwrap();
+    for input in [&tail_game, &restored] {
+        let frozen = bytes(input);
+        assert_eq!(
+            evaluate(&Cna::dev(), &content, input, &Command::Advance).unwrap_err(),
+            expected
+        );
+        assert_eq!(bytes(input), frozen);
+    }
+    let mut wrong = respond(&game.state, Value::Null);
+    let frozen = bytes(&game);
+    let Command::Respond(response) = &mut wrong else {
+        unreachable!()
+    };
+    response.seat.role = Role::Air;
+    assert!(matches!(
+        evaluate(&Cna::dev(), &content, &game, &wrong),
+        Err(cna_core::engine::Rejection::WrongSeat { .. })
+    ));
+    assert_eq!(bytes(&game), frozen);
+}
+fn restored_from(game: &Game<Cna>) -> Game<Cna> {
+    serde_json::from_slice(&bytes(game)).unwrap()
+}
+
+/// Cases: land:20.3, land:20.41, land:20.49
+#[test]
+fn replacement_equipment_allocation_sums_every_duplicate_row_and_keeps_distinct_identity() {
+    use cna_content::units::WeaponPoints;
+    let (mut content, mut state, id, seat) = fixture(true);
+    let class = content
+        .units
+        .classes
+        .values()
+        .find(|c| c.nation == "cw" && c.unit_type == "tank")
+        .unwrap()
+        .id
+        .clone();
+    let weapons: Vec<_> = content
+        .units
+        .weapons
+        .values()
+        .filter(|w| w.kind == "tank" && w.nation == "cw")
+        .take(2)
+        .map(|w| w.id.clone())
+        .collect();
+    assert_eq!(weapons.len(), 2);
+    let source = content.units.units.get_mut(&id).unwrap();
+    source.class = Some(class.clone());
+    content.units.classes.get_mut(&class).unwrap().max_toe = Some(8);
+    let rows = vec![
+        WeaponPoints {
+            weapon: weapons[0].clone(),
+            n: 2,
+        },
+        WeaponPoints {
+            weapon: weapons[0].clone(),
+            n: 1,
+        },
+        WeaponPoints {
+            weapon: weapons[1].clone(),
+            n: 1,
+        },
+    ];
+    state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(rows.clone()));
+    counter_mut(&mut state).kind = ReplacementKind::Tank {
+        nation: ReplacementNation::Commonwealth,
+        weapon: weapons[0].clone(),
+    };
+    let plan = AllocationPlan {
+        uses: vec![AllocationUse {
+            counter: COUNTER.into(),
+            recipient: id.clone(),
+            points: 1,
+            conversion: "tank".into(),
+        }],
+    };
+    let frozen = bytes(&state);
+    let after = allocation::prepare(&content, &state, seat, &plan).unwrap();
+    let Some(Toe::Weapons(actual)) = &after.land.units[&id].toe else {
+        panic!("equipment identity disappeared")
+    };
+    assert_eq!(
+        actual
+            .iter()
+            .map(|p| (p.weapon.clone(), p.n))
+            .collect::<std::collections::BTreeMap<_, _>>(),
+        std::collections::BTreeMap::from([(weapons[0].clone(), 4), (weapons[1].clone(), 1)])
+    );
+    assert_eq!(
+        crate::logistics::toe_strength(&content, &after.land.units[&id])
+            .unwrap()
+            .get(),
+        5
+    );
+    assert_eq!(bytes(&state), frozen);
+    let restored = restored_from(&game(state.clone()));
+    assert_eq!(
+        bytes(&allocation::prepare(&content, &restored.state, seat, &plan).unwrap()),
+        bytes(&after)
+    );
+    // Each actual row is validated; a negative row cannot cancel a positive row.
+    state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(vec![
+        WeaponPoints {
+            weapon: weapons[0].clone(),
+            n: 5,
+        },
+        WeaponPoints {
+            weapon: weapons[0].clone(),
+            n: -1,
+        },
+    ]));
+    assert_eq!(
+        allocation::prepare(&content, &state, seat, &plan).unwrap_err(),
+        cna_core::engine::Rejection::Engine(training::strength_error(
+            crate::logistics::SupplyError::Invalid,
+            "recipient live strength"
+        ))
+    );
+    // Missing physical identity is corrupt even if the additive strength still fits.
+    state.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: "absent-weapon".into(),
+        n: 1,
+    }]));
+    assert_eq!(
+        allocation::prepare(&content, &state, seat, &plan).unwrap_err(),
+        cna_core::engine::Rejection::Engine(invariant("existing equipment identity absent"))
+    );
+}
+
+/// An explicitly surveyed two-hex test overlay on the real grid. Production map data stay intact.
+struct TrainingMovementOverlay(std::path::PathBuf);
+impl TrainingMovementOverlay {
+    fn new(content: &mut CnaContent, home: &HexId, next: &HexId) -> Self {
+        use cna_content::map::{LineKind, MapContent, SideKind};
+        use std::sync::atomic::{AtomicU32, Ordering};
+        static SERIAL: AtomicU32 = AtomicU32::new(0);
+        let dir = std::env::temp_dir().join(format!(
+            "cna-rp-training-{}-{}",
+            std::process::id(),
+            SERIAL.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::create_dir(&dir).unwrap();
+        let data = cna_content::repo_data_dir().join("map");
+        for name in ["aliases.csv", "sections.toml", "layers.toml"] {
+            std::fs::copy(data.join(name), dir.join(name)).unwrap();
+        }
+        let mut cells = String::from("hex_id,section,q,r,terrain,flags\n");
+        for row in content.map.iter() {
+            let terrain = if row.id == *home || row.id == *next {
+                "clear"
+            } else {
+                row.terrain.as_deref().unwrap_or("unclassified")
+            };
+            cells.push_str(&format!(
+                "{},{},{},{},{},{}\n",
+                row.id,
+                row.section,
+                row.axial.q,
+                row.axial.r,
+                terrain,
+                row.flags.join("|")
+            ));
+        }
+        let (a, b) = if home < next {
+            (home, next)
+        } else {
+            (next, home)
+        };
+        let mut coverage = format!(
+            "layer,hex_id,neighbour_id,src,review_batch\nterrain,{a},,land:8.37,test\nterrain,{b},,land:8.37,test\n"
+        );
+        for kind in LineKind::ALL {
+            coverage.push_str(&format!("line:{},{a},{b},land:8.33,test\n", kind.name()));
+        }
+        for kind in SideKind::ALL {
+            coverage.push_str(&format!("side:{},{a},{b},land:8.35,test\n", kind.name()));
+        }
+        std::fs::write(dir.join("hexes.csv"), cells).unwrap();
+        std::fs::write(dir.join("coverage.csv"), coverage).unwrap();
+        std::fs::write(
+            dir.join("line_features.csv"),
+            "from_hex,to_hex,kind,src,review_batch\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("hexsides.csv"),
+            "hex_id,direction,neighbour_id,feature,high_side,src,review_batch\n",
+        )
+        .unwrap();
+        content.map = MapContent::load(&dir).unwrap();
+        Self(dir)
+    }
+}
+impl Drop for TrainingMovementOverlay {
+    fn drop(&mut self) {
+        assert_eq!(self.0.parent(), Some(std::env::temp_dir().as_path()));
+        assert!(
+            self.0
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .starts_with("cna-rp-training-")
+        );
+        std::fs::remove_dir_all(&self.0).unwrap();
+    }
+}
+fn move_response(state: &State, pending: &crate::state::Pending, action: Value) -> Command {
+    assert!(state.decisions.pending.iter().any(|p| p.id == pending.id));
+    Command::Respond(DecisionResponse {
+        decision_id: pending.id.clone(),
+        seat: pending.seat,
+        controller_epoch: 0,
+        decision_revision: pending.revision,
+        idempotency_key: format!("{}-rp-movement", pending.id),
+        action,
+        public_explanation: None,
+    })
+}
+fn finish_training_move(
+    content: &CnaContent,
+    mut transition: cna_core::engine::Transition<Cna>,
+    id: &UnitId,
+    home: &HexId,
+) -> cna_core::engine::Transition<Cna> {
+    for _ in 0..20 {
+        let request = transition
+            .game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| {
+                p.kind == crate::land::reaction::KIND || p.kind == crate::land::reaction::CONTINUE
+            })
+            .cloned();
+        let Some(pending) = request else {
+            return transition;
+        };
+        let action = if pending.kind == crate::land::reaction::KIND {
+            assert!(
+                pending
+                    .space
+                    .context
+                    .as_ref()
+                    .is_some_and(|v| v["forced_pass"] == true)
+            );
+            Value::Null
+        } else {
+            assert_ne!(
+                transition.game.state.land.units[id].location,
+                Location::Hex { hex: home.clone() }
+            );
+            json!([{"unit":id,"path":[home]}])
+        };
+        let next = evaluate(
+            &Cna::dev(),
+            content,
+            &transition.game,
+            &move_response(&transition.game.state, &pending, action),
+        )
+        .unwrap();
+        transition.events.extend(next.events);
+        transition.game = next.game;
+        transition.progress = next.progress;
+    }
+    panic!("training movement continuation exceeded the 20-action fixture guard");
+}
+
+/// Cases: land:17.33, land:17.35, land:20.43, land:8.11, land:8.13
+#[test]
+fn replacement_actual_dispatcher_depart_return_interrupts_training_and_replays_exactly() {
+    let (mut content, mut state, id, seat) = fixture(false);
+    let home = counter(&state).location.hex().unwrap().clone();
+    let next = content
+        .map
+        .neighbors(&home)
+        .into_iter()
+        .find(|h| content.areas.areas["cairo"].hex_ids.contains(h))
+        .unwrap();
+    let _overlay = TrainingMovementOverlay::new(&mut content, &home, &next);
+    // Isolate the actual movement dispatcher, not a new published campaign setup.
+    for unit in state.land.units.values_mut() {
+        if unit.id != id {
+            unit.location = Location::Eliminated;
+        }
+    }
+    state.land.units.get_mut(&id).unwrap().detached = true;
+    candidate(&content, &mut state, seat);
+    state.cursor.block = crate::seq::Block::PlayerHalf;
+    state.cursor.index = crate::seq::PLAYER_HALF
+        .iter()
+        .position(|s| s.anchor == "opstage.movement_and_combat.movement")
+        .unwrap();
+    state.cursor.half = Some(crate::seq::Half::A);
+    state.cursor.entered = false;
+    state.turn.player_a = Some(seat.side);
+    state.turn.weather = Some(crate::state::WeatherState {
+        kind: cna_tables::land::weather::WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    state.logistics.unit_supply.insert(
+        id.clone(),
+        crate::state::UnitSupply {
+            activity_water: WaterPoints::new(10000),
+            ready_ammo: cna_core::quantity::AmmoPoints::new(10000),
+            tank_fuel: FuelTenths::new(10000),
+            ..crate::state::UnitSupply::default()
+        },
+    );
+    let water_stage = crate::logistics::water::WaterStage::current(&state);
+    state.logistics.rations.insert(
+        id.clone(),
+        crate::logistics::Rations {
+            water_stage: Some(water_stage),
+            infantry_water_received: 2,
+            issued_gt: Some(state.cursor.game_turn),
+            pasta_gt: Some(state.cursor.game_turn),
+            ..crate::logistics::Rations::default()
+        },
+    );
+    let initial = game(state);
+    let opened = evaluate(&Cna::dev(), &content, &initial, &Command::Advance)
+        .unwrap()
+        .game;
+    let request = opened
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == crate::land::movement::KIND && p.seat == seat)
+        .unwrap();
+    let command = move_response(
+        &opened.state,
+        request,
+        json!([{"unit":id,"path":[next,home]}]),
+    );
+    let frozen = bytes(&opened);
+    let recovered = restored_from(&opened);
+    let a = finish_training_move(
+        &content,
+        evaluate(&Cna::dev(), &content, &opened, &command).unwrap(),
+        &id,
+        &home,
+    );
+    let b = finish_training_move(
+        &content,
+        evaluate(&Cna::dev(), &content, &recovered, &command).unwrap(),
+        &id,
+        &home,
+    );
+    assert_eq!(bytes(&a.game), bytes(&b.game));
+    assert_eq!(bytes(&a.events), bytes(&b.events));
+    assert_eq!(bytes(&opened), frozen);
+    assert_eq!(
+        a.game.state.land.units[&id].location,
+        Location::Hex { hex: home }
+    );
+    assert!(a.game.state.land.units[&id].cp_spent_quarters > 0);
+    assert!(a.game.state.land.movement.moved.contains(&id));
+    assert!(matches!(
+        counter(&a.game.state).training,
+        Training::Training {
+            completed: 0,
+            candidate: Some(TrainingCandidate {
+                interrupted: true,
+                ..
+            }),
+            ..
+        }
+    ));
+    let mut at_tail = a.game;
+    at_tail.state.decisions.pending.clear();
+    tail(&mut at_tail.state);
+    training::finish_training_stage(&content, &mut at_tail.state).unwrap();
+    assert!(matches!(
+        counter(&at_tail.state).training,
+        Training::Training {
+            completed: 0,
+            last_counted: None,
+            ..
+        }
+    ));
 }

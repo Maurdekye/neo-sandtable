@@ -3,6 +3,22 @@ use super::*;
 use crate::{CnaContent, State, ownership, state::LandUnit, steps::illegal};
 use cna_core::{engine::Rejection, ids::SeatId};
 
+/// TOE queries describe existing trusted bodies. Preserve the actual supply error/case.
+pub(super) fn strength_error(error: crate::logistics::SupplyError, context: &str) -> EngineError {
+    use crate::logistics::SupplyError;
+    match error {
+        SupplyError::Invalid => invariant(format!("invalid TOE strength: {context}")),
+        SupplyError::Insufficient => {
+            invariant(format!("TOE strength returned Insufficient: {context}"))
+        }
+        SupplyError::UnknownFuelRate => gap(
+            "airlog:49.12",
+            format!("TOE strength returned UnknownFuelRate (interp:units-0005): {context}"),
+        ),
+        SupplyError::Unsupported { case } => gap(case, context),
+    }
+}
+
 pub(super) fn stage(state: &State) -> Result<OpStageKey, EngineError> {
     Ok(OpStageKey {
         game_turn: state.cursor.game_turn,
@@ -125,11 +141,15 @@ fn qualifies(
     }
     let needs_tank = match &counter.kind {
         ReplacementKind::Tank { .. } => true,
-        ReplacementKind::Recce { weapon, .. } => content
-            .units
-            .weapons
-            .get(weapon)
-            .is_some_and(|weapon| weapon.kind == "tank"),
+        ReplacementKind::Recce { weapon, .. } => {
+            content
+                .units
+                .weapons
+                .get(weapon)
+                .ok_or_else(|| invariant("recce replacement weapon absent"))?
+                .kind
+                == "tank"
+        }
         _ => false,
     };
     if needs_tank && class.unit_type != "tank"
@@ -156,12 +176,12 @@ fn qualifies(
         ));
     }
     let current = crate::logistics::toe_strength(content, instructor)
-        .map_err(|_| gap("land:17.35", "instructor current strength is unknown"))?
+        .map_err(|error| strength_error(error, "instructor current strength"))?
         .get();
     let mut assigned = instructor.clone();
     assigned.toe = source.toe.clone();
     let assigned = crate::logistics::toe_strength(content, &assigned)
-        .map_err(|_| gap("land:17.35", "instructor assigned strength is unknown"))?
+        .map_err(|error| strength_error(error, "instructor assigned strength"))?
         .get();
     Ok(assigned > 0 && i64::from(current) * 3 >= i64::from(assigned))
 }
@@ -178,7 +198,15 @@ fn instructor(
         match qualifies(content, state, owner, counter, unit) {
             Ok(true) => return Ok(Some(unit.id.clone())),
             Ok(false) => (),
-            Err(error) => unknown = Some(error),
+            // A corrupt relevant witness cannot disappear behind a later valid one.
+            Err(error @ EngineError::Invariant { .. }) => return Err(error),
+            // A known witness can be selected instead of an unresolved source row.
+            // If none exists, return the FIRST exact unknown rather than overwrite it.
+            Err(error @ EngineError::Unsupported { .. }) => {
+                if unknown.is_none() {
+                    unknown = Some(error);
+                }
+            }
         }
     }
     if let Some(error) = unknown {
@@ -345,7 +373,7 @@ fn valid(
     owner: Side,
     counter: &ReplacementCounter,
     witness: &TrainingCandidate,
-) -> bool {
+) -> Result<bool, EngineError> {
     if counter.physical.stage != witness.stage
         || counter.physical.cp_quarters != 0
         || counter.location
@@ -353,50 +381,52 @@ fn valid(
                 hex: witness.hex.clone(),
             })
     {
-        return false;
+        return Ok(false);
     }
-    if super::arrival::recipient(content, state, owner, &counter.recipient, &counter.kind).is_err()
-    {
-        return false;
+    match super::arrival::recipient(content, state, owner, &counter.recipient, &counter.kind) {
+        Ok(()) => (),
+        Err(Rejection::Illegal { .. }) => return Ok(false),
+        Err(Rejection::Engine(error)) => return Err(error),
+        Err(_) => {
+            return Err(invariant(
+                "recipient qualification returned a non-legality protocol rejection",
+            ));
+        }
     }
     // The real movement kernel records executed prefixes, including a trip that
     // ends back in the training hex. Ignore stale prior-window history in Organization.
     if state.cursor.anchor() == "opstage.movement_and_combat.movement"
         && state.land.movement.moved.contains(&witness.instructor)
     {
-        return false;
+        return Ok(false);
     }
-    state
-        .land
-        .units
-        .get(&witness.instructor)
-        .is_some_and(|u| qualifies(content, state, owner, counter, u).unwrap_or(false))
+    match state.land.units.get(&witness.instructor) {
+        Some(unit) => qualifies(content, state, owner, counter, unit),
+        None => Ok(false),
+    }
 }
 
 /// Monotone bookkeeping in the canonical draft. No events, RNG, or new candidate creation.
 /// Cases: land:17.33, land:17.35, land:20.43
-pub(crate) fn invalidate_training(content: &CnaContent, state: &mut State) {
-    let interrupted: Vec<_> = state
-        .land
-        .replacements
-        .sides
-        .iter()
-        .flat_map(|own| {
-            own.counters
-                .iter()
-                .filter_map(|counter| match &counter.training {
-                    Training::Training {
-                        candidate: Some(candidate),
-                        ..
-                    } if !candidate.interrupted
-                        && !valid(content, state, own.side, counter, candidate) =>
-                    {
-                        Some((own.side, counter.id.clone()))
-                    }
-                    _ => None,
-                })
-        })
-        .collect();
+pub(crate) fn invalidate_training(
+    content: &CnaContent,
+    state: &mut State,
+) -> Result<(), EngineError> {
+    let mut interrupted = vec![];
+    // Complete all fallible reads before publishing any interrupted flag.
+    for own in &state.land.replacements.sides {
+        for counter in &own.counters {
+            if let Training::Training {
+                candidate: Some(candidate),
+                ..
+            } = &counter.training
+                && !candidate.interrupted
+                && !valid(content, state, own.side, counter, candidate)?
+            {
+                interrupted.push((own.side, counter.id.clone()));
+            }
+        }
+    }
     for (owner, id) in interrupted {
         if let Some(counter) = state
             .land
@@ -413,6 +443,7 @@ pub(crate) fn invalidate_training(content: &CnaContent, state: &mut State) {
             candidate.interrupted = true;
         }
     }
+    Ok(())
 }
 
 /// Exactly one call at the complete OLD stage exit, before cursor/CP reset.
@@ -445,7 +476,7 @@ pub(crate) fn finish_training_stage(
             "training credit requires complete old OpStage exit",
         ));
     }
-    invalidate_training(content, state);
+    invalidate_training(content, state)?;
     for own in &mut state.land.replacements.sides {
         for counter in &mut own.counters {
             let Training::Training {

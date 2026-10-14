@@ -177,8 +177,7 @@ pub(crate) fn enter_units(
             cx,
             seat,
             if training { TRAINING } else { ALLOCATION },
-            "Replacement unit command",
-            "Only your recipient-owned counters may be selected; answers do not train or absorb.",
+            "Only your recipient-owned replacement counters may be selected; answers do not train or absorb.".into(),
             &[
                 "land:17.33",
                 "land:20.3",

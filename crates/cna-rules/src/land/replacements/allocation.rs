@@ -275,6 +275,14 @@ pub(super) fn prepare(
         let source = &content.units.units[&recipient];
         let class = crate::land::formation::class(content, &recipient)
             .ok_or_else(|| Rejection::Engine(invariant("class vanished")))?;
+        let before = crate::logistics::toe_strength(content, unit)
+            .map_err(|error| {
+                Rejection::Engine(super::training::strength_error(
+                    error,
+                    "recipient live strength",
+                ))
+            })?
+            .get();
         let mut maximum = class.max_toe.ok_or_else(|| {
             Rejection::Engine(gap("land:20.3", "recipient maximum TOE is unknown"))
         })?;
@@ -301,9 +309,6 @@ pub(super) fn prepare(
                 maximum = us_maximum;
             }
         }
-        let before = crate::logistics::toe_strength(content, unit)
-            .map_err(|_| Rejection::Engine(gap("land:20.3", "recipient live TOE is unknown")))?
-            .get();
         let after = before
             .checked_add(gain)
             .ok_or_else(|| illegal("TOE overflow"))?;
@@ -324,10 +329,32 @@ pub(super) fn prepare(
             }
         } else {
             let mut inventory = match &unit.toe {
-                Some(Toe::Weapons(points)) => points
-                    .iter()
-                    .map(|p| (p.weapon.clone(), p.n))
-                    .collect::<BTreeMap<_, _>>(),
+                Some(Toe::Weapons(points)) => {
+                    let mut inventory = BTreeMap::new();
+                    for point in points {
+                        if point.n < 0 {
+                            return Err(Rejection::Engine(invariant(
+                                "negative existing equipment count",
+                            )));
+                        }
+                        let equipment =
+                            content.units.weapons.get(&point.weapon).ok_or_else(|| {
+                                Rejection::Engine(invariant("existing equipment identity absent"))
+                            })?;
+                        if equipment.kind != class.unit_type
+                            && !class.assigns.iter().any(|a| a.kind == equipment.kind)
+                        {
+                            return Err(Rejection::Engine(invariant(
+                                "existing equipment type is incompatible with its recipient",
+                            )));
+                        }
+                        let count = inventory.entry(point.weapon.clone()).or_insert(0_i32);
+                        *count = count.checked_add(point.n).ok_or_else(|| {
+                            Rejection::Engine(invariant("existing equipment count overflow"))
+                        })?;
+                    }
+                    inventory
+                }
                 _ => {
                     let weapon = source.vehicle.clone().ok_or_else(|| {
                         Rejection::Engine(gap(

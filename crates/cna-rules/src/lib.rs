@@ -193,14 +193,14 @@ impl Cna {
                     clock: view::wire_clock(content, state),
                 }));
                 self.enter_step(content, state, cx)?;
-                land::replacements::invalidate_training(content, state);
+                land::replacements::invalidate_training(content, state)?;
                 land::engagement::reconcile(content, state);
                 continue;
             }
             // Entered and nothing left to decide: let the step resolve what its answers closed,
             // which may open further decisions; otherwise the step is complete.
             self.finish_step(content, state, cx)?;
-            land::replacements::invalidate_training(content, state);
+            land::replacements::invalidate_training(content, state)?;
             land::engagement::reconcile(content, state);
             if !state.decisions.pending.is_empty() {
                 continue;
@@ -266,7 +266,7 @@ impl Cna {
         })?;
         state.decisions.pending.remove(idx);
         let summary = self.respond_to(content, state, &pending, &response.action, cx)?;
-        land::replacements::invalidate_training(content, state);
+        land::replacements::invalidate_training(content, state)?;
         land::breakdown::window::park(state, None);
         cx.emit(EngineEvent::new(
             Audience::Seat(pending.seat),
