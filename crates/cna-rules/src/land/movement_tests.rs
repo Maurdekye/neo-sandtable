@@ -1039,7 +1039,7 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
     let mut rng = CampaignRng::from_seed([19; 32]);
     let begin = std::time::Instant::now();
     // The bounded default test budgets its own CPU work, excluding parallel tests and waiting.
-    // Keep the ignored whole-campaign profiler's wall budget unchanged.
+    // The ignored whole-campaign profiler keeps the wall-clock hang guard below.
     let thread_begin = (!must_finish)
         .then(|| cpu_time::ThreadTime::try_now().expect("movement test needs a thread CPU clock"));
     let mut moves = 0;
@@ -1082,8 +1082,11 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
                 wall.as_secs_f64()
             );
         } else {
+            // Hang guard only (owner ruling D11, docs/decisions.md): about 2.5-3x the 103.7 s
+            // this campaign took on a fast CI runner (0c13a01). Smaller slowdowns are judged
+            // by rerunning the previous commit beside the new one.
             assert!(
-                begin.elapsed().as_secs() < 180,
+                begin.elapsed().as_secs() < 300,
                 "movement campaign exceeded its bounded test budget"
             );
         }
@@ -2247,11 +2250,13 @@ fn profile_large_mobile_unit_inspect_on_real_graziani() {
         formation::allowance(&c, &g.state, &chosen.id).unwrap().cpa,
         t.elapsed()
     );
-    // CI run 37561141299 measured 342 ms/query on its slower runner (47337f3).
-    // Allow roughly twice that measurement; the local optimization target stays 200 ms.
+    // Hang guard only (owner ruling D11, docs/decisions.md): about 2.5x the 2.6 s these
+    // five queries took on a fast CI runner (0c13a01). Smaller slowdowns are judged by
+    // rerunning the previous commit beside the new one; the local optimization target
+    // stays 200 ms per query.
     assert!(
-        t.elapsed() < std::time::Duration::from_millis(3500),
-        "mean inspect should remain below the 700 ms CI regression limit"
+        t.elapsed() < std::time::Duration::from_millis(6500),
+        "mean inspect should remain below the 1300 ms CI hang limit"
     );
 }
 

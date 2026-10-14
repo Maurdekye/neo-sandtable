@@ -87,3 +87,11 @@ output, persisted with the campaign, and streamed on a channel separate from gam
 [`protocol.md`](protocol.md)). A seat's transcript reveals that seat's private knowledge, so the
 operator view sees every transcript, a side's view sees only its own seats', and the opposing side
 never sees them. Transcripts are for watching only; adjudication never depends on them.
+
+## D11 (O) — CI timing checks are hang guards
+GitHub's runners vary in speed by about 1.5 times from hour to hour (2026-10-14: the same commit
+took 27 minutes at 09:57 UTC and 37.5 minutes at 12:32 UTC). So the timing checks in the slow CI
+job (the offline full game-turn, the whole movement campaign and the large-unit inspect query)
+only catch hangs and large slowdowns: each limit is about 2.5 times the test's time on a fast
+runner. Smaller slowdowns are judged by rerunning the previous commit's slow job beside the new
+one at the same time, never by tightening a limit. Local optimisation targets are unchanged.

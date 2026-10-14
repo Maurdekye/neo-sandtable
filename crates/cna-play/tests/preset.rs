@@ -875,9 +875,10 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
     let started = std::time::Instant::now();
     // Persisted per-decision/lifetime bounds remain in force. Full-turn completion
     // additionally requires the actual fence, never merely an Ok supervisor result.
-    // CI 37668460452 (db029cfa, 2026-10-07): this sole ignored preset test
-    // completed in 242.46 s. Guard 485 s is about 2x that measured duration;
-    // this calibration does not diagnose the separate browser setup stall.
+    // Hang guard only (owner ruling D11, docs/decisions.md): about 2.5x this test's
+    // 415.06 s on a fast CI runner (run 38546151542, ed694b8, 2026-10-14). Smaller
+    // slowdowns are judged by rerunning the previous commit beside the new one.
+    // This calibration does not diagnose the separate browser setup stall.
     // Send graceful stop and join supervisors, rather than canceling cleanup.
     let result = if let Err(error) = initial_handoff {
         Err(error)
@@ -886,7 +887,7 @@ async fn full_game_turn_inert_preset_reports_each_seat_and_phase() {
         tokio::pin!(play);
         tokio::select! {
             result = &mut play => result,
-            _ = tokio::time::sleep(Duration::from_secs(485)) => {
+            _ = tokio::time::sleep(Duration::from_secs(1050)) => {
                 let _ = stop.send(true);
                 cna_play::combine_results(Err("offline full-turn measurement hang guard reached".into()), play.await)
             }

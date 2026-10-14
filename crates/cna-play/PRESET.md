@@ -192,8 +192,10 @@ synthetic. The browser proof compares these persisted watermarks with raw WS and
 decoded UI values before RELEASE; cleanup acknowledgement alone is not a passing
 browser proof. No transcript bodies or credential URLs enter the measurement report.
 
-The ignored-test hang guard is 485 seconds, about twice this test's completed
-242.46-second CI duration (run 37668460452, db029cfa, 2026-10-07). This measured
-calibration does not explain the separate browser-attached setup stall. The
-120-second browser acknowledgement guard, default tests and production model,
-tool and wall budgets are unchanged.
+The ignored-test hang guard is 1,050 seconds, about 2.5 times this test's
+415.06-second duration on a fast CI runner (run 38546151542, ed694b8,
+2026-10-14). It only catches hangs and large slowdowns; smaller slowdowns are
+judged by rerunning the previous commit beside the new one (owner ruling D11 in
+docs/decisions.md). This measured calibration does not explain the separate
+browser-attached setup stall. The 120-second browser acknowledgement guard,
+default tests and production model, tool and wall budgets are unchanged.
