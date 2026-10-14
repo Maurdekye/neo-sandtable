@@ -581,11 +581,13 @@ fn feeding_entry_game(water: bool) -> (cna_core::engine::Game<Cna>, UnitId) {
     )
 }
 /// Cases: airlog:51.12, airlog:51.17, airlog:53.25, land:3.6
+/// Interpretations: interp:units-0006, interp:units-0007
 #[test]
 fn actual_pre_and_water_feeding_entries_retire_once_with_recovery_retry_and_private_streams() {
     use super::super::{batches, cargo_history::CargoSite};
+    use cna_content::units::{NormalToe, Toe};
     use cna_core::engine::{Command, evaluate};
-    for (water, strict) in [(false, false), (false, true), (true, false)] {
+    for (water, strict) in [(false, false), (false, true), (true, false), (true, true)] {
         let rules = Cna { strict };
         let (game, id) = feeding_entry_game(water);
         let mut plain = game.clone();
@@ -600,70 +602,90 @@ fn actual_pre_and_water_feeding_entries_retire_once_with_recovery_retry_and_priv
         );
         let original = serde_json::to_value(&game).unwrap();
         let recovered = serde_json::from_value(original.clone()).unwrap();
-        let first = evaluate(&rules, content(), &game, &Command::Advance).unwrap();
-        let restored = evaluate(&rules, content(), &recovered, &Command::Advance).unwrap();
-        assert_eq!(
-            serde_json::to_value(&first.game).unwrap(),
-            serde_json::to_value(&restored.game).unwrap()
+        let first_result = evaluate(&rules, content(), &game, &Command::Advance);
+        let first = first_result.unwrap_or_else(|rejection| panic!("Advance {rejection:?}"));
+        let restored_result = evaluate(&rules, content(), &recovered, &Command::Advance);
+        let restored = restored_result.unwrap_or_else(|rejection| panic!("Advance {rejection:?}"));
+        assert!(
+            serde_json::to_value(&first.game).unwrap()
+                == serde_json::to_value(&restored.game).unwrap(),
+            "Advance accepted"
         );
-        assert_eq!(first.events, restored.events);
-        assert_eq!(serde_json::to_value(&game).unwrap(), original);
-        assert_eq!(first.game.rng, game.rng);
+        assert!(first.events == restored.events, "Advance accepted");
+        assert!(
+            serde_json::to_value(&game).unwrap() == original,
+            "Advance accepted"
+        );
+        assert!(first.game.rng == game.rng, "Advance accepted");
         let state = &first.game.state;
-        assert_eq!(
-            state.logistics.prisoners["feeding"].food_stage,
-            Some(WaterStage::current(state))
+        assert!(
+            state.logistics.prisoners["feeding"].food_stage == Some(WaterStage::current(state)),
+            "Advance accepted"
         );
-        assert_eq!(state.logistics.prisoners["feeding"].stores_short, 0);
-        assert_eq!(
-            state.logistics.prisoners["feeding"].guards_fed_gt,
-            if water {
-                None
-            } else {
-                Some(state.cursor.game_turn)
-            }
+        assert!(
+            state.logistics.prisoners["feeding"].stores_short == 0,
+            "Advance accepted"
         );
-        assert_eq!(state.logistics.prisoners["feeding"].guards_stores_short, 0);
-        assert_eq!(
-            state.logistics.unit_supply[&id].carried.stores,
-            if water { 2 } else { 0 }
+        assert!(
+            state.logistics.prisoners["feeding"].guards_fed_gt
+                == if water {
+                    None
+                } else {
+                    Some(state.cursor.game_turn)
+                },
+            "Advance accepted"
         );
-        assert_eq!(state.logistics.dumps["food"].supplies.stores, 20);
+        assert!(
+            state.logistics.prisoners["feeding"].guards_stores_short == 0,
+            "Advance accepted"
+        );
+        assert!(
+            state.logistics.unit_supply[&id].carried.stores == if water { 2 } else { 0 },
+            "Advance accepted"
+        );
+        assert!(
+            state.logistics.dumps["food"].supplies.stores == 20,
+            "Advance accepted"
+        );
         let remaining = &state.logistics.cargo_history.histories[&CargoSite::Unit(id.clone())].lots;
         if water {
-            assert_eq!(remaining.len(), 1);
-            assert_eq!(remaining[0].id, "lower");
+            assert!(remaining.len() == 1, "Advance accepted");
+            assert!(remaining[0].id == "lower", "Advance accepted");
         } else {
-            assert!(remaining.is_empty());
+            assert!(remaining.is_empty(), "Advance accepted");
         }
-        assert_eq!(
+        assert!(
             state.logistics.cargo_history.histories[&CargoSite::Dump("food".into())]
                 .lots
-                .len(),
-            2
+                .len()
+                == 2,
+            "Advance accepted"
         );
         let kind = if water {
             batches::WATER
         } else {
             batches::STORES
         };
-        assert_eq!(
+        assert!(
             state
                 .decisions
                 .pending
                 .iter()
                 .filter(|p| p.kind == kind)
-                .count(),
-            2
+                .count()
+                == 2,
+            "Advance accepted"
         );
         let saved = serde_json::from_value(serde_json::to_value(&first.game).unwrap()).unwrap();
         for source in [&first.game, &saved] {
-            let retry = evaluate(&rules, content(), source, &Command::Advance).unwrap();
-            assert_eq!(
-                serde_json::to_value(&retry.game).unwrap(),
-                serde_json::to_value(&first.game).unwrap()
+            let retry_result = evaluate(&rules, content(), source, &Command::Advance);
+            let retry = retry_result.unwrap_or_else(|rejection| panic!("Advance {rejection:?}"));
+            assert!(
+                serde_json::to_value(&retry.game).unwrap()
+                    == serde_json::to_value(&first.game).unwrap(),
+                "Advance accepted"
             );
-            assert!(retry.events.is_empty());
+            assert!(retry.events.is_empty(), "Advance accepted");
         }
         // The same mandatory-feeding ledger also protects direct entry retries.
         let mut retry = state.clone();
@@ -679,20 +701,50 @@ fn actual_pre_and_water_feeding_entries_retire_once_with_recovery_retry_and_priv
             !water,
         )
         .unwrap();
-        assert_eq!(
-            serde_json::to_value(&retry).unwrap(),
-            serde_json::to_value(state).unwrap()
+        assert!(
+            serde_json::to_value(&retry).unwrap() == serde_json::to_value(state).unwrap(),
+            "Advance accepted"
         );
-        assert_eq!(events, first.events);
-        assert_eq!(rng.state(), first.game.rng);
+        assert!(events == first.events, "Advance accepted");
+        assert!(rng.state() == first.game.rng, "Advance accepted");
     }
-    // Full Water retains its earlier public-content composition stop; no bypass.
+    // Known Graziani HQ source is supported by units-0006/0007. Keep the full
+    // composition stop against an explicit public source gap, not private TOE.
+    let mut missing = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    // CnaContent has no Clone API; clone its actual public unit catalogue into
+    // the same-source content copy before omitting the single class maximum.
+    missing.units = content().units.clone();
+    let public_hq: UnitId = "cw.6_aus_div.17th_aus_infantry_bde_hq".into();
+    let row = &missing.units.units[&public_hq];
+    assert!(
+        row.class.as_deref() == Some("cw.e")
+            && matches!(row.toe.as_ref(), Some(Toe::Normal(NormalToe::N))),
+        "public Normal(N) HQ source must be verified before its deliberate omission"
+    );
+    let class = &missing.units.classes["cw.e"];
+    assert!(
+        class.unit_type == "headquarters" && !class.max_toe_paren && class.max_toe.is_some(),
+        "public numeric HQ source must be present before its deliberate omission"
+    );
+    missing.units.classes.get_mut("cw.e").unwrap().max_toe = None;
     let (game, _) = feeding_entry_game(true);
     let bytes = serde_json::to_value(&game).unwrap();
-    assert!(matches!(evaluate(&Cna { strict: true }, content(), &game,
-        &Command::Advance), Err(Rejection::Engine(EngineError::Unsupported { case, .. }))
-        if case == "airlog:52.42"));
-    assert_eq!(serde_json::to_value(&game).unwrap(), bytes);
+    let rng_before = game.rng.clone();
+    let result = evaluate(&Cna { strict: true }, &missing, &game, &Command::Advance);
+    let diagnostic = match &result {
+        Ok(_) => "accepted".to_owned(),
+        Err(rejection) => format!("{rejection:?}"),
+    };
+    assert!(
+        matches!(&result, Err(Rejection::Engine(EngineError::Unsupported { case, .. }))
+        if case == "airlog:52.42"),
+        "Advance {diagnostic}"
+    );
+    assert!(
+        serde_json::to_value(&game).unwrap() == bytes,
+        "Advance {diagnostic}"
+    );
+    assert!(game.rng == rng_before, "Advance {diagnostic}");
 }
 /// Cases: airlog:51.12, airlog:51.17, airlog:53.25, land:3.6
 #[test]
