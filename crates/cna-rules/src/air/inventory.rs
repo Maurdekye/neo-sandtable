@@ -353,13 +353,12 @@ fn base_mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, Engine
     let mut tokens = BTreeSet::new();
     for (id, site) in &air.runtime.facilities {
         site.properties(content, id)?;
-        if let Some(token) = site.incarnation {
-            if token.serial() == 0
+        if let Some(token) = site.incarnation
+            && (token.serial() == 0
                 || token.serial() > air.runtime.site_incarnation_serial
-                || !tokens.insert(token)
-            {
-                return Err(invalid("invalid or duplicate facility incarnation"));
-            }
+                || !tokens.insert(token))
+        {
+            return Err(invalid("invalid or duplicate facility incarnation"));
         }
     }
     for (id, unit) in &air.runtime.sgsus {

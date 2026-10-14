@@ -85,7 +85,7 @@ fn begin_allocates_unique_authority_and_rejects_duplicate_or_exhausted_ids_atomi
     let (mut unknown, _) = fixture();
     let bad = FacilityWork::Create {
         kind: FacilityKind::LandingStrip,
-        hex: HexId("not-a-hex".into()),
+        hex: HexId::from("not-a-hex"),
     };
     let before = bytes(&unknown);
     assert!(begin_facility_project(content(), &mut unknown, Side::Axis, &bad).is_err());
