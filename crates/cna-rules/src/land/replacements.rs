@@ -65,6 +65,7 @@ pub enum ReplacementNation {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ProductionRowRef {
     AxisTruck {
+        #[serde(rename = "truck_kind")]
         kind: FuelTruckKind,
     },
     AxisEquipment {
@@ -73,6 +74,7 @@ pub enum ProductionRowRef {
     },
     CommonwealthTruck {
         column: String,
+        #[serde(rename = "truck_kind")]
         kind: FuelTruckKind,
     },
     CommonwealthInfantry {
@@ -159,8 +161,14 @@ pub enum ReplacementKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ProducedKind {
-    Trucks { kind: FuelTruckKind },
-    Points { kind: ReplacementKind },
+    Trucks {
+        #[serde(rename = "truck_kind")]
+        kind: FuelTruckKind,
+    },
+    Points {
+        #[serde(rename = "replacement_kind")]
+        kind: ReplacementKind,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

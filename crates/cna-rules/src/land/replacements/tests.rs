@@ -1144,3 +1144,232 @@ fn late_ordinary_distribution_refusal_is_adjudication_invariant_with_whole_game_
         }
     ));
 }
+
+fn assert_contract_roundtrip<T>(value: T, expected: serde_json::Value)
+where
+    T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + std::fmt::Debug,
+{
+    let encoded = serde_json::to_value(&value).unwrap();
+    assert_eq!(encoded, expected);
+    let restored: T = serde_json::from_value(encoded).unwrap();
+    assert_eq!(restored, value);
+    assert_eq!(serde_json::to_value(restored).unwrap(), expected);
+}
+
+/// Cases: land:20.61, land:20.72
+#[test]
+fn production_row_wire_contract_roundtrips_all_five_variants() {
+    use serde_json::json;
+    for (kind, wire) in [
+        (FuelTruckKind::Light, "light"),
+        (FuelTruckKind::Medium, "medium"),
+        (FuelTruckKind::Heavy, "heavy"),
+    ] {
+        assert_contract_roundtrip(
+            ProductionRowRef::AxisTruck { kind },
+            json!({"kind":"axis_truck","truck_kind":wire}),
+        );
+        assert_contract_roundtrip(
+            ProductionRowRef::CommonwealthTruck {
+                column: truck_column(8).unwrap().0.into(),
+                kind,
+            },
+            json!({"kind":"commonwealth_truck","column":truck_column(8).unwrap().0,"truck_kind":wire}),
+        );
+    }
+    assert_contract_roundtrip(
+        italian_infantry(),
+        json!({"kind":"axis_equipment","nation":"italian","item":"Infantry"}),
+    );
+    assert_contract_roundtrip(
+        ProductionRowRef::CommonwealthInfantry {
+            column: infantry_column(8).unwrap().0.into(),
+        },
+        json!({"kind":"commonwealth_infantry","column":infantry_column(8).unwrap().0}),
+    );
+    // Read an actual native finite designation; this check grants no production entitlement.
+    let c = content();
+    let item = c
+        .tables
+        .land
+        .commonwealth_production
+        .equipment_rows()
+        .next()
+        .unwrap()
+        .0
+        .to_owned();
+    assert_contract_roundtrip(
+        ProductionRowRef::CommonwealthEquipment { item: item.clone() },
+        json!({"kind":"commonwealth_equipment","item":item}),
+    );
+}
+
+/// Cases: land:20.61, land:20.72
+#[test]
+fn produced_kind_wire_contract_roundtrips_both_variants_with_nested_discriminator() {
+    use serde_json::json;
+    for (kind, wire) in [
+        (FuelTruckKind::Light, "light"),
+        (FuelTruckKind::Medium, "medium"),
+        (FuelTruckKind::Heavy, "heavy"),
+    ] {
+        assert_contract_roundtrip(
+            ProducedKind::Trucks { kind },
+            json!({"kind":"trucks","truck_kind":wire}),
+        );
+    }
+    assert_contract_roundtrip(
+        ProducedKind::Points {
+            kind: ReplacementKind::Infantry {
+                nation: ReplacementNation::Commonwealth,
+            },
+        },
+        json!({"kind":"points","replacement_kind":{"kind":"infantry","nation":"commonwealth"}}),
+    );
+}
+
+/// Cases: land:20.21, land:20.74, land:20.78, land:3.6
+#[test]
+fn buffered_truck_and_points_game_checkpoint_resumes_exact_owned_finish() {
+    use cna_core::engine::{Command, Game, Rejection, evaluate};
+    let mut c = content();
+    c.bounds.end_gt = 12; // Reduced future-calendar fixture, not Graziani entitlement.
+    let mut game = distribution_game(&c, 3);
+    let truck_row = ProductionRowRef::CommonwealthTruck {
+        column: truck_column(8).unwrap().0.into(),
+        kind: FuelTruckKind::Medium,
+    };
+    let truck_kind = ProducedKind::Trucks {
+        kind: FuelTruckKind::Medium,
+    };
+    let ProcedurePhase::Distributing { determined, .. } =
+        &mut side_mut(&mut game.state, Side::Commonwealth)
+            .unwrap()
+            .planning
+            .phase
+    else {
+        unreachable!()
+    };
+    determined.push(DeterminedProduction {
+        row: truck_row,
+        kind: truck_kind,
+        points: 3,
+        arrival_turn: 8,
+    });
+    let cmd = production_command(
+        &game.state,
+        Side::Commonwealth,
+        windows::DISTRIBUTION,
+        serde_json::Value::Null,
+    );
+    let accepted = evaluate(&crate::Cna::dev(), &c, &game, &cmd).unwrap().game;
+    assert_eq!(accepted.rng, game.rng);
+    let ProcedurePhase::Distributing {
+        determined,
+        submitted: Some(plan),
+    } = &side(&accepted.state, Side::Commonwealth)
+        .unwrap()
+        .planning
+        .phase
+    else {
+        panic!("nonempty distribution buffer missing")
+    };
+    assert_eq!(determined.len(), 2);
+    assert_eq!(plan.batches.len(), 6);
+    assert!(
+        plan.batches
+            .iter()
+            .any(|b| matches!(b.kind, ProducedKind::Trucks { .. }))
+    );
+    assert!(
+        plan.batches
+            .iter()
+            .any(|b| matches!(b.kind, ProducedKind::Points { .. }))
+    );
+    let plan = plan.clone();
+    let encoded = serde_json::to_vec(&accepted).unwrap();
+    let restored: Game<crate::Cna> = serde_json::from_slice(&encoded).unwrap();
+    assert_eq!(serde_json::to_vec(&restored).unwrap(), encoded);
+
+    // The isolated distribution fixture has not completed the genuine convoy setup.
+    // The full dispatcher must retain that refusal and both buffered checkpoints unchanged.
+    for checkpoint in [&accepted, &restored] {
+        assert_eq!(
+            evaluate(&crate::Cna::dev(), &c, checkpoint, &Command::Advance).err(),
+            Some(Rejection::Engine(EngineError::Unsupported {
+                case: "scen:60.37".into(),
+                detail: "initial convoy planning must finish during setup".into(),
+            }))
+        );
+        assert_eq!(serde_json::to_vec(checkpoint).unwrap(), encoded);
+    }
+
+    // Compare successful resumes at the actual owned finalizer, preserving all Game fields.
+    let mut direct = accepted.clone();
+    let mut resumed = restored;
+    for checkpoint in [&mut direct, &mut resumed] {
+        let before_rng = checkpoint.rng.clone();
+        let before_units = serde_json::to_vec(&checkpoint.state.land.units).unwrap();
+        let before_logistics = serde_json::to_vec(&checkpoint.state.logistics).unwrap();
+        let mut rng = CampaignRng::from_state(&checkpoint.rng);
+        let mut events = vec![];
+        windows::finish_planning(
+            &c,
+            &mut checkpoint.state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+        )
+        .unwrap();
+        checkpoint.rng = rng.state();
+        assert_eq!(checkpoint.rng, before_rng);
+        assert!(events.is_empty());
+        assert_eq!(
+            serde_json::to_vec(&checkpoint.state.land.units).unwrap(),
+            before_units
+        );
+        assert_eq!(
+            serde_json::to_vec(&checkpoint.state.logistics).unwrap(),
+            before_logistics
+        );
+        let owned = side(&checkpoint.state, Side::Commonwealth).unwrap();
+        assert_eq!(owned.orders.len(), 6);
+        assert_eq!(owned.next_serial, 6);
+        assert_eq!(owned.orders.iter().map(|o| o.points).sum::<i32>(), 6);
+        assert_eq!(
+            owned
+                .orders
+                .iter()
+                .filter(|o| matches!(o.kind, ProducedKind::Trucks { .. }))
+                .map(|o| o.points)
+                .sum::<i32>(),
+            3
+        );
+        assert_eq!(
+            owned
+                .orders
+                .iter()
+                .filter(|o| matches!(o.kind, ProducedKind::Points { .. }))
+                .map(|o| o.points)
+                .sum::<i32>(),
+            3
+        );
+        assert!(owned.counters.is_empty());
+        assert_eq!(owned.cw_arrival_limits.len(), 1);
+        assert_eq!(owned.cw_arrival_limits[0].total_trucks, 3);
+        assert_eq!(owned.cw_arrival_limits[0].alexandria_trucks, 0);
+        assert!(owned.cw_arrival_limits[0].infantry_city.is_none());
+        assert!(matches!(owned.planning.phase, ProcedurePhase::Resolved));
+    }
+    assert_eq!(
+        serde_json::to_vec(&resumed).unwrap(),
+        serde_json::to_vec(&direct).unwrap()
+    );
+    let closed: Game<crate::Cna> =
+        serde_json::from_slice(&serde_json::to_vec(&resumed).unwrap()).unwrap();
+    let before_retry = serde_json::to_vec(&closed).unwrap();
+    let mut retry = closed;
+    assert!(finish_distribution(&mut retry.state, Side::Commonwealth, &plan).is_err());
+    assert_eq!(serde_json::to_vec(&retry).unwrap(), before_retry);
+}
