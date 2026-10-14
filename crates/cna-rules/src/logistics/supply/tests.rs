@@ -880,3 +880,289 @@ fn invalid_under_over_ranges_and_missing_maximum_are_rejected() {
     unknown.toe = Some(Toe::Under { under: 1 });
     assert_eq!(toe_strength(content(), &unknown), Err(SupplyError::Invalid));
 }
+
+/// Cases: land:4.45, land:4.48, airlog:49.12, airlog:49.13, airlog:49.19
+#[test]
+fn known_zero_organic_weapon_rates_preserve_tobruk_components_and_motorizing_trucks() {
+    let (original, _) = state();
+    let zero = &content().units.weapons["it.aa_heavy_i"];
+    assert_eq!(zero.fuel_rate, Some(0));
+    assert!(
+        content()
+            .tables
+            .airlog
+            .fuel_consumption
+            .fuel_for(0, 7)
+            .is_none()
+    );
+    for name in [
+        "it.tobruk_garrison.4th_tobruk_cd_arty_group",
+        "it.tobruk_garrison.5th_tobruk_cd_arty_group",
+    ] {
+        let id: UnitId = name.into();
+        let Some(Toe::Weapons(points)) = &original.land.units[&id].toe else {
+            panic!("authored Tobruk equipment is missing");
+        };
+        assert!(points.iter().any(|p| p.weapon == zero.id && p.n > 0));
+        for trucks in [
+            Trucks::default(),
+            Trucks {
+                light: 2,
+                medium: 1,
+                heavy: 1,
+            },
+        ] {
+            let mut input = original.clone();
+            input.land.units.get_mut(&id).unwrap().trucks = trucks;
+            let before = serde_json::to_value(&input).unwrap();
+            for quarters in [1, 4, 28, 196, 396] {
+                let cp = quarters / 4 + i32::from(quarters % 4 != 0);
+                let organic = points
+                    .iter()
+                    .map(|p| {
+                        let rate = content().units.weapons[&p.weapon].fuel_rate.unwrap();
+                        assert!(p.n >= 0);
+                        if rate == 0 {
+                            0
+                        } else {
+                            content()
+                                .tables
+                                .airlog
+                                .fuel_consumption
+                                .fuel_for(rate, cp)
+                                .unwrap()
+                                .get()
+                                * p.n
+                        }
+                    })
+                    .sum::<i32>();
+                let truck_cost = content()
+                    .tables
+                    .airlog
+                    .fuel_consumption
+                    .fuel_for(1, cp)
+                    .unwrap()
+                    .get()
+                    * (trucks.light + trucks.medium + trucks.heavy);
+                if trucks == Trucks::default() {
+                    assert_eq!(truck_cost, 0);
+                } else {
+                    assert!(truck_cost > 0);
+                }
+                assert_eq!(
+                    movement_fuel_cost(content(), &input, &id, quarters)
+                        .unwrap()
+                        .get(),
+                    organic + truck_cost
+                );
+            }
+            assert_eq!(serde_json::to_value(&input).unwrap(), before);
+        }
+    }
+}
+
+/// Cases: land:4.48, airlog:49.12, airlog:49.13, airlog:49.19
+#[test]
+fn known_zero_weapon_fuel_is_zero_but_positive_components_and_source_errors_remain_exact() {
+    let (mut input, id) = state();
+    let zero = &content().units.weapons["it.aa_heavy_i"];
+    assert_eq!(zero.fuel_rate, Some(0));
+    input.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: zero.id.clone(),
+        n: 2,
+    }]));
+    input.land.units.get_mut(&id).unwrap().trucks = Trucks::default();
+    assert_eq!(
+        movement_fuel_cost(content(), &input, &id, 28),
+        Ok(FuelTenths::ZERO)
+    );
+    let positive = content()
+        .units
+        .weapons
+        .values()
+        .find(|w| w.fuel_rate.is_some_and(|r| r > 0))
+        .unwrap();
+    input.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(vec![
+        WeaponPoints {
+            weapon: zero.id.clone(),
+            n: 2,
+        },
+        WeaponPoints {
+            weapon: positive.id.clone(),
+            n: 3,
+        },
+    ]));
+    input.land.units.get_mut(&id).unwrap().trucks = Trucks {
+        heavy: 1,
+        ..Trucks::default()
+    };
+    let expected = content()
+        .tables
+        .airlog
+        .fuel_consumption
+        .fuel_for(positive.fuel_rate.unwrap(), 7)
+        .unwrap()
+        .get()
+        * 3
+        + content()
+            .tables
+            .airlog
+            .fuel_consumption
+            .fuel_for(1, 7)
+            .unwrap()
+            .get();
+    assert_eq!(
+        movement_fuel_cost(content(), &input, &id, 28)
+            .unwrap()
+            .get(),
+        expected
+    );
+    input.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: zero.id.clone(),
+        n: 2,
+    }]));
+    let mut unknown = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    unknown.units.weapons.get_mut(&zero.id).unwrap().fuel_rate = None;
+    assert_eq!(
+        movement_fuel_cost(&unknown, &input, &id, 28),
+        Err(SupplyError::Unsupported {
+            case: "airlog:49.12"
+        })
+    );
+    unknown.units.weapons.remove(&zero.id).unwrap();
+    assert_eq!(
+        movement_fuel_cost(&unknown, &input, &id, 28),
+        Err(SupplyError::Unsupported { case: "land:4.48" })
+    );
+    input.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: zero.id.clone(),
+        n: -1,
+    }]));
+    let before = serde_json::to_value(&input).unwrap();
+    assert_eq!(
+        movement_fuel_cost(content(), &input, &id, 28),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(
+        movement_fuel_cost(content(), &input, &id, -1),
+        Err(SupplyError::Invalid)
+    );
+    assert_eq!(serde_json::to_value(&input).unwrap(), before);
+}
+
+/// Cases: land:4.48, airlog:49.12, airlog:49.13, airlog:49.19
+#[test]
+fn known_zero_prepared_weapon_cost_matches_canonical_results_and_keeps_chart_contract() {
+    let (original, id) = state();
+    let zero = &content().units.weapons["it.aa_heavy_i"];
+    let zero_rate = PreparedFuelRate::new(content(), 0);
+    assert!(zero_rate.fuel_for(7).is_none());
+    let positive = &content().units.weapons["it.cv33"];
+    assert!(positive.fuel_rate.is_some_and(|rate| rate > 0));
+    for name in [
+        "it.tobruk_garrison.4th_tobruk_cd_arty_group",
+        "it.tobruk_garrison.5th_tobruk_cd_arty_group",
+    ] {
+        let authored: UnitId = name.into();
+        for trucks in [
+            Trucks::default(),
+            Trucks {
+                light: 1,
+                ..Trucks::default()
+            },
+        ] {
+            let mut input = original.clone();
+            input.land.units.get_mut(&authored).unwrap().trucks = trucks;
+            let before = serde_json::to_vec(&input).unwrap();
+            let prepared = PreparedMovementFuel::new(content(), &input, &authored)
+                .expect("authored zero-rate weapon pricing must be prepared");
+            for quarters in [-1, 0, 1, 4, 5, 28, 196, 200, 204, 396, i32::MAX] {
+                assert_eq!(
+                    prepared.movement_cost(&input, quarters),
+                    Some(movement_fuel_cost(content(), &input, &authored, quarters))
+                );
+            }
+            assert_eq!(serde_json::to_vec(&input).unwrap(), before);
+        }
+    }
+    for (count, mixed) in [(2, false), (2, true), (-1, false), (i32::MAX, true)] {
+        for trucks in [
+            Trucks::default(),
+            Trucks {
+                heavy: 1,
+                ..Trucks::default()
+            },
+        ] {
+            let mut input = original.clone();
+            let mut points = vec![WeaponPoints {
+                weapon: zero.id.clone(),
+                n: count,
+            }];
+            if mixed {
+                points.push(WeaponPoints {
+                    weapon: positive.id.clone(),
+                    n: count,
+                });
+            }
+            let unit = input.land.units.get_mut(&id).unwrap();
+            unit.toe = Some(Toe::Weapons(points));
+            unit.trucks = trucks;
+            let before = serde_json::to_vec(&input).unwrap();
+            let prepared = PreparedMovementFuel::new(content(), &input, &id)
+                .expect("resolved weapon rates must be prepared");
+            for quarters in [-1, 0, 1, 4, 5, 28, 196, 200, 204, 396, i32::MAX] {
+                let canonical = movement_fuel_cost(content(), &input, &id, quarters);
+                assert_eq!(prepared.movement_cost(&input, quarters), Some(canonical));
+            }
+            if count < 0 {
+                assert_eq!(
+                    prepared.movement_cost(&input, 28),
+                    Some(Err(SupplyError::Invalid))
+                );
+            }
+            if mixed && count == i32::MAX {
+                assert_eq!(
+                    prepared.movement_cost(&input, 28),
+                    Some(Err(SupplyError::Invalid))
+                );
+            }
+            assert_eq!(serde_json::to_vec(&input).unwrap(), before);
+        }
+    }
+    let mut input = original.clone();
+    input.land.units.get_mut(&id).unwrap().toe = Some(Toe::Weapons(vec![WeaponPoints {
+        weapon: zero.id.clone(),
+        n: 2,
+    }]));
+    let before = serde_json::to_vec(&input).unwrap();
+    let mut unknown = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    unknown.units.weapons.get_mut(&zero.id).unwrap().fuel_rate = None;
+    assert!(PreparedMovementFuel::new(&unknown, &input, &id).is_none());
+    assert_eq!(
+        movement_fuel_cost(&unknown, &input, &id, 28),
+        Err(SupplyError::Unsupported {
+            case: "airlog:49.12"
+        })
+    );
+    unknown.units.weapons.remove(&zero.id).unwrap();
+    assert!(PreparedMovementFuel::new(&unknown, &input, &id).is_none());
+    assert_eq!(
+        movement_fuel_cost(&unknown, &input, &id, 28),
+        Err(SupplyError::Unsupported { case: "land:4.48" })
+    );
+    let mut invalid_rate = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    invalid_rate
+        .units
+        .weapons
+        .get_mut(&zero.id)
+        .unwrap()
+        .fuel_rate = Some(-1);
+    let prepared = PreparedMovementFuel::new(&invalid_rate, &input, &id)
+        .expect("resolved invalid rate must preserve visited pricing error");
+    let expected = Err(SupplyError::Unsupported {
+        case: "airlog:49.19",
+    });
+    assert_eq!(movement_fuel_cost(&invalid_rate, &input, &id, 28), expected);
+    assert_eq!(prepared.movement_cost(&input, 28), Some(expected));
+    assert_eq!(serde_json::to_vec(&input).unwrap(), before);
+}

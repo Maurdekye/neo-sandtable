@@ -270,6 +270,10 @@ pub fn movement_fuel_cost(
         if n < 0 {
             return Err(SupplyError::Invalid);
         }
+        // An explicit zero rate means no organic transport, not a missing chart entry.
+        if rate == 0 {
+            return Ok(0);
+        }
         content
             .tables
             .airlog
@@ -1260,6 +1264,7 @@ pub(crate) fn query_withdrawal_history_sites(
 const PREPARED_FUEL_ROWS: [i32; 13] = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45];
 
 pub(super) struct PreparedFuelRate {
+    zero_rate: bool,
     whole_fifty: Option<FuelTenths>,
     cells: [Option<FuelTenths>; 13],
 }
@@ -1268,6 +1273,7 @@ impl PreparedFuelRate {
     fn new(content: &CnaContent, rate: i32) -> Self {
         let table = &content.tables.airlog.fuel_consumption;
         Self {
+            zero_rate: rate == 0,
             whole_fifty: table.printed(rate, 50),
             cells: PREPARED_FUEL_ROWS.map(|cp| table.printed(rate, cp)),
         }
@@ -1303,6 +1309,9 @@ impl PreparedFuelRate {
     fn cost(&self, cp: i32, count: i32) -> Result<i32, SupplyError> {
         if count < 0 {
             return Err(SupplyError::Invalid);
+        }
+        if self.zero_rate {
+            return Ok(0);
         }
         self.fuel_for(cp)
             .ok_or(SupplyError::Unsupported {
