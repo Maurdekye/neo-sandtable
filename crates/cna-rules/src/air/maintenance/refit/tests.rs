@@ -18,6 +18,17 @@ fn limits() -> BTreeMap<SgsuId, u32> {
     BTreeMap::from([(SgsuId("a".into()), 3), (SgsuId("b".into()), 3)])
 }
 
+/// Cases: airlog:36.5, airlog:38.36
+#[test]
+fn legacy_receipt_has_no_entitlement_and_retains_its_serialized_shape() {
+    let legacy = serde_json::json!({
+        "period": period(), "cohort": cohort("a", "first", &["p1"]), "successful": [],
+    });
+    let restored: RefitReceipt = serde_json::from_value(legacy.clone()).unwrap();
+    assert!(restored.stores_entitlement.is_none());
+    assert_eq!(serde_json::to_value(restored).unwrap(), legacy);
+}
+
 /// Cases: airlog:38.33, airlog:38.36
 /// Interpretations: interp:airlog-0022
 #[test]
@@ -27,6 +38,7 @@ fn failed_attempts_consume_period_capacity_and_cannot_retry_at_another_servicer(
         period: period(),
         cohort: cohort("a", "first", &["p1", "p2"]),
         successful: BTreeSet::new(),
+        stores_entitlement: None,
     }];
     let before = serde_json::to_vec(&prior).unwrap();
     let one = account_refit(
@@ -81,6 +93,7 @@ fn nationality_partitions_share_one_squadron_store_and_split_is_exact_unsupporte
         period: period(),
         cohort: partitions[0].clone(),
         successful: BTreeSet::new(),
+        stores_entitlement: None,
     }];
     assert!(
         account_refit(period(), &paid, &partitions[1..], &limits())
@@ -125,6 +138,7 @@ fn success_priority_keeps_owner_order_and_rejects_duplicate_or_excess_results() 
         period: period(),
         cohort: cohort("a", "first", &["p1"]),
         successful: BTreeSet::from([PlaneId("unattempted".into())]),
+        stores_entitlement: None,
     };
     assert!(matches!(
         account_refit(period(), &[bad], &[], &limits()),
@@ -187,6 +201,7 @@ fn standalone_receipts_checkpoint_with_structured_source_and_no_dues_or_load_def
                 period: period(),
                 cohort: cohort("a", "first", &["p1"]),
                 successful: BTreeSet::new(),
+                stores_entitlement: None,
             }],
         )]),
         debits: BTreeMap::from([(

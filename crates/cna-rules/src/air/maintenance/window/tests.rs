@@ -212,6 +212,241 @@ fn finish_game(game: &mut Game<Cna>) {
     game.rng = rng.state();
 }
 
+fn offmap_game(pay_dues: bool) -> Game<Cna> {
+    let mut state = base(false);
+    let site = FacilityId("airfield_deversoir".into());
+    let paid = dues_stage(period(&state).unwrap()).unwrap();
+    inventory::update(content(), &mut state.air, |runtime| {
+        for s in runtime
+            .sgsus
+            .values_mut()
+            .filter(|s| owned(&s.force, Side::Axis))
+        {
+            s.position = SgsuPosition::Facility(site.clone());
+            if !pay_dues {
+                s.stores_paid_game_turn = Some(paid.game_turn);
+                s.fuel_water_paid = Some(paid);
+            }
+        }
+        for p in runtime
+            .aircraft
+            .values_mut()
+            .filter(|p| p.squadron.as_deref() == Some("axis.refit"))
+        {
+            p.facility = Some(site.0.clone());
+        }
+        Ok(())
+    })
+    .unwrap();
+    state
+        .logistics
+        .air_dumps
+        .get_mut("refit.stock")
+        .unwrap()
+        .facility = site;
+    let mut rng = CampaignRng::from_seed([41; 32]);
+    enter(
+        content(),
+        &mut state,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut Vec::new(),
+        },
+        false,
+    )
+    .unwrap();
+    Game {
+        state,
+        rng: rng.state(),
+    }
+}
+
+fn offmap_plan(state: &State, pay_dues: bool) -> RefitPlan {
+    let mut selected = plan(state, pay_dues);
+    if pay_dues {
+        selected.draws[0].draws[0].amount.stores = StoresPoints::new(1);
+    } else {
+        selected.draws.clear();
+    }
+    selected
+}
+
+/// Cases: airlog:35.14, airlog:36.5, airlog:38.33, airlog:38.36, land:3.6
+#[test]
+fn offmap_refit_records_logical_stores_and_only_spends_finite_dues() {
+    for pay_dues in [false, true] {
+        let mut game = offmap_game(pay_dues);
+        if !pay_dues {
+            game.state.logistics.air_dumps.clear();
+        }
+        let before = game.clone();
+        let action = serde_json::to_value(offmap_plan(&game.state, pay_dues)).unwrap();
+        let one = respond(&game, Side::Axis, action);
+        assert_eq!(one.rng, before.rng);
+        assert_eq!(
+            serde_json::to_value(&one.state.logistics).unwrap(),
+            serde_json::to_value(&before.state.logistics).unwrap()
+        );
+        assert_eq!(
+            one.state.air.runtime.aircraft,
+            before.state.air.runtime.aircraft
+        );
+        assert!(one.state.air.runtime.maintenance.receipts.is_empty());
+        let restored: Game<Cna> =
+            serde_json::from_slice(&serde_json::to_vec(&one).unwrap()).unwrap();
+        let mut a = respond(&one, Side::Commonwealth, Value::Null);
+        let mut b = respond(&restored, Side::Commonwealth, Value::Null);
+        finish_game(&mut a);
+        finish_game(&mut b);
+        assert_eq!(
+            serde_json::to_vec(&a).unwrap(),
+            serde_json::to_vec(&b).unwrap()
+        );
+        let receipt = &a.state.air.runtime.maintenance.receipts[&Side::Axis][0];
+        assert_eq!(
+            receipt.stores_entitlement,
+            Some(refit::SourceEntitlement {
+                facility: FacilityId("airfield_deversoir".into()),
+                stores: StoresPoints::new(1),
+            })
+        );
+        if pay_dues {
+            assert_eq!(
+                a.state.logistics.air_dumps["refit.stock"].supplies,
+                Supplies {
+                    fuel: 3,
+                    stores: 7,
+                    water: 3,
+                    ammo: 0
+                }
+            );
+        } else {
+            assert_eq!(
+                serde_json::to_value(&a.state.logistics).unwrap(),
+                serde_json::to_value(&before.state.logistics).unwrap()
+            );
+            assert!(
+                a.state
+                    .air
+                    .runtime
+                    .maintenance
+                    .debits
+                    .values()
+                    .all(Vec::is_empty)
+            );
+        }
+        for id in &receipt.cohort.priority {
+            assert_eq!(
+                a.state.air.runtime.aircraft[id].refitted,
+                receipt.successful.contains(id)
+            );
+            assert!(!a.state.air.runtime.aircraft[id].fuelled);
+            assert!(!a.state.air.runtime.aircraft[id].armed);
+        }
+        let completed = serde_json::to_vec(&a).unwrap();
+        finish_game(&mut a);
+        assert_eq!(serde_json::to_vec(&a).unwrap(), completed);
+    }
+}
+
+/// Cases: airlog:36.5, airlog:38.36, land:3.6
+#[test]
+fn offmap_private_service_and_provenance_preserve_enemy_streams_through_advance() {
+    let a = offmap_game(true);
+    let mut b = a.clone();
+    b.state
+        .logistics
+        .air_dumps
+        .get_mut("refit.stock")
+        .unwrap()
+        .supplies
+        .stores += 3;
+    assert_indistinguishable(
+        &Cna::dev(),
+        content(),
+        &a.state,
+        &b.state,
+        Side::Commonwealth,
+    );
+    let act = command(
+        &a,
+        Side::Axis,
+        serde_json::to_value(offmap_plan(&a.state, true)).unwrap(),
+    );
+    assert_action_indistinguishable(&Cna::dev(), content(), &a, &b, &act, Side::Commonwealth);
+    let pass = command(&a, Side::Axis, Value::Null);
+    assert_actions_indistinguishable(
+        &Cna::dev(),
+        content(),
+        (&a, &act),
+        (&a, &pass),
+        Side::Commonwealth,
+    );
+    let serviced = respond(
+        &respond(
+            &a,
+            Side::Axis,
+            serde_json::to_value(offmap_plan(&a.state, true)).unwrap(),
+        ),
+        Side::Commonwealth,
+        Value::Null,
+    );
+    let passed = respond(
+        &respond(&a, Side::Axis, Value::Null),
+        Side::Commonwealth,
+        Value::Null,
+    );
+    assert_action_indistinguishable(
+        &Cna::dev(),
+        content(),
+        &serviced,
+        &passed,
+        &Command::Advance,
+        Side::Commonwealth,
+    );
+}
+
+/// Cases: airlog:36.5, airlog:38.36, airlog:34.0
+#[test]
+fn late_offmap_inventory_failure_rolls_back_state_rng_and_entitlement() {
+    let game = offmap_game(true);
+    let one = respond(
+        &game,
+        Side::Axis,
+        serde_json::to_value(offmap_plan(&game.state, true)).unwrap(),
+    );
+    let mut accepted = respond(&one, Side::Commonwealth, Value::Null);
+    // Trusted mirror corruption is discovered by canonical commit after dice.
+    accepted
+        .state
+        .air
+        .forces
+        .get_mut("axis")
+        .unwrap()
+        .planes
+        .values_mut()
+        .next()
+        .unwrap()
+        .total += 1;
+    let before = serde_json::to_vec(&accepted).unwrap();
+    let mut rng = CampaignRng::from_state(&accepted.rng);
+    let mut events = Vec::new();
+    assert!(
+        finish(
+            content(),
+            &mut accepted.state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(rng.state(), accepted.rng);
+    assert!(events.is_empty());
+    assert_eq!(serde_json::to_vec(&accepted).unwrap(), before);
+}
+
 fn rejected_response(content: &CnaContent, game: &Game<Cna>, action: Value) -> Rejection {
     let before = serde_json::to_vec(game).unwrap();
     let rejection = match evaluate(
@@ -1107,10 +1342,16 @@ fn actual_foreign_servicer_uses_aircraft_nationality_and_damaged_active_capacity
     })
     .unwrap();
     let before = serde_json::to_vec(&game).unwrap();
-    assert!(
-        matches!(validate(content(), &game.state, Side::Axis, current, &plan(&game.state, true)),
-        Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "airlog:36.5")
-    );
+    assert!(matches!(
+        validate(
+            content(),
+            &game.state,
+            Side::Axis,
+            current,
+            &plan(&game.state, true)
+        ),
+        Err(Rejection::Illegal { .. })
+    ));
     assert_eq!(serde_json::to_vec(&game).unwrap(), before);
 }
 
@@ -1136,7 +1377,7 @@ fn cohort_servicers(space: &ActionSpace) -> Vec<String> {
 
 /// Cases: airlog:36.5, airlog:36.14, airlog:36.17, airlog:43.21, airlog:44.14, airlog:44.16, land:3.6
 #[test]
-fn finite_consumer_domain_zero_and_offmap_exclusion_preserve_other_domains_and_recovery() {
+fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_recovery() {
     let game = opened(false);
     let current = period(&game.state).unwrap();
     let original = space(content(), &game.state, Side::Axis, current).unwrap();
@@ -1174,7 +1415,9 @@ fn finite_consumer_domain_zero_and_offmap_exclusion_preserve_other_domains_and_r
         .facilities
         .iter()
         .find_map(|(id, s)| {
-            (s.properties(content(), id).unwrap().theatre == FacilityTheatre::CommonwealthOffMap)
+            (id.0 == "airfield_deversoir"
+                && s.properties(content(), id).unwrap().theatre
+                    == FacilityTheatre::CommonwealthOffMap)
                 .then(|| id.clone())
         })
         .unwrap();
@@ -1223,18 +1466,33 @@ fn finite_consumer_domain_zero_and_offmap_exclusion_preserve_other_domains_and_r
         .unwrap();
         assert_eq!(rng.state(), changed.rng);
         let domain = space(content(), &changed.state, Side::Axis, current).unwrap();
-        assert_eq!(cohort_maximum(&domain), 0);
-        assert!(cohort_servicers(&domain).is_empty());
+        assert_eq!(
+            cohort_maximum(&domain),
+            if exempt {
+                u32::try_from(planes).unwrap()
+            } else {
+                0
+            }
+        );
+        assert_eq!(
+            cohort_servicers(&domain),
+            if exempt {
+                vec!["axis.foreign", "axis.refit"]
+            } else {
+                Vec::new()
+            }
+        );
         assert!(domain.check(&Value::Null).is_ok());
         assert!(
             domain
                 .check(&serde_json::to_value(RefitPlan::default()).unwrap())
                 .is_ok()
         );
-        assert!(
+        assert_eq!(
             domain
                 .check(&serde_json::to_value(plan(&changed.state, true)).unwrap())
-                .is_err()
+                .is_ok(),
+            exempt
         );
         let ActionSchema::Record { fields: old } = &original.schema else {
             unreachable!()
@@ -1303,10 +1561,7 @@ fn finite_consumer_domain_zero_and_offmap_exclusion_preserve_other_domains_and_r
         if exempt {
             assert_eq!(
                 refusal,
-                Rejection::Engine(unsupported(
-                    "airlog:36.5",
-                    "unlimited/exempt aircraft refit requires reviewed consumer extension"
-                ))
+                illegal("invalid or insufficient own finite refit stock allocation")
             );
         } else {
             assert_eq!(refusal, illegal("own refit facility is unavailable"));

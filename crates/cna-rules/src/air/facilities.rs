@@ -93,6 +93,107 @@ pub struct FacilityProperties {
     pub theatre: FacilityTheatre,
 }
 
+/// Derived from exact scenario source pairs, never a stored off-map flag.
+/// Only the reviewed actual-SGSU refit consumer uses this classification.
+/// Cases: airlog:36.5, airlog:36.53, scen:60.5
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::air) enum MaintenanceSource {
+    Finite,
+    OffMap36_5,
+}
+
+impl FacilityProperties {
+    /// Call only on properties returned by the canonical facility resolver.
+    /// Malta, Mediterranean location boxes and Ethiopia gain no consumer here.
+    /// Cases: airlog:36.5, airlog:36.53, scen:60.5
+    pub(in crate::air) fn maintenance_source(&self, id: &FacilityId) -> MaintenanceSource {
+        let Location::OffMap { id: location } = &self.location else {
+            return MaintenanceSource::Finite;
+        };
+        let known = match self.kind {
+            FacilityKind::FlyingBoatBasin => matches!(
+                (id.0.as_str(), location.as_str()),
+                ("flying_boat_basin_port_said", "offmap_port_said")
+            ),
+            FacilityKind::Airfield => matches!(
+                (id.0.as_str(), location.as_str()),
+                ("airfield_abu_seier", "offmap_abu_seier")
+                    | ("airfield_ismailia", "offmap_ismailia")
+                    | ("airfield_fayid", "offmap_fayid")
+                    | ("airfield_deversoir", "offmap_deversoir")
+                    | ("airfield_kabrit", "offmap_kabrit")
+                    | (
+                        "airfield_tripoli_tunisia_boxes@box_tripolitania",
+                        "box_tripolitania"
+                    )
+                    | ("airfield_tripoli_tunisia_boxes@box_tripoli", "box_tripoli")
+                    | ("airfield_tripoli_tunisia_boxes@box_gabes", "box_gabes")
+                    | ("airfield_tripoli_tunisia_boxes@box_tunis", "box_tunis")
+            ),
+            _ => false,
+        };
+        if known {
+            MaintenanceSource::OffMap36_5
+        } else {
+            MaintenanceSource::Finite
+        }
+    }
+}
+
+#[cfg(test)]
+mod maintenance_source_tests {
+    use super::*;
+
+    /// Cases: airlog:36.5, airlog:36.53, airlog:36.3, scen:60.5
+    #[test]
+    fn only_exact_canonical_source_pairs_have_aircraft_supply_entitlement() {
+        let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let sources = catalog(&content).unwrap().facilities;
+        let ids = [
+            "flying_boat_basin_port_said",
+            "airfield_abu_seier",
+            "airfield_ismailia",
+            "airfield_fayid",
+            "airfield_deversoir",
+            "airfield_kabrit",
+            "airfield_tripoli_tunisia_boxes@box_tripolitania",
+            "airfield_tripoli_tunisia_boxes@box_tripoli",
+            "airfield_tripoli_tunisia_boxes@box_gabes",
+            "airfield_tripoli_tunisia_boxes@box_tunis",
+        ];
+        for name in ids {
+            let source = sources.iter().find(|f| f.id == name).unwrap();
+            let id = FacilityId(name.into());
+            let site = FacilityState {
+                incarnation: None,
+                origin: FacilityOrigin::Scenario,
+                owner: source.side,
+                current_capacity: source
+                    .limit
+                    .map_or(FacilityCapacity::Unlimited, FacilityCapacity::Levels),
+                upgraded_kind: None,
+                project_unavailable: false,
+            };
+            let props = site.properties(&content, &id).unwrap();
+            assert_eq!(props.maintenance_source(&id), MaintenanceSource::OffMap36_5);
+            if name == "flying_boat_basin_port_said" {
+                assert!(props.kind.accepts(true));
+                assert!(!props.kind.accepts(false));
+            }
+            let mut wrong = props.clone();
+            wrong.location = Location::OffMap {
+                id: "box_italy".into(),
+            };
+            assert_eq!(wrong.maintenance_source(&id), MaintenanceSource::Finite);
+            assert_eq!(
+                props.maintenance_source(&FacilityId("unverified.site".into())),
+                MaintenanceSource::Finite
+            );
+        }
+        assert!(!sources.iter().any(|s| s.id.contains("ethiopia")));
+    }
+}
+
 /// Private physical-site identity, distinct from its stable map/catalog ID.
 /// Restored values are validated by the canonical inventory, never authority.
 /// Cases: land:24.76, land:24.79, airlog:36.2, airlog:36.15

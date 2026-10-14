@@ -19,7 +19,7 @@ use super::{
 };
 use crate::air::{
     designation::{self, Family},
-    facilities::{FacilityCapacity, FacilityId, FacilityTheatre},
+    facilities::{FacilityCapacity, FacilityId, FacilityTheatre, MaintenanceSource},
     inventory,
     sgsu::{SgsuId, SgsuOpStage, SgsuPosition},
     state::PlaneId,
@@ -37,7 +37,7 @@ use crate::{
 pub const TACTICAL: &str = "opstage.land_support_air.maintenance";
 pub const STRATEGIC: &str = "strategic_air_recovery.maintenance";
 pub const KIND: &str = "cna.air.finite_refit";
-const MISSING: &str = "fuel/gun/ordnance preparation, exempt facility consumers (airlog:36.5, airlog:43.21, airlog:44.14, airlog:44.16), cross-servicer Stores allocation, mixed-method cohorts and sandstorm refit loss selection";
+const MISSING: &str = "fuel/gun/ordnance preparation, no-SGSU facility consumers (airlog:43.21, airlog:44.14, airlog:44.16), cross-servicer Stores allocation, mixed-method cohorts and sandstorm refit loss selection";
 
 fn unsupported(case: &str, detail: &str) -> EngineError {
     EngineError::Unsupported {
@@ -145,8 +145,9 @@ fn finite_cohort_servicers(
             .ok_or_else(|| invalid("missing SGSU site"))?;
         let props = site.properties(content, site_id)?;
         if site.operational()
-            && props.theatre == FacilityTheatre::Africa
-            && matches!(props.location, Location::Hex { .. })
+            && ((props.theatre == FacilityTheatre::Africa
+                && matches!(props.location, Location::Hex { .. }))
+                || props.maintenance_source(site_id) == MaintenanceSource::OffMap36_5)
         {
             ids.push(id.clone());
         }
@@ -326,7 +327,7 @@ fn space(
         json!({"planes": roster, "sgsus": consumers, "air_dumps": holdings,
             "fuel_draw_unit": "tenths of a Fuel Point",
             "scope": "Refit and SGSU dues only; no aircraft fuel or ammunition loading.",
-            "development_limitation": "Cohort servicers cover operational Africa/on-map SGSUs only. Source-backed exempt refit under airlog:36.5, airlog:43.21, airlog:44.14 and airlog:44.16 remains unimplemented; exclusion grants no supply or flight rights."}),
+            "development_limitation": "Refit covers operational on-map SGSUs and the verified airlog:36.5 SGSU facilities; aircraft Stores entitlement never pays SGSU dues. No-SGSU consumers under airlog:43.21, airlog:44.14 and airlog:44.16 and aircraft fuel/ammunition loading remain unimplemented."}),
     ))
 }
 
@@ -479,6 +480,45 @@ struct Validated {
     prior: BTreeMap<SupplySource, FuelTenths>,
     groups: Vec<(refit::RefitCohort, Nationality)>,
     paid: SgsuOpStage,
+    entitlements: BTreeMap<String, refit::SourceEntitlement>,
+}
+
+/// Resolve aircraft Stores only, leaving actual SGSU operation dues finite.
+/// Caller has already checked ownership and the operational compatible site.
+/// Cases: airlog:36.5, airlog:38.36
+fn refit_stores_supply(
+    content: &CnaContent,
+    state: &State,
+    servicer: &SgsuId,
+) -> Result<refit::ComponentSupply, EngineError> {
+    let s = state
+        .air
+        .runtime
+        .sgsus
+        .get(servicer)
+        .ok_or_else(|| invalid("refit Stores SGSU missing"))?;
+    let SgsuPosition::Facility(id) = &s.position else {
+        return Err(unsupported(
+            "airlog:36.17",
+            "refit Stores needs exact facility SGSU",
+        ));
+    };
+    let site = state
+        .air
+        .runtime
+        .facilities
+        .get(id)
+        .ok_or_else(|| invalid("refit Stores site missing"))?;
+    let props = site.properties(content, id)?;
+    Ok(match props.maintenance_source(id) {
+        MaintenanceSource::Finite => refit::ComponentSupply::Finite,
+        MaintenanceSource::OffMap36_5 => {
+            refit::ComponentSupply::Entitled(refit::SourceEntitlement {
+                facility: id.clone(),
+                stores: StoresPoints::new(1),
+            })
+        }
+    })
 }
 
 /// Check determinate owner choices before reporting a missing procedure. This
@@ -819,7 +859,12 @@ fn legal_choices(
         if split_squadrons.contains(squadron) {
             continue;
         }
-        if let Some(demand) = demands.get_mut(id) {
+        if let Some(demand) = demands.get_mut(id)
+            && matches!(
+                refit_stores_supply(content, state, id)?,
+                refit::ComponentSupply::Finite
+            )
+        {
             demand.stores = StoresPoints::new(
                 demand
                     .stores
@@ -988,8 +1033,9 @@ fn validate(
         if !site.operational() {
             return Err(illegal("own refit facility is unavailable"));
         }
-        if props.theatre != FacilityTheatre::Africa
-            || !matches!(props.location, Location::Hex { .. })
+        if (props.theatre != FacilityTheatre::Africa
+            || !matches!(props.location, Location::Hex { .. }))
+            && props.maintenance_source(site_id) != MaintenanceSource::OffMap36_5
         {
             return Err(unsupported(
                 "airlog:36.5",
@@ -1140,6 +1186,7 @@ fn validate(
         }
     }
     let accounting = refit::account_refit(current, &previous, &plan.cohorts, &limits)?;
+    let mut entitlements = BTreeMap::new();
     for squadron in accounting.newly_charged_squadrons {
         let id = &plan
             .cohorts
@@ -1147,14 +1194,23 @@ fn validate(
             .find(|c| c.assigned_squadron == squadron && !c.priority.is_empty())
             .ok_or_else(|| invalid("charged squadron absent from plan"))?
             .servicer;
-        let demand = demands.entry(id.clone()).or_default();
-        demand.stores = StoresPoints::new(
-            demand
-                .stores
-                .get()
-                .checked_add(1)
-                .ok_or_else(|| invalid("refit Stores overflow"))?,
-        );
+        match refit_stores_supply(content, state, id)? {
+            refit::ComponentSupply::Finite => {
+                let demand = demands.entry(id.clone()).or_default();
+                demand.stores = StoresPoints::new(
+                    demand
+                        .stores
+                        .get()
+                        .checked_add(1)
+                        .ok_or_else(|| invalid("refit Stores overflow"))?,
+                );
+            }
+            refit::ComponentSupply::Entitled(receipt) => {
+                // Keep the existing consumer/draw validation even at zero cost.
+                demands.entry(id.clone()).or_default();
+                entitlements.insert(squadron, receipt);
+            }
+        }
     }
     let mut prior = BTreeMap::<SupplySource, FuelTenths>::new();
     for receipt in state
@@ -1229,6 +1285,7 @@ fn validate(
         prior: BTreeMap::new(),
         groups,
         paid,
+        entitlements,
     })
 }
 
@@ -1354,6 +1411,7 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
     let mut results = BTreeMap::new();
     for (side, v) in &validated {
         let mut receipts = Vec::new();
+        let mut recorded_entitlements = BTreeSet::new();
         for (cohort, nation) in &v.groups {
             let assigned = cohort.servicer.0 == cohort.assigned_squadron;
             let successful = match cohort.method {
@@ -1385,6 +1443,11 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
                 period: current,
                 cohort: cohort.clone(),
                 successful,
+                stores_entitlement: v
+                    .entitlements
+                    .get(&cohort.assigned_squadron)
+                    .filter(|_| recorded_entitlements.insert(cohort.assigned_squadron.clone()))
+                    .cloned(),
             });
         }
         results.insert(*side, receipts);

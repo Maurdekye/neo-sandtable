@@ -2,12 +2,16 @@
 //! No runtime field, decision handler, RNG, debit or readiness change here.
 use std::collections::{BTreeMap, BTreeSet};
 
-use cna_core::{engine::EngineError, quantity::FuelTenths};
+use cna_core::{
+    engine::EngineError,
+    quantity::{FuelTenths, StoresPoints},
+};
 use cna_protocol::Side;
 use serde::{Deserialize, Serialize};
 
 use super::invalid;
 use crate::air::{
+    facilities::FacilityId,
     sgsu::{SgsuId, SgsuOpStage},
     state::PlaneId,
 };
@@ -105,6 +109,24 @@ pub struct RefitReceipt {
     pub period: MaintenancePeriod,
     pub cohort: RefitCohort,
     pub successful: BTreeSet<PlaneId>,
+    /// Absent in legacy and finite receipts: no source exemption is inferred.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(in crate::air) stores_entitlement: Option<SourceEntitlement>,
+}
+
+/// The logical refit Stores requirement satisfied at an exact 36.5 site.
+/// This is not stock, an SGSU dues payment or a future service credit.
+/// Cases: airlog:36.5, airlog:38.36
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(in crate::air) struct SourceEntitlement {
+    pub facility: FacilityId,
+    pub stores: StoresPoints,
+}
+
+pub(super) enum ComponentSupply {
+    Finite,
+    Entitled(SourceEntitlement),
 }
 
 /// Trusted debit history for the existing Air supply facade. A vector avoids
@@ -161,6 +183,7 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
         return Err(invalid("maintenance answer/finish markers disagree"));
     }
     let mut attempted = BTreeSet::new();
+    let mut entitled_squadrons = BTreeSet::new();
     for receipt in window.receipts.values().flatten() {
         receipt.period.check()?;
         if period_key(receipt.period) > period_key(period) {
@@ -174,6 +197,17 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
             || !receipt.successful.is_subset(&ids)
         {
             return Err(invalid("invalid maintenance outcome IDs"));
+        }
+        if let Some(entitlement) = &receipt.stores_entitlement
+            && (entitlement.facility.0.is_empty()
+                || entitlement.stores.get() != 1
+                || ids.is_empty()
+                || !entitled_squadrons.insert((
+                    period_key(receipt.period),
+                    &receipt.cohort.assigned_squadron,
+                )))
+        {
+            return Err(invalid("invalid or duplicate refit Stores entitlement"));
         }
         for id in ids {
             if !attempted.insert((period_key(receipt.period), id)) {
