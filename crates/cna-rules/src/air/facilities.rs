@@ -889,13 +889,14 @@ mod work_source_tests {
                 FacilityKind::FlyingBoatBasin,
             ),
         ] {
-            // Explicit source-valid fixtures, not constructed identity generation.
+            // Restore an already constructed legacy fixture, not a new-site command.
+            // Its unknown incarnation grants no Engineering project authority.
             let id = FacilityId(format!("test.work.{kind:?}"));
-            inventory::update(&content, &mut state.air, |runtime| {
-                runtime.facilities.insert(id.clone(), strip(kind));
-                Ok(())
-            })
-            .unwrap();
+            state.air.runtime.facilities.insert(id.clone(), strip(kind));
+            inventory::check(&content, &state.air).unwrap();
+            state.air = serde_json::from_slice(&serde_json::to_vec(&state.air).unwrap()).unwrap();
+            inventory::check(&content, &state.air).unwrap();
+            assert_eq!(state.air.runtime.facilities[&id].incarnation, None);
             let work = FacilityWork::Upgrade { id: id.clone() };
             let before = serde_json::to_vec(&state).unwrap();
             let properties = work
@@ -947,33 +948,40 @@ mod work_source_tests {
         let (content, a) = fixture();
         for fact in 0..3 {
             let mut b = a.clone();
-            inventory::update(&content, &mut b.air, |runtime| {
-                match fact {
-                    0 => {
-                        runtime.facilities.insert(
-                            FacilityId("test.work.private".into()),
-                            strip(FacilityKind::LandingStrip),
-                        );
+            if fact == 0 {
+                // Restore a private legacy site; generic updates cannot create sites.
+                let id = FacilityId("test.work.private".into());
+                b.air
+                    .runtime
+                    .facilities
+                    .insert(id.clone(), strip(FacilityKind::LandingStrip));
+                inventory::check(&content, &b.air).unwrap();
+                b.air = serde_json::from_slice(&serde_json::to_vec(&b.air).unwrap()).unwrap();
+                inventory::check(&content, &b.air).unwrap();
+                assert_eq!(b.air.runtime.facilities[&id].incarnation, None);
+            } else {
+                inventory::update(&content, &mut b.air, |runtime| {
+                    match fact {
+                        1 => {
+                            runtime
+                                .facilities
+                                .get_mut(&FacilityId("airfield_benina".into()))
+                                .unwrap()
+                                .current_capacity = FacilityCapacity::Levels(2);
+                        }
+                        2 => {
+                            runtime
+                                .facilities
+                                .get_mut(&FacilityId("airfield_benina".into()))
+                                .unwrap()
+                                .project_unavailable = true;
+                        }
+                        _ => unreachable!(),
                     }
-                    1 => {
-                        runtime
-                            .facilities
-                            .get_mut(&FacilityId("airfield_benina".into()))
-                            .unwrap()
-                            .current_capacity = FacilityCapacity::Levels(2);
-                    }
-                    2 => {
-                        runtime
-                            .facilities
-                            .get_mut(&FacilityId("airfield_benina".into()))
-                            .unwrap()
-                            .project_unavailable = true;
-                    }
-                    _ => unreachable!(),
-                }
-                Ok(())
-            })
-            .unwrap();
+                    Ok(())
+                })
+                .unwrap();
+            }
             assert_indistinguishable(&Cna::dev(), &content, &a, &b, Side::Commonwealth);
         }
     }

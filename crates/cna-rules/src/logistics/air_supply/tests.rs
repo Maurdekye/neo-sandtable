@@ -62,16 +62,22 @@ fn exact_site_and_answering_owner_are_required_without_facility_owner_gate() {
     let (content, mut state, id) = fixture();
     let original = FacilityId("airfield_benina".into());
     let colocated = FacilityId("constructed.test-colocated".into());
+    // Arrange the existing legacy site before exercising the operational update.
+    let mut other = state.air.runtime.facilities[&original].clone();
+    other.owner = Side::Commonwealth;
+    let props = other.properties(&content, &original).unwrap();
+    other.origin = FacilityOrigin::Constructed {
+        kind: props.kind,
+        location: props.location,
+    };
+    state
+        .air
+        .runtime
+        .facilities
+        .insert(colocated.clone(), other);
+    inventory::check(&content, &state.air).unwrap();
     inventory::update(&content, &mut state.air, |runtime| {
-        let facility = runtime.facilities.get_mut(&original).unwrap();
-        facility.owner = Side::Commonwealth;
-        let props = facility.properties(&content, &original)?;
-        let mut other = facility.clone();
-        other.origin = FacilityOrigin::Constructed {
-            kind: props.kind,
-            location: props.location,
-        };
-        runtime.facilities.insert(colocated.clone(), other);
+        runtime.facilities.get_mut(&original).unwrap().owner = Side::Commonwealth;
         Ok(())
     })
     .unwrap();
