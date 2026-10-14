@@ -714,3 +714,234 @@ fn malformed_domains_defer_before_any_later_budget_refusal() {
         }
     }
 }
+
+/// Actual public CNA ingress, not a synthetic ActionSchema. This targets the
+/// labelled dev finite-consumer domain correction; it grants no exempt rights.
+/// Cases: airlog:35.14, airlog:36.5, airlog:38.33, scen:59.36
+#[test]
+fn actual_air_domain_with_own_planes_and_no_finite_consumer_answers_legally() {
+    use cna_core::{
+        dice::CampaignRng,
+        engine::{Command, Game, evaluate},
+    };
+    use cna_rules::{Cna, CnaContent, State, air::maintenance::window, seq::Block};
+
+    let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+    let mut state = State::new(&content).unwrap();
+    // Existing public Air fixtures close the unstarted setup before importing
+    // its source-backed unassigned pools. No aircraft or consumer is fabricated.
+    assert!(state.setup.tasks.is_empty());
+    assert!(state.air.squadrons.is_empty());
+    state.setup.closed = true;
+    // Limit unrelated ground projection work, retaining the complete Air state.
+    state.land.units.clear();
+    state.logistics.unit_supply.clear();
+    state.logistics.truck_pools.clear();
+    state.logistics.dumps.clear();
+    state.cursor.block = Block::OpStage;
+    state.cursor.index = Block::OpStage
+        .steps()
+        .iter()
+        .position(|step| step.anchor == window::TACTICAL)
+        .unwrap();
+    // Exercise the later-period no-consumer correction, not the first-stage bar.
+    state.cursor.op_stage = Some(2);
+    assert_ne!(
+        state.cursor.op_stage,
+        Some(content.scenario.meta.start.opstage)
+    );
+    state.cursor.entered = false;
+    state.turn.player_a = Some(Side::Axis);
+    let initial = Game::<Cna> {
+        state,
+        rng: CampaignRng::from_seed([41; 32]).state(),
+    };
+    let rules = Cna::dev();
+    let opened = evaluate(&rules, &content, &initial, &Command::Advance)
+        .unwrap()
+        .game;
+    assert_eq!(opened.rng, initial.rng);
+    assert!(opened.state.air.runtime.sgsus.is_empty());
+    let own_planes = opened
+        .state
+        .air
+        .runtime
+        .aircraft
+        .values()
+        .filter(|plane| plane.force == "axis")
+        .count();
+    assert!(own_planes > 0);
+    let pending = rules.pending(&content, &opened.state);
+    assert_eq!(pending.len(), 2);
+    for side in Side::ALL {
+        assert!(pending.iter().any(|request| {
+            request.kind == window::KIND && request.seat == SeatId::new(side, Role::Air)
+        }));
+    }
+    let request = pending
+        .iter()
+        .find(|request| request.seat == SeatId::new(Side::Axis, Role::Air))
+        .unwrap();
+    assert!(request.space.pass.is_some());
+    let context = request.space.context.as_ref().unwrap();
+    assert_eq!(context["planes"].as_object().unwrap().len(), own_planes);
+    assert!(context["sgsus"].as_object().unwrap().is_empty());
+    let ActionSchema::Record { fields } = &request.space.schema else {
+        panic!("actual maintenance domain must retain its structured plan");
+    };
+    // The consumer filter changes cohorts only. Dues still enumerate all own
+    // SGSUs; finite draws still enumerate all own dumps with the original limits.
+    // In this source-backed fixture there are no SGSUs, so both outer lists are
+    // empty without reducing any nested stock domain.
+    let dues = &fields
+        .iter()
+        .find(|field| field.name == "dues")
+        .unwrap()
+        .schema;
+    assert_eq!(dues, &list(choice(0), 0, 0));
+    let draws = &fields
+        .iter()
+        .find(|field| field.name == "draws")
+        .unwrap()
+        .schema;
+    let dump_ids: Vec<_> = context["air_dumps"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect();
+    let expected_draw = record(vec![
+        field(
+            "source",
+            record(vec![
+                field(
+                    "source",
+                    ActionSchema::Choice {
+                        options: vec![ChoiceOption {
+                            id: "air_dump".into(),
+                            label: "air_dump".into(),
+                            detail: None,
+                        }],
+                    },
+                    false,
+                ),
+                field(
+                    "id",
+                    ActionSchema::Choice {
+                        options: dump_ids
+                            .iter()
+                            .map(|id| ChoiceOption {
+                                id: id.clone(),
+                                label: id.clone(),
+                                detail: None,
+                            })
+                            .collect(),
+                    },
+                    false,
+                ),
+            ]),
+            false,
+        ),
+        field(
+            "amount",
+            record(vec![
+                field("fuel", integer(i64::from(i32::MAX)), false),
+                field("ammo", integer(0), false),
+                field("stores", integer(i64::from(i32::MAX)), false),
+                field("water", integer(i64::from(i32::MAX)), false),
+            ]),
+            false,
+        ),
+    ]);
+    assert_eq!(
+        draws,
+        &list(
+            record(vec![
+                field("servicer", choice(0), false),
+                field(
+                    "draws",
+                    list(expected_draw, 0, u32::try_from(dump_ids.len()).unwrap()),
+                    false
+                ),
+            ]),
+            0,
+            0
+        )
+    );
+    request.space.check(&Value::Null).unwrap();
+    let cohorts = &fields
+        .iter()
+        .find(|field| field.name == "cohorts")
+        .unwrap()
+        .schema;
+    let ActionSchema::List { item, min, max } = cohorts else {
+        panic!("actual cohorts must remain a list");
+    };
+    assert_eq!((*min, *max), (0, 0));
+    let ActionSchema::Record { fields } = item.as_ref() else {
+        panic!("cohort item must retain its structured fields");
+    };
+    let servicer = &fields
+        .iter()
+        .find(|field| field.name == "servicer")
+        .unwrap()
+        .schema;
+    let ActionSchema::Choice { options } = servicer else {
+        panic!("actual cohort servicers must be enumerated");
+    };
+    assert!(options.is_empty());
+    let opened_bytes = serde_json::to_vec(&opened).unwrap();
+    for epoch in [0, 7] {
+        for mode in [Mode::LegalRandom, Mode::PassWhenPossible] {
+            for attempt in 0..16 {
+                let response = answer(request, epoch, mode, attempt, &NoCandidates).unwrap();
+                assert_eq!(
+                    response,
+                    answer(request, epoch, mode, attempt, &NoCandidates).unwrap()
+                );
+                assert_eq!(
+                    serde_json::to_vec(&response).unwrap(),
+                    serde_json::to_vec(
+                        &legacy_answer(request, epoch, mode, attempt, &NoCandidates).unwrap()
+                    )
+                    .unwrap()
+                );
+                request.space.check(&response.action).unwrap();
+                if mode == Mode::PassWhenPossible {
+                    assert!(response.action.is_null());
+                }
+                if !response.action.is_null() {
+                    assert_eq!(response.action["cohorts"], json!([]));
+                    assert_eq!(response.action["dues"], json!([]));
+                    assert_eq!(response.action["draws"], json!([]));
+                }
+                let accepted = evaluate(&rules, &content, &opened, &Command::Respond(response))
+                    .unwrap()
+                    .game;
+                assert_eq!(accepted.rng, opened.rng);
+                assert_eq!(serde_json::to_vec(&opened).unwrap(), opened_bytes);
+                assert_eq!(
+                    serde_json::to_vec(&accepted.state.logistics).unwrap(),
+                    serde_json::to_vec(&opened.state.logistics).unwrap()
+                );
+                assert_eq!(
+                    serde_json::to_vec(&accepted.state.air.runtime.aircraft).unwrap(),
+                    serde_json::to_vec(&opened.state.air.runtime.aircraft).unwrap()
+                );
+                assert_eq!(
+                    serde_json::to_vec(&accepted.state.air.runtime.sgsus).unwrap(),
+                    serde_json::to_vec(&opened.state.air.runtime.sgsus).unwrap()
+                );
+                assert!(
+                    accepted
+                        .state
+                        .air
+                        .runtime
+                        .maintenance
+                        .closed
+                        .contains(&Side::Axis)
+                );
+            }
+        }
+    }
+}
