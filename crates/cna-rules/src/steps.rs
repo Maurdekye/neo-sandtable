@@ -42,6 +42,9 @@ impl Cna {
             crate::land::recovery::field::ANCHOR => {
                 crate::land::recovery::field::finish(content, state, cx, self.strict)
             }
+            "opstage.organization.training" | "opstage.organization.reorganization" => {
+                crate::land::replacements::finish_units(content, state)
+            }
             "end_of_turn" | "end_of_game" => {
                 crate::land::replacements::discard_completed_limits(state)
             }
@@ -141,6 +144,12 @@ impl Cna {
         let anchor = state.cursor.anchor();
         match anchor {
             crate::land::recovery::field::ANCHOR => crate::land::recovery::field::enter(state, cx),
+            "opstage.organization.training" | "opstage.organization.reorganization" => {
+                // This bounded replacement consumer does not implement unrelated unit-morale
+                // training or the remaining organization cases in the full profile.
+                self.unimplemented(content, anchor)?;
+                crate::land::replacements::enter_units(content, state, cx)
+            }
             crate::air::maintenance::window::TACTICAL
             | crate::air::maintenance::window::STRATEGIC => {
                 crate::air::maintenance::window::enter(content, state, cx, self.strict)
@@ -241,6 +250,9 @@ impl Cna {
         match pending.kind.as_str() {
             crate::land::recovery::field::KIND => {
                 crate::land::recovery::field::answer(content, state, pending, action)
+            }
+            crate::land::replacements::TRAINING | crate::land::replacements::ALLOCATION => {
+                crate::land::replacements::answer_unit(content, state, pending, action)
             }
             crate::land::replacements::SCHEDULE | crate::land::replacements::DISTRIBUTION => {
                 crate::land::replacements::answer(content, state, pending, action)

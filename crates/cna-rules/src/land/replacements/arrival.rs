@@ -101,7 +101,7 @@ pub(super) fn cities(
     Ok(choices)
 }
 
-fn training_subject(
+pub(super) fn training_subject(
     content: &CnaContent,
     body: &ReplacementKind,
     recipient: &UnitId,
@@ -143,7 +143,7 @@ fn training_subject(
 /// Initial assignment is Logistics authority, not an act by the receiving unit.
 /// Later training/allocation/motion uses the recipient's resolved command owner.
 /// Cases: land:20.41, land:20.42, land:20.67
-fn recipient(
+pub(super) fn recipient(
     content: &CnaContent,
     state: &State,
     owner: Side,
@@ -498,6 +498,16 @@ pub(super) fn finish(
             .orders
             .retain(|prior| prior.id != *id);
     }
+    let arrived: Vec<_> = prepared
+        .plan
+        .choices
+        .iter()
+        .filter_map(|choice| match choice {
+            ArrivalChoice::Points { order, .. } => Some(order.clone()),
+            _ => None,
+        })
+        .collect();
+    super::training::register_arrivals(content, &mut draft, prepared.owner, &arrived)?;
     side_mut(&mut draft, prepared.owner)?.arrival.phase = ProcedurePhase::Resolved;
     *state = draft;
     Ok(prepared.limit.clone())
