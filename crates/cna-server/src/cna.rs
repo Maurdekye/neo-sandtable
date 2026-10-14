@@ -2199,3 +2199,7 @@ mod tests {
 #[cfg(test)]
 #[path = "cna_policy_tests.rs"]
 mod policy_tests;
+
+#[cfg(test)]
+#[path = "replacement_actor_controls.rs"]
+mod replacement_actor_controls;
