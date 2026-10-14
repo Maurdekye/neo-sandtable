@@ -303,16 +303,31 @@ fn first_period_refit_domain_is_zero_without_changing_dues_draws_or_later_domain
             &later.state,
             owner,
             period(&later.state).unwrap(),
-        );
-        assert_eq!(cohort_maximum(&expected), positive);
-        assert_eq!(
-            cohort_maximum(&space(
-                content(),
-                &strategic.state,
-                owner,
-                period(&strategic.state).unwrap()
-            )),
+        )
+        .unwrap();
+        // The finite DEV procedure advertises no cohort when this owner has
+        // planes but no implemented servicer; its full roster bound is kept
+        // whenever an operational finite consumer exists.
+        let later_max = if finite_cohort_servicers(content(), &later.state, owner)
+            .unwrap()
+            .is_empty()
+        {
+            0
+        } else {
             positive
+        };
+        assert_eq!(cohort_maximum(&expected), later_max);
+        assert_eq!(
+            cohort_maximum(
+                &space(
+                    content(),
+                    &strategic.state,
+                    owner,
+                    period(&strategic.state).unwrap()
+                )
+                .unwrap()
+            ),
+            later_max
         );
         let ActionSchema::Record { fields } = &mut expected.schema else {
             unreachable!()
@@ -345,7 +360,8 @@ fn first_period_refit_domain_is_zero_without_changing_dues_draws_or_later_domain
         &first.state,
         Side::Axis,
         period(&first.state).unwrap(),
-    );
+    )
+    .unwrap();
     assert!(
         own_space
             .check(&serde_json::to_value(dues_only).unwrap())
@@ -1080,4 +1096,495 @@ fn actual_foreign_servicer_uses_aircraft_nationality_and_damaged_active_capacity
         Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "airlog:36.5")
     );
     assert_eq!(serde_json::to_vec(&game).unwrap(), before);
+}
+
+fn cohort_servicers(space: &ActionSpace) -> Vec<String> {
+    let ActionSchema::Record { fields } = &space.schema else {
+        panic!("refit record required")
+    };
+    let ActionSchema::List { item, .. } =
+        &fields.iter().find(|f| f.name == "cohorts").unwrap().schema
+    else {
+        panic!("cohort list required")
+    };
+    let ActionSchema::Record { fields } = item.as_ref() else {
+        panic!("cohort record required")
+    };
+    let ActionSchema::Choice { options } =
+        &fields.iter().find(|f| f.name == "servicer").unwrap().schema
+    else {
+        panic!("servicer choice required")
+    };
+    options.iter().map(|o| o.id.clone()).collect()
+}
+
+/// Cases: airlog:36.5, airlog:36.14, airlog:36.17, airlog:43.21, airlog:44.14, airlog:44.16, land:3.6
+#[test]
+fn finite_consumer_domain_zero_and_offmap_exclusion_preserve_other_domains_and_recovery() {
+    let game = opened(false);
+    let current = period(&game.state).unwrap();
+    let original = space(content(), &game.state, Side::Axis, current).unwrap();
+    assert_eq!(
+        cohort_servicers(&original),
+        vec!["axis.foreign", "axis.refit"]
+    );
+    let planes = game
+        .state
+        .air
+        .runtime
+        .aircraft
+        .values()
+        .filter(|p| owned(&p.force, Side::Axis))
+        .count();
+    assert!(planes > 0);
+    assert_eq!(cohort_maximum(&original), u32::try_from(planes).unwrap());
+    for case in [
+        "airlog:36.5",
+        "airlog:43.21",
+        "airlog:44.14",
+        "airlog:44.16",
+    ] {
+        assert!(
+            original.context.as_ref().unwrap()["development_limitation"]
+                .as_str()
+                .unwrap()
+                .contains(case)
+        );
+    }
+    let offmap = game
+        .state
+        .air
+        .runtime
+        .facilities
+        .iter()
+        .find_map(|(id, s)| {
+            (s.properties(content(), id).unwrap().theatre == FacilityTheatre::CommonwealthOffMap)
+                .then(|| id.clone())
+        })
+        .unwrap();
+    for exempt in [false, true] {
+        let mut changed = Game::<Cna> {
+            state: base(false),
+            rng: game.rng.clone(),
+        };
+        inventory::update(content(), &mut changed.state.air, |runtime| {
+            if exempt {
+                for s in runtime
+                    .sgsus
+                    .values_mut()
+                    .filter(|s| owned(&s.force, Side::Axis))
+                {
+                    s.position = SgsuPosition::Facility(offmap.clone());
+                }
+                for p in runtime
+                    .aircraft
+                    .values_mut()
+                    .filter(|p| p.squadron.as_deref() == Some("axis.refit"))
+                {
+                    p.facility = Some(offmap.0.clone());
+                }
+            } else {
+                runtime
+                    .facilities
+                    .get_mut(&FacilityId("airfield_benina".into()))
+                    .unwrap()
+                    .project_unavailable = true;
+            }
+            Ok(())
+        })
+        .unwrap();
+        let mut rng = CampaignRng::from_state(&changed.rng);
+        let mut events = Vec::new();
+        enter(
+            content(),
+            &mut changed.state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+            false,
+        )
+        .unwrap();
+        assert_eq!(rng.state(), changed.rng);
+        let domain = space(content(), &changed.state, Side::Axis, current).unwrap();
+        assert_eq!(cohort_maximum(&domain), 0);
+        assert!(cohort_servicers(&domain).is_empty());
+        assert!(domain.check(&Value::Null).is_ok());
+        assert!(
+            domain
+                .check(&serde_json::to_value(RefitPlan::default()).unwrap())
+                .is_ok()
+        );
+        assert!(
+            domain
+                .check(&serde_json::to_value(plan(&changed.state, true)).unwrap())
+                .is_err()
+        );
+        let ActionSchema::Record { fields: old } = &original.schema else {
+            unreachable!()
+        };
+        let ActionSchema::Record { fields: new } = &domain.schema else {
+            unreachable!()
+        };
+        for name in ["dues", "draws"] {
+            assert_eq!(
+                old.iter().find(|f| f.name == name),
+                new.iter().find(|f| f.name == name)
+            );
+        }
+        let inner = |fields: &[FieldSchema]| {
+            let ActionSchema::List { item, .. } =
+                &fields.iter().find(|f| f.name == "cohorts").unwrap().schema
+            else {
+                unreachable!()
+            };
+            let ActionSchema::Record { fields } = item.as_ref() else {
+                unreachable!()
+            };
+            fields
+                .iter()
+                .filter(|f| f.name != "servicer")
+                .cloned()
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(inner(old), inner(new));
+        assert_eq!(domain.pass, original.pass);
+        assert_eq!(
+            domain.context.as_ref().unwrap()["development_limitation"],
+            original.context.as_ref().unwrap()["development_limitation"]
+        );
+        let restored: Game<Cna> =
+            serde_json::from_slice(&serde_json::to_vec(&changed).unwrap()).unwrap();
+        assert_eq!(
+            space(content(), &restored.state, Side::Axis, current).unwrap(),
+            domain
+        );
+        let before = serde_json::to_vec(&changed).unwrap();
+        let pending = changed
+            .state
+            .decisions
+            .pending
+            .iter()
+            .find(|p| p.seat.side == Side::Axis)
+            .unwrap()
+            .clone();
+        assert_eq!(pending.space, domain);
+        let proposed = serde_json::to_value(plan(&changed.state, true)).unwrap();
+        assert!(matches!(
+            rejected_response(content(), &changed, proposed.clone()),
+            Rejection::Illegal { .. }
+        ));
+        assert!(matches!(
+            answer(content(), &mut changed.state, &pending, &proposed),
+            Err(Rejection::Illegal { .. })
+        ));
+        assert_eq!(serde_json::to_vec(&changed).unwrap(), before);
+        let proposed = plan(&changed.state, true);
+        let refusal = match validate(content(), &changed.state, Side::Axis, current, &proposed) {
+            Err(error) => error,
+            Ok(_) => panic!("excluded consumer refit was accepted"),
+        };
+        if exempt {
+            assert_eq!(
+                refusal,
+                Rejection::Engine(unsupported(
+                    "airlog:36.5",
+                    "unlimited/exempt aircraft refit requires reviewed consumer extension"
+                ))
+            );
+        } else {
+            assert_eq!(refusal, illegal("own refit facility is unavailable"));
+        }
+        assert_eq!(serde_json::to_vec(&changed).unwrap(), before);
+        let aircraft = changed.state.air.runtime.aircraft.clone();
+        let stock = serde_json::to_value(&changed.state.logistics).unwrap();
+        let one = respond(&changed, Side::Axis, Value::Null);
+        let restored: Game<Cna> =
+            serde_json::from_slice(&serde_json::to_vec(&one).unwrap()).unwrap();
+        let mut a = respond(&one, Side::Commonwealth, Value::Null);
+        let mut b = respond(&restored, Side::Commonwealth, Value::Null);
+        finish_game(&mut a);
+        finish_game(&mut b);
+        assert_eq!(
+            serde_json::to_vec(&a).unwrap(),
+            serde_json::to_vec(&b).unwrap()
+        );
+        assert_eq!(a.rng, changed.rng);
+        assert_eq!(a.state.air.runtime.aircraft, aircraft);
+        assert_eq!(serde_json::to_value(&a.state.logistics).unwrap(), stock);
+        let resolved = serde_json::to_vec(&a).unwrap();
+        finish_game(&mut a);
+        assert_eq!(serde_json::to_vec(&a).unwrap(), resolved);
+    }
+}
+
+/// Cases: airlog:36.12, airlog:36.17, land:3.6
+#[test]
+fn second_owner_domain_error_and_actual_entry_fail_without_partial_publication() {
+    let mut state = base(false);
+    let site = state
+        .air
+        .runtime
+        .facilities
+        .iter()
+        .find_map(|(id, s)| {
+            let props = s.properties(content(), id).unwrap();
+            (s.owner == Side::Commonwealth
+                && props.theatre == FacilityTheatre::Africa
+                && matches!(props.location, Location::Hex { .. }))
+            .then(|| id.clone())
+        })
+        .unwrap();
+    let mut squadron = state.air.squadrons["axis.foreign"].clone();
+    squadron.id = "cw.domain".into();
+    squadron.force = "commonwealth".into();
+    squadron.side = Side::Commonwealth;
+    squadron.nationality = "cw".into();
+    squadron.facility = site.0.clone();
+    state.air.squadrons.insert(squadron.id.clone(), squadron);
+    inventory::update(content(), &mut state.air, |runtime| {
+        let mut s = runtime.sgsus[&SgsuId("axis.foreign".into())].clone();
+        s.force = "commonwealth".into();
+        s.nationality = "cw".into();
+        s.position = SgsuPosition::Facility(site.clone());
+        runtime.sgsus.insert(SgsuId("cw.domain".into()), s);
+        Ok(())
+    })
+    .unwrap();
+    // Corrupt only the second owner's trusted property. The pure batch builder
+    // must return the exact error without yielding the already valid Axis menu.
+    state
+        .air
+        .runtime
+        .facilities
+        .get_mut(&site)
+        .unwrap()
+        .current_capacity = FacilityCapacity::Levels(i32::MAX);
+    let current = period(&state).unwrap();
+    let expected = state.air.runtime.facilities[&site]
+        .properties(content(), &site)
+        .unwrap_err();
+    let before = serde_json::to_vec(&state).unwrap();
+    assert!(space(content(), &state, Side::Axis, current).is_ok());
+    assert_eq!(spaces(content(), &state, current), Err(expected.clone()));
+    let mut rng = CampaignRng::from_seed([41; 32]);
+    let before_rng = rng.state();
+    let mut events = Vec::new();
+    // Actual enter may detect the same canonical corruption during inventory
+    // validation earlier; either path must publish no window, period or Note.
+    assert_eq!(
+        enter(
+            content(),
+            &mut state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events
+            },
+            false
+        ),
+        Err(expected)
+    );
+    assert_eq!(serde_json::to_vec(&state).unwrap(), before);
+    assert_eq!(rng.state(), before_rng);
+    assert!(events.is_empty());
+}
+
+/// Cases: airlog:35.14, airlog:36.17, airlog:38.32, airlog:38.33, airlog:38.36, airlog:38.39, land:3.6
+#[test]
+fn advertised_illegal_choices_precede_missing_designation_method_and_stores_shapes() {
+    let game = opened(false);
+    let current = period(&game.state).unwrap();
+    for refusal in 0..4 {
+        let mut own = game.clone();
+        own.state
+            .air
+            .runtime
+            .designation
+            .assignments
+            .remove("axis.refit");
+        let mut proposed = plan(&own.state, true);
+        match refusal {
+            0 => proposed.cohorts[0].priority[1] = proposed.cohorts[0].priority[0].clone(),
+            1 => proposed.draws[0].draws[0].amount.stores = StoresPoints::new(1),
+            2 => {
+                let mut other = proposed.cohorts[0].clone();
+                other.servicer = SgsuId("axis.foreign".into());
+                proposed.cohorts.push(other);
+                proposed.dues.push(SgsuId("axis.foreign".into()));
+            }
+            _ => {
+                let mut other = proposed.cohorts[0].clone();
+                other.method = RefitMethod::PerPlane;
+                proposed.cohorts.push(other);
+            }
+        }
+        let action = serde_json::to_value(&proposed).unwrap();
+        assert!(
+            space(content(), &own.state, Side::Axis, current)
+                .unwrap()
+                .check(&action)
+                .is_ok()
+        );
+        assert!(matches!(
+            rejected_response(content(), &own, action),
+            Rejection::Illegal { .. }
+        ));
+        let before = serde_json::to_vec(&own).unwrap();
+        assert!(matches!(
+            validate(content(), &own.state, Side::Axis, current, &proposed),
+            Err(Rejection::Illegal { .. })
+        ));
+        assert_eq!(serde_json::to_vec(&own).unwrap(), before);
+    }
+    let mut missing = game.clone();
+    missing
+        .state
+        .air
+        .runtime
+        .designation
+        .assignments
+        .remove("axis.refit");
+    let proposed = plan(&missing.state, true);
+    assert!(
+        matches!(validate(content(), &missing.state, Side::Axis, current, &proposed),
+        Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "airlog:38.32")
+    );
+
+    let mut ground = game.clone();
+    let location = ground.state.air.runtime.facilities[&FacilityId("airfield_benina".into())]
+        .properties(content(), &FacilityId("airfield_benina".into()))
+        .unwrap()
+        .location;
+    inventory::update(content(), &mut ground.state.air, |runtime| {
+        runtime
+            .sgsus
+            .get_mut(&SgsuId("axis.refit".into()))
+            .unwrap()
+            .position = SgsuPosition::Ground(location.clone());
+        for p in runtime
+            .aircraft
+            .values_mut()
+            .filter(|p| p.squadron.as_deref() == Some("axis.refit"))
+        {
+            p.facility = None;
+        }
+        Ok(())
+    })
+    .unwrap();
+    let legal_ground_dues = RefitPlan {
+        dues: vec![SgsuId("axis.refit".into())],
+        ..Default::default()
+    };
+    let mut duplicate_dues = legal_ground_dues.clone();
+    duplicate_dues.dues.push(duplicate_dues.dues[0].clone());
+    assert!(
+        space(content(), &ground.state, Side::Axis, current)
+            .unwrap()
+            .check(&serde_json::to_value(&duplicate_dues).unwrap())
+            .is_ok()
+    );
+    assert!(matches!(
+        rejected_response(
+            content(),
+            &ground,
+            serde_json::to_value(duplicate_dues).unwrap()
+        ),
+        Rejection::Illegal { .. }
+    ));
+    let before = serde_json::to_vec(&ground).unwrap();
+    assert!(
+        matches!(validate(content(), &ground.state, Side::Axis, current, &legal_ground_dues),
+        Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "airlog:35.14")
+    );
+    assert_eq!(serde_json::to_vec(&ground).unwrap(), before);
+
+    let mut missing_site = game.clone();
+    missing_site
+        .state
+        .air
+        .runtime
+        .sgsus
+        .get_mut(&SgsuId("axis.refit".into()))
+        .unwrap()
+        .position = SgsuPosition::Facility(FacilityId("missing.canonical.site".into()));
+    let expected = invalid("missing SGSU site");
+    assert_eq!(
+        space(content(), &missing_site.state, Side::Axis, current),
+        Err(expected.clone())
+    );
+    assert_eq!(
+        rejected_response(content(), &missing_site, Value::Null),
+        Rejection::Engine(expected)
+    );
+}
+
+/// Cases: airlog:36.14, airlog:36.17, land:3.6
+#[test]
+fn enemy_consumer_eligibility_does_not_change_own_domains_pass_streams_or_fixed_windows() {
+    let a = opened(false);
+    let mut b = a.clone();
+    inventory::update(content(), &mut b.state.air, |runtime| {
+        runtime
+            .facilities
+            .get_mut(&FacilityId("airfield_benina".into()))
+            .unwrap()
+            .project_unavailable = true;
+        Ok(())
+    })
+    .unwrap();
+    let current = period(&a.state).unwrap();
+    assert_ne!(
+        cohort_servicers(&space(content(), &a.state, Side::Axis, current).unwrap()),
+        cohort_servicers(&space(content(), &b.state, Side::Axis, current).unwrap())
+    );
+    assert_eq!(
+        space(content(), &a.state, Side::Commonwealth, current).unwrap(),
+        space(content(), &b.state, Side::Commonwealth, current).unwrap()
+    );
+    assert_indistinguishable(
+        &Cna::dev(),
+        content(),
+        &a.state,
+        &b.state,
+        Side::Commonwealth,
+    );
+    assert_action_indistinguishable(
+        &Cna::dev(),
+        content(),
+        &a,
+        &b,
+        &command(&a, Side::Commonwealth, Value::Null),
+        Side::Commonwealth,
+    );
+    for game in [&a, &b] {
+        let mut fresh = game.clone();
+        fresh.state.decisions.pending.clear();
+        fresh.state.air.runtime.maintenance = refit::MaintenanceState::default();
+        let mut rng = CampaignRng::from_state(&fresh.rng);
+        let mut events = Vec::new();
+        enter(
+            content(),
+            &mut fresh.state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+            false,
+        )
+        .unwrap();
+        assert_eq!(
+            fresh
+                .state
+                .decisions
+                .pending
+                .iter()
+                .map(|p| (p.seat, p.kind.as_str()))
+                .collect::<Vec<_>>(),
+            Side::ALL
+                .into_iter()
+                .map(|side| (SeatId::new(side, Role::Air), KIND))
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(rng.state(), game.rng);
+    }
 }
