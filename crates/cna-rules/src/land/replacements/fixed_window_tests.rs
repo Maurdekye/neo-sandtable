@@ -7,6 +7,7 @@ use cna_core::{
     event::EngineEvent,
     visibility::{Audience, Perspective},
 };
+use std::collections::{BTreeMap, BTreeSet};
 
 const ROLES: [Role; 3] = [Role::FrontLine, Role::RearArea, Role::Logistics];
 const ANCHORS: [&str; 2] = [
@@ -55,13 +56,24 @@ fn viewers(owner: SeatId) -> Vec<Perspective> {
     }).collect()
 }
 
-fn output(content: &CnaContent, game: &Game<Cna>, perspective: Perspective) -> Value {
+fn output(
+    content: &CnaContent,
+    game: &Game<Cna>,
+    perspective: Perspective,
+    targets: &BTreeSet<String>,
+) -> Value {
     let rules = Cna::full();
     let pending: Vec<_> = rules.pending(content, &game.state).into_iter()
         .filter(|request| perspective.can_see(&Audience::Seat(request.seat))).collect();
+    // The same union of actual inspect targets is queried for every non-owner
+    // teammate/opponent; preserve complete Ok payloads and typed Err payloads.
+    let inspected: BTreeMap<_, _> = targets.iter().map(|target| {
+        (target.clone(), rules.inspect(content, &game.state, perspective, target))
+    }).collect();
     json!({
         "view": rules.view(content, &game.state, perspective),
         "observe": rules.observe(content, &game.state, perspective),
+        "inspect": inspected,
         "pending": pending,
         "clock": rules.clock(content, &game.state),
     })
@@ -72,11 +84,21 @@ fn observed_events(events: &[EngineEvent], perspective: Perspective) -> Vec<&Eng
 }
 
 fn same_outputs(content: &CnaContent, owner: SeatId, games: &[Game<Cna>], histories: &[Vec<EngineEvent>]) {
+    let states: Vec<_> = games.iter().map(|game| &game.state).collect();
+    let targets = crate::testkit::inspect_targets(&states);
+    let opponent = if owner.side == Side::Axis { Side::Commonwealth } else { Side::Axis };
+    // Add the standard full state-pair proof at actual entry, after each Respond,
+    // and after atomic finish; retain the stronger ordered byte comparisons below.
+    for game in games.iter().skip(1) {
+        crate::testkit::assert_indistinguishable(
+            &Cna::full(), content, &games[0].state, &game.state, opponent,
+        );
+    }
     for perspective in viewers(owner) {
-        let reference = bytes(&output(content, &games[0], perspective));
+        let reference = bytes(&output(content, &games[0], perspective, &targets));
         let reference_events = bytes(&observed_events(&histories[0], perspective));
         for (game, history) in games.iter().zip(histories).skip(1) {
-            assert_eq!(bytes(&output(content, game, perspective)), reference,
+            assert_eq!(bytes(&output(content, game, perspective, &targets)), reference,
                 "full ordered output for {perspective}");
             assert_eq!(bytes(&observed_events(history, perspective)), reference_events,
                 "entire ordered replay stream for {perspective}");
@@ -92,6 +114,21 @@ fn same_outputs(content: &CnaContent, owner: SeatId, games: &[Game<Cna>], histor
         assert_eq!(bytes(&schedule(&game.state)), bytes(&schedule(&games[0].state)));
         assert_eq!(game.rng, games[0].rng);
     }
+}
+
+fn same_action(content: &CnaContent, owner: SeatId, games: &[Game<Cna>], command: &Command) {
+    let opponent = if owner.side == Side::Axis { Side::Commonwealth } else { Side::Axis };
+    let frozen = bytes(&games);
+    let reference_recovered = restored_from(&games[0]);
+    for game in games.iter().skip(1) {
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::full(), content, &games[0], game, command, opponent,
+        );
+        crate::testkit::assert_action_indistinguishable(
+            &Cna::full(), content, &reference_recovered, &restored_from(game), command, opponent,
+        );
+    }
+    assert_eq!(bytes(&games), frozen);
 }
 
 fn waiting(content: &CnaContent, input: &Game<Cna>) {
@@ -170,13 +207,25 @@ fn strict_pairs(role: Role) {
                 assert_eq!(domain(&games[2]), training_point == ready);
                 same_outputs(&content, seat, &games, &histories);
                 for _ in 0..6 {
+                    // Compare actual waiting Advance and the next canonical seat
+                    // response across both hidden-fact pairs and their recoveries.
+                    same_action(&content, seat, &games, &Command::Advance);
+                    let command = move_response(
+                        &games[0].state, &games[0].state.decisions.pending[0], Value::Null,
+                    );
+                    same_action(&content, seat, &games, &command);
                     for index in 0..games.len() {
                         waiting(&content, &games[index]);
                         let recovered = restored_from(&games[index]);
                         assert_eq!(bytes(&games[index]), bytes(&recovered));
+                        let opponent = if owner == Side::Axis { Side::Commonwealth } else { Side::Axis };
+                        crate::testkit::assert_indistinguishable(
+                            &Cna::full(), &content, &games[index].state, &recovered.state, opponent,
+                        );
+                        let targets = crate::testkit::inspect_targets(&[&games[index].state, &recovered.state]);
                         for perspective in viewers(seat) {
-                            assert_eq!(bytes(&output(&content, &games[index], perspective)),
-                                bytes(&output(&content, &recovered, perspective)));
+                            assert_eq!(bytes(&output(&content, &games[index], perspective, &targets)),
+                                bytes(&output(&content, &recovered, perspective, &targets)));
                         }
                         let (next, events) = pass(&content, &games[index]);
                         games[index] = next;
@@ -190,6 +239,15 @@ fn strict_pairs(role: Role) {
                     unit_windows::finish_units(&content, &mut current.state).unwrap();
                     unit_windows::finish_units(&content, &mut recovered.state).unwrap();
                     assert_eq!(bytes(current), bytes(&recovered));
+                    let opponent = if owner == Side::Axis { Side::Commonwealth } else { Side::Axis };
+                    crate::testkit::assert_indistinguishable(
+                        &Cna::full(), &content, &current.state, &recovered.state, opponent,
+                    );
+                    let targets = crate::testkit::inspect_targets(&[&current.state, &recovered.state]);
+                    for perspective in viewers(seat) {
+                        assert_eq!(bytes(&output(&content, current, perspective, &targets)),
+                            bytes(&output(&content, &recovered, perspective, &targets)));
+                    }
                     assert_ne!(bytes(current), before); // resolved only after six actual answers
                     let finished = bytes(current);
                     unit_windows::finish_units(&content, &mut current.state).unwrap();
