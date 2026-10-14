@@ -1889,18 +1889,62 @@ mod tests {
                         })
                         .collect(),
                 };
-                let mut campaign = Campaign::create(
-                    &path,
-                    Cna::dev(),
-                    content,
-                    Game {
-                        state,
-                        rng: CampaignRng::from_seed([6; 32]).state(),
-                    },
-                    meta,
-                    pins.clone(),
-                )
-                .unwrap();
+                // Enter the real replacement window before this checkpoint is
+                // persisted. Only its declared no-due passes are fixture setup;
+                // the six mandatory arrival batches still use the actor below.
+                let mut game = Game {
+                    state,
+                    rng: CampaignRng::from_seed([6; 32]).state(),
+                };
+                let fixture_rng = game.rng.clone();
+                let rules = Cna::dev();
+                game = evaluate(&rules, &content, &game, &Command::Advance)
+                    .unwrap()
+                    .game;
+                assert_eq!(game.rng, fixture_rng);
+                let replacements: Vec<_> = rules
+                    .pending(&content, &game.state)
+                    .into_iter()
+                    .filter(|request| request.kind == "cna.replacements.arrival")
+                    .collect();
+                assert_eq!(replacements.len(), 2);
+                for side in Side::ALL {
+                    assert!(
+                        replacements
+                            .iter()
+                            .any(|request| request.seat == SeatId::new(side, Role::Logistics))
+                    );
+                }
+                for request in replacements {
+                    // A declared pass alone does not prove that no replacement
+                    // assignment is due. Unknown or nonempty domains must stop.
+                    let schema = request.space.schema.to_json_schema();
+                    let choices = &schema["properties"]["choices"];
+                    assert_eq!(choices["type"], "array");
+                    assert_eq!(choices["minItems"], 0, "replacement orders are due");
+                    assert_eq!(choices["maxItems"], 0, "replacement orders are due");
+                    assert!(request.space.pass.is_some());
+                    request.space.check(&serde_json::Value::Null).unwrap();
+                    game = evaluate(
+                        &rules,
+                        &content,
+                        &game,
+                        &Command::Respond(DecisionResponse {
+                            decision_id: request.id.clone(),
+                            seat: request.seat,
+                            controller_epoch: 0,
+                            decision_revision: request.revision,
+                            idempotency_key: format!("fixture-replacement:{}", request.id),
+                            action: serde_json::Value::Null,
+                            public_explanation: None,
+                        }),
+                    )
+                    .unwrap()
+                    .game;
+                    assert_eq!(game.rng, fixture_rng);
+                }
+                let mut campaign =
+                    Campaign::create(&path, Cna::dev(), content, game, meta, pins.clone()).unwrap();
                 campaign.advance().unwrap();
                 let requests = campaign.pending();
                 assert_eq!(requests.len(), 6);
