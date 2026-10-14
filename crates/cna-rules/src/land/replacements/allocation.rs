@@ -96,9 +96,9 @@ fn point(content: &CnaContent, kind: &ReplacementKind) -> Result<Point, EngineEr
                 ));
             }
             match equipment.kind.as_str() {
-                "artillery" => Ok(Point::ArtilleryGun),
-                "anti_tank" => Ok(Point::AntiTankGun),
-                "anti_air" => Ok(Point::AntiAirGun),
+                "gun" | "sp_gun" => Ok(Point::ArtilleryGun),
+                "anti_tank" | "sp_anti_tank" => Ok(Point::AntiTankGun),
+                "anti_air_light" | "anti_air_heavy" => Ok(Point::AntiAirGun),
                 _ => Err(gap(
                     "land:20.3",
                     "gun lacks a verified replacement classification",
@@ -315,7 +315,10 @@ pub(super) fn prepare(
         if after > maximum {
             return Err(illegal("absorption exceeds the verified TOE maximum"));
         }
-        let next_toe = if weapons.is_empty() {
+        // land:19.64d, land:20.3: paid guns are consumed conversion inputs for HW.
+        // The scalar HW point is the entire physical result, with printed counter ratings.
+        // Equipment identity has already been validated by point(); retain no second stock.
+        let next_toe = if weapons.is_empty() || row == Row::HeavyWeapons {
             if matches!(unit.toe, Some(Toe::Weapons(_))) {
                 return Err(illegal("infantry payment cannot rewrite an equipment TOE"));
             }

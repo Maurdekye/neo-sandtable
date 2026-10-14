@@ -69,8 +69,8 @@ fn choices(ids: &[String]) -> ActionSchema {
     }
 }
 
-/// Domain membership depends only on counters assigned to this seat's own recipients.
-/// No counter, candidate or owned request means no state/decision-id mutation.
+/// Six public schedule slots, independent of hidden counters or training status.
+/// Only the owning seat's domain varies; an empty Choice requires its ordinary pass.
 /// Cases: land:17.33, land:20.3, land:20.41, land:20.43, land:20.49, land:3.6
 pub(crate) fn enter_units(
     content: &CnaContent,
@@ -81,27 +81,22 @@ pub(crate) fn enter_units(
     let current = key(state);
     let mut openings = vec![];
     for owner in Side::ALL {
-        let Some(own) = state
-            .land
-            .replacements
-            .sides
-            .iter()
-            .find(|own| own.side == owner)
-        else {
-            continue;
-        };
-        if procedure(own, training).key.as_ref() == Some(&current) {
+        let exists = state.land.replacements.sides.iter().any(|own| own.side == owner);
+        // An older/default empty replacement state still gets all public windows.
+        // Validate any existing side before publishing openings; never hide duplicates.
+        if exists && procedure(side(state, owner)?, training).key.as_ref() == Some(&current) {
             continue;
         }
         for role in [Role::FrontLine, Role::RearArea, Role::Logistics] {
             let seat = SeatId::new(owner, role);
             let counters = ids(content, state, seat, training);
-            if !counters.is_empty() {
-                openings.push((seat, counters));
-            }
+            openings.push((seat, counters));
         }
     }
     for (seat, counters) in openings {
+        if !state.land.replacements.sides.iter().any(|own| own.side == seat.side) {
+            state.land.replacements.sides.push(SideReplacements::new(seat.side));
+        }
         let own = side_mut(state, seat.side)?;
         let proc = procedure_mut(own, training);
         if proc.key.as_ref() != Some(&current) {
@@ -114,7 +109,10 @@ pub(crate) fn enter_units(
                 }),
             };
         }
-        let space = if training {
+        let space = if counters.is_empty() {
+            ActionSpace::new(choices(&[]))
+                .with_pass("No recipient-owned counters in this window; submit a pass.")
+        } else if training {
             ActionSpace::new(ActionSchema::Record {
                 fields: vec![field(
                     "counters",

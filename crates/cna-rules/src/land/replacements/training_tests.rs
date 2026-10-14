@@ -13,6 +13,9 @@ use cna_protocol::Role;
 use serde::Serialize;
 use serde_json::{Value, json};
 
+#[path = "fixed_window_tests.rs"]
+mod fixed_windows;
+
 const COUNTER: &str = "commonwealth.replacement-1";
 fn bytes(value: &impl Serialize) -> Vec<u8> {
     serde_json::to_vec(value).unwrap()
@@ -158,7 +161,11 @@ fn respond(state: &State, action: Value) -> Command {
         .decisions
         .pending
         .iter()
-        .find(|p| p.seat.side == Side::Commonwealth)
+        .find(|p| {
+            p.seat.side == Side::Commonwealth
+                && !matches!(&p.space.schema,
+                    cna_core::decision::ActionSchema::Choice { options } if options.is_empty())
+        })
         .unwrap();
     Command::Respond(DecisionResponse {
         decision_id: pending.id.clone(),
@@ -175,6 +182,19 @@ fn game(state: State) -> Game<Cna> {
         state,
         rng: CampaignRng::from_seed([92; 32]).state(),
     }
+}
+fn pass_remaining(content: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
+    // Fixed windows require actual answers from the other five seats, even if empty.
+    for _ in 0..6 {
+        let Some(pending) = game.state.decisions.pending.first() else {
+            return game;
+        };
+        assert!(matches!(pending.kind.as_str(), unit_windows::TRAINING | unit_windows::ALLOCATION));
+        let command = move_response(&game.state, pending, Value::Null);
+        game = evaluate(&Cna::dev(), content, &game, &command).unwrap().game;
+    }
+    assert!(game.state.decisions.pending.is_empty());
+    game
 }
 fn allocation(id: &UnitId, points: i32) -> AllocationPlan {
     AllocationPlan {
@@ -333,7 +353,7 @@ fn replacement_training_canonical_respond_only_buffers_and_rejections_keep_game_
         (&game, &respond(&game.state, Value::Null)),
         Side::Axis,
     );
-    let mut finished = accepted.game.state;
+    let mut finished = pass_remaining(&content, accepted.game).state;
     unit_windows::finish_units(&content, &mut finished).unwrap();
     assert!(matches!(
         counter(&finished).training,
@@ -460,13 +480,14 @@ fn replacement_allocation_respond_checkpoint_and_late_finish_rollback_are_atomic
         bytes(&game.state.land.units)
     );
     assert_eq!(accepted.game.rng, game.rng);
-    let restored: Game<Cna> = serde_json::from_slice(&bytes(&accepted.game)).unwrap();
-    let mut a = accepted.game.state.clone();
+    let accepted = pass_remaining(&content, accepted.game);
+    let restored: Game<Cna> = serde_json::from_slice(&bytes(&accepted)).unwrap();
+    let mut a = accepted.state.clone();
     let mut b = restored.state;
     unit_windows::finish_units(&content, &mut a).unwrap();
     unit_windows::finish_units(&content, &mut b).unwrap();
     assert_eq!(bytes(&a), bytes(&b));
-    let mut invalid = accepted.game;
+    let mut invalid = accepted;
     counter_mut(&mut invalid.state).points = 0;
     let frozen = bytes(&invalid);
     assert!(unit_windows::finish_units(&content, &mut invalid.state).is_err());
@@ -499,6 +520,9 @@ fn replacement_no_candidates_no_counters_is_byte_rng_event_identical() {
     let mut events = vec![];
     training::invalidate_training(&content, &mut state).unwrap();
     training::finish_training_stage(&content, &mut state).unwrap();
+    assert_eq!(bytes(&state), initial);
+    assert_eq!(rng.state(), original_rng);
+    assert!(events.is_empty());
     unit_windows::enter_units(
         &content,
         &mut state,
@@ -509,9 +533,15 @@ fn replacement_no_candidates_no_counters_is_byte_rng_event_identical() {
     )
     .unwrap();
     unit_windows::finish_units(&content, &mut state).unwrap();
-    assert_eq!(bytes(&state), initial);
+    // Lead's fixed-window ruling supersedes only the former no-window expectation.
+    // Until six ordinary passes, finish must leave the whole opened State intact.
+    assert_eq!(state.decisions.pending.len(), 6);
+    assert_eq!(events.len(), 6);
+    let opened = bytes(&state);
+    unit_windows::finish_units(&content, &mut state).unwrap();
+    assert_eq!(bytes(&state), opened);
     assert_eq!(rng.state(), original_rng);
-    assert!(events.is_empty());
+    assert!(events.iter().all(|event| matches!(event.event, cna_protocol::GameEvent::DecisionOpened { .. })));
 }
 
 /// Cases: land:20.43, land:17.33
