@@ -442,6 +442,42 @@ fn same_dump(location: &Location, dump: &DumpLocation) -> bool {
 }
 /// The nearest-dump exception is confined to prisoners and guards.
 /// Cases: airlog:51.12, airlog:51.17
+/// Retire stage-current tags using the existing automatic consumption order.
+/// Mandatory prisoner/guard feeding receives no new action, refusal or truck CP.
+fn retire_special_stores(
+    original: &State,
+    draft: &mut crate::state::LogisticsState,
+    side: Side,
+    site: &super::cargo_history::CargoSite,
+    n: i32,
+) -> Result<(), EngineError> {
+    if n > 0
+        && original
+            .logistics
+            .cargo_history
+            .histories
+            .get(site)
+            .is_some_and(|h| h.stage == WaterStage::current(original))
+    {
+        super::cargo_history::parcels(original, side, site).map_err(|error| {
+            EngineError::Invariant {
+                detail: format!(
+                    "invalid current cargo history at special stores consumption: {error:?}"
+                ),
+            }
+        })?;
+        super::cargo_history::retire_debit(
+            draft,
+            site,
+            cna_content::scenario::Supplies {
+                stores: n,
+                ..Default::default()
+            },
+        )
+        .map_err(engine)?;
+    }
+    Ok(())
+}
 fn draw_special_stores(
     content: &CnaContent,
     state: &mut State,
@@ -450,16 +486,31 @@ fn draw_special_stores(
     needed: i32,
 ) -> Result<i32, EngineError> {
     let mut remaining = needed;
-    for (id, holding) in &mut state.logistics.unit_supply {
-        if state.land.units.get(id).is_some_and(|u| {
-            u.side == side
-                && &u.location == location
-                && u.trucks.light + u.trucks.medium + u.trucks.heavy > 0
-        }) {
-            let n = remaining.min(holding.carried.stores).max(0);
-            holding.carried.stores -= n;
-            remaining -= n;
-        }
+    let mut draft = state.logistics.clone();
+    let ids: Vec<_> = state
+        .logistics
+        .unit_supply
+        .keys()
+        .filter(|id| {
+            state.land.units.get(*id).is_some_and(|u| {
+                u.side == side
+                    && &u.location == location
+                    && u.trucks.light + u.trucks.medium + u.trucks.heavy > 0
+            })
+        })
+        .cloned()
+        .collect();
+    for id in ids {
+        let n = remaining.min(draft.unit_supply[&id].carried.stores).max(0);
+        retire_special_stores(
+            state,
+            &mut draft,
+            side,
+            &super::cargo_history::CargoSite::Unit(id.clone()),
+            n,
+        )?;
+        draft.unit_supply.get_mut(&id).unwrap().carried.stores -= n;
+        remaining -= n;
     }
     let mut dumps: Vec<_> = state
         .logistics
@@ -491,11 +542,18 @@ fn draw_special_stores(
         if remaining == 0 {
             break;
         }
-        let stock = &mut state.logistics.dumps.get_mut(&id).unwrap().supplies.stores;
-        let n = remaining.min(*stock);
-        *stock -= n;
+        let n = remaining.min(draft.dumps[&id].supplies.stores);
+        retire_special_stores(
+            state,
+            &mut draft,
+            side,
+            &super::cargo_history::CargoSite::Dump(id.clone()),
+            n,
+        )?;
+        draft.dumps.get_mut(&id).unwrap().supplies.stores -= n;
         remaining -= n;
     }
+    state.logistics = draft;
     Ok(remaining)
 }
 

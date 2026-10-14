@@ -7,10 +7,7 @@ use crate::{
     },
     seq::{Block, OPSTAGE},
 };
-use cna_content::{
-    scenario::Placement,
-    units::{Toe, Trucks, WeaponPoints},
-};
+use cna_content::units::{Toe, Trucks, WeaponPoints};
 use cna_core::{dice::CampaignRng, visibility::Perspective};
 use serde_json::json;
 const UNIT: &str = "it.1_libyan_div.viii_libyan_bn";
@@ -33,24 +30,20 @@ fn fixture() -> (CnaContent, State, Carrier, Carrier) {
         ..Default::default()
     };
     u.transport_trucks = Trucks::default();
-    let pool = crate::logistics::pools::add_truck_pool(
-        &mut state.logistics,
-        None,
-        Side::Axis,
-        Placement::City {
-            city: "tripoli".into(),
-        },
-        Some(location.clone()),
-        Trucks {
-            heavy: 1,
-            ..Default::default()
-        },
-        Supplies {
-            water: 20,
-            ..Default::default()
-        },
-    )
-    .unwrap();
+    // Component placement/stock fixture on an actual source-created pool.
+    // State::new already recorded its full physical inventory; no CP is injected.
+    let source_pool = state
+        .logistics
+        .truck_pools
+        .iter_mut()
+        .find(|p| p.side == Side::Axis)
+        .unwrap();
+    source_pool.location = Some(location.clone());
+    source_pool.cargo = Supplies {
+        water: 20,
+        ..Default::default()
+    };
+    let pool = source_pool.id.clone();
     state.logistics.dumps.insert(
         "box-stock".into(),
         crate::state::Dump {
@@ -355,7 +348,9 @@ fn stamp_overflow_rolls_back_the_entire_stock_transfer() {
                 ..Default::default()
             }
         ),
-        Err(SupplyError::Invalid)
+        Err(distribution::DistributionError::Supply(
+            SupplyError::Invalid
+        ))
     );
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
     assert!(is_supply_box(&Location::OffMap {

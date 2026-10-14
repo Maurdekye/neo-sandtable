@@ -313,7 +313,7 @@ pub fn validate_dump_capacity(
 /// Cases: airlog:49.14, airlog:49.16, airlog:50.15, airlog:53.24, airlog:54.13, airlog:54.2, land:8.88
 /// Interpretations: interp:airlog-0001, interp:airlog-0008, interp:airlog-0019
 #[allow(clippy::too_many_arguments)]
-pub fn transfer(
+fn transfer_stock_only(
     content: &CnaContent,
     state: &mut State,
     side: Side,
@@ -463,6 +463,311 @@ pub fn transfer(
         }
     }
     *state = draft;
+    Ok(())
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DistributionCargoError {
+    History(super::cargo_history::CargoError),
+    Motion(super::cargo_history::motion::MotionError),
+    InvalidCarrier(&'static str),
+    UnintegratedRoute(&'static str),
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DistributionError {
+    Supply(SupplyError),
+    Cargo(DistributionCargoError),
+}
+impl From<SupplyError> for DistributionError {
+    fn from(error: SupplyError) -> Self {
+        Self::Supply(error)
+    }
+}
+impl From<super::cargo_history::CargoError> for DistributionError {
+    fn from(error: super::cargo_history::CargoError) -> Self {
+        Self::Cargo(DistributionCargoError::History(error))
+    }
+}
+impl From<super::cargo_history::motion::MotionError> for DistributionError {
+    fn from(error: super::cargo_history::motion::MotionError) -> Self {
+        Self::Cargo(DistributionCargoError::Motion(error))
+    }
+}
+fn invalid_carrier(detail: &'static str) -> DistributionError {
+    DistributionError::Cargo(DistributionCargoError::InvalidCarrier(detail))
+}
+/// Preserve owner action errors and trusted source/history categories independently.
+pub(super) fn rejection(error: DistributionError) -> Rejection {
+    use super::cargo_history::{CargoError, motion::MotionError};
+    let unsupported = |detail: &str| {
+        Rejection::Engine(EngineError::Unsupported {
+            case: "airlog:53.25".into(),
+            detail: detail.into(),
+        })
+    };
+    let invariant = |detail: &str| {
+        Rejection::Engine(EngineError::Invariant {
+            detail: detail.into(),
+        })
+    };
+    match error {
+        DistributionError::Supply(
+            error @ (SupplyError::Unsupported { .. } | SupplyError::UnknownFuelRate),
+        ) => Rejection::Engine(super::stores::engine(error)),
+        DistributionError::Supply(_) => {
+            illegal("transfer exceeds stocks, capacity or same-location rules")
+        }
+        DistributionError::Cargo(DistributionCargoError::Motion(MotionError::Unknown)) => {
+            unsupported("organization transfer requires tracked current-stage physical pool timing")
+        }
+        DistributionError::Cargo(DistributionCargoError::Motion(MotionError::Mixed)) => {
+            unsupported("mixed physical pool timing requires a selected packing witness")
+        }
+        DistributionError::Cargo(DistributionCargoError::History(CargoError::ChoiceRequired)) => {
+            unsupported(
+                "distinct cargo histories require explicit lot choices in a later handling slice",
+            )
+        }
+        DistributionError::Cargo(DistributionCargoError::History(CargoError::Ceiling)) => {
+            illegal("goods exceed their first carrier's CP ceiling (airlog:53.25)")
+        }
+        DistributionError::Cargo(DistributionCargoError::History(CargoError::Insufficient)) => {
+            illegal("cargo parcel quantity is unavailable")
+        }
+        DistributionError::Cargo(DistributionCargoError::History(CargoError::Invalid)) => {
+            invariant("invalid owned distribution cargo history")
+        }
+        DistributionError::Cargo(DistributionCargoError::Motion(MotionError::Invalid)) => {
+            invariant("invalid owned distribution physical timing")
+        }
+        DistributionError::Cargo(DistributionCargoError::InvalidCarrier(detail)) => {
+            invariant(detail)
+        }
+        DistributionError::Cargo(DistributionCargoError::UnintegratedRoute(detail)) => {
+            unsupported(detail)
+        }
+    }
+}
+/// No motion/fuel writer: retained physical inventory plus actual stage history only.
+fn pool_timing(
+    content: &CnaContent,
+    state: &State,
+    side: Side,
+    id: &str,
+) -> Result<super::cargo_history::CarrierTiming, DistributionError> {
+    use super::{
+        cargo_history::{CargoSite, motion},
+        segment,
+    };
+    use cna_tables::airlog::trucks::TruckType;
+    // The public wrapper has checked both owner endpoints before trusted records.
+    let mut found = state.logistics.truck_pools.iter().filter(|p| p.id == id);
+    let p = found.next().ok_or(SupplyError::Invalid)?;
+    if p.side != side {
+        return Err(SupplyError::Invalid.into());
+    }
+    if id.is_empty() || found.next().is_some() || !state.logistics.truck_pool_ids.contains(id) {
+        return Err(invalid_carrier("invalid real distribution pool identity"));
+    }
+    let site = CargoSite::Pool(id.into());
+    let stage = super::water::WaterStage::current(state);
+    let mut current = state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter()
+        .filter(|entry| entry.site == site && entry.stage == stage);
+    let present = current.next();
+    if current.next().is_some() {
+        return Err(invalid_carrier(
+            "duplicate current distribution pool motion",
+        ));
+    }
+    let physical: Vec<motion::PhysicalTrucks> = if let Some(old) =
+        state.logistics.pool_fuel_segments.get(id)
+    {
+        // Never synthesize initial identities from an uninitialized legacy fuel ledger.
+        if !old.cohorts_initialized {
+            return Err(if present.is_some() {
+                invalid_carrier(
+                    "present funded pool motion lacks canonical initialized physical inventory",
+                )
+            } else {
+                motion::MotionError::Unknown.into()
+            });
+        }
+        segment::carrier_ledger(
+            Some(old),
+            old.segment.clone(),
+            &old.origin,
+            &p.trucks,
+            &id.to_owned(),
+            &format!("pool.{id}"),
+        )
+        .map_err(|_| invalid_carrier("retained distribution pool cohorts do not match inventory"))?
+        .cohorts
+        .iter()
+        .map(motion::PhysicalTrucks::from)
+        .collect()
+    } else {
+        // This requires saved current-stage, exact surviving genesis identities.
+        // It creates no groups or zero records and refuses orphan funding accounts.
+        super::pool_fuel::unfunded_pool_physical_cohorts(state, id)?
+    };
+    // Query's Unknown alone is ambiguous. Reconcile every PRESENT current record
+    // against the complete canonical physical list before asking for uniform timing.
+    let entry = present.ok_or(motion::MotionError::Unknown)?;
+    let expected: std::collections::BTreeSet<_> = physical
+        .iter()
+        .map(|group| (&group.id, group.kind, group.count))
+        .collect();
+    let actual: std::collections::BTreeSet<_> = entry
+        .cohorts
+        .iter()
+        .map(|group| (&group.id, group.kind, group.count))
+        .collect();
+    if expected.len() != physical.len()
+        || actual.len() != entry.cohorts.len()
+        || actual != expected
+        || entry
+            .cohorts
+            .iter()
+            .any(|group| group.id.is_empty() || group.count <= 0 || group.spent_cp_quarters < 0)
+    {
+        return Err(invalid_carrier(
+            "present current pool motion does not match full physical inventory",
+        ));
+    }
+    let mut cpa = None;
+    for (kind, count) in [
+        (TruckType::Light, p.trucks.light),
+        (TruckType::Medium, p.trucks.medium),
+        (TruckType::Heavy, p.trucks.heavy),
+    ] {
+        if count < 0 {
+            return Err(invalid_carrier("negative distribution pool trucks"));
+        }
+        if count > 0 {
+            let n = content
+                .tables
+                .airlog
+                .truck_characteristics
+                .truck(kind)
+                .cpa_supplies
+                .checked_mul(4)
+                .filter(|n| *n > 0)
+                .ok_or_else(|| invalid_carrier("invalid bound supply truck CPA"))?;
+            cpa = Some(cpa.map_or(n, |old: i32| old.min(n)));
+        }
+    }
+    let cpa = cpa.ok_or(SupplyError::Invalid)?;
+    Ok(motion::timing(
+        state,
+        side,
+        &CargoSite::Pool(id.into()),
+        &physical,
+        cpa,
+    )?)
+}
+/// Current owner parcels only; expiry and malformed-history checks use the
+/// existing validated query. Endpoint-wide tagging is intentionally conservative.
+fn endpoint_has_tags(
+    state: &State,
+    side: Side,
+    endpoint: &Endpoint,
+) -> Result<bool, DistributionError> {
+    use super::cargo_history::{self, CargoSite};
+    let site = match endpoint {
+        Endpoint::Dump(id) => Some(CargoSite::Dump(id.clone())),
+        Endpoint::Cargo(id) => Some(CargoSite::Unit(id.clone())),
+        Endpoint::Pool(id) => Some(CargoSite::Pool(id.clone())),
+        Endpoint::Ground(_) | Endpoint::Tank(_) | Endpoint::Ready(_) => None,
+    };
+    let Some(site) = site else {
+        return Ok(false);
+    };
+    Ok(cargo_history::parcels(state, side, &site)?
+        .iter()
+        .any(|parcel| parcel.ceiling_cp_quarters.is_some()))
+}
+/// Proposed public signature retains arguments and wraps errors locally.
+/// ALL original validation precedes tag guards on an unpublished stock draft.
+#[allow(clippy::too_many_arguments)]
+pub fn transfer(
+    content: &CnaContent,
+    state: &mut State,
+    side: Side,
+    from: &Endpoint,
+    to: &Endpoint,
+    amount: Supplies,
+    packing: &CargoPacking,
+) -> Result<(), DistributionError> {
+    use super::cargo_history::{self, CargoSite};
+    let mut stock_draft = state.clone();
+    transfer_stock_only(content, &mut stock_draft, side, from, to, amount, packing)?;
+    let included = match (from, to) {
+        (Endpoint::Pool(pool), Endpoint::Dump(dump)) => Some((pool, dump, false)),
+        (Endpoint::Dump(dump), Endpoint::Pool(pool)) => Some((pool, dump, true)),
+        _ => None,
+    };
+    // Validate BOTH existing cargo endpoints even when the first is tagged.
+    // Malformed current history must not be hidden by a short-circuit guard.
+    let source_tagged = endpoint_has_tags(state, side, from)?;
+    let target_tagged = endpoint_has_tags(state, side, to)?;
+    let Some((pool, dump, loading)) = included else {
+        if matches!((from, to), (Endpoint::Pool(_), Endpoint::Ground(_))) {
+            return Err(DistributionError::Cargo(
+                DistributionCargoError::UnintegratedRoute(
+                    "pool unloading to a new ground dump lacks a cargo-history destination (airlog:53.25)",
+                ),
+            ));
+        }
+        if source_tagged || target_tagged {
+            return Err(DistributionError::Cargo(
+                DistributionCargoError::UnintegratedRoute(
+                    "current tagged cargo touches an unintegrated distribution endpoint (airlog:53.25)",
+                ),
+            ));
+        }
+        *state = stock_draft;
+        return Ok(());
+    };
+    if state.logistics.dumps[dump].id != *dump {
+        return Err(invalid_carrier(
+            "distribution dump key disagrees with identity",
+        ));
+    }
+    let timing = pool_timing(content, state, side, pool)?;
+    let (source, target, origin, recipient) = if loading {
+        (
+            CargoSite::Dump(dump.clone()),
+            CargoSite::Pool(pool.clone()),
+            None,
+            Some(timing),
+        )
+    } else {
+        (
+            CargoSite::Pool(pool.clone()),
+            CargoSite::Dump(dump.clone()),
+            Some(timing),
+            None,
+        )
+    };
+    let choices = cargo_history::select(state, side, &source, amount, None)?;
+    let mut history_draft = state.clone();
+    cargo_history::transfer_with_origin(
+        &mut history_draft,
+        side,
+        &source,
+        &target,
+        amount,
+        &choices,
+        origin,
+        recipient,
+    )?;
+    stock_draft.logistics.cargo_history = history_draft.logistics.cargo_history;
+    *state = stock_draft;
     Ok(())
 }
 

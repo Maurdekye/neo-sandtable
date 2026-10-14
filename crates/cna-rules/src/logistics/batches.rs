@@ -2,8 +2,7 @@
 //! Stocks, rations and cargo effects commit once at the closed step.
 //! Well results are adjudicated only after both seats close their current lists.
 use super::{
-    CargoPacking, SupplyDraw, SupplyError, available_sources_with_content, capacity, distribution,
-    rations,
+    CargoPacking, SupplyDraw, available_sources_with_content, capacity, distribution, rations,
     stores::{self, RationDraw, draws, engine, field, option},
     water, wells,
 };
@@ -1314,12 +1313,7 @@ fn apply_distribution(
         let from = serde_json::from_str(&o.from).map_err(|_| illegal("unknown source"))?;
         let to = serde_json::from_str(&o.to).map_err(|_| illegal("unknown receiver"))?;
         distribution::transfer(content, &mut draft, side, &from, &to, o.amount, &o.packing)
-            .map_err(|e| match e {
-                SupplyError::Unsupported { .. } | SupplyError::UnknownFuelRate => {
-                    Rejection::Engine(engine(e))
-                }
-                _ => illegal("transfer exceeds stocks, capacity or same-location rules"),
-            })?;
+            .map_err(distribution::rejection)?;
     }
     *state = draft;
     notice(

@@ -1545,7 +1545,19 @@ fn graziani_response(p: &Pending, action: Value) -> Command {
 /// Drive real authored setup and the scheduled stock-only water window. No reserve,
 /// location, cargo or cursor is edited by this proof driver.
 fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
+    graziani_ready_at(KIND, true)
+}
+
+fn graziani_ready_at(
+    stop_kind: &str,
+    preload_fuel: bool,
+) -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
     let c = content();
+    let source_dump = if preload_fuel {
+        "ax_dump_1"
+    } else {
+        "ax_dump_2"
+    };
     let rules = Cna::dev();
     let mut game: Game<Cna> = Game {
         state: State::new(c).unwrap(),
@@ -1574,7 +1586,7 @@ fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
     )
     .unwrap();
     let crate::state::DumpLocation::AwaitingSetup { placement } =
-        &game.state.logistics.dumps["ax_dump_1"].location
+        &game.state.logistics.dumps[source_dump].location
     else {
         panic!()
     };
@@ -1586,11 +1598,16 @@ fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
         false,
     )
     .unwrap();
+    // The empty-preload witness makes a round trip, so its offered origin
+    // must permit both directions. Entry restrictions can be asymmetric;
+    // that intended terrain behavior is not a movement defect.
     let origin = dump_domain.iter().filter(|l| pool_domain.contains(l))
         .filter_map(Location::hex).find(|hex| c.map.neighbors(hex).iter().any(|h|
             matches!(c.map.terrain_survey(&h.id), cna_content::map::Survey::Present(t) if t != "sea")
             && crate::land::map::truck_step_cost(c, Side::Axis,
                 &Trucks { light:30, medium:0, heavy:0 }, hex, &h.id, false, false).is_ok()
+            && (preload_fuel || crate::land::map::truck_step_cost(c, Side::Axis,
+                &Trucks { light:30, medium:0, heavy:0 }, &h.id, hex, false, false).is_ok())
         )).expect("published regions provide an eligible known-land pool/dump placement").clone();
     let mut events = vec![];
     let mut selected = None;
@@ -1604,7 +1621,7 @@ fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
             continue;
         }
         let p = game.state.decisions.pending[0].clone();
-        if p.kind == KIND && p.seat.side == Side::Axis {
+        if p.kind == stop_kind && p.seat.side == Side::Axis {
             assert!(game.state.setup.closed && loaded && issued);
             return (game, selected.unwrap(), origin, events);
         }
@@ -1640,7 +1657,17 @@ fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
                         panic!()
                     };
                     assert!(options.iter().any(|o| o.id == origin.to_string()));
-                    action = json!(origin);
+                    action = if preload_fuel || dump == source_dump {
+                        json!(origin)
+                    } else {
+                        json!(
+                            options
+                                .iter()
+                                .find(|o| o.id != origin.to_string())
+                                .expect("other source dump has a separate legal setup choice")
+                                .id
+                        )
+                    };
                 }
                 crate::setup::SetupTask::Pool { pool, .. }
                     if selected.is_none()
@@ -1659,7 +1686,16 @@ fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
                         .is_some_and(|id| asset.key() == format!("pool:{id}")) =>
                 {
                     if operation == "menu" && !loaded {
-                        action = json!("load");
+                        if preload_fuel {
+                            action = json!("load");
+                        } else {
+                            let ActionSchema::Choice { options } = &p.space.schema else {
+                                panic!()
+                            };
+                            assert!(options.iter().any(|option| option.id == "done"));
+                            action = json!("done");
+                            loaded = true;
+                        }
                     } else if operation == "load" {
                         action = json!({"light":{"fuel":100}});
                         loaded = true;
@@ -1679,12 +1715,12 @@ fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
                 super::super::water::pools::activity_need(c, &game.state, Side::Axis, id).unwrap();
             assert!(need == 30 || need == 60);
             let source =
-                serde_json::to_string(&super::super::SupplySource::Dump("ax_dump_1".into()))
+                serde_json::to_string(&super::super::SupplySource::Dump(source_dump.into()))
                     .unwrap();
             action = json!({"allocations":[],"wells":[],"pool_allocations":[
                 {"pool":id,"activity":need,"draws":[{"source":source,"stores":0,"water":need}]}]});
             let before = serde_json::to_value(&game.state.logistics.truck_pools).unwrap();
-            let stock = game.state.logistics.dumps["ax_dump_1"].supplies.water;
+            let stock = game.state.logistics.dumps[source_dump].supplies.water;
             let t = evaluate(&rules, c, &game, &graziani_response(&p, action)).unwrap();
             assert_eq!(t.game.rng, game.rng);
             assert_eq!(
@@ -1692,7 +1728,7 @@ fn graziani_ready_convoy() -> (Game<Cna>, String, HexId, Vec<EngineEvent>) {
                 before
             );
             assert_eq!(
-                t.game.state.logistics.dumps["ax_dump_1"].supplies.water,
+                t.game.state.logistics.dumps[source_dump].supplies.water,
                 stock
             );
             game = t.game;
@@ -2103,4 +2139,346 @@ fn actual_dispatcher_light_and_heavy_loss_preserve_exact_type_lineage_and_all_ho
         assert!(a.game.state.logistics.truck_convoy.resolved);
         assert!(a.game.state.land.breakdown.window.pool.is_none());
     }
+}
+
+fn history_scheduled_answer(game: &Game<Cna>, p: &Pending) -> Value {
+    let request = Cna::dev()
+        .pending(content(), &game.state)
+        .into_iter()
+        .find(|r| r.id == p.id)
+        .unwrap();
+    let mut local = CampaignRng::from_seed([1; 32]);
+    if p.kind == crate::land::breakdown::window::KIND {
+        return crate::baseline::random_breakdown(content(), &game.state, &request, &mut local);
+    }
+    crate::baseline::logistics_orders_with_profile(
+        content(),
+        &game.state,
+        &request,
+        &mut local,
+        false,
+    )
+    .unwrap()
+    .unwrap_or_else(|| {
+        if p.space.pass.is_some() {
+            Value::Null
+        } else {
+            first_setup(&p.space.schema)
+        }
+    })
+}
+fn history_scheduled_until(
+    mut game: Game<Cna>,
+    kind: &str,
+    stage: super::super::water::WaterStage,
+) -> Game<Cna> {
+    for _ in 0..100_000 {
+        if game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .any(|p| p.kind == kind && p.seat.side == Side::Axis)
+            && super::super::water::WaterStage::current(&game.state) == stage
+        {
+            return game;
+        }
+        let command = if let Some(p) = game.state.decisions.pending.first() {
+            graziani_response(p, history_scheduled_answer(&game, p))
+        } else {
+            Command::Advance
+        };
+        let t = evaluate(&Cna::dev(), content(), &game, &command).unwrap_or_else(|e| {
+            panic!(
+                "scheduled history witness {:?} at {}: {e:?}",
+                command,
+                game.state.cursor.anchor()
+            )
+        });
+        game = t.game;
+    }
+    panic!("scheduled history witness did not reach {kind} within unchanged campaign guard");
+}
+fn history_scheduled_distribution(mut game: Game<Cna>, action: Value) -> Game<Cna> {
+    let p = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == super::super::batches::DISTRIBUTION && p.seat.side == Side::Axis)
+        .unwrap()
+        .clone();
+    let before = serde_json::to_value(&game.state.logistics).unwrap();
+    let t = evaluate(
+        &Cna::dev(),
+        content(),
+        &game,
+        &graziani_response(&p, action.clone()),
+    )
+    .unwrap_or_else(|error| panic!("scheduled distribution {action}: {error:?}"));
+    assert_eq!(
+        serde_json::to_value(&t.game.state.logistics.truck_pools).unwrap(),
+        before["truck_pools"]
+    );
+    assert_eq!(
+        serde_json::to_value(&t.game.state.logistics.dumps).unwrap(),
+        before["dumps"]
+    );
+    assert_eq!(
+        serde_json::to_value(&t.game.state.logistics.cargo_history).unwrap(),
+        before["cargo_history"]
+    );
+    assert_eq!(t.game.rng, game.rng);
+    game = t.game;
+    while let Some(p) = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == super::super::batches::DISTRIBUTION)
+        .cloned()
+    {
+        assert_eq!(p.seat.side, Side::Commonwealth);
+        game = evaluate(
+            &Cna::dev(),
+            content(),
+            &game,
+            &graziani_response(&p, Value::Null),
+        )
+        .unwrap()
+        .game;
+    }
+    let saved = checkpoint(&game);
+    let a = evaluate(&Cna::dev(), content(), &game, &Command::Advance).unwrap();
+    let b = evaluate(&Cna::dev(), content(), &saved, &Command::Advance).unwrap();
+    assert_eq!(
+        serde_json::to_value(&a.game).unwrap(),
+        serde_json::to_value(&b.game).unwrap()
+    );
+    assert_eq!(a.events, b.events);
+    assert_eq!(a.game.rng, game.rng);
+    a.game
+}
+/// Cases: scen:59.44, scen:59.45, scen:60.34, airlog:52.42, airlog:53.24, airlog:53.25, land:21.41
+/// Interpretations: interp:airlog-0020
+#[test]
+fn authored_distribution_load_then_move_and_next_stage_retained_funding_unload() {
+    use super::super::{
+        batches, capacity,
+        distribution::{self, Endpoint},
+    };
+    let c = content();
+    let (game, id, origin, _) = graziani_ready_at(batches::DISTRIBUTION, false);
+    let first_stage = super::super::water::WaterStage::current(&game.state);
+    let pool = game
+        .state
+        .logistics
+        .truck_pools
+        .iter()
+        .find(|p| p.id == id)
+        .unwrap();
+    assert_eq!(
+        pool.location.as_ref().and_then(Location::hex),
+        Some(&origin)
+    );
+    assert!(pool.activity_water.get() > 0);
+    let amount = Supplies {
+        stores: 5,
+        ..Default::default()
+    };
+    assert!(game.state.logistics.dumps["ax_dump_2"].supplies.stores >= 5);
+    let source_before = game.state.logistics.dumps["ax_dump_2"].supplies.stores;
+    let pool_before = pool.cargo.stores;
+    assert_eq!(pool.cargo, Supplies::default());
+    let cargo = Supplies {
+        stores: pool.cargo.stores + 5,
+        ..Default::default()
+    };
+    let packing = capacity::find_packing(c, &pool.trucks, &Trucks::default(), cargo).unwrap();
+    let from = Endpoint::Dump("ax_dump_2".into());
+    let to = Endpoint::Pool(id.clone());
+    let action = json!([{"from":serde_json::to_string(&from).unwrap(),"to":serde_json::to_string(&to).unwrap(),"amount":amount,"packing":packing}]);
+    let loaded = history_scheduled_distribution(game, action);
+    assert_eq!(
+        loaded.state.logistics.dumps["ax_dump_2"].supplies.stores,
+        source_before - 5
+    );
+    assert_eq!(
+        loaded
+            .state
+            .logistics
+            .truck_pools
+            .iter()
+            .find(|p| p.id == id)
+            .unwrap()
+            .cargo
+            .stores,
+        pool_before + 5
+    );
+    let lot = loaded.state.logistics.cargo_history.histories[&CargoSite::Pool(id.clone())]
+        .lots
+        .iter()
+        .find(|l| l.goods.stores == 5)
+        .unwrap();
+    assert_eq!(lot.spent_cp_quarters, 0);
+    assert_eq!(lot.ceiling_cp_quarters, 160);
+    let game = history_scheduled_until(loaded, KIND, first_stage);
+    // Real accepted out-and-back route returns to actual source dump without
+    // location/cursor/history edits. A valid loss allocation is answered by the
+    // published allocator; no dice are injected or silently skipped.
+    let neighbor = c
+        .map
+        .neighbors(&origin)
+        .into_iter()
+        .find_map(|h| {
+            let path = vec![h.id.clone(), origin.clone()];
+            let plan = vec![TruckConvoyOrder::Move {
+                pool: id.clone(),
+                path: path.clone(),
+            }];
+            (validate_plan(c, &game.state, Side::Axis, &plan, false).is_ok()
+                && matches!(
+                    convoy_move::adjudicate_pool_edge(c, &game.state, &id, &origin, &h.id, false),
+                    Ok(convoy_move::PoolEdge::Pass(_))
+                ))
+            .then_some(h.id.clone())
+        })
+        .expect("real source placement must supply a legal return route");
+    let path = vec![neighbor, origin.clone()];
+    let quote =
+        convoy_move::prepare_pool_route(c, &game.state, Side::Axis, &id, &path, false).unwrap();
+    assert!(quote.costs.iter().map(|s| s.cp_quarters).sum::<i32>() > 0);
+    let p = game
+        .state
+        .decisions
+        .pending
+        .iter()
+        .find(|p| p.kind == KIND && p.seat.side == Side::Axis)
+        .unwrap();
+    let accepted = evaluate(
+        &Cna::dev(),
+        c,
+        &game,
+        &graziani_response(p, json!([{"operation":"move","pool":id,"path":path}])),
+    )
+    .unwrap()
+    .game;
+    assert_eq!(accepted.rng, game.rng);
+    assert_eq!(
+        serde_json::to_value(&accepted.state.logistics.truck_pools).unwrap(),
+        serde_json::to_value(&game.state.logistics.truck_pools).unwrap()
+    );
+    let next_stage = super::super::water::WaterStage {
+        op_stage: first_stage.op_stage + 1,
+        ..first_stage
+    };
+    let mut moved = accepted;
+    for _ in 0..100_000 {
+        if moved.state.logistics.truck_convoy.resolved {
+            break;
+        }
+        let command = if let Some(p) = moved.state.decisions.pending.first() {
+            graziani_response(p, history_scheduled_answer(&moved, p))
+        } else {
+            Command::Advance
+        };
+        moved = evaluate(&Cna::dev(), c, &moved, &command).unwrap().game;
+    }
+    assert!(moved.state.logistics.truck_convoy.resolved);
+    assert_eq!(
+        super::super::water::WaterStage::current(&moved.state),
+        first_stage
+    );
+    let first_records: Vec<_> = moved
+        .state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter()
+        .filter(|e| e.site == CargoSite::Pool(id.clone()) && e.stage == first_stage)
+        .flat_map(|e| &e.cohorts)
+        .collect();
+    assert!(!first_records.is_empty());
+    let actual_cp = first_records[0].spent_cp_quarters;
+    assert!(actual_cp > 0);
+    assert!(
+        first_records
+            .iter()
+            .all(|r| r.spent_cp_quarters == actual_cp)
+    );
+    let first_lots = &moved.state.logistics.cargo_history.histories[&CargoSite::Pool(id.clone())];
+    assert_eq!(first_lots.stage, first_stage);
+    let stores_lot = first_lots
+        .lots
+        .iter()
+        .find(|lot| lot.goods.stores == 5)
+        .unwrap();
+    assert_eq!(stores_lot.spent_cp_quarters, actual_cp);
+    assert_eq!(stores_lot.ceiling_cp_quarters, 160);
+    let distribution = history_scheduled_until(moved, batches::DISTRIBUTION, next_stage);
+    let pool = distribution
+        .state
+        .logistics
+        .truck_pools
+        .iter()
+        .find(|p| p.id == id)
+        .unwrap();
+    assert_eq!(
+        pool.location.as_ref().and_then(Location::hex),
+        Some(&origin)
+    );
+    assert!(
+        distribution.state.logistics.pool_fuel_segments[&id]
+            .paid_cost
+            .get()
+            > 0
+    );
+    assert!(distribution.state.logistics.pool_fuel_segments[&id].cp_quarters > 0);
+    let next_records: Vec<_> = distribution
+        .state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter()
+        .filter(|e| e.site == CargoSite::Pool(id.clone()) && e.stage == next_stage)
+        .flat_map(|e| &e.cohorts)
+        .collect();
+    assert!(!next_records.is_empty());
+    assert!(next_records.iter().all(|h| h.spent_cp_quarters == 0));
+    // Supply Distribution occurs before this stage's Move. This proves retained
+    // prior-stage funding plus authoritative current-stage zero, not a second
+    // same-stage post-Move Organization window.
+    assert!(pool.cargo.stores >= 5);
+    let before = distribution.state.logistics.dumps["ax_dump_2"]
+        .supplies
+        .stores;
+    let history = serde_json::to_value(&distribution.state.logistics.pool_fuel_segments).unwrap();
+    let action = json!([{"from":serde_json::to_string(&to).unwrap(),"to":serde_json::to_string(&from).unwrap(),"amount":amount,"packing":CargoPacking::default()}]);
+    let unloaded = history_scheduled_distribution(distribution, action);
+    assert_eq!(
+        unloaded.state.logistics.dumps["ax_dump_2"].supplies.stores,
+        before + 5
+    );
+    assert_eq!(
+        serde_json::to_value(&unloaded.state.logistics.pool_fuel_segments).unwrap(),
+        history
+    );
+    let dump = super::super::cargo_history::parcels(
+        &unloaded.state,
+        Side::Axis,
+        &CargoSite::Dump("ax_dump_2".into()),
+    )
+    .unwrap();
+    assert!(dump.iter().any(|p| p.goods.stores == 5
+        && p.spent_cp_quarters == 0
+        && p.ceiling_cp_quarters == Some(160)));
+    // Old generic stock legality still guards the actual schedule endpoint.
+    assert_eq!(
+        distribution::location(&unloaded.state, Side::Axis, &from)
+            .unwrap()
+            .hex(),
+        Some(&origin)
+    );
 }

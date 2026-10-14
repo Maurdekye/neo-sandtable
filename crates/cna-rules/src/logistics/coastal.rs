@@ -28,6 +28,72 @@ use serde_json::Value;
 fn engine(error: impl Into<PortOperationError>) -> EngineError {
     error.into().into_engine()
 }
+/// Coastal transport preserves its existing port error category. Current truck
+/// histories remain fail-closed until ship transport has its own integration.
+/// Cases: airlog:53.25, airlog:56.34, land:3.6
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CoastalOperationError {
+    Port(PortOperationError),
+    History(super::cargo_history::CargoError),
+    TaggedRoute,
+}
+impl From<PortOperationError> for CoastalOperationError {
+    fn from(error: PortOperationError) -> Self {
+        Self::Port(error)
+    }
+}
+impl From<SupplyError> for CoastalOperationError {
+    fn from(error: SupplyError) -> Self {
+        Self::Port(error.into())
+    }
+}
+impl From<super::cargo_history::CargoError> for CoastalOperationError {
+    fn from(error: super::cargo_history::CargoError) -> Self {
+        Self::History(error)
+    }
+}
+fn cargo_rejection(error: CoastalOperationError) -> Rejection {
+    match error {
+        CoastalOperationError::Port(
+            error @ (PortOperationError::Policy(_)
+            | PortOperationError::Starting(_)
+            | PortOperationError::Supply(SupplyError::Unsupported { .. })),
+        ) => Rejection::Engine(engine(error)),
+        CoastalOperationError::Port(_) => {
+            illegal("coastal list violates cargo, ownership, phase, CPA or port limits")
+        }
+        CoastalOperationError::History(error) => Rejection::Engine(EngineError::Invariant {
+            detail: format!("invalid current owner cargo history at coastal endpoint: {error:?}"),
+        }),
+        CoastalOperationError::TaggedRoute => Rejection::Engine(EngineError::Unsupported {
+            case: "airlog:53.25".into(),
+            detail: "current tagged cargo touches unintegrated coastal transport".into(),
+        }),
+    }
+}
+/// Query both original cargo sites after all original stock/port validation.
+/// A source tag must not hide a malformed target; expired tags confer no ban.
+fn guard_cargo_sites(
+    state: &State,
+    side: Side,
+    source: Option<super::cargo_history::CargoSite>,
+    target: Option<super::cargo_history::CargoSite>,
+) -> Result<(), CoastalOperationError> {
+    let tagged = |site: Option<super::cargo_history::CargoSite>| match site {
+        Some(site) => Ok::<_, CoastalOperationError>(
+            super::cargo_history::parcels(state, side, &site)?
+                .iter()
+                .any(|parcel| parcel.ceiling_cp_quarters.is_some()),
+        ),
+        None => Ok(false),
+    };
+    let source_tagged = tagged(source)?;
+    let target_tagged = tagged(target)?;
+    if source_tagged || target_tagged {
+        return Err(CoastalOperationError::TaggedRoute);
+    }
+    Ok(())
+}
 pub const AXIS: &str = "cna.logistics.coastal.axis";
 pub const CW: &str = "cna.logistics.coastal.commonwealth";
 const TYPES: [SupplyType; 4] = [
@@ -267,6 +333,25 @@ pub fn load(
     id: &str,
     dump: &str,
     cargo: Supplies,
+) -> Result<(), CoastalOperationError> {
+    use super::cargo_history::CargoSite;
+    let mut draft = state.clone();
+    load_stock_only(content, &mut draft, id, dump, cargo)?;
+    guard_cargo_sites(
+        state,
+        Side::Axis,
+        Some(CargoSite::Dump(dump.into())),
+        Some(CargoSite::Ship(id.into())),
+    )?;
+    state.logistics = draft.logistics;
+    Ok(())
+}
+fn load_stock_only(
+    content: &CnaContent,
+    state: &mut State,
+    id: &str,
+    dump: &str,
+    cargo: Supplies,
 ) -> Result<(), PortOperationError> {
     if !active(state)
         || !one_type(&cargo)
@@ -328,7 +413,30 @@ pub fn unload(
     id: &str,
     dump: &str,
     cargo: Supplies,
-) -> Result<(), PortOperationError> {
+) -> Result<(), CoastalOperationError> {
+    use super::cargo_history::CargoSite;
+    let mut draft = state.clone();
+    let resolved = unload_stock_only(content, &mut draft, id, dump, cargo)?;
+    guard_cargo_sites(
+        state,
+        Side::Axis,
+        Some(CargoSite::Ship(id.into())),
+        state
+            .logistics
+            .dumps
+            .contains_key(&resolved)
+            .then_some(CargoSite::Dump(resolved)),
+    )?;
+    state.logistics = draft.logistics;
+    Ok(())
+}
+fn unload_stock_only(
+    content: &CnaContent,
+    state: &mut State,
+    id: &str,
+    dump: &str,
+    cargo: Supplies,
+) -> Result<String, PortOperationError> {
     if !active(state) || !one_type(&cargo) {
         return Err(SupplyError::Invalid.into());
     }
@@ -359,7 +467,7 @@ pub fn unload(
     draft.logistics.coastal_ships.get_mut(id).unwrap().cargo = remaining;
     draft.logistics.dumps.get_mut(&dump).unwrap().supplies = total;
     state.logistics = draft.logistics;
-    Ok(())
+    Ok(dump)
 }
 /// Consecutive verified sea hexes cost1CP each. Off-map joins and transit-box topology need
 /// their own verified source data; the land entry hex is not assumed to be a sea entrance.
@@ -429,7 +537,30 @@ pub fn commonwealth_transfer(
     from: &str,
     to: &str,
     cargo: Supplies,
-) -> Result<(), PortOperationError> {
+) -> Result<(), CoastalOperationError> {
+    use super::cargo_history::CargoSite;
+    let mut draft = state.clone();
+    let resolved = commonwealth_transfer_stock_only(content, &mut draft, from, to, cargo)?;
+    guard_cargo_sites(
+        state,
+        Side::Commonwealth,
+        (!from.starts_with("base:")).then_some(CargoSite::Dump(from.into())),
+        state
+            .logistics
+            .dumps
+            .contains_key(&resolved)
+            .then_some(CargoSite::Dump(resolved)),
+    )?;
+    state.logistics = draft.logistics;
+    Ok(())
+}
+fn commonwealth_transfer_stock_only(
+    content: &CnaContent,
+    state: &mut State,
+    from: &str,
+    to: &str,
+    cargo: Supplies,
+) -> Result<String, PortOperationError> {
     if state.cursor.anchor() != "opstage.organization.tactical_shipping"
         || from == to
         || ports::weight24(content, &cargo)? == 0
@@ -476,7 +607,7 @@ pub fn commonwealth_transfer(
     }
     draft.logistics.dumps.get_mut(&target_id).unwrap().supplies = destination;
     state.logistics = draft.logistics;
-    Ok(())
+    Ok(target_id)
 }
 /// A menu may omit an unassessed port only with an explicit owner-private source note.
 /// The last accepted owner is read solely to address that note, never as usable capacity.
@@ -900,7 +1031,7 @@ fn apply_orders(
                     unload(content, &mut draft, &o.ship, &o.dump, o.cargo)
                 }
                 "sail" if o.dump.is_empty() && o.cargo == Supplies::default() => {
-                    sail(content, &mut draft, &o.ship, &o.path)
+                    sail(content, &mut draft, &o.ship, &o.path).map_err(CoastalOperationError::from)
                 }
                 _ => Err(SupplyError::Invalid.into()),
             }
@@ -909,14 +1040,7 @@ fn apply_orders(
                 .map_err(|_| illegal("invalid coastal order"))?;
             commonwealth_transfer(content, &mut draft, &o.from, &o.to, o.cargo)
         };
-        result.map_err(|e| match e {
-            PortOperationError::Policy(_)
-            | PortOperationError::Starting(_)
-            | PortOperationError::Supply(SupplyError::Unsupported { .. }) => {
-                Rejection::Engine(engine(e))
-            }
-            _ => illegal("coastal list violates cargo, ownership, phase, CPA or port limits"),
-        })?;
+        result.map_err(cargo_rejection)?;
     }
     state.logistics = draft.logistics;
     publish_presence(state, &before, cx);

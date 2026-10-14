@@ -386,3 +386,419 @@ fn empty_stock_domain_requires_an_empty_allocation_list() {
     };
     assert_eq!((min, max), (0, 1));
 }
+// Explicit consumption fixtures test retirement mechanics, not a claim that
+// these current tags arise at the earlier PRE/Water anchors in real play.
+fn special_retirement_fixture() -> (State, UnitId, Location) {
+    use super::super::cargo_history::{CargoHistory, CargoLot, CargoSite};
+    let (mut state, id) = setup(20, 0);
+    state.cursor.op_stage = Some(1);
+    let location = state.land.units[&id].location.clone();
+    state.land.units.get_mut(&id).unwrap().trucks.light = 1;
+    state
+        .logistics
+        .unit_supply
+        .entry(id.clone())
+        .or_default()
+        .carried
+        .stores = 3;
+    let lots = vec![
+        CargoLot {
+            id: "lower".into(),
+            goods: Supplies {
+                stores: 1,
+                ..Default::default()
+            },
+            spent_cp_quarters: 12,
+            ceiling_cp_quarters: 160,
+            continuous_first_line: false,
+        },
+        CargoLot {
+            id: "greater".into(),
+            goods: Supplies {
+                stores: 1,
+                ..Default::default()
+            },
+            spent_cp_quarters: 48,
+            ceiling_cp_quarters: 160,
+            continuous_first_line: false,
+        },
+    ];
+    let history = CargoHistory {
+        stage: WaterStage::current(&state),
+        lots,
+    };
+    state
+        .logistics
+        .cargo_history
+        .histories
+        .insert(CargoSite::Unit(id.clone()), history.clone());
+    state
+        .logistics
+        .cargo_history
+        .histories
+        .insert(CargoSite::Dump("food".into()), history);
+    (state, id, location)
+}
+/// Cases: airlog:51.12, airlog:51.17, airlog:53.25
+/// Interpretations: interp:airlog-0020
+#[test]
+fn special_consumption_retires_greatest_cp_tags_then_fresh_and_preserves_stock_order() {
+    use super::super::cargo_history::CargoSite;
+    let (mut state, id, location) = special_retirement_fixture();
+    assert_eq!(
+        draw_special_stores(content(), &mut state, Side::Axis, &location, 1).unwrap(),
+        0
+    );
+    let unit = &state.logistics.cargo_history.histories[&CargoSite::Unit(id.clone())];
+    assert_eq!(unit.lots.len(), 1);
+    assert_eq!(unit.lots[0].id, "lower");
+    assert_eq!(state.logistics.unit_supply[&id].carried.stores, 2);
+    assert_eq!(state.logistics.dumps["food"].supplies.stores, 20);
+    assert_eq!(
+        draw_special_stores(content(), &mut state, Side::Axis, &location, 2).unwrap(),
+        0
+    );
+    assert_eq!(state.logistics.unit_supply[&id].carried.stores, 0);
+    assert!(
+        state.logistics.cargo_history.histories[&CargoSite::Unit(id)]
+            .lots
+            .is_empty()
+    );
+    assert_eq!(
+        draw_special_stores(content(), &mut state, Side::Axis, &location, 1).unwrap(),
+        0
+    );
+    assert_eq!(state.logistics.dumps["food"].supplies.stores, 19);
+    let dump = &state.logistics.cargo_history.histories[&CargoSite::Dump("food".into())];
+    assert_eq!(dump.lots.len(), 1);
+    assert_eq!(dump.lots[0].id, "lower");
+    let saved: State = serde_json::from_value(serde_json::to_value(&state).unwrap()).unwrap();
+    assert_eq!(
+        serde_json::to_value(&saved).unwrap(),
+        serde_json::to_value(&state).unwrap()
+    );
+}
+/// Cases: airlog:51.12, airlog:51.17, airlog:53.25, land:3.6
+#[test]
+fn special_consumption_late_malformed_dump_rolls_back_prior_unit_debit_and_expired_is_ignored() {
+    use super::super::cargo_history::CargoSite;
+    let (mut state, _, location) = special_retirement_fixture();
+    state
+        .logistics
+        .cargo_history
+        .histories
+        .get_mut(&CargoSite::Dump("food".into()))
+        .unwrap()
+        .lots[0]
+        .spent_cp_quarters = -1;
+    let before = serde_json::to_value(&state).unwrap();
+    assert!(matches!(
+        draw_special_stores(content(), &mut state, Side::Axis, &location, 5),
+        Err(EngineError::Invariant { .. })
+    ));
+    assert_eq!(serde_json::to_value(&state).unwrap(), before);
+    state.cursor.op_stage = Some(2);
+    assert_eq!(
+        draw_special_stores(content(), &mut state, Side::Axis, &location, 5).unwrap(),
+        0
+    );
+    assert_eq!(state.logistics.dumps["food"].supplies.stores, 18);
+}
+/// Cases: airlog:51.12, airlog:51.17, airlog:53.25, land:3.6
+#[test]
+fn special_consumption_current_tags_never_refuse_valid_mandatory_stores_or_change_shortage() {
+    let (mut tagged, id, location) = special_retirement_fixture();
+    let mut plain = tagged.clone();
+    plain.logistics.cargo_history.histories.clear();
+    assert_eq!(
+        draw_special_stores(content(), &mut tagged, Side::Axis, &location, 30).unwrap(),
+        7
+    );
+    assert_eq!(
+        draw_special_stores(content(), &mut plain, Side::Axis, &location, 30).unwrap(),
+        7
+    );
+    assert_eq!(
+        tagged.logistics.unit_supply[&id].carried,
+        plain.logistics.unit_supply[&id].carried
+    );
+    assert_eq!(
+        tagged.logistics.dumps["food"].supplies,
+        plain.logistics.dumps["food"].supplies
+    );
+    crate::testkit::assert_indistinguishable(
+        &Cna::dev(),
+        content(),
+        &tagged,
+        &plain,
+        Side::Commonwealth,
+    );
+}
+
+// These games use real dispatchers with explicitly synthetic pre-entry tags.
+// They do not assert that distribution can precede PRE or Water in real play.
+fn feeding_entry_game(water: bool) -> (cna_core::engine::Game<Cna>, UnitId) {
+    use crate::seq::Block;
+    let (mut state, id, location) = special_retirement_fixture();
+    state.setup.closed = true;
+    state.cursor.block = if water { Block::OpStage } else { Block::Pre };
+    let anchor = if water {
+        "opstage.organization.water_distribution"
+    } else {
+        "logistics.stores_expenditure"
+    };
+    state.cursor.index = state
+        .cursor
+        .block
+        .steps()
+        .iter()
+        .position(|step| step.anchor == anchor)
+        .unwrap();
+    state.cursor.entered = false;
+    state.turn.weather = Some(crate::state::WeatherState {
+        kind: cna_tables::land::weather::WeatherKind::Normal,
+        storm_sections: vec![],
+    });
+    state.logistics.prisoners.insert(
+        "feeding".into(),
+        PrisonerGroup {
+            owner: Side::Axis,
+            location,
+            prisoner_points: 1,
+            guard_points: 1,
+            food_stage: None,
+            stores_short: 0,
+            guards_fed_gt: None,
+            guards_stores_short: 0,
+        },
+    );
+    (
+        cna_core::engine::Game {
+            state,
+            rng: CampaignRng::from_seed([27; 32]).state(),
+        },
+        id,
+    )
+}
+/// Cases: airlog:51.12, airlog:51.17, airlog:53.25, land:3.6
+#[test]
+fn actual_pre_and_water_feeding_entries_retire_once_with_recovery_retry_and_private_streams() {
+    use super::super::{batches, cargo_history::CargoSite};
+    use cna_core::engine::{Command, evaluate};
+    for (water, strict) in [(false, false), (false, true), (true, false)] {
+        let rules = Cna { strict };
+        let (game, id) = feeding_entry_game(water);
+        let mut plain = game.clone();
+        plain.state.logistics.cargo_history.histories.clear();
+        crate::testkit::assert_action_indistinguishable(
+            &rules,
+            content(),
+            &game,
+            &plain,
+            &Command::Advance,
+            Side::Commonwealth,
+        );
+        let original = serde_json::to_value(&game).unwrap();
+        let recovered = serde_json::from_value(original.clone()).unwrap();
+        let first = evaluate(&rules, content(), &game, &Command::Advance).unwrap();
+        let restored = evaluate(&rules, content(), &recovered, &Command::Advance).unwrap();
+        assert_eq!(
+            serde_json::to_value(&first.game).unwrap(),
+            serde_json::to_value(&restored.game).unwrap()
+        );
+        assert_eq!(first.events, restored.events);
+        assert_eq!(serde_json::to_value(&game).unwrap(), original);
+        assert_eq!(first.game.rng, game.rng);
+        let state = &first.game.state;
+        assert_eq!(
+            state.logistics.prisoners["feeding"].food_stage,
+            Some(WaterStage::current(state))
+        );
+        assert_eq!(state.logistics.prisoners["feeding"].stores_short, 0);
+        assert_eq!(
+            state.logistics.prisoners["feeding"].guards_fed_gt,
+            if water {
+                None
+            } else {
+                Some(state.cursor.game_turn)
+            }
+        );
+        assert_eq!(state.logistics.prisoners["feeding"].guards_stores_short, 0);
+        assert_eq!(
+            state.logistics.unit_supply[&id].carried.stores,
+            if water { 2 } else { 0 }
+        );
+        assert_eq!(state.logistics.dumps["food"].supplies.stores, 20);
+        let remaining = &state.logistics.cargo_history.histories[&CargoSite::Unit(id.clone())].lots;
+        if water {
+            assert_eq!(remaining.len(), 1);
+            assert_eq!(remaining[0].id, "lower");
+        } else {
+            assert!(remaining.is_empty());
+        }
+        assert_eq!(
+            state.logistics.cargo_history.histories[&CargoSite::Dump("food".into())]
+                .lots
+                .len(),
+            2
+        );
+        let kind = if water {
+            batches::WATER
+        } else {
+            batches::STORES
+        };
+        assert_eq!(
+            state
+                .decisions
+                .pending
+                .iter()
+                .filter(|p| p.kind == kind)
+                .count(),
+            2
+        );
+        let saved = serde_json::from_value(serde_json::to_value(&first.game).unwrap()).unwrap();
+        for source in [&first.game, &saved] {
+            let retry = evaluate(&rules, content(), source, &Command::Advance).unwrap();
+            assert_eq!(
+                serde_json::to_value(&retry.game).unwrap(),
+                serde_json::to_value(&first.game).unwrap()
+            );
+            assert!(retry.events.is_empty());
+        }
+        // The same mandatory-feeding ledger also protects direct entry retries.
+        let mut retry = state.clone();
+        let mut rng = CampaignRng::from_state(&first.game.rng);
+        let mut events = first.events.clone();
+        feed_prisoners(
+            content(),
+            &mut retry,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events,
+            },
+            !water,
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_value(&retry).unwrap(),
+            serde_json::to_value(state).unwrap()
+        );
+        assert_eq!(events, first.events);
+        assert_eq!(rng.state(), first.game.rng);
+    }
+    // Full Water retains its earlier public-content composition stop; no bypass.
+    let (game, _) = feeding_entry_game(true);
+    let bytes = serde_json::to_value(&game).unwrap();
+    assert!(matches!(evaluate(&Cna { strict: true }, content(), &game,
+        &Command::Advance), Err(Rejection::Engine(EngineError::Unsupported { case, .. }))
+        if case == "airlog:52.42"));
+    assert_eq!(serde_json::to_value(&game).unwrap(), bytes);
+}
+/// Cases: airlog:51.12, airlog:51.17, airlog:53.25, land:3.6
+#[test]
+fn actual_feeding_late_group_malformed_history_rolls_back_whole_game_and_prior_events() {
+    use super::super::cargo_history::CargoSite;
+    use cna_core::engine::{Command, evaluate};
+    for (water, strict) in [(false, false), (false, true), (true, false)] {
+        let rules = Cna { strict };
+        let (mut game, id) = feeding_entry_game(water);
+        // Two synthetic groups use actual canonical neighboring sites. The first
+        // succeeds; only the second group's current history is malformed.
+        let first_location = Location::Hex {
+            hex: "C4020".into(),
+        };
+        let second_location = Location::Hex {
+            hex: "C4021".into(),
+        };
+        game.state.land.units.get_mut(&id).unwrap().location = first_location.clone();
+        game.state.land.units.get_mut(&id).unwrap().trucks.light = 0;
+        game.state
+            .logistics
+            .unit_supply
+            .get_mut(&id)
+            .unwrap()
+            .carried
+            .stores = 0;
+        game.state
+            .logistics
+            .cargo_history
+            .histories
+            .remove(&CargoSite::Unit(id));
+        game.state.logistics.dumps.get_mut("food").unwrap().location = DumpLocation::Hex {
+            hex: "C4020".into(),
+        };
+        let mut second_dump = game.state.logistics.dumps["food"].clone();
+        second_dump.id = "second".into();
+        second_dump.location = DumpLocation::Hex {
+            hex: "C4021".into(),
+        };
+        game.state
+            .logistics
+            .dumps
+            .insert("second".into(), second_dump);
+        let mut broken =
+            game.state.logistics.cargo_history.histories[&CargoSite::Dump("food".into())].clone();
+        broken.lots[0].spent_cp_quarters = -1;
+        game.state
+            .logistics
+            .cargo_history
+            .histories
+            .insert(CargoSite::Dump("second".into()), broken);
+        let first = game.state.logistics.prisoners.get_mut("feeding").unwrap();
+        first.location = first_location;
+        first.guard_points = 0;
+        let mut second = first.clone();
+        second.location = second_location;
+        game.state
+            .logistics
+            .prisoners
+            .insert("second".into(), second);
+        let expected = EngineError::Invariant {
+            detail: "invalid current cargo history at special stores consumption: Invalid".into(),
+        };
+        // Establish a genuinely late group error, rather than mere first-draw purity.
+        let mut partial = game.state.clone();
+        let mut rng = CampaignRng::from_state(&game.rng);
+        let mut events = vec![EngineEvent::new(
+            Audience::Side(Side::Axis),
+            GameEvent::Note {
+                text: "Previously received event".into(),
+            },
+        )];
+        let prior_events = events.clone();
+        assert_eq!(
+            feed_prisoners(
+                content(),
+                &mut partial,
+                &mut Cx {
+                    rng: &mut rng,
+                    events: &mut events
+                },
+                !water
+            )
+            .unwrap_err(),
+            expected
+        );
+        assert_eq!(partial.logistics.dumps["food"].supplies.stores, 19);
+        assert_eq!(
+            partial.logistics.prisoners["feeding"].food_stage,
+            Some(WaterStage::current(&partial))
+        );
+        assert!(events.len() > prior_events.len());
+        assert_eq!(rng.state(), game.rng);
+        // Only core evaluation is the whole-group transaction boundary. None of
+        // the disposable partial consumption or notes may reach its caller.
+        let bytes = serde_json::to_value(&game).unwrap();
+        let restored = serde_json::from_value(bytes.clone()).unwrap();
+        let prior = serde_json::to_value(&prior_events).unwrap();
+        for source in [&game, &restored, &game] {
+            assert_eq!(
+                evaluate(&rules, content(), source, &Command::Advance).unwrap_err(),
+                Rejection::Engine(expected.clone())
+            );
+            assert_eq!(serde_json::to_value(source).unwrap(), bytes);
+            assert_eq!(source.rng, game.rng);
+        }
+        assert_eq!(serde_json::to_value(&prior_events).unwrap(), prior);
+    }
+}
