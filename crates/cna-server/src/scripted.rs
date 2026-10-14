@@ -239,10 +239,20 @@ pub fn answer(
             request.kind
         )));
     }
+    let empty_replacements_choice = matches!(
+        request.kind.as_str(),
+        "cna.replacements.training" | "cna.replacements.allocation"
+    ) && matches!(
+        &request.space.schema,
+        ActionSchema::Choice { options } if options.is_empty()
+    );
     // A declared pass is this baseline's policy for an unavailable domain. It is
     // selected before generation, never substituted after an execution failure.
     let pass = request.space.pass.is_some()
-        && (unavailable || mode == Mode::PassWhenPossible || sample(&mut generator.rng, 5)? == 0);
+        && (empty_replacements_choice
+            || unavailable
+            || mode == Mode::PassWhenPossible
+            || sample(&mut generator.rng, 5)? == 0);
     let budget_unavailable = !pass
         && ResourcePreview {
             rng: generator.rng.clone(),
