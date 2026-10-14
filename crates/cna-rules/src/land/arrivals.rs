@@ -1571,8 +1571,105 @@ mod tests {
             .unwrap();
         arrival_orders(c, &game.state, &r).expect("source-conserving arrival policy")
     }
+    // These arrival-only fixtures never schedule replacement production. Respond
+    // to the real no-due window without resolving it or bypassing the finish.
+    fn empty_replacement_command(game: &Game<Cna>, p: &Pending) -> Command {
+        assert_eq!(p.kind, crate::land::replacements::ARRIVAL);
+        assert_eq!(p.seat.role, Role::Logistics);
+        let own = game
+            .state
+            .land
+            .replacements
+            .sides
+            .iter()
+            .find(|own| own.side == p.seat.side)
+            .unwrap();
+        assert!(
+            own.orders.is_empty(),
+            "fixture must prove no due replacements"
+        );
+        let ActionSchema::Record { fields } = &p.space.schema else {
+            panic!("replacement request must declare its choices schema");
+        };
+        assert_eq!(fields.len(), 1);
+        assert_eq!(fields[0].name, "choices");
+        assert!(matches!(
+            fields[0].schema,
+            ActionSchema::List { min: 0, max: 0, .. }
+        ));
+        assert!(p.space.pass.is_some());
+        Command::Respond(DecisionResponse {
+            decision_id: p.id.clone(),
+            seat: p.seat,
+            controller_epoch: 1,
+            decision_revision: p.revision,
+            idempotency_key: p.id.to_string(),
+            action: Value::Null,
+            public_explanation: None,
+        })
+    }
+    fn respond_empty_replacement(
+        rules: &Cna,
+        c: &CnaContent,
+        game: &Game<Cna>,
+        p: &Pending,
+    ) -> Game<Cna> {
+        let command = empty_replacement_command(game, p);
+        let before = serde_json::to_vec(game).unwrap();
+        let recovered: Game<Cna> = serde_json::from_slice(&before).unwrap();
+        let transition = evaluate(rules, c, game, &command).unwrap();
+        let replay = evaluate(rules, c, &recovered, &command).unwrap();
+        assert_eq!(json!(transition.game), json!(replay.game));
+        assert_eq!(json!(transition.events), json!(replay.events));
+        assert_eq!(serde_json::to_vec(game).unwrap(), before);
+        assert_eq!(serde_json::to_vec(&recovered).unwrap(), before);
+        assert_eq!(transition.game.rng, game.rng);
+        // An expected serialized value only: never edit the live Game's pending
+        // decisions or procedure. The returned Game always comes from evaluate.
+        let mut expected = json!(game);
+        let side_index = game
+            .state
+            .land
+            .replacements
+            .sides
+            .iter()
+            .position(|own| own.side == p.seat.side)
+            .unwrap();
+        expected["state"]["land"]["replacements"]["sides"][side_index]["arrival"]["phase"] =
+            json!(crate::land::replacements::ProcedurePhase::Awaiting {
+                submitted: Some(crate::land::replacements::ReplacementPlan::Arrival(
+                    crate::land::replacements::ArrivalPlan { choices: vec![] },
+                )),
+            });
+        expected["state"]["decisions"]["pending"] = json!(
+            game.state
+                .decisions
+                .pending
+                .iter()
+                .filter(|other| other.id != p.id)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(json!(transition.game), expected);
+        transition.game
+    }
+    fn pass_empty_replacements(rules: &Cna, c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
+        let requests: Vec<_> = game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .filter(|p| p.kind == crate::land::replacements::ARRIVAL)
+            .cloned()
+            .collect();
+        assert!(requests.len() <= Side::ALL.len());
+        for p in requests {
+            game = respond_empty_replacement(rules, c, &game, &p);
+        }
+        game
+    }
     fn drain(c: &CnaContent, mut game: Game<Cna>) -> Game<Cna> {
         for _ in 0..20 {
+            game = pass_empty_replacements(&Cna::dev(), c, game);
             if let Some(p) = game
                 .state
                 .decisions
@@ -2007,6 +2104,7 @@ mod tests {
         let mut full = evaluate(&Cna::full(), &c, &before, &Command::Advance)
             .unwrap()
             .game;
+        full = pass_empty_replacements(&Cna::full(), &c, full);
         for p in full.state.decisions.pending.clone() {
             let a = plan(&c, &full, &p);
             full = evaluate(
@@ -2105,7 +2203,7 @@ mod tests {
             assert_eq!(game.rng, rng);
             assert_eq!(game.state.cursor.anchor(), "opstage.convoy_arrival");
         }
-        game
+        pass_empty_replacements(&Cna::dev(), c, game)
     }
     /// Cases: land:3.6, airlog:34.84, airlog:35.11, airlog:36.0
     #[test]
@@ -2228,6 +2326,7 @@ mod tests {
             assert_eq!(json!(a.state.air), initial);
             assert_eq!(json!(b.state.air), initial);
         }
+        (a, b) = pass_empty_replacement_pair(&c, a, b, Side::Axis);
         crate::testkit::assert_action_indistinguishable(
             &Cna::dev(),
             &c,
@@ -3551,6 +3650,39 @@ mod tests {
             assert_eq!(a.state.cursor.anchor(), "opstage.convoy_arrival");
             assert_eq!(b.state.cursor.anchor(), "opstage.convoy_arrival");
         }
+        pass_empty_replacement_pair(c, a, b, observer)
+    }
+    fn pass_empty_replacement_pair(
+        c: &CnaContent,
+        mut a: Game<Cna>,
+        mut b: Game<Cna>,
+        observer: Side,
+    ) -> (Game<Cna>, Game<Cna>) {
+        for side in Side::ALL {
+            let find = |game: &Game<Cna>| {
+                game.state
+                    .decisions
+                    .pending
+                    .iter()
+                    .find(|p| p.kind == crate::land::replacements::ARRIVAL && p.seat.side == side)
+                    .cloned()
+            };
+            let (pa, pb) = (find(&a), find(&b));
+            assert_eq!(pa.is_some(), pb.is_some());
+            if let (Some(pa), Some(pb)) = (pa, pb) {
+                let ca = empty_replacement_command(&a, &pa);
+                let cb = empty_replacement_command(&b, &pb);
+                crate::testkit::assert_actions_indistinguishable(
+                    &Cna::dev(),
+                    c,
+                    (&a, &ca),
+                    (&b, &cb),
+                    observer,
+                );
+                a = respond_empty_replacement(&Cna::dev(), c, &a, &pa);
+                b = respond_empty_replacement(&Cna::dev(), c, &b, &pb);
+            }
+        }
         (a, b)
     }
     /// Cases: land:3.6, land:20.14, land:9.12
@@ -4038,7 +4170,7 @@ mod tests {
             .decisions
             .pending
             .iter()
-            .find(|p| p.seat == SeatId::new(Side::Commonwealth, Role::Commander))
+            .find(|p| p.kind == BATCH && p.seat == SeatId::new(Side::Commonwealth, Role::Commander))
             .unwrap()
             .clone();
         let mut order = plan(&c, &g, &commander);
@@ -4056,7 +4188,7 @@ mod tests {
             .decisions
             .pending
             .iter()
-            .find(|p| p.seat == SeatId::new(Side::Commonwealth, Role::Logistics))
+            .find(|p| p.kind == BATCH && p.seat == SeatId::new(Side::Commonwealth, Role::Logistics))
             .unwrap()
             .clone();
         let mut order = plan(&c, &g, &logistics);
