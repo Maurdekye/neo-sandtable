@@ -524,7 +524,7 @@ async fn production_recover_policy_propagates_real_water_errors_before_any_comma
                 campaign.binding(seat).controller_epoch,
             )
             .unwrap_err();
-            assert_eq!(actual, expected);
+            assert_eq!(actual, Rejection::Engine(expected.clone()));
             assert_eq!(
                 serde_json::to_value(campaign.game.as_ref()).unwrap(),
                 before_game
@@ -846,3 +846,7 @@ async fn production_factories_capture_each_actual_full_dev_policy_profile_indepe
         assert_eq!(rows(&path), before);
     }
 }
+
+#[cfg(test)]
+#[path = "cna_policy_carrier_tests.rs"]
+mod carrier_controls;
