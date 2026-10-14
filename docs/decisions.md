@@ -91,7 +91,10 @@ never sees them. Transcripts are for watching only; adjudication never depends o
 ## D11 (O) — CI timing checks are hang guards
 GitHub's runners vary in speed by about 1.5 times from hour to hour (2026-10-14: the same commit
 took 27 minutes at 09:57 UTC and 37.5 minutes at 12:32 UTC). So the timing checks in the slow CI
-job (the offline full game-turn, the whole movement campaign and the large-unit inspect query)
-only catch hangs and large slowdowns: each limit is about 2.5 times the test's time on a fast
-runner. Smaller slowdowns are judged by rerunning the previous commit's slow job beside the new
-one at the same time, never by tightening a limit. Local optimisation targets are unchanged.
+job (the offline full game-turn with each fake turn's transcript confirmation wait, the whole
+movement campaign and the large-unit inspect query) only catch hangs and large slowdowns: each
+limit is about 2.5 times the test's time on a fast runner, but never above a production limit
+the check runs inside (the fake turn's wait stays under the 60-second turn limit). Smaller
+slowdowns are judged by rerunning the previous commit's slow job beside the new one at the same
+time, never by tightening a limit. Local optimisation targets and production limits are
+unchanged.

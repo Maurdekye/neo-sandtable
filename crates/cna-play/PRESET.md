@@ -196,6 +196,11 @@ The ignored-test hang guard is 1,050 seconds, about 2.5 times this test's
 415.06-second duration on a fast CI runner (run 38546151542, ed694b8,
 2026-10-14). It only catches hangs and large slowdowns; smaller slowdowns are
 judged by rerunning the previous commit beside the new one (owner ruling D11 in
-docs/decisions.md). This measured calibration does not explain the separate
+docs/decisions.md). The same ruling covers each fake turn's own transcript
+confirmation wait, now 55 seconds (formerly 30). Its slowest case is Axis
+logistics' last set-up answer, whose transcript waits behind the set-up close:
+fast runners stayed under 30 seconds, slow ones did not (run 38594053345,
+2944580). 55 seconds keeps the whole fake turn inside the unchanged 60-second
+turn limit. This measured calibration does not explain the separate
 browser-attached setup stall. The 120-second browser acknowledgement guard,
 default tests and production model, tool and wall budgets are unchanged.

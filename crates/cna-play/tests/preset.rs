@@ -586,7 +586,11 @@ impl SeatDriver for Fake {
             },
         );
         self.phase(TurnPhase::TranscriptConfirmation);
-        confirm_transcript(&self.sink, Duration::from_secs(30)).await?;
+        // Hang guard only (owner ruling D11, docs/decisions.md). The slowest flush is Axis
+        // logistics' last set-up answer, which waits for set-up to close: under the former 30 s
+        // on fast CI runners, over it on slow ones (run 38594053345, 2944580). 55 s keeps the
+        // whole fake turn inside the unchanged 60 s production turn limit.
+        confirm_transcript(&self.sink, Duration::from_secs(55)).await?;
         self.cost += 0.01;
         Ok(TurnOutcome {
             ok: true,
