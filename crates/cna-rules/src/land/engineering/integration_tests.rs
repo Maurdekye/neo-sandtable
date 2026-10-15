@@ -434,3 +434,6 @@ fn malformed_air_retained_marker_stops_actual_advance_without_capturing_either_h
     assert_eq!(game.rng, rng);
     assert!(game.state.engineering.closed_activity.is_none());
 }
+
+#[path = "boundary_stream_tests.rs"]
+mod boundary_stream_controls;
