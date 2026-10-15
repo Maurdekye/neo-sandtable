@@ -483,7 +483,7 @@ async fn exercise(fixture: &Opened, profile: &str) -> Checked<usize> {
         bytes(&serde_json::from_str::<Game<Cna>>(&checkpoint)?) == bytes(&fixture.game),
         "actual checkpoint0 must retain the complete opened Game",
     )?;
-    let mut query = db.prepare("SELECT payload FROM events ORDER BY id")?;
+    let mut query = db.prepare("SELECT payload FROM events ORDER BY event_id")?;
     let persisted = query
         .query_map([], |row| row.get::<_, String>(0))?
         .map(|row| Ok(serde_json::from_str::<EngineEvent>(&row?)?))

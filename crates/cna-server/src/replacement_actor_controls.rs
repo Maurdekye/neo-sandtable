@@ -331,7 +331,7 @@ async fn replacement_real_empty_windows_use_original_writer_and_match_direct_can
                     Command::Respond(answer)
                 );
                 let persisted_events: Vec<EngineEvent> = db
-                    .prepare("SELECT payload FROM events ORDER BY id")
+                    .prepare("SELECT payload FROM events ORDER BY event_id")
                     .unwrap()
                     .query_map([], |row| row.get::<_, String>(0))
                     .unwrap()
