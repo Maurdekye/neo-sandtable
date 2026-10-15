@@ -4564,7 +4564,48 @@ fn step1_require_domains(
     }
 }
 
+// Exact additive source-gap control, not an exemption for arbitrary inspect errors.
+// Cases: land:4.45, land:4.46; source gap: data/units/GAPS.md U-009.
+fn step1_source_skip_inspect_error(
+    c: &CnaContent,
+    id: &UnitId,
+    refusals: &[Step1SupplyRefusal],
+) -> Rejection {
+    assert!(
+        id.as_str() == "it.tobruk_garrison.the_san_giorgio",
+        "golden source-gap unit changed"
+    );
+    let oa = &c.units.units[id];
+    assert_eq!(oa.kind.as_deref(), Some("fixed_ship"));
+    assert!(oa.class.is_none(), "golden fixed ship now has a source class");
+    assert_eq!(refusals.len(), 3, "golden fixed-ship preflight changed");
+    for (refusal, step) in refusals.iter().zip([
+        Step1SupplyStep::ActivityWaterDue,
+        Step1SupplyStep::FuelCapacity,
+        Step1SupplyStep::OneCpFuel,
+    ]) {
+        assert_eq!(refusal.step, step);
+        assert_eq!(
+            refusal.error,
+            logistics::SupplyError::Unsupported { case: "land:4.46" }
+        );
+    }
+    Rejection::Engine(cna_core::engine::EngineError::Unsupported {
+        case: "land:4.46".into(),
+        detail: "movement class is not identified in source data".into(),
+    })
+}
+
 fn step1_compare(c: &CnaContent, g: &Game<Cna>, id: &UnitId) {
+    step1_compare_expected(c, g, id, None);
+}
+
+fn step1_compare_expected(
+    c: &CnaContent,
+    g: &Game<Cna>,
+    id: &UnitId,
+    expected_error: Option<&Rejection>,
+) {
     let u = &g.state.land.units[id];
     let owner = SeatId::new(u.side, ownership::seat_for_unit(c, &g.state, id));
     let opposing = SeatId::new(u.side.opponent(), owner.role);
@@ -4603,6 +4644,9 @@ fn step1_compare(c: &CnaContent, g: &Game<Cna>, id: &UnitId) {
                     .map_or(true, |v| v.get("reachable").is_none()),
                 "proposed disclosed unauthorized reachability"
             );
+        } else if let Some(expected) = expected_error {
+            assert_eq!(legacy.as_ref().err(), Some(expected));
+            assert_eq!(proposed.as_ref().err(), Some(expected));
         } else {
             assert!(
                 legacy.as_ref().is_ok_and(|v| v.get("reachable").is_some()),
@@ -5293,8 +5337,9 @@ fn step1_plain_setup_first_movement_and_midgame_twenty_per_side_byte_golden() {
         .unwrap_or_else(|reason| panic!("golden supplied midgame invalid: {reason}"));
     // Add EVERY skipped unit in all three existing views, never replacing a base sample ID.
     step1_print_source_skips(&skipped);
-    for id in skipped.keys() {
-        step1_compare(&c, &supplied, id);
+    for (id, refusals) in &skipped {
+        let expected = step1_source_skip_inspect_error(&c, id, refusals);
+        step1_compare_expected(&c, &supplied, id, Some(&expected));
     }
     step1_check_source_skips(&c, &states.midgame.state, &supplied.state, &skipped).unwrap_or_else(
         |reason| panic!("golden additive skipped control changed refusal: {reason}"),
@@ -6166,6 +6211,16 @@ fn not_applicable_cwa_hq_moves_with_separate_truck_fuel_and_water_in_both_profil
 }
 
 fn step2_compare_profile(c: &CnaContent, g: &Game<Cna>, id: &UnitId, strict: bool) {
+    step2_compare_profile_expected(c, g, id, strict, None);
+}
+
+fn step2_compare_profile_expected(
+    c: &CnaContent,
+    g: &Game<Cna>,
+    id: &UnitId,
+    strict: bool,
+    expected_error: Option<&Rejection>,
+) {
     let u = &g.state.land.units[id];
     let owner = SeatId::new(u.side, ownership::seat_for_unit(c, &g.state, id));
     let opposing = SeatId::new(u.side.opponent(), owner.role);
@@ -6205,6 +6260,9 @@ fn step2_compare_profile(c: &CnaContent, g: &Game<Cna>, id: &UnitId, strict: boo
                     .map_or(true, |v| v.get("reachable").is_none()),
                 "proposed disclosed unauthorized reachability"
             );
+        } else if let Some(expected) = expected_error {
+            assert_eq!(legacy.as_ref().err(), Some(expected));
+            assert_eq!(proposed.as_ref().err(), Some(expected));
         } else {
             assert!(
                 legacy.as_ref().is_ok_and(|v| v.get("reachable").is_some()),
@@ -6290,8 +6348,9 @@ fn step2_plain_setup_first_movement_and_midgame_twenty_per_side_byte_golden() {
         .unwrap_or_else(|reason| panic!("golden supplied midgame invalid: {reason}"));
     // Add EVERY skipped unit in all three existing views, never replacing a base sample ID.
     step1_print_source_skips(&skipped);
-    for id in skipped.keys() {
-        step2_compare(&c, &supplied, id);
+    for (id, refusals) in &skipped {
+        let expected = step1_source_skip_inspect_error(&c, id, refusals);
+        step2_compare_profile_expected(&c, &supplied, id, false, Some(&expected));
     }
     step1_check_source_skips(&c, &states.midgame.state, &supplied.state, &skipped).unwrap_or_else(
         |reason| panic!("golden additive skipped control changed refusal: {reason}"),
