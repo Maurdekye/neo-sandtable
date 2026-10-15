@@ -1045,8 +1045,10 @@ fn replacement_actual_dispatcher_depart_return_interrupts_training_and_replays_e
         .map
         .neighbors(&home)
         .into_iter()
-        .find(|h| content.areas.areas["cairo"].hex_ids.contains(h))
-        .unwrap();
+        .find(|h| content.areas.areas["cairo"].hex_ids.contains(&h.id))
+        .unwrap()
+        .id
+        .clone();
     let _overlay = TrainingMovementOverlay::new(&mut content, &home, &next);
     // Isolate the actual movement dispatcher, not a new published campaign setup.
     for unit in state.land.units.values_mut() {

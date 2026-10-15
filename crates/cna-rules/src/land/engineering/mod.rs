@@ -90,7 +90,7 @@ fn validate_activity_entry(
     entry: &UnitActivity,
     end: ActivityStage,
 ) -> Result<(), EngineError> {
-    if id.0.is_empty()
+    if id.as_str().is_empty()
         || !valid_stage(entry.stage)
         || entry.stage > end
         || entry.gross_cp_quarters < 0

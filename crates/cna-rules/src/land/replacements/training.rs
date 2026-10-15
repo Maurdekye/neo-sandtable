@@ -353,9 +353,7 @@ pub(super) fn register_arrivals(
             Ok(prepared) => register(state, owner, &prepared)?,
             Err(Rejection::Engine(EngineError::Unsupported { case, .. }))
                 if case == "land:17.32" || case == "land:17.35" =>
-            {
-                ()
-            }
+            {}
             Err(Rejection::Engine(error)) => return Err(error),
             Err(_) => {
                 return Err(invariant(

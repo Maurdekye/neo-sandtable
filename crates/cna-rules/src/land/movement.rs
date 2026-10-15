@@ -2111,10 +2111,7 @@ fn reachable_inner(
             {
                 continue;
             }
-            query_reads
-                .map_costs
-                .terrain(&to.id)
-                .map_err(Rejection::Engine)?;
+            query_reads.map_costs.terrain(&to.id)?;
             node.restore(&mut draft)?;
             if let Some(mut r) = query_candidate(run_inner(
                 content,
@@ -2530,7 +2527,7 @@ fn reachable_inner_legacy_for_step1(
             {
                 continue;
             }
-            map::terrain(content, &to.id, strict).map_err(Rejection::Engine)?;
+            map::terrain(content, &to.id, strict)?;
             node.restore(&mut draft)?;
             if let Some(mut r) = query_candidate(run(
                 content,
@@ -3393,7 +3390,7 @@ fn reachable_inner_reference_for_step2(
             {
                 continue;
             }
-            map::terrain(content, &to.id, strict).map_err(Rejection::Engine)?;
+            map::terrain(content, &to.id, strict)?;
             node.restore(&mut draft)?;
             if let Some(mut r) = query_candidate(run_reference_for_step2(
                 content,

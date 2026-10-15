@@ -657,7 +657,7 @@ mod query_error_controls {
     #[test]
     fn strict_box_handling_survives_witness_and_enumeration_without_input_writes() {
         let (c, mut s, from, to) = setup();
-        let stage = logistics::rations::WaterStage::current(&s);
+        let stage = logistics::water::WaterStage::current(&s);
         s.land.units.get_mut(&from).unwrap().box_handling =
             Some(logistics::box_handling::BoxHandling {
                 stage,

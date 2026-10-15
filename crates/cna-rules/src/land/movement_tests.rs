@@ -664,7 +664,7 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
             return;
         }
         let p = rules.pending(&c, &g.state).remove(0);
-        let action = if p.kind == KIND && eligible(&c, &g.state, &LEG.into(), p.seat) {
+        let action = if p.kind == KIND && eligible(&c, &g.state, &LEG.into(), p.seat).unwrap() {
             let hex = g.state.land.units[&LEG.into()].location.hex().unwrap();
             let to = if hex.as_str() == "C4020" {
                 "C4021"
@@ -2733,7 +2733,7 @@ fn public_reaction_windows_hide_readiness_and_private_passes_converge_after_rest
         &a.state,
         &second.into(),
         a.state.decisions.pending[0].seat
-    ));
+    ).unwrap());
 }
 
 /// Cases: land:8.63, land:8.64, land:8.66, land:8.67
@@ -4181,6 +4181,7 @@ fn step1_sample(c: &CnaContent, s: &State, side: Side, count: usize) -> Vec<Unit
 // Preserve its per-member moving_limits -> CP -> segment-fuel ordering.
 enum Step1RawFirstGate {
     Eligibility,
+    EligibilityQueryError(Rejection),
     Allowance,
     MovingLimits(Rejection),
     CpWindow { member: UnitId, error: Rejection },
@@ -4202,9 +4203,13 @@ fn step1_raw_first_gate(
         && s.cursor.anchor() != "opstage.movement_and_combat.movement")
         || (s.land.movement.mode == WindowMode::Segment
             && s.cursor.phasing(s.turn.player_a) != Some(unit.side))
-        || !eligible(c, s, id, seat)
     {
         return Some(Step1RawFirstGate::Eligibility);
+    }
+    match eligible(c, s, id, seat) {
+        Ok(true) => {}
+        Ok(false) => return Some(Step1RawFirstGate::Eligibility),
+        Err(error) => return Some(Step1RawFirstGate::EligibilityQueryError(error)),
     }
     let moving = s
         .land
@@ -4255,6 +4260,9 @@ fn step1_raw_first_gate(
 fn step1_raw_first_gate_description(refusal: Option<Step1RawFirstGate>) -> String {
     match refusal {
         Some(Step1RawFirstGate::Eligibility) => "eligibility".into(),
+        Some(Step1RawFirstGate::EligibilityQueryError(error)) => {
+            format!("eligibility_query_error:{error:?}")
+        }
         Some(Step1RawFirstGate::Allowance) => "allowance".into(),
         Some(Step1RawFirstGate::MovingLimits(error)) => format!("moving_limits:{error:?}"),
         Some(Step1RawFirstGate::CpWindow { error, .. }) => format!("cp_window:{error:?}"),
