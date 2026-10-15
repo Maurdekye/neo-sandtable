@@ -16,6 +16,9 @@ use cna_protocol::{GameEvent, Role};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
+type PlansResult =
+    Result<Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)>, Rejection>;
+
 pub const KIND: &str = "cna.movement.reaction";
 pub const CONTINUE: &str = "cna.movement.continue";
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -222,12 +225,7 @@ fn validate_saved_cpa(
 /// Reachability variants use current own holdings and the saved eligibility bit for each CPA.
 /// The original window never needs to query the moving opponent again.
 /// Cases: land:8.53, land:8.55, land:8.56
-pub fn plans(
-    c: &CnaContent,
-    s: &State,
-    id: &UnitId,
-    strict: bool,
-) -> Result<Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)>, Rejection> {
+pub fn plans(c: &CnaContent, s: &State, id: &UnitId, strict: bool) -> PlansResult {
     let Some(w) = &s.land.reaction.window else {
         return Ok(vec![]);
     };
@@ -671,7 +669,7 @@ pub(crate) fn plans_legacy_for_step1(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> Result<Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)>, Rejection> {
+) -> PlansResult {
     let Some(w) = &s.land.reaction.window else {
         return Ok(vec![]);
     };
@@ -723,7 +721,7 @@ pub(crate) fn plans_reference_for_step2(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> Result<Vec<(Option<super::trucks::Division>, Vec<movement::Reachable>)>, Rejection> {
+) -> PlansResult {
     let Some(w) = &s.land.reaction.window else {
         return Ok(vec![]);
     };

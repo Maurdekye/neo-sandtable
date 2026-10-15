@@ -439,10 +439,9 @@ pub fn reachable(
             seat,
             strict,
             NonPhasingMove::Retreat,
-        ))? {
-            if capped(s, s, &next, &selected, actual.path.len()) {
-                out.push(cost);
-            }
+        ))? && capped(s, s, &next, &selected, actual.path.len())
+        {
+            out.push(cost);
         }
     }
     Ok(out)
@@ -552,10 +551,9 @@ pub(crate) fn reachable_legacy_for_step1(
             seat,
             strict,
             NonPhasingMove::Retreat,
-        ))? {
-            if capped(s, s, &next, &selected, actual.path.len()) {
-                out.push(cost);
-            }
+        ))? && capped(s, s, &next, &selected, actual.path.len())
+        {
+            out.push(cost);
         }
     }
     Ok(out)
@@ -618,10 +616,9 @@ pub(crate) fn reachable_reference_for_step2(
                 strict,
                 NonPhasingMove::Retreat,
             ))?
+            && capped(s, s, &next, &selected, actual.path.len())
         {
-            if capped(s, s, &next, &selected, actual.path.len()) {
-                out.push(cost);
-            }
+            out.push(cost);
         }
     }
     Ok(out)

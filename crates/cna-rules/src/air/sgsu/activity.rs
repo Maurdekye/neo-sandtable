@@ -149,10 +149,10 @@ fn validate_records(
 }
 // Container semantics do not bound a newer current interval by an older query.
 fn validate_container(history: &SgsuActivityState) -> Result<(), EngineError> {
-    if let Some(previous) = &history.previous_closed {
-        if !previous.closed {
-            return Err(invalid("retained interval is not closed"));
-        }
+    if let Some(previous) = &history.previous_closed
+        && !previous.closed
+    {
+        return Err(invalid("retained interval is not closed"));
     }
     if let Some(current) = &history.current {
         if current.closed && history.previous_closed.as_ref() != Some(current) {
@@ -160,10 +160,10 @@ fn validate_container(history: &SgsuActivityState) -> Result<(), EngineError> {
                 "closed current interval differs from immutable retained interval",
             ));
         }
-        if let Some(previous) = &history.previous_closed {
-            if key(previous.stage) > key(current.stage) {
-                return Err(invalid("retained interval is later than current history"));
-            }
+        if let Some(previous) = &history.previous_closed
+            && key(previous.stage) > key(current.stage)
+        {
+            return Err(invalid("retained interval is later than current history"));
         }
     }
     Ok(())
@@ -334,13 +334,13 @@ pub fn capture_sgsu_stage(
     }
     snapshot.closed = true;
     validate_records(content, &snapshot, stage)?;
-    if let Some(previous) = &history.previous_closed {
-        if previous.stage == stage {
-            if previous != &snapshot {
-                return Err(invalid("same-stage closure would rewrite history"));
-            }
-            return Ok(());
+    if let Some(previous) = &history.previous_closed
+        && previous.stage == stage
+    {
+        if previous != &snapshot {
+            return Err(invalid("same-stage closure would rewrite history"));
         }
+        return Ok(());
     }
     retirement(state, history.previous_closed.as_ref())?;
     state.air.runtime.sgsu_activity.current = Some(snapshot.clone());
@@ -387,10 +387,10 @@ pub fn stage_evidence(
     };
     validate_records(content, records, stage)?;
     let recorded = records.entries.get(id).cloned();
-    if let Some(entry) = &recorded {
-        if entry.owner != owner {
-            return Err(invalid("unauthorized selected history"));
-        }
+    if let Some(entry) = &recorded
+        && entry.owner != owner
+    {
+        return Err(invalid("unauthorized selected history"));
     }
     // Actual SGSU CP/travel/applied-pin procedures do not exist in this source slice.
     // This fixed trusted gap is neither saved state nor answer-supplied coverage.
