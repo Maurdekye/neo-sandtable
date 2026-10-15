@@ -751,57 +751,74 @@ fn entry(value: &Game<Cna>) -> (crate::air::sgsu::SgsuId, activity::SgsuActivity
 /// Cases: land:24.11, land:24.12, land:24.22, land:24.23, airlog:35.11
 #[test]
 fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_advance() {
-    let mut cases = Vec::new();
+    let check = |value: Game<Cna>, detail: &str| {
+        assert!(
+            value
+                .state
+                .land
+                .replacements
+                .sides
+                .iter()
+                .all(|s| s.counters.is_empty())
+        );
+        rejection_pure(
+            &value,
+            &Command::Advance,
+            Rejection::Engine(EngineError::Invariant {
+                detail: detail.into(),
+            }),
+        );
+    };
     for (gt, op) in [(0, Some(1)), (1, Some(0)), (1, Some(4))] {
         // S1: convoy key154-164/504 or saved-scope509-511 intercepts first.
         let mut value = canonical_setup_fixture::negative_component_old_tail(1);
         value.state.cursor.game_turn = gt;
         value.state.cursor.op_stage = op;
-        cases.push((value, "air SGSU activity: invalid Operations Stage label"));
+        check(value, "air SGSU activity: invalid Operations Stage label");
     }
     // S1: missing OpStage is intercepted by convoy key154-164 at finish_inner504.
     let mut missing = canonical_setup_fixture::negative_component_old_tail(1);
     missing.state.cursor.op_stage = None;
-    cases.push((missing, "old-stage boundary has no Operations Stage"));
+    check(missing, "old-stage boundary has no Operations Stage");
     let mut future = canonical_setup_fixture::genuine_before_old_tail(1);
     future.state.air.runtime.sgsu_activity.current = Some(air_closed(2));
-    cases.push((future, "air SGSU activity: future recorded interval"));
+    check(future, "air SGSU activity: future recorded interval");
     let mut unclosed = canonical_setup_fixture::genuine_before_old_tail(2);
     let mut prior = air_closed(1);
     prior.closed = false;
     unclosed.state.air.runtime.sgsu_activity.previous_closed = Some(prior);
-    cases.push((
+    check(
         unclosed,
         "air SGSU activity: retained interval is not closed",
-    ));
+    );
     let mut unmatched = canonical_setup_fixture::genuine_before_old_tail(1);
     unmatched.state.air.runtime.sgsu_activity.current = Some(air_closed(1));
-    cases.push((
+    check(
         unmatched,
         "air SGSU activity: closed current interval differs from immutable retained interval",
-    ));
+    );
     let mut order = canonical_setup_fixture::genuine_before_old_tail(3);
     let mut current = air_closed(1);
     current.closed = false;
     order.state.air.runtime.sgsu_activity.current = Some(current);
     order.state.air.runtime.sgsu_activity.previous_closed = Some(air_closed(2));
-    cases.push((
+    check(
         order,
         "air SGSU activity: retained interval is later than current history",
-    ));
+    );
     let mut uninitialized = canonical_setup_fixture::genuine_before_old_tail(1);
     assert!(!uninitialized.state.air.runtime.sgsus.is_empty());
     uninitialized.state.air.runtime.bases_initialized = false;
-    cases.push((
+    check(
         uninitialized,
         "air SGSU activity: uninitialized canonical base maps contain records",
-    ));
+    );
     let mut import = canonical_setup_fixture::genuine_before_old_tail(1);
     import.state.air.runtime.initialized = false;
-    cases.push((
+    check(
         import,
         "air inventory: inventory and bases must be imported",
-    ));
+    );
     let mut owner = canonical_setup_fixture::genuine_before_old_tail(1);
     let (id, mut item) = entry(&owner);
     item.owner = item.owner.opponent();
@@ -809,7 +826,7 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
     current.closed = false;
     current.entries.insert(id, item);
     owner.state.air.runtime.sgsu_activity.current = Some(current);
-    cases.push((owner, "air SGSU activity: historical owner was rewritten"));
+    check(owner, "air SGSU activity: historical owner was rewritten");
     for fault in 0..6 {
         let mut value = canonical_setup_fixture::genuine_before_old_tail(1);
         let (mut id, mut item) = entry(&value);
@@ -836,7 +853,7 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
             value.state.air.runtime.sgsu_activity.previous_closed = Some(current.clone());
         }
         value.state.air.runtime.sgsu_activity.current = Some(current);
-        cases.push((
+        check(
             value,
             match fault {
                 0 => "air SGSU activity: corrupt selected activity",
@@ -846,14 +863,14 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
                 4 => "air SGSU activity: corrupt selected activity",
                 _ => "air SGSU activity: invalid physical historical observation",
             },
-        ));
+        );
     }
     let mut global = canonical_setup_fixture::genuine_before_old_tail(1);
     global.state.engineering.observed_opening = Some(ActivityStage {
         game_turn: 2,
         op_stage: 1,
     });
-    cases.push((global, "engineering closure has invalid opening history"));
+    check(global, "engineering closure has invalid opening history");
     for future in [false, true] {
         let mut value = canonical_setup_fixture::genuine_before_old_tail(1);
         let id = value.state.land.units.keys().next().unwrap().clone();
@@ -870,7 +887,7 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
                 pinned: false,
             },
         );
-        cases.push((value, "engineering closure has corrupt selected activity"));
+        check(value, "engineering closure has corrupt selected activity");
     }
     let mut physical = canonical_setup_fixture::genuine_before_old_tail(1);
     let id = physical.state.land.units.keys().next().unwrap().clone();
@@ -887,10 +904,10 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
             pinned: false,
         },
     );
-    cases.push((
+    check(
         physical,
         "air SGSU activity: invalid physical historical observation",
-    ));
+    );
     let mut identity = canonical_setup_fixture::genuine_before_old_tail(1);
     identity.state.engineering.activity.insert(
         cna_core::ids::UnitId::new(""),
@@ -905,10 +922,10 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
             pinned: false,
         },
     );
-    cases.push((
+    check(
         identity,
         "engineering closure has corrupt selected activity",
-    ));
+    );
     // Lead-approved S1: close_pair requires the completed tail; opening is still None.
     let mut duplicate = canonical_setup_fixture::negative_component_old_tail(1);
     close_pair(&mut duplicate.state).unwrap();
@@ -916,10 +933,10 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
         game_turn: 1,
         op_stage: 1,
     });
-    cases.push((
+    check(
         duplicate,
         "engineering same-stage closure would rewrite history",
-    ));
+    );
     let mut required = canonical_setup_fixture::genuine_before_old_tail(2);
     let mut prior = land_closed(1);
     // Orphan authority is an explicit corrupt retained ID, never a created project/RP.
@@ -927,17 +944,17 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
         .required_facility_projects
         .insert(serde_json::from_value(json!(1u64)).unwrap());
     required.state.engineering.closed_activity = Some(prior);
-    cases.push((
+    check(
         required,
         "engineering facility project: retained interval references an unknown required project",
-    ));
+    );
     // Lead option2a: FIRST-closure S1 has no Air prior, so the existing invalid
     // Land label reaches retirement170-174 unchanged. No Air history is removed.
     let mut label = canonical_setup_fixture::negative_component_old_tail(1);
     let mut prior = land_closed(1);
     prior.stage.game_turn = 0;
     label.state.engineering.closed_activity = Some(prior);
-    cases.push((label, "engineering retirement has an invalid prior label"));
+    check(label, "engineering retirement has an invalid prior label");
     let mut retained = canonical_setup_fixture::genuine_before_old_tail(2);
     let mut prior = land_closed(1);
     prior.observed_opening = Some(ActivityStage {
@@ -945,41 +962,25 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
         op_stage: 2,
     });
     retained.state.engineering.closed_activity = Some(prior);
-    cases.push((
+    check(
         retained,
         "engineering retained interval has invalid stage metadata",
-    ));
-    for (value, detail) in cases {
-        assert!(
-            value
-                .state
-                .land
-                .replacements
-                .sides
-                .iter()
-                .all(|s| s.counters.is_empty())
-        );
+    );
+    {
+        // Genuine unmatched old interval is a typed source stop, not a fabricated quiet history.
+        let mut older = canonical_setup_fixture::genuine_before_old_tail(2);
+        let mut current = air_closed(1);
+        current.closed = false;
+        older.state.air.runtime.sgsu_activity.current = Some(current);
         rejection_pure(
-            &value,
+            &older,
             &Command::Advance,
-            Rejection::Engine(EngineError::Invariant {
-                detail: detail.into(),
+            Rejection::Engine(EngineError::Unsupported {
+                case: "land:24.11".into(),
+                detail: "unclosed older SGSU interval would be discarded".into(),
             }),
         );
     }
-    // Genuine unmatched old interval is a typed source stop, not a fabricated quiet history.
-    let mut older = canonical_setup_fixture::genuine_before_old_tail(2);
-    let mut current = air_closed(1);
-    current.closed = false;
-    older.state.air.runtime.sgsu_activity.current = Some(current);
-    rejection_pure(
-        &older,
-        &Command::Advance,
-        Rejection::Engine(EngineError::Unsupported {
-            case: "land:24.11".into(),
-            detail: "unclosed older SGSU interval would be discarded".into(),
-        }),
-    );
     for mismatch in [false, true] {
         let mut value = canonical_setup_fixture::genuine_before_old_tail(3);
         value.state.air.runtime.sgsu_activity.previous_closed = Some(air_closed(2));
