@@ -2728,12 +2728,15 @@ fn public_reaction_windows_hide_readiness_and_private_passes_converge_after_rest
     );
     let a = evaluate(&Cna::full(), &c, &a, &command).unwrap().game;
     assert_eq!(a.state.decisions.pending[0].kind, KIND);
-    assert!(eligible(
-        &c,
-        &a.state,
-        &second.into(),
-        a.state.decisions.pending[0].seat
-    ).unwrap());
+    assert!(
+        eligible(
+            &c,
+            &a.state,
+            &second.into(),
+            a.state.decisions.pending[0].seat
+        )
+        .unwrap()
+    );
 }
 
 /// Cases: land:8.63, land:8.64, land:8.66, land:8.67

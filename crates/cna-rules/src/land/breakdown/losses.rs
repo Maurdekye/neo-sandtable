@@ -1051,7 +1051,11 @@ mod tests {
                     actual.land.breakdown.unresolved_passengers[&id][0].points,
                     1
                 );
-                assert!(crate::land::movement::reachable(&c, &actual, &id, false).unwrap().is_empty());
+                assert!(
+                    crate::land::movement::reachable(&c, &actual, &id, false)
+                        .unwrap()
+                        .is_empty()
+                );
             }
         }
     }
