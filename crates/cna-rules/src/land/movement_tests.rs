@@ -4565,7 +4565,8 @@ fn step1_require_domains(
 }
 
 // Exact additive source-gap control, not an exemption for arbitrary inspect errors.
-// Cases: land:4.45, land:4.46; source gap: data/units/GAPS.md U-009.
+// Cases: land:4.45, land:4.46
+// Source gap: data/units/GAPS.md U-009.
 fn step1_source_skip_inspect_error(
     c: &CnaContent,
     id: &UnitId,

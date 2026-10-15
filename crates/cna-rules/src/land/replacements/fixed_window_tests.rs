@@ -613,7 +613,7 @@ fn hw(weapon: &str) -> (CnaContent, State, UnitId, SeatId, AllocationPlan) {
     (content, state, id, seat, plan)
 }
 
-/// Cases: land:19.64d, land:20.3, land:20.41, land:20.48, land:20.49
+/// Cases: land:19.64, land:20.3, land:20.41, land:20.48, land:20.49
 #[test]
 fn replacement_heavy_weapons_consumes_both_inputs_into_whole_scalar_toe_and_keeps_payment_history()
 {
@@ -694,7 +694,7 @@ fn replacement_heavy_weapons_consumes_both_inputs_into_whole_scalar_toe_and_keep
     }
 }
 
-/// Cases: land:19.64d, land:20.3, land:20.41, land:20.43, land:20.49
+/// Cases: land:19.64, land:20.3, land:20.41, land:20.43, land:20.49
 #[test]
 fn replacement_heavy_weapons_refuses_plain_infantry_nation_partial_assignment_and_invalid_equipment_atomically()
  {
