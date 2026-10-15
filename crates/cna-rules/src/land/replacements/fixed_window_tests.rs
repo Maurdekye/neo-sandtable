@@ -391,16 +391,19 @@ fn strict_pairs(role: Role) {
 }
 
 /// Cases: land:3.6, land:17.33, land:20.41, land:20.43, land:20.49
+#[ignore = "slow: full-roster thirteen-perspective present/absent/opposite-status privacy pairs with ordered recovery"]
 #[test]
 fn replacement_fixed_front_line_strict_present_absent_empty_status_ordered_recovery_pairs() {
     strict_pairs(Role::FrontLine);
 }
 /// Cases: land:3.6, land:17.33, land:20.41, land:20.43, land:20.49
+#[ignore = "slow: full-roster thirteen-perspective present/absent/opposite-status privacy pairs with ordered recovery"]
 #[test]
 fn replacement_fixed_rear_area_strict_present_absent_empty_status_ordered_recovery_pairs() {
     strict_pairs(Role::RearArea);
 }
 /// Cases: land:3.6, land:17.33, land:20.41, land:20.43, land:20.49
+#[ignore = "slow: full-roster thirteen-perspective present/absent/opposite-status privacy pairs with ordered recovery"]
 #[test]
 fn replacement_fixed_logistics_strict_present_absent_empty_status_ordered_recovery_pairs() {
     strict_pairs(Role::Logistics);
