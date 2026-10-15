@@ -315,4 +315,3 @@ pub(super) fn before_first_true_open() -> Game<Cna> {
         })
         .clone()
 }
-

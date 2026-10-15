@@ -201,7 +201,9 @@ pub async fn movement_demo(root: &Path, repo: &Path, mut config: LaunchConfig) -
                                 "cna.replacements.training" | "cna.replacements.allocation"
                             ) || p.space.pass.is_none()
                         }) {
-                            return Err("fixture seat opened a different window before movement".into());
+                            return Err(
+                                "fixture seat opened a different window before movement".into()
+                            );
                         }
                         let response = answer(
                             request,
@@ -211,7 +213,10 @@ pub async fn movement_demo(root: &Path, repo: &Path, mut config: LaunchConfig) -
                             &NoCandidates,
                         )
                         .map_err(|e| e.to_string())?;
-                        demo.handle.submit(response).await.map_err(|e| e.to_string())?;
+                        demo.handle
+                            .submit(response)
+                            .await
+                            .map_err(|e| e.to_string())?;
                         continue;
                     }
                     if !matches!(demo.handle.status(), CampaignStatus::Running) {

@@ -4577,7 +4577,10 @@ fn step1_source_skip_inspect_error(
     );
     let oa = &c.units.units[id];
     assert_eq!(oa.kind.as_deref(), Some("fixed_ship"));
-    assert!(oa.class.is_none(), "golden fixed ship now has a source class");
+    assert!(
+        oa.class.is_none(),
+        "golden fixed ship now has a source class"
+    );
     assert_eq!(refusals.len(), 3, "golden fixed-ship preflight changed");
     for (refusal, step) in refusals.iter().zip([
         Step1SupplyStep::ActivityWaterDue,
