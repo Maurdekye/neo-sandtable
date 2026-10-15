@@ -357,62 +357,63 @@ fn component_public_empty_first_open_through_post_next_open_has_all_thirteen_ord
                 game_turn: start,
                 op_stage: 1,
             };
-            if let Some(observed) = &c.state.air.runtime.sgsu_activity.current {
-                if observed.stage == interval && !observed.closed {
-                    let base = a.state.air.runtime.sgsu_activity.current.as_ref().unwrap();
-                    assert_eq!(base.stage, observed.stage);
-                    let left = base.entries.get(id).unwrap();
-                    let right = observed.entries.get(id).unwrap();
-                    assert_ne!(left, right, "active private current pair must differ");
-                    assert_eq!(left.owner, right.owner);
-                    assert_eq!(left.opening_location, right.opening_location);
-                    assert_eq!(left.closing_location, right.closing_location);
-                    assert_eq!(right.gross_cp_quarters, left.gross_cp_quarters + 4);
-                    assert!(right.departed && right.pinned);
-                    assert_eq!(
-                        whole(&checkpoint(&c)),
-                        whole(&c),
-                        "active SGSU history survives complete checkpoint recovery"
-                    );
-                    saw_differing_current = true;
-                }
+            if let Some(observed) = &c.state.air.runtime.sgsu_activity.current
+                && observed.stage == interval
+                && !observed.closed
+            {
+                let base = a.state.air.runtime.sgsu_activity.current.as_ref().unwrap();
+                assert_eq!(base.stage, observed.stage);
+                let left = base.entries.get(id).unwrap();
+                let right = observed.entries.get(id).unwrap();
+                assert_ne!(left, right, "active private current pair must differ");
+                assert_eq!(left.owner, right.owner);
+                assert_eq!(left.opening_location, right.opening_location);
+                assert_eq!(left.closing_location, right.closing_location);
+                assert_eq!(right.gross_cp_quarters, left.gross_cp_quarters + 4);
+                assert!(right.departed && right.pinned);
+                assert_eq!(
+                    whole(&checkpoint(&c)),
+                    whole(&c),
+                    "active SGSU history survives complete checkpoint recovery"
+                );
+                saw_differing_current = true;
             }
-            if let Some(retained) = &c.state.air.runtime.sgsu_activity.previous_closed {
-                if retained.stage == interval {
-                    let base = a
-                        .state
-                        .air
-                        .runtime
-                        .sgsu_activity
-                        .previous_closed
-                        .as_ref()
-                        .unwrap();
-                    assert_eq!(base.stage, retained.stage);
-                    assert!(base.closed && retained.closed && retained.observed_opening);
-                    let left = base.entries.get(id).unwrap();
-                    let right = retained.entries.get(id).unwrap();
-                    assert_ne!(
-                        left, right,
-                        "actual close must retain the differing SGSU observations"
-                    );
-                    assert_eq!(left.owner, right.owner);
-                    assert_eq!(left.opening_location, right.opening_location);
-                    assert_eq!(left.closing_location, right.closing_location);
-                    assert_eq!(right.gross_cp_quarters, left.gross_cp_quarters + 4);
-                    assert!(right.departed && right.pinned);
-                    assert_eq!(
-                        whole(&checkpoint(&c)),
-                        whole(&c),
-                        "retained SGSU history survives complete checkpoint recovery"
-                    );
-                    saw_differing_retained = true;
-                }
+            if let Some(retained) = &c.state.air.runtime.sgsu_activity.previous_closed
+                && retained.stage == interval
+            {
+                let base = a
+                    .state
+                    .air
+                    .runtime
+                    .sgsu_activity
+                    .previous_closed
+                    .as_ref()
+                    .unwrap();
+                assert_eq!(base.stage, retained.stage);
+                assert!(base.closed && retained.closed && retained.observed_opening);
+                let left = base.entries.get(id).unwrap();
+                let right = retained.entries.get(id).unwrap();
+                assert_ne!(
+                    left, right,
+                    "actual close must retain the differing SGSU observations"
+                );
+                assert_eq!(left.owner, right.owner);
+                assert_eq!(left.opening_location, right.opening_location);
+                assert_eq!(left.closing_location, right.closing_location);
+                assert_eq!(right.gross_cp_quarters, left.gross_cp_quarters + 4);
+                assert!(right.departed && right.pinned);
+                assert_eq!(
+                    whole(&checkpoint(&c)),
+                    whole(&c),
+                    "retained SGSU history survives complete checkpoint recovery"
+                );
+                saw_differing_retained = true;
             }
         }
-        if let Some(record) = &a.state.engineering.closed_activity {
-            if record.stage.game_turn == start {
-                closed.insert(record.stage.op_stage);
-            }
+        if let Some(record) = &a.state.engineering.closed_activity
+            && record.stage.game_turn == start
+        {
+            closed.insert(record.stage.op_stage);
         }
         for &p in &perspectives {
             assert_eq!(
@@ -509,49 +510,49 @@ fn component_midstage_legacy_recovery_never_fabricates_opening_or_quiet_sgsu_cov
     let saved = checkpoint(&legacy);
     assert_eq!(whole(&saved), whole(&legacy));
     for serial in 0..2048 {
-        if let Some(closed) = &legacy.state.engineering.closed_activity {
-            if closed.stage == stage {
-                assert_eq!(closed.observed_opening, None);
-                assert!(
-                    closed
-                        .entries
-                        .values()
-                        .all(|e| e.activity.opening_location.is_none())
-                );
-                let selected = SgsuOpStage {
-                    game_turn: stage.game_turn,
-                    op_stage: stage.op_stage,
+        if let Some(closed) = &legacy.state.engineering.closed_activity
+            && closed.stage == stage
+        {
+            assert_eq!(closed.observed_opening, None);
+            assert!(
+                closed
+                    .entries
+                    .values()
+                    .all(|e| e.activity.opening_location.is_none())
+            );
+            let selected = SgsuOpStage {
+                game_turn: stage.game_turn,
+                op_stage: stage.op_stage,
+            };
+            let air = legacy
+                .state
+                .air
+                .runtime
+                .sgsu_activity
+                .previous_closed
+                .as_ref()
+                .unwrap();
+            assert_eq!(air.stage, selected);
+            assert!(!air.observed_opening);
+            for (id, unit) in &legacy.state.air.runtime.sgsus {
+                let evidence = activity::stage_evidence(
+                    content(),
+                    &legacy.state,
+                    unit.side().unwrap(),
+                    id,
+                    selected,
+                )
+                .unwrap();
+                let activity::SgsuEvidence::Unknown { reason, recorded } = evidence else {
+                    panic!("missing producers cannot certify a complete quiet interval")
                 };
-                let air = legacy
-                    .state
-                    .air
-                    .runtime
-                    .sgsu_activity
-                    .previous_closed
-                    .as_ref()
-                    .unwrap();
-                assert_eq!(air.stage, selected);
-                assert!(!air.observed_opening);
-                for (id, unit) in &legacy.state.air.runtime.sgsus {
-                    let evidence = activity::stage_evidence(
-                        content(),
-                        &legacy.state,
-                        unit.side().unwrap(),
-                        id,
-                        selected,
-                    )
-                    .unwrap();
-                    let activity::SgsuEvidence::Unknown { reason, recorded } = evidence else {
-                        panic!("missing producers cannot certify a complete quiet interval")
-                    };
-                    assert_eq!(
-                        reason,
-                        activity::SgsuEvidenceGap::IncompleteProducerCoverage
-                    );
-                    assert!(recorded.is_some_and(|entry| entry.opening_location.is_none()));
-                }
-                return;
+                assert_eq!(
+                    reason,
+                    activity::SgsuEvidenceGap::IncompleteProducerCoverage
+                );
+                assert!(recorded.is_some_and(|entry| entry.opening_location.is_none()));
             }
+            return;
         }
         if legacy.state.cursor.op_stage == Some(stage.op_stage) {
             assert_eq!(legacy.state.engineering.observed_opening, None);
