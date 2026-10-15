@@ -308,6 +308,9 @@ fn reachable_air_and_engineering_oldtail_corruptions_restore_complete_public_adv
     assert!(!uninitialized.state.air.runtime.sgsus.is_empty());
     uninitialized.state.air.runtime.bases_initialized = false;
     cases.push((uninitialized, "air SGSU activity: uninitialized canonical base maps contain records"));
+    let mut import = game(1);
+    import.state.air.runtime.initialized = false;
+    cases.push((import, "air inventory: inventory and bases must be imported"));
     let mut owner = game(1); let (id, mut item) = entry(&owner);
     item.owner = item.owner.opponent(); let mut current = air_closed(1); current.closed = false;
     current.entries.insert(id, item); owner.state.air.runtime.sgsu_activity.current = Some(current);
