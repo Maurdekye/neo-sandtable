@@ -4,23 +4,27 @@ use crate::{
     Cna,
     seq::{Block, Half, PLAYER_HALF},
 };
-use cna_core::{dice::CampaignRng, engine::Game};
+use cna_core::engine::Game;
 use serde_json::json;
 use std::sync::OnceLock;
+
+#[path = "canonical_setup_fixture.rs"]
+mod canonical_setup_fixture;
 
 fn content() -> &'static CnaContent {
     static CONTENT: OnceLock<CnaContent> = OnceLock::new();
     CONTENT.get_or_init(|| CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap())
 }
 fn game() -> Game<Cna> {
-    let mut state = State::new(content()).unwrap();
-    state.cursor.game_turn = 1;
-    state.cursor.op_stage = Some(2);
-    Game {
-        state,
-        rng: CampaignRng::from_seed([72; 32]).state(),
-    }
+    // Lawful setup and real PRE decisions supply actual placed squadrons/SGSUs.
+    // The existing op2 component label below is for direct history-query controls,
+    // not a claim of a publicly returned OpStage2 checkpoint or opening credit.
+    let mut game = canonical_setup_fixture::before_first_true_open();
+    game.state.cursor.game_turn = 1;
+    game.state.cursor.op_stage = Some(2);
+    game
 }
+
 fn stage(op_stage: u8) -> SgsuOpStage {
     SgsuOpStage {
         game_turn: 1,
