@@ -47,7 +47,7 @@ impl Opened {
 fn real_entered(kind: &str) -> Opened {
     let (content, _) = inputs(&cna_content::repo_data_dir(), cna_rules::PROFILE_DEV).unwrap();
     let rules = Cna::dev();
-    let mut before = Game {
+    let mut before: Game<Cna> = Game {
         state: State::new(&content).unwrap(),
         rng: CampaignRng::from_seed([92; 32]).state(),
     };
@@ -309,8 +309,11 @@ async fn replacement_real_empty_windows_use_original_writer_and_match_direct_can
                     .collect();
                 let reader = handle.replay();
                 assert_eq!(bindings, before_bindings);
+                let recovery_content =
+                    CnaContent::load(&cna_content::repo_data_dir(), content.scenario_key())
+                        .unwrap();
                 let recovered =
-                    Campaign::recover(&path, ruleset(profile).unwrap(), content.clone(), &pins)
+                    Campaign::recover(&path, ruleset(profile).unwrap(), recovery_content, &pins)
                         .unwrap();
                 assert_eq!(bytes(recovered.game.as_ref()), bytes(&expected.game));
                 assert_eq!(recovered.status(), &CampaignStatus::Paused);
@@ -458,8 +461,10 @@ fn replacement_real_pass_persistence_duplicate_conflict_and_errors_keep_complete
             assert_eq!(rows(&path), accepted);
             assert_eq!(bytes(current.game.as_ref()), bytes(&expected.game));
             drop(current);
+            let recovery_content =
+                CnaContent::load(&cna_content::repo_data_dir(), content.scenario_key()).unwrap();
             let recovered =
-                Campaign::recover(&path, ruleset(profile).unwrap(), content.clone(), &pins)
+                Campaign::recover(&path, ruleset(profile).unwrap(), recovery_content, &pins)
                     .unwrap();
             assert_eq!(rows(&path), accepted);
             assert_eq!(bytes(recovered.game.as_ref()), bytes(&expected.game));
@@ -508,7 +513,9 @@ fn replacement_real_pass_transaction_failure_commits_no_command_transcript_or_me
             bindings
         );
         drop(current);
-        let recovered = Campaign::recover(&path, Cna::full(), content.clone(), &pins).unwrap();
+        let recovery_content =
+            CnaContent::load(&cna_content::repo_data_dir(), content.scenario_key()).unwrap();
+        let recovered = Campaign::recover(&path, Cna::full(), recovery_content, &pins).unwrap();
         assert_eq!(rows(&path), before);
         assert_eq!(bytes(recovered.game.as_ref()), bytes(&entered));
     }

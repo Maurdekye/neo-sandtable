@@ -521,7 +521,12 @@ async fn exercise(fixture: &Opened, profile: &str) -> Checked<usize> {
         "six empty passes must not introduce Public activity",
     )?;
     let before = rows(&path);
-    let recovered = Campaign::recover(&path, ruleset(profile)?, fixture.content.clone(), &pins)?;
+    let recovery_content = CnaContent::load(
+        &cna_content::repo_data_dir(),
+        fixture.content.scenario_key(),
+    )
+    .map_err(Error::Invalid)?;
+    let recovered = Campaign::recover(&path, ruleset(profile)?, recovery_content, &pins)?;
     require(
         bytes(recovered.game.as_ref()) == bytes(&expected_game),
         "complete recovered Game/RNG mismatch",
@@ -541,7 +546,12 @@ async fn exercise(fixture: &Opened, profile: &str) -> Checked<usize> {
     )?;
     drop(recovered);
     // Recovered original writer and HTTP/WS replay follow the same existing interfaces.
-    let recovered = Campaign::recover(&path, ruleset(profile)?, fixture.content.clone(), &pins)?;
+    let recovery_content = CnaContent::load(
+        &cna_content::repo_data_dir(),
+        fixture.content.scenario_key(),
+    )
+    .map_err(Error::Invalid)?;
+    let recovered = Campaign::recover(&path, ruleset(profile)?, recovery_content, &pins)?;
     let replay_api = Api::start(directory.path(), &path, recovered, profile).await?;
     let replayed = capture(&replay_api, fixture).await;
     let finished = replay_api.finish().await;
