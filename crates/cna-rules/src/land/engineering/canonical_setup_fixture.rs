@@ -147,22 +147,26 @@ fn admitted_before_first_open() -> Game<Cna> {
                         .location
                 );
             }
-            // Public PRE decisions stop this transition before the FIRST OpStage opening.
-            assert_eq!(closed.game.state.cursor.block, Block::Pre);
-            assert!(closed.game.state.engineering.observed_opening.is_none());
+            // Setup close may open pre-game convoy plans before the cursor leaves
+            // Setup (setup/decisions.rs771; logistics/convoys.rs124-153/400-419).
+            // Respond records each declared answer without advancing the cursor;
+            // the next real Advance leaves Setup only after all plans are answered.
+            let mut admitted = closed.game;
+            for serial in 0..4096 {
+                assert!(admitted.state.setup.closed);
+                if admitted.state.cursor.block == Block::Pre {
+                    break;
+                }
+                assert_eq!(admitted.state.cursor.block, Block::Setup);
+                let command = next_command(&admitted, serial);
+                admitted = accepted_with_checkpoint_retry(&admitted, &command).game;
+            }
+            // Preserve the original real PRE/no-opening admission obligations.
+            assert_eq!(admitted.state.cursor.block, Block::Pre);
+            assert!(admitted.state.engineering.observed_opening.is_none());
+            assert!(admitted.state.air.runtime.sgsu_activity.current.is_none());
             assert!(
-                closed
-                    .game
-                    .state
-                    .air
-                    .runtime
-                    .sgsu_activity
-                    .current
-                    .is_none()
-            );
-            assert!(
-                closed
-                    .game
+                admitted
                     .state
                     .air
                     .runtime
@@ -170,7 +174,7 @@ fn admitted_before_first_open() -> Game<Cna> {
                     .previous_closed
                     .is_none()
             );
-            closed.game
+            admitted
         })
         .clone()
 }
