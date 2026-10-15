@@ -11,7 +11,11 @@ type Checked<T> = Result<T, Box<dyn StdError + Send + Sync>>;
 type Socket = WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>;
 
 fn require(condition: bool, message: &str) -> Checked<()> {
-    if condition { Ok(()) } else { Err(std::io::Error::other(message.to_owned()).into()) }
+    if condition {
+        Ok(())
+    } else {
+        Err(std::io::Error::other(message.to_owned()).into())
+    }
 }
 
 struct Api {
@@ -24,23 +28,46 @@ struct Api {
 }
 
 impl Api {
-    async fn start(directory: &Path, path: &Path, campaign: Campaign<Cna>, profile: &str) -> Checked<Self> {
+    async fn start(
+        directory: &Path,
+        path: &Path,
+        campaign: Campaign<Cna>,
+        profile: &str,
+    ) -> Checked<Self> {
         // Finish all fallible listener/client construction before spawning the original writer.
         let listener = TcpListener::bind("127.0.0.1:0").await?;
         let port = listener.local_addr()?.port();
-        let client = reqwest::Client::builder().timeout(Duration::from_secs(5)).build()?;
-        let handle = CampaignHandle::spawn_with_policy(campaign, path,
-            movement_policy_with_profile(profile == cna_rules::PROFILE_FULL))?;
-        let app = App::new(directory.to_owned(), port, Arc::new(|_, _| {
-            Err(Error::Invalid("creation is outside this control".into()))
-        }));
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .build()?;
+        let handle = CampaignHandle::spawn_with_policy(
+            campaign,
+            path,
+            movement_policy_with_profile(profile == cna_rules::PROFILE_FULL),
+        )?;
+        let app = App::new(
+            directory.to_owned(),
+            port,
+            Arc::new(|_, _| Err(Error::Invalid("creation is outside this control".into()))),
+        );
         app.register(handle.clone());
         let router = app.router(&directory.join("no-static-assets"));
         let (stop, wait) = oneshot::channel();
         let server = tokio::spawn(async move {
-            axum::serve(listener, router).with_graceful_shutdown(async { let _ = wait.await; }).await
+            axum::serve(listener, router)
+                .with_graceful_shutdown(async {
+                    let _ = wait.await;
+                })
+                .await
         });
-        Ok(Self { app, handle, url: format!("http://127.0.0.1:{port}"), stop, server, client })
+        Ok(Self {
+            app,
+            handle,
+            url: format!("http://127.0.0.1:{port}"),
+            stop,
+            server,
+            client,
+        })
     }
 
     fn token(&self, p: Perspective) -> String {
@@ -53,7 +80,12 @@ impl Api {
     }
 
     async fn get(&self, token: &str, path: &str) -> Checked<(u16, Vec<u8>)> {
-        let response = self.client.get(format!("{}{path}", self.url)).bearer_auth(token).send().await?;
+        let response = self
+            .client
+            .get(format!("{}{path}", self.url))
+            .bearer_auth(token)
+            .send()
+            .await?;
         let status = response.status().as_u16();
         Ok((status, response.bytes().await?.to_vec()))
     }
@@ -74,8 +106,10 @@ async fn next(socket: &mut Socket) -> Checked<Option<Vec<u8>>> {
         match tokio::time::timeout(Duration::from_secs(5), socket.next()).await? {
             Some(Ok(Message::Text(text))) => return Ok(Some(text.as_bytes().to_vec())),
             Some(Ok(Message::Close(_))) | None => return Ok(None),
-            Some(Ok(Message::Ping(_) | Message::Pong(_))) => {},
-            Some(Ok(_)) => return Err(std::io::Error::other("unexpected non-text server frame").into()),
+            Some(Ok(Message::Ping(_) | Message::Pong(_))) => {}
+            Some(Ok(_)) => {
+                return Err(std::io::Error::other("unexpected non-text server frame").into());
+            }
             Some(Err(error)) => return Err(error.into()),
         }
     }
@@ -92,23 +126,49 @@ struct Live {
 impl Live {
     async fn open(api: &Api, p: Perspective) -> Checked<Self> {
         let projection = api.handle.projection(p);
-        let hello = ServerMessage::Hello { protocol: cna_protocol::PROTOCOL_VERSION,
-            campaign: projection.meta.clone(), perspective: p.to_string() };
-        let snapshot = ServerMessage::Snapshot { seq: projection.seq, view: projection.view };
-        let url = format!("{}/api/campaigns/{}/stream?cap={}",
-            api.url.replacen("http://", "ws://", 1), projection.meta.id, api.token(p));
+        let hello = ServerMessage::Hello {
+            protocol: cna_protocol::PROTOCOL_VERSION,
+            campaign: projection.meta.clone(),
+            perspective: p.to_string(),
+        };
+        let snapshot = ServerMessage::Snapshot {
+            seq: projection.seq,
+            view: projection.view,
+        };
+        let url = format!(
+            "{}/api/campaigns/{}/stream?cap={}",
+            api.url.replacen("http://", "ws://", 1),
+            projection.meta.id,
+            api.token(p)
+        );
         let (mut socket, _) = tokio_tungstenite::connect_async(url).await?;
-        socket.send(Message::Text(serde_json::to_string(&ClientMessage::Subscribe {
-            perspective: p.to_string(), from_seq: None,
-        })?.into())).await?;
+        socket
+            .send(Message::Text(
+                serde_json::to_string(&ClientMessage::Subscribe {
+                    perspective: p.to_string(),
+                    from_seq: None,
+                })?
+                .into(),
+            ))
+            .await?;
         let mut complete = vec![];
         for reference in [hello, snapshot] {
-            let actual = next(&mut socket).await?.ok_or_else(|| std::io::Error::other("short initial live WS"))?;
-            require(actual == bytes(&reference), "entire authenticated live handshake differs")?;
+            let actual = next(&mut socket)
+                .await?
+                .ok_or_else(|| std::io::Error::other("short initial live WS"))?;
+            require(
+                actual == bytes(&reference),
+                "entire authenticated live handshake differs",
+            )?;
             complete.push(actual);
         }
-        Ok(Self { perspective: p, socket, seq: projection.seq,
-            transcripts: SeatId::all().map(|seat| (seat, 0)).collect(), complete })
+        Ok(Self {
+            perspective: p,
+            socket,
+            seq: projection.seq,
+            transcripts: SeatId::all().map(|seat| (seat, 0)).collect(),
+            complete,
+        })
     }
 
     async fn through_commit(&mut self, api: &Api) -> Checked<()> {
@@ -140,12 +200,19 @@ impl Live {
                     *cursor = *tseq;
                     expected.push(message);
                 }
-                if done { break; }
+                if done {
+                    break;
+                }
             }
         }
         for reference in expected {
-            let actual = next(&mut self.socket).await?.ok_or_else(|| std::io::Error::other("short live commit publication"))?;
-            require(actual == bytes(&reference), "entire live publication/order differs from this committed transition")?;
+            let actual = next(&mut self.socket)
+                .await?
+                .ok_or_else(|| std::io::Error::other("short live commit publication"))?;
+            require(
+                actual == bytes(&reference),
+                "entire live publication/order differs from this committed transition",
+            )?;
             self.complete.push(actual);
         }
         Ok(())
@@ -167,14 +234,18 @@ async fn ws(api: &Api, p: Perspective, replay: bool) -> Checked<Vec<Vec<u8>>> {
     let from = replay.then_some(0);
     let mut expected = vec![ServerMessage::Hello {
         protocol: cna_protocol::PROTOCOL_VERSION,
-        campaign: header.meta.clone(), perspective: p.to_string(),
+        campaign: header.meta.clone(),
+        perspective: p.to_string(),
     }];
     if replay {
         let reader = api.handle.replay();
         let mut cursor = 0;
         while cursor < projection.seq {
             let rows = reader.events(p, cursor, projection.seq)?;
-            require(!rows.is_empty(), "complete replay cannot silently lose a page")?;
+            require(
+                !rows.is_empty(),
+                "complete replay cannot silently lose a page",
+            )?;
             for message in rows {
                 let ServerMessage::Event { seq, .. } = &message else {
                     return Err(std::io::Error::other("non-event replay row").into());
@@ -185,7 +256,10 @@ async fn ws(api: &Api, p: Perspective, replay: bool) -> Checked<Vec<Vec<u8>>> {
             }
         }
     } else {
-        expected.push(ServerMessage::Snapshot { seq: projection.seq, view: projection.view });
+        expected.push(ServerMessage::Snapshot {
+            seq: projection.seq,
+            view: projection.view,
+        });
     }
     let reader = api.handle.replay();
     for seat in SeatId::all() {
@@ -201,34 +275,56 @@ async fn ws(api: &Api, p: Perspective, replay: bool) -> Checked<Vec<Vec<u8>>> {
                 cursor = *tseq;
                 expected.push(message);
             }
-            if done { break; }
+            if done {
+                break;
+            }
         }
     }
-    let url = format!("{}/api/campaigns/{}/stream?cap={}",
-        api.url.replacen("http://", "ws://", 1), header.meta.id, api.token(p));
+    let url = format!(
+        "{}/api/campaigns/{}/stream?cap={}",
+        api.url.replacen("http://", "ws://", 1),
+        header.meta.id,
+        api.token(p)
+    );
     let (mut socket, _) = tokio_tungstenite::connect_async(url).await?;
     let result = async {
-        socket.send(Message::Text(serde_json::to_string(&ClientMessage::Subscribe {
-            perspective: p.to_string(), from_seq: from,
-        })?.into())).await?;
+        socket
+            .send(Message::Text(
+                serde_json::to_string(&ClientMessage::Subscribe {
+                    perspective: p.to_string(),
+                    from_seq: from,
+                })?
+                .into(),
+            ))
+            .await?;
         let mut actual = vec![];
         for reference in &expected {
-            let text = next(&mut socket).await?.ok_or_else(|| std::io::Error::other("short WebSocket history"))?;
-            require(text == bytes(reference), "entire ordered WS message differs from committed reference")?;
+            let text = next(&mut socket)
+                .await?
+                .ok_or_else(|| std::io::Error::other("short WebSocket history"))?;
+            require(
+                text == bytes(reference),
+                "entire ordered WS message differs from committed reference",
+            )?;
             actual.push(text);
         }
         Ok::<_, Box<dyn StdError + Send + Sync>>(actual)
-    }.await;
+    }
+    .await;
     let close = socket.close(None).await;
     // Keep any unexpected remaining text instead of silently projecting it away.
     let mut tail = vec![];
     let drained = async {
-        while let Some(text) = next(&mut socket).await? { tail.push(text); }
+        while let Some(text) = next(&mut socket).await? {
+            tail.push(text);
+        }
         Ok::<_, Box<dyn StdError + Send + Sync>>(())
-    }.await;
+    }
+    .await;
     drop(socket);
     let mut actual = result?;
-    close?; drained?;
+    close?;
+    drained?;
     require(tail.is_empty(), "unexpected trailing WebSocket text")?;
     actual.extend(tail);
     Ok(actual)
@@ -256,25 +352,49 @@ async fn capture(api: &Api, fixture: &Opened) -> Checked<Vec<Surface>> {
         for seat in SeatId::all().filter(|seat| p.can_see(&Audience::Seat(*seat))) {
             paths.push(format!("/api/campaigns/{id}/seats/{seat}/observe"));
             for request in api.handle.seat(seat).pending {
-                paths.push(format!("/api/campaigns/{id}/seats/{seat}/decisions/{}/actions", request.id));
+                paths.push(format!(
+                    "/api/campaigns/{id}/seats/{seat}/decisions/{}/actions",
+                    request.id
+                ));
             }
             // Actual unchanged own/opponent unit identities plus an unknown target;
             // a strict inspect refusal stays an exact status/body, never a stop/fallback.
             for side in cna_protocol::Side::ALL {
-                let unit = fixture.before.state.land.units.values().find(|unit| unit.side == side)
-                    .ok_or_else(|| std::io::Error::other("unchanged content needs a real side unit"))?;
-                paths.push(format!("/api/campaigns/{id}/seats/{seat}/inspect/{}", unit.id));
+                let unit = fixture
+                    .before
+                    .state
+                    .land
+                    .units
+                    .values()
+                    .find(|unit| unit.side == side)
+                    .ok_or_else(|| {
+                        std::io::Error::other("unchanged content needs a real side unit")
+                    })?;
+                paths.push(format!(
+                    "/api/campaigns/{id}/seats/{seat}/inspect/{}",
+                    unit.id
+                ));
             }
-            paths.push(format!("/api/campaigns/{id}/seats/{seat}/inspect/not-an-actual-unit"));
-            paths.push(format!("/api/campaigns/{id}/transcripts?perspective={p}&seat={seat}&after=0"));
+            paths.push(format!(
+                "/api/campaigns/{id}/seats/{seat}/inspect/not-an-actual-unit"
+            ));
+            paths.push(format!(
+                "/api/campaigns/{id}/transcripts?perspective={p}&seat={seat}&after=0"
+            ));
         }
         for path in paths {
             let (status, body) = api.get(&token, &path).await?;
-            if !path.contains("/inspect/") { require(status == 200, "authenticated existing surface rejected")?; }
+            if !path.contains("/inspect/") {
+                require(status == 200, "authenticated existing surface rejected")?;
+            }
             http.push((path, status, body));
         }
-        result.push(Surface { perspective: p, http,
-            snapshot_ws: ws(api, p, false).await?, replay_ws: ws(api, p, true).await? });
+        result.push(Surface {
+            perspective: p,
+            http,
+            snapshot_ws: ws(api, p, false).await?,
+            replay_ws: ws(api, p, true).await?,
+        });
     }
     Ok(result)
 }
@@ -285,7 +405,9 @@ async fn exercise(fixture: &Opened, profile: &str) -> Checked<usize> {
     let path = directory.path().join("surfaces.sqlite");
     let (mut current, pins) = campaign(&path, profile, fixture.game.clone());
     let pending = current.pending();
-    for request in &pending { bind(&mut current, request.seat); }
+    for request in &pending {
+        bind(&mut current, request.seat);
+    }
     // Responses are serialized through the real actor, with automatic advance paused.
     current.set_paused(true)?;
     let api = Api::start(directory.path(), &path, current, profile).await?;
@@ -353,27 +475,70 @@ async fn exercise(fixture: &Opened, profile: &str) -> Checked<usize> {
     finished?;
     let (surfaces, expected_game, expected_events, public_events) = result?;
     let db = Connection::open(&path)?;
-    let checkpoint: String = db.query_row("SELECT game FROM checkpoints WHERE revision=0", [], |row| row.get(0))?;
-    require(bytes(&serde_json::from_str::<Game<Cna>>(&checkpoint)?) == bytes(&fixture.game), "actual checkpoint0 must retain the complete opened Game")?;
+    let checkpoint: String =
+        db.query_row("SELECT game FROM checkpoints WHERE revision=0", [], |row| {
+            row.get(0)
+        })?;
+    require(
+        bytes(&serde_json::from_str::<Game<Cna>>(&checkpoint)?) == bytes(&fixture.game),
+        "actual checkpoint0 must retain the complete opened Game",
+    )?;
     let mut query = db.prepare("SELECT payload FROM events ORDER BY id")?;
-    let persisted = query.query_map([], |row| row.get::<_, String>(0))?
-        .map(|row| Ok(serde_json::from_str::<EngineEvent>(&row?)?)).collect::<Checked<Vec<_>>>()?;
-    require(bytes(&persisted) == bytes(&expected_events), "all committed EngineEvents must match canonical response transitions")?;
-    let mut actual_public: Vec<_> = fixture.events.iter().filter(|event| event.audience == Audience::Public).cloned().collect();
-    actual_public.extend(persisted.iter().filter(|event| event.audience == Audience::Public).cloned());
-    require(bytes(&actual_public) == bytes(&public_events), "independent full ordered Public stream mismatch")?;
-    require(bytes(&actual_public) == bytes(&fixture.events.iter().filter(|event| event.audience == Audience::Public).cloned().collect::<Vec<_>>()),
-        "six empty passes must not introduce Public activity")?;
+    let persisted = query
+        .query_map([], |row| row.get::<_, String>(0))?
+        .map(|row| Ok(serde_json::from_str::<EngineEvent>(&row?)?))
+        .collect::<Checked<Vec<_>>>()?;
+    require(
+        bytes(&persisted) == bytes(&expected_events),
+        "all committed EngineEvents must match canonical response transitions",
+    )?;
+    let mut actual_public: Vec<_> = fixture
+        .events
+        .iter()
+        .filter(|event| event.audience == Audience::Public)
+        .cloned()
+        .collect();
+    actual_public.extend(
+        persisted
+            .iter()
+            .filter(|event| event.audience == Audience::Public)
+            .cloned(),
+    );
+    require(
+        bytes(&actual_public) == bytes(&public_events),
+        "independent full ordered Public stream mismatch",
+    )?;
+    require(
+        bytes(&actual_public)
+            == bytes(
+                &fixture
+                    .events
+                    .iter()
+                    .filter(|event| event.audience == Audience::Public)
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            ),
+        "six empty passes must not introduce Public activity",
+    )?;
     let before = rows(&path);
     let recovered = Campaign::recover(&path, ruleset(profile)?, fixture.content.clone(), &pins)?;
-    require(bytes(recovered.game.as_ref()) == bytes(&expected_game), "complete recovered Game/RNG mismatch")?;
+    require(
+        bytes(recovered.game.as_ref()) == bytes(&expected_game),
+        "complete recovered Game/RNG mismatch",
+    )?;
     for surface in surfaces.last().unwrap() {
         let view = recovered.view(surface.perspective)?;
         let (_, _, body) = &surface.http[0];
         let http: Value = serde_json::from_slice(body)?;
-        require(http["snapshot"]["view"] == serde_json::to_value(view)?, "recovered perspective projection differs")?;
+        require(
+            http["snapshot"]["view"] == serde_json::to_value(view)?,
+            "recovered perspective projection differs",
+        )?;
     }
-    require(rows(&path) == before, "recovery must not mutate any SQLite row")?;
+    require(
+        rows(&path) == before,
+        "recovery must not mutate any SQLite row",
+    )?;
     drop(recovered);
     // Recovered original writer and HTTP/WS replay follow the same existing interfaces.
     let recovered = Campaign::recover(&path, ruleset(profile)?, fixture.content.clone(), &pins)?;
@@ -381,8 +546,14 @@ async fn exercise(fixture: &Opened, profile: &str) -> Checked<usize> {
     let replayed = capture(&replay_api, fixture).await;
     let finished = replay_api.finish().await;
     finished?;
-    require(replayed? == *surfaces.last().unwrap(), "all authenticated surfaces and complete WS replay differ after restart")?;
-    require(rows(&path) == before, "recovered writer and authenticated reads must preserve complete SQLite rows")?;
+    require(
+        replayed? == *surfaces.last().unwrap(),
+        "all authenticated surfaces and complete WS replay differ after restart",
+    )?;
+    require(
+        rows(&path) == before,
+        "recovered writer and authenticated reads must preserve complete SQLite rows",
+    )?;
     Ok(surfaces.len())
 }
 

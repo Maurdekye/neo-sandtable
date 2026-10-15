@@ -81,7 +81,12 @@ pub(crate) fn enter_units(
     let current = key(state);
     let mut openings = vec![];
     for owner in Side::ALL {
-        let exists = state.land.replacements.sides.iter().any(|own| own.side == owner);
+        let exists = state
+            .land
+            .replacements
+            .sides
+            .iter()
+            .any(|own| own.side == owner);
         // An older/default empty replacement state still gets all public windows.
         // Validate any existing side before publishing openings; never hide duplicates.
         if exists && procedure(side(state, owner)?, training).key.as_ref() == Some(&current) {
@@ -94,8 +99,18 @@ pub(crate) fn enter_units(
         }
     }
     for (seat, counters) in openings {
-        if !state.land.replacements.sides.iter().any(|own| own.side == seat.side) {
-            state.land.replacements.sides.push(SideReplacements::new(seat.side));
+        if !state
+            .land
+            .replacements
+            .sides
+            .iter()
+            .any(|own| own.side == seat.side)
+        {
+            state
+                .land
+                .replacements
+                .sides
+                .push(SideReplacements::new(seat.side));
         }
         let own = side_mut(state, seat.side)?;
         let proc = procedure_mut(own, training);

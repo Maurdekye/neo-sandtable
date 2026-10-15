@@ -207,10 +207,11 @@ pub(super) fn recipient(
             // land:19.64d, land:20.3: HW conversion consumes both Infantry and Gun RP.
             // This is not land:19.9 permission to attach a second physical weapon stock.
             ReplacementKind::Gun { .. } => {
-                matches!(class.unit_type.as_str(), "artillery" | "anti_tank" | "anti_air")
-                    || (class.unit_type == "infantry"
-                        && source.infantry_kind
-                            == Some(cna_content::units::InfantryKind::HeavyWeapons))
+                matches!(
+                    class.unit_type.as_str(),
+                    "artillery" | "anti_tank" | "anti_air"
+                ) || (class.unit_type == "infantry"
+                    && source.infantry_kind == Some(cna_content::units::InfantryKind::HeavyWeapons))
             }
             ReplacementKind::Tank { .. } => class.unit_type == "tank",
             ReplacementKind::Recce { .. } => class.unit_type == "recce",

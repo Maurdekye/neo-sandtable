@@ -240,5 +240,3 @@ pub(super) fn answer(
         public_explanation: None,
     })
 }
-
-

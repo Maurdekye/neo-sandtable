@@ -71,7 +71,10 @@ struct Generator<'a> {
 impl Generator<'_> {
     fn action(&mut self, schema: &ActionSchema, depth: u32) -> Result<Value, Error> {
         #[cfg(test)]
-        replacement_sampler_controls::observe(replacement_sampler_controls::Phase::Generate, &self.rng);
+        replacement_sampler_controls::observe(
+            replacement_sampler_controls::Phase::Generate,
+            &self.rng,
+        );
         if depth > 32 || self.nodes_left == 0 {
             return Err(Error::Invalid("action generation budget exhausted".into()));
         }
@@ -158,7 +161,10 @@ impl ResourcePreview {
 
     fn action(&mut self, schema: &ActionSchema, depth: u32) -> Result<(), PreviewStop> {
         #[cfg(test)]
-        replacement_sampler_controls::observe(replacement_sampler_controls::Phase::Preview, &self.rng);
+        replacement_sampler_controls::observe(
+            replacement_sampler_controls::Phase::Preview,
+            &self.rng,
+        );
         if depth > 32 || self.nodes_left == 0 {
             return Err(PreviewStop::Budget);
         }
@@ -239,7 +245,10 @@ pub fn answer(
         attempt,
     };
     #[cfg(test)]
-    replacement_sampler_controls::observe(replacement_sampler_controls::Phase::Begin, &generator.rng);
+    replacement_sampler_controls::observe(
+        replacement_sampler_controls::Phase::Begin,
+        &generator.rng,
+    );
     let unavailable = unavailable_domain(request, candidates);
     if unavailable && request.space.pass.is_none() {
         return Err(Error::Invalid(format!(
