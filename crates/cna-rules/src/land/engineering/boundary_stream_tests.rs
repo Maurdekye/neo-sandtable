@@ -580,7 +580,13 @@ fn before_replacement_window(anchor: &str) -> Game<Cna> {
             assert!(matches!(command, Command::Advance));
             assert!(value.state.decisions.pending.is_empty());
             assert!(
-                advanced.game.state.decisions.pending.iter().all(|p| p.kind == kind)
+                advanced
+                    .game
+                    .state
+                    .decisions
+                    .pending
+                    .iter()
+                    .all(|p| p.kind == kind)
             );
             return value;
         }
