@@ -561,6 +561,58 @@ fn component_midstage_legacy_recovery_never_fabricates_opening_or_quiet_sgsu_cov
     panic!("legacy component did not close its entered interval");
 }
 
+// Genuine public predecessor: preview only ordinary commands and retain the
+// actual input Game of the Advance that opens the selected replacement window.
+fn before_replacement_window(anchor: &str) -> Game<Cna> {
+    let kind = match anchor {
+        "opstage.organization.reorganization" => "cna.replacements.allocation",
+        "opstage.organization.training" => "cna.replacements.training",
+        _ => panic!("only the two source replacement windows are selected"),
+    };
+    let mut value = first_open_component();
+    for serial in 0..4096 {
+        let command = next_command(&value, serial);
+        let advanced = accepted_with_checkpoint_retry(&value, &command);
+        if advanced.game.state.cursor.block == Block::OpStage
+            && advanced.game.state.cursor.anchor() == anchor
+            && !advanced.game.state.decisions.pending.is_empty()
+        {
+            assert!(matches!(command, Command::Advance));
+            assert!(value.state.decisions.pending.is_empty());
+            assert!(
+                advanced.game.state.decisions.pending.iter().all(|p| p.kind == kind)
+            );
+            return value;
+        }
+        value = advanced.game;
+    }
+    panic!("lawful source flow did not reach the replacement-window predecessor");
+}
+
+// NEGATIVE ONLY: the production sequencer's unentered first-opening clock.
+// This is not a publicly returned Game and never feeds a positive stream.
+fn first_open_entry_clock_for_negative_labels() -> Game<Cna> {
+    let mut value = first_open_component();
+    assert_eq!(value.state.cursor.block, Block::Pre);
+    assert_eq!(value.state.cursor.anchor(), "logistics.stores_expenditure");
+    assert!(value.state.cursor.entered);
+    assert!(value.state.decisions.pending.is_empty());
+    assert!(value.state.engineering.observed_opening.is_none());
+    assert!(value.state.air.runtime.sgsu_activity.current.is_none());
+    let original = serde_json::to_value(&value).unwrap();
+    let mut cursor = value.state.cursor.clone();
+    cursor.advance(&content().bounds);
+    assert_eq!(cursor.block, Block::OpStage);
+    assert_eq!(cursor.index, 0);
+    assert_eq!(cursor.op_stage, Some(1));
+    assert!(!cursor.entered);
+    value.state.cursor = cursor;
+    let mut only_clock = serde_json::to_value(&value).unwrap();
+    only_clock["state"]["cursor"] = original["state"]["cursor"].clone();
+    assert_eq!(only_clock, original);
+    value
+}
+
 fn rejection_pure(value: &Game<Cna>, command: &Command, expected: Rejection) {
     let before = whole(value);
     let saved = checkpoint(value);
@@ -592,12 +644,9 @@ fn empty_oob_duplicate_side_errors_at_real_public_open_and_respond_restore_whole
         "opstage.organization.reorganization",
         "opstage.organization.training",
     ] {
-        let mut original = first_open_component();
-        original.state.cursor.index = crate::seq::OPSTAGE
-            .iter()
-            .position(|step| step.anchor == anchor)
-            .unwrap();
-        // Explicit component entry clock; no replacement counter or candidate.
+        // The actual input of the public Advance that opens all six slots.
+        // No cursor/index transplant, pending clear, counter or candidate.
+        let original = before_replacement_window(anchor);
         let mut broken = checkpoint(&original);
         broken.state.land.replacements.sides = vec![
             SideReplacements::new(Side::Axis),
@@ -1048,7 +1097,9 @@ fn checked_tail_and_true_open_label_guards_preserve_whole_component_and_rng() {
         ),
         (1, None, "air SGSU activity: missing Operations Stage"),
     ] {
-        let mut value = first_open_component();
+        // Corrupt the unentered opening-entry clock, not PRE's soon-replaced
+        // label: seq::next_raw resets PRE to Some(1) before public dispatch.
+        let mut value = first_open_entry_clock_for_negative_labels();
         value.state.cursor.game_turn = gt;
         value.state.cursor.op_stage = op;
         rejection_pure(
