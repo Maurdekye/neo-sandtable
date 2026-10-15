@@ -265,8 +265,8 @@ async fn replacement_real_empty_windows_use_original_writer_and_match_direct_can
                 assert_eq!(bytes(&answer), bytes(&canonical_pass(&request, epoch)));
                 let expected = evaluate(
                     &ruleset(profile).unwrap(),
-                    &content,
-                    &entered,
+                    content,
+                    entered,
                     &Command::Respond(canonical_pass(&request, epoch)),
                 )
                 .unwrap();
@@ -382,7 +382,7 @@ async fn replacement_real_empty_windows_use_original_writer_and_match_direct_can
                 assert!(!pending.iter().any(|pending| pending.id == request.id));
                 assert_eq!(
                     pending.len() + 1,
-                    Cna::dev().pending(&content, &entered.state).len()
+                    Cna::dev().pending(content, &entered.state).len()
                 );
             }
         }
@@ -443,8 +443,8 @@ fn replacement_real_pass_persistence_duplicate_conflict_and_errors_keep_complete
             assert_eq!(bytes(current.game.as_ref()), bytes(&entered));
             let expected = evaluate(
                 &ruleset(profile).unwrap(),
-                &content,
-                &entered,
+                content,
+                entered,
                 &Command::Respond(answer.clone()),
             )
             .unwrap();
