@@ -113,26 +113,37 @@ fn accepted_with_checkpoint_retry(value: &Game<Cna>, command: &Command) -> cna_c
 fn component_public_empty_first_open_through_post_next_open_has_all_thirteen_ordered_streams() {
     let mut a = first_open_component();
     let mut b = checkpoint(&a);
+    // Independent pair: c varies only a real canonical SGSU's private history.
+    // b retains the original, separate Engineering history variation below.
+    let mut c = checkpoint(&a);
     let start = a.state.cursor.game_turn;
     assert!(content().bounds.end_gt > start, "source scenario must include next turn");
     let mut prior_a = Vec::new();
     let mut prior_b = Vec::new();
+    let mut prior_c = Vec::new();
     let perspectives: Vec<_> = Perspective::all().collect();
     assert_eq!(perspectives.len(), 13);
     let mut closed = BTreeSet::new();
     let mut saw_post = false;
     let mut responses = 0usize;
     let mut private_pair_added = false;
+    let mut sgsu_id = None;
+    let mut saw_differing_current = false;
+    let mut saw_differing_retained = false;
     for serial in 0..4096 {
         for &p in &perspectives {
             assert_eq!(visible_frame(&a, &prior_a, p), visible_frame(&b, &prior_b, p), "before command {serial} {p}");
+            assert_eq!(visible_frame(&a, &prior_a, p), visible_frame(&c, &prior_c, p), "SGSU before command {serial} {p}");
         }
         let command = next_command(&a, serial);
         if matches!(command, Command::Respond(_)) { responses += 1; }
         let left = accepted_with_checkpoint_retry(&a, &command);
         let right = accepted_with_checkpoint_retry(&b, &command);
+        let sgsu = accepted_with_checkpoint_retry(&c, &command);
         assert_eq!(left.progress, right.progress);
         assert_eq!(left.events, right.events, "complete raw phase/event order, including Operator");
+        assert_eq!(left.progress, sgsu.progress);
+        assert_eq!(left.events, sgsu.events, "SGSU complete raw phase/event order, including Operator");
         for event in &left.events {
             if let GameEvent::PhaseChanged { clock } = &event.event {
                 saw_post |= clock.game_turn == start && clock.op_stage.is_none()
@@ -141,12 +152,20 @@ fn component_public_empty_first_open_through_post_next_open_has_all_thirteen_ord
         }
         prior_a.extend(left.events);
         prior_b.extend(right.events);
+        prior_c.extend(sgsu.events);
         a = left.game; b = right.game;
+        c = sgsu.game;
         assert_eq!(a.rng, b.rng);
         assert_eq!(serde_json::to_value(&a.state.land).unwrap(), serde_json::to_value(&b.state.land).unwrap());
         assert_eq!(serde_json::to_value(&a.state.logistics).unwrap(), serde_json::to_value(&b.state.logistics).unwrap());
         assert!(a.state.land.replacements.sides.iter().all(|s| s.counters.is_empty()));
         assert!(b.state.land.replacements.sides.iter().all(|s| s.counters.is_empty()));
+        assert_eq!(a.rng, c.rng);
+        assert_eq!(serde_json::to_value(&a.state.land).unwrap(), serde_json::to_value(&c.state.land).unwrap());
+        assert_eq!(serde_json::to_value(&a.state.logistics).unwrap(), serde_json::to_value(&c.state.logistics).unwrap());
+        assert_eq!(serde_json::to_value(&a.state.engineering).unwrap(), serde_json::to_value(&c.state.engineering).unwrap());
+        assert_eq!(serde_json::to_value(&a.state.air.runtime.sgsus).unwrap(), serde_json::to_value(&c.state.air.runtime.sgsus).unwrap());
+        assert!(c.state.land.replacements.sides.iter().all(|s| s.counters.is_empty()));
         if !private_pair_added && a.state.engineering.observed_opening == Some(ActivityStage { game_turn:start, op_stage:1 }) {
             // Explicit private-record variation, never a CP expenditure, pin action,
             // training entitlement or altered public world state.
@@ -154,16 +173,74 @@ fn component_public_empty_first_open_through_post_next_open_has_all_thirteen_ord
             entry.gross_cp_quarters = 4; entry.departed = true; entry.pinned = true;
             private_pair_added = true;
         }
+        if sgsu_id.is_none() && a.state.engineering.observed_opening == Some(ActivityStage { game_turn:start, op_stage:1 }) {
+            let (id, unit) = c.state.air.runtime.sgsus.iter().next().expect("existing canonical source SGSU");
+            let id = id.clone();
+            let owner = unit.side().expect("canonical SGSU owner");
+            let observed = c.state.air.runtime.sgsu_activity.current.as_mut().expect("actual public opening history");
+            assert_eq!(observed.stage, SgsuOpStage { game_turn:start, op_stage:1 });
+            assert!(observed.observed_opening && !observed.closed);
+            let entry = observed.entries.get_mut(&id).expect("real opening recorded canonical id");
+            assert_eq!(entry.owner, owner);
+            assert_eq!(&*entry, a.state.air.runtime.sgsu_activity.current.as_ref().unwrap().entries.get(&id).unwrap());
+            // Private observations only: no CP expenditure, actual movement/pin,
+            // producer-coverage claim, new id, candidate, inventory or entitlement.
+            entry.gross_cp_quarters = entry.gross_cp_quarters.checked_add(4).unwrap();
+            entry.departed = true; entry.pinned = true;
+            sgsu_id = Some(id);
+        }
+        if let Some(id) = &sgsu_id {
+            let interval = SgsuOpStage { game_turn:start, op_stage:1 };
+            if let Some(observed) = &c.state.air.runtime.sgsu_activity.current {
+                if observed.stage == interval && !observed.closed {
+                    let base = a.state.air.runtime.sgsu_activity.current.as_ref().unwrap();
+                    assert_eq!(base.stage, observed.stage);
+                    let left = base.entries.get(id).unwrap();
+                    let right = observed.entries.get(id).unwrap();
+                    assert_ne!(left, right, "active private current pair must differ");
+                    assert_eq!(left.owner, right.owner);
+                    assert_eq!(left.opening_location, right.opening_location);
+                    assert_eq!(left.closing_location, right.closing_location);
+                    assert_eq!(right.gross_cp_quarters, left.gross_cp_quarters + 4);
+                    assert!(right.departed && right.pinned);
+                    assert_eq!(whole(&checkpoint(&c)), whole(&c), "active SGSU history survives complete checkpoint recovery");
+                    saw_differing_current = true;
+                }
+            }
+            if let Some(retained) = &c.state.air.runtime.sgsu_activity.previous_closed {
+                if retained.stage == interval {
+                    let base = a.state.air.runtime.sgsu_activity.previous_closed.as_ref().unwrap();
+                    assert_eq!(base.stage, retained.stage);
+                    assert!(base.closed && retained.closed && retained.observed_opening);
+                    let left = base.entries.get(id).unwrap();
+                    let right = retained.entries.get(id).unwrap();
+                    assert_ne!(left, right, "actual close must retain the differing SGSU observations");
+                    assert_eq!(left.owner, right.owner);
+                    assert_eq!(left.opening_location, right.opening_location);
+                    assert_eq!(left.closing_location, right.closing_location);
+                    assert_eq!(right.gross_cp_quarters, left.gross_cp_quarters + 4);
+                    assert!(right.departed && right.pinned);
+                    assert_eq!(whole(&checkpoint(&c)), whole(&c), "retained SGSU history survives complete checkpoint recovery");
+                    saw_differing_retained = true;
+                }
+            }
+        }
         if let Some(record) = &a.state.engineering.closed_activity {
             if record.stage.game_turn == start { closed.insert(record.stage.op_stage); }
         }
         for &p in &perspectives {
             assert_eq!(visible_frame(&a, &prior_a, p), visible_frame(&b, &prior_b, p), "after command {serial} {p}");
+            assert_eq!(visible_frame(&a, &prior_a, p), visible_frame(&c, &prior_c, p), "SGSU after command {serial} {p}");
         }
         if a.state.engineering.observed_opening == Some(ActivityStage { game_turn:start + 1, op_stage:1 }) {
             assert!(private_pair_added && responses > 0 && saw_post);
             assert_eq!(closed, [1u8,2,3].into_iter().collect());
             assert_eq!(prior_a, prior_b);
+            assert!(saw_differing_current && saw_differing_retained, "SGSU current AND actual retained history variation required");
+            assert_eq!(prior_a, prior_c);
+            assert_eq!(c.state.engineering.observed_opening, a.state.engineering.observed_opening);
+            assert_eq!(c.state.air.runtime.sgsu_activity.current.as_ref().unwrap().stage,
+                SgsuOpStage { game_turn:start + 1, op_stage:1 });
             let retained = a.state.engineering.closed_activity.as_ref().unwrap();
             assert_eq!(retained.stage, ActivityStage { game_turn:start, op_stage:3 });
             assert_eq!(a.state.air.runtime.sgsu_activity.current.as_ref().unwrap().stage,
