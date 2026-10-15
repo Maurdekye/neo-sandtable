@@ -777,6 +777,10 @@ async fn stream(mut socket: WebSocket, handle: CampaignHandle, grant: Grant) {
                             continue 'subscriptions;
                         }
                         Some(Ok(Message::Ping(_)|Message::Pong(_))) => {},
+                        Some(Ok(Message::Close(_))) => {
+                            let _ = tokio::time::timeout(Duration::from_secs(5), socket.recv()).await;
+                            return;
+                        }
                         _ => return,
                     }
                 }
