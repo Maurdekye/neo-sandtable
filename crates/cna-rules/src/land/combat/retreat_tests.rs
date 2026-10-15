@@ -64,12 +64,7 @@ impl Overlay {
             };
             rows += &format!(
                 "{},{},{},{},{},{}\n",
-                h.id,
-                h.section,
-                h.axial.q,
-                h.axial.r,
-                terrain,
-                flags
+                h.id, h.section, h.axial.q, h.axial.r, terrain, flags
             );
         }
         std::fs::write(dir.join("hexes.csv"), rows).unwrap();

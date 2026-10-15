@@ -746,11 +746,18 @@ fn replacement_heavy_weapons_refuses_plain_infantry_nation_partial_assignment_an
         let command = respond(&opened.state, serde_json::to_value(&plan).unwrap());
         let rejected = evaluate(&Cna::full(), &content, &opened, &command).unwrap_err();
         if reason == 5 {
-            let pending = opened.state.decisions.pending.iter()
-                .find(|pending| pending.seat == seat).unwrap();
-            assert!(matches!(&pending.space.schema, ActionSchema::Record { fields }
+            let pending = opened
+                .state
+                .decisions
+                .pending
+                .iter()
+                .find(|pending| pending.seat == seat)
+                .unwrap();
+            assert!(
+                matches!(&pending.space.schema, ActionSchema::Record { fields }
                 if fields.iter().any(|field| field.name == "uses"
-                    && matches!(&field.schema, ActionSchema::List { min: 0, max: 1, .. }))));
+                    && matches!(&field.schema, ActionSchema::List { min: 0, max: 1, .. })))
+            );
             assert_eq!(rejected, cna_core::engine::Rejection::Illegal {
                 message: "the answer does not fit this decision's action space: action.uses: expected 0..=1 items".into(),
             });
@@ -768,25 +775,39 @@ fn replacement_heavy_weapons_refuses_plain_infantry_nation_partial_assignment_an
         if reason == 5 {
             // Keep the original exact handler refusal after a genuine max-two opening.
             // Only the recipient changes after declaration; the pending schema is untouched.
-            let (healthy_content, healthy_state, _, healthy_seat, healthy_plan) = hw("cw.2_pounder");
+            let (healthy_content, healthy_state, _, healthy_seat, healthy_plan) =
+                hw("cw.2_pounder");
             assert_eq!(healthy_seat, seat);
             assert_eq!(bytes(&healthy_plan), bytes(&plan));
             let (mut late, _) = entered(&healthy_content, &game(healthy_state));
-            let pending = late.state.decisions.pending.iter()
-                .find(|pending| pending.seat == healthy_seat).unwrap();
-            assert!(matches!(&pending.space.schema, ActionSchema::Record { fields }
+            let pending = late
+                .state
+                .decisions
+                .pending
+                .iter()
+                .find(|pending| pending.seat == healthy_seat)
+                .unwrap();
+            assert!(
+                matches!(&pending.space.schema, ActionSchema::Record { fields }
                 if fields.iter().any(|field| field.name == "uses"
-                    && matches!(&field.schema, ActionSchema::List { min: 0, max: 2, .. }))));
+                    && matches!(&field.schema, ActionSchema::List { min: 0, max: 2, .. })))
+            );
             let action = serde_json::to_value(&healthy_plan).unwrap();
             pending.space.check(&action).unwrap();
             let command = respond(&late.state, action);
-            side_mut(&mut late.state, healthy_seat.side).unwrap().counters[1].recipient =
-                UnitId::new("absent-recipient");
-            assert_eq!(expected, cna_core::engine::Rejection::Illegal {
-                message: "not an own living replacement recipient".into(),
-            });
+            side_mut(&mut late.state, healthy_seat.side)
+                .unwrap()
+                .counters[1]
+                .recipient = UnitId::new("absent-recipient");
             assert_eq!(
-                allocation::prepare(&healthy_content, &late.state, healthy_seat, &healthy_plan).unwrap_err(),
+                expected,
+                cna_core::engine::Rejection::Illegal {
+                    message: "not an own living replacement recipient".into(),
+                }
+            );
+            assert_eq!(
+                allocation::prepare(&healthy_content, &late.state, healthy_seat, &healthy_plan)
+                    .unwrap_err(),
                 expected
             );
             let frozen = bytes(&late);
