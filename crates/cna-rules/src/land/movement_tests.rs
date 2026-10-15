@@ -6719,23 +6719,45 @@ fn fixed_ship_reaction_exclusion_preserves_fixed_windows_and_real_query_errors()
         let g = start(&c, s, strict);
         let before = serde_json::to_vec(&g).unwrap();
         let options = super::super::reaction::candidate_options(
-            &c, &g.state, &[LEG.into()], &"C4021".into(), &[], strict,
-        ).unwrap();
+            &c,
+            &g.state,
+            &[LEG.into()],
+            &"C4021".into(),
+            &[],
+            strict,
+        )
+        .unwrap();
         assert!(options.is_empty());
         assert_eq!(serde_json::to_vec(&g).unwrap(), before);
-        let t = respond(&c, &g, seat(&g), json!([{"unit":LEG,"path":["C4021"]}]), strict).unwrap();
+        let t = respond(
+            &c,
+            &g,
+            seat(&g),
+            json!([{"unit":LEG,"path":["C4021"]}]),
+            strict,
+        )
+        .unwrap();
         assert!(t.game.state.land.reaction.adjudication_stop.is_none());
         let window = t.game.state.land.reaction.window.as_ref().unwrap();
         assert!(window.eligible.is_empty());
         assert!(window.cpa_options.is_empty());
-        let roles: BTreeSet<_> = t.game.state.decisions.pending.iter()
+        let roles: BTreeSet<_> = t
+            .game
+            .state
+            .decisions
+            .pending
+            .iter()
             .filter(|p| p.kind == super::super::reaction::KIND)
-            .map(|p| p.seat).collect();
-        assert_eq!(roles, BTreeSet::from([
-            SeatId::new(Side::Axis, Role::FrontLine),
-            SeatId::new(Side::Axis, Role::RearArea),
-            SeatId::new(Side::Axis, Role::Logistics),
-        ]));
+            .map(|p| p.seat)
+            .collect();
+        assert_eq!(
+            roles,
+            BTreeSet::from([
+                SeatId::new(Side::Axis, Role::FrontLine),
+                SeatId::new(Side::Axis, Role::RearArea),
+                SeatId::new(Side::Axis, Role::Logistics),
+            ])
+        );
         assert_eq!(
             serde_json::to_vec(&t.game.state.land.units[&SHIP.into()]).unwrap(),
             serde_json::to_vec(&g.state.land.units[&SHIP.into()]).unwrap(),
@@ -6749,7 +6771,12 @@ fn fixed_ship_reaction_exclusion_preserves_fixed_windows_and_real_query_errors()
         });
         assert_eq!(
             super::super::reaction::candidate_options(
-                &c, &g.state, &[LEG.into()], &"C4021".into(), &[], strict,
+                &c,
+                &g.state,
+                &[LEG.into()],
+                &"C4021".into(),
+                &[],
+                strict,
             ),
             Err(expected),
         );
@@ -6804,9 +6831,21 @@ fn fixed_ship_represented_member_is_screened_before_selected_root_allowance() {
                 assert!(formation::fixed_ship(&c, &ship));
                 assert!(c.units.units[&ship].class.is_none());
                 assert_eq!(ownership::parent_for_unit(&c, &s, &ship), Some(&root));
-                let expected_members: BTreeSet<_> = [root.clone(), ship.clone()].into_iter().collect();
-                assert_eq!(formation::members(&c, &s, &root).into_iter().collect::<BTreeSet<_>>(), expected_members);
-                assert_eq!(formation::FormationIndex::new(&c, &s).members(&root).into_iter().collect::<BTreeSet<_>>(), expected_members);
+                let expected_members: BTreeSet<_> =
+                    [root.clone(), ship.clone()].into_iter().collect();
+                assert_eq!(
+                    formation::members(&c, &s, &root)
+                        .into_iter()
+                        .collect::<BTreeSet<_>>(),
+                    expected_members
+                );
+                assert_eq!(
+                    formation::FormationIndex::new(&c, &s)
+                        .members(&root)
+                        .into_iter()
+                        .collect::<BTreeSet<_>>(),
+                    expected_members
+                );
                 let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &root));
                 assert!(eligible_base(&c, &s, &root, owner));
                 let mut order = Order::new(root.clone(), vec!["C4021".into()]);
@@ -6823,14 +6862,23 @@ fn fixed_ship_represented_member_is_screened_before_selected_root_allowance() {
                     detail: "movement class is not identified in source data".into(),
                 });
                 // The raw checked query and inspect error contract are not relaxed.
-                assert_eq!(formation::query_allowance(&c, &game.state, &root).err(), Some(unknown.clone()));
-                assert_eq!(unit_stack(&c, &mut game.state, &order, owner, strict), Err(illegal("a fixed ship cannot move (land:30.17)")));
+                assert_eq!(
+                    formation::query_allowance(&c, &game.state, &root).err(),
+                    Some(unknown.clone())
+                );
+                assert_eq!(
+                    unit_stack(&c, &mut game.state, &order, owner, strict),
+                    Err(illegal("a fixed ship cannot move (land:30.17)"))
+                );
                 assert_eq!(serde_json::to_vec(&game.state).unwrap(), before_state);
                 assert_eq!(game.rng, before_rng);
                 assert_eq!(serde_json::to_vec(&game).unwrap(), before_game);
                 // An unresolved nonfixed member must still propagate the exact error.
                 c.units.units.get_mut(&ship).unwrap().kind = None;
-                assert_eq!(unit_stack(&c, &mut game.state, &order, owner, strict), Err(unknown));
+                assert_eq!(
+                    unit_stack(&c, &mut game.state, &order, owner, strict),
+                    Err(unknown)
+                );
                 assert_eq!(serde_json::to_vec(&game.state).unwrap(), before_state);
                 assert_eq!(game.rng, before_rng);
                 assert_eq!(serde_json::to_vec(&game).unwrap(), before_game);
@@ -6857,7 +6905,14 @@ fn represented_fixed_ship_guard_preserves_continuation_and_base_precedence() {
             state: s,
             rng: CampaignRng::from_seed([107; 32]).state(),
         };
-        for variant in ["wrong_seat", "wrong_shape", "stopped", "fixed_member", "frozen_members", "base_wrong_seat"] {
+        for variant in [
+            "wrong_seat",
+            "wrong_shape",
+            "stopped",
+            "fixed_member",
+            "frozen_members",
+            "base_wrong_seat",
+        ] {
             let mut trial = game.clone();
             let mut order = Order::new(root.clone(), vec!["C4021".into()]);
             let mut submitted_seat = owner;
@@ -6874,11 +6929,27 @@ fn represented_fixed_ship_guard_preserves_continuation_and_base_precedence() {
                 "wrong_seat" => submitted_seat = SeatId::new(Side::Axis, Role::RearArea),
                 "wrong_shape" => order.with_stack = true,
                 "stopped" => {
-                    trial.state.land.reaction.continuation.as_mut().unwrap().mover_stopped = true;
+                    trial
+                        .state
+                        .land
+                        .reaction
+                        .continuation
+                        .as_mut()
+                        .unwrap()
+                        .mover_stopped = true;
                     trial.state.land.movement.moved.insert(root.clone());
                     assert!(!continuing(&trial.state, &root));
                 }
-                "frozen_members" => trial.state.land.reaction.continuation.as_mut().unwrap().members = vec![root.clone()],
+                "frozen_members" => {
+                    trial
+                        .state
+                        .land
+                        .reaction
+                        .continuation
+                        .as_mut()
+                        .unwrap()
+                        .members = vec![root.clone()]
+                }
                 "base_wrong_seat" => {
                     trial.state.land.reaction.continuation = None;
                     submitted_seat = SeatId::new(Side::Axis, Role::RearArea);
@@ -6892,15 +6963,33 @@ fn represented_fixed_ship_guard_preserves_continuation_and_base_precedence() {
             let before_game = serde_json::to_vec(&trial).unwrap();
             let result = unit_stack(&c, &mut trial.state, &order, submitted_seat, strict);
             match variant {
-                "wrong_seat" | "wrong_shape" => assert_eq!(result, Err(illegal("unit cannot continue this move"))),
-                "stopped" | "base_wrong_seat" => assert_eq!(result, Err(illegal("unit is not available to this seat in this segment"))),
-                "fixed_member" => assert_eq!(result, Err(illegal("a fixed ship cannot move (land:30.17)"))),
+                "wrong_seat" | "wrong_shape" => {
+                    assert_eq!(result, Err(illegal("unit cannot continue this move")))
+                }
+                "stopped" | "base_wrong_seat" => assert_eq!(
+                    result,
+                    Err(illegal(
+                        "unit is not available to this seat in this segment"
+                    ))
+                ),
+                "fixed_member" => assert_eq!(
+                    result,
+                    Err(illegal("a fixed ship cannot move (land:30.17)"))
+                ),
                 "frozen_members" => assert_eq!(result, Ok(vec![root.clone()])),
                 _ => unreachable!(),
             }
-            assert_eq!(serde_json::to_vec(&trial.state).unwrap(), before_state, "{variant}");
+            assert_eq!(
+                serde_json::to_vec(&trial.state).unwrap(),
+                before_state,
+                "{variant}"
+            );
             assert_eq!(trial.rng, before_rng, "{variant}");
-            assert_eq!(serde_json::to_vec(&trial).unwrap(), before_game, "{variant}");
+            assert_eq!(
+                serde_json::to_vec(&trial).unwrap(),
+                before_game,
+                "{variant}"
+            );
         }
     }
 }

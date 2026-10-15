@@ -1206,14 +1206,23 @@ fn fixed_ship_rba_policy_has_no_move_and_keeps_real_source_errors_typed() {
     assert!(c.units.units[&id].class.is_none());
     assert!(!ids(&c, &opened.state, owner).contains(&id));
     assert_eq!(Cna::dev().pending(&c, &opened.state).len(), 3);
-    let request = Cna::dev().pending(&c, &opened.state).into_iter()
-        .find(|r| r.kind == KIND && r.seat == owner).unwrap();
+    let request = Cna::dev()
+        .pending(&c, &opened.state)
+        .into_iter()
+        .find(|r| r.kind == KIND && r.seat == owner)
+        .unwrap();
     let before = serde_json::to_vec(&opened).unwrap();
     let mut chooser = CampaignRng::from_seed([71; 32]);
-    assert_eq!(random_orders(&c, &opened.state, &request, &mut chooser), Ok(json!([])));
+    assert_eq!(
+        random_orders(&c, &opened.state, &request, &mut chooser),
+        Ok(json!([]))
+    );
     assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
     let bad = command(&c, &opened, owner, json!([{"unit":SHIP,"path":["C4021"]}]));
-    assert!(matches!(evaluate(&Cna::dev(), &c, &opened, &bad), Err(Rejection::Illegal { .. })));
+    assert!(matches!(
+        evaluate(&Cna::dev(), &c, &opened, &bad),
+        Err(Rejection::Illegal { .. })
+    ));
     assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
     let answered = answer(&c, &opened, owner, json!([]));
     assert_eq!(answered.rng, opened.rng);
@@ -1228,7 +1237,10 @@ fn fixed_ship_rba_policy_has_no_move_and_keeps_real_source_errors_typed() {
         detail: "movement class is not identified in source data".into(),
     });
     for strict in [false, true] {
-        assert_eq!(reachable(&c, &opened.state, &id, strict).err(), Some(expected.clone()));
+        assert_eq!(
+            reachable(&c, &opened.state, &id, strict).err(),
+            Some(expected.clone())
+        );
         assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
     }
 }

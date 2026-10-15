@@ -230,7 +230,10 @@ fn available(content: &CnaContent, state: &State, seat: SeatId) -> Vec<UnitId> {
         .units_of(seat.side)
         .filter(|u| {
             eligible_base(content, state, &u.id, seat)
-                && formations.members(&u.id).iter().all(|id| !formation::fixed_ship(content, id))
+                && formations
+                    .members(&u.id)
+                    .iter()
+                    .all(|id| !formation::fixed_ship(content, id))
                 && formations
                     .allowance(content, state, &u.id)
                     .is_some_and(|a| {
@@ -353,7 +356,10 @@ fn unit_stack(
         if k.seat != seat || k.with_stack != order.with_stack || k.mover_stopped {
             return Err(illegal("unit cannot continue this move"));
         }
-        if k.members.iter().any(|id| formation::fixed_ship(content, id)) {
+        if k.members
+            .iter()
+            .any(|id| formation::fixed_ship(content, id))
+        {
             return Err(illegal("a fixed ship cannot move (land:30.17)"));
         }
         return Ok(k.members.clone());

@@ -20,9 +20,11 @@ pub fn class<'a>(content: &'a CnaContent, id: &UnitId) -> Option<&'a UnitClass> 
 /// A fixed ship has a known movement prohibition, independent of its unresolved ratings.
 /// Cases: land:30.17
 pub(super) fn fixed_ship(content: &CnaContent, id: &UnitId) -> bool {
-    content.units.units.get(id).is_some_and(|oa| {
-        oa.kind.as_deref() == Some("fixed_ship")
-    })
+    content
+        .units
+        .units
+        .get(id)
+        .is_some_and(|oa| oa.kind.as_deref() == Some("fixed_ship"))
 }
 /// Components still with their parent, including the root. A remote child is not represented.
 /// Cases: land:9.21, land:19.46
