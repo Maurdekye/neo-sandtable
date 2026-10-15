@@ -1190,3 +1190,45 @@ fn step2_retreat_current_base_catalog_and_three_views_are_byte_exact() {
         assert!(game.rng == rng, "Step2 retreat RNG changed");
     }
 }
+
+/// Cases: land:30.17, land:13.21, land:13.23, land:3.6
+#[test]
+fn fixed_ship_rba_policy_has_no_move_and_keeps_real_source_errors_typed() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    let (mut c, mut game, _overlay) = fixture();
+    game.state.land.units.get_mut(&LEG.into()).unwrap().location = Location::Eliminated;
+    game.state.cursor.half = Some(Half::B); // Commonwealth phasing; Axis owns the ship.
+    place(&mut game.state, SHIP, "C4020"); // Synthetic location, sourced ship identity.
+    let opened = open_game(&c, &game);
+    let id: UnitId = SHIP.into();
+    let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &opened.state, &id));
+    assert!(formation::fixed_ship(&c, &id));
+    assert!(c.units.units[&id].class.is_none());
+    assert!(!ids(&c, &opened.state, owner).contains(&id));
+    assert_eq!(Cna::dev().pending(&c, &opened.state).len(), 3);
+    let request = Cna::dev().pending(&c, &opened.state).into_iter()
+        .find(|r| r.kind == KIND && r.seat == owner).unwrap();
+    let before = serde_json::to_vec(&opened).unwrap();
+    let mut chooser = CampaignRng::from_seed([71; 32]);
+    assert_eq!(random_orders(&c, &opened.state, &request, &mut chooser), Ok(json!([])));
+    assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
+    let bad = command(&c, &opened, owner, json!([{"unit":SHIP,"path":["C4021"]}]));
+    assert!(matches!(evaluate(&Cna::dev(), &c, &opened, &bad), Err(Rejection::Illegal { .. })));
+    assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
+    let answered = answer(&c, &opened, owner, json!([]));
+    assert_eq!(answered.rng, opened.rng);
+    assert_eq!(
+        serde_json::to_vec(&answered.state.land.units[&id]).unwrap(),
+        serde_json::to_vec(&opened.state.land.units[&id]).unwrap(),
+    );
+    // A different unknown is not a fixed ship and gets no new DEV error exemption.
+    c.units.units.get_mut(&id).unwrap().kind = None;
+    let expected = Rejection::Engine(EngineError::Unsupported {
+        case: "land:4.46".into(),
+        detail: "movement class is not identified in source data".into(),
+    });
+    for strict in [false, true] {
+        assert_eq!(reachable(&c, &opened.state, &id, strict).err(), Some(expected.clone()));
+        assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
+    }
+}

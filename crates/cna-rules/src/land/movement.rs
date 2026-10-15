@@ -230,6 +230,7 @@ fn available(content: &CnaContent, state: &State, seat: SeatId) -> Vec<UnitId> {
         .units_of(seat.side)
         .filter(|u| {
             eligible_base(content, state, &u.id, seat)
+                && formations.members(&u.id).iter().all(|id| !formation::fixed_ship(content, id))
                 && formations
                     .allowance(content, state, &u.id)
                     .is_some_and(|a| {
@@ -343,10 +344,17 @@ fn unit_stack(
     seat: SeatId,
     strict: bool,
 ) -> Result<Vec<UnitId>, Rejection> {
+    // Cases: land:30.17
+    if formation::fixed_ship(content, &order.unit) {
+        return Err(illegal("a fixed ship cannot move (land:30.17)"));
+    }
     if continuing(state, &order.unit) {
         let k = state.land.reaction.continuation.as_ref().unwrap();
         if k.seat != seat || k.with_stack != order.with_stack || k.mover_stopped {
             return Err(illegal("unit cannot continue this move"));
+        }
+        if k.members.iter().any(|id| formation::fixed_ship(content, id)) {
+            return Err(illegal("a fixed ship cannot move (land:30.17)"));
         }
         return Ok(k.members.clone());
     }
@@ -370,6 +378,12 @@ fn unit_stack(
     };
     let mut members = BTreeSet::new();
     for root in &roots {
+        if formation::members(content, state, root)
+            .iter()
+            .any(|id| formation::fixed_ship(content, id))
+        {
+            return Err(illegal("a fixed ship cannot move (land:30.17)"));
+        }
         if !eligible(content, state, root, seat)? {
             return Err(illegal("stack contains a unit unavailable to this seat"));
         }

@@ -6705,3 +6705,76 @@ fn step2_query_price_memo_keeps_dynamic_inputs_errors_and_all_step_fields() {
         );
     }
 }
+
+/// Cases: land:30.17, land:8.11, land:8.51, land:8.52
+#[test]
+fn fixed_ship_reaction_exclusion_preserves_fixed_windows_and_real_query_errors() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    for strict in [false, true] {
+        // Synthetic positions only; the fixed-ship record and its missing class are real.
+        let (mut c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+        place(&mut s, SHIP, "C4022");
+        assert!(c.units.units[&SHIP.into()].class.is_none());
+        assert!(formation::fixed_ship(&c, &SHIP.into()));
+        let g = start(&c, s, strict);
+        let before = serde_json::to_vec(&g).unwrap();
+        let options = super::super::reaction::candidate_options(
+            &c, &g.state, &[LEG.into()], &"C4021".into(), &[], strict,
+        ).unwrap();
+        assert!(options.is_empty());
+        assert_eq!(serde_json::to_vec(&g).unwrap(), before);
+        let t = respond(&c, &g, seat(&g), json!([{"unit":LEG,"path":["C4021"]}]), strict).unwrap();
+        assert!(t.game.state.land.reaction.adjudication_stop.is_none());
+        let window = t.game.state.land.reaction.window.as_ref().unwrap();
+        assert!(window.eligible.is_empty());
+        assert!(window.cpa_options.is_empty());
+        let roles: BTreeSet<_> = t.game.state.decisions.pending.iter()
+            .filter(|p| p.kind == super::super::reaction::KIND)
+            .map(|p| p.seat).collect();
+        assert_eq!(roles, BTreeSet::from([
+            SeatId::new(Side::Axis, Role::FrontLine),
+            SeatId::new(Side::Axis, Role::RearArea),
+            SeatId::new(Side::Axis, Role::Logistics),
+        ]));
+        assert_eq!(
+            serde_json::to_vec(&t.game.state.land.units[&SHIP.into()]).unwrap(),
+            serde_json::to_vec(&g.state.land.units[&SHIP.into()]).unwrap(),
+        );
+        // Remove ONLY the test's known-prohibition marker. A genuinely unclassified
+        // neighbor must still propagate its complete typed error in both profiles.
+        c.units.units.get_mut(&SHIP.into()).unwrap().kind = None;
+        let expected = Rejection::Engine(EngineError::Unsupported {
+            case: "land:4.46".into(),
+            detail: "movement class is not identified in source data".into(),
+        });
+        assert_eq!(
+            super::super::reaction::candidate_options(
+                &c, &g.state, &[LEG.into()], &"C4021".into(), &[], strict,
+            ),
+            Err(expected),
+        );
+        assert_eq!(serde_json::to_vec(&g).unwrap(), before);
+    }
+}
+
+/// Cases: land:30.17, land:8.11, land:9.21
+#[test]
+fn fixed_ship_direct_and_stack_orders_are_known_illegal_without_mutation() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    for strict in [false, true] {
+        for with_stack in [false, true] {
+            let (c, mut s, _overlay) = setup(TANK, Some("road"), false, None);
+            place(&mut s, SHIP, "C4020");
+            let id: UnitId = if with_stack { TANK.into() } else { SHIP.into() };
+            let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &id));
+            let mut order = Order::new(id, vec!["C4021".into()]);
+            order.with_stack = with_stack;
+            let before = serde_json::to_vec(&s).unwrap();
+            assert_eq!(
+                unit_stack(&c, &mut s, &order, owner, strict),
+                Err(illegal("a fixed ship cannot move (land:30.17)")),
+            );
+            assert_eq!(serde_json::to_vec(&s).unwrap(), before);
+        }
+    }
+}

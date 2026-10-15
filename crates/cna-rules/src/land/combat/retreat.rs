@@ -49,7 +49,9 @@ fn allowed(c: &CnaContent, s: &State, id: &UnitId, seat: SeatId) -> bool {
         && s.land.units.get(id).is_some_and(|u| u.side == seat.side)
         && ownership::seat_for_unit(c, s, id) == seat.role
         && formation::members(c, s, id).iter().all(|member| {
-            !s.land.combat.pinned.contains(member)
+            // Cases: land:30.17
+            !formation::fixed_ship(c, member)
+                && !s.land.combat.pinned.contains(member)
                 && !s.land.combat.retreat.retreated.contains(member)
                 && s.land.units[member].cohesion_quarters > -104
         })

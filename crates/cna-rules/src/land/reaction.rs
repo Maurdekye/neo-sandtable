@@ -79,6 +79,10 @@ pub(super) fn candidate_options(
         .filter(|u| u.location.hex().is_some_and(|h| targets.contains(h)))
     {
         let members = formation::members(c, s, &u.id);
+        // Cases: land:30.17
+        if members.iter().any(|id| formation::fixed_ship(c, id)) {
+            continue;
+        }
         if members.iter().any(|id| {
             s.land.units[id].engaged
                 || s.land.combat.pinned.contains(id)
