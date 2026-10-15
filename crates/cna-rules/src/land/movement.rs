@@ -2111,7 +2111,9 @@ fn reachable_inner(
             {
                 continue;
             }
-            query_reads.map_costs.terrain(&to.id)?;
+            if query_candidate(query_reads.map_costs.terrain(&to.id))?.is_none() {
+                continue;
+            }
             node.restore(&mut draft)?;
             if let Some(mut r) = query_candidate(run_inner(
                 content,
@@ -2527,7 +2529,9 @@ fn reachable_inner_legacy_for_step1(
             {
                 continue;
             }
-            map::terrain(content, &to.id, strict)?;
+            if query_candidate(map::terrain(content, &to.id, strict))?.is_none() {
+                continue;
+            }
             node.restore(&mut draft)?;
             if let Some(mut r) = query_candidate(run(
                 content,
@@ -3390,7 +3394,9 @@ fn reachable_inner_reference_for_step2(
             {
                 continue;
             }
-            map::terrain(content, &to.id, strict)?;
+            if query_candidate(map::terrain(content, &to.id, strict))?.is_none() {
+                continue;
+            }
             node.restore(&mut draft)?;
             if let Some(mut r) = query_candidate(run_reference_for_step2(
                 content,

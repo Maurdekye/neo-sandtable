@@ -657,6 +657,14 @@ mod query_error_controls {
     #[test]
     fn strict_box_handling_survives_witness_and_enumeration_without_input_writes() {
         let (c, mut s, from, to) = setup();
+        // One medium Truck Point must be enough to reach the transfer witness.
+        s.land.units.get_mut(&to).unwrap().toe =
+            Some(cna_content::units::Toe::Under { under: 1 });
+        let strength = formation::query_strength(&c, &s, &to).unwrap();
+        let medium = c.tables.airlog.truck_characteristics.truck(TruckType::Medium);
+        assert_eq!(strength, 1);
+        assert_eq!(medium.capacity_inf_toe_halves, strength * 2);
+        assert_eq!(medium.cpa_inf, 20);
         let stage = logistics::water::WaterStage::current(&s);
         s.land.units.get_mut(&from).unwrap().box_handling =
             Some(logistics::box_handling::BoxHandling {

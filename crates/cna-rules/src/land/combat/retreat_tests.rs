@@ -41,12 +41,26 @@ impl Overlay {
         }
         // A test overlay on the real coordinate grid; no publication movement data are inferred.
         let cells: BTreeSet<_> = (0..=38).map(|n| HexId::new(format!("C40{n:02}"))).collect();
+        // Synthetic sea closes this corridor; it asserts no published terrain facts.
+        let perimeter: BTreeSet<_> = cells
+            .iter()
+            .flat_map(|hex| content.map.neighbors(hex))
+            .filter(|h| !cells.contains(&h.id))
+            .map(|h| h.id.clone())
+            .collect();
         let mut rows = String::from("hex_id,section,q,r,terrain,flags\n");
         for h in content.map.iter() {
             let terrain = if cells.contains(&h.id) {
                 if desert { "desert" } else { "clear" }
+            } else if perimeter.contains(&h.id) {
+                "sea"
             } else {
                 h.terrain.as_deref().unwrap_or("unclassified")
+            };
+            let flags = if perimeter.contains(&h.id) {
+                "sea".to_owned()
+            } else {
+                h.flags.join("|")
             };
             rows += &format!(
                 "{},{},{},{},{},{}\n",
@@ -55,11 +69,14 @@ impl Overlay {
                 h.axial.q,
                 h.axial.r,
                 terrain,
-                h.flags.join("|")
+                flags
             );
         }
         std::fs::write(dir.join("hexes.csv"), rows).unwrap();
         let mut coverage = String::from("layer,hex_id,neighbour_id,src,review_batch\n");
+        for hex in &perimeter {
+            coverage += &format!("terrain,{hex},,land:8.37,test\n");
+        }
         let mut lines = String::from("from_hex,to_hex,kind,src,review_batch\n");
         let mut sides =
             String::from("hex_id,direction,neighbour_id,feature,high_side,src,review_batch\n");
