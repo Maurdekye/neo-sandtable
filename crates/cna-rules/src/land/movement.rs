@@ -358,6 +358,16 @@ fn unit_stack(
         }
         return Ok(k.members.clone());
     }
+    // Screen the selected represented family before eligible queries its rating.
+    // Keep base availability and the earlier continuation checks ahead of this guard.
+    // Cases: land:30.17, land:9.21
+    if eligible_base(content, state, &order.unit, seat)
+        && formation::members(content, state, &order.unit)
+            .iter()
+            .any(|id| formation::fixed_ship(content, id))
+    {
+        return Err(illegal("a fixed ship cannot move (land:30.17)"));
+    }
     if !eligible(content, state, &order.unit, seat)? {
         return Err(illegal(
             "unit is not available to this seat in this segment",
