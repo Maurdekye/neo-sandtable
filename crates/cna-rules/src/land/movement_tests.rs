@@ -1067,8 +1067,11 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
         .then(|| cpu_time::ThreadTime::try_now().expect("movement test needs a thread CPU clock"));
     let mut moves = 0;
     let mut after_setup = 0;
+    let mut budget_answers = 0;
+    let mut fixed_training_answers = 0;
+    let mut fixed_allocation_answers = 0;
     for n in 0..answer_limit + 4096 {
-        if after_setup == answer_limit {
+        if budget_answers == answer_limit {
             break;
         }
         if n % 100 == 0 {
@@ -1126,6 +1129,11 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
         let request = rules.pending(&c, &g.state).remove(0);
         if !request.kind.starts_with("cna.setup.") {
             after_setup += 1;
+            match (must_finish, request.kind.as_str()) {
+                (false, "cna.replacements.training") => fixed_training_answers += 1,
+                (false, "cna.replacements.allocation") => fixed_allocation_answers += 1,
+                _ => budget_answers += 1,
+            }
         }
         let action = profiling_answer(&c, &g.state, &request, &mut rng);
         if request.kind == KIND {
@@ -1150,7 +1158,7 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
     }
     if let Some(thread_begin) = &thread_begin {
         eprintln!(
-            "bounded movement finished: thread CPU {:.3}s, wall {:.3}s, {after_setup} post-setup answers, {moves} movement orders",
+            "bounded movement finished: thread CPU {:.3}s, wall {:.3}s, {after_setup} post-setup answers, {budget_answers} historical-budget answers, {fixed_training_answers} fixed training responses, {fixed_allocation_answers} fixed allocation responses, {moves} movement orders",
             thread_begin
                 .try_elapsed()
                 .expect("movement test needs a thread CPU clock")
@@ -1162,7 +1170,11 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
         moves > 0,
         "bounded campaign must execute a real movement order"
     );
-    assert_eq!(after_setup, answer_limit);
+    assert_eq!(budget_answers, answer_limit);
+    assert_eq!(
+        after_setup,
+        budget_answers + fixed_training_answers + fixed_allocation_answers
+    );
     assert!(!must_finish, "profile campaign did not finish");
 }
 fn profiling_answer(
