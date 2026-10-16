@@ -4564,7 +4564,7 @@ fn step1_require_domains(
     }
 }
 
-// Exact additive source-gap control, not an exemption for arbitrary inspect errors.
+// Exact raw source-gap witness; the known fixed ship still has successful inspection.
 // Cases: land:4.45, land:4.46
 // Source gap: data/units/GAPS.md U-009.
 fn step1_source_skip_inspect_error(
@@ -4649,8 +4649,16 @@ fn step1_compare_expected(
                 "proposed disclosed unauthorized reachability"
             );
         } else if let Some(expected) = expected_error {
-            assert_eq!(legacy.as_ref().err(), Some(expected));
-            assert_eq!(proposed.as_ref().err(), Some(expected));
+            // The exact raw class gap remains; the sourced prohibition answers reachability.
+            assert_eq!(
+                formation::query_allowance(c, &g.state, id).as_ref().err(),
+                Some(expected)
+            );
+            for result in [&legacy, &proposed] {
+                let detail = result.as_ref().expect("fixed-ship own detail unavailable");
+                assert_eq!(detail.get("reachable"), Some(&json!([])));
+                assert_eq!(detail.get("movement_allowance"), Some(&Value::Null));
+            }
         } else {
             assert!(
                 legacy.as_ref().is_ok_and(|v| v.get("reachable").is_some()),
@@ -6265,8 +6273,16 @@ fn step2_compare_profile_expected(
                 "proposed disclosed unauthorized reachability"
             );
         } else if let Some(expected) = expected_error {
-            assert_eq!(legacy.as_ref().err(), Some(expected));
-            assert_eq!(proposed.as_ref().err(), Some(expected));
+            // The exact raw class gap remains; the sourced prohibition answers reachability.
+            assert_eq!(
+                formation::query_allowance(c, &g.state, id).as_ref().err(),
+                Some(expected)
+            );
+            for result in [&legacy, &proposed] {
+                let detail = result.as_ref().expect("fixed-ship own detail unavailable");
+                assert_eq!(detail.get("reachable"), Some(&json!([])));
+                assert_eq!(detail.get("movement_allowance"), Some(&Value::Null));
+            }
         } else {
             assert!(
                 legacy.as_ref().is_ok_and(|v| v.get("reachable").is_some()),
@@ -6861,7 +6877,7 @@ fn fixed_ship_represented_member_is_screened_before_selected_root_allowance() {
                     case: "land:4.46".into(),
                     detail: "movement class is not identified in source data".into(),
                 });
-                // The raw checked query and inspect error contract are not relaxed.
+                // The raw checked allowance error stays exact; inspect now has known-empty reachability.
                 assert_eq!(
                     formation::query_allowance(&c, &game.state, &root).err(),
                     Some(unknown.clone())
@@ -6990,6 +7006,278 @@ fn represented_fixed_ship_guard_preserves_continuation_and_base_precedence() {
                 before_game,
                 "{variant}"
             );
+        }
+    }
+}
+
+/// Cases: land:30.17, land:4.46, land:3.62, land:8.11
+#[test]
+fn fixed_ship_ordinary_reachability_restores_complete_successful_private_inspection() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    let (mut c, mut s, _overlay) = setup(SHIP, Some("road"), false, None);
+    s.cursor.entered = true;
+    let id: UnitId = SHIP.into();
+    let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &id));
+    assert!(formation::fixed_ship(&c, &id));
+    assert!(c.units.units[&id].class.is_none());
+    assert!(eligible_base(&c, &s, &id, owner));
+    let game = Game::<Cna> {
+        state: s,
+        rng: CampaignRng::from_seed([108; 32]).state(),
+    };
+    let expected = Rejection::Engine(EngineError::Unsupported {
+        case: "land:4.46".into(),
+        detail: "movement class is not identified in source data".into(),
+    });
+    let before = serde_json::to_vec(&game.state).unwrap();
+    let rng = game.rng.clone();
+    let whole = serde_json::to_vec(&game).unwrap();
+    for strict in [false, true] {
+        assert_eq!(eligible(&c, &game.state, &id, owner), Ok(false));
+        assert!(reachable(&c, &game.state, &id, strict).unwrap().is_empty());
+        assert_eq!(
+            formation::query_allowance(&c, &game.state, &id).err(),
+            Some(expected.clone())
+        );
+        let mut perspectives = 0;
+        for perspective in Perspective::all() {
+            perspectives += 1;
+            let actual = Cna { strict }.inspect(&c, &game.state, perspective, SHIP);
+            let legacy =
+                crate::view::inspect_legacy_for_step1(&c, &game.state, perspective, SHIP, strict);
+            let reference = crate::view::inspect_reference_for_step2(
+                &c,
+                &game.state,
+                perspective,
+                SHIP,
+                strict,
+            );
+            assert_eq!(actual, legacy);
+            assert_eq!(actual, reference);
+            assert_eq!(
+                serde_json::to_vec(&actual).unwrap(),
+                serde_json::to_vec(&legacy).unwrap()
+            );
+            assert_eq!(
+                serde_json::to_vec(&actual).unwrap(),
+                serde_json::to_vec(&reference).unwrap()
+            );
+            let enemy = matches!(perspective, Perspective::Side(Side::Commonwealth))
+                || matches!(perspective, Perspective::Seat(seat) if seat.side == Side::Commonwealth);
+            if enemy {
+                crate::testkit::assert_face_only(&actual);
+                let detail = actual.as_ref().unwrap();
+                assert!(detail.get("reachable").is_none());
+                assert!(detail.get("movement_allowance").is_none());
+                assert!(detail.get("supplies").is_none());
+            } else {
+                let detail = actual
+                    .as_ref()
+                    .expect("known fixed ship must inspect successfully");
+                assert_eq!(detail.get("reachable"), Some(&json!([])));
+                assert_eq!(detail.get("movement_allowance"), Some(&Value::Null));
+                assert_eq!(detail.get("reaction_division_paths"), Some(&json!([])));
+                assert_eq!(detail["unit"]["id"], json!(SHIP));
+                assert_eq!(
+                    detail["movement_restrictions"][0]["restrictions"]["case"],
+                    json!("land:4.46")
+                );
+            }
+            assert_eq!(serde_json::to_vec(&game.state).unwrap(), before);
+            assert_eq!(game.rng, rng);
+            assert_eq!(serde_json::to_vec(&game).unwrap(), whole);
+        }
+        assert_eq!(perspectives, 13);
+    }
+    // A nonfixed missing class must keep its actual typed refusal, in both profiles.
+    c.units.units.get_mut(&id).unwrap().kind = None;
+    for strict in [false, true] {
+        assert_eq!(eligible(&c, &game.state, &id, owner), Err(expected.clone()));
+        assert_eq!(
+            reachable(&c, &game.state, &id, strict).err(),
+            Some(expected.clone())
+        );
+        assert_eq!(
+            Cna { strict }.inspect(&c, &game.state, Perspective::Seat(owner), SHIP),
+            Err(expected.clone())
+        );
+        assert_eq!(serde_json::to_vec(&game.state).unwrap(), before);
+        assert_eq!(game.rng, rng);
+        assert_eq!(serde_json::to_vec(&game).unwrap(), whole);
+    }
+}
+
+/// Cases: land:30.17, land:9.21, land:8.11, land:8.51, land:8.56, land:4.46
+#[test]
+fn fixed_ship_ordinary_eligibility_keeps_1b3_family_and_saved_continuation_scope() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    let (mut c, mut s, _overlay) = setup(TANK, Some("road"), false, None);
+    place(&mut s, SHIP, "C4020");
+    let root: UnitId = TANK.into();
+    let ship: UnitId = SHIP.into();
+    let child = s.land.units.get_mut(&ship).unwrap();
+    child.detached = false;
+    child.attached_to = Some(root.clone());
+    let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &root));
+    assert!(!formation::fixed_ship(&c, &root));
+    assert!(formation::class(&c, &root).is_some());
+    assert!(formation::members(&c, &s, &root).contains(&ship));
+    assert!(eligible_base(&c, &s, &root, owner));
+    let game = Game::<Cna> {
+        state: s,
+        rng: CampaignRng::from_seed([109; 32]).state(),
+    };
+    let unknown = Rejection::Engine(EngineError::Unsupported {
+        case: "land:4.46".into(),
+        detail: "movement class is not identified in source data".into(),
+    });
+    for strict in [false, true] {
+        for variant in [
+            "represented",
+            "assigned",
+            "saved_fixed",
+            "saved_only",
+            "saved_fixed_remote",
+        ] {
+            let mut trial = game.clone();
+            if variant == "assigned" {
+                let child = trial.state.land.units.get_mut(&ship).unwrap();
+                child.attached_to = None;
+                child.assignment = crate::state::Assignment::Parent(root.clone());
+            }
+            if variant.starts_with("saved_") {
+                trial.state.land.reaction.continuation =
+                    Some(super::super::reaction::Continuation {
+                        seat: owner,
+                        unit: root.clone(),
+                        members: if variant == "saved_only" {
+                            vec![root.clone()]
+                        } else {
+                            vec![root.clone(), ship.clone()]
+                        },
+                        with_stack: false,
+                        planned_path: vec!["C4021".into()],
+                        orders_after: vec![],
+                        mover_stopped: false,
+                    });
+                assert!(continuing(&trial.state, &root));
+            }
+            if variant == "saved_fixed_remote" {
+                trial.state.land.units.get_mut(&ship).unwrap().location = Location::Hex {
+                    hex: "C4022".into(),
+                };
+                assert!(!formation::members(&c, &trial.state, &root).contains(&ship));
+            }
+            let before = serde_json::to_vec(&trial.state).unwrap();
+            let rng = trial.rng.clone();
+            let whole = serde_json::to_vec(&trial).unwrap();
+            if variant == "saved_only" {
+                // No wider family negative: keep the preexisting raw current-family error.
+                assert_eq!(
+                    eligible(&c, &trial.state, &root, owner),
+                    Err(unknown.clone())
+                );
+                assert_eq!(
+                    reachable(&c, &trial.state, &root, strict).err(),
+                    Some(unknown.clone())
+                );
+            } else {
+                assert_eq!(eligible(&c, &trial.state, &root, owner), Ok(false));
+                assert!(
+                    reachable(&c, &trial.state, &root, strict)
+                        .unwrap()
+                        .is_empty()
+                );
+            }
+            assert_eq!(serde_json::to_vec(&trial.state).unwrap(), before);
+            assert_eq!(trial.rng, rng);
+            assert_eq!(serde_json::to_vec(&trial).unwrap(), whole);
+        }
+        // No fixed kind anywhere in the represented family: preserve the exact error.
+        let before = serde_json::to_vec(&game.state).unwrap();
+        let rng = game.rng.clone();
+        let whole = serde_json::to_vec(&game).unwrap();
+        c.units.units.get_mut(&ship).unwrap().kind = None;
+        assert_eq!(
+            eligible(&c, &game.state, &root, owner),
+            Err(unknown.clone())
+        );
+        assert_eq!(
+            reachable(&c, &game.state, &root, strict).err(),
+            Some(unknown.clone())
+        );
+        assert_eq!(
+            Cna { strict }.inspect(&c, &game.state, Perspective::Seat(owner), TANK),
+            Err(unknown.clone())
+        );
+        assert_eq!(serde_json::to_vec(&game.state).unwrap(), before);
+        assert_eq!(game.rng, rng);
+        assert_eq!(serde_json::to_vec(&game).unwrap(), whole);
+        c.units.units.get_mut(&ship).unwrap().kind = Some("fixed_ship".into());
+    }
+}
+
+/// Cases: land:30.17, land:8.11, land:19.44, land:4.46
+#[test]
+fn ordinary_fixed_ship_negative_follows_existing_base_availability() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    let (mut c, s, _overlay) = setup(SHIP, Some("road"), false, None);
+    let id: UnitId = SHIP.into();
+    let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &id));
+    let game = Game::<Cna> {
+        state: s,
+        rng: CampaignRng::from_seed([110; 32]).state(),
+    };
+    for fixed in [true, false] {
+        c.units.units.get_mut(&id).unwrap().kind = if fixed {
+            Some("fixed_ship".into())
+        } else {
+            None
+        };
+        for variant in ["wrong_seat", "moved", "off_map", "stopped_and_moved"] {
+            let mut trial = game.clone();
+            let submitted = if variant == "wrong_seat" {
+                SeatId::new(Side::Axis, Role::FrontLine)
+            } else {
+                owner
+            };
+            match variant {
+                "moved" | "stopped_and_moved" => {
+                    trial.state.land.movement.moved.insert(id.clone());
+                }
+                "off_map" => {
+                    trial.state.land.units.get_mut(&id).unwrap().location = Location::Eliminated
+                }
+                "wrong_seat" => {}
+                _ => unreachable!(),
+            }
+            if variant == "stopped_and_moved" {
+                trial.state.land.reaction.continuation =
+                    Some(super::super::reaction::Continuation {
+                        seat: owner,
+                        unit: id.clone(),
+                        members: vec![id.clone()],
+                        with_stack: false,
+                        planned_path: vec!["C4021".into()],
+                        orders_after: vec![],
+                        mover_stopped: true,
+                    });
+                assert!(!continuing(&trial.state, &id));
+            }
+            assert!(!eligible_base(&c, &trial.state, &id, submitted));
+            let before = serde_json::to_vec(&trial.state).unwrap();
+            let rng = trial.rng.clone();
+            let whole = serde_json::to_vec(&trial).unwrap();
+            assert_eq!(eligible(&c, &trial.state, &id, submitted), Ok(false));
+            // Wrong-seat is a direct eligibility check; reachable derives the true owner.
+            if variant != "wrong_seat" {
+                for strict in [false, true] {
+                    assert!(reachable(&c, &trial.state, &id, strict).unwrap().is_empty());
+                }
+            }
+            assert_eq!(serde_json::to_vec(&trial.state).unwrap(), before);
+            assert_eq!(trial.rng, rng);
+            assert_eq!(serde_json::to_vec(&trial).unwrap(), whole);
         }
     }
 }

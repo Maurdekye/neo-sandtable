@@ -220,6 +220,30 @@ fn eligible(
     if !eligible_base(content, state, id, seat) {
         return Ok(false);
     }
+    // Known immobility precedes unresolved ratings; base availability stays first.
+    // Cases: land:30.17, land:9.21
+    if formation::fixed_ship(content, id) {
+        return Ok(false);
+    }
+    // Match unit_stack's scope: use saved members only while continuing that move.
+    let fixed_member = if continuing(state, id) {
+        state
+            .land
+            .reaction
+            .continuation
+            .as_ref()
+            .unwrap()
+            .members
+            .iter()
+            .any(|member| formation::fixed_ship(content, member))
+    } else {
+        formation::members(content, state, id)
+            .iter()
+            .any(|member| formation::fixed_ship(content, member))
+    };
+    if fixed_member {
+        return Ok(false);
+    }
     let a = formation::query_allowance(content, state, id)?;
     Ok(query_candidate(validate_window_move(state, &state.land.units[id], a, 1))?.is_some())
 }
