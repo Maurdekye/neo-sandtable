@@ -18,9 +18,15 @@ axum = "0.8"
 async-trait = "0.1"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+rusqlite = { version = "0.37", features = ["bundled", "limits"] }
 
 [dev-dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["json"] }
 
 [lints]
 workspace = true
+
+[target.'cfg(windows)'.dependencies]
+win32job = "=2.0.3"
+winapi-util = "=0.1.11"
+getrandom = { version = "=0.4.3", default-features = false }
