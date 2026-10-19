@@ -435,5 +435,6 @@ fn legacy_database_defaults_to_unbounded_and_bad_controls_are_atomic() {
         assert_eq!(c.state_hash().unwrap(), before);
         assert_eq!(c.status(), &CampaignStatus::Running);
     }
+    c.set_paused(false).unwrap();
     c.advance().unwrap();
 }

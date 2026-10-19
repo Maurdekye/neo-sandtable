@@ -12,6 +12,16 @@ folder and database folder. The default database folder is the agent scratch fol
 `campaigns/`, outside the repository. Browser requests require a loopback Host and an approved
 local Origin; the Vite origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed.
 
+After every process restart, a recovered campaign whose committed status is Running awaits
+explicit operator activation. The barrier is internal and not persisted: Game, RNG, revision,
+status and bindings stay intact. Scripted work and new accepted commands cannot run until the
+operator uses the existing Resume control. Resume opens this barrier without writing Running
+again. Freshly created campaigns are unaffected. There is no auto-resume option: restarting a
+server must not resume AI generation or spending without a conscious operator decision.
+Existing operator campaign inspection reports `recovered_awaiting_activation`; the board labels
+it “recovered, awaiting activation”. Seat/side snapshots and protocol types carry no new status
+or barrier field. Trusted seat launchers must use the host admission adapter before generating.
+
 Every API request requires a capability. Startup generates fresh high-entropy credentials,
 prints `http://127.0.0.1:PORT/#cap=TOKEN`, and writes a trusted launcher credential document to
 `CNA_CAMPAIGN_DIR/operator-capabilities.json` (override with `CNA_CAPABILITY_FILE`). The fragment
@@ -259,3 +269,29 @@ fatal-writer path and does not claim that the stop was persisted.
 `CampaignHandle::spawn_with_fallible_baseline` accepts a checked aggressive baseline.
 Existing `spawn` and `spawn_with_candidates` adapt infallible baselines without changing
 their answers. Null without a declared pass retains the existing seat-pause behavior.
+
+The initial unit-window breakdown failure may retain bounded operator-private
+evidence from the same failed evaluation. The engine's ordinary rejection, Game,
+events, public/seat views, HTTP, WebSocket and replay do not carry this evidence.
+The opaque core carrier has length-only formatting and no serialization; the
+host record has constant redacted formatting. Only `Campaign::commit` enables
+the synchronous thread-local evaluation scope. Other threads and ordinary
+evaluation leave the producer closure disabled. The rule-owned encoder uses
+the landed allocation reason enum; capture never re-solves or consumes RNG.
+
+`cna-server operator-failures <campaign>` is explicit local operator access to
+the existing campaign database. It opens SQLite read-only and performs no
+migration, writer recovery, network listener or credential creation. Output is
+private: bounded correlation/availability metadata followed by the validated
+encoded record, newest first. At most 32 records, each at most 32768 bytes, are
+read in one transaction; total CLI output is capped at 2 MiB. Missing, legacy,
+corrupt and mismatched records report fixed unavailable categories. Do not use
+this command in agent collection, public logs or seat output.
+
+The generic stop and private row, with correlation version/revision/hash and
+newest-32 pruning, share one transaction. If it fails, both roll back and the
+writer attempts one stop-only transaction. If that also fails, memory blocks
+further work and the operator sees `stopped (not persisted)`; no private row or
+durability is claimed. The first cause remains authoritative. On restart only
+the last committed revision/status is recovered, behind the Running activation
+barrier; no failed command is resubmitted automatically.

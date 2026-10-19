@@ -2,6 +2,7 @@
 use super::{
     Asset, RolledCheck, balanced_allocation,
     losses::{self, LossPlan, UnitPartition},
+    private_encoder::{Attempt, PassengerAttempt},
 };
 use crate::{
     CnaContent, State,
@@ -120,8 +121,30 @@ pub(super) fn pack_two(
 /// Failure returns no fabricated allocation; callers must leave the mandatory choice to its owner.
 /// Cases: land:21.35, land:21.36, land:21.41, land:21.43
 pub fn plan(c: &CnaContent, s: &State, outcome: &RolledCheck) -> Option<LossPlan> {
+    plan_inner(c, s, outcome, &mut Attempt::default())
+}
+
+/// Initial unit-window probe only. Record after the SAME solver returns None;
+/// successful alternatives never publish an earlier rejected candidate.
+/// Cases: land:21.43
+pub(super) fn plan_for_stop(c: &CnaContent, s: &State, outcome: &RolledCheck) -> Option<LossPlan> {
+    let mut attempt = Attempt::default();
+    let result = plan_inner(c, s, outcome, &mut attempt);
+    if result.is_none() {
+        // Inactive/already-recorded scopes do not call this encoding closure.
+        // The total empty fallback is private unavailability, never game error.
+        cna_core::diagnostic::record(|| super::private_encoder::payload(outcome, &attempt));
+    }
+    result
+}
+
+// The sole initial-window stop producer calls the SAME algorithm once. Local
+// fixed observations never affect its choices, State/RNG or validator count.
+fn plan_inner(
+    c: &CnaContent, s: &State, outcome: &RolledCheck, attempt: &mut Attempt,
+) -> Option<LossPlan> {
     let preferred = balanced_allocation(&outcome.group.assets, outcome.broken)?;
-    if let Some(plan) = with_losses(c, s, outcome, preferred) {
+    if let Some(plan) = with_losses(c, s, outcome, preferred, attempt) {
         return Some(plan);
     }
     let (cells, indices) = super::allocation::grouped(&outcome.group.assets)?;
@@ -171,8 +194,9 @@ pub fn plan(c: &CnaContent, s: &State, outcome: &RolledCheck) -> Option<LossPlan
         &mut vec![],
         outcome.broken,
         &mut |chosen| {
+            *attempt = Attempt::default();
             let expanded = super::allocation::expand(&outcome.group.assets, &indices, chosen)?;
-            with_losses(c, s, outcome, expanded)
+            with_losses(c, s, outcome, expanded, attempt)
         },
     )
 }
@@ -181,7 +205,9 @@ fn with_losses(
     s: &State,
     outcome: &RolledCheck,
     losses: Vec<i32>,
+    attempt: &mut Attempt,
 ) -> Option<LossPlan> {
+    *attempt = Attempt::default();
     let at_origin: Vec<_> = outcome
         .group
         .assets
@@ -237,6 +263,7 @@ fn with_losses(
                             medium,
                             heavy,
                         },
+                        attempt,
                     ) {
                         selected = Some(p);
                         break 'transport;
@@ -251,6 +278,7 @@ fn with_losses(
         at_origin,
         partitions,
     };
+    *attempt = Attempt::default(); // final validation has no private leaf hook yet
     losses::apply(c, &mut s.clone(), outcome, &plan).ok()?;
     Some(plan)
 }
@@ -262,7 +290,9 @@ fn partition(
     id: cna_core::ids::UnitId,
     broken: &[Asset],
     transport: Trucks,
+    attempt: &mut Attempt,
 ) -> Option<UnitPartition> {
+    *attempt = Attempt::default(); // unknown until a real leaf is reached
     let old = &s.land.units[&id];
     let lost = trucks(broken);
     let working = sub(old.trucks, lost)?;
@@ -271,7 +301,17 @@ fn partition(
     let infantry =
         super::super::formation::class(c, &id).is_some_and(|k| k.unit_type == "infantry");
     let obligation = if infantry {
-        losses::passenger_obligation(c, strength, old.transport_trucks).ok()?
+        match losses::passenger_obligation(c, strength, old.transport_trucks) {
+            Ok(obligation) => obligation,
+            Err(reason) => {
+                attempt.reason = Some(reason);
+                attempt.passenger = Some(PassengerAttempt::input(
+                    id.as_str(), old.trucks, old.transport_trucks, strength,
+                    working_transport, transport,
+                ));
+                return None;
+            }
+        }
     } else {
         losses::PassengerObligation {
             carried: 0,
@@ -294,7 +334,17 @@ fn partition(
     } else {
         0
     };
-    if passengers > capacity(c, transport) {
+    let broken_capacity = capacity(c, transport);
+    if passengers > broken_capacity {
+        attempt.reason = Some(super::allocation_reason::AllocationReason::Passenger(
+            super::allocation_reason::PassengerReason::BrokenPassengersExceedCapacity,
+        ));
+        attempt.passenger = Some(PassengerAttempt::input(
+            id.as_str(), old.trucks, old.transport_trucks, strength,
+            working_transport, transport,
+        ).reached_capacity(
+            obligation.carried, obligation.walking, unresolved, passengers, broken_capacity,
+        ));
         return None;
     }
     let stock = s
@@ -638,6 +688,157 @@ mod tests {
                 .motorized
         );
         assert_source_unit_toe_conserved(&c, &s, &id, 6);
+    }
+
+    // Same successful algorithm/validator path with and without fixed local
+    // observations. Test-only comparison; production never solves twice.
+    #[test]
+    fn private_observation_keeps_same_plan_and_full_state_bytes() {
+        let (c, s, outcome) = captured_quantities_synthetic_context();
+        let before = serde_json::to_vec(&s).unwrap();
+        let ordinary = plan(&c, &s, &outcome).unwrap();
+        let mut attempt = Attempt::default();
+        let observed = plan_inner(&c, &s, &outcome, &mut attempt).unwrap();
+        assert_eq!(serde_json::to_vec(&ordinary).unwrap(), serde_json::to_vec(&observed).unwrap());
+        assert_eq!(serde_json::to_vec(&s).unwrap(), before);
+        assert!(attempt.reason.is_none());
+        assert!(attempt.passenger.is_none());
+    }
+
+    fn diagnosed_window_game(fail_before_candidate: bool) -> (CnaContent, cna_core::engine::Game<crate::Cna>) {
+        let (c, mut s, mut outcome) = captured_quantities_synthetic_context();
+        if fail_before_candidate {
+            // Ordinary synthetic malformed roll boundary, not observed holdings,
+            // validator exhaustion or a reconstruction of the real stopped game.
+            outcome.broken = 100;
+        }
+        s.cursor.block = crate::seq::Block::PlayerHalf;
+        s.cursor.half = Some(crate::seq::Half::A);
+        s.cursor.op_stage = Some(1);
+        s.cursor.index = 1;
+        s.cursor.entered = true;
+        s.turn.player_a = Some(cna_protocol::Side::Commonwealth);
+        s.decisions.pending.clear();
+        s.land.breakdown.window.parked = true;
+        s.land.breakdown.window.outcomes.push_back(outcome);
+        let rng = cna_core::dice::CampaignRng::from_seed([7; 32]);
+        (c, cna_core::engine::Game { state: s, rng: rng.state() })
+    }
+
+    #[test]
+    fn evaluated_capture_on_off_success_keeps_state_rng_events_and_views() {
+        use cna_core::engine::{Command, Ruleset, evaluate, evaluate_diagnosed};
+        use cna_core::visibility::Perspective;
+        use cna_protocol::Side;
+        let (c, game) = diagnosed_window_game(false);
+        let input = serde_json::to_vec(&game.state).unwrap();
+        let ordinary = evaluate(&crate::Cna::dev(), &c, &game, &Command::Advance).unwrap();
+        let (observed, payload) = evaluate_diagnosed(&crate::Cna::dev(), &c, &game, &Command::Advance);
+        let observed = observed.unwrap();
+        assert!(payload.is_none()); // earlier attempts are never stop evidence
+        assert_eq!(serde_json::to_vec(&ordinary.game.state).unwrap(), serde_json::to_vec(&observed.game.state).unwrap());
+        assert_eq!(serde_json::to_vec(&ordinary.game.rng).unwrap(), serde_json::to_vec(&observed.game.rng).unwrap());
+        assert_eq!(serde_json::to_vec(&ordinary.events).unwrap(), serde_json::to_vec(&observed.events).unwrap());
+        assert_eq!(serde_json::to_vec(&ordinary.progress).unwrap(), serde_json::to_vec(&observed.progress).unwrap());
+        assert_eq!(serde_json::to_vec(&game.state).unwrap(), input);
+        for perspective in [Perspective::Operator, Perspective::Side(Side::Axis), Perspective::Side(Side::Commonwealth)]
+            .into_iter().chain(cna_core::ids::SeatId::all().map(Perspective::Seat)) {
+            assert_eq!(
+                serde_json::to_vec(&crate::Cna::dev().view(&c, &ordinary.game.state, perspective)).unwrap(),
+                serde_json::to_vec(&crate::Cna::dev().view(&c, &observed.game.state, perspective)).unwrap(),
+            );
+        }
+    }
+
+    #[test]
+    fn evaluated_failure_is_generic_with_unknown_candidate_and_input_rng_purity() {
+        use cna_core::engine::{Command, EngineError, Rejection, evaluate, evaluate_diagnosed};
+        let (c, game) = diagnosed_window_game(true);
+        let input = serde_json::to_vec(&game.state).unwrap();
+        let rng = serde_json::to_vec(&game.rng).unwrap();
+        let ordinary = evaluate(&crate::Cna::dev(), &c, &game, &Command::Advance).unwrap_err();
+        let (observed, payload) = evaluate_diagnosed(&crate::Cna::dev(), &c, &game, &Command::Advance);
+        let observed = observed.unwrap_err();
+        assert_eq!(ordinary, observed);
+        assert_eq!(ordinary, Rejection::Engine(EngineError::Unsupported {
+            case: "land:21.43".into(), detail: "breakdown allocation could not be resolved".into(),
+        }));
+        let record: serde_json::Value = serde_json::from_slice(payload.unwrap().as_bytes()).unwrap();
+        assert!(record["representative_attempt_reason"].is_null());
+        assert_eq!(record["candidate_available"], false);
+        assert_eq!(record["candidate_complete"], false);
+        assert_eq!(record["complete_explanation"], false);
+        assert_eq!(record["result"], "unresolved");
+        assert_eq!(serde_json::to_vec(&game.state).unwrap(), input);
+        assert_eq!(serde_json::to_vec(&game.rng).unwrap(), rng);
+    }
+
+    #[test]
+    fn evaluated_passenger_input_failure_captures_actual_hook_and_preserves_game() {
+        use cna_core::engine::{Command, EngineError, Rejection, evaluate, evaluate_diagnosed};
+        use cna_tables::Bound;
+        let (mut c, game) = diagnosed_window_game(false);
+        // Deliberately malformed SYNTHETIC chart input reaches the real
+        // passenger_obligation guard through the unchanged evaluator/planner.
+        // This is not a legal campaign, captured failure or hand-built Attempt.
+        let path = cna_content::repo_data_dir().join("tables/airlog/54.2-truck-characteristics.toml");
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(text.matches("capacity_inf_toe_halves = 2").count(), 1);
+        let text = text.replace("capacity_inf_toe_halves = 2", "capacity_inf_toe_halves = -2");
+        c.tables.airlog.truck_characteristics = cna_tables::airlog::trucks::TruckTable::from_raw(
+            &cna_tables::RawTable::parse(&path, &text).unwrap(),
+        ).unwrap();
+        let input = serde_json::to_vec(&game.state).unwrap();
+        let rng = serde_json::to_vec(&game.rng).unwrap();
+        let ordinary = evaluate(&crate::Cna::dev(), &c, &game, &Command::Advance).unwrap_err();
+        let (observed, payload) = evaluate_diagnosed(&crate::Cna::dev(), &c, &game, &Command::Advance);
+        assert_eq!(ordinary, observed.unwrap_err());
+        assert_eq!(ordinary, Rejection::Engine(EngineError::Unsupported {
+            case: "land:21.43".into(), detail: "breakdown allocation could not be resolved".into(),
+        }));
+        let record: serde_json::Value = serde_json::from_slice(payload.unwrap().as_bytes()).unwrap();
+        assert_eq!(record["representative_attempt_reason"], "passenger/invalid_input");
+        assert_eq!(record["input_available"], true);
+        assert_eq!(record["candidate_available"], true);
+        assert_eq!(record["candidate_complete"], false);
+        assert_eq!(record["complete_explanation"], false);
+        assert_eq!(record["truncated"], false);
+        let rows = record["rows"].as_array().unwrap();
+        let input_row = rows.iter().find(|row| row["family"] == "passenger_input").unwrap();
+        assert_eq!(input_row["unit"], "cw.2_nz_div.19th_nz_bn");
+        assert_eq!(input_row["strength_toe"], 6);
+        assert_eq!(input_row["old_transport"]["native_points_lmh"], serde_json::json!([0, 2, 0]));
+        assert!(input_row["carried_toe"].is_null());
+        assert!(input_row["walking_toe"].is_null());
+        let candidate = rows.iter().find(|row| row["family"] == "passenger_candidate").unwrap();
+        // Only partition transport tuples were reached; the failed helper did
+        // not produce passenger accounting. Never convert those unknowns to 0.
+        assert!(!candidate["working_transport"].is_null());
+        assert!(!candidate["broken_transport"].is_null());
+        for field in ["unresolved_toe", "broken_passengers_toe", "broken_capacity_toe"] {
+            assert!(candidate[field].is_null());
+        }
+        assert_eq!(serde_json::to_vec(&game.state).unwrap(), input);
+        assert_eq!(serde_json::to_vec(&game.rng).unwrap(), rng);
+    }
+
+    #[test]
+    fn paired_hidden_asset_prefix_changes_only_operator_private_capture() {
+        use cna_core::engine::{Command, evaluate_diagnosed};
+        use cna_protocol::Side;
+        let (c, a) = diagnosed_window_game(true);
+        let mut b = cna_core::engine::Game { state: a.state.clone(), rng: a.rng.clone() };
+        b.state.land.breakdown.window.outcomes.front_mut().unwrap().group.assets[0].points = 4;
+        // Only a hidden synthetic queued check differs, not public geometry,
+        // status, total unit strength or any accepted command/transcript.
+        crate::testkit::assert_indistinguishable(&crate::Cna::dev(), &c, &a.state, &b.state, Side::Axis);
+        crate::testkit::assert_action_indistinguishable(&crate::Cna::dev(), &c, &a, &b, &Command::Advance, Side::Axis);
+        let (ar, ap) = evaluate_diagnosed(&crate::Cna::dev(), &c, &a, &Command::Advance);
+        let (br, bp) = evaluate_diagnosed(&crate::Cna::dev(), &c, &b, &Command::Advance);
+        assert_eq!(ar.unwrap_err(), br.unwrap_err());
+        assert_ne!(ap.unwrap().as_bytes(), bp.unwrap().as_bytes());
+        // HTTP/WS/transcripts/DB rows are tested by the joint Server owner diff;
+        // this Rules test certifies no network/persistence surface by itself.
     }
 
     /// Small ordinary boundary control, not captured campaign history or RNG.

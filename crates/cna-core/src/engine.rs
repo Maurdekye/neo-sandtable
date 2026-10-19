@@ -258,3 +258,22 @@ pub fn evaluate<R: Ruleset>(
         progress,
     })
 }
+
+/// The authoritative host's synchronous commit-only diagnostic boundary. Calls
+/// ordinary evaluation exactly once; private evidence accompanies only a root
+/// engine rejection. Success and other rejections never disclose captured input.
+/// The evaluation-local thread slot is restored on return, nesting and panic.
+pub fn evaluate_diagnosed<R: Ruleset>(
+    ruleset: &R,
+    content: &R::Content,
+    game: &Game<R>,
+    command: &Command,
+) -> (Result<Transition<R>, Rejection>, Option<crate::diagnostic::PrivatePayload>) {
+    let (result, payload) = crate::diagnostic::scoped(|| evaluate(ruleset, content, game, command));
+    let payload = if matches!(&result, Err(Rejection::Engine(_))) { payload } else { None };
+    (result, payload)
+}
+
+#[cfg(test)]
+#[path = "diagnostic_tests.rs"]
+mod diagnostic_tests;

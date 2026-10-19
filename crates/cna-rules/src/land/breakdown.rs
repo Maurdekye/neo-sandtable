@@ -7,6 +7,7 @@ pub mod core;
 pub mod losses;
 pub mod markers;
 mod packing;
+mod private_encoder;
 pub mod pool_losses;
 mod pool_window;
 pub mod pools;

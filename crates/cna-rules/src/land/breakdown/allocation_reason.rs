@@ -9,12 +9,13 @@ pub(crate) enum AllocationReason {
 pub(crate) enum PassengerReason {
     InvalidInput,
     Arithmetic,
+    BrokenPassengersExceedCapacity,
 }
 
 impl std::fmt::Debug for AllocationReason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Passenger(PassengerReason::InvalidInput | PassengerReason::Arithmetic) => {
+            Self::Passenger(_) => {
                 f.write_str("AllocationReason(<redacted>)")
             }
         }
@@ -36,6 +37,7 @@ impl std::fmt::Display for PassengerReason {
     }
 }
 
-// Both cases are constructed in losses::passenger_obligation's actual branches.
+// Input/arithmetic are constructed in losses::passenger_obligation; capacity is
+// constructed only at baseline's actual broken-passenger capacity predicate.
 // No serde, IDs/holdings/counters, unused stage/leaf scaffold or lint suppression.
 // The later operator-private seam extends this SAME enum only with real producer hooks.

@@ -1,4 +1,9 @@
 //! Forced answers inferred only from the seat-visible action space, never game knowledge.
+use crate::host::{
+    HostForcedLease, HostForcedReservation, HostForcedSubmission, HostIdentity, HostRefusal,
+    PreparedRoute, RouteCancellation, RouteSettlementAck,
+};
+use crate::operation::{Allowance, Operation};
 use crate::{
     game::{GameBackend, SubmitRequest, ToolError},
     transcript::{TranscriptEntry, TranscriptSink},
@@ -9,15 +14,20 @@ use cna_core::{
 };
 use serde_json::Value;
 use std::{future::Future, pin::Pin, sync::Arc};
-use crate::host::{HostForcedLease, HostForcedSubmission, HostIdentity, HostRefusal,
-    PreparedRoute, RouteCancellation, RouteSettlementAck};
-use crate::operation::Allowance;
 
-type RetainedBegin = Pin<Box<dyn Future<Output = Result<Box<dyn HostForcedLease>, HostRefusal>> + Send>>;
+type RetainedBegin =
+    Pin<Box<dyn Future<Output = Result<Box<dyn HostForcedLease>, HostRefusal>> + Send>>;
 
-struct BeginAbortOnDrop { handle: Arc<RouteCancellation>, armed: bool }
+struct BeginAbortOnDrop {
+    handle: Arc<RouteCancellation>,
+    armed: bool,
+}
 impl Drop for BeginAbortOnDrop {
-    fn drop(&mut self) { if self.armed { self.handle.request(); } }
+    fn drop(&mut self) {
+        if self.armed {
+            self.handle.request();
+        }
+    }
 }
 
 /// Concrete retained owner/capture representations, not heap payloads or an RSS estimate.
@@ -25,7 +35,7 @@ impl Drop for BeginAbortOnDrop {
 pub(crate) fn retained_begin_metadata_bytes() -> usize {
     std::mem::size_of::<ForcedAnswerSupervisor>()
         + std::mem::size_of::<BeginAbortOnDrop>()
-        + std::mem::size_of::<(Arc<dyn HostForcedSubmission>, HostIdentity, SubmitRequest, PreparedRoute, Allowance)>()
+        + std::mem::size_of::<(Arc<dyn HostForcedReservation>, PreparedRoute)>()
 }
 
 /// Foreground caller ownership, allocated BEFORE polling/enqueueing begin. The containing
@@ -33,6 +43,10 @@ pub(crate) fn retained_begin_metadata_bytes() -> usize {
 /// The preallocated handle survives loss of the begin reply/token. Dropping it asks abort
 /// but cannot release a credit, canonical receipt, child or reader.
 pub struct ForcedAnswerSupervisor {
+    reservation: Arc<dyn HostForcedReservation>,
+    receipt_identity: String,
+    receipt: Option<crate::game::SubmitReceipt>,
+    execution_started: bool,
     handle: Arc<RouteCancellation>,
     allowance: Allowance,
     begin: Option<RetainedBegin>,
@@ -41,40 +55,198 @@ pub struct ForcedAnswerSupervisor {
 }
 
 impl ForcedAnswerSupervisor {
-    pub fn new(host: Arc<dyn HostForcedSubmission>, identity: HostIdentity,
-        request: SubmitRequest, route: PreparedRoute) -> Result<Self, HostRefusal>
-    {
-        if route.owner() != &identity { return Err(HostRefusal::IdentityChanged); }
-        // Fixed owner/future metadata was charged at successful prepare. A post-prepare
-        // overflow/expiry must not refuse BEFORE owning the terminal registration future.
-        let allowance = route.allowance();
-        let handle = route.cancellation();
-        // The actor adapter registers the SAME handle/writer wake before its first enqueue.
-        // The caller retains both the future and handle before that future can be polled.
-        let begin = Box::pin(async move { host.begin(identity, request, route, allowance).await });
-        Ok(Self { handle, allowance, begin: Some(begin), lease: None, settled: None })
+    pub fn new(
+        host: Arc<dyn HostForcedSubmission>,
+        identity: HostIdentity,
+        request: SubmitRequest,
+        operation: Operation,
+    ) -> Result<Self, HostRefusal> {
+        // One caller-owned copy of the original request identity. Charge before copying;
+        // Server's COMMAND live-fit calculation must include this same bounded metadata.
+        let bytes = crate::operation::encoded_len(
+            &request.idempotency_key,
+            crate::operation::COMMAND_BYTES,
+        )
+        .map_err(|_| crate::host::operation_refusal(operation.overflow()))?;
+        operation
+            .charge(bytes)
+            .map_err(crate::host::operation_refusal)?;
+        let receipt_identity = request.idempotency_key.clone();
+        // This is synchronous and precedes ALL worker preparation. The adapter retains the
+        // original request/sole credit and registers terminal ownership before returning.
+        let reservation: Arc<dyn HostForcedReservation> =
+            host.reserve(identity, request, operation)?.into();
+        let allowance = reservation.operation().allowance();
+        let handle = reservation.cancellation();
+        Ok(Self {
+            reservation,
+            receipt_identity,
+            receipt: None,
+            execution_started: false,
+            handle,
+            allowance,
+            begin: None,
+            lease: None,
+            settled: None,
+        })
     }
 
-    pub fn cancellation(&self) -> Arc<RouteCancellation> { self.handle.clone() }
-    pub fn lease(&self) -> Option<&dyn HostForcedLease> { self.lease.as_deref() }
-    pub fn settled(&self) -> Option<RouteSettlementAck> { self.settled }
+    /// The foreground owner already retains reservation/cancellation before this first await.
+    /// Failed or canceled preparation cannot discard the actor's reserved settlement path.
+    pub async fn prepare(&mut self, sink: &TranscriptSink) -> Result<(), HostRefusal> {
+        if self.begin.is_some() || self.lease.is_some() || self.settled.is_some() {
+            return Err(HostRefusal::IdentityChanged);
+        }
+        let mut abort = BeginAbortOnDrop {
+            handle: self.handle.clone(),
+            armed: true,
+        };
+        let route =
+            sink.prepare_route(self.reservation.route())
+                .await
+                .map_err(|error| match self.reservation.operation().check() {
+                    Err(operation_error) => crate::host::operation_refusal(operation_error),
+                    Ok(()) => HostRefusal::Ownership(error),
+                })?;
+        let reservation = self.reservation.clone();
+        self.begin = Some(Box::pin(async move { reservation.begin(route).await }));
+        abort.armed = false;
+        Ok(())
+    }
+
+    pub fn cancellation(&self) -> Arc<RouteCancellation> {
+        self.handle.clone()
+    }
+    pub fn lease(&self) -> Option<&dyn HostForcedLease> {
+        self.lease.as_deref()
+    }
+    pub fn settled(&self) -> Option<RouteSettlementAck> {
+        self.settled
+    }
+    pub fn allowance(&self) -> Allowance {
+        self.allowance
+    }
+    pub fn accepted_receipt(&self) -> Option<&crate::game::SubmitReceipt> {
+        self.receipt.as_ref()
+    }
+
+    /// Execute exactly once under the original whole-answer allowance. The containing runner
+    /// retains this owner on every return and every canceled borrowed wait. A timeout never
+    /// cancels an accepted command, drops its receipt or performs actor/native settlement.
+    pub async fn execute(&mut self, sink: &TranscriptSink) -> Result<bool, HostRefusal> {
+        if self.execution_started {
+            return Err(HostRefusal::IdentityChanged);
+        }
+        self.execution_started = true;
+        let allowance = self.allowance;
+        let mut abort = BeginAbortOnDrop {
+            handle: self.handle.clone(),
+            armed: true,
+        };
+        let sink = sink.for_operation(self.reservation.operation());
+        let result = tokio::time::timeout_at(allowance.deadline(), async {
+            self.prepare(&sink).await?;
+            self.begin().await?;
+            let identity = self.reservation.identity();
+            sink.emit(identity.seat, TranscriptEntry::System { text: format!(
+                "Automatic forced answer attempt: pass for {} revision {}; no model invoked",
+                identity.decision_id, identity.revision) });
+            self.reservation
+                .operation()
+                .check()
+                .map_err(crate::host::operation_refusal)?;
+            let intent = sink
+                .confirm_intent()
+                .await
+                .map_err(HostRefusal::Ownership)?;
+            let receipt = self
+                .lease
+                .as_ref()
+                .ok_or(HostRefusal::Unknown)?
+                .commit(intent)
+                .await?;
+            // Move the actual returned receipt before any fallible capture/second marker.
+            // The actor independently retains its canonical receipt; neither is rolled back.
+            self.receipt = Some(receipt);
+            let receipt = self.receipt.as_ref().expect("accepted forced receipt");
+            if !receipt.duplicate {
+                sink.charge_copy(&receipt.decision_id)
+                    .map_err(crate::host::operation_refusal)?;
+                sink.emit(
+                    identity.seat,
+                    TranscriptEntry::DecisionSubmitted {
+                        decision_id: receipt.decision_id.clone(),
+                        summary: "automatic forced answer: pass (no model invoked)".into(),
+                    },
+                );
+            }
+            self.reservation
+                .operation()
+                .check()
+                .map_err(crate::host::operation_refusal)?;
+            let second = sink
+                .confirm_postcommit()
+                .await
+                .map_err(HostRefusal::Ownership)?;
+            let pending = self
+                .lease
+                .as_ref()
+                .ok_or(HostRefusal::Unknown)?
+                .finish_delivery(&self.receipt_identity, second)
+                .await?;
+            if pending.iter().any(|p| {
+                p.id.to_string() == identity.decision_id && p.revision == identity.revision
+            }) {
+                return Err(HostRefusal::Ownership(
+                    "automatic answer left its decision revision pending".into(),
+                ));
+            }
+            Ok(true)
+        })
+        .await;
+        match result {
+            Ok(Ok(answered)) => {
+                abort.armed = false;
+                Ok(answered)
+            }
+            Ok(Err(error)) => Err(error),
+            Err(_) => Err(HostRefusal::Expired),
+        }
+    }
 
     /// One original whole-answer deadline; timeout borrows rather than drops begin.
     /// A lost reply leaves ownership here and in the actor's registered association.
     pub async fn begin(&mut self) -> Result<(), HostRefusal> {
-        if self.lease.is_some() { return Ok(()); }
-        if self.settled.is_some() { return Err(HostRefusal::StoppedBeforeWork); }
-        let mut abort = BeginAbortOnDrop { handle: self.handle.clone(), armed: true };
+        if self.lease.is_some() {
+            return Ok(());
+        }
+        if self.settled.is_some() {
+            return Err(HostRefusal::StoppedBeforeWork);
+        }
+        let mut abort = BeginAbortOnDrop {
+            handle: self.handle.clone(),
+            armed: true,
+        };
         let pending = self.begin.as_mut().ok_or(HostRefusal::Unknown)?;
         match tokio::time::timeout_at(self.allowance.deadline(), pending.as_mut()).await {
             Ok(result) => {
                 self.begin = None;
                 match result {
-                    Ok(lease) => { self.lease = Some(lease); abort.armed = false; Ok(()) }
-                    Err(error) => { self.handle.request(); Err(error) }
+                    Ok(lease) => {
+                        self.lease = Some(lease);
+                        abort.armed = false;
+                        Ok(())
+                    }
+                    Err(error) => {
+                        self.handle.request();
+                        Err(error)
+                    }
                 }
             }
-            Err(_) => { self.handle.request(); Err(HostRefusal::Expired) }
+            Err(_) => {
+                self.handle.request();
+                Err(HostRefusal::Expired)
+            }
         }
     }
 
@@ -82,33 +254,30 @@ impl ForcedAnswerSupervisor {
     /// Even if begin never delivered a token, the pre-enqueue association receives this wake.
     /// Actual actor ACK is retained separately; no timeout or Drop substitutes for it.
     pub fn request_settlement_after_supervision(&self) {
-        self.handle.request(); // late first poll may only establish terminal association
+        self.handle.request();
         self.handle.request_settlement_after_supervision();
     }
 
     /// Expiry can close the caller's wait but leaves this foreground owner intact. The
     /// containing runner must retain it and report Unsettled, never healthy finish/re-admit.
     pub async fn settlement_ack(&mut self) -> Result<RouteSettlementAck, HostRefusal> {
-        if let Some(ack) = self.settled { return Ok(ack); }
+        if let Some(ack) = self.settled {
+            return Ok(ack);
+        }
         if !self.handle.settlement_requested() {
-            return Err(HostRefusal::Ownership("supervision settlement not requested".into()));
+            return Err(HostRefusal::Ownership(
+                "supervision settlement not requested".into(),
+            ));
         }
-        // A caller may be canceled before begin was ever polled. Drive its first bounded
-        // poll here so the adapter registers the SAME pending capability before observing
-        // abort/expiry. No new task is spawned; actual actor ACK remains the only witness.
-        if let Some(pending) = self.begin.as_mut() {
-            let completion = std::future::poll_fn(|cx| {
-                std::task::Poll::Ready(pending.as_mut().poll(cx))
-            }).await;
-            if let std::task::Poll::Ready(result) = completion {
-                self.begin = None;
-                if let Ok(lease) = result { self.lease = Some(lease); }
-            }
-        }
+        // Registration/actor ownership precedes reserve return, so Reserved-no-route also
+        // reaches the SAME terminal ACK. Never start/poll a new begin just to obtain cleanup.
         let ack = match self.handle.acknowledged_settlement() {
             Some(ack) => ack,
-            None => tokio::time::timeout_at(self.allowance.deadline(), self.handle.settlement_ack())
-                .await.map_err(|_| HostRefusal::Expired)?,
+            None => {
+                tokio::time::timeout_at(self.allowance.deadline(), self.handle.settlement_ack())
+                    .await
+                    .map_err(|_| HostRefusal::Expired)?
+            }
         };
         self.settled = Some(ack);
         // Only the actual retained actor witness permits forgetting begin/lease futures.
@@ -119,7 +288,11 @@ impl ForcedAnswerSupervisor {
 }
 
 impl Drop for ForcedAnswerSupervisor {
-    fn drop(&mut self) { if self.settled.is_none() { self.handle.request(); } }
+    fn drop(&mut self) {
+        if self.settled.is_none() {
+            self.handle.request();
+        }
+    }
 }
 
 fn empty(schema: &ActionSchema) -> bool {
@@ -236,130 +409,391 @@ mod tests {
     use tokio::sync::{Semaphore, watch};
 
     struct LostBegin {
-        retained: Mutex<Option<PreparedRoute>>,
+        retained: Mutex<Option<Arc<TestReservation>>>,
+        closed: std::sync::atomic::AtomicBool,
+    }
+    struct TestReservation {
+        owner: crate::host::ForcedReservationOwner,
+        request: SubmitRequest,
+        route: Mutex<Option<PreparedRoute>>,
+        _credit: Mutex<crate::operation::CommandCredit<crate::game::SubmitReceipt>>,
         installed: tokio::sync::Notify,
     }
     struct BeginDelivery;
     #[async_trait]
     impl crate::host::HostDeliveryRoute for BeginDelivery {
-        async fn append(&self, _: &str, ordinal: u64, _: &crate::transcript::UnconfirmedEntry)
-            -> Result<u64, String> { Ok(ordinal) }
-    }
-    #[async_trait]
-    impl HostForcedSubmission for LostBegin {
-        async fn begin(&self, _: HostIdentity, _: SubmitRequest, route: PreparedRoute, _: Allowance)
-            -> Result<Box<dyn HostForcedLease>, HostRefusal>
-        {
-            *self.retained.lock().unwrap() = Some(route);
-            {
-                let retained = self.retained.lock().unwrap();
-                let route = retained.as_ref().unwrap();
-                route.register_writer_wake(std::thread::current(), std::mem::size_of::<std::thread::Thread>())?;
-                route.install("undelivered-token".into(), Arc::new(BeginDelivery))?;
-            }
-            self.installed.notify_one();
-            std::future::pending().await // actor installed, but token/reply is lost
+        async fn append(
+            &self,
+            _: &str,
+            ordinal: u64,
+            _: &crate::transcript::UnconfirmedEntry,
+        ) -> Result<u64, String> {
+            Ok(ordinal)
         }
+    }
+    struct ReservationView(Arc<TestReservation>);
+    #[async_trait]
+    impl HostForcedReservation for ReservationView {
+        fn identity(&self) -> &HostIdentity {
+            self.0.owner.identity()
+        }
+        fn operation(&self) -> Operation {
+            self.0.owner.operation()
+        }
+        fn cancellation(&self) -> Arc<RouteCancellation> {
+            self.0.owner.cancellation()
+        }
+        fn route(&self) -> crate::host::ReservedForcedRoute {
+            self.0.owner.route()
+        }
+        async fn begin(
+            &self,
+            route: PreparedRoute,
+        ) -> Result<Box<dyn HostForcedLease>, HostRefusal> {
+            if !Arc::ptr_eq(&route.cancellation(), &self.cancellation())
+                || route.owner() != self.identity()
+            {
+                return Err(HostRefusal::IdentityChanged);
+            }
+            {
+                let mut retained = self.0.route.lock().unwrap();
+                if retained.is_some() {
+                    return Err(HostRefusal::IdentityChanged);
+                }
+                *retained = Some(route);
+                self.operation()
+                    .check()
+                    .map_err(crate::host::operation_refusal)?;
+                retained
+                    .as_ref()
+                    .unwrap()
+                    .install("undelivered-token".into(), Arc::new(BeginDelivery))?;
+            }
+            self.0.installed.notify_one();
+            std::future::pending().await // installed, but the begin reply/token is lost
+        }
+        async fn abort(&self) -> Result<(), HostRefusal> {
+            self.cancellation().request();
+            Ok(())
+        }
+        async fn settle(&self) -> Result<(), HostRefusal> {
+            // This test adapter witnesses only its actor transition, never native joins.
+            self.0
+                .owner
+                .acknowledge_settlement(&self.cancellation(), false)?;
+            Ok(())
+        }
+    }
+    impl HostForcedSubmission for LostBegin {
+        fn reserve(
+            &self,
+            identity: HostIdentity,
+            request: SubmitRequest,
+            operation: Operation,
+        ) -> Result<Box<dyn HostForcedReservation>, HostRefusal> {
+            let mut slot = self.retained.lock().unwrap();
+            if self.closed.load(std::sync::atomic::Ordering::Acquire) || slot.is_some() {
+                return Err(HostRefusal::StoppedBeforeWork);
+            }
+            let metadata = (
+                &request,
+                identity.seat.to_string(),
+                identity.epoch,
+                &identity.decision_id,
+                identity.revision,
+                &identity.operation_id,
+            );
+            let bytes = crate::operation::encoded_len(&metadata, crate::operation::COMMAND_BYTES)
+                .map_err(|_| crate::host::operation_refusal(operation.overflow()))?;
+            operation
+                .charge(bytes)
+                .map_err(crate::host::operation_refusal)?;
+            let owner = crate::host::ForcedReservationOwner::new(identity, operation.clone())?;
+            let credit = crate::operation::CommandCredit::new(operation)
+                .map_err(crate::host::operation_refusal)?;
+            let accepted = Arc::new(TestReservation {
+                owner,
+                request,
+                route: Mutex::new(None),
+                _credit: Mutex::new(credit),
+                installed: Default::default(),
+            });
+            // Accepted owner is retained BEFORE registration outcome and before reserve return.
+            *slot = Some(accepted.clone());
+            accepted.owner.register_writer_wake(
+                std::thread::current(),
+                std::mem::size_of::<std::thread::Thread>(),
+            )?;
+            Ok(Box::new(ReservationView(accepted)))
+        }
+    }
+    impl LostBegin {
+        fn new() -> Arc<Self> {
+            Arc::new(Self {
+                retained: Mutex::new(None),
+                closed: Default::default(),
+            })
+        }
+        fn accepted(&self) -> Arc<TestReservation> {
+            self.retained.lock().unwrap().as_ref().unwrap().clone()
+        }
+        fn actual_transition(&self, uncertain: bool) {
+            let accepted = self.accepted();
+            let handle = accepted.owner.cancellation();
+            accepted
+                .owner
+                .acknowledge_settlement(&handle, uncertain)
+                .unwrap();
+            // No request ACK, timer or Drop clears this slot; only this test's actual transition.
+            self.retained.lock().unwrap().take();
+        }
+        fn exit_writer(&self) {
+            self.closed
+                .store(true, std::sync::atomic::Ordering::Release);
+            // Dead writer cannot acknowledge cleanup. Existing owner remains retained.
+            self.accepted().owner.cancellation().request();
+        }
+    }
+    fn supervisor(
+        host: Arc<LostBegin>,
+        id: &str,
+        duration: std::time::Duration,
+    ) -> (ForcedAnswerSupervisor, Operation) {
+        let operation = Operation::new(
+            id.into(),
+            1,
+            Allowance::required(Some(tokio::time::Instant::now() + duration)).unwrap(),
+        )
+        .unwrap();
+        let identity = HostIdentity {
+            seat: crate::toy::AXIS,
+            epoch: 7,
+            decision_id: "test-decision".into(),
+            revision: 1,
+            operation_id: id.into(),
+        };
+        let request = SubmitRequest {
+            decision_id: identity.decision_id.clone(),
+            epoch: identity.epoch,
+            revision: Some(identity.revision),
+            idempotency_key: "original-request-key".into(),
+            action: Value::Null,
+            public_explanation: None,
+        };
+        (
+            ForcedAnswerSupervisor::new(host, identity, request, operation.clone()).unwrap(),
+            operation,
+        )
     }
 
     #[tokio::test]
     async fn canceled_begin_wait_keeps_foreground_future_until_actual_actor_ack() {
-        let host = Arc::new(LostBegin { retained: Mutex::new(None), installed: Default::default() });
-        let route = crate::host::test_prepared_route("lost-begin-op");
-        let identity = route.owner().clone();
-        let request = SubmitRequest { decision_id: identity.decision_id.clone(), epoch: identity.epoch,
-            revision: Some(identity.revision), idempotency_key: "original-request-key".into(),
-            action: Value::Null, public_explanation: None };
-        let mut owner = ForcedAnswerSupervisor::new(host.clone(), identity, request, route).unwrap();
+        let host = LostBegin::new();
+        let (mut owner, operation) = supervisor(
+            host.clone(),
+            "lost-begin-op",
+            std::time::Duration::from_secs(5),
+        );
+        let sink = crate::transcript::TranscriptSink::new(LocalTranscript::detached())
+            .for_operation(operation);
+        let accepted = host.accepted();
+        assert_eq!(accepted.request.idempotency_key, "original-request-key");
+        owner.prepare(&sink).await.unwrap();
         tokio::select! {
             _ = owner.begin() => panic!("lost begin cannot return a lease"),
-            _ = host.installed.notified() => {},
+            _ = accepted.installed.notified() => {},
         }
-        assert!(owner.begin.is_some(), "canceled borrowed wait must retain begin future");
+        assert!(
+            owner.begin.is_some(),
+            "canceled borrowed wait must retain begin future"
+        );
         assert!(owner.lease().is_none());
         assert!(owner.cancellation().requested());
         assert!(!owner.cancellation().settlement_requested());
-        assert_eq!(owner.settlement_ack().await,
-            Err(HostRefusal::Ownership("supervision settlement not requested".into())));
+        assert_eq!(
+            owner.settlement_ack().await,
+            Err(HostRefusal::Ownership(
+                "supervision settlement not requested".into()
+            ))
+        );
         assert!(owner.begin.is_some());
-        // Original supervisor's actual cleanup precedes settlement request, never the timer.
         owner.request_settlement_after_supervision();
-        let route = host.retained.lock().unwrap().take().unwrap();
-        route.acknowledge_settlement(&owner.cancellation(), false).unwrap();
+        host.actual_transition(false);
         let ack = owner.settlement_ack().await.unwrap();
         assert_eq!(owner.settlement_ack().await.unwrap(), ack);
         assert!(owner.begin.is_none());
         assert_eq!(owner.settled(), Some(ack));
+        assert!(sink.stop_delivery().await.is_empty());
     }
 
     #[tokio::test]
     async fn post_prepare_overflow_retains_caller_and_actor_association_before_refusal() {
-        let host = Arc::new(LostBegin { retained: Mutex::new(None), installed: Default::default() });
-        let route = crate::host::test_prepared_route("overflow-before-caller");
-        let identity = route.owner().clone();
-        route.operation().overflow();
-        let request = SubmitRequest { decision_id: identity.decision_id.clone(), epoch: identity.epoch,
-            revision: Some(identity.revision), idempotency_key: "overflow-original-key".into(),
-            action: Value::Null, public_explanation: None };
-        let mut owner = ForcedAnswerSupervisor::new(host.clone(), identity, request, route).unwrap();
+        let host = LostBegin::new();
+        let (mut owner, operation) = supervisor(
+            host.clone(),
+            "overflow-before-begin",
+            std::time::Duration::from_secs(5),
+        );
+        let sink = crate::transcript::TranscriptSink::new(LocalTranscript::detached())
+            .for_operation(operation.clone());
+        owner.prepare(&sink).await.unwrap();
+        operation.overflow();
         assert_eq!(owner.begin().await, Err(HostRefusal::CaptureOverflow));
-        assert!(host.retained.lock().unwrap().is_some());
+        assert!(host.accepted().route.lock().unwrap().is_some());
         assert!(owner.cancellation().acknowledged_settlement().is_none());
         owner.request_settlement_after_supervision();
-        let retained = host.retained.lock().unwrap().take().unwrap();
-        retained.acknowledge_settlement(&owner.cancellation(), false).unwrap();
+        host.actual_transition(false);
         assert!(owner.settlement_ack().await.is_ok());
+        sink.stop_delivery().await;
     }
 
     #[tokio::test]
-    async fn expired_unpolled_begin_reaches_terminal_registration_without_renewal() {
-        let host = Arc::new(LostBegin { retained: Mutex::new(None), installed: Default::default() });
-        let route = crate::host::test_prepared_route_with_allowance("expired-unpolled", std::time::Duration::from_millis(100));
-        let deadline = route.allowance().deadline();
-        let identity = route.owner().clone();
-        let request = SubmitRequest { decision_id: identity.decision_id.clone(), epoch: identity.epoch,
-            revision: Some(identity.revision), idempotency_key: "expired-original-key".into(),
-            action: Value::Null, public_explanation: None };
+    async fn expired_unprepared_reservation_reaches_terminal_ack_without_renewal() {
+        let host = LostBegin::new();
+        let (mut owner, operation) = supervisor(
+            host.clone(),
+            "expired-unprepared",
+            std::time::Duration::from_millis(100),
+        );
+        let deadline = owner.allowance.deadline();
+        let sink = crate::transcript::TranscriptSink::new(LocalTranscript::detached())
+            .for_operation(operation);
         tokio::time::sleep_until(deadline).await;
-        let mut owner = ForcedAnswerSupervisor::new(host.clone(), identity, request, route).unwrap();
-        assert_eq!(owner.allowance.deadline(), deadline);
+        assert!(owner.prepare(&sink).await.is_err());
+        assert!(!sink.test_route_owned());
         owner.request_settlement_after_supervision();
         assert_eq!(owner.settlement_ack().await, Err(HostRefusal::Expired));
-        assert!(host.retained.lock().unwrap().is_some(), "expired wait must drive terminal registration");
-        assert!(owner.cancellation().acknowledged_settlement().is_none());
+        assert!(
+            host.retained.lock().unwrap().is_some(),
+            "expired reservation remains actor-owned"
+        );
+        assert!(host.accepted().route.lock().unwrap().is_none());
         assert!(owner.settled().is_none(), "timeout is not actor ACK");
-        let retained = host.retained.lock().unwrap().take().unwrap();
-        retained.acknowledge_settlement(&owner.cancellation(), false).unwrap();
+        host.actual_transition(false);
         assert!(owner.settlement_ack().await.is_ok());
-        assert_eq!(owner.allowance.deadline(), deadline, "terminal observation did not renew allowance");
+        assert_eq!(owner.allowance.deadline(), deadline);
+        assert!(sink.stop_delivery().await.is_empty());
     }
 
     #[tokio::test]
-    async fn canceled_before_first_begin_poll_retains_registration_until_actual_ack() {
-        let host = Arc::new(LostBegin { retained: Mutex::new(None), installed: Default::default() });
-        let route = crate::host::test_prepared_route("never-polled-begin");
-        let identity = route.owner().clone();
-        let request = SubmitRequest { decision_id: identity.decision_id.clone(), epoch: identity.epoch,
-            revision: Some(identity.revision), idempotency_key: "unpolled-original-key".into(),
-            action: Value::Null, public_explanation: None };
-        let mut owner = ForcedAnswerSupervisor::new(host.clone(), identity, request, route).unwrap();
-        assert!(host.retained.lock().unwrap().is_none());
+    async fn canceled_before_first_begin_poll_keeps_reserved_registration_until_actual_ack() {
+        let host = LostBegin::new();
+        let (mut owner, _) = supervisor(
+            host.clone(),
+            "never-polled-begin",
+            std::time::Duration::from_secs(5),
+        );
+        assert!(host.accepted().route.lock().unwrap().is_none());
+        assert!(owner.begin.is_none());
+        assert!(owner.cancellation().acknowledged_settlement().is_none());
         owner.request_settlement_after_supervision();
         {
             let mut wait = Box::pin(owner.settlement_ack());
             std::future::poll_fn(|cx| {
                 assert!(wait.as_mut().poll(cx).is_pending());
                 std::task::Poll::Ready(())
-            }).await;
-            // Cancel this borrowed wait; the foreground owner/actor association still exist.
+            })
+            .await;
         }
         assert!(host.retained.lock().unwrap().is_some());
         assert!(owner.settled().is_none());
-        let retained = host.retained.lock().unwrap().take().unwrap();
-        retained.acknowledge_settlement(&owner.cancellation(), false).unwrap();
+        host.actual_transition(false);
         assert!(owner.settlement_ack().await.is_ok());
     }
 
+    #[tokio::test]
+    async fn two_sinks_one_campaign_loser_refuses_before_prepare_accepts_nothing() {
+        let host = LostBegin::new();
+        let (mut first, operation) =
+            supervisor(host.clone(), "winner", std::time::Duration::from_secs(5));
+        let a = crate::transcript::TranscriptSink::new(LocalTranscript::detached())
+            .for_operation(operation);
+        let b = crate::transcript::TranscriptSink::new(LocalTranscript::detached());
+        let candidate = crate::host::test_reserved_owner("loser");
+        let identity = candidate.identity().clone();
+        let request = SubmitRequest {
+            decision_id: identity.decision_id.clone(),
+            epoch: identity.epoch,
+            revision: Some(identity.revision),
+            idempotency_key: "loser-key".into(),
+            action: Value::Null,
+            public_explanation: None,
+        };
+        assert!(matches!(
+            ForcedAnswerSupervisor::new(host.clone(), identity, request, candidate.operation()),
+            Err(HostRefusal::StoppedBeforeWork)
+        ));
+        assert!(!a.test_route_owned());
+        assert!(!b.test_route_owned(), "loser has no accepted worker route");
+        first.prepare(&a).await.unwrap();
+        assert!(a.test_route_owned());
+        first.request_settlement_after_supervision();
+        host.actual_transition(false);
+        first.settlement_ack().await.unwrap();
+        assert!(a.stop_delivery().await.is_empty());
+        assert!(b.stop_delivery().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn writer_exit_between_reserve_and_prepare_keeps_uncertainty_without_route() {
+        let host = LostBegin::new();
+        let (mut owner, _) = supervisor(
+            host.clone(),
+            "exit-before-prepare",
+            std::time::Duration::from_secs(5),
+        );
+        let sink = crate::transcript::TranscriptSink::new(LocalTranscript::detached());
+        host.exit_writer();
+        assert!(owner.prepare(&sink).await.is_err());
+        assert!(!sink.test_route_owned());
+        assert!(host.retained.lock().unwrap().is_some());
+        assert!(owner.cancellation().acknowledged_settlement().is_none());
+        owner.request_settlement_after_supervision();
+        assert!(
+            owner.cancellation().acknowledged_settlement().is_none(),
+            "dead writer cannot ACK"
+        );
+        assert!(owner.settled().is_none());
+        assert!(sink.stop_delivery().await.is_empty());
+        // Test intentionally retains the actor association. Scope exit requests abort only.
+    }
+
+    #[tokio::test]
+    async fn retained_reserved_pending_active_phases_require_actual_transition_before_ack() {
+        for phase in 0..3 {
+            let host = LostBegin::new();
+            let (mut owner, operation) = supervisor(
+                host.clone(),
+                &format!("phase-{phase}"),
+                std::time::Duration::from_secs(5),
+            );
+            let sink = crate::transcript::TranscriptSink::new(LocalTranscript::detached())
+                .for_operation(operation);
+            if phase > 0 {
+                owner.prepare(&sink).await.unwrap();
+            }
+            if phase == 2 {
+                let accepted = host.accepted();
+                tokio::select! {
+                    _ = owner.begin() => panic!("lost begin must remain owned"),
+                    _ = accepted.installed.notified() => {},
+                }
+            }
+            owner.cancellation().request();
+            assert!(host.retained.lock().unwrap().is_some());
+            assert!(owner.cancellation().acknowledged_settlement().is_none());
+            assert!(!owner.cancellation().settlement_requested());
+            owner.request_settlement_after_supervision();
+            assert!(
+                owner.cancellation().acknowledged_settlement().is_none(),
+                "request is not transition"
+            );
+            host.actual_transition(true);
+            assert!(owner.settlement_ack().await.unwrap().uncertain());
+            assert!(host.retained.lock().unwrap().is_none());
+            sink.stop_delivery().await;
+        }
+    }
     #[test]
     fn force_requires_explicit_pass_and_proven_empty_action_domain() {
         let empty_unit = ActionSchema::Unit { among: vec![] };
@@ -548,11 +982,21 @@ mod tests {
         });
         let (stop_sender, stop) = watch::channel(false);
         drop(stop_sender); // Closing a false stop channel is not a stop request.
+        let host = crate::host_fixture::FixtureHost::explicit(
+            game.clone(),
+            store.clone(),
+            [(AXIS, 7)].into(),
+        );
         let mut runner = SeatRunner {
             seat: AXIS,
             controller_epoch: 7,
             driver: Box::new(NoCli),
             game: game.clone(),
+            host: crate::run::RunnerHost {
+                admission: host.clone(),
+                forced: host.clone(),
+            },
+            ownership: crate::run::RunnerOwnership::empty(),
             memory,
             router: router.clone(),
             sink,
@@ -584,6 +1028,7 @@ mod tests {
             0
         );
         assert_eq!(game.submissions.lock().unwrap().len(), 1);
+        host.join_actor().await;
         let rows = store.seat_log(AXIS);
         assert!(rows.iter().any(|r|matches!(&r.entry,TranscriptEntry::DecisionSubmitted {summary,..} if summary.contains("automatic forced answer"))));
     }
@@ -631,6 +1076,12 @@ mod tests {
     }
     #[async_trait]
     impl SeatDriver for OneModel {
+        fn set_host_context(
+            &mut self,
+            context: crate::host::HostDriverContext,
+        ) -> Result<(), DriverError> {
+            crate::host_fixture::accept_inert_context(context)
+        }
         fn kind(&self) -> CliKind {
             CliKind::Claude
         }
@@ -699,6 +1150,11 @@ mod tests {
         });
         let (_sender, stop) = watch::channel(false);
         let turns = Arc::new(std::sync::atomic::AtomicU32::new(0));
+        let host = crate::host_fixture::FixtureHost::explicit(
+            game.clone(),
+            store.clone(),
+            [(AXIS, 7)].into(),
+        );
         let mut runner = SeatRunner {
             seat: AXIS,
             controller_epoch: 7,
@@ -707,6 +1163,11 @@ mod tests {
                 turns: turns.clone(),
             }),
             game: game.clone(),
+            host: crate::run::RunnerHost {
+                admission: host.clone(),
+                forced: host.clone(),
+            },
+            ownership: crate::run::RunnerOwnership::empty(),
             memory,
             router,
             sink,
@@ -731,6 +1192,7 @@ mod tests {
         );
         assert_eq!(turns.load(std::sync::atomic::Ordering::SeqCst), 1);
         assert_eq!(game.submissions.lock().unwrap().len(), 2);
+        host.join_actor().await;
         assert!(store.seat_log(AXIS).iter().any(|r|matches!(&r.entry,TranscriptEntry::DecisionSubmitted{summary,..} if summary.contains("automatic forced"))));
     }
     #[tokio::test]

@@ -16,7 +16,7 @@ use cna_seats::{game::SubmitRequest, memory::WriteMode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, VecDeque},
     path::Path,
     sync::{Arc, Mutex, OnceLock},
     time::Instant,
@@ -45,6 +45,14 @@ pub struct PerspectiveSnapshot {
     perspective: Perspective,
 }
 impl PerspectiveSnapshot {
+    /// Control and game projection come from the same captured writer publication.
+    pub(crate) fn control_status(&self) -> (CampaignStatus, bool, bool) {
+        (
+            self.published.status.clone(),
+            self.published.awaiting_activation,
+            self.published.stop_persisted,
+        )
+    }
     pub fn header(&self) -> ProjectionHeader {
         self.published.headers[&self.perspective].clone()
     }
@@ -106,13 +114,35 @@ enum Op {
     WriteNotebook(SeatId, WriteMode, String),
     Message(SeatId, String),
     Messages(SeatId, u64),
+    #[cfg(test)]
+    WriterFence {
+        entered: std::sync::mpsc::Sender<()>,
+        release: std::sync::mpsc::Receiver<()>,
+    },
     Shutdown,
+}
+impl Op {
+    fn changes_admission(&self) -> bool {
+        matches!(
+            self,
+            Self::Pause(_)
+                | Self::SetRunBoundary(_)
+                | Self::Handover(..)
+                | Self::PauseSeat(..)
+                | Self::Submit(_)
+                | Self::SubmitAction(..)
+                | Self::Shutdown
+        )
+    }
 }
 struct Envelope {
     op: Op,
     reply: oneshot::Sender<Result<Value, Error>>,
 }
 struct Inner {
+    host: Arc<crate::host_gate::HostGate>,
+    forced: Arc<crate::host_forced::ForcedBridge>,
+    wake: crate::host_gate::WriterWake,
     tx: mpsc::Sender<Envelope>,
     published: watch::Receiver<Arc<Published>>,
     streams: BTreeMap<Perspective, broadcast::Sender<ServerMessage>>,
@@ -128,6 +158,7 @@ pub struct CampaignHandle {
     inner: Arc<Inner>,
 }
 struct Publisher {
+    host: Arc<crate::host_gate::HostGate>,
     published: watch::Sender<Arc<Published>>,
     streams: BTreeMap<Perspective, broadcast::Sender<ServerMessage>>,
     seats: BTreeMap<SeatId, watch::Sender<SeatState>>,
@@ -136,12 +167,33 @@ struct Publisher {
 }
 pub(crate) type Observer = Arc<dyn Fn(SeatId) -> Value + Send + Sync>;
 pub(crate) type Projector = Arc<dyn Fn(Perspective) -> ViewState + Send + Sync>;
-struct Published {
+pub(crate) struct Published {
+    commit_revision: u64,
+    status: CampaignStatus,
     headers: BTreeMap<Perspective, ProjectionHeader>,
     views: BTreeMap<Perspective, OnceLock<ViewState>>,
     projector: Projector,
     seats: BTreeMap<SeatId, SeatState>,
     observer: Observer,
+    awaiting_activation: bool,
+    stop_persisted: bool,
+}
+impl Published {
+    /// Borrow only this owner's raw requests from the SAME committed root.
+    /// No projection, serialization or rule-owned pending clone occurs here.
+    pub(crate) fn host_pending<R: Ruleset>(
+        &self,
+        campaign: &Campaign<R>,
+        seat: SeatId,
+    ) -> Result<&[DecisionRequest], cna_seats::host::HostRefusal> {
+        if self.commit_revision != campaign.host_commit_revision() {
+            return Err(cna_seats::host::HostRefusal::IdentityChanged);
+        }
+        self.seats
+            .get(&seat)
+            .map(|state| state.pending.as_slice())
+            .ok_or(cna_seats::host::HostRefusal::IdentityChanged)
+    }
 }
 fn published<R>(campaign: &Campaign<R>) -> Result<Arc<Published>, Error>
 where
@@ -175,11 +227,15 @@ where
         })
         .collect();
     Ok(Arc::new(Published {
+        commit_revision: campaign.host_commit_revision(),
+        status: campaign.status().clone(),
         headers,
         views: Perspective::all().map(|p| (p, OnceLock::new())).collect(),
         projector,
         seats,
         observer: campaign.observer(),
+        awaiting_activation: campaign.recovered_awaiting_activation(),
+        stop_persisted: campaign.stop_is_durable(),
     }))
 }
 impl Publisher {
@@ -193,6 +249,7 @@ impl Publisher {
         let next = published(campaign)?;
         // One atomic root binds headers, pending, bindings and snapshot readers to one commit.
         let previous = self.published.send_replace(Arc::clone(&next));
+        self.host.publish(campaign);
         for (&p, header) in &next.headers {
             let previous_seq = previous.headers[&p].seq;
             let end = header.seq;
@@ -325,7 +382,78 @@ impl CampaignHandle {
         R::State: Send + Sync,
         R::Content: Send + Sync,
     {
+        Self::spawn_with_writer_record::<R, 0>(campaign, path, baseline, candidates, policy, None)
+            .map_err(|failure| match failure {
+                crate::owned_writer::WriterStartFailure::Setup(original) => original,
+                // None publication above never enters owned row admission.
+                crate::owned_writer::WriterStartFailure::Envelope(_) => Error::NotRunning,
+                crate::owned_writer::WriterStartFailure::Spawn(original) =>
+                    Error::Invalid(format!("cannot start campaign writer: {original}")),
+            })
+    }
+
+    /// Held private owned producer. Its original outer root exists before this
+    /// call. The writer remains parked until that owner explicitly releases it;
+    /// no returned CampaignHandle facade contains its std join custody.
+    /// Full original admission/lease OPEN/trusted factory integration is still
+    /// required upstream; no production call site invokes this constructor.
+    pub(crate) fn spawn_owned_with_controllers<R, const N: usize>(
+        campaign: Campaign<R>,
+        path: &Path,
+        baseline: Option<FallibleBaseline<R>>,
+        candidates: Box<dyn Candidates + Send>,
+        policy: Option<ActionPolicy<R>>,
+        owner: &mut crate::owned_writer::WriterJoin<Result<(), Error>, N>,
+    ) -> Result<Self, crate::owned_writer::OwnedSpawnFailure>
+    where
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
+    {
+        use crate::owned_writer::{OwnedSpawnFailure, WriterRefusal};
+        let vacant = owner.vacant_standard()
+            .ok_or(OwnedSpawnFailure::Refused(WriterRefusal::Occupied))?;
+        Self::spawn_owned_claimed(campaign, path, baseline, candidates, policy, vacant)
+            .map_err(OwnedSpawnFailure::Start)
+    }
+
+    /// Concrete trusted factories claim their parent's publication slot BEFORE
+    /// Campaign::create/recover. Holding this endpoint cannot take a join handle;
+    /// an HTTP waiter disappearing therefore cannot erase std writer custody.
+    pub(crate) fn spawn_owned_claimed<R, const N: usize>(
+        campaign: Campaign<R>,
+        path: &Path,
+        baseline: Option<FallibleBaseline<R>>,
+        candidates: Box<dyn Candidates + Send>,
+        policy: Option<ActionPolicy<R>>,
+        vacant: crate::owned_writer::VacantStandard<'_, Result<(), Error>, N>,
+    ) -> Result<Self, crate::owned_writer::WriterStartFailure>
+    where
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
+    {
+        Self::spawn_with_writer_record(campaign, path, baseline, candidates, policy, Some(vacant))
+    }
+
+    fn spawn_with_writer_record<R, const N: usize>(
+        campaign: Campaign<R>,
+        path: &Path,
+        baseline: Option<FallibleBaseline<R>>,
+        candidates: Box<dyn Candidates + Send>,
+        policy: Option<ActionPolicy<R>>,
+        publication: Option<crate::owned_writer::VacantStandard<'_, Result<(), Error>, N>>,
+    ) -> Result<Self, crate::owned_writer::WriterStartFailure>
+    where
+        R: Ruleset + Send + Sync + 'static,
+        R::State: Send + Sync,
+        R::Content: Send + Sync,
+    {
         let (tx, mut rx) = mpsc::channel::<Envelope>(COMMAND_BUFFER);
+        let wake = Arc::new(OnceLock::new());
+        let (host, mut prompt_settlements) =
+            crate::host_gate::HostGate::new(&campaign, wake.clone());
+        let (forced, mut forced_inbox) = crate::host_forced::channel(host.clone(), wake.clone());
         let initial = published(&campaign)?;
         let (published_send, published_recv) = watch::channel(Arc::clone(&initial));
         let mut streams = BTreeMap::new();
@@ -348,6 +476,7 @@ impl CampaignHandle {
             }
         }
         let mut publisher = Publisher {
+            host: host.clone(),
             published: published_send,
             streams: streams.clone(),
             seats: seat_senders,
@@ -356,22 +485,106 @@ impl CampaignHandle {
         };
         let metrics = Arc::clone(&campaign.metrics);
         let supports_aggressive = baseline.is_some();
+        let writer_host = host.clone();
+        let writer_wake = wake.clone();
+        let record = publication.as_ref().map(|vacant| Arc::clone(vacant.record()));
+        if let Some(record) = record.as_ref() {
+            if !campaign.capture_owned_prepared(record) {
+                return Err(crate::owned_writer::WriterStartFailure::Setup(Error::NotRunning));
+            }
+        }
         let thread = std::thread::Builder::new()
             .name("campaign-writer".into())
             .spawn(move || {
+                let _ = writer_wake.set(std::thread::current());
                 let mut campaign = campaign;
+                if let Some(record) = record.as_ref() {
+                    if !record.await_owner_publication() || !campaign.capture_owned_initial(record) {
+                        // Exact snapshot errors remain in the independent
+                        // record. This fixed control refusal does not replace
+                        // them with a fabricated generic storage cause.
+                        return Err(Error::NotRunning);
+                    }
+                }
+                let mut deferred: VecDeque<Envelope> = VecDeque::new();
+                let mut writer_fatals = crate::writer_fatal::WriterFatals::default();
                 let result = (|| {
                     loop {
-                        match rx.try_recv() {
+                        // Actual settlement ACKs have a reserved lane and remain
+                        // processable even with a full deferred control queue.
+                        if let Ok(settlement) = prompt_settlements.try_recv() {
+                            writer_host.settle_prompt(settlement);
+                            continue;
+                        }
+                        forced_inbox.observe_abort();
+                        if forced_inbox.settlement() {
+                            publisher.update(&campaign)?;
+                            continue;
+                        }
+                        // One command and one original-author append per loop.
+                        // Neither ordinary controls nor tokenless cleanup need
+                        // the other lane to drain a later sibling capture.
+                        let pending_root = Arc::clone(&publisher.published.borrow());
+                        let forced_work = forced_inbox.command(&mut campaign, pending_root.as_ref(), &mut writer_fatals)
+                            | forced_inbox.delivery(&mut campaign, &mut writer_fatals);
+                        if forced_work {
+                            if let Err(error) = publisher.update(&campaign) { writer_fatals.record(error); }
+                        }
+                        if writer_fatals.primary().is_some() { return Ok(()); }
+                        if !writer_host.has_outstanding() && !deferred.is_empty() {
+                            writer_host.begin_write().map_err(|_|Error::NotRunning)?;
+                            let envelope = deferred.pop_front().expect("nonempty deferred queue");
+                            writer_host.defer_controls(!deferred.is_empty());
+                            if matches!(envelope.op,Op::Shutdown) {
+                                let _ = envelope.reply.send(Ok(Value::Null));
+                                return Ok(());
+                            }
+                            dispatch_and_publish(&mut campaign,envelope,&mut publisher)?;
+                            continue;
+                        }
+                        // Do not consume more controls than the existing bounded
+                        // queue can retain; its sender backpressure remains intact.
+                        let incoming = if deferred.len() < COMMAND_BUFFER { rx.try_recv() }
+                            else { Err(mpsc::error::TryRecvError::Empty) };
+                        match incoming {
                             Ok(envelope) => {
+                                if envelope.op.changes_admission() {
+                                    match writer_host.begin_write() {
+                                        Ok(()) => {}
+                                        Err(cna_seats::host::HostRefusal::StoppedBeforeWork) => {
+                                            deferred.push_back(envelope);
+                                            writer_host.defer_controls(true);
+                                            continue;
+                                        }
+                                        Err(_) => {
+                                            let _ = envelope.reply.send(Err(Error::NotRunning));
+                                            return Err(Error::NotRunning);
+                                        }
+                                    }
+                                }
                                 if matches!(envelope.op, Op::Shutdown) {
                                     let _ = envelope.reply.send(Ok(Value::Null));
                                     return Ok(());
                                 }
                                 dispatch_and_publish(&mut campaign, envelope, &mut publisher)?;
+                                continue;
                             }
-                            Err(mpsc::error::TryRecvError::Disconnected) => return Ok(()),
+                            Err(mpsc::error::TryRecvError::Disconnected) => {
+                                if !writer_host.has_outstanding() { return Ok(()); }
+                                forced_inbox.close();
+                            }
                             Err(mpsc::error::TryRecvError::Empty) => {}
+                        }
+                        if writer_host.has_outstanding() || !deferred.is_empty() {
+                            // unpark is level-retained: a send between try_recv
+                            // and park cannot be lost. No actor await holds a lock.
+                            if !forced_work { std::thread::park(); }
+                            continue;
+                        }
+                        match writer_host.begin_write() {
+                            Ok(()) => {}
+                            Err(cna_seats::host::HostRefusal::StoppedBeforeWork) => continue,
+                            Err(_) => return Err(Error::NotRunning),
                         }
                         let step = auto_step(
                             &mut campaign,
@@ -381,16 +594,9 @@ impl CampaignHandle {
                         );
                         match step {
                             Ok(Step::Idle) => {
-                                // An idle writer waits for control or a seat submission without polling.
+                                // Both control and settlement sends wake this writer.
                                 publisher.update(&campaign)?;
-                                let Some(envelope) = rx.blocking_recv() else {
-                                    return Ok(());
-                                };
-                                if matches!(envelope.op, Op::Shutdown) {
-                                    let _ = envelope.reply.send(Ok(Value::Null));
-                                    return Ok(());
-                                }
-                                dispatch_and_publish(&mut campaign, envelope, &mut publisher)?;
+                                std::thread::park();
                             }
                             Err(_error)
                                 if matches!(campaign.status(), CampaignStatus::Stopped { .. }) =>
@@ -402,21 +608,77 @@ impl CampaignHandle {
                         }
                     }
                 })();
-                if let Err(error) = &result {
-                    tracing::error!(%error, "campaign writer stopped");
-                    if let Err(storage_error) = campaign.stop_runtime(error) {
-                        tracing::error!(%storage_error, "could not persist campaign writer stop");
+                if let Err(error) = result { writer_fatals.record(error); }
+                forced_inbox.close();
+                if writer_fatals.primary().is_some() {
+                    tracing::error!(error = %writer_fatals.primary().expect("present"), "campaign writer stopped");
+                    writer_fatals.report_secondary();
+                    if let Err(storage_error) = campaign.stop_runtime_causes(
+                        writer_fatals.primary().expect("present"), writer_fatals.secondary()
+                    ) {
+                        writer_fatals.record(storage_error);
+                        // No retry/third stop write; report the newly retained
+                        // secondary if persistence itself failed.
+                        writer_fatals.report_secondary();
                     }
                     // Publishing may itself be the failing operation. Status remains visible
                     // through its separate watch even when a projection cannot be read.
-                    let _ = publisher.update(&campaign);
+                    if let Err(error) = publisher.update(&campaign) {
+                        writer_fatals.record(error);
+                        writer_fatals.report_secondary();
+                    }
                     publisher.status.send_replace(campaign.status().clone());
+                    writer_host.close();
                 }
-                result
+                writer_fatals.enter_closed_cleanup();
+                // A storage/publication failure closes admission, but is NOT a
+                // native-supervision settlement. Keep this original writer and
+                // its reserved ACK receiver alive until every reserved/issued
+                // operation has its actual ordered settlement. No failed-control replay or
+                // new automatic work is permitted in this closed phase.
+                while writer_host.has_outstanding() {
+                    if let Ok(settlement) = prompt_settlements.try_recv() {
+                        writer_host.settle_prompt(settlement);
+                        continue;
+                    }
+                    // Closed writer still owns the only reservation/receipt
+                    // path. Refused pending BEGINs become owned aborts; only
+                    // the caller's actual-supervision latch permits final ACK.
+                    forced_inbox.observe_abort();
+                    if forced_inbox.settlement() { continue; }
+                    let pending_root = Arc::clone(&publisher.published.borrow());
+                    let forced_work = forced_inbox.command(&mut campaign, pending_root.as_ref(), &mut writer_fatals)
+                        | forced_inbox.delivery(&mut campaign, &mut writer_fatals);
+                    match rx.try_recv() {
+                        Ok(envelope) => {
+                            let _ = envelope.reply.send(Err(Error::NotRunning));
+                        }
+                        Err(_) => if !forced_work { std::thread::park(); },
+                    }
+                }
+                for envelope in deferred {
+                    let _ = envelope.reply.send(Err(Error::NotRunning));
+                }
+                if let Some(record) = record.as_ref() {
+                    // Reserved ACK/forced cleanup above has actually drained.
+                    // Capture before the owning connection leaves this writer.
+                    campaign.capture_owned_terminal(record);
+                }
+                writer_fatals.into_result()
             })
-            .map_err(|e| Error::Invalid(format!("cannot start campaign writer: {e}")))?;
+            .map_err(crate::owned_writer::WriterStartFailure::Spawn)?;
+        // Publish the SAME concrete writer handle before any caller can prepare
+        // a forced route. Its fixed Thread storage has no opaque callback capture.
+        let _ = wake.set(thread.thread().clone());
+        let legacy_thread = match publication {
+            Some(vacant) => { vacant.publish(thread); None }
+            None => Some(thread),
+        };
         Ok(Self {
             inner: Arc::new(Inner {
+                host,
+                forced,
+                wake,
                 tx,
                 published: published_recv,
                 streams,
@@ -425,7 +687,7 @@ impl CampaignHandle {
                 reader: ReplayReader::new(path),
                 metrics,
                 supports_aggressive,
-                thread: Mutex::new(Some(thread)),
+                thread: Mutex::new(legacy_thread),
             }),
         })
     }
@@ -436,12 +698,21 @@ impl CampaignHandle {
             .send(Envelope { op, reply })
             .await
             .map_err(|_| Error::NotRunning)?;
+        crate::host_gate::wake(&self.inner.wake);
         let result = wait.await.map_err(|_| Error::NotRunning)??;
         Ok(serde_json::from_value(result)?)
     }
     /// Operator-process diagnostics only; no HTTP/WS/MCP endpoint exposes these timings.
     pub fn runtime_metrics(&self) -> RuntimeMetrics {
         *self.inner.metrics.lock().expect("runtime metrics lock")
+    }
+    /// Required trusted host adapter, never a GameBackend tool or wire field.
+    pub fn host_admission(&self) -> Arc<dyn cna_seats::host::HostAdmission> {
+        self.inner.host.clone()
+    }
+    /// Trusted in-process host only. This is not a seat/GameBackend or wire API.
+    pub fn host_forced_submission(&self) -> Arc<dyn cna_seats::host::HostForcedSubmission> {
+        self.inner.forced.clone()
     }
     pub fn header(&self, p: Perspective) -> ProjectionHeader {
         self.inner.published.borrow().headers[&p].clone()
@@ -475,6 +746,13 @@ impl CampaignHandle {
     }
     pub fn status(&self) -> CampaignStatus {
         self.inner.status.borrow().clone()
+    }
+    /// Operator/host-only runtime gate captured before any recovered writer work.
+    pub fn recovered_awaiting_activation(&self) -> bool {
+        self.inner.published.borrow().awaiting_activation
+    }
+    pub fn stop_is_durable(&self) -> bool {
+        self.inner.published.borrow().stop_persisted
     }
     pub fn watch_status(&self) -> watch::Receiver<CampaignStatus> {
         self.inner.status.clone()
@@ -640,7 +918,7 @@ fn auto_step_inner<R: Ruleset>(
     candidates: &dyn Candidates,
     policy: Option<&ActionPolicy<R>>,
 ) -> Result<Step, Error> {
-    if campaign.status() != &CampaignStatus::Running {
+    if campaign.recovered_awaiting_activation() || campaign.status() != &CampaignStatus::Running {
         return Ok(Step::Idle);
     }
     let first_scripted = campaign.pending().into_iter().find(|d| {
@@ -865,6 +1143,12 @@ fn dispatch<R: Ruleset>(campaign: &mut Campaign<R>, op: Op) -> Result<Value, Err
         }
         Op::Message(seat, text) => serialize(campaign.team_message(seat, &text)?),
         Op::Messages(seat, after) => serialize(campaign.read_messages(seat, after)?),
+        #[cfg(test)]
+        Op::WriterFence { entered, release } => {
+            let _ = entered.send(());
+            release.recv().map_err(|_| Error::NotRunning)?;
+            Ok(Value::Null)
+        }
         Op::Shutdown => Ok(Value::Null),
     }
 }
@@ -872,3 +1156,8 @@ fn dispatch<R: Ruleset>(campaign: &mut Campaign<R>, op: Op) -> Result<Value, Err
 #[cfg(test)]
 #[path = "actor_policy_tests.rs"]
 mod policy_tests;
+
+#[allow(dead_code)] // Held owner stop source; no live main/Host finalization.
+#[path = "owned_stop.rs"]
+mod owned_stop;
+pub(crate) use owned_stop::{OwnedStop, StopObservation};

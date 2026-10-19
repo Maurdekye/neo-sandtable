@@ -7,7 +7,9 @@ use std::{
 
 use cna_core::{
     decision::{DecisionRequest, DecisionResponse},
-    engine::{Command, EngineError, Game, Progress, Rejection, Ruleset, evaluate},
+    engine::{
+        Command, EngineError, Game, Progress, Rejection, Ruleset, evaluate, evaluate_diagnosed,
+    },
     ids::SeatId,
     visibility::{Audience, Perspective},
 };
@@ -131,6 +133,8 @@ pub struct RuntimeMetrics {
 /// Owned by exactly one writer. Viewers consume committed projections, never the mutable game.
 pub struct Campaign<R: Ruleset> {
     db: Connection,
+    // Field order: SQLite closes before this local guard clone; parent retains another.
+    connection_custody: Option<Arc<cna_seats::seat_host::CampaignFileCustody>>,
     pub(crate) metrics: Arc<Mutex<RuntimeMetrics>>,
     ruleset: Arc<R>,
     pub(crate) content: Arc<R::Content>,
@@ -138,6 +142,11 @@ pub struct Campaign<R: Ruleset> {
     meta: CampaignMeta,
     revision: u64,
     status: CampaignStatus,
+    // Recovery is not operator consent to resume controllers or spending. This is
+    // deliberately absent from persisted Game/status/bindings and all seat views.
+    awaiting_activation: bool,
+    stop_persisted: bool,
+    capture_unavailable: bool,
     bindings: BTreeMap<SeatId, Binding>,
     run_boundary: Option<RunBoundary>,
 }
@@ -152,7 +161,9 @@ fn hash<T: Serialize + ?Sized>(value: &T) -> Result<String, Error> {
     Ok(format!("{:x}", Sha256::digest(json(value)?.as_bytes())))
 }
 fn connection(path: &Path) -> Result<Connection, Error> {
-    let mut db = Connection::open(path)?;
+    configure_connection(Connection::open(path)?)
+}
+fn configure_connection(mut db: Connection) -> Result<Connection, Error> {
     db.busy_timeout(std::time::Duration::from_secs(5))?;
     db.pragma_update(None, "journal_mode", "WAL")?;
     db.pragma_update(None, "synchronous", "FULL")?;
@@ -213,6 +224,38 @@ fn store_transcript(
 }
 
 impl<R: Ruleset> Campaign<R> {
+    /// Retain actual stored identity while the original factory still owns this
+    /// connection, before it can be moved into the standard writer or see GO.
+    pub(crate) fn capture_owned_prepared<const N: usize>(
+        &self,
+        record: &crate::owned_writer::WriterRecord<N>,
+    ) -> bool {
+        record.capture_connection_provenance(self.connection_custody.as_ref());
+        let initial_path_ok = record.capture_initial_path(&self.db);
+        record.capture_prepared(&self.db);
+        initial_path_ok && matches!(record.prepared(), Some(Ok(_)))
+            && (!record.guarded_connection_required()
+                || matches!(record.connection_provenance(), Some(Ok(()))))
+    }
+
+    /// Owned lifecycle only: source reads use this SAME writer connection.
+    /// Neither an observer projection nor a second connection is evidence.
+    pub(crate) fn capture_owned_initial<const N: usize>(
+        &self,
+        record: &crate::owned_writer::WriterRecord<N>,
+    ) -> bool {
+        let captured = record.capture_initial(&self.db);
+        captured && (!record.guarded_connection_required()
+            || matches!(record.connection_provenance(), Some(Ok(()))))
+    }
+
+    pub(crate) fn capture_owned_terminal<const N: usize>(
+        &self,
+        record: &crate::owned_writer::WriterRecord<N>,
+    ) {
+        record.capture_terminal(&self.db);
+    }
+
     pub fn create(
         path: &Path,
         ruleset: R,
@@ -220,6 +263,22 @@ impl<R: Ruleset> Campaign<R> {
         game: Game<R>,
         meta: CampaignMeta,
         pins: Pins,
+    ) -> Result<Self, Error> {
+        Self::create_connection(path, None, ruleset, content, game, meta, pins)
+    }
+
+    pub(crate) fn create_guarded(
+        custody: Arc<cna_seats::seat_host::CampaignFileCustody>,
+        ruleset: R, content: R::Content, game: Game<R>, meta: CampaignMeta, pins: Pins,
+    ) -> Result<Self, crate::owned_writer::WriterStartFailure> {
+        crate::owned_row_envelope::title(&meta.title)?;
+        Ok(Self::create_connection(custody.protected_path(), Some(Arc::clone(&custody)),
+            ruleset, content, game, meta, pins)?)
+    }
+
+    fn create_connection(
+        path: &Path, connection_custody: Option<Arc<cna_seats::seat_host::CampaignFileCustody>>,
+        ruleset: R, content: R::Content, game: Game<R>, meta: CampaignMeta, pins: Pins,
     ) -> Result<Self, Error> {
         if pins.rules_profile != ruleset.profile_id() || meta.rules_profile != pins.rules_profile {
             return Err(Error::Invalid("rules-profile pins disagree".into()));
@@ -258,6 +317,7 @@ impl<R: Ruleset> Campaign<R> {
         tx.commit()?;
         Ok(Self {
             db,
+            connection_custody,
             metrics: Arc::new(Mutex::new(RuntimeMetrics::default())),
             ruleset: Arc::new(ruleset),
             content: Arc::new(content),
@@ -265,6 +325,9 @@ impl<R: Ruleset> Campaign<R> {
             meta,
             revision: 0,
             status: CampaignStatus::Running,
+            awaiting_activation: false,
+            stop_persisted: true,
+            capture_unavailable: false,
             run_boundary: None,
             bindings,
         })
@@ -276,6 +339,45 @@ impl<R: Ruleset> Campaign<R> {
         ruleset: R,
         content: R::Content,
         expected: &Pins,
+    ) -> Result<Self, Error> {
+        Self::recover_connection(path, None, ruleset, content, expected)
+    }
+
+    pub(crate) fn recover_guarded(
+        custody: Arc<cna_seats::seat_host::CampaignFileCustody>,
+        ruleset: R, content: R::Content, expected: &Pins,
+    ) -> Result<Self, crate::owned_writer::WriterStartFailure> {
+        Self::recover_bounded(custody.protected_path(), Some(Arc::clone(&custody)),
+            ruleset, content, expected)
+    }
+
+    pub(crate) fn recover_owned(path: &Path, ruleset: R, content: R::Content, expected: &Pins)
+        -> Result<Self, crate::owned_writer::WriterStartFailure>
+    { Self::recover_bounded(path, None, ruleset, content, expected) }
+
+    fn recover_bounded(
+        path: &Path, custody: Option<Arc<cna_seats::seat_host::CampaignFileCustody>>,
+        ruleset: R, content: R::Content, expected: &Pins,
+    ) -> Result<Self, crate::owned_writer::WriterStartFailure> {
+        // No CREATE, WAL, schema or migration before raw borrowed admission.
+        // Custody (when required) predates this open and remains through close.
+        {
+            // This read-only preflight also protects private profile entrypoints
+            // which do not arrive through the dispatcher's discriminator open.
+            let reader = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+                .map_err(Error::from)?;
+            crate::owned_row_envelope::check_recovery(&reader)?;
+        } // reader closes before writable open; no extra retained row body.
+        let db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE)
+            .map_err(Error::from)?;
+        let fields = crate::owned_row_envelope::recovery_fields(&db)?;
+        let db = configure_connection(db)?;
+        Ok(Self::recover_rows(db, custody, ruleset, content, expected, fields)?)
+    }
+
+    fn recover_connection(
+        path: &Path, connection_custody: Option<Arc<cna_seats::seat_host::CampaignFileCustody>>,
+        ruleset: R, content: R::Content, expected: &Pins,
     ) -> Result<Self, Error> {
         let db = connection(path)?;
         let (meta, pins, revision, rng, final_hash, status): (
@@ -299,6 +401,16 @@ impl<R: Ruleset> Campaign<R> {
                 ))
             },
         )?;
+        Self::recover_rows(db, connection_custody, ruleset, content, expected,
+            (meta, pins, revision, rng, final_hash, status))
+    }
+
+    fn recover_rows(
+        db: Connection, connection_custody: Option<Arc<cna_seats::seat_host::CampaignFileCustody>>,
+        ruleset: R, content: R::Content, expected: &Pins,
+        fields: crate::owned_row_envelope::RecoveryFields,
+    ) -> Result<Self, Error> {
+        let (meta, pins, revision, rng, final_hash, status) = fields;
         if decode::<Pins>(&pins)? != *expected || expected.rules_profile != ruleset.profile_id() {
             return Err(Error::Recovery("immutable input pins changed".into()));
         }
@@ -362,15 +474,21 @@ impl<R: Ruleset> Campaign<R> {
             db.query_row("SELECT boundary FROM run_control WHERE id=1", [], |r| {
                 r.get(0)
             })?;
+        let recovered_status: CampaignStatus = decode(&status)?;
+        let awaiting_activation = recovered_status == CampaignStatus::Running;
         let campaign = Self {
             db,
+            connection_custody,
             metrics: Arc::new(Mutex::new(RuntimeMetrics::default())),
             ruleset: Arc::new(ruleset),
             content: Arc::new(content),
             game: Arc::new(game),
             meta: decode(&meta)?,
             revision,
-            status: decode(&status)?,
+            status: recovered_status,
+            awaiting_activation,
+            stop_persisted: true,
+            capture_unavailable: false,
             run_boundary: decode(&run_boundary)?,
             bindings,
         };
@@ -393,6 +511,21 @@ impl<R: Ruleset> Campaign<R> {
 
     pub fn status(&self) -> &CampaignStatus {
         &self.status
+    }
+    /// Server-private identity of the committed immutable reader root.
+    pub(crate) fn host_commit_revision(&self) -> u64 {
+        self.revision
+    }
+    /// Trusted host/operator control only. No seat binding or game field carries it.
+    pub fn recovered_awaiting_activation(&self) -> bool {
+        self.awaiting_activation
+    }
+    /// Trusted operator control, never a seat or game field.
+    pub fn stop_is_durable(&self) -> bool {
+        self.stop_persisted
+    }
+    pub fn private_capture_unavailable(&self) -> bool {
+        self.capture_unavailable
     }
     pub fn state_hash(&self) -> Result<String, Error> {
         hash(self.game.as_ref())
@@ -522,35 +655,108 @@ impl<R: Ruleset> Campaign<R> {
         } else {
             CampaignStatus::Running
         };
+        // Explicit Resume of recovered committed Running needs no durable write:
+        // recovery preserved that status, and this only opens the in-memory gate.
+        if !paused && self.awaiting_activation && self.status == CampaignStatus::Running {
+            self.awaiting_activation = false;
+            return Ok(());
+        }
         self.db
             .execute("UPDATE campaign SET status=? WHERE id=1", [json(&next)?])?;
         self.status = next;
+        self.awaiting_activation = false;
         Ok(())
     }
 
-    /// A rules or policy failure changes only the campaign control status. Do not claim a
-    /// durable stop or replace the in-memory status unless its write succeeds.
+    /// First root cause owns the stop. Diagnostic failure cannot resume the writer:
+    /// roll back the combined transaction, then try exactly one stop-only transaction.
     pub(crate) fn stop_engine(&mut self, error: &EngineError) -> Result<(), Error> {
-        let stopped = CampaignStatus::Stopped {
-            error: error.to_string(),
-        };
-        self.db
-            .execute("UPDATE campaign SET status=? WHERE id=1", [json(&stopped)?])?;
+        self.stop_engine_diagnosed(error, None)
+    }
+    pub(crate) fn stop_engine_diagnosed(
+        &mut self,
+        error: &EngineError,
+        payload: Option<cna_core::diagnostic::PrivatePayload>,
+    ) -> Result<(), Error> {
+        self.stop_with_private(error.to_string(), payload)
+    }
+    fn stop_with_private(
+        &mut self,
+        error: String,
+        payload: Option<cna_core::diagnostic::PrivatePayload>,
+    ) -> Result<(), Error> {
+        if matches!(self.status, CampaignStatus::Stopped { .. }) {
+            return Ok(());
+        }
+        let stopped = CampaignStatus::Stopped { error };
+        let serialized = json(&stopped)?;
+        // An empty total producer fallback means capture unavailable, not an
+        // encoded record with zero quantities. Preserve the generic stop.
+        let payload = payload.filter(|payload| !payload.as_bytes().is_empty());
+        let combined = (|| -> Result<(), Error> {
+            let tx = self.db.transaction()?;
+            if tx.execute("UPDATE campaign SET status=? WHERE id=1", [&serialized])? != 1 {
+                return Err(Error::Recovery("campaign stop row unavailable".into()));
+            }
+            if let Some(payload) = payload.as_ref() {
+                // Correlate the already committed checkpoint, not a re-serialization
+                // of rejected state. A diagnostic lookup failure rolls back this
+                // transaction and still permits the one generic stop-only fallback.
+                let state_hash: String = tx.query_row(
+                    "SELECT state_hash FROM campaign WHERE id=1 AND revision=? AND length(state_hash)=64",
+                    [self.revision], |row| row.get(0),
+                )?;
+                crate::operator_failures::store(
+                    &tx,
+                    &self.meta.id,
+                    self.revision,
+                    &state_hash,
+                    payload,
+                )?;
+            }
+            tx.commit()?;
+            Ok(())
+        })();
         self.status = stopped;
-        Ok(())
+        self.awaiting_activation = false;
+        if combined.is_ok() {
+            self.stop_persisted = true;
+            self.capture_unavailable = payload.is_none();
+            return Ok(());
+        }
+        // The failed transaction has dropped/rolled back before this single fallback.
+        // An outer error must not attempt another write or replace the root cause.
+        self.capture_unavailable = true;
+        let fallback = (|| -> Result<(), Error> {
+            let tx = self.db.transaction()?;
+            if tx.execute("UPDATE campaign SET status=? WHERE id=1", [&serialized])? != 1 {
+                return Err(Error::Recovery("campaign stop row unavailable".into()));
+            }
+            tx.commit()?;
+            Ok(())
+        })();
+        self.stop_persisted = fallback.is_ok();
+        fallback
     }
 
     /// Runtime failure cannot resume automatically, even if publishing a committed projection
     /// failed. Persist the stop when storage permits; retain it in memory if storage is broken.
     pub(crate) fn stop_runtime(&mut self, error: &Error) -> Result<(), Error> {
-        self.status = CampaignStatus::Stopped {
-            error: error.to_string(),
+        // In particular, do not turn a failed stop-only fallback into a third write.
+        self.stop_with_private(error.to_string(), None)
+    }
+    /// Campaign-owned diagnostic report only; full errors have already MOVED
+    /// out of Operation entries. Legacy single-error stop remains unchanged.
+    pub(crate) fn stop_runtime_causes(
+        &mut self,
+        primary: &Error,
+        secondary: Option<&Error>,
+    ) -> Result<(), Error> {
+        let diagnostic = match secondary {
+            Some(secondary) => format!("primary: {primary}\nsecondary: {secondary}"),
+            None => return self.stop_runtime(primary),
         };
-        self.db.execute(
-            "UPDATE campaign SET status=? WHERE id=1",
-            [json(&self.status)?],
-        )?;
-        Ok(())
+        self.stop_with_private(diagnostic, None)
     }
 
     /// Handover preserves the entire game and its accepted secret submissions.
@@ -695,17 +901,21 @@ impl<R: Ruleset> Campaign<R> {
         )
     }
     fn commit(&mut self, command: Command, seat: String, key: String) -> Result<Receipt, Error> {
+        if self.awaiting_activation {
+            return Err(Error::NotRunning);
+        }
         if self.status != CampaignStatus::Running
             && !(self.status == CampaignStatus::Paused && matches!(&command, Command::Respond(_)))
         {
             return Err(Error::NotRunning);
         }
         let engine_start = Instant::now();
-        let transition = match evaluate(self.ruleset.as_ref(), &self.content, &self.game, &command)
-        {
+        let (evaluated, private) =
+            evaluate_diagnosed(self.ruleset.as_ref(), &self.content, &self.game, &command);
+        let transition = match evaluated {
             Ok(t) => t,
             Err(Rejection::Engine(error)) => {
-                self.stop_engine(&error)?;
+                self.stop_engine_diagnosed(&error, private)?;
                 tracing::error!(%error, "campaign stopped at an unsupported case or invariant");
                 return Err(Rejection::Engine(error).into());
             }

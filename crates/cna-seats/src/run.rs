@@ -226,8 +226,56 @@ pub enum SeatEnd {
     Finished,
     /// Stopped on request.
     Stopped,
+    /// A trusted host closed admission before new work. This is not a seat failure/pause.
+    Closed(crate::host::HostRefusal),
     Paused(PauseReason),
     Failed(PauseReason),
+}
+
+/// Required in-process host adapters. A game/tool backend cannot supply permission implicitly.
+#[derive(Clone)]
+pub struct RunnerHost {
+    pub admission: Arc<dyn crate::host::HostAdmission>,
+    pub forced: Arc<dyn crate::host::HostForcedSubmission>,
+}
+
+/// Foreground ownership survives a borrowed run timeout or error. This has no permissions and
+/// no destructor release: the actor/native owners need actual supervision and settlement ACK.
+pub struct RunnerOwnership {
+    /// Trusted launcher configuration stays with the ORIGINAL foreground owner.
+    /// Its absence never supplies a native archive plan or substitutes a destination.
+    archive: Option<crate::failed_evidence::CampaignArchive>,
+    forced: Option<crate::automatic::ForcedAnswerSupervisor>,
+    permit: Option<OwnedSemaphorePermit>,
+    context: Option<crate::host::HostDriverContext>,
+    native_entered: bool,
+    uncertain: bool,
+    decision: Option<(String, u32, Instant)>,
+}
+impl RunnerOwnership {
+    pub fn empty() -> Self {
+        Self {
+            archive: None,
+            forced: None,
+            permit: None,
+            context: None,
+            native_entered: false,
+            uncertain: false,
+            decision: None,
+        }
+    }
+    /// Install trusted campaign-derived archive inputs BEFORE borrowing the run.
+    /// This moves the configuration once; it does not grant host admission, inspect
+    /// paths, create files, settle prior work or introduce a second allowance.
+    pub fn for_campaign(archive: crate::failed_evidence::CampaignArchive) -> Self {
+        Self {
+            archive: Some(archive),
+            ..Self::empty()
+        }
+    }
+    pub fn is_unsettled(&self) -> bool {
+        self.uncertain || self.forced.is_some() || self.native_entered || self.permit.is_some()
+    }
 }
 
 /// Everything one seat runner needs.
@@ -236,6 +284,8 @@ pub struct SeatRunner {
     pub controller_epoch: u64,
     pub driver: Box<dyn SeatDriver>,
     pub game: Arc<dyn GameBackend>,
+    pub host: RunnerHost,
+    pub ownership: RunnerOwnership,
     pub memory: Arc<dyn SeatMemory>,
     pub router: Arc<ToolRouter>,
     pub sink: TranscriptSink,
@@ -256,6 +306,135 @@ enum TurnKind {
 }
 
 impl SeatRunner {
+    fn identity(
+        &self,
+        request: &DecisionRequest,
+        operation_id: String,
+    ) -> crate::host::HostIdentity {
+        crate::host::HostIdentity {
+            seat: self.seat,
+            epoch: self.controller_epoch,
+            decision_id: request.id.to_string(),
+            revision: request.revision,
+            operation_id,
+        }
+    }
+
+    fn decision_deadline(&mut self, request: &DecisionRequest) -> Instant {
+        let parent = self.started + self.limits.max_wall;
+        if let Some((id, revision, deadline)) = self.ownership.decision.as_mut()
+            && id.as_str() == request.id.as_str()
+            && *revision == request.revision
+        {
+            *deadline = (*deadline).min(parent);
+            return *deadline;
+        }
+        let deadline = parent.min(Instant::now() + self.limits.turn_timeout);
+        self.ownership.decision = Some((request.id.to_string(), request.revision, deadline));
+        deadline
+    }
+
+    fn closed(error: crate::host::HostRefusal) -> SeatEnd {
+        use crate::host::HostRefusal;
+        match error {
+            HostRefusal::WaitingForActivation
+            | HostRefusal::StoppedBeforeWork
+            | HostRefusal::IdentityChanged
+            | HostRefusal::Unknown
+            | HostRefusal::NoAllowance => SeatEnd::Closed(error),
+            HostRefusal::Expired => SeatEnd::Paused(PauseReason::TurnTimeout),
+            other => SeatEnd::Failed(PauseReason::CliError(other.to_string())),
+        }
+    }
+
+    fn install_context(&mut self, request: &DecisionRequest) -> Result<(), SeatEnd> {
+        let deadline = self.decision_deadline(request);
+        let allowance = crate::operation::Allowance::required(Some(deadline))
+            .map_err(|e| Self::closed(crate::host::operation_refusal(e)))?;
+        let id = uuid::Uuid::new_v4().to_string();
+        let operation = match self.ownership.archive.as_ref() {
+            Some(archive) => archive
+                .operation(self.seat, self.controller_epoch, id.clone(), allowance)
+                .map_err(|error| {
+                    use crate::failed_evidence::ArchiveError;
+                    let refusal = match error {
+                        ArchiveError::Operation(error) => crate::host::operation_refusal(error),
+                        ArchiveError::Identity => crate::host::HostRefusal::IdentityChanged,
+                        ArchiveError::Fit => crate::host::HostRefusal::CaptureOverflow,
+                        ArchiveError::Path | ArchiveError::Filesystem | ArchiveError::Mismatch => {
+                            crate::host::HostRefusal::Ownership(
+                                "original campaign archive planning refused".into(),
+                            )
+                        }
+                    };
+                    Self::closed(refusal)
+                })?,
+            // Inert drivers can use the existing toy runner. Native Claude's
+            // required plan guard refuses this context before any native effect.
+            // No fabricated campaign database, archive path or fallback is supplied.
+            None => crate::operation::Operation::new(id.clone(), self.controller_epoch, allowance)
+                .map_err(|error| Self::closed(crate::host::operation_refusal(error)))?,
+        };
+        let context = crate::host::HostDriverContext {
+            admission: self.host.admission.clone(),
+            identity: self.identity(request, id),
+            operation,
+        };
+        self.driver
+            .set_host_context(context.clone())
+            .map_err(|error| match error {
+                DriverError::Host(refusal) => Self::closed(refusal),
+                other => SeatEnd::Failed(PauseReason::CliError(other.to_string())),
+            })?;
+        self.ownership.context = Some(context);
+        Ok(())
+    }
+
+    async fn stop_owned(&mut self) -> Result<(), DriverError> {
+        if !self.ownership.native_entered {
+            return Ok(());
+        }
+        let context = self
+            .ownership
+            .context
+            .as_ref()
+            .ok_or_else(|| DriverError::Host(crate::host::HostRefusal::NoAllowance))?;
+        let result =
+            tokio::time::timeout_at(context.operation.allowance().deadline(), self.driver.stop())
+                .await
+                .map_err(|_| {
+                    DriverError::Host(crate::host::HostRefusal::Ownership(
+                        "native child/readers remain foreground-owned Unsettled".into(),
+                    ))
+                })?;
+        if result.is_ok() {
+            self.ownership.native_entered = false;
+        }
+        result
+    }
+
+    /// Retry observation of retained cleanup only, using the original allowances. This never
+    /// re-enters dispatch or re-admits a credit because a timer/drop/request ACK occurred.
+    pub async fn settle_owned(&mut self) -> Result<(), DriverError> {
+        self.stop_owned().await?;
+        if let Some(owner) = self.ownership.forced.as_mut() {
+            self.sink
+                .join_delivery_until(owner.allowance().deadline())
+                .await
+                .map_err(|e| DriverError::Host(crate::host::HostRefusal::Ownership(e)))?;
+            owner.request_settlement_after_supervision();
+            let ack = owner.settlement_ack().await.map_err(DriverError::Host)?;
+            if ack.uncertain() {
+                return Err(DriverError::Host(crate::host::HostRefusal::Ownership(
+                    "actor settlement uncertainty retained".into(),
+                )));
+            }
+            self.ownership.forced = None;
+        }
+        self.ownership.permit.take();
+        self.ownership.uncertain = false;
+        Ok(())
+    }
     fn set(&self, status: SeatStatus, reason: Option<PauseReason>) {
         let _ = self.state.send(SeatState { status, reason });
     }
@@ -277,15 +456,76 @@ impl SeatRunner {
 
     /// Run until the game ends, the seat pauses or fails, or a stop is requested.
     pub async fn run(&mut self) -> SeatEnd {
-        let mut end = self.run_inner().await;
-        if let Err(error) = self.driver.stop().await {
-            end = SeatEnd::Failed(PauseReason::CliError(format!(
-                "CLI cleanup failed: {error}"
-            )));
+        if self.ownership.is_unsettled() {
+            let reason = match self.state.borrow().reason.clone() {
+                Some(PauseReason::CliError(reason)) if reason.contains("Unsettled") => {
+                    PauseReason::CliError(reason)
+                }
+                Some(reason) => PauseReason::CliError(format!(
+                    "{reason}; original supervision remains owned Unsettled; no new admission"
+                )),
+                None => PauseReason::CliError(
+                    "original supervision remains owned Unsettled; no new admission".into(),
+                ),
+            };
+            self.set(SeatStatus::Paused, Some(reason.clone()));
+            return SeatEnd::Paused(reason);
         }
-        let drained = tokio::time::timeout(Duration::from_secs(5), self.sink.flush()).await;
-        if drained.is_err() || self.sink.pending_count() != 0 {
-            self.sink.stop_delivery().await;
+        let changes = self.host.admission.subscribe();
+        match self.host.admission.snapshot() {
+            Ok(snapshot)
+                if snapshot.activated && snapshot.status == crate::host::HostStatus::Running => {}
+            Ok(snapshot) if snapshot.status == crate::host::HostStatus::Finished => {
+                return SeatEnd::Finished;
+            }
+            Ok(snapshot) if !snapshot.activated => {
+                return SeatEnd::Closed(crate::host::HostRefusal::WaitingForActivation);
+            }
+            Ok(_) => return SeatEnd::Closed(crate::host::HostRefusal::StoppedBeforeWork),
+            Err(error) => return Self::closed(error),
+        }
+        let mut end = match tokio::time::timeout_at(
+            self.started + self.limits.max_wall,
+            self.run_inner(changes),
+        )
+        .await
+        {
+            Ok(end) => end,
+            Err(_) => SeatEnd::Paused(PauseReason::WallClockExhausted),
+        };
+        if let Err(error) = self.settle_owned().await {
+            self.ownership.uncertain = true;
+            let original = match &end {
+                SeatEnd::Paused(reason) | SeatEnd::Failed(reason) => format!("{reason}; "),
+                _ => String::new(),
+            };
+            end = SeatEnd::Paused(PauseReason::CliError(format!(
+                "{original}CLI cleanup remains Unsettled: {error}"
+            )));
+            self.set(
+                SeatStatus::Paused,
+                match &end {
+                    SeatEnd::Paused(r) => Some(r.clone()),
+                    _ => None,
+                },
+            );
+            return end;
+        }
+        let deadline =
+            (self.started + self.limits.max_wall).min(Instant::now() + Duration::from_secs(5));
+        let drained = tokio::time::timeout_at(deadline, self.sink.flush_confirmed()).await;
+        if !matches!(drained, Ok(Ok(()))) || self.sink.pending_count() != 0 {
+            if let Err(error) = self.sink.join_delivery_until(deadline).await {
+                self.ownership.uncertain = true;
+                let original = match &end {
+                    SeatEnd::Paused(r) | SeatEnd::Failed(r) => format!("{r}; "),
+                    _ => String::new(),
+                };
+                return SeatEnd::Failed(PauseReason::CliError(format!(
+                    "{original}{error}; {} unconfirmed captures remain owned",
+                    self.sink.pending_count()
+                )));
+            }
             let original = match &end {
                 SeatEnd::Paused(r) | SeatEnd::Failed(r) => format!("{r}; "),
                 _ => String::new(),
@@ -309,28 +549,84 @@ impl SeatRunner {
             .iter()
             .filter(|p| crate::automatic::forced_pass(&p.space))
         {
-            let remaining = self.limits.max_wall.saturating_sub(self.started.elapsed());
+            if self.ownership.forced.is_some() {
+                return Err(SeatEnd::Failed(PauseReason::CliError(
+                    "forced supervision already owned".into(),
+                )));
+            }
+            let deadline = self
+                .decision_deadline(request)
+                .min(Instant::now() + Duration::from_secs(5));
+            let allowance = crate::operation::Allowance::required(Some(deadline))
+                .map_err(|e| Self::closed(crate::host::operation_refusal(e)))?;
+            let id = uuid::Uuid::new_v4().to_string();
+            let operation =
+                crate::operation::Operation::new(id.clone(), self.controller_epoch, allowance)
+                    .map_err(|e| Self::closed(crate::host::operation_refusal(e)))?;
+            let original = crate::game::SubmitRequest {
+                decision_id: request.id.to_string(),
+                epoch: self.controller_epoch,
+                revision: Some(request.revision),
+                idempotency_key: format!(
+                    "automatic|{}|{}|e{}|r{}|null",
+                    self.seat, request.id, self.controller_epoch, request.revision
+                ),
+                action: serde_json::Value::Null,
+                public_explanation: None,
+            };
+            self.ownership.forced = Some(
+                crate::automatic::ForcedAnswerSupervisor::new(
+                    self.host.forced.clone(),
+                    self.identity(request, id),
+                    original,
+                    operation,
+                )
+                .map_err(Self::closed)?,
+            );
+            let owner = self
+                .ownership
+                .forced
+                .as_mut()
+                .expect("retained forced reservation");
             let result = tokio::select! {
-                result = tokio::time::timeout(remaining, crate::automatic::answer(
-                    self.game.as_ref(), self.seat, self.controller_epoch, request, &self.sink,
-                )) => result.map_err(|_| SeatEnd::Paused(PauseReason::WallClockExhausted))?,
+                result = owner.execute(&self.sink) => result,
                 _ = async {
                     if self.stop.wait_for(|stop| *stop).await.is_err() {
                         std::future::pending::<()>().await;
                     }
                 } => return Err(SeatEnd::Stopped),
             };
-            answered |=
-                result.map_err(|e| SeatEnd::Paused(PauseReason::CliError(e.to_string())))?;
+            answered |= result.map_err(Self::closed)?;
+            // A previous model turn can leave the SAME session/readers alive. Observe actual
+            // original supervision before asking the forced actor to settle, even though this
+            // forced answer itself dispatched no native bytes.
+            self.stop_owned()
+                .await
+                .map_err(|error| SeatEnd::Failed(PauseReason::CliError(error.to_string())))?;
+            let owner = self
+                .ownership
+                .forced
+                .as_mut()
+                .expect("retained forced reservation");
+            owner.request_settlement_after_supervision();
+            let ack = owner.settlement_ack().await.map_err(Self::closed)?;
+            if ack.uncertain() {
+                return Err(SeatEnd::Failed(PauseReason::CliError(
+                    "forced actor remains uncertain".into(),
+                )));
+            }
+            self.ownership.forced = None;
         }
         Ok(answered)
     }
 
-    async fn run_inner(&mut self) -> SeatEnd {
+    async fn run_inner(
+        &mut self,
+        mut changes: watch::Receiver<crate::host::HostSnapshot>,
+    ) -> SeatEnd {
         let mut fresh = self.sessions.load(self.seat).is_none();
         let mut alive = false;
         let mut recoveries = 0u32;
-        let mut permit: Option<OwnedSemaphorePermit> = None;
         loop {
             // Wait for something to decide.
             let pending = loop {
@@ -354,6 +650,13 @@ impl SeatRunner {
                 tokio::select! {
                     () = tokio::time::sleep(Duration::from_millis(250)) => {}
                     _ = self.stop.changed() => {}
+                    _ = changes.changed() => {
+                        match self.host.admission.snapshot() {
+                            Ok(snapshot) if snapshot.activated && snapshot.status == crate::host::HostStatus::Running => {},
+                            Ok(_) => return SeatEnd::Closed(crate::host::HostRefusal::StoppedBeforeWork),
+                            Err(error) => return Self::closed(error),
+                        }
+                    }
                 }
             };
             match self.answer_automatic(&pending).await {
@@ -366,16 +669,40 @@ impl SeatRunner {
             }
             self.set(SeatStatus::Deciding, None);
 
+            // Stamp this revision's original deadline BEFORE waiting for a scarce session
+            // permit or preparing prompts. Retries and later awaits cannot renew it.
+            let admission_deadline = self.decision_deadline(&pending[0]);
+
             // Take a session slot before touching the CLI.
-            if permit.is_none() {
-                permit = match self.permits.clone().acquire_owned().await {
-                    Ok(p) => Some(p),
-                    Err(_) => return SeatEnd::Stopped,
+            if self.ownership.permit.is_none() {
+                self.ownership.permit = match tokio::time::timeout_at(
+                    admission_deadline,
+                    self.permits.clone().acquire_owned(),
+                )
+                .await
+                {
+                    Ok(Ok(p)) => Some(p),
+                    Ok(Err(_)) => return SeatEnd::Stopped,
+                    Err(_) => return SeatEnd::Paused(PauseReason::TurnTimeout),
                 };
             }
 
             if !alive {
-                match self.bring_up(fresh).await {
+                if let Err(end) = self.install_context(&pending[0]) {
+                    return end;
+                }
+                let deadline = self
+                    .ownership
+                    .context
+                    .as_ref()
+                    .expect("required startup context")
+                    .operation
+                    .allowance()
+                    .deadline();
+                match tokio::time::timeout_at(deadline, self.bring_up(fresh))
+                    .await
+                    .unwrap_or_else(|_| Err(SeatEnd::Paused(PauseReason::TurnTimeout)))
+                {
                     Ok(was_fresh) => {
                         fresh = was_fresh;
                         alive = true;
@@ -400,18 +727,39 @@ impl SeatRunner {
                     Ok(false) => {}
                     Err(end) => return end,
                 }
+                if let Err(end) = self.install_context(&pending[0]) {
+                    return end;
+                }
+                let deadline = self
+                    .ownership
+                    .context
+                    .as_ref()
+                    .expect("required prompt context")
+                    .operation
+                    .allowance()
+                    .deadline();
                 let prompt = match kind {
                     TurnKind::First => {
-                        let notebook = self.memory.notebook_read(self.seat).await;
+                        let notebook = match tokio::time::timeout_at(
+                            deadline,
+                            self.memory.notebook_read(self.seat),
+                        )
+                        .await
+                        {
+                            Ok(notebook) => notebook,
+                            Err(_) => return SeatEnd::Paused(PauseReason::TurnTimeout),
+                        };
                         self.prompts.first_turn(self.seat, &notebook, &pending)
                     }
                     TurnKind::Window => self.prompts.window_turn(self.seat, &pending),
                     TurnKind::Nudge => self.prompts.nudge(self.seat, &pending),
                 };
-                match self
-                    .driver
-                    .run_turn(&prompt, self.limits.turn_timeout)
-                    .await
+                match tokio::time::timeout_at(
+                    deadline,
+                    self.driver.run_turn(&prompt, self.limits.turn_timeout),
+                )
+                .await
+                .unwrap_or(Err(DriverError::Timeout))
                 {
                     Ok(outcome) => {
                         if let Some(id) = self.driver.session_id() {
@@ -426,6 +774,7 @@ impl SeatRunner {
                         return SeatEnd::Failed(PauseReason::IsolationFailure(e));
                     }
                     Err(DriverError::Cli(e)) => return SeatEnd::Paused(PauseReason::CliError(e)),
+                    Err(DriverError::Host(error)) => return Self::closed(error),
                     Err(
                         e @ (DriverError::Died(_)
                         | DriverError::Timeout
@@ -442,10 +791,24 @@ impl SeatRunner {
                             return SeatEnd::Paused(PauseReason::TurnTimeout);
                         }
                         // Kill whatever is left and bring the session back (resume, else reseed).
-                        if let Err(error) = self.driver.stop().await {
+                        if let Err(error) = self.stop_owned().await {
                             return SeatEnd::Failed(PauseReason::CliError(error.to_string()));
                         }
-                        match self.bring_up(false).await {
+                        if let Err(end) = self.install_context(&pending[0]) {
+                            return end;
+                        }
+                        let deadline = self
+                            .ownership
+                            .context
+                            .as_ref()
+                            .expect("required recovery context")
+                            .operation
+                            .allowance()
+                            .deadline();
+                        match tokio::time::timeout_at(deadline, self.bring_up(false))
+                            .await
+                            .unwrap_or_else(|_| Err(SeatEnd::Paused(PauseReason::TurnTimeout)))
+                        {
                             Ok(was_fresh) => fresh = was_fresh,
                             Err(end) => return end,
                         }
@@ -484,11 +847,11 @@ impl SeatRunner {
                 kind = TurnKind::Nudge;
             }
             if self.limits.park_between_windows {
-                if let Err(error) = self.driver.stop().await {
+                if let Err(error) = self.stop_owned().await {
                     return SeatEnd::Failed(PauseReason::CliError(error.to_string()));
                 }
                 alive = false;
-                permit = None;
+                self.ownership.permit = None;
             }
         }
     }
@@ -511,23 +874,26 @@ impl SeatRunner {
     async fn bring_up(&mut self, fresh_hint: bool) -> Result<bool, SeatEnd> {
         let stored = self.sessions.load(self.seat);
         if let (Some(id), false) = (&stored, fresh_hint) {
+            self.ownership.native_entered = true;
             match self.driver.start(Some(id)).await {
                 Ok(_) => return Ok(false),
                 Err(DriverError::Isolation(e)) => {
                     return Err(SeatEnd::Failed(PauseReason::IsolationFailure(e)));
                 }
+                Err(DriverError::Host(error)) => return Err(Self::closed(error)),
                 Err(e) => {
                     self.sink.system(
                         self.seat,
                         format!("could not resume session {id} ({e}); starting a new one from the notebook"),
                     );
-                    self.driver.stop().await.map_err(|error| {
+                    self.stop_owned().await.map_err(|error| {
                         SeatEnd::Failed(PauseReason::CliError(error.to_string()))
                     })?;
                     self.sessions.clear(self.seat);
                 }
             }
         }
+        self.ownership.native_entered = true;
         match self.driver.start(None).await {
             Ok(info) => {
                 self.sessions.save(self.seat, &info.session_id);
@@ -536,6 +902,7 @@ impl SeatRunner {
             Err(DriverError::Isolation(e)) => {
                 Err(SeatEnd::Failed(PauseReason::IsolationFailure(e)))
             }
+            Err(DriverError::Host(error)) => Err(Self::closed(error)),
             Err(e) => Err(SeatEnd::Paused(PauseReason::CliError(e.to_string()))),
         }
     }
@@ -550,7 +917,7 @@ mod tests {
     use crate::toy::{AXIS, COMMONWEALTH, NumberDuel};
     use crate::transcript::LocalTranscript;
     use serde_json::json;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
     /// A scripted "CLI": it answers by calling the real tool router like a model would.
     struct FakeDriver {
@@ -561,6 +928,7 @@ mod tests {
         turns: u32,
         starts: Arc<AtomicU32>,
         resumes: Arc<AtomicU32>,
+        cleanup_observed: Arc<AtomicBool>,
         session: String,
         alive: bool,
     }
@@ -571,6 +939,10 @@ mod tests {
         Plays,
         /// Never answers anything (ends turns immediately).
         Silent,
+        /// No submission, and stop cannot establish a child/readers join.
+        CleanupUnknown,
+        /// Owns the same inert session while a borrowed startup wait is canceled.
+        StartWait,
         /// Plays, but the process "dies" during turn 2 *after* submitting.
         DiesAfterSubmitOnTurn2,
         TimesOut(crate::driver::TimeoutKind),
@@ -578,6 +950,12 @@ mod tests {
 
     #[async_trait]
     impl SeatDriver for FakeDriver {
+        fn set_host_context(
+            &mut self,
+            context: crate::host::HostDriverContext,
+        ) -> Result<(), DriverError> {
+            crate::host_fixture::accept_inert_context(context)
+        }
         fn kind(&self) -> CliKind {
             CliKind::Claude
         }
@@ -589,6 +967,9 @@ mod tests {
                 self.session = format!("s{}", self.starts.load(Ordering::SeqCst));
             }
             self.alive = true;
+            if matches!(self.script, Script::StartWait) {
+                std::future::pending::<()>().await;
+            }
             Ok(SessionInfo {
                 session_id: self.session.clone(),
                 model: None,
@@ -611,7 +992,7 @@ mod tests {
                     Err(DriverError::TimeoutAt(diagnostic))
                 };
             }
-            let play = !matches!(self.script, Script::Silent);
+            let play = !matches!(self.script, Script::Silent | Script::CleanupUnknown);
             if play {
                 let obs = self
                     .router
@@ -650,6 +1031,13 @@ mod tests {
             self.alive
         }
         async fn stop(&mut self) -> Result<(), crate::driver::DriverError> {
+            if matches!(self.script, Script::CleanupUnknown)
+                && !self.cleanup_observed.load(Ordering::SeqCst)
+            {
+                return Err(DriverError::Host(crate::host::HostRefusal::Ownership(
+                    "inert unresolved child/readers".into(),
+                )));
+            }
             self.alive = false;
 
             Ok(())
@@ -657,6 +1045,7 @@ mod tests {
     }
 
     struct Harness {
+        host: RunnerHost,
         game: Arc<dyn GameBackend>,
         router: Arc<ToolRouter>,
         sink: TranscriptSink,
@@ -665,15 +1054,22 @@ mod tests {
         permits: Arc<Semaphore>,
         starts: Arc<AtomicU32>,
         resumes: Arc<AtomicU32>,
+        cleanup_observed: Arc<AtomicBool>,
     }
 
     fn harness() -> Harness {
         let seats = vec![AXIS, COMMONWEALTH];
-        let game: Arc<dyn GameBackend> = Arc::new(NumberDuel::game(11));
+        let toy = Arc::new(NumberDuel::game(11));
+        let host = crate::toy_host::ToyHost::fresh_number_duel(toy.clone());
+        let game: Arc<dyn GameBackend> = toy;
         let memory = Arc::new(InMemorySeatMemory::new(seats.clone()));
         let router = Arc::new(ToolRouter::new(game.clone(), memory, &seats));
         let stored = LocalTranscript::detached();
         Harness {
+            host: RunnerHost {
+                admission: host.clone(),
+                forced: host,
+            },
             game,
             router,
             sink: TranscriptSink::new(stored.clone()),
@@ -682,6 +1078,7 @@ mod tests {
             permits: Arc::new(Semaphore::new(2)),
             starts: Arc::new(AtomicU32::new(0)),
             resumes: Arc::new(AtomicU32::new(0)),
+            cleanup_observed: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -701,10 +1098,13 @@ mod tests {
                 turns: 0,
                 starts: h.starts.clone(),
                 resumes: h.resumes.clone(),
+                cleanup_observed: h.cleanup_observed.clone(),
                 session: String::new(),
                 alive: false,
             }),
             game: h.game.clone(),
+            host: h.host.clone(),
+            ownership: RunnerOwnership::empty(),
             memory: Arc::new(InMemorySeatMemory::new(vec![AXIS, COMMONWEALTH])),
             router: h.router.clone(),
             sink: h.sink.clone(),
@@ -718,6 +1118,208 @@ mod tests {
             state,
             stop,
         }
+    }
+
+    fn archive_configuration(root: &std::path::Path) -> crate::failed_evidence::CampaignArchive {
+        crate::failed_evidence::CampaignArchive::new(
+            &root.join("campaigns/11111111-1111-4111-8111-111111111111.sqlite"),
+            &root.join("sandbox"),
+            &root.join("run"),
+            &[root.join("isolation")],
+        )
+        .unwrap()
+    }
+
+    // SOURCE ONLY/UNRUN: synthetic path configuration and an inert driver; no
+    // database, path probe, archive write, child, model or provider is invoked.
+    #[tokio::test]
+    async fn campaign_runner_installs_original_plan_before_borrowed_work() {
+        let h = harness();
+        let mut a = runner(&h, AXIS, Script::Plays, RunLimits::default());
+        let root = std::env::temp_dir().join("synthetic-runner-archive-no-io");
+        a.ownership = RunnerOwnership::for_campaign(archive_configuration(&root));
+        let pending = a.pending().await;
+        let deadline = a.decision_deadline(&pending[0]);
+        a.install_context(&pending[0]).unwrap();
+        let retained = a.ownership.context.as_ref().unwrap();
+        let original = retained.operation.clone();
+        let plan = original.archive_plan().unwrap();
+        assert_eq!(plan.seat, AXIS);
+        assert_eq!(plan.epoch, a.controller_epoch);
+        assert_eq!(original.id(), retained.identity.operation_id);
+        assert_eq!(original.allowance().deadline(), deadline);
+        assert_eq!(retained.identity.decision_id, pending[0].id.to_string());
+        assert_eq!(retained.identity.revision, pending[0].revision);
+        let charged = original.captured_bytes();
+        let chunk = original.borrow_archive_chunk(&original).unwrap();
+        assert!(retained.operation.same_instance(&original));
+        drop(chunk);
+        assert_eq!(original.captured_bytes(), charged);
+        assert_eq!(a.decision_deadline(&pending[0]), deadline);
+        assert_eq!(h.starts.load(Ordering::SeqCst), 0);
+        assert_eq!(h.permits.available_permits(), 2);
+        assert!(!a.ownership.is_unsettled());
+    }
+
+    #[tokio::test]
+    async fn campaign_archive_fit_refuses_before_context_or_native_start() {
+        let h = harness();
+        let mut a = runner(&h, AXIS, Script::Plays, RunLimits::default());
+        // Configuration construction is inert; the ORIGINAL operation's fixed
+        // conversion reserve exceeds 16 MiB and must refuse without a fallback.
+        let root = std::env::temp_dir().join("x".repeat(4000));
+        a.ownership = RunnerOwnership::for_campaign(archive_configuration(&root));
+        let pending = a.pending().await;
+        assert!(matches!(a.install_context(&pending[0]),
+            Err(SeatEnd::Failed(PauseReason::CliError(ref reason)))
+                if reason == &crate::host::HostRefusal::CaptureOverflow.to_string()));
+        assert!(a.ownership.archive.is_some());
+        assert!(a.ownership.context.is_none());
+        assert_eq!(h.starts.load(Ordering::SeqCst), 0);
+        assert_eq!(h.permits.available_permits(), 2);
+        assert!(!a.ownership.is_unsettled());
+    }
+
+    #[tokio::test]
+    async fn expired_campaign_decision_retains_original_context_and_credit() {
+        let h = harness();
+        let mut a = runner(&h, AXIS, Script::Plays, RunLimits::default());
+        let root = std::env::temp_dir().join("synthetic-expired-runner-archive-no-io");
+        a.ownership = RunnerOwnership::for_campaign(archive_configuration(&root));
+        let pending = a.pending().await;
+        a.install_context(&pending[0]).unwrap();
+        let original = a.ownership.context.as_ref().unwrap().operation.clone();
+        let deadline = original.allowance().deadline();
+        let charged = original.captured_bytes();
+        // No wall-clock sleep or synthetic ACK. The existing decision ceiling
+        // shortens admission only; it does not alter/release the retained original.
+        a.ownership.decision.as_mut().unwrap().2 = Instant::now() - Duration::from_secs(1);
+        assert_eq!(
+            a.install_context(&pending[0]),
+            Err(SeatEnd::Paused(PauseReason::TurnTimeout))
+        );
+        assert!(
+            a.ownership
+                .context
+                .as_ref()
+                .unwrap()
+                .operation
+                .same_instance(&original)
+        );
+        assert_eq!(original.allowance().deadline(), deadline);
+        assert_eq!(original.captured_bytes(), charged);
+        assert!(original.archive_plan().is_some());
+        assert_eq!(h.starts.load(Ordering::SeqCst), 0);
+        assert_eq!(h.permits.available_permits(), 2);
+    }
+
+    #[tokio::test]
+    async fn activation_closed_does_not_start_or_fail_the_seat() {
+        let h = harness();
+        let closed = crate::host_fixture::FixtureHost::explicit(
+            h.game.clone(),
+            h.stored.clone(),
+            [(AXIS, 1), (COMMONWEALTH, 1)].into(),
+        );
+        closed.set_activation(false);
+        let mut a = runner(&h, AXIS, Script::Plays, RunLimits::default());
+        a.host = RunnerHost {
+            admission: closed.clone(),
+            forced: closed,
+        };
+        assert_eq!(
+            a.run().await,
+            SeatEnd::Closed(crate::host::HostRefusal::WaitingForActivation)
+        );
+        assert_eq!(h.starts.load(Ordering::SeqCst), 0);
+        assert_eq!(a.state.borrow().status, SeatStatus::Idle);
+        assert_eq!(h.permits.available_permits(), 2);
+        assert!(!a.ownership.is_unsettled());
+        assert_eq!(
+            h.game.observe(AXIS).await["history"]
+                .as_array()
+                .unwrap()
+                .len(),
+            0
+        );
+    }
+
+    #[tokio::test]
+    async fn unknown_cleanup_keeps_original_permit_and_refuses_reentry() {
+        let h = harness();
+        let mut a = runner(
+            &h,
+            AXIS,
+            Script::CleanupUnknown,
+            RunLimits {
+                max_nudges: 0,
+                ..RunLimits::default()
+            },
+        );
+        assert!(
+            matches!(a.run().await, SeatEnd::Paused(PauseReason::CliError(ref reason)) if reason.contains("Unsettled"))
+        );
+        assert!(a.ownership.is_unsettled());
+        assert_eq!(a.state.borrow().status, SeatStatus::Paused);
+        let original_reason = a.state.borrow().reason.clone();
+        assert_eq!(h.permits.available_permits(), 1);
+        assert!(
+            matches!(a.run().await, SeatEnd::Paused(PauseReason::CliError(ref reason)) if reason.contains("Unsettled"))
+        );
+        assert_eq!(a.state.borrow().reason, original_reason);
+        assert_eq!(h.starts.load(Ordering::SeqCst), 1);
+        assert_eq!(h.permits.available_permits(), 1);
+        // SAME inert driver now reports its actual cleanup observation. No owner replacement,
+        // drop, timer or permit reacquisition substitutes for the next successful stop.
+        h.cleanup_observed.store(true, Ordering::SeqCst);
+        a.settle_owned().await.unwrap();
+        assert_eq!(h.permits.available_permits(), 2);
+        assert!(!a.ownership.is_unsettled());
+    }
+
+    #[tokio::test]
+    async fn canceled_borrowed_run_retains_same_session_and_permit_until_stop() {
+        let h = harness();
+        let mut a = runner(&h, AXIS, Script::StartWait, RunLimits::default());
+        assert!(
+            tokio::time::timeout(Duration::from_millis(1), a.run())
+                .await
+                .is_err()
+        );
+        assert!(a.ownership.is_unsettled());
+        assert!(a.ownership.native_entered);
+        assert_eq!(h.starts.load(Ordering::SeqCst), 1);
+        assert_eq!(h.permits.available_permits(), 1);
+        assert!(
+            matches!(a.run().await, SeatEnd::Paused(PauseReason::CliError(ref reason)) if reason.contains("Unsettled"))
+        );
+        assert_eq!(h.starts.load(Ordering::SeqCst), 1);
+        a.settle_owned().await.unwrap();
+        assert!(!a.ownership.is_unsettled());
+        assert_eq!(h.permits.available_permits(), 2);
+    }
+
+    #[tokio::test]
+    async fn same_revision_deadline_and_permit_wait_never_renew() {
+        let h = harness();
+        let mut a = runner(
+            &h,
+            AXIS,
+            Script::Plays,
+            RunLimits {
+                turn_timeout: Duration::from_millis(20),
+                ..RunLimits::default()
+            },
+        );
+        let request = h.game.pending(AXIS).await.remove(0);
+        let first = a.decision_deadline(&request);
+        tokio::time::sleep(Duration::from_millis(1)).await;
+        assert_eq!(a.decision_deadline(&request), first);
+        a.permits = Arc::new(Semaphore::new(0));
+        assert_eq!(a.run().await, SeatEnd::Paused(PauseReason::TurnTimeout));
+        assert_eq!(h.starts.load(Ordering::SeqCst), 0);
+        assert!(!a.ownership.native_entered);
+        assert_eq!(a.decision_deadline(&request), first);
     }
 
     #[tokio::test]

@@ -261,7 +261,7 @@ pub(crate) fn finish(
         }
         loop {
             if let Some(outcome) = s.land.breakdown.window.outcomes.front() {
-                if super::baseline::plan(c, s, outcome).is_none() {
+                if super::baseline::plan_for_stop(c, s, outcome).is_none() {
                     return Err(EngineError::Unsupported {
                         case: "land:21.43".into(),
                         detail: "breakdown allocation could not be resolved".into(),

@@ -20,12 +20,23 @@ use crate::transcript::{LocalTranscript, StoredEntry, TranscriptSink};
 
 /// What a toy run produced.
 pub struct DemoReport {
+    /// Actual runner/child/permit owners; a caller must retain these on uncertain completion.
+    pub retained_runners: Vec<SeatRunner>,
+    // SAME listener/router association remains owned while any original runner is unsettled.
+    // Returning the report must not silently invoke McpServer::drop behind that runner.
+    retained_mcp: Option<McpServer>,
     pub ends: Vec<(SeatId, SeatEnd)>,
     pub transcript: Vec<StoredEntry>,
     pub outcome: Option<Value>,
     pub tool_calls: Vec<(SeatId, u64)>,
     pub game: Arc<dyn GameBackend>,
     pub router: Arc<ToolRouter>,
+}
+
+impl DemoReport {
+    pub fn has_retained_owners(&self) -> bool {
+        !self.retained_runners.is_empty() || self.retained_mcp.is_some()
+    }
 }
 
 pub const TOY_DESCRIPTION: &str = "The game is a two-player card duel (Number Duel): each seat holds a \
@@ -40,7 +51,9 @@ pub async fn play_toy_game(
     make_driver: impl Fn(SeatId, String, TranscriptSink, String) -> Box<dyn SeatDriver>,
 ) -> DemoReport {
     let seats = vec![AXIS, COMMONWEALTH];
-    let game: Arc<dyn GameBackend> = Arc::new(NumberDuel::game(seed));
+    let toy = Arc::new(NumberDuel::game(seed));
+    let host = crate::toy_host::ToyHost::fresh_number_duel(toy.clone());
+    let game: Arc<dyn GameBackend> = toy;
     let memory: Arc<dyn SeatMemory> = Arc::new(InMemorySeatMemory::new(seats.clone()));
     let router = Arc::new(ToolRouter::new(game.clone(), memory.clone(), &seats));
     let prompts = Arc::new(DefaultPrompts {
@@ -82,6 +95,11 @@ pub async fn play_toy_game(
             controller_epoch: 1,
             driver: make_driver(*seat, url, sink.clone(), prompts.system_prompt(*seat)),
             game: game.clone(),
+            host: crate::run::RunnerHost {
+                admission: host.clone(),
+                forced: host.clone(),
+            },
+            ownership: crate::run::RunnerOwnership::empty(),
             memory: memory.clone(),
             router: router.clone(),
             sink: sink.clone(),
@@ -94,14 +112,30 @@ pub async fn play_toy_game(
             stop: stop_rx.clone(),
         };
         let seat = *seat;
-        tasks.push(tokio::spawn(async move { (seat, runner.run().await) }));
+        tasks.push(tokio::spawn(async move {
+            let end = runner.run().await;
+            (seat, end, runner)
+        }));
     }
     let mut ends = Vec::new();
+    let mut retained_runners = Vec::new();
     for t in tasks {
-        ends.push(t.await.expect("runner task"));
+        let (seat, end, runner) = t.await.expect("runner task");
+        ends.push((seat, end));
+        if runner.ownership.is_unsettled() {
+            retained_runners.push(runner);
+        }
     }
-    sink.flush().await;
+    // Each runner already observed its bounded drain. An additional unbounded flush could
+    // strand the returned foreground owners after an uncertain result.
+    let retained_mcp = if retained_runners.is_empty() {
+        None
+    } else {
+        Some(server)
+    };
     DemoReport {
+        retained_runners,
+        retained_mcp,
         ends,
         transcript: store.log(),
         outcome: game.outcome().await,

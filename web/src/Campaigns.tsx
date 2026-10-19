@@ -71,6 +71,14 @@ export function CampaignControl({
     [busy, setBusy] = useState(false),
     [error, setError] = useState('')
   const path = `/api/campaigns/${encodeURIComponent(campaign)}`
+  const awaitingActivation = state === 'recovered_awaiting_activation'
+  const resume = state === 'paused' || awaitingActivation
+  const disabled =
+    busy ||
+    history ||
+    !access.session.operator ||
+    perspective !== 'operator' ||
+    !(state === 'running' || resume)
   useEffect(() => {
     const abort = new AbortController()
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -107,14 +115,13 @@ export function CampaignControl({
     }
   }, [access, path, perspective])
   async function toggle() {
-    if (!access.session.operator || history || perspective !== 'operator')
-      return
+    if (disabled) return
     setBusy(true)
     setError('')
     try {
       const data = await request(
         access,
-        `${path}/${state === 'paused' ? 'resume' : 'pause'}`,
+        `${path}/${resume ? 'resume' : 'pause'}`,
         { method: 'POST' },
       )
       if (
@@ -134,22 +141,13 @@ export function CampaignControl({
   return (
     <>
       <span className="view-note" role="status">
-        Campaign {state}
+        Campaign {awaitingActivation ? 'recovered, awaiting activation' : state}
         {error && ` · ${error}`}
       </span>
-      <button
-        disabled={
-          busy ||
-          history ||
-          !access.session.operator ||
-          perspective !== 'operator' ||
-          !['running', 'paused'].includes(state)
-        }
-        onClick={() => void toggle()}
-      >
+      <button disabled={disabled} onClick={() => void toggle()}>
         {busy
           ? 'Applying control…'
-          : state === 'paused'
+          : resume
             ? 'Resume campaign'
             : 'Pause campaign'}
       </button>

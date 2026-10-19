@@ -10,11 +10,15 @@
 pub mod automatic;
 pub mod demo;
 pub mod driver;
+pub mod failed_evidence;
 pub mod game;
 pub mod host;
+#[cfg(test)]
+mod host_fixture;
 pub mod mcp;
 pub mod memory;
 pub mod operation;
 pub mod run;
 pub mod toy;
+mod toy_host;
 pub mod transcript;

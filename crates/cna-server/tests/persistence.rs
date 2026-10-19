@@ -279,6 +279,201 @@ fn scripted<R: Ruleset>(campaign: &mut Campaign<R>) {
     }
 }
 
+// Synthetic rejected-input pair: committed state and every ordinary projection
+// are identical; only the same-evaluation private input varies. No real holdings
+// or retained operator evidence is read by this fixture.
+struct PrivateFailureProbe;
+impl Ruleset for PrivateFailureProbe {
+    type State = State;
+    type Content = u32;
+    fn profile_id(&self) -> &str { "tiny-v1" }
+    fn advance(&self, secret: &u32, state: &mut State, cx: &mut Cx<'_>) -> Result<Progress, EngineError> {
+        cna_core::diagnostic::record(|| {
+            if *secret == 0 { return cna_core::diagnostic::PrivatePayload::empty(); }
+            cna_core::diagnostic::PrivatePayload::from_encoded(
+                serde_json::to_vec(&json!({"version":1,"quantity":secret})).unwrap(),
+            ).unwrap()
+        });
+        Tiny { unsupported: true, empty_progress: false, impossible: false }.advance(&(), state, cx)
+    }
+    fn respond(&self, _: &u32, state: &mut State, response: &DecisionResponse, cx: &mut Cx<'_>) -> Result<(), Rejection> {
+        rules().respond(&(), state, response, cx)
+    }
+    fn pending(&self, _: &u32, state: &State) -> Vec<DecisionRequest> { rules().pending(&(), state) }
+    fn observe(&self, _: &u32, state: &State, perspective: Perspective) -> Value { rules().observe(&(), state, perspective) }
+    fn view(&self, _: &u32, state: &State, perspective: Perspective) -> ViewState { rules().view(&(), state, perspective) }
+}
+fn private_probe(path: &std::path::Path, secret: u32) -> Campaign<PrivateFailureProbe> {
+    let meta = CampaignMeta {
+        id: "tiny".into(), scenario_id: "tiny".into(), rules_profile: "tiny-v1".into(), title: "Synthetic".into(),
+        seats: SeatId::all().map(|s| cna_protocol::SeatInfo {
+            id: s.to_string(), side: s.side, role: s.role, controller: None, status: cna_protocol::SeatStatus::Idle,
+        }).collect(),
+    };
+    Campaign::create(path, PrivateFailureProbe, secret, Game {
+        state: State::default(), rng: CampaignRng::from_seed([7; 32]).state(),
+    }, meta, pins()).unwrap()
+}
+
+#[test]
+fn private_rejected_inputs_do_not_change_any_committed_perspective_or_replay() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut public = Vec::new();
+    let mut private = Vec::new();
+    for secret in [13, 71] {
+        let path = dir.path().join(format!("pair-{secret}.sqlite"));
+        let mut campaign = private_probe(&path, secret);
+        let before = campaign.state_hash().unwrap();
+        let error = campaign.advance().unwrap_err().to_string();
+        assert_eq!(campaign.state_hash().unwrap(), before);
+        assert!(campaign.stop_is_durable());
+        let mut surfaces = Vec::new();
+        for perspective in Perspective::all() {
+            surfaces.push(json!({
+                "metadata":campaign.metadata(perspective),
+                "view":campaign.view(perspective).unwrap(),
+                "events":campaign.events_after(perspective,0,512).unwrap(),
+                "transcripts":SeatId::all().map(|s| campaign.transcripts_after(perspective,s,0,512).unwrap()).collect::<Vec<_>>(),
+            }));
+        }
+        public.push(json!({"error":error,"status":campaign.status(),"surfaces":surfaces}));
+        drop(campaign);
+        let records = cna_server::operator_failures::read_local(&path).unwrap();
+        assert_eq!(records.len(),1);
+        assert_eq!(format!("{:?}", records[0]),"OperatorFailure([redacted])");
+        private.push(records[0].private_payload().unwrap().as_bytes().to_vec());
+        let recovered = Campaign::recover(&path,PrivateFailureProbe,secret,&pins()).unwrap();
+        assert_eq!(recovered.state_hash().unwrap(),before);
+        assert!(matches!(recovered.status(),CampaignStatus::Stopped { .. }));
+    }
+    assert_eq!(public[0],public[1]);
+    assert_ne!(private[0],private[1]);
+}
+
+#[test]
+fn private_insert_failure_rolls_back_combined_stop_then_commits_generic_stop_only() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("fallback.sqlite");
+    let mut campaign = private_probe(&path,13);
+    let before = campaign.state_hash().unwrap();
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch("CREATE TABLE stop_writes(n INTEGER); CREATE TRIGGER count_stop AFTER UPDATE OF status ON campaign BEGIN INSERT INTO stop_writes VALUES(1); END; CREATE TRIGGER reject_private BEFORE INSERT ON operator_failures BEGIN SELECT RAISE(FAIL,'synthetic diagnostic storage failure'); END;").unwrap();
+    assert!(campaign.advance().is_err());
+    assert!(campaign.stop_is_durable());
+    assert!(campaign.private_capture_unavailable());
+    assert_eq!(campaign.state_hash().unwrap(),before);
+    assert_eq!(db.query_row("SELECT count(*) FROM operator_failures",[],|r|r.get::<_,u64>(0)).unwrap(),0);
+    assert_eq!(db.query_row("SELECT count(*) FROM stop_writes",[],|r|r.get::<_,u64>(0)).unwrap(),1);
+    let first = campaign.status().clone();
+    assert!(campaign.advance().is_err());
+    assert_eq!(campaign.status(),&first);
+    assert_eq!(db.query_row("SELECT count(*) FROM stop_writes",[],|r|r.get::<_,u64>(0)).unwrap(),1);
+    drop(campaign);
+    let recovered = Campaign::recover(&path,PrivateFailureProbe,13,&pins()).unwrap();
+    assert_eq!(recovered.status(),&first);
+    assert_eq!(cna_server::operator_failures::read_local(&path).unwrap()[0].availability,cna_server::operator_failures::Availability::Missing);
+}
+
+#[test]
+fn failed_stop_only_is_non_durable_and_restart_requires_explicit_activation() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("non-durable.sqlite");
+    let mut campaign = private_probe(&path,13);
+    let before = campaign.state_hash().unwrap();
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch("CREATE TRIGGER reject_stop BEFORE UPDATE OF status ON campaign BEGIN SELECT RAISE(FAIL,'synthetic all stop writes unavailable'); END;").unwrap();
+    assert!(campaign.advance().is_err());
+    assert!(matches!(campaign.status(),CampaignStatus::Stopped { .. }));
+    assert!(!campaign.stop_is_durable());
+    assert!(campaign.private_capture_unavailable());
+    assert_eq!(campaign.state_hash().unwrap(),before);
+    let persisted: String = db.query_row("SELECT status FROM campaign",[],|r|r.get(0)).unwrap();
+    assert_eq!(serde_json::from_str::<CampaignStatus>(&persisted).unwrap(),CampaignStatus::Running);
+    assert_eq!(db.query_row("SELECT count(*) FROM operator_failures",[],|r|r.get::<_,u64>(0)).unwrap(),0);
+    drop(campaign);
+    db.execute_batch("DROP TRIGGER reject_stop").unwrap();
+    let mut recovered = Campaign::recover(&path,PrivateFailureProbe,13,&pins()).unwrap();
+    assert!(recovered.recovered_awaiting_activation());
+    assert_eq!(recovered.state_hash().unwrap(),before);
+    assert!(matches!(recovered.advance(),Err(Error::NotRunning)));
+    recovered.set_paused(false).unwrap();
+    assert!(recovered.advance().is_err());
+    assert!(recovered.stop_is_durable());
+    assert_eq!(recovered.state_hash().unwrap(),before);
+    assert_eq!(cna_server::operator_failures::read_local(&path).unwrap()[0].availability,cna_server::operator_failures::Availability::Available);
+}
+
+#[test]
+fn ignored_private_insert_is_unavailable_and_rolls_back_before_one_stop_only_write() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("ignored-private-insert.sqlite");
+    let mut campaign = private_probe(&path,13);
+    let before = campaign.state_hash().unwrap();
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch("CREATE TABLE stop_writes(n INTEGER); CREATE TRIGGER count_stop AFTER UPDATE OF status ON campaign BEGIN INSERT INTO stop_writes VALUES(1); END; CREATE TRIGGER ignore_private BEFORE INSERT ON operator_failures BEGIN SELECT RAISE(IGNORE); END;").unwrap();
+    assert!(campaign.advance().is_err());
+    assert!(campaign.stop_is_durable());
+    assert!(campaign.private_capture_unavailable());
+    assert_eq!(campaign.state_hash().unwrap(),before);
+    assert_eq!(db.query_row("SELECT count(*) FROM operator_failures",[],|r|r.get::<_,u64>(0)).unwrap(),0);
+    assert_eq!(db.query_row("SELECT count(*) FROM stop_writes",[],|r|r.get::<_,u64>(0)).unwrap(),1);
+    let first = campaign.status().clone();
+    assert!(campaign.advance().is_err());
+    assert_eq!(campaign.status(),&first);
+    assert_eq!(db.query_row("SELECT count(*) FROM stop_writes",[],|r|r.get::<_,u64>(0)).unwrap(),1);
+    drop(campaign);
+    let recovered = Campaign::recover(&path,PrivateFailureProbe,13,&pins()).unwrap();
+    assert_eq!(recovered.status(),&first);
+    assert_eq!(cna_server::operator_failures::read_local(&path).unwrap()[0].availability,
+        cna_server::operator_failures::Availability::Missing);
+}
+
+#[test]
+fn empty_encoder_fallback_preserves_generic_stop_and_never_claims_a_record() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("empty-capture.sqlite");
+    let mut campaign = private_probe(&path,0);
+    let before = campaign.state_hash().unwrap();
+    assert!(campaign.advance().is_err());
+    assert!(campaign.stop_is_durable());
+    assert!(campaign.private_capture_unavailable());
+    assert_eq!(campaign.state_hash().unwrap(),before);
+    let records = cna_server::operator_failures::read_local(&path).unwrap();
+    assert_eq!(records[0].availability,cna_server::operator_failures::Availability::Missing);
+    assert!(records[0].private_payload().is_none());
+}
+
+#[test]
+fn zero_row_stop_write_never_claims_durability_or_commits_a_private_only_row() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("ignored-stop.sqlite");
+    let mut campaign = private_probe(&path,13);
+    let before = campaign.state_hash().unwrap();
+    let db = rusqlite::Connection::open(&path).unwrap();
+    // SQLite's IGNORE is a numeric successful statement with ZERO affected
+    // campaign rows, not proof that the generic stop was persisted.
+    db.execute_batch("CREATE TRIGGER ignore_stop BEFORE UPDATE OF status ON campaign BEGIN SELECT RAISE(IGNORE); END;").unwrap();
+    assert!(campaign.advance().is_err());
+    assert!(matches!(campaign.status(),CampaignStatus::Stopped { .. }));
+    assert!(!campaign.stop_is_durable());
+    assert!(campaign.private_capture_unavailable());
+    assert_eq!(campaign.state_hash().unwrap(),before);
+    let persisted:String = db.query_row("SELECT status FROM campaign",[],|r|r.get(0)).unwrap();
+    assert_eq!(serde_json::from_str::<CampaignStatus>(&persisted).unwrap(),CampaignStatus::Running);
+    assert_eq!(db.query_row("SELECT count(*) FROM operator_failures",[],|r|r.get::<_,u64>(0)).unwrap(),0);
+    let first = campaign.status().clone();
+    assert!(campaign.advance().is_err());
+    assert_eq!(campaign.status(),&first);
+    drop(campaign);
+    db.execute_batch("DROP TRIGGER ignore_stop").unwrap();
+    let mut recovered = Campaign::recover(&path,PrivateFailureProbe,13,&pins()).unwrap();
+    assert!(recovered.recovered_awaiting_activation());
+    assert!(matches!(recovered.advance(),Err(Error::NotRunning)));
+    recovered.set_paused(false).unwrap();
+    assert!(recovered.advance().is_err());
+    assert!(recovered.stop_is_durable());
+}
+
 #[test]
 fn duplicate_validation_and_handover_do_not_touch_secret_state_or_rng() {
     let dir = tempfile::tempdir().unwrap();
@@ -350,6 +545,7 @@ fn atomic_failure_rolls_back_command_events_pending_rng_and_memory() {
     let mut restored = Campaign::recover(&path, rules(), (), &pins()).unwrap();
     assert_eq!(before, restored.state_hash().unwrap());
     db.execute_batch("DROP TRIGGER fail_stream").unwrap();
+    restored.set_paused(false).unwrap();
     restored.submit(order.clone()).unwrap();
     assert!(restored.submit(order).unwrap().duplicate);
 }
@@ -1014,6 +1210,7 @@ fn opening_index_failure_rolls_back_the_entire_accepted_transition() {
     drop(game);
     let mut restored = Campaign::recover(&path, rules(), (), &pins()).unwrap();
     assert_eq!(before, restored.state_hash().unwrap());
+    restored.set_paused(false).unwrap();
     restored.advance().unwrap();
     assert_eq!(restored.pending().len(), 10);
     assert!(
@@ -1198,6 +1395,104 @@ fn p_index(p: Perspective) -> usize {
     Perspective::all()
         .position(|candidate| candidate == p)
         .unwrap()
+}
+
+#[test]
+fn recovered_running_requires_zero_write_activation_with_and_without_pending() {
+    for with_pending in [false, true] {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("activation.sqlite");
+        let mut original = campaign(&path, rules());
+        assert!(!original.recovered_awaiting_activation());
+        if with_pending {
+            original.advance().unwrap();
+        }
+        let before = original.state_hash().unwrap();
+        let pending = original.pending();
+        let views = original.views(&Perspective::all().collect::<Vec<_>>()).unwrap();
+        let bindings: Vec<_> = SeatId::all().map(|s| original.binding(s).clone()).collect();
+        drop(original);
+        let mut restored = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+        assert_eq!(restored.status(), &CampaignStatus::Running);
+        assert!(restored.recovered_awaiting_activation());
+        assert!(matches!(restored.step(&NoCandidates), Ok(Step::Idle)));
+        if with_pending {
+            let seat = SeatId::all().next().unwrap();
+            assert!(matches!(restored.submit(response(&restored, seat)), Err(Error::NotRunning)));
+        } else {
+            assert!(matches!(restored.advance(), Err(Error::NotRunning)));
+        }
+        assert_eq!(restored.state_hash().unwrap(), before);
+        assert_eq!(restored.pending(), pending);
+        assert_eq!(restored.views(&Perspective::all().collect::<Vec<_>>()).unwrap(), views);
+        assert_eq!(SeatId::all().map(|s| restored.binding(s).clone()).collect::<Vec<_>>(), bindings);
+        let db = rusqlite::Connection::open(&path).unwrap();
+        let committed: (u64, String, String, String) = db.query_row(
+            "SELECT revision, rng, state_hash, status FROM campaign WHERE id=1",
+            [], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+        ).unwrap();
+        // A real UPDATE would fail. Opening AlreadyRunning must have no status write.
+        db.execute_batch("CREATE TRIGGER no_activation_write BEFORE UPDATE ON campaign BEGIN SELECT RAISE(ABORT,'activation must be memory-only'); END;").unwrap();
+        restored.set_paused(false).unwrap();
+        assert!(!restored.recovered_awaiting_activation());
+        assert_eq!(restored.status(), &CampaignStatus::Running);
+        assert_eq!(restored.state_hash().unwrap(), before);
+        let after: (u64, String, String, String) = db.query_row(
+            "SELECT revision, rng, state_hash, status FROM campaign WHERE id=1",
+            [], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+        ).unwrap();
+        assert_eq!(committed, after);
+        db.execute_batch("DROP TRIGGER no_activation_write").unwrap();
+        if with_pending {
+            let seat = SeatId::all().next().unwrap();
+            let order = response(&restored, seat);
+            restored.submit(order.clone()).unwrap();
+            assert!(restored.submit(order).unwrap().duplicate);
+        } else {
+            restored.advance().unwrap();
+        }
+        drop(restored);
+        let restarted = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+        assert!(restarted.recovered_awaiting_activation(), "every restart closes the barrier again");
+    }
+}
+
+#[tokio::test]
+async fn recovered_writer_publishes_gate_before_any_baseline_or_automatic_work() {
+    use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("actor-activation.sqlite");
+    let mut original = campaign(&path, rules());
+    original.advance().unwrap();
+    for seat in SeatId::all() {
+        original.handover(seat, Some(ControllerInfo {
+            kind: ControllerKind::Scripted, label: "aggressive".into(),
+        }), json!({"mode":"aggressive"})).unwrap();
+    }
+    let before = original.state_hash().unwrap();
+    drop(original);
+    let restored = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+    let calls = Arc::new(AtomicUsize::new(0));
+    let record = calls.clone();
+    let handle = cna_server::actor::CampaignHandle::spawn_with_fallible_baseline(
+        restored, &path, Box::new(move |_, _, _| {
+            record.fetch_add(1, Ordering::SeqCst);
+            Ok(json!(2))
+        }),
+    ).unwrap();
+    assert!(handle.recovered_awaiting_activation());
+    assert_eq!(handle.status(), CampaignStatus::Running);
+    // These acknowledgements force the real writer through control/idle boundaries.
+    // No sleeps, mock gate or Paused fixture can establish the Running witness.
+    for _ in 0..3 {
+        assert_eq!(handle.run_boundary().await.unwrap(), None);
+    }
+    handle.shutdown().await.unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    let final_state = Campaign::recover(&path, rules(), (), &pins()).unwrap();
+    assert_eq!(final_state.state_hash().unwrap(), before);
+    assert_eq!(final_state.status(), &CampaignStatus::Running);
+    assert_eq!(final_state.pending().len(), 10);
 }
 
 // A real actor observer with a controllable reader stall. The rules still use Tiny's exact

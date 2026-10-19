@@ -66,6 +66,15 @@ pub fn create(
     data: &Path,
     request: CreateRequest,
 ) -> Result<CampaignHandle, Error> {
+    let (campaign, path, strict) = prepare_create(directory, data, request)?;
+    CampaignHandle::spawn_with_policy(campaign, &path, movement_policy_with_profile(strict))
+}
+
+fn prepare_create(
+    directory: &Path,
+    data: &Path,
+    request: CreateRequest,
+) -> Result<(Campaign<Cna>, std::path::PathBuf, bool), Error> {
     if request.kind != CampaignKind::Cna {
         return Err(Error::Invalid("CNA factory requires kind cna".into()));
     }
@@ -128,14 +137,137 @@ pub fn create(
     if request.paused {
         campaign.set_paused(true)?;
     }
-    CampaignHandle::spawn_with_policy(campaign, &path, movement_policy_with_profile(strict))
+    Ok((campaign, path, strict))
 }
 pub fn recover(path: &Path, data: &Path, profile: &str) -> Result<CampaignHandle, Error> {
+    let (campaign, strict) = prepare_recover(path, data, profile)?;
+    CampaignHandle::spawn_with_policy(campaign, path, movement_policy_with_profile(strict))
+}
+
+fn prepare_recover(path: &Path, data: &Path, profile: &str) -> Result<(Campaign<Cna>, bool), Error> {
     let ruleset = ruleset(profile)?;
     let (content, pins) = inputs(data, profile)?;
     let strict = ruleset.strict;
     let campaign = Campaign::recover(path, ruleset, content, &pins)?;
-    CampaignHandle::spawn_with_policy(campaign, path, movement_policy_with_profile(strict))
+    Ok((campaign, strict))
+}
+
+pub(crate) fn create_owned<const N: usize>(
+    directory: &Path,
+    data: &Path,
+    request: CreateRequest,
+    claimed: crate::owned_writer::VacantStandard<'_, Result<(), Error>, N>,
+) -> Result<CampaignHandle, crate::owned_writer::WriterStartFailure> {
+    crate::owned_row_envelope::title(&request.title)?;
+    let (campaign, path, strict) = prepare_create(directory, data, request)?;
+    CampaignHandle::spawn_owned_claimed(campaign, &path, None,
+        Box::new(crate::scripted::NoCandidates), Some(movement_policy_with_profile(strict)), claimed)
+}
+
+pub(crate) fn recover_owned<const N: usize>(
+    path: &Path,
+    data: &Path,
+    profile: &str,
+    claimed: crate::owned_writer::VacantStandard<'_, Result<(), Error>, N>,
+) -> Result<CampaignHandle, crate::owned_writer::WriterStartFailure> {
+    let ruleset = ruleset(profile)?;
+    let (content, pins) = inputs(data, profile)?;
+    let strict = ruleset.strict;
+    let campaign = Campaign::recover_owned(path, ruleset, content, &pins)?;
+    CampaignHandle::spawn_owned_claimed(campaign, path, None,
+        Box::new(crate::scripted::NoCandidates), Some(movement_policy_with_profile(strict)), claimed)
+}
+
+
+// PRIVATE guarded preparation. Host admits the existing storage directory;
+// it alone creates/opens the leaf and retains its namespace guards.
+pub(crate) struct GuardedFresh {
+    ruleset: Cna, content: CnaContent, game: Game<Cna>, meta: CampaignMeta, pins: Pins,
+    kind: ControllerKind, controller: String, paused: bool,
+}
+pub(crate) fn prepare_guarded_fresh<const N: usize>(
+    directory: &Path, data: &Path, request: CreateRequest,
+    record: &crate::owned_writer::WriterRecord<N>,
+) -> Result<GuardedFresh, crate::owned_writer::WriterStartFailure> {
+    crate::owned_row_envelope::title(&request.title)?;
+    if request.kind != CampaignKind::Cna {
+        return Err(Error::Invalid("CNA factory requires kind cna".into()).into());
+    }
+    let ruleset = ruleset(&request.rules_profile)?;
+    let kind = match request.controller.as_str() {
+        "legal_random" | "pass_when_possible" => ControllerKind::Scripted,
+        "human" => ControllerKind::Human,
+        _ => {
+            return Err(Error::Invalid(
+                "CNA supports legal_random, pass_when_possible or human".into(),
+            ).into());
+        }
+    };
+    let (content, pins) = inputs(data, &request.rules_profile)?;
+    let state = State::new(&content).map_err(Error::Invalid)?;
+    if record.attempt_path().is_some() { return Err(Error::NotRunning.into()); }
+    let id = uuid::Uuid::new_v4().to_string();
+    let path = directory.join(format!("{id}.sqlite"));
+    record.retain_attempt_path(path).map_err(|_| Error::NotRunning)?;
+    let meta = CampaignMeta {
+        id,
+        scenario_id: "graziani".into(),
+        rules_profile: request.rules_profile,
+        title: request.title,
+        seats: SeatId::all()
+            .map(|s| SeatInfo {
+                id: s.to_string(),
+                side: s.side,
+                role: s.role,
+                controller: None,
+                status: SeatStatus::Idle,
+            })
+            .collect(),
+    };
+    Ok(GuardedFresh { ruleset, content, game: Game { state, rng: CampaignRng::from_seed(request.seed).state() },
+        meta, pins, kind, controller: request.controller, paused: request.paused })
+}
+
+impl GuardedFresh {
+    pub(crate) fn open_and_spawn<const N: usize>(self,
+        custody: &std::sync::Arc<cna_seats::seat_host::CampaignFileCustody>,
+        claimed: crate::owned_writer::VacantStandard<'_, Result<(), Error>, N>,
+    ) -> Result<CampaignHandle, crate::owned_writer::WriterStartFailure> {
+        let strict = self.ruleset.strict;
+        let mut campaign = Campaign::create_guarded(std::sync::Arc::clone(custody),
+            self.ruleset, self.content, self.game, self.meta, self.pins)?;
+    for seat in SeatId::all() {
+        campaign.handover(
+            seat,
+            Some(ControllerInfo {
+                kind: self.kind,
+                label: if self.kind == ControllerKind::Scripted {
+                    format!("scripted:{}", self.controller)
+                } else {
+                    "Human".into()
+                },
+            }),
+            serde_json::json!({"mode": self.controller}),
+        )?;
+    }
+    if self.paused {
+        campaign.set_paused(true)?;
+    }
+        CampaignHandle::spawn_owned_claimed(campaign, custody.protected_path(), None,
+            Box::new(crate::scripted::NoCandidates), Some(movement_policy_with_profile(strict)), claimed)
+    }
+}
+pub(crate) fn recover_guarded_owned<const N: usize>(
+    custody: &std::sync::Arc<cna_seats::seat_host::CampaignFileCustody>,
+    data: &Path, profile: &str,
+    claimed: crate::owned_writer::VacantStandard<'_, Result<(), Error>, N>,
+) -> Result<CampaignHandle, crate::owned_writer::WriterStartFailure> {
+    let ruleset = ruleset(profile)?;
+    let (content, pins) = inputs(data, profile)?;
+    let strict = ruleset.strict;
+    let campaign = Campaign::recover_guarded(std::sync::Arc::clone(custody), ruleset, content, &pins)?;
+    CampaignHandle::spawn_owned_claimed(campaign, custody.protected_path(), None,
+        Box::new(crate::scripted::NoCandidates), Some(movement_policy_with_profile(strict)), claimed)
 }
 
 #[cfg(test)]

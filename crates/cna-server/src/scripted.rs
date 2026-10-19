@@ -205,7 +205,7 @@ pub enum Step {
 impl<R: Ruleset> Campaign<R> {
     /// One safe boundary of the runner. Caller yields between steps for control requests.
     pub fn step(&mut self, candidates: &dyn Candidates) -> Result<Step, Error> {
-        if self.status() != &CampaignStatus::Running {
+        if self.recovered_awaiting_activation() || self.status() != &CampaignStatus::Running {
             return Ok(Step::Idle);
         }
         let pending = self.pending();

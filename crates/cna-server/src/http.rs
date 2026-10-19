@@ -32,6 +32,11 @@ use tower_http::{
     services::{ServeDir, ServeFile},
 };
 
+#[path = "owned_app.rs"]
+#[allow(dead_code)] // Private source stage; no binary owns this route yet.
+pub(crate) mod owned;
+use owned::FactoryRoute;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CampaignKind {
@@ -63,7 +68,7 @@ pub type Factory = Arc<dyn Fn(CreateRequest, &Path) -> Result<CampaignHandle, Er
 pub struct App {
     campaigns: Arc<RwLock<BTreeMap<String, CampaignHandle>>>,
     directory: PathBuf,
-    factory: Factory,
+    factory: FactoryRoute,
     port: u16,
     capabilities: Arc<Capabilities>,
 }
@@ -72,7 +77,7 @@ impl App {
         Self {
             campaigns: Arc::new(RwLock::new(BTreeMap::new())),
             directory,
-            factory,
+            factory: FactoryRoute::Legacy(factory),
             port,
             capabilities: Arc::new(Capabilities::new()),
         }
@@ -122,6 +127,12 @@ impl App {
             .ok_or_else(|| ApiError(StatusCode::NOT_FOUND, "unknown campaign".into()))
     }
     pub async fn shutdown(&self) {
+        if let FactoryRoute::Owned(endpoint) = &self.factory {
+            // Borrowed callback requests CLOSE only. Actual original creator,
+            // Host and writer joins belong to the independent outer owner.
+            let _ = endpoint.request_shutdown();
+            return;
+        }
         let handles: Vec<_> = self
             .campaigns
             .read()
@@ -297,7 +308,15 @@ async fn local_requests(
         request.extensions_mut().insert(grant);
     }
     let api = request.uri().path() == "/api" || request.uri().path().starts_with("/api/");
-    let mut response = next.run(request).await;
+    let blocked = api && match &app.factory {
+        FactoryRoute::Legacy(_) => false,
+        FactoryRoute::Owned(endpoint) => endpoint.check_admission().is_err(),
+    };
+    let mut response = if blocked {
+        StatusCode::SERVICE_UNAVAILABLE.into_response()
+    } else {
+        next.run(request).await
+    };
     response.headers_mut().insert(
         axum::http::header::REFERRER_POLICY,
         "no-referrer".parse().expect("header"),
@@ -366,7 +385,17 @@ async fn create(
     Json(request): Json<CreateRequest>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
     authorized(grant.operator())?;
-    let factory = app.factory.clone();
+    if let FactoryRoute::Owned(endpoint) = &app.factory {
+        let handle = endpoint.create(request).await.map_err(|_| ApiError(
+            StatusCode::SERVICE_UNAVAILABLE, "creation unavailable".into(),
+        ))?;
+        // The owned endpoint must only expose a parent-registered, bound writer.
+        // Its staged implementation returns BindingPending until that seam is
+        // implemented; no HTTP continuation performs legacy App::register here.
+        return Ok((StatusCode::CREATED, Json(json!(handle.header(Perspective::Operator).meta))));
+    }
+    let FactoryRoute::Legacy(factory) = &app.factory else { unreachable!("owned route returned above") };
+    let factory = factory.clone();
     let dir = app.directory.clone();
     let handle = tokio::task::spawn_blocking(move || factory(request, &dir))
         .await
@@ -389,14 +418,24 @@ async fn inspect_campaign(
     let p = perspective(&query)?;
     authorized(grant.campaign(&id) && grant.perspective(p))?;
     let handle = app.campaign(&id)?;
-    let status = match handle.status() {
+    let snapshot = handle.snapshot(p);
+    let (committed_status, awaiting_activation, stop_persisted) = snapshot.control_status();
+    let status = match committed_status {
+        CampaignStatus::Running
+            if p == Perspective::Operator && awaiting_activation =>
+        {
+            json!({"state":"recovered_awaiting_activation"})
+        }
         CampaignStatus::Stopped { error: _ } if p != Perspective::Operator => {
             json!({"state":"stopped"})
+        }
+        CampaignStatus::Stopped { .. } if !stop_persisted => {
+            json!({"state":"stopped","error":"stopped (not persisted)"})
         }
         other => json!(other),
     };
     Ok(Json({
-        let projection = handle.projection(p);
+        let projection = snapshot.projection();
         json!({"campaign":projection.meta,"status":status,"snapshot":projection})
     }))
 }

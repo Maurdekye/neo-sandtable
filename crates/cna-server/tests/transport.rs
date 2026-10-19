@@ -146,6 +146,194 @@ impl Server {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn recovered_running_operator_status_requires_deliberate_zero_write_resume() {
+    let dir = tempfile::tempdir().unwrap();
+    let original = sandbox::create(dir.path(),&data(),request("human",false)).unwrap();
+    let id = original.header(Perspective::Operator).meta.id;
+    pending(&original).await;
+    original.shutdown().await.unwrap();
+    let path = dir.path().join(format!("{id}.sqlite"));
+    let recovered = sandbox::recover(&path,&data()).unwrap();
+    let roots:Vec<_> = Perspective::all().map(|p|(p,recovered.projection(p))).collect();
+    let epochs:Vec<_> = SeatId::all().map(|s|(s,recovered.seat(s).binding.controller_epoch)).collect();
+    let db = rusqlite::Connection::open(&path).unwrap();
+    // This rejects every persisted control-status change; releasing the
+    // recovered committed-Running barrier must therefore perform ZERO writes.
+    db.execute_batch("CREATE TRIGGER no_recovery_activation_write BEFORE UPDATE OF status ON campaign BEGIN SELECT RAISE(FAIL,'synthetic activation must not persist'); END;").unwrap();
+    let server = Server::new(dir.path(),Some(recovered.clone())).await;
+    let operator = server.client();
+    let root = format!("{}/api/campaigns/{id}",server.url);
+    let observed = async {
+        let awaiting:Value = operator.get(format!("{root}?perspective=operator")).send().await?.json().await?;
+        let mut restricted = Vec::new();
+        for perspective in Perspective::all().filter(|p|*p!=Perspective::Operator) {
+            let token = match perspective {
+                Perspective::Side(side)=>server.app.side_token(&id,side).unwrap(),
+                Perspective::Seat(seat)=>server.app.seat_token(&id,seat).unwrap(),
+                Perspective::Operator=>unreachable!(),
+            };
+            let client = reqwest::Client::new();
+            let visible:Value = client.get(format!("{root}?perspective={perspective}"))
+                .bearer_auth(&token).send().await?.json().await?;
+            let denied = client.post(format!("{root}/resume")).bearer_auth(&token).send().await?.status();
+            restricted.push((visible,denied));
+        }
+        let resume = operator.post(format!("{root}/resume")).send().await?.status();
+        let running:Value = operator.get(format!("{root}?perspective=operator")).send().await?.json().await?;
+        Ok::<_,reqwest::Error>((awaiting,restricted,resume,running))
+    }.await;
+    // Always join the original actor/listener before assertions or propagation
+    // of a transport failure; no failed assertion abandons a writer thread.
+    server.stop().await;
+    let (awaiting,restricted,resume,running) = observed.unwrap();
+    assert_eq!(awaiting["status"],serde_json::json!({"state":"recovered_awaiting_activation"}));
+    let before_metadata = awaiting["campaign"].clone();
+    for (visible,denied) in restricted {
+        assert_eq!(visible["status"],serde_json::json!({"state":"running"}));
+        assert!(!visible.to_string().contains("awaiting_activation"));
+        assert_eq!(denied,reqwest::StatusCode::FORBIDDEN);
+    }
+    assert!(resume.is_success());
+    assert_eq!(running["status"],serde_json::json!({"state":"running"}));
+    assert_eq!(running["campaign"],before_metadata);
+    for (p,root) in roots { assert_eq!(recovered.projection(p),root); }
+    for (seat,epoch) in epochs { assert_eq!(recovered.seat(seat).binding.controller_epoch,epoch); }
+    assert_eq!(db.query_row("SELECT status FROM campaign",[],|r|r.get::<_,String>(0)).unwrap(),
+        serde_json::to_string(&CampaignStatus::Running).unwrap());
+}
+
+// Synthetic rejected-draft input. The committed game is identical in the pair;
+// the only difference is the operator-private same-evaluation capture. This
+// fixture never reads real holdings, a retained journal or a historical DB.
+struct PrivateTransportProbe;
+impl cna_core::engine::Ruleset for PrivateTransportProbe {
+    type State = u8;
+    type Content = u32;
+    fn profile_id(&self)->&str { "private-transport-test-v1" }
+    fn advance(&self, secret:&u32, draft:&mut u8, _: &mut cna_core::engine::Cx<'_>)
+        -> Result<cna_core::engine::Progress,cna_core::engine::EngineError> {
+        *draft = 9;
+        cna_core::diagnostic::record(|| cna_core::diagnostic::PrivatePayload::from_encoded(
+            serde_json::to_vec(&serde_json::json!({"version":1,"quantity":secret})).unwrap()).unwrap());
+        Err(cna_core::engine::EngineError::Invariant {detail:"fixed synthetic failure".into()})
+    }
+    fn respond(&self,_:&u32,_:&mut u8,_:&cna_core::decision::DecisionResponse,_:&mut cna_core::engine::Cx<'_>)
+        -> Result<(),cna_core::engine::Rejection> { unreachable!("no decisions in this fixture") }
+    fn pending(&self,_:&u32,_:&u8)->Vec<cna_core::decision::DecisionRequest> { vec![] }
+    fn observe(&self,_:&u32,state:&u8,_:Perspective)->Value { serde_json::json!(state) }
+    fn view(&self,_:&u32,_:&u8,_:Perspective)->cna_protocol::ViewState {
+        cna_protocol::ViewState {clock:cna_protocol::Clock {game_turn:1,date:"1940-09-15".into(),
+            stage:"synthetic".into(),op_stage:None,phase:"synthetic".into(),segment:None,
+            step:None,phasing:None},stacks:vec![],units:std::collections::BTreeMap::new(),markers:vec![],pending:vec![]}
+    }
+}
+fn private_transport_pins()->cna_server::Pins {
+    cna_server::Pins {rules_profile:"private-transport-test-v1".into(),
+        content_hash:"synthetic".into(),engine_version:"synthetic".into()}
+}
+fn private_transport_campaign(path:&Path,secret:u32)->cna_server::Campaign<PrivateTransportProbe> {
+    let pins = private_transport_pins();
+    cna_server::Campaign::create(path,PrivateTransportProbe,secret,cna_core::engine::Game {
+        state:0,rng:cna_core::dice::CampaignRng::from_seed([7;32]).state()},
+        cna_protocol::CampaignMeta {id:"private-pair".into(),scenario_id:"synthetic".into(),
+            rules_profile:pins.rules_profile.clone(),title:"Synthetic".into(),seats:vec![]},pins).unwrap()
+}
+
+async fn private_transport_surfaces(server:&Server)
+    -> Result<Vec<Value>,Box<dyn std::error::Error>> {
+    let id = "private-pair";
+    let root = format!("{}/api/campaigns/{id}",server.url);
+    let client = reqwest::Client::new();
+    let mut surfaces = Vec::new();
+    for perspective in Perspective::all() {
+        let token = match perspective {
+            Perspective::Operator=>server.app.operator_token().to_owned(),
+            Perspective::Side(side)=>server.app.side_token(id,side).unwrap(),
+            Perspective::Seat(seat)=>server.app.seat_token(id,seat).unwrap(),
+        };
+        let snapshot:Value = client.get(format!("{root}?perspective={perspective}"))
+            .bearer_auth(&token).send().await?.error_for_status()?.json().await?;
+        // There is deliberately no network reader, including for the ordinary
+        // operator capability. Only the separate host-local CLI can read it.
+        let diagnostic = client.get(format!("{root}/operator-failures"))
+            .bearer_auth(&token).send().await?.status().as_u16();
+        let own:SeatId = "axis.commander".parse().unwrap();
+        let transcript = client.get(format!("{root}/transcripts?perspective={perspective}&seat={own}"))
+            .bearer_auth(&token).send().await?;
+        let transcript_status = transcript.status().as_u16();
+        let transcript_body:Value = transcript.json().await?;
+        let (mut socket,_) = tokio_tungstenite::connect_async(format!(
+            "{}/api/campaigns/{id}/stream?cap={token}",server.url.replace("http:","ws:"))).await?;
+        let frames = async {
+            socket.send(Message::Text(serde_json::to_string(&ClientMessage::Subscribe {
+                perspective:perspective.to_string(),from_seq:None})?.into())).await?;
+            let mut frames = Vec::new();
+            while frames.len()<2 {
+                let next = tokio::time::timeout(Duration::from_secs(5),socket.next()).await
+                    .map_err(|_|std::io::Error::other("synthetic stream deadline"))?
+                    .ok_or_else(||std::io::Error::other("synthetic stream closed"))??;
+                if let Message::Text(text) = next { frames.push(serde_json::from_str::<Value>(&text)?); }
+            }
+            Ok::<_,Box<dyn std::error::Error>>(frames)
+        }.await;
+        let close = socket.close(None).await;
+        let frames = frames?;
+        close?;
+        surfaces.push(serde_json::json!({"perspective":perspective.to_string(),"snapshot":snapshot,
+            "private_endpoint_status":diagnostic,"transcript_status":transcript_status,
+            "transcript":transcript_body,"frames":frames}));
+    }
+    Ok(surfaces)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn rejected_private_pair_has_identical_authenticated_http_ws_and_recovered_surfaces() {
+    let mut public = Vec::new();
+    let mut private = Vec::new();
+    for secret in [13,71] {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("private-pair.sqlite");
+        let mut campaign = private_transport_campaign(&path,secret);
+        let before = campaign.state_hash().unwrap();
+        let rejected = campaign.advance();
+        let committed = campaign.state_hash().unwrap();
+        let handle = CampaignHandle::spawn(campaign,&path,None).unwrap();
+        // Legitimate own transcript knowledge is preserved separately from the
+        // rejected draft's new private disclosure.
+        let own:SeatId = "axis.commander".parse().unwrap();
+        handle.append(own,"synthetic".into(),TranscriptEntry::Reasoning {text:"legitimate-own-canary".into()}).await.unwrap();
+        let server = Server::new(dir.path(),Some(handle)).await;
+        let live = private_transport_surfaces(&server).await;
+        server.stop().await;
+        let recovered = cna_server::Campaign::recover(&path,PrivateTransportProbe,secret,&private_transport_pins()).unwrap();
+        let recovered_hash = recovered.state_hash().unwrap();
+        let restored = CampaignHandle::spawn(recovered,&path,None).unwrap();
+        let server = Server::new(dir.path(),Some(restored)).await;
+        let after = private_transport_surfaces(&server).await;
+        server.stop().await;
+        // All original actor/listener resources have joined before assertions.
+        assert!(rejected.is_err());
+        assert_eq!(committed,before);
+        assert_eq!(recovered_hash,before);
+        let live = live.unwrap();
+        let after = after.unwrap();
+        assert_eq!(live,after);
+        for surface in &live {
+            assert_eq!(surface["private_endpoint_status"],404);
+            let text = surface.to_string();
+            assert!(!text.contains("quantity"));
+            let p:Perspective = surface["perspective"].as_str().unwrap().parse().unwrap();
+            assert_eq!(text.contains("legitimate-own-canary"),p.can_see(&cna_core::visibility::Audience::Seat(own)));
+        }
+        let records = cna_server::operator_failures::read_local(&path).unwrap();
+        private.push(records[0].private_payload().unwrap().as_bytes().to_vec());
+        public.push(live);
+    }
+    assert_eq!(public[0],public[1]);
+    assert_ne!(private[0],private[1]);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn sandbox_finishes_while_unread_viewer_lags_then_recovery_matches() {
     let dir = tempfile::tempdir().unwrap();
     let handle = sandbox::create(dir.path(), &data(), request("legal_random", true)).unwrap();

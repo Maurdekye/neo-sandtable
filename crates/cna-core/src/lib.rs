@@ -13,6 +13,7 @@
 pub mod clock;
 pub mod decision;
 pub mod dice;
+pub mod diagnostic;
 pub mod engine;
 pub mod event;
 pub mod hex;

@@ -47,3 +47,15 @@ CREATE TABLE IF NOT EXISTS run_control (
     id INTEGER PRIMARY KEY CHECK(id = 1), boundary TEXT NOT NULL
 );
 INSERT OR IGNORE INTO run_control VALUES (1, 'null');
+
+-- Operator-private failure evidence, excluded from game state, events and transcripts.
+-- A record and its generic stop are committed together by the authoritative writer.
+CREATE TABLE IF NOT EXISTS operator_failures (
+    id INTEGER PRIMARY KEY,
+    campaign TEXT NOT NULL,
+    committed_revision INTEGER NOT NULL CHECK(committed_revision >= 0),
+    state_hash TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    payload BLOB NOT NULL CHECK(length(payload) BETWEEN 1 AND 32768),
+    payload_sha256 TEXT NOT NULL
+);
