@@ -3,13 +3,8 @@ use cna_play::{
     Demo,
     config::{Command, parse_args},
 };
-use cna_seats::{
-    driver::{
-        SeatDriver,
-        claude::{ClaudeConfig, ClaudeDriver},
-    },
-    run::PromptBuilder,
-};
+use cna_seats::driver::SeatDriver;
+mod watched;
 use std::{path::PathBuf, time::Duration};
 
 const USAGE: &str = "cna-play [--kind sandbox|cna] [--seat SEAT=claude:MODEL|scripted:MODE|human] [--turns N] [--tool-calls N] [--long-lived --wall-seconds N --turn-timeout N --context-tokens N --recoveries N]\n  Wildcard: --seat '*=scripted:legal_random'\n  CNA: --kind cna --seat axis.commander=claude:haiku --seat '*=scripted:legal_random'\n  Preset: --preset graziani-haiku --stop-after-turn G [--stop-after-opstage S] --budget-usd USD [--seat-budget-usd SEAT=USD for EVERY seat]\n  Resume: --resume CAMPAIGN.sqlite [--stop-after-turn G --stop-after-opstage S] [--seat-budget-usd SEAT=USD for EVERY seat] (lifetime global cap/spend retained)\n  Replay: --replay CAMPAIGN.sqlite (no CLI starts)";
@@ -46,19 +41,8 @@ async fn main() {
         ),
     };
     let claude_count = config.claude_seats().count();
-    let account = if claude_count > 0 {
-        assert_eq!(
-            std::env::var("CNA_LIVE_CLI_TESTS").as_deref(),
-            Ok("1"),
-            "set CNA_LIVE_CLI_TESTS=1 to authorize this bounded paid run"
-        );
-        let profile = std::env::var_os("CNA_CLAUDE_CONFIG_DIR")
-            .expect("CNA_CLAUDE_CONFIG_DIR must point to claude-5");
-        let email = std::env::var("CNA_CLAUDE_EMAIL").expect("expected claude-5 email required");
-        Some((PathBuf::from(profile), email))
-    } else {
-        None
-    };
+    watched::check_admission(&config, resume.is_some())
+        .expect("watched admission refused before account access or CLI launch");
     let root = if let Some(path) = &resume {
         path.parent()
             .and_then(|p| p.parent())
@@ -139,29 +123,29 @@ async fn main() {
     }
     println!("Attach viewer now; starting in 10 seconds.");
     tokio::time::sleep(Duration::from_secs(10)).await;
-    let mut drivers: Vec<_> = config
-        .claude_seats()
-        .map(|(seat, model)| {
-            let (profile, email) = account.as_ref().unwrap();
-            let driver = ClaudeDriver::new(
-                ClaudeConfig {
-                    seat,
-                    exe: None,
-                    model: model.into(),
-                    config_dir: Some(profile.clone()),
-                    expected_email: Some(email.clone()),
-                    sandbox: root.join("sandbox").join(seat.to_string()),
-                    run_dir: root.join("run").join(seat.to_string()),
-                    mcp_url: demo.mcp.url(seat).unwrap(),
-                    system_prompt: demo.prompts.system_prompt(seat),
-                    effort: None,
-                    context_window: config.session.as_ref().map(|s| s.context_tokens),
-                },
-                demo.sink.clone(),
-            );
-            (seat, Box::new(driver) as Box<dyn SeatDriver>)
-        })
-        .collect();
+    let mut watched = if claude_count > 0 {
+        Some(
+            watched::WatchedRuntime::prepare(&config, resume.is_some())
+                .await
+                .expect("prepare watched run"),
+        )
+    } else {
+        None
+    };
+    let mut drivers: Vec<(_, Box<dyn SeatDriver>)> = if let Some(runtime) = &watched {
+        match runtime.drivers(&demo) {
+            Ok(drivers) => drivers,
+            Err(error) => {
+                if let Some(runtime) = &mut watched {
+                    let _ = runtime.shutdown().await;
+                }
+                let _ = demo.shutdown().await;
+                panic!("watched driver preparation failed: {error}");
+            }
+        }
+    } else {
+        Vec::new()
+    };
     let (stop, stopped) = tokio::sync::watch::channel(false);
     let interrupt = tokio::spawn(async move {
         if tokio::signal::ctrl_c().await.is_ok() {
@@ -175,6 +159,31 @@ async fn main() {
     };
     interrupt.abort();
     let _ = interrupt.await;
+    if let Some(runtime) = &mut watched {
+        runtime.stop_admission();
+        // Native supervisors run independently of gateway HTTP graceful drain.
+        // Join every driver even if play_durable already reported cleanup error.
+        let (children, gateway) = tokio::join!(
+            async {
+                let mut cleanup = Ok(());
+                for (_, driver) in &mut drivers {
+                    cleanup = cna_play::combine_results(
+                        cleanup,
+                        driver.stop().await.map_err(|e| e.to_string()),
+                    );
+                }
+                cleanup
+            },
+            runtime.shutdown()
+        );
+        result = cna_play::combine_results(result, children);
+        match gateway {
+            Ok(report) => println!(
+                "Watched routed usage (numeric lower bounds; incomplete generations remain unknown): {report:?}"
+            ),
+            Err(error) => result = cna_play::combine_results(result, Err(error)),
+        }
+    }
     if let Some(journal) = &demo.journal {
         match journal
             .snapshot()

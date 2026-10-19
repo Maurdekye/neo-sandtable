@@ -69,6 +69,16 @@ impl JobRun {
     }
 
     pub async fn spawn(&self, command: Command) -> Result<WatchedJob, JobFailure> {
+        self.spawn_checked(|| Ok(command)).await
+    }
+
+    /// Acquire capacity FIRST, then repeat the caller's identity/layout checks
+    /// and construct the command synchronously immediately before assignment.
+    /// Never retain a prelaunch check across an asynchronous slot wait.
+    pub async fn spawn_checked(
+        &self,
+        command: impl FnOnce() -> Result<Command, JobFailure>,
+    ) -> Result<WatchedJob, JobFailure> {
         if self.failed.load(Ordering::SeqCst) {
             return Err(JobFailure::Stopped);
         }
@@ -82,6 +92,10 @@ impl JobRun {
         if self.failed.load(Ordering::SeqCst) {
             return Err(JobFailure::Stopped);
         }
+        if Instant::now() >= self.deadline {
+            return Err(JobFailure::Deadline);
+        }
+        let command = command()?;
         if Instant::now() >= self.deadline {
             return Err(JobFailure::Deadline);
         }
@@ -451,6 +465,33 @@ mod tests {
             cmd.env("SYSTEMROOT", root);
         }
         cmd
+    }
+
+    #[tokio::test]
+    async fn queued_spawn_repeats_guard_after_capacity_and_can_refuse_without_execution() {
+        use std::sync::atomic::AtomicUsize;
+        let files = Files::new();
+        let run = JobRun::new(Duration::from_secs(10)).unwrap();
+        let first = run.spawn(command("leaf", &files.0)).await.unwrap();
+        let second = run.spawn(command("leaf", &files.0)).await.unwrap();
+        let checks = Arc::new(AtomicUsize::new(0));
+        let seen = checks.clone();
+        let waiting = run.spawn_checked(move || {
+            seen.fetch_add(1, Ordering::SeqCst);
+            Err(JobFailure::Spawn) // changed layout/identity; never construct child
+        });
+        tokio::pin!(waiting);
+        let queued = tokio::time::timeout(Duration::from_millis(40), &mut waiting)
+            .await
+            .is_err();
+        let before = checks.load(Ordering::SeqCst);
+        let first_joined = first.stop().await;
+        let refusal = waiting.await;
+        let second_joined = second.stop().await;
+        assert!(queued && before == 0);
+        assert!(first_joined.is_ok() && second_joined.is_ok());
+        assert!(matches!(refusal, Err(JobFailure::Spawn)));
+        assert_eq!(checks.load(Ordering::SeqCst), 1);
     }
 
     #[test]

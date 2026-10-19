@@ -61,6 +61,11 @@ pub const MCP_NAME: &str = "cna";
 #[path = "watched_claude.rs"]
 mod watched;
 pub use watched::watched_command;
+#[cfg(windows)]
+#[path = "watched_launch.rs"]
+mod watched_launch;
+#[cfg(windows)]
+pub use watched_launch::{WATCHED_VERSION, WatchedLaunch, native_admission};
 
 /// Configuration of one Claude Code seat.
 #[derive(Clone, Debug)]
@@ -378,6 +383,8 @@ pub struct ClaudeDriver {
     telemetry: super::SessionTelemetry,
     idle: bool,
     reported_cost_limit: Option<f64>,
+    #[cfg(windows)]
+    watched: Option<Arc<WatchedLaunch>>,
 }
 
 impl ClaudeDriver {
@@ -391,7 +398,20 @@ impl ClaudeDriver {
             telemetry: super::SessionTelemetry::default(),
             idle: true,
             reported_cost_limit: None,
+            #[cfg(windows)]
+            watched: None,
         }
+    }
+
+    #[cfg(windows)]
+    pub fn new_watched(
+        cfg: ClaudeConfig,
+        sink: TranscriptSink,
+        launch: Arc<WatchedLaunch>,
+    ) -> Self {
+        let mut driver = Self::new(cfg, sink);
+        driver.watched = Some(launch);
+        driver
     }
 
     fn exe(&self) -> Result<PathBuf, DriverError> {
@@ -514,6 +534,19 @@ impl SeatDriver for ClaudeDriver {
         self.parser = ClaudeParser::default();
         self.telemetry = super::SessionTelemetry::default();
         self.idle = true;
+        #[cfg(windows)]
+        if let Some(launch) = &self.watched {
+            let (process, info) = launch
+                .start(&self.cfg, resume_session, self.reported_cost_limit)
+                .await?;
+            self.proc = Some(process);
+            self.session_id = Some(info.session_id.clone());
+            self.sink.system(
+                self.cfg.seat,
+                "watched session started with pinned CLI and scoped MCP",
+            );
+            return Ok(info);
+        }
         let io = |e| DriverError::Spawn {
             cli: "claude",
             source: e,
@@ -601,6 +634,17 @@ impl SeatDriver for ClaudeDriver {
                     cli_version,
                 } => {
                     check_isolation(tools, *mcp_connected)?;
+                    #[cfg(windows)]
+                    if self.watched.is_some() {
+                        watched_launch::check_init(
+                            self.session_id.as_deref(),
+                            session_id,
+                            model.as_deref(),
+                            cli_version.as_deref(),
+                            tools,
+                            *mcp_connected,
+                        )?;
+                    }
                     self.telemetry.model = model.clone();
                     self.telemetry.cli_version = cli_version.clone();
                     self.telemetry.tools = tools.clone();

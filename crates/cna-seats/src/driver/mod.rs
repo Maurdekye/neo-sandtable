@@ -25,6 +25,8 @@ use tokio::time::Instant;
 pub mod antigravity;
 pub mod claude;
 pub mod codex;
+#[cfg(windows)]
+mod watched_process;
 
 /// Which CLI drives a seat.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -352,7 +354,9 @@ pub trait SeatDriver: Send + Sync {
 
 /// A child process with line-oriented stdout, writable stdin and a stderr tail for diagnostics.
 pub struct ChildProc {
-    child: Child,
+    child: Option<Child>,
+    #[cfg(windows)]
+    watched: Option<watched_process::SupervisedChild>,
     stdin: Option<ChildStdin>,
     lines: mpsc::Receiver<String>,
     stderr_tail: Arc<Mutex<VecDeque<String>>>,
@@ -401,7 +405,9 @@ impl ChildProc {
             }
         });
         Ok(Self {
-            child,
+            child: Some(child),
+            #[cfg(windows)]
+            watched: None,
             stdin,
             lines,
             stderr_tail,
@@ -412,7 +418,11 @@ impl ChildProc {
     /// Active/canceled turns use kill instead; this grace is bounded.
     pub async fn finish(&mut self, grace: Duration) -> std::io::Result<()> {
         self.close_stdin();
-        match tokio::time::timeout(grace, self.child.wait()).await {
+        #[cfg(windows)]
+        if self.watched.is_some() {
+            return self.kill().await;
+        }
+        match tokio::time::timeout(grace, self.child.as_mut().expect("legacy child").wait()).await {
             Ok(Ok(_)) => Ok(()),
             Ok(Err(error)) => Err(error),
             Err(_) => self.kill().await,
@@ -446,7 +456,14 @@ impl ChildProc {
     }
 
     pub fn is_running(&mut self) -> bool {
-        !matches!(self.child.try_wait(), Ok(Some(_)))
+        #[cfg(windows)]
+        if let Some(watched) = &self.watched {
+            return watched.is_running();
+        }
+        !matches!(
+            self.child.as_mut().expect("legacy child").try_wait(),
+            Ok(Some(_))
+        )
     }
 
     pub fn stderr_tail(&self) -> String {
@@ -456,10 +473,15 @@ impl ChildProc {
 
     pub async fn kill(&mut self) -> std::io::Result<()> {
         self.stdin = None;
-        if self.child.try_wait()?.is_none() {
-            self.child.start_kill()?;
+        #[cfg(windows)]
+        if let Some(watched) = &mut self.watched {
+            return watched.stop().await;
         }
-        self.child.wait().await.map(|_| ())
+        let child = self.child.as_mut().expect("legacy child");
+        if child.try_wait()?.is_none() {
+            child.start_kill()?;
+        }
+        child.wait().await.map(|_| ())
     }
 }
 

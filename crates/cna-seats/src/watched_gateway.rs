@@ -85,6 +85,13 @@ impl WatchedGateway {
         self.0.budget.stop()
     }
 
+    /// Launcher fallback after joining/aborting a bounded HTTP service. Stop
+    /// admissions first; service ownership must be settled before this drain.
+    pub async fn shutdown_pumps(&self) -> io::Result<()> {
+        let _ = self.stop();
+        self.join_pumps().await
+    }
+
     /// Shutdown first cancels active upstream IO, then drains HTTP connections.
     /// Caller must join this task and independently kill/join native children.
     pub async fn serve(
@@ -329,7 +336,13 @@ async fn messages(
     // No upstream headers except the fixed public media type are relayed.
     let (sender, receiver) = tokio::sync::mpsc::channel(1);
     let failed = Arc::new(std::sync::atomic::AtomicBool::new(true));
-    gateway.0.pumps.lock().await.spawn(forward_pump(
+    let mut pumps = gateway.0.pumps.lock().await;
+    // A bounded launcher timeout may cancel the HTTP owner. Under the same
+    // registry lock as drain, never register another pump after run stop.
+    if gateway.0.budget.usage().map_or(true, |usage| usage.stopped) {
+        return deny(StatusCode::SERVICE_UNAVAILABLE);
+    }
+    pumps.spawn(forward_pump(
         gateway.clone(),
         upstream.bytes_stream(),
         accounting,
@@ -337,6 +350,7 @@ async fn messages(
         sender,
         failed.clone(),
     ));
+    drop(pumps);
     let bytes = stream::unfold(
         (receiver, failed, false),
         |(mut receiver, failed, ended)| async move {
