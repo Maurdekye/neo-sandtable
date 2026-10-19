@@ -13,6 +13,7 @@ pub mod plans;
 pub use plans::{RecoveryClosureKey, RecoveryProcedure, RecoveryProcedureState, RepairPlan, TowPlan};
 
 mod transaction;
+pub(crate) mod field;
 
 #[cfg(test)]
 mod disclosure_contract_tests;
