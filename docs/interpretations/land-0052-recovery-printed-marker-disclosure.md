@@ -53,5 +53,8 @@ Three authored controls in recovery/disclosure_contract_tests.rs call production
 fixture changes: public removal, public towing, and equal public removals with different
 private contents. They also check that actor-only Notes do not enter the former-owner stream.
 They remain unrun and are source-contract controls, not Respond/Advance repair-driver proof.
-No callable repair procedure or projection change is claimed. The lead approved implementation;
-the amendment itself remains pending the owner's next batch review after publication.
+A first Axis field tank-repair driver now has seven authored flow controls in
+recovery/field/tests.rs, including actual Respond/Advance former-owner pairs. These also
+remain unrun; no demonstrated gameplay result or projection change is claimed. The lead
+approved implementation; the amendment remains pending the owner's next batch review after
+publication.
