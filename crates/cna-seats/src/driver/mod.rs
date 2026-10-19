@@ -420,7 +420,7 @@ impl ChildProc {
         self.close_stdin();
         #[cfg(windows)]
         if self.watched.is_some() {
-            return self.kill().await;
+            return self.park_watched(grace).await;
         }
         match tokio::time::timeout(grace, self.child.as_mut().expect("legacy child").wait()).await {
             Ok(Ok(_)) => Ok(()),

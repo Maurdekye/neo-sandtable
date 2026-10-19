@@ -2,15 +2,15 @@
 use super::*;
 use crate::{
     request_budget::RequestBudget,
-    watched_job::{JobFailure, WatchedJob},
+    watched_job::{JobCompletion, JobFailure, WatchedJob},
 };
 use tokio::{sync::watch, task::JoinHandle};
 
 pub(super) struct SupervisedChild {
     stop: watch::Sender<bool>,
-    supervisor: Option<JoinHandle<Result<(), JobFailure>>>,
+    supervisor: Option<JoinHandle<Result<JobCompletion, JobFailure>>>,
     pumps: Vec<Option<JoinHandle<()>>>,
-    result: Option<Result<(), String>>,
+    result: Option<Result<JobCompletion, String>>,
     budget: RequestBudget,
 }
 
@@ -29,7 +29,7 @@ impl ChildProc {
         let supervisor_stop = stopped.clone();
         let supervisor_budget = budget.clone();
         let supervisor = tokio::spawn(async move {
-            job.supervise(async move {
+            job.supervise_completion(async move {
                 tokio::select! {
                     _ = stopping(supervisor_stop) => {},
                     _ = supervisor_budget.bound(std::future::pending::<()>()) => {},
@@ -94,6 +94,36 @@ impl ChildProc {
     }
 }
 
+impl ChildProc {
+    pub(super) async fn park_watched(&mut self, grace: Duration) -> std::io::Result<()> {
+        self.close_stdin();
+        let result = {
+            let watched = self
+                .watched
+                .as_mut()
+                .ok_or_else(|| std::io::Error::other("missing watched owner"))?;
+            let park = watched.park(grace);
+            tokio::pin!(park);
+            let mut closed = false;
+            loop {
+                tokio::select! {
+                    result = &mut park => break result,
+                    line = self.lines.recv(), if !closed => { closed = line.is_none(); }
+                }
+            }
+        };
+        if let Err(error) = result {
+            if let Some(watched) = &self.watched {
+                let _ = watched.budget.stop();
+            }
+            // Cleanup success cannot turn forced/unverified park into retention.
+            let cleanup = self.kill().await;
+            return Err(cleanup.err().unwrap_or(error));
+        }
+        Ok(())
+    }
+}
+
 impl SupervisedChild {
     pub(super) fn is_running(&self) -> bool {
         self.supervisor
@@ -101,11 +131,39 @@ impl SupervisedChild {
             .is_some_and(|task| !task.is_finished())
     }
 
+    async fn park(&mut self, grace: Duration) -> std::io::Result<()> {
+        let deadline = Instant::now() + grace;
+        if let Some(task) = self.supervisor.as_mut() {
+            let completion = tokio::time::timeout_at(deadline, &mut *task)
+                .await
+                .map_err(|_| std::io::Error::other("natural CLI park timed out"))?
+                .map_err(|_| std::io::Error::other("natural CLI supervisor failed"))?
+                .map_err(|_| std::io::Error::other("natural CLI job cleanup failed"))?;
+            self.result = Some(Ok(completion));
+            self.supervisor.take();
+        }
+        if !matches!(self.result,Some(Ok(JobCompletion::Natural(status))) if status.success()) {
+            return Err(std::io::Error::other(
+                "forced or unsuccessful CLI exit is not resumable",
+            ));
+        }
+        for slot in &mut self.pumps {
+            let Some(pump) = slot.as_mut() else { continue };
+            tokio::time::timeout_at(deadline, &mut *pump)
+                .await
+                .map_err(|_| std::io::Error::other("natural CLI output drain timed out"))?
+                .map_err(|_| std::io::Error::other("natural CLI output drain failed"))?;
+            slot.take();
+        }
+        self.pumps.clear();
+        Ok(())
+    }
+
     pub(super) async fn stop(&mut self) -> std::io::Result<()> {
         self.stop.send_replace(true);
         if let Some(task) = self.supervisor.as_mut() {
             let result = match tokio::time::timeout(Duration::from_secs(5), &mut *task).await {
-                Ok(Ok(Ok(()))) => Ok(()),
+                Ok(Ok(Ok(completion))) => Ok(completion),
                 Ok(_) => Err("watched job cleanup failed".to_string()),
                 Err(_) => {
                     task.abort();
@@ -139,6 +197,7 @@ impl SupervisedChild {
         self.result
             .clone()
             .unwrap_or_else(|| Err("missing watched cleanup".into()))
+            .map(|_| ())
             .map_err(std::io::Error::other)
     }
 }
@@ -207,6 +266,22 @@ mod tests {
             b"inert",
         )
         .unwrap();
+        if kind == "park" || kind == "nonzero" {
+            use std::io::{Read, Write};
+            let mut input = Vec::new();
+            std::io::stdin().read_to_end(&mut input).unwrap();
+            // More than the16-row queue AFTER EOF proves park keeps consuming.
+            for _ in 0..40 {
+                println!("synthetic-final-frame");
+            }
+            std::io::stdout().flush().unwrap();
+            let marker = PathBuf::from(std::env::var_os("CNA_INERT_MARKER").unwrap());
+            fs::write(marker, b"flushed-after-eof").unwrap();
+            if kind == "nonzero" {
+                std::process::exit(17);
+            }
+            return;
+        }
         if kind == "flood" {
             use std::io::Write;
             let row = "x".repeat(32 * 1024);
@@ -236,6 +311,39 @@ mod tests {
         })
         .await
         .is_ok()
+    }
+
+    #[tokio::test]
+    async fn eof_park_keeps_draining_and_requires_natural_success() {
+        for kind in ["park", "nonzero"] {
+            let files = Files::new();
+            let requests = budget(Duration::from_secs(20));
+            let jobs = JobRun::new(Duration::from_secs(20)).unwrap();
+            let job = jobs.spawn(files.command(kind)).await.unwrap();
+            let mut process = ChildProc::from_watched(job, requests.clone());
+            let executed = ready(&files).await;
+            let parked = process.finish(Duration::from_secs(2)).await;
+            let flushed = fs::read(files.0.join("ready")).ok().as_deref()
+                == Some(b"flushed-after-eof".as_slice());
+            let cleanup = process.kill().await;
+            assert!(executed && flushed && cleanup.is_ok());
+            assert_eq!(parked.is_ok(), kind == "park");
+            assert!(!process.is_running());
+        }
+    }
+
+    #[tokio::test]
+    async fn timed_out_eof_park_forces_join_but_never_reports_resumable() {
+        let files = Files::new();
+        let requests = budget(Duration::from_secs(20));
+        let jobs = JobRun::new(Duration::from_secs(20)).unwrap();
+        let job = jobs.spawn(files.command("idle")).await.unwrap();
+        let mut process = ChildProc::from_watched(job, requests.clone());
+        let executed = ready(&files).await;
+        let parked = process.finish(Duration::from_millis(80)).await;
+        let cleanup = process.kill().await;
+        assert!(executed && parked.is_err() && cleanup.is_ok() && !process.is_running());
+        assert!(requests.usage().unwrap().stopped);
     }
 
     #[tokio::test]

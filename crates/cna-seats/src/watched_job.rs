@@ -46,6 +46,15 @@ pub enum JobFailure {
     Drain,
 }
 
+/// Cleanup success is distinct from a normal CLI exit. Only a natural,
+/// successful exit can contribute to a separately verified parked-file binding.
+#[derive(Clone, Copy, Debug)]
+pub enum JobCompletion {
+    Natural(ExitStatus),
+    Stopped,
+    Deadline,
+}
+
 /// One allocation per run. Unknown cleanup latches admission closed before any
 /// capacity is returned; a caller cannot create a third simultaneous root.
 #[derive(Clone)]
@@ -374,20 +383,35 @@ impl WatchedJob {
 
     /// A root-first exit with a live descendant keeps its permit and waits for
     /// explicit stop/wall expiry. Never call JobObjectChild::wait for drain.
-    pub async fn supervise(mut self, stop: impl Future<Output = ()>) -> Result<(), JobFailure> {
+    pub async fn supervise(self, stop: impl Future<Output = ()>) -> Result<(), JobFailure> {
+        self.supervise_completion(stop).await.map(|_| ())
+    }
+
+    pub async fn supervise_completion(
+        mut self,
+        stop: impl Future<Output = ()>,
+    ) -> Result<JobCompletion, JobFailure> {
         tokio::pin!(stop);
         let deadline = tokio::time::Instant::from_std(self.deadline);
-        tokio::select! {
-            _ = tokio::time::sleep_until(deadline) => {},
-            _ = &mut stop => {},
+        let completion = tokio::select! {
+            biased;
+            _ = tokio::time::sleep_until(deadline) => JobCompletion::Deadline,
+            _ = &mut stop => JobCompletion::Stopped,
             result = self.root_wait() => {
-                result?;
-                if !self.membership()?.is_empty() {
-                    tokio::select! { _ = tokio::time::sleep_until(deadline) => {}, _ = &mut stop => {} }
+                let status = result?;
+                if self.membership()?.is_empty() && Instant::now() < self.deadline {
+                    JobCompletion::Natural(status)
+                } else {
+                    tokio::select! {
+                        biased;
+                        _ = tokio::time::sleep_until(deadline) => JobCompletion::Deadline,
+                        _ = &mut stop => JobCompletion::Stopped,
+                    }
                 }
             }
-        }
-        self.cleanup().await
+        };
+        self.cleanup().await?;
+        Ok(completion)
     }
 
     pub async fn stop(mut self) -> Result<(), JobFailure> {
@@ -465,6 +489,18 @@ mod tests {
             cmd.env("SYSTEMROOT", root);
         }
         cmd
+    }
+
+    #[tokio::test]
+    async fn parent_success_with_live_descendant_then_stop_is_forced_not_natural() {
+        let files = Files::new();
+        let run = JobRun::new(Duration::from_secs(10)).unwrap();
+        let mut job = run.spawn(command("tree", &files.0)).await.unwrap();
+        let root = tokio::time::timeout(Duration::from_secs(3), job.root_wait()).await;
+        let live = job.membership().map(|m| !m.is_empty()).unwrap_or(false);
+        let completion = job.supervise_completion(async {}).await;
+        assert!(root.is_ok() && live);
+        assert!(matches!(completion, Ok(JobCompletion::Stopped)));
     }
 
     #[tokio::test]
