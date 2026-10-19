@@ -3,7 +3,7 @@
 - **Cases:** airlog:38.42, airlog:38.43
 - **Status:** proposed
 - **Profile version:** cna-2021-dev; cna-2021-full pending complete maintenance caller activation
-- **Decided by:** neo-sandtable (lead), 2026-10-19, mc4d915dab177; relayed by rules-mgr mc26e9ef9b466
+- **Decided by:** @neo-sandtable (lead), 2026-10-19, mc4d915dab177; relayed by @rules-mgr mc26e9ef9b466
 - **Owner review:** pending
 - **Related ruling:** adopted, owner-reviewed airlog-0024 remains the squadron/period price authority
 
