@@ -1,5 +1,5 @@
-//! First Graziani Axis FIELD slice: one tank marker per hex, returned as typed receipts.
-//! Other vehicle procedures and ancillary holding partitions remain explicit gaps.
+//! Graziani Axis FIELD tanks and homogeneous single-cohort truck markers.
+//! Mixed/funded truck merges and other vehicle procedures remain explicit gaps.
 use super::{payloads::*, plans::*, transaction};
 use crate::{
     CnaContent, State,
@@ -28,6 +28,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub(crate) const ANCHOR: &str = "opstage.repair.maintenance";
 pub(crate) const KIND: &str = "cna.recovery.field_repair";
+
+mod trucks;
 
 fn invariant(detail: &str) -> EngineError {
     EngineError::Invariant {
@@ -86,6 +88,15 @@ pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineErro
         opportunity: Some(key.clone()),
         ..Default::default()
     };
+    let cargo_sites: Vec<_> = state.land.breakdown.markers.values()
+        .filter(|m| m.side == key.phasing)
+        .map(|m| logistics::cargo_history::CargoSite::BrokenMarker(m.id.clone())).collect();
+    let mut priority = logistics::cargo_history::selection_field(state, key.phasing, &cargo_sites);
+    priority.name = "cargo_priority".into();
+    priority.doc = "Complete cargo lots in pre-dice priority order; omit for stable lot-id order. This slice supports one supply kind per parcel.".into();
+    let mut targets = vec![ChoiceOption { id: "create_at_site".into(), label: "Create pool at repair site".into(), detail: None }];
+    targets.extend(state.logistics.truck_pools.iter().filter(|p| p.side == key.phasing)
+        .map(|p| ChoiceOption { id: p.id.clone(), label: p.id.clone(), detail: None }));
     let space = ActionSpace::new(ActionSchema::List {
         min: 0,
         max: u32::MAX,
@@ -99,20 +110,23 @@ pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineErro
                 },
                 FieldSchema {
                     name: "points".into(),
-                    doc: "Tank TOE points to attempt, prepaid before dice".into(),
+                    doc: "Points selected before dice; truck returns use the printed per-hex budget".into(),
                     schema: ActionSchema::Integer {
                         min: 1,
                         max: i32::MAX.into(),
                     },
                     optional: false,
                 },
+                priority,
+                FieldSchema { name: "return_pool".into(), doc: "Existing own pool at the site, or create_at_site (default)".into(),
+                    schema: ActionSchema::Choice { options: targets }, optional: true },
             ],
         }),
     })
     .with_pass("Attempt no field repairs.");
     open(state, cx, SeatId::new(key.phasing, Role::RearArea), KIND,
-        "Declare field repair attempts; tank receipts are supported, other repair procedures remain unfinished.".into(),
-        &["land:22.11", "land:22.12", "land:22.25", "land:22.26"],
+        "Declare field repair attempts and pre-dice truck return choices; other repair procedures remain unfinished.".into(),
+        &["land:22.11", "land:22.12", "land:22.23", "land:22.25", "land:22.26"],
         Trigger::Scheduled, Secrecy::Secret, space);
     Ok(())
 }
@@ -122,6 +136,10 @@ pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineErro
 struct Declaration {
     marker: String,
     points: i32,
+    #[serde(default)]
+    cargo_priority: Vec<logistics::cargo_history::LotSelection>,
+    #[serde(default)]
+    return_pool: Option<String>,
 }
 
 /// Answers select own actual assets and record only the approved plan buffer.
@@ -166,13 +184,25 @@ pub(crate) fn answer(
             return Err(illegal("repair points exceed own marker"));
         }
         asset.points = selected.points;
+        let return_pool = match selected.return_pool.as_deref() {
+            None | Some("create_at_site") => ReturnPoolTarget::CreateAtSite,
+            Some(id) => ReturnPoolTarget::Existing { pool: id.into() },
+        };
+        let cargo_priority = if trucks::kind(&asset.equipment).is_some() {
+            trucks::priority(s, marker, &selected.cargo_priority)?
+        } else {
+            if !selected.cargo_priority.is_empty() || !matches!(return_pool, ReturnPoolTarget::CreateAtSite) {
+                return Err(illegal("truck return choices do not apply to tank receipts"));
+            }
+            vec![]
+        };
         plan.markers.push(RepairMarkerPlan {
             marker: selected.marker,
             assets: vec![asset],
             pool_assets: vec![],
             mode: RepairMode::Field,
-            cargo_priority: vec![],
-            return_pool: ReturnPoolTarget::CreateAtSite,
+            cargo_priority,
+            return_pool,
         });
     }
     prepare(c, s, &plan, false, false)?;
@@ -266,11 +296,12 @@ fn prepare(
         {
             return Err(illegal("repair selection changed"));
         }
+        let vehicle = if trucks::kind(&actual.equipment).is_some() {
+            trucks::validate(c, s, marker, choice)?;
+            RepairVehicle::Truck
+        } else {
         let Equipment::Weapon(weapon) = &actual.equipment else {
-            return Err(gap(
-                "land:22.23",
-                "field truck/recce repair allocation is not implemented",
-            ));
+            return Err(gap("land:22.24", "this field equipment procedure is not implemented"));
         };
         let equipment = c
             .units
@@ -300,6 +331,8 @@ fn prepare(
                 "nontrivial repair holding partitions are not implemented",
             ));
         }
+        RepairVehicle::Tank
+        };
         let weather = logistics::weather::at_hex(c, s, &marker.hex)?;
         if matches!(weather, WeatherKind::Rainstorm | WeatherKind::Sandstorm) {
             return Err(illegal("field repair is unavailable in this storm"));
@@ -324,7 +357,7 @@ fn prepare(
             .cost(
                 RepairLocation::Field,
                 VehicleState::BrokenDown,
-                RepairVehicle::Tank,
+                vehicle,
             )
             .ok_or_else(|| gap("land:22.15", "field tank repair cost is unavailable"))?;
         let fuel = selected
@@ -349,7 +382,7 @@ fn prepare(
             asset: RepairAsset::Unit(selected.clone()),
             mode: RepairLocation::Field,
             vehicle_state: VehicleState::BrokenDown,
-            vehicle: RepairVehicle::Tank,
+            vehicle,
             cost,
             demand,
         });
@@ -459,6 +492,12 @@ pub(crate) fn finish(
             cx.emit(EngineEvent::new(Audience::Side(actor), GameEvent::Note { text: format!("Field repair unavailable at own marker {id}; no attempt or payment made.") }));
         }
         for row in field.repair.attempts() {
+            if row.vehicle() == RepairVehicle::Truck {
+                let choice = field.repair.output_choices().iter().find(|choice| choice.marker() == row.marker())
+                    .ok_or_else(|| invariant("missing pre-dice truck output choice"))?;
+                trucks::resolve(c, draft, cx, row, choice)?;
+                continue;
+            }
             let before = draft.clone();
             let marker = draft.land.breakdown.markers.get(row.marker()).cloned().ok_or_else(|| invariant("repair marker vanished"))?;
             let RepairAsset::Unit(selected) = row.asset() else { return Err(invariant("unexpected pool tank repair").into()); };

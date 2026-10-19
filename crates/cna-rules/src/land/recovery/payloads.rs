@@ -118,10 +118,6 @@ impl PreparedRepair {
     pub(crate) fn site_debits(&self) -> &[RepairSiteDebit] {
         &self.site_debits
     }
-    #[allow(
-        dead_code,
-        reason = "Truck returns will consume the validated output choices"
-    )]
     pub(crate) fn output_choices(&self) -> &[RepairOutputChoice] {
         &self.output_choices
     }
@@ -129,19 +125,11 @@ impl PreparedRepair {
 
 /// Trusted copy of the validated pre-dice target and complete cargo priority.
 #[derive(Debug)]
-#[allow(
-    dead_code,
-    reason = "Truck repair output allocation is not active in the tank slice"
-)]
 pub(crate) struct RepairOutputChoice {
     pub(super) marker: String,
     pub(super) target: ReturnPoolTarget,
     pub(super) cargo_priority: Vec<LotSelection>,
 }
-#[allow(
-    dead_code,
-    reason = "Truck repair output allocation is not active in the tank slice"
-)]
 impl RepairOutputChoice {
     pub(crate) fn marker(&self) -> &str {
         &self.marker
@@ -186,10 +174,6 @@ impl ReceiptReturn {
 /// Positive successful counts and actual selected cargo only; never passengers,
 /// marker tank fuel, an old funding account or a current-segment entitlement.
 #[derive(Debug)]
-#[allow(
-    dead_code,
-    reason = "Approved truck-return contract awaits the truck repair producer"
-)]
 pub(crate) struct ReturnedTrucks {
     pub(super) marker: String,
     pub(super) target: ReturnPoolTarget,
@@ -199,10 +183,6 @@ pub(crate) struct ReturnedTrucks {
     pub(super) cargo_parcels: Vec<Parcel>,
     pub(super) activity_water: WaterPoints,
 }
-#[allow(
-    dead_code,
-    reason = "Approved truck-return contract awaits the truck repair producer"
-)]
 impl ReturnedTrucks {
     pub(crate) fn marker(&self) -> &str {
         &self.marker
@@ -305,10 +285,6 @@ impl ValidatedRepairOutcome {
 /// binds actual pool, merged stocks, allocation serial/used IDs and marker state.
 /// Oob revalidates full merged capacity and uses its unchanged real allocator.
 #[derive(Debug)]
-#[allow(
-    dead_code,
-    reason = "Approved site truck-return contract awaits truck repair"
-)]
 pub(crate) struct PreparedSiteTruckReturn {
     pub(super) actor: Side,
     pub(super) stage: WaterStage,
@@ -317,10 +293,6 @@ pub(crate) struct PreparedSiteTruckReturn {
     pub(super) before: State,
     pub(super) returns: Vec<ReturnedTrucks>,
 }
-#[allow(
-    dead_code,
-    reason = "Approved site truck-return contract awaits truck repair"
-)]
 impl PreparedSiteTruckReturn {
     pub(crate) fn actor(&self) -> Side {
         self.actor
