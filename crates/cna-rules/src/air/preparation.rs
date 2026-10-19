@@ -1,9 +1,10 @@
-//! Private load facts and permanent initial-credit history, not producers.
+//! Private load facts and permanent initial-credit history.
 //!
 //! Generic inventory migration records only UnknownLegacy, terminal for free
 //! initial credit. A future real setup-close import must construct brand-new
-//! InitialUnspecified/Unselected records directly; no such authority exists here.
-//! These source checks grant no loading, mission, payment or flight permission.
+//! InitialUnspecified/Unselected records directly. Paid fuel admission belongs
+//! to the transactional maintenance producer, not these structural records.
+//! These source checks grant no arming, mission, payment or flight permission.
 
 use std::collections::BTreeMap;
 
@@ -53,6 +54,12 @@ pub enum CurrentPreparation {
     /// paid replacement. Never convertible to initial state by setup authority.
     UnknownLegacy,
     Unprepared,
+    /// Paid fuel with ammunition still unknown; never a complete flight load.
+    /// Cases: airlog:38.21, airlog:38.24, airlog:38.25
+    KnownFuel {
+        mode: usize,
+        fuel_available: bool,
+    },
     KnownLoad {
         load: KnownLoad,
     },
@@ -168,7 +175,9 @@ pub fn validate_load(
 /// Interpretations: interp:air-0018
 pub fn armed_projection(current: &CurrentPreparation, old_bit: bool) -> bool {
     match current {
-        CurrentPreparation::UnknownLegacy | CurrentPreparation::InitialUnspecified => old_bit,
+        CurrentPreparation::UnknownLegacy
+        | CurrentPreparation::InitialUnspecified
+        | CurrentPreparation::KnownFuel { .. } => old_bit,
         CurrentPreparation::Unprepared => false,
         CurrentPreparation::KnownLoad { load } => {
             load.gun_ammunition
@@ -183,6 +192,16 @@ pub fn armed_projection(current: &CurrentPreparation, old_bit: bool) -> bool {
                         CarriedOrdnance::Torpedoes { rating_points } => *rating_points > 0,
                     })
         }
+    }
+}
+
+/// Typed fuel knowledge, without inferring anything from a legacy coarse bit.
+/// Cases: airlog:38.21, airlog:38.25
+pub(in crate::air) fn known_fuel(current: &CurrentPreparation) -> Option<(usize, bool)> {
+    match current {
+        CurrentPreparation::KnownFuel { mode, fuel_available } => Some((*mode, *fuel_available)),
+        CurrentPreparation::KnownLoad { load } => Some((load.mode, load.fuel_available)),
+        _ => None,
     }
 }
 
