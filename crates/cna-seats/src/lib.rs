@@ -8,11 +8,15 @@
 //! lands. See `README.md` for how each CLI is driven.
 
 pub mod automatic;
+pub mod calibration;
+pub mod calibration_http;
+pub mod calibration_isolation;
 pub mod demo;
 pub mod driver;
 pub mod game;
 pub mod mcp;
 pub mod memory;
+pub mod request_budget;
 pub mod run;
 pub mod toy;
 pub mod transcript;

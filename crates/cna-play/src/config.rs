@@ -311,7 +311,7 @@ pub fn parse_args(args: &[String]) -> Result<Command, String> {
                 }
                 preset = true;
                 kind = GameKind::Cna;
-                specs.push("*=claude:claude-haiku-4-5-20251001".into());
+                specs.push("*=claude:claude-haiku-5-5".into());
                 session = Some(SessionLimits {
                     wall_seconds: 21_600,
                     ..SessionLimits::default()
@@ -415,9 +415,7 @@ pub fn parse_args(args: &[String]) -> Result<Command, String> {
     if preset
         && (config.kind != GameKind::Cna
             || config.claude_seats().count() != 10
-            || config
-                .claude_seats()
-                .any(|(_, m)| m != "claude-haiku-4-5-20251001"))
+            || config.claude_seats().any(|(_, m)| m != "claude-haiku-5-5"))
     {
         return Err("graziani-haiku preset requires all ten Haiku seats and CNA".into());
     }
@@ -459,6 +457,11 @@ mod tests {
             panic!()
         };
         assert_eq!(config.claude_seats().count(), 10);
+        assert!(
+            config
+                .claude_seats()
+                .all(|(_, model)| model == "claude-haiku-5-5")
+        );
         assert!(config.session.is_some());
         assert_eq!(config.run.unwrap().boundary.game_turn, 1);
         for bad in [
