@@ -44,5 +44,6 @@ Uncalled S1 helpers separately provide ordinary cost, capped increment, fatigue 
 morale input and final actual defense increment. Authored tests put a defender at its CPA:
 ordinary full defense previews three DP, but a final differential of -4 charges only one CP;
 an adverse probe can preview two and actually charge zero. Earlier barrage charges survive.
-These tests are unrun. Later callers must prove one actual ledger write and no morale feedback.
+The S1 arithmetic tests passed on 2026-10-19. Later callers must prove one actual ledger write
+and no morale feedback.
 This consequential ruling enters an owner batch only after publication on main.

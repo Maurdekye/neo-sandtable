@@ -55,5 +55,6 @@ caller must include every applicable obligation in its contribution matrix, spli
 and uncaptured buckets where their weights differ, and verify all physical eligibility.
 Authored hand tests cover 63 raw at 5% -> four losses, 70 at 15% -> ten defensive losses,
 33% of ten -> four captured, owner placement of a fractional remainder, necessary overshoot,
-superfluous TOE and a captured subset exceeding casualties. These tests have not run. No
+superfluous TOE and a captured subset exceeding casualties. S1 arithmetic tests passed on
+2026-10-19. No
 gameplay loss selection is active; batch submission waits for this file to be on main.
