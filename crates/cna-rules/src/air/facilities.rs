@@ -95,7 +95,7 @@ pub struct FacilityProperties {
 
 /// Derived from exact scenario source pairs, never a stored off-map flag.
 /// Only the reviewed actual-SGSU refit consumer uses this classification.
-/// Cases: airlog:36.5, airlog:36.53, scen:60.5
+/// Cases: airlog:36.5, scen:60.5
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::air) enum MaintenanceSource {
     Finite,
@@ -105,7 +105,7 @@ pub(in crate::air) enum MaintenanceSource {
 impl FacilityProperties {
     /// Call only on properties returned by the canonical facility resolver.
     /// Malta, Mediterranean location boxes and Ethiopia gain no consumer here.
-    /// Cases: airlog:36.5, airlog:36.53, scen:60.5
+    /// Cases: airlog:36.5, scen:60.5
     pub(in crate::air) fn maintenance_source(&self, id: &FacilityId) -> MaintenanceSource {
         let Location::OffMap { id: location } = &self.location else {
             return MaintenanceSource::Finite;
@@ -144,7 +144,7 @@ impl FacilityProperties {
 mod maintenance_source_tests {
     use super::*;
 
-    /// Cases: airlog:36.5, airlog:36.53, airlog:36.3, scen:60.5
+    /// Cases: airlog:36.5, airlog:36.3, scen:60.5
     #[test]
     fn only_exact_canonical_source_pairs_have_aircraft_supply_entitlement() {
         let content = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
