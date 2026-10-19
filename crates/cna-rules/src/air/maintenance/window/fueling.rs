@@ -63,14 +63,30 @@ fn after_debit(
         || !state.air.runtime.maintenance.closed.contains(&owner)
         || state.air.runtime.maintenance.finished
     {
-        return Err(invalid("paid servicing admission has no matching closed period"));
+        return Err(invalid(
+            "paid servicing admission has no matching closed period",
+        ));
     }
     let admission = PaidServicingAdmission {
         owner,
         period,
         changes,
-        receipts_before: state.air.runtime.maintenance.arming_receipts.get(&owner).cloned().unwrap_or_default(),
-        charges_before: state.air.runtime.maintenance.gun_charges.get(&owner).cloned().unwrap_or_default(),
+        receipts_before: state
+            .air
+            .runtime
+            .maintenance
+            .arming_receipts
+            .get(&owner)
+            .cloned()
+            .unwrap_or_default(),
+        charges_before: state
+            .air
+            .runtime
+            .maintenance
+            .gun_charges
+            .get(&owner)
+            .cloned()
+            .unwrap_or_default(),
         receipts: arming.receipts.clone(),
         charges: arming.charges.clone(),
     };
@@ -153,7 +169,9 @@ pub(super) fn spend_and_admit(
         }
         changes.insert(id.clone(), change.clone());
     }
-    if changes.is_empty() { return Ok(None); }
+    if changes.is_empty() {
+        return Ok(None);
+    }
     after_debit(state, side, current, changes, &validated.arming).map(Some)
 }
 
@@ -165,9 +183,23 @@ impl PaidServicingAdmission {
         {
             return Err(invalid("paid servicing admission period changed"));
         }
-        if runtime.maintenance.arming_receipts.get(&self.owner).map(Vec::as_slice).unwrap_or(&[]) != self.receipts_before.as_slice()
-            || runtime.maintenance.gun_charges.get(&self.owner).map(Vec::as_slice).unwrap_or(&[]) != self.charges_before.as_slice()
-        { return Err(invalid("paid servicing history changed")); }
+        if runtime
+            .maintenance
+            .arming_receipts
+            .get(&self.owner)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
+            != self.receipts_before.as_slice()
+            || runtime
+                .maintenance
+                .gun_charges
+                .get(&self.owner)
+                .map(Vec::as_slice)
+                .unwrap_or(&[])
+                != self.charges_before.as_slice()
+        {
+            return Err(invalid("paid servicing history changed"));
+        }
         for (id, change) in &self.changes {
             if runtime.aircraft.get(id) != Some(&change.plane)
                 || runtime.preparation.current.get(id) != Some(&change.before)
@@ -183,19 +215,34 @@ impl PaidServicingAdmission {
     pub(in crate::air) fn apply(&self, runtime: &mut AirRuntime) -> Result<(), EngineError> {
         self.verify(runtime)?;
         if !self.receipts.is_empty() {
-            runtime.maintenance.arming_receipts.entry(self.owner).or_default().extend(self.receipts.clone());
+            runtime
+                .maintenance
+                .arming_receipts
+                .entry(self.owner)
+                .or_default()
+                .extend(self.receipts.clone());
         }
         if !self.charges.is_empty() {
-            runtime.maintenance.gun_charges.entry(self.owner).or_default().extend(self.charges.clone());
+            runtime
+                .maintenance
+                .gun_charges
+                .entry(self.owner)
+                .or_default()
+                .extend(self.charges.clone());
         }
         for (id, change) in &self.changes {
             runtime
                 .preparation
                 .current
                 .insert(id.clone(), change.after.clone());
-            let plane = runtime.aircraft.get_mut(id).ok_or_else(|| invalid("paid plane disappeared"))?;
-            plane.fuelled = crate::air::preparation::fuel_availability(&change.after).unwrap_or(change.plane.fuelled);
-            plane.armed = crate::air::preparation::armed_projection(&change.after, change.plane.armed);
+            let plane = runtime
+                .aircraft
+                .get_mut(id)
+                .ok_or_else(|| invalid("paid plane disappeared"))?;
+            plane.fuelled = crate::air::preparation::fuel_availability(&change.after)
+                .unwrap_or(change.plane.fuelled);
+            plane.armed =
+                crate::air::preparation::armed_projection(&change.after, change.plane.armed);
         }
         Ok(())
     }
@@ -203,11 +250,33 @@ impl PaidServicingAdmission {
     pub(in crate::air) fn permits_history(&self, old: &AirRuntime, new: &AirRuntime) -> bool {
         let mut receipts = old.maintenance.arming_receipts.clone();
         let mut charges = old.maintenance.gun_charges.clone();
-        if !self.receipts.is_empty() { receipts.entry(self.owner).or_default().extend(self.receipts.clone()); }
-        if !self.charges.is_empty() { charges.entry(self.owner).or_default().extend(self.charges.clone()); }
-        old.maintenance.arming_receipts.get(&self.owner).map(Vec::as_slice).unwrap_or(&[]) == self.receipts_before.as_slice()
-            && old.maintenance.gun_charges.get(&self.owner).map(Vec::as_slice).unwrap_or(&[]) == self.charges_before.as_slice()
-            && new.maintenance.arming_receipts == receipts && new.maintenance.gun_charges == charges
+        if !self.receipts.is_empty() {
+            receipts
+                .entry(self.owner)
+                .or_default()
+                .extend(self.receipts.clone());
+        }
+        if !self.charges.is_empty() {
+            charges
+                .entry(self.owner)
+                .or_default()
+                .extend(self.charges.clone());
+        }
+        old.maintenance
+            .arming_receipts
+            .get(&self.owner)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
+            == self.receipts_before.as_slice()
+            && old
+                .maintenance
+                .gun_charges
+                .get(&self.owner)
+                .map(Vec::as_slice)
+                .unwrap_or(&[])
+                == self.charges_before.as_slice()
+            && new.maintenance.arming_receipts == receipts
+            && new.maintenance.gun_charges == charges
     }
 
     pub(in crate::air) fn permits(&self, id: &PlaneId, old: &AirRuntime, new: &AirRuntime) -> bool {
@@ -215,8 +284,10 @@ impl PaidServicingAdmission {
             return false;
         };
         let mut expected = change.plane.clone();
-        expected.fuelled = crate::air::preparation::fuel_availability(&change.after).unwrap_or(change.plane.fuelled);
-        expected.armed = crate::air::preparation::armed_projection(&change.after, change.plane.armed);
+        expected.fuelled = crate::air::preparation::fuel_availability(&change.after)
+            .unwrap_or(change.plane.fuelled);
+        expected.armed =
+            crate::air::preparation::armed_projection(&change.after, change.plane.armed);
         old.maintenance.period == Some(self.period)
             && old.maintenance.closed.contains(&self.owner)
             && old.aircraft.get(id) == Some(&change.plane)
