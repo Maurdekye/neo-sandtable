@@ -85,6 +85,9 @@ fn fixture_current(
 ) {
     let bit = preparation::armed_projection(&current, air.runtime.aircraft[id].armed);
     air.runtime.aircraft.get_mut(id).unwrap().armed = bit;
+    if let Some((_, available)) = preparation::known_fuel(&current) {
+        air.runtime.aircraft.get_mut(id).unwrap().fuelled = available;
+    }
     air.runtime.preparation.current.insert(id.clone(), current);
     refresh(content, air);
     check(content, air).unwrap();
@@ -124,6 +127,7 @@ fn every_live_matrix_cell_and_nonlive_current_is_strict_without_repair() {
         Some(CurrentPreparation::UnknownLegacy),
         Some(CurrentPreparation::Unprepared),
         Some(known(0, false, None)),
+        Some(CurrentPreparation::KnownFuel { mode: 0, fuel_available: true }),
         None,
     ];
     for (row, credit) in ledger.iter().enumerate() {
@@ -141,6 +145,9 @@ fn every_live_matrix_cell_and_nonlive_current_is_strict_without_repair() {
             if let Some(carried) = carried {
                 state.air.runtime.aircraft.get_mut(&id).unwrap().armed =
                     preparation::armed_projection(carried, true);
+                if let Some((_, available)) = preparation::known_fuel(carried) {
+                    state.air.runtime.aircraft.get_mut(&id).unwrap().fuelled = available;
+                }
                 state
                     .air
                     .runtime
@@ -151,7 +158,7 @@ fn every_live_matrix_cell_and_nonlive_current_is_strict_without_repair() {
             refresh(&content, &mut state.air);
             let before = bytes(&state.air);
             let result = check(&content, &state.air);
-            let valid = matches!((row, column), (0, 0) | (1 | 2, 2 | 3) | (3, 1..=3));
+            let valid = matches!((row, column), (0, 0) | (1 | 2, 2 | 3) | (3, 1..=4));
             if valid {
                 result.unwrap();
             } else {
@@ -713,6 +720,9 @@ fn preparation_mode_guns_ordnance_credit_and_current_variants_stay_private() {
         known(0, true, None),
         known(0, false, Some(CarriedOrdnance::Bombs { bomb_points: 1 })),
         known(1, false, None),
+        CurrentPreparation::KnownFuel { mode: 0, fuel_available: true },
+        CurrentPreparation::KnownFuel { mode: 1, fuel_available: true },
+        CurrentPreparation::KnownFuel { mode: 0, fuel_available: false },
     ] {
         let mut state = base.clone();
         fixture_current(&content, &mut state.air, &id, current);
@@ -991,4 +1001,61 @@ fn default_new_id_known_establishment_rejects_and_rolls_back_zero_or_populated_m
             }
         }
     }
+}
+
+/// Cases: airlog:38.21, airlog:38.24, airlog:38.25, land:3.6
+#[test]
+fn generic_known_fuel_and_known_load_updates_cannot_buy_fuel_or_change_fueled_mode() {
+    let content = content();
+    let (base, id) = single(&content, "cw.wellington_i");
+    for partial in [false, true] {
+        for available in [false, true] {
+            let mut air = base.air.clone();
+            let current = if partial {
+                CurrentPreparation::KnownFuel { mode: 0, fuel_available: available }
+            } else {
+                CurrentPreparation::KnownLoad { load: KnownLoad {
+                    mode: 0, fuel_available: available, gun_ammunition: false, ordnance: None,
+                } }
+            };
+            fixture_current(&content, &mut air, &id, current);
+            if !available {
+                rejects_edit(&content, &air, |runtime| {
+                    match runtime.preparation.current.get_mut(&id).unwrap() {
+                        CurrentPreparation::KnownFuel { fuel_available, .. } => *fuel_available = true,
+                        CurrentPreparation::KnownLoad { load } => load.fuel_available = true,
+                        _ => unreachable!(),
+                    }
+                    runtime.aircraft.get_mut(&id).unwrap().fuelled = true;
+                    Ok(())
+                });
+            } else {
+                rejects_edit(&content, &air, |runtime| {
+                    match runtime.preparation.current.get_mut(&id).unwrap() {
+                        CurrentPreparation::KnownFuel { mode, .. } => *mode = 1,
+                        CurrentPreparation::KnownLoad { load } => load.mode = 1,
+                        _ => unreachable!(),
+                    }
+                    Ok(())
+                });
+            }
+            let mut broken = air.clone();
+            broken.runtime.aircraft.get_mut(&id).unwrap().fuelled = !available;
+            let before = bytes(&broken);
+            assert!(matches!(check(&content, &broken), Err(EngineError::Invariant { .. })));
+            assert_eq!(bytes(&broken), before);
+        }
+    }
+    let mut air = base.air.clone();
+    air.runtime.aircraft.get_mut(&id).unwrap().fuelled = false;
+    refresh(&content, &mut air);
+    rejects_edit(&content, &air, |runtime| {
+        runtime.aircraft.get_mut(&id).unwrap().fuelled = true;
+        Ok(())
+    });
+    rejects_edit(&content, &air, |runtime| {
+        runtime.preparation.current.insert(id.clone(), CurrentPreparation::KnownFuel { mode: 0, fuel_available: true });
+        runtime.aircraft.get_mut(&id).unwrap().fuelled = true;
+        Ok(())
+    });
 }

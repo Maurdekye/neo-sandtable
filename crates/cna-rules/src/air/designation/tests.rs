@@ -342,13 +342,15 @@ fn enemy_readiness_and_pilots_never_change_own_designation_schema_or_answer() {
     super::super::inventory::update(content(), &mut b.state.air, |rt| {
         for (id, p) in rt.aircraft.iter_mut().filter(|(_, p)| p.force == "axis") {
             p.refitted = !p.refitted;
-            p.fuelled = !p.fuelled;
             let CurrentPreparation::KnownLoad { load } =
                 rt.preparation.current.get_mut(id).unwrap()
             else {
                 panic!("private typed-load fixture missing");
             };
             load.gun_ammunition = !load.gun_ammunition;
+            // Consuming a known fuel fact needs no new paid-load admission.
+            load.fuel_available = false;
+            p.fuelled = false;
         }
         for p in rt.pilots.values_mut().filter(|p| p.force == "axis") {
             p.rating = 6;

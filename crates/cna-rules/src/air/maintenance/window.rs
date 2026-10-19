@@ -1,4 +1,5 @@
-//! Fixed two-Air finite refit/dues batches. No load producer or flight rights.
+//! Fixed two-Air refit/dues and finite fuel batches. No flight rights.
+pub(in crate::air) mod fueling;
 use std::collections::{BTreeMap, BTreeSet};
 
 use cna_core::{
@@ -37,7 +38,7 @@ use crate::{
 pub const TACTICAL: &str = "opstage.land_support_air.maintenance";
 pub const STRATEGIC: &str = "strategic_air_recovery.maintenance";
 pub const KIND: &str = "cna.air.finite_refit";
-const MISSING: &str = "fuel/gun/ordnance preparation, no-SGSU facility consumers (airlog:43.21, airlog:44.14, airlog:44.16), cross-servicer Stores allocation, mixed-method cohorts and sandstorm refit loss selection";
+const MISSING: &str = "joint initial-load commitment, gun/ordnance preparation, exempt/no-SGSU fueling (airlog:36.5, airlog:43.21, airlog:44.14, airlog:44.16), cross-servicer Stores allocation, mixed-method cohorts and sandstorm refit loss selection";
 
 fn unsupported(case: &str, detail: &str) -> EngineError {
     EngineError::Unsupported {
@@ -175,6 +176,9 @@ fn space(
                 json!({
                     "aircraft": p.aircraft, "assigned_squadron": p.squadron,
                     "physical_facility": p.facility, "refitted": p.refitted,
+                    "preparation": state.air.runtime.preparation.current.get(id),
+                    "modes": content.units.aircraft.get(&p.aircraft).map(|a| a.modes.iter().enumerate()
+                        .map(|(mode, source)| json!({"mode": mode, "fuel_points": source.fuel_points})).collect::<Vec<_>>()),
                 }),
             )
         })
@@ -241,6 +245,19 @@ fn space(
         .map(|(id, _)| id.clone())
         .collect();
     let plane_max = u32::try_from(planes.len()).unwrap_or(u32::MAX);
+    let mode_max = state.air.runtime.aircraft.values().filter(|p| owned(&p.force, owner))
+        .filter_map(|p| content.units.aircraft.get(&p.aircraft))
+        .map(|a| a.modes.len().saturating_sub(1)).max().unwrap_or(0);
+    let mut fuel_servicers = Vec::new();
+    for id in &finite_servicers {
+        let s = &state.air.runtime.sgsus[id];
+        if let SgsuPosition::Facility(site_id) = &s.position {
+            let p = state.air.runtime.facilities[site_id].properties(content, site_id)?;
+            if p.theatre == FacilityTheatre::Africa && matches!(p.location, Location::Hex { .. }) {
+                fuel_servicers.push(id.0.clone());
+            }
+        }
+    }
     // Cases: scen:59.36
     // This public period prohibits refit for both owners;
     // SGSU dues and their stock draws keep their existing domains.
@@ -301,7 +318,7 @@ fn space(
                         fields: vec![
                             field("servicer", choice(finite_servicers.into_iter().map(|id| id.0))),
                             field("assigned_squadron", choice(squadrons)),
-                            field("priority", list(choice(planes), plane_max)),
+                            field("priority", list(choice(planes.clone()), plane_max)),
                             field("method", choice(["squadron".into(), "per_plane".into()])),
                         ],
                     },
@@ -320,14 +337,26 @@ fn space(
                     sgsu_max,
                 ),
             ),
+            FieldSchema {
+                name: "fueling".into(),
+                doc: "Finite aircraft refueling, with explicit source modes.".into(),
+                optional: true,
+                schema: list(ActionSchema::Record { fields: vec![
+                    field("servicer", choice(fuel_servicers)),
+                    field("planes", list(ActionSchema::Record { fields: vec![
+                        field("plane", choice(planes)),
+                        field("mode", ActionSchema::Integer { min: 0, max: i64::try_from(mode_max).unwrap_or(i64::MAX) }),
+                    ] }, plane_max)),
+                ] }, if first_bar(content, current) { 0 } else { plane_max }),
+            },
         ],
     })
-    .with_pass("Perform no finite refit or SGSU dues payment in this maintenance period.")
+    .with_pass("Perform no aircraft service or SGSU dues payment in this maintenance period.")
     .with_context(
         json!({"planes": roster, "sgsus": consumers, "air_dumps": holdings,
             "fuel_draw_unit": "tenths of a Fuel Point",
-            "scope": "Refit and SGSU dues only; no aircraft fuel or ammunition loading.",
-            "development_limitation": "Refit covers operational on-map SGSUs and the verified airlog:36.5 SGSU facilities; aircraft Stores entitlement never pays SGSU dues. No-SGSU consumers under airlog:43.21, airlog:44.14 and airlog:44.16 and aircraft fuel/ammunition loading remain unimplemented."}),
+            "scope": "Refit, finite on-map SGSU fueling and SGSU dues. No ammunition loading or flight permission.",
+            "development_limitation": "Verified airlog:36.5 aircraft Stores entitlement never pays SGSU dues. Fueling at exempt/no-SGSU sites (airlog:36.5, airlog:43.21, airlog:44.14, airlog:44.16), joint initial-load commitment and ammunition loading remain unimplemented."}),
     ))
 }
 
@@ -370,16 +399,16 @@ pub fn enter(
     *state = draft;
     for (side, domain) in domains {
         cx.emit(EngineEvent::new(Audience::Side(side), GameEvent::Note {
-            text: format!("Development maintenance supports finite SGSU refit/dues only; missing: {MISSING}. No load or flight permission follows."),
+            text: format!("Development maintenance supports SGSU refit/dues and finite on-map fueling; missing: {MISSING}. No flight permission follows."),
         }));
         open(
             state,
             cx,
             SeatId::new(side, Role::Air),
             KIND,
-            "Choose finite refit cohorts in success-priority order and exact SGSU dues/draws."
+            "Choose refit cohorts, finite fuel service modes and exact SGSU dues/draws."
                 .into(),
-            &["airlog:35.14", "airlog:38.33", "airlog:38.36"],
+            &["airlog:35.14", "airlog:38.21", "airlog:38.23", "airlog:38.33", "airlog:38.36"],
             Trigger::Scheduled,
             Secrecy::SecretSimultaneous,
             domain,
@@ -481,6 +510,7 @@ struct Validated {
     groups: Vec<(refit::RefitCohort, Nationality)>,
     paid: SgsuOpStage,
     entitlements: BTreeMap<String, refit::SourceEntitlement>,
+    fueling: fueling::ValidatedFueling,
 }
 
 /// Resolve aircraft Stores only, leaving actual SGSU operation dues finite.
@@ -531,12 +561,15 @@ fn legal_choices(
     owner: Side,
     current: MaintenancePeriod,
     plan: &RefitPlan,
+    fuel: &fueling::ValidatedFueling,
 ) -> Result<(), Rejection> {
-    let mut consumers = BTreeSet::new();
+    let mut consumers = fuel.demands.keys().cloned().collect::<BTreeSet<_>>();
+    let mut dues_seen = BTreeSet::new();
     for id in &plan.dues {
-        if !consumers.insert(id.clone()) {
+        if !dues_seen.insert(id.clone()) {
             return Err(illegal("duplicate SGSU dues choice"));
         }
+        consumers.insert(id.clone());
         if !state
             .air
             .runtime
@@ -548,7 +581,7 @@ fn legal_choices(
         }
     }
     let mut limits = BTreeMap::new();
-    let mut active = BTreeMap::<FacilityId, BTreeSet<SgsuId>>::new();
+    let mut active = fuel.active.clone();
     for cohort in &plan.cohorts {
         if cohort.priority.is_empty() {
             continue;
@@ -874,6 +907,7 @@ fn legal_choices(
             );
         }
     }
+    fuel.add_demands(&mut demands)?;
     for (id, demand) in demands {
         let amount = draw_totals.get(&id).copied().unwrap_or_default();
         // Stated draws were already checked together through the exact finite
@@ -955,15 +989,16 @@ fn validate(
     current: MaintenancePeriod,
     plan: &RefitPlan,
 ) -> Result<Validated, Rejection> {
-    if first_bar(content, current) && !plan.cohorts.is_empty() {
+    if first_bar(content, current) && (!plan.cohorts.is_empty() || !plan.fueling.is_empty()) {
         return Err(illegal(
             "scen:59.36: aircraft maintenance barred in first scenario OpStage",
         ));
     }
     // Ordinary supported plans retain their existing validation/cost path.
     // Missing procedure shapes need all determinate checks first.
+    let fueling = fueling::validate(content, state, owner, current, plan)?;
     if needs_choice_preflight(state, owner, plan) {
-        legal_choices(content, state, owner, current, plan)?;
+        legal_choices(content, state, owner, current, plan, &fueling)?;
     }
     let paid = dues_stage(current)?;
     let mut demands = BTreeMap::<SgsuId, SupplyDemand>::new();
@@ -1006,7 +1041,7 @@ fn validate(
         .unwrap_or_default();
     let mut groups: Vec<(refit::RefitCohort, Nationality)> = Vec::new();
     let mut methods = BTreeMap::new();
-    let mut active: BTreeMap<FacilityId, BTreeSet<SgsuId>> = BTreeMap::new();
+    let mut active = fueling.active.clone();
     for cohort in &plan.cohorts {
         if cohort.priority.is_empty() {
             continue;
@@ -1212,6 +1247,7 @@ fn validate(
             }
         }
     }
+    fueling.add_demands(&mut demands)?;
     let mut prior = BTreeMap::<SupplySource, FuelTenths>::new();
     for receipt in state
         .air
@@ -1286,6 +1322,7 @@ fn validate(
         groups,
         paid,
         entitlements,
+        fueling,
     })
 }
 
@@ -1350,63 +1387,15 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
             validate(content, &draft, side, current, plan).map_err(adjudication_error)?,
         ));
     }
+    let mut admissions = Vec::new();
     for (side, v) in &mut validated {
-        for receipt in draft
-            .air
-            .runtime
-            .maintenance
-            .debits
-            .get(side)
-            .into_iter()
-            .flatten()
-        {
-            for (source, amount) in &receipt.fuel_rounding {
-                let total = v.prior.entry(source.clone()).or_default();
-                *total = FuelTenths::new(
-                    total
-                        .get()
-                        .checked_add(amount.get())
-                        .ok_or_else(|| invalid("finite refit rounding overflow"))?,
-                );
-            }
+        if let Some(paid) = fueling::spend_and_admit(content, &mut draft, *side, current, v)? {
+            admissions.push(paid);
         }
-        for (id, demand) in &v.demands {
-            let draws = v
-                .plans
-                .draws
-                .iter()
-                .find(|d| &d.servicer == id)
-                .map(|d| d.draws.as_slice())
-                .unwrap_or(&[]);
-            let use_ = if v.plans.dues.contains(id) {
-                AirSupplyUse::SgsuOperation
-            } else {
-                AirSupplyUse::AircraftServicing
-            };
-            air_supply::spend(
-                content,
-                &mut draft,
-                *side,
-                id,
-                use_,
-                AirSupplyDebit {
-                    demand: *demand,
-                    draws,
-                    prior: &v.prior,
-                },
-            )
-            .map_err(supply_error)
-            .map_err(adjudication_error)?;
-            for draw in draws {
-                let total = v.prior.entry(draw.source.clone()).or_default();
-                *total = FuelTenths::new(
-                    total
-                        .get()
-                        .checked_add(draw.amount.fuel.get())
-                        .ok_or_else(|| invalid("finite refit rounding overflow"))?,
-                );
-            }
-        }
+    }
+    // Both combined debits must succeed before any aircraft fact is updated.
+    for paid in admissions {
+        inventory::update_fueling(content, &mut draft.air, paid)?;
     }
     let mut results = BTreeMap::new();
     for (side, v) in &validated {
@@ -1454,6 +1443,10 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
     }
     inventory::update(content, &mut draft.air, |runtime| {
         for (side, v) in &validated {
+            if !v.fueling.receipts.is_empty() {
+                runtime.maintenance.fuel_receipts.entry(*side).or_default()
+                    .extend(v.fueling.receipts.clone());
+            }
             for id in &v.plans.dues {
                 let s = runtime
                     .sgsus
@@ -1510,6 +1503,14 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
     })?;
     *state = draft;
     *cx.rng = rng;
+    for (side, v) in &validated {
+        let count: usize = v.fueling.receipts.iter().map(|r| r.cohort.planes.len()).sum();
+        if count > 0 {
+            cx.emit(EngineEvent::new(Audience::Side(*side), GameEvent::Note {
+                text: format!("Refueled {count} aircraft at your air facilities."),
+            }));
+        }
+    }
     Ok(())
 }
 
