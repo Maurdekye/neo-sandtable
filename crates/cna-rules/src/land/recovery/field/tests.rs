@@ -16,6 +16,8 @@ use serde_json::json;
 
 const MARKER: &str = "field-fixture";
 
+mod truck_tests;
+
 fn fixture(points: i32, roll: u8, captured: bool) -> (CnaContent, Game<Cna>) {
     let mut c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
     c.bounds.end_gt = 1;
