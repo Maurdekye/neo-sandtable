@@ -93,12 +93,40 @@ pub struct ConsumerDraws {
     pub draws: Vec<SupplyDraw>,
 }
 
-/// Only refit and actual SGSU dues, without future fuel/gun/ordnance fields.
+/// Refit, finite fuel and actual SGSU dues; no gun or ordnance loading fields.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RefitPlan {
     pub dues: Vec<SgsuId>,
     pub cohorts: Vec<RefitCohort>,
     pub draws: Vec<ConsumerDraws>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fueling: Vec<FuelCohort>,
+}
+
+/// Explicit source mode and identity, never an answer-provided cost.
+/// Cases: airlog:38.21, airlog:38.24
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FuelSelection {
+    pub plane: PlaneId,
+    pub mode: usize,
+}
+
+/// Refueling throughput is independent of refit attempts at the same SGSU.
+/// Cases: airlog:38.22, airlog:38.23, airlog:38.25
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FuelCohort {
+    pub servicer: SgsuId,
+    pub planes: Vec<FuelSelection>,
+}
+
+/// Paid fuel service history, not ammunition or flight authorization.
+/// Cases: airlog:38.23, airlog:38.24, airlog:38.25
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FuelReceipt {
+    pub period: MaintenancePeriod,
+    pub cohort: FuelCohort,
 }
 
 /// Recorded only by a successful whole-State finish, including failed rolls.
@@ -139,8 +167,8 @@ pub struct DebitReceipt {
     pub fuel_rounding: Vec<(SupplySource, FuelTenths)>,
 }
 
-/// Unattached owned type pending exact shared-field approval. Only buffer
-/// waiting answers during Respond; receipts/finished belong to atomic finish.
+/// Only buffer waiting answers during Respond; service receipts and finished
+/// belong to atomic finish. Fuel history is separate from refit throughput.
 /// Existing SgsuState fields remain the sole dues truth.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -150,6 +178,8 @@ pub struct MaintenanceState {
     pub waiting: BTreeMap<Side, RefitPlan>,
     pub receipts: BTreeMap<Side, Vec<RefitReceipt>>,
     pub debits: BTreeMap<Side, Vec<DebitReceipt>>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub fuel_receipts: BTreeMap<Side, Vec<FuelReceipt>>,
     pub finished: bool,
 }
 
@@ -215,6 +245,23 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
             }
         }
     }
+    let mut fueled = BTreeSet::new();
+    for receipt in window.fuel_receipts.values().flatten() {
+        receipt.period.check()?;
+        if period_key(receipt.period) > period_key(period)
+            || receipt.cohort.servicer.0.is_empty()
+            || receipt.cohort.planes.is_empty()
+        {
+            return Err(invalid("invalid fuel service history"));
+        }
+        for selected in &receipt.cohort.planes {
+            if selected.plane.0.is_empty()
+                || !fueled.insert((period_key(receipt.period), &selected.plane))
+            {
+                return Err(invalid("duplicate period fuel service in history"));
+            }
+        }
+    }
     for receipt in window.debits.values().flatten() {
         let expected: Vec<_> = receipt
             .draws
@@ -269,6 +316,11 @@ pub(crate) fn check_transition(
         let new_debits = new.debits.get(&side).map(Vec::as_slice).unwrap_or(&[]);
         if !next.starts_with(prior) || !new_debits.starts_with(old_debits) {
             return Err(invalid("maintenance attempt/debit history rewritten"));
+        }
+        let old_fuel = old.fuel_receipts.get(&side).map(Vec::as_slice).unwrap_or(&[]);
+        let new_fuel = new.fuel_receipts.get(&side).map(Vec::as_slice).unwrap_or(&[]);
+        if !new_fuel.starts_with(old_fuel) {
+            return Err(invalid("maintenance fuel history rewritten"));
         }
     }
     Ok(())
