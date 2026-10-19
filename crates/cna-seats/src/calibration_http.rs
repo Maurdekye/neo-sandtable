@@ -24,6 +24,9 @@ use serde_json::Value;
 
 use crate::calibration::{CalibrationFence, FenceError, OUTPUT_LIMIT, assess_prompt_usage};
 
+#[path = "watched_gateway.rs"]
+pub mod watched;
+
 const REQUEST_LIMIT: usize = 16 * 1024 * 1024;
 const COUNT_REPLY_LIMIT: usize = 32 * 1024;
 const EVENT_LIMIT: usize = 256 * 1024;
@@ -406,6 +409,10 @@ struct UsageObserver {
 
 impl UsageObserver {
     fn feed(&mut self, bytes: &[u8], fence: &LaneAFence) {
+        self.feed_report(bytes, &fence.0.report);
+    }
+
+    fn feed_report(&mut self, bytes: &[u8], report: &Mutex<LaneAReport>) {
         for byte in bytes {
             if self.previous_cr && *byte == b'\n' {
                 self.previous_cr = false;
@@ -414,7 +421,7 @@ impl UsageObserver {
             self.previous_cr = *byte == b'\r';
             if *byte == b'\n' || *byte == b'\r' {
                 if self.line.is_empty() {
-                    self.event(fence);
+                    self.event(report);
                     self.data.clear();
                 } else {
                     let line = self
@@ -445,7 +452,7 @@ impl UsageObserver {
         }
     }
 
-    fn event(&mut self, fence: &LaneAFence) {
+    fn event(&mut self, report: &Mutex<LaneAReport>) {
         if self.data.is_empty() {
             return;
         }
@@ -467,7 +474,7 @@ impl UsageObserver {
             _ => None,
         };
         if let Some(usage) = usage {
-            let Ok(mut report) = fence.0.report.lock() else {
+            let Ok(mut report) = report.lock() else {
                 self.invalid = true;
                 return;
             };
@@ -512,7 +519,11 @@ impl UsageObserver {
     }
 
     fn finish(self, fence: &LaneAFence) {
-        if let Ok(mut report) = fence.0.report.lock() {
+        self.finish_report(&fence.0.report);
+    }
+
+    fn finish_report(self, report: &Mutex<LaneAReport>) {
+        if let Ok(mut report) = report.lock() {
             report.stream_finished = true;
             report.accounting_unknown = self.invalid
                 || !self.stopped

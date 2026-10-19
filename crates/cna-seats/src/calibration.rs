@@ -234,7 +234,7 @@ impl CalibrationFence {
     }
 }
 
-fn checked_body(raw: &[u8]) -> Result<Vec<u8>, FenceError> {
+pub(crate) fn checked_body(raw: &[u8]) -> Result<Vec<u8>, FenceError> {
     if raw.len() > BODY_LIMIT {
         return Err(FenceError::Body);
     }
@@ -301,7 +301,7 @@ fn contains_budget_control(value: &Value) -> bool {
 /// https://platform.claude.com/docs/en/api/beta/messages/count_tokens .
 /// Inference-only fields are deliberately omitted, not silently represented
 /// as identical counted bytes. The ledger's digest always binds FULL inference.
-fn count_projection(inference: &[u8]) -> Result<(Vec<u8>, Vec<String>), FenceError> {
+pub(crate) fn count_projection(inference: &[u8]) -> Result<(Vec<u8>, Vec<String>), FenceError> {
     const FIELDS: &[&str] = &[
         "messages",
         "model",

@@ -47,6 +47,7 @@ struct State {
     limits: RequestLimits,
     deadline: Instant,
     usage: RequestUsage,
+    cancelled: tokio::sync::watch::Sender<bool>,
 }
 
 /// All ten seats and their transports must share this same allocation.
@@ -65,6 +66,7 @@ impl RequestBudget {
             limits,
             deadline,
             usage: RequestUsage::default(),
+            cancelled: tokio::sync::watch::channel(false).0,
         }))))
     }
 
@@ -75,6 +77,7 @@ impl RequestBudget {
         }
         if Instant::now() >= state.deadline {
             state.usage.stopped = true;
+            state.cancelled.send_replace(true);
             return Err(RequestBudgetError::Deadline);
         }
         if state.usage.total >= state.limits.total
@@ -82,6 +85,7 @@ impl RequestBudget {
                 && state.usage.generations >= state.limits.generations)
         {
             state.usage.stopped = true;
+            state.cancelled.send_replace(true);
             return Err(RequestBudgetError::Exhausted);
         }
         state.usage.total += 1;
@@ -112,14 +116,35 @@ impl RequestBudget {
         }
     }
 
-    /// Refuse later admissions. The supervisor must cancel and join existing
-    /// forwards and streamed responses; this does not claim to stop native IO.
+    /// Bound a body read or other continuation by this run's deadline and stop
+    /// signal without spending another request. Dropping this future cancels
+    /// its IO. This is also used for every streamed response read.
+    pub async fn bound<T: Future>(&self, future: T) -> Result<T::Output, RequestBudgetError> {
+        let (deadline, mut cancelled) = {
+            let state = self.0.lock().map_err(|_| RequestBudgetError::Stopped)?;
+            (state.deadline, state.cancelled.subscribe())
+        };
+        tokio::select! {
+            biased;
+            _ = cancelled.wait_for(|stopped| *stopped) => Err(RequestBudgetError::Stopped),
+            result = tokio::time::timeout_at(tokio::time::Instant::from_std(deadline), future) => {
+                match result {
+                    Ok(value) => Ok(value),
+                    Err(_) => {
+                        self.stop()?;
+                        Err(RequestBudgetError::Deadline)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Refuse later admissions and cancel bound IO. The supervisor still owns
+    /// native process cleanup and joining server tasks.
     pub fn stop(&self) -> Result<(), RequestBudgetError> {
-        self.0
-            .lock()
-            .map_err(|_| RequestBudgetError::Stopped)?
-            .usage
-            .stopped = true;
+        let mut state = self.0.lock().map_err(|_| RequestBudgetError::Stopped)?;
+        state.usage.stopped = true;
+        state.cancelled.send_replace(true);
         Ok(())
     }
 
