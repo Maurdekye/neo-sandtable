@@ -31,7 +31,7 @@ pub(super) fn maintenance_key(state: &State) -> Result<RecoveryClosureKey, Engin
     })
 }
 
-fn supply_error(error: logistics::RecoverySupplyError) -> Rejection {
+pub(super) fn supply_error(error: logistics::RecoverySupplyError) -> Rejection {
     use logistics::{RecoverySupplyError, SupplyError};
     match error {
         RecoverySupplyError::Canonical(error) => Rejection::Engine(error),

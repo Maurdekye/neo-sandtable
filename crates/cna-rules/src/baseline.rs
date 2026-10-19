@@ -40,6 +40,11 @@ pub fn random_orders(
     request: &DecisionRequest,
     rng: &mut CampaignRng,
 ) -> Value {
+    // Optional field repairs use the declared pass in both scripted modes until
+    // a repair-selection policy is added. This makes no eligibility query.
+    if request.kind == crate::land::recovery::field::KIND {
+        return Value::Null;
+    }
     if !matches!(
         request.kind.as_str(),
         movement::KIND | reaction::KIND | reaction::CONTINUE
