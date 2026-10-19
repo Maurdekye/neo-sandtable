@@ -245,9 +245,16 @@ fn space(
         .map(|(id, _)| id.clone())
         .collect();
     let plane_max = u32::try_from(planes.len()).unwrap_or(u32::MAX);
-    let mode_max = state.air.runtime.aircraft.values().filter(|p| owned(&p.force, owner))
+    let mode_max = state
+        .air
+        .runtime
+        .aircraft
+        .values()
+        .filter(|p| owned(&p.force, owner))
         .filter_map(|p| content.units.aircraft.get(&p.aircraft))
-        .map(|a| a.modes.len().saturating_sub(1)).max().unwrap_or(0);
+        .map(|a| a.modes.len().saturating_sub(1))
+        .max()
+        .unwrap_or(0);
     let mut fuel_servicers = Vec::new();
     for id in &finite_servicers {
         let s = &state.air.runtime.sgsus[id];
@@ -406,9 +413,14 @@ pub fn enter(
             cx,
             SeatId::new(side, Role::Air),
             KIND,
-            "Choose refit cohorts, finite fuel service modes and exact SGSU dues/draws."
-                .into(),
-            &["airlog:35.14", "airlog:38.21", "airlog:38.23", "airlog:38.33", "airlog:38.36"],
+            "Choose refit cohorts, finite fuel service modes and exact SGSU dues/draws.".into(),
+            &[
+                "airlog:35.14",
+                "airlog:38.21",
+                "airlog:38.23",
+                "airlog:38.33",
+                "airlog:38.36",
+            ],
             Trigger::Scheduled,
             Secrecy::SecretSimultaneous,
             domain,
@@ -1456,7 +1468,11 @@ fn finish_transaction(
     inventory::update(content, &mut draft.air, |runtime| {
         for (side, v) in &validated {
             if !v.fueling.receipts.is_empty() {
-                runtime.maintenance.fuel_receipts.entry(*side).or_default()
+                runtime
+                    .maintenance
+                    .fuel_receipts
+                    .entry(*side)
+                    .or_default()
                     .extend(v.fueling.receipts.clone());
             }
             for id in &v.plans.dues {
@@ -1516,11 +1532,19 @@ fn finish_transaction(
     *state = draft;
     *cx.rng = rng;
     for (side, v) in &validated {
-        let count: usize = v.fueling.receipts.iter().map(|r| r.cohort.planes.len()).sum();
+        let count: usize = v
+            .fueling
+            .receipts
+            .iter()
+            .map(|r| r.cohort.planes.len())
+            .sum();
         if count > 0 {
-            cx.emit(EngineEvent::new(Audience::Side(*side), GameEvent::Note {
-                text: format!("Refueled {count} aircraft at your air facilities."),
-            }));
+            cx.emit(EngineEvent::new(
+                Audience::Side(*side),
+                GameEvent::Note {
+                    text: format!("Refueled {count} aircraft at your air facilities."),
+                },
+            ));
         }
     }
     Ok(())
