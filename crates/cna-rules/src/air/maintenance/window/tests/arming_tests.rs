@@ -28,9 +28,8 @@ fn armed_game_count(count: i32) -> (Game<Cna>, Vec<PlaneId>) {
 fn armed_game_source(count: i32, aircraft: &str) -> (Game<Cna>, Vec<PlaneId>) {
     let mut state = base(false);
     // Explicit source-backed replacement fixture; no scenario quantity asserted.
-    let ids =
-        inventory::receive_unassigned(content(), &mut state.air, Side::Axis, aircraft, count)
-            .unwrap();
+    let ids = inventory::receive_unassigned(content(), &mut state.air, Side::Axis, aircraft, count)
+        .unwrap();
     inventory::update(content(), &mut state.air, |runtime| {
         for id in &ids {
             let p = runtime.aircraft.get_mut(id).unwrap();
@@ -587,59 +586,65 @@ fn late_real_ammo_fuel_and_refit_draw_failure_preserves_game_rng_and_existing_ev
 #[test]
 fn enemy_windows_acceptance_and_advance_hide_real_ammunition_and_charge_receipts() {
     for legacy in [false, true] {
-    for (guns, bombs, fuel) in [(true, false, false), (false, true, false), (true, true, true)] {
-    let (mut game, ids) = armed_game();
-    if legacy {
-        for id in &ids { preparation_fixture(&mut game, id, CurrentPreparation::UnknownLegacy); }
-    }
-    let selected = arm_plan(&game, &ids, guns, bombs, fuel, false);
-    let mut loaded = accepted(&game, &selected);
-    let mut passed = accepted(&game, &RefitPlan::default());
-    assert_indistinguishable(
-        &Cna::dev(),
-        content(),
-        &loaded.state,
-        &passed.state,
-        Side::Commonwealth,
-    );
-    assert_action_indistinguishable(
-        &Cna::dev(),
-        content(),
-        &loaded,
-        &passed,
-        &Command::Advance,
-        Side::Commonwealth,
-    );
-    fuel_finish(&mut loaded);
-    finish_game(&mut passed);
-    component_next_period(&mut loaded);
-    component_next_period(&mut passed);
-    assert_indistinguishable(
-        &Cna::dev(),
-        content(),
-        &loaded.state,
-        &passed.state,
-        Side::Commonwealth,
-    );
-    assert_action_indistinguishable(
-        &Cna::dev(),
-        content(),
-        &loaded,
-        &passed,
-        &command(&loaded, Side::Commonwealth, Value::Null),
-        Side::Commonwealth,
-    );
-    let a = accepted(&loaded, &RefitPlan::default());
-    let b = accepted(&passed, &RefitPlan::default());
-    assert_action_indistinguishable(
-        &Cna::dev(),
-        content(),
-        &a,
-        &b,
-        &Command::Advance,
-        Side::Commonwealth,
-    );
-    }
+        for (guns, bombs, fuel) in [
+            (true, false, false),
+            (false, true, false),
+            (true, true, true),
+        ] {
+            let (mut game, ids) = armed_game();
+            if legacy {
+                for id in &ids {
+                    preparation_fixture(&mut game, id, CurrentPreparation::UnknownLegacy);
+                }
+            }
+            let selected = arm_plan(&game, &ids, guns, bombs, fuel, false);
+            let mut loaded = accepted(&game, &selected);
+            let mut passed = accepted(&game, &RefitPlan::default());
+            assert_indistinguishable(
+                &Cna::dev(),
+                content(),
+                &loaded.state,
+                &passed.state,
+                Side::Commonwealth,
+            );
+            assert_action_indistinguishable(
+                &Cna::dev(),
+                content(),
+                &loaded,
+                &passed,
+                &Command::Advance,
+                Side::Commonwealth,
+            );
+            fuel_finish(&mut loaded);
+            finish_game(&mut passed);
+            component_next_period(&mut loaded);
+            component_next_period(&mut passed);
+            assert_indistinguishable(
+                &Cna::dev(),
+                content(),
+                &loaded.state,
+                &passed.state,
+                Side::Commonwealth,
+            );
+            assert_action_indistinguishable(
+                &Cna::dev(),
+                content(),
+                &loaded,
+                &passed,
+                &command(&loaded, Side::Commonwealth, Value::Null),
+                Side::Commonwealth,
+            );
+            let a = accepted(&loaded, &RefitPlan::default());
+            let b = accepted(&passed, &RefitPlan::default());
+            assert_action_indistinguishable(
+                &Cna::dev(),
+                content(),
+                &a,
+                &b,
+                &Command::Advance,
+                Side::Commonwealth,
+            );
+        }
     }
 }
 
@@ -855,39 +860,89 @@ fn optional_null_service_lists_and_bomb_preserve_fit_exact_advertised_schema() {
 /// Cases: airlog:38.21, airlog:38.41, airlog:38.43
 #[test]
 fn actual_two_source_modes_cannot_hide_original_known_fuel_mode_in_joint_arming() {
-    let source = content().units.aircraft.values().find(|a| a.role != "flying_boat"
-        && a.modes.len() >= 2 && a.modes.iter().take(2).all(|m| m.fuel_points.is_some())).unwrap();
+    let source = content()
+        .units
+        .aircraft
+        .values()
+        .find(|a| {
+            a.role != "flying_boat"
+                && a.modes.len() >= 2
+                && a.modes.iter().take(2).all(|m| m.fuel_points.is_some())
+        })
+        .unwrap();
     // Source-validation holding fixture; no scenario arrival or nationality
     // entitlement is claimed. Both modes and all costs are actual source data.
     let (mut game, ids) = armed_game_source(1, &source.id);
-    preparation_fixture(&mut game, &ids[0], CurrentPreparation::KnownFuel { mode: 0, fuel_available: true });
+    preparation_fixture(
+        &mut game,
+        &ids[0],
+        CurrentPreparation::KnownFuel {
+            mode: 0,
+            fuel_available: true,
+        },
+    );
     let unchanged = arm_plan(&game, &ids, true, false, true, false);
     let mut changed = unchanged.clone();
     changed.fueling[0].planes[0].mode = 1;
-    changed.draws[0].draws[0].amount.fuel = FuelTenths::new(10 + crate::air::maintenance::fuel_points(source, 1).unwrap() * 10);
+    changed.draws[0].draws[0].amount.fuel =
+        FuelTenths::new(10 + crate::air::maintenance::fuel_points(source, 1).unwrap() * 10);
     let before = serde_json::to_vec(&game).unwrap();
-    assert!(matches!(rejected_response(content(), &game, serde_json::to_value(&changed).unwrap()),
-        Rejection::Illegal { message } if message.contains("original known mode")));
+    assert!(
+        matches!(rejected_response(content(), &game, serde_json::to_value(&changed).unwrap()),
+        Rejection::Illegal { message } if message.contains("original known mode"))
+    );
     assert_eq!(serde_json::to_vec(&game).unwrap(), before);
     // Defensive finish control for a corrupted accepted buffer, without
     // pretending that the real Respond accepted the illegal selection above.
     let mut invalid = accepted(&game, &RefitPlan::default());
-    invalid.state.air.runtime.maintenance.waiting.insert(Side::Axis, changed.clone());
+    invalid
+        .state
+        .air
+        .runtime
+        .maintenance
+        .waiting
+        .insert(Side::Axis, changed.clone());
     let before = serde_json::to_vec(&invalid).unwrap();
     let mut rng = CampaignRng::from_state(&invalid.rng);
-    let prefix = vec![EngineEvent::new(Audience::Side(Side::Axis), GameEvent::Note { text: "Existing event".into() })];
+    let prefix = vec![EngineEvent::new(
+        Audience::Side(Side::Axis),
+        GameEvent::Note {
+            text: "Existing event".into(),
+        },
+    )];
     let mut events = prefix.clone();
-    assert!(finish(content(), &mut invalid.state, &mut Cx { rng: &mut rng, events: &mut events }).is_err());
+    assert!(
+        finish(
+            content(),
+            &mut invalid.state,
+            &mut Cx {
+                rng: &mut rng,
+                events: &mut events
+            }
+        )
+        .is_err()
+    );
     assert_eq!(serde_json::to_vec(&invalid).unwrap(), before);
     assert_eq!(rng.state(), invalid.rng);
     assert_eq!(events, prefix);
-    let mut done = accepted(&game, &unchanged); fuel_finish(&mut done);
-    assert_eq!(crate::air::preparation::known_fuel(&done.state.air.runtime.preparation.current[&ids[0]]), Some((0, true)));
+    let mut done = accepted(&game, &unchanged);
+    fuel_finish(&mut done);
+    assert_eq!(
+        crate::air::preparation::known_fuel(&done.state.air.runtime.preparation.current[&ids[0]]),
+        Some((0, true))
+    );
     assert!(done.state.air.runtime.aircraft[&ids[0]].armed);
     // Existing fuel-only KnownFuel behavior remains supported without new ammo.
-    changed.arming.clear(); changed.draws[0].draws[0].amount.ammo = AmmoPoints::new(0);
-    let mut fuel_only = accepted(&game, &changed); fuel_finish(&mut fuel_only);
-    assert_eq!(crate::air::preparation::known_fuel(&fuel_only.state.air.runtime.preparation.current[&ids[0]]), Some((1, true)));
+    changed.arming.clear();
+    changed.draws[0].draws[0].amount.ammo = AmmoPoints::new(0);
+    let mut fuel_only = accepted(&game, &changed);
+    fuel_finish(&mut fuel_only);
+    assert_eq!(
+        crate::air::preparation::known_fuel(
+            &fuel_only.state.air.runtime.preparation.current[&ids[0]]
+        ),
+        Some((1, true))
+    );
 }
 
 /// Cases: airlog:38.43, airlog:38.42
@@ -899,58 +954,123 @@ fn same_period_same_site_new_id_reuses_actual_paid_gun_charge_with_zero_new_ammo
     let mut component = accepted(&game, &selected);
     let current = period(&component.state).unwrap();
     let mut v = validate(content(), &component.state, Side::Axis, current, &selected).unwrap();
-    let paid = fueling::spend_and_admit(content(), &mut component.state, Side::Axis, current, &mut v).unwrap().unwrap();
+    let paid =
+        fueling::spend_and_admit(content(), &mut component.state, Side::Axis, current, &mut v)
+            .unwrap()
+            .unwrap();
     inventory::update_servicing(content(), &mut component.state.air, paid).unwrap();
     // Actual payment/admission component seam before the enclosing finish's
     // final closure. Copy only the dues/debit effects it would record; no closed
     // campaign window is reopened and no stock/charge credit is invented.
     inventory::update(content(), &mut component.state.air, |runtime| {
         let s = runtime.sgsus.get_mut(&SgsuId("axis.refit".into())).unwrap();
-        s.stores_paid_game_turn = Some(v.paid.game_turn); s.fuel_water_paid = Some(v.paid);
-        runtime.maintenance.debits.entry(Side::Axis).or_default().push(refit::DebitReceipt {
-            servicer: SgsuId("axis.refit".into()), draws: selected.draws[0].draws.clone(),
-            fuel_rounding: selected.draws[0].draws.iter().map(|d| (d.source.clone(), d.amount.fuel)).collect(),
-        });
+        s.stores_paid_game_turn = Some(v.paid.game_turn);
+        s.fuel_water_paid = Some(v.paid);
+        runtime
+            .maintenance
+            .debits
+            .entry(Side::Axis)
+            .or_default()
+            .push(refit::DebitReceipt {
+                servicer: SgsuId("axis.refit".into()),
+                draws: selected.draws[0].draws.clone(),
+                fuel_rounding: selected.draws[0]
+                    .draws
+                    .iter()
+                    .map(|d| (d.source.clone(), d.amount.fuel))
+                    .collect(),
+            });
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
     let old_charge = component.state.air.runtime.maintenance.gun_charges[&Side::Axis].clone();
     let stock = component.state.logistics.air_dumps.clone();
     let mut later = arm_plan(&component, &ids[1..], true, false, false, false);
-    later.dues.clear(); later.draws.clear();
+    later.dues.clear();
+    later.draws.clear();
     let mut v = validate(content(), &component.state, Side::Axis, current, &later).unwrap();
     assert_eq!(v.demands[&SgsuId("axis.refit".into())].ammo.get(), 0);
-    let paid = fueling::spend_and_admit(content(), &mut component.state, Side::Axis, current, &mut v).unwrap().unwrap();
+    let paid =
+        fueling::spend_and_admit(content(), &mut component.state, Side::Axis, current, &mut v)
+            .unwrap()
+            .unwrap();
     inventory::update_servicing(content(), &mut component.state.air, paid).unwrap();
     assert_eq!(component.state.logistics.air_dumps, stock);
-    assert_eq!(component.state.air.runtime.maintenance.gun_charges[&Side::Axis], old_charge);
-    assert_eq!(component.state.air.runtime.maintenance.arming_receipts[&Side::Axis].len(), 2);
+    assert_eq!(
+        component.state.air.runtime.maintenance.gun_charges[&Side::Axis],
+        old_charge
+    );
+    assert_eq!(
+        component.state.air.runtime.maintenance.arming_receipts[&Side::Axis].len(),
+        2
+    );
     assert!(component.state.air.runtime.aircraft[&ids[1]].armed);
 }
 
 /// Cases: airlog:38.44, airlog:38.41
 #[test]
 fn identical_existing_bomb_load_and_preserve_cost_zero_but_different_valid_payload_costs_one() {
-    let source = content().units.aircraft.values().find(|a| a.role != "flying_boat"
-        && a.modes.first().is_some_and(|m| m.fuel_points.is_some() && m.bomb_capacity.is_some_and(|n| n > 1))).unwrap();
+    let source = content()
+        .units
+        .aircraft
+        .values()
+        .find(|a| {
+            a.role != "flying_boat"
+                && a.modes.first().is_some_and(|m| {
+                    m.fuel_points.is_some() && m.bomb_capacity.is_some_and(|n| n > 1)
+                })
+        })
+        .unwrap();
     let (game, ids) = armed_game_source(1, &source.id);
     let first = arm_plan(&game, &ids, false, true, false, false);
-    let mut done = accepted(&game, &first); fuel_finish(&mut done); component_next_period(&mut done);
+    let mut done = accepted(&game, &first);
+    fuel_finish(&mut done);
+    component_next_period(&mut done);
     for identical in [false, true] {
         let mut unchanged = arm_plan(&done, &ids, false, identical, false, false);
-        unchanged.dues.clear(); unchanged.draws.clear();
-        let ready = validate(content(), &done.state, Side::Axis, period(&done.state).unwrap(), &unchanged).unwrap();
+        unchanged.dues.clear();
+        unchanged.draws.clear();
+        let ready = validate(
+            content(),
+            &done.state,
+            Side::Axis,
+            period(&done.state).unwrap(),
+            &unchanged,
+        )
+        .unwrap();
         assert!(ready.arming.changes.is_empty() && ready.demands.is_empty());
         let stock = done.state.logistics.air_dumps.clone();
-        let mut preserved = accepted(&done, &unchanged); assert!(fuel_finish(&mut preserved).is_empty());
+        let mut preserved = accepted(&done, &unchanged);
+        assert!(fuel_finish(&mut preserved).is_empty());
         assert_eq!(preserved.state.logistics.air_dumps, stock);
-        assert_eq!(preserved.state.air.runtime.preparation.current, done.state.air.runtime.preparation.current);
+        assert_eq!(
+            preserved.state.air.runtime.preparation.current,
+            done.state.air.runtime.preparation.current
+        );
     }
     let mut changed = arm_plan(&done, &ids, false, true, false, false);
-    changed.arming[0].planes[0].bombs.as_mut().unwrap().bomb_points = source.modes[0].bomb_capacity.unwrap();
+    changed.arming[0].planes[0]
+        .bombs
+        .as_mut()
+        .unwrap()
+        .bomb_points = source.modes[0].bomb_capacity.unwrap();
     changed.draws[0].draws[0].amount.stores = StoresPoints::new(0);
-    let ready = validate(content(), &done.state, Side::Axis, period(&done.state).unwrap(), &changed).unwrap();
+    let ready = validate(
+        content(),
+        &done.state,
+        Side::Axis,
+        period(&done.state).unwrap(),
+        &changed,
+    )
+    .unwrap();
     assert_eq!(ready.demands[&SgsuId("axis.refit".into())].ammo.get(), 1);
     let stock = done.state.logistics.air_dumps["refit.stock"].supplies.ammo;
-    let mut changed_game = accepted(&done, &changed); fuel_finish(&mut changed_game);
-    assert_eq!(changed_game.state.logistics.air_dumps["refit.stock"].supplies.ammo, stock - 1);
+    let mut changed_game = accepted(&done, &changed);
+    fuel_finish(&mut changed_game);
+    assert_eq!(
+        changed_game.state.logistics.air_dumps["refit.stock"]
+            .supplies
+            .ammo,
+        stock - 1
+    );
 }
