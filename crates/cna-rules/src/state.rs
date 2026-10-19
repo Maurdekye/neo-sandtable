@@ -166,6 +166,12 @@ pub struct LandState {
     pub arrivals: crate::land::arrivals::ArrivalState,
     #[serde(default)]
     pub breakdown: crate::land::breakdown::BreakdownState,
+    /// Current recovery opportunity and buffered owner plans; no outcome archive.
+    #[serde(default)]
+    pub recovery: crate::land::recovery::RecoveryProcedureState,
+    /// Minimal positive repair receipt lots and never-reused per-side serials.
+    #[serde(default)]
+    pub(crate) replacement_receipts: crate::land::replacements::receipts::ReplacementReceiptState,
     #[serde(default)]
     pub reaction: crate::land::reaction::ReactionState,
     /// Public target-hex assault announcements, retained until the OpStage ends.

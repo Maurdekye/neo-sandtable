@@ -12,6 +12,7 @@ pub mod map;
 pub mod movement;
 pub mod offmap;
 pub mod reaction;
+pub mod recovery;
 pub mod replacements;
 pub mod reserve;
 pub mod stacking;
