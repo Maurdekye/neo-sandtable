@@ -199,7 +199,10 @@ pub fn armed_projection(current: &CurrentPreparation, old_bit: bool) -> bool {
 /// Cases: airlog:38.21, airlog:38.25
 pub(in crate::air) fn known_fuel(current: &CurrentPreparation) -> Option<(usize, bool)> {
     match current {
-        CurrentPreparation::KnownFuel { mode, fuel_available } => Some((*mode, *fuel_available)),
+        CurrentPreparation::KnownFuel {
+            mode,
+            fuel_available,
+        } => Some((*mode, *fuel_available)),
         CurrentPreparation::KnownLoad { load } => Some((load.mode, load.fuel_available)),
         _ => None,
     }

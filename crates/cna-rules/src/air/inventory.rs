@@ -577,7 +577,10 @@ fn check_preparation_records(
             preparation::validate_load(content, plane, load)?;
         }
         if let Some((mode, available)) = preparation::known_fuel(current) {
-            let source = content.units.aircraft.get(&plane.aircraft)
+            let source = content
+                .units
+                .aircraft
+                .get(&plane.aircraft)
                 .ok_or_else(|| invalid("known fuel has no aircraft source"))?;
             super::maintenance::fuel_points(source, mode)?;
             if plane.fuelled != available {
@@ -659,9 +662,10 @@ fn check_preparation_transition(
             let next_fuel = current.and_then(preparation::known_fuel);
             if (!previous.fuelled && plane.fuelled)
                 || next_fuel.is_some_and(|(mode, available)| {
-                    available && prior_fuel.is_none_or(|(old_mode, old_available)| {
-                        !old_available || old_mode != mode
-                    })
+                    available
+                        && prior_fuel.is_none_or(|(old_mode, old_available)| {
+                            !old_available || old_mode != mode
+                        })
                 })
                 || prior_fuel.is_some_and(|(mode, available)| {
                     available && next_fuel.is_some_and(|(next, _)| mode != next)
@@ -669,12 +673,16 @@ fn check_preparation_transition(
                 || (matches!(current, Some(CurrentPreparation::KnownFuel { .. }))
                     && !matches!(before, Some(CurrentPreparation::KnownFuel { .. })))
             {
-                return Err(invalid("ordinary update cannot establish or change paid fuel"));
+                return Err(invalid(
+                    "ordinary update cannot establish or change paid fuel",
+                ));
             }
             if matches!(before, Some(CurrentPreparation::KnownFuel { .. }))
                 && !matches!(current, Some(CurrentPreparation::KnownFuel { .. }))
             {
-                return Err(invalid("ordinary update cannot replace partial fuel knowledge"));
+                return Err(invalid(
+                    "ordinary update cannot replace partial fuel knowledge",
+                ));
             }
             match (before, current) {
                 (
@@ -718,7 +726,12 @@ fn check_preparation_transition(
                 return Err(invalid("new aircraft cannot fabricate legacy preparation"));
             }
             if plane.fuelled
-                || matches!(current, Some(CurrentPreparation::KnownLoad { .. } | CurrentPreparation::KnownFuel { .. }))
+                || matches!(
+                    current,
+                    Some(
+                        CurrentPreparation::KnownLoad { .. } | CurrentPreparation::KnownFuel { .. }
+                    )
+                )
             {
                 return Err(invalid("new aircraft cannot establish a known load"));
             }
@@ -916,7 +929,9 @@ pub(in crate::air) fn update_fueling(
     air: &mut AirState,
     paid: super::maintenance::window::fueling::PaidFuelAdmission,
 ) -> Result<(), EngineError> {
-    update_inner(content, air, None, Some(&paid), |runtime| paid.apply(runtime))
+    update_inner(content, air, None, Some(&paid), |runtime| {
+        paid.apply(runtime)
+    })
 }
 
 /// Internal permission for exactly one canonical physical-site allocation.
