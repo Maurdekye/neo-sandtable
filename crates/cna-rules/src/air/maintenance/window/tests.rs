@@ -14,8 +14,8 @@ use cna_core::{
 };
 use std::sync::OnceLock;
 
-mod fueling_tests;
 mod arming_tests;
+mod fueling_tests;
 
 fn content() -> &'static CnaContent {
     static CONTENT: OnceLock<CnaContent> = OnceLock::new();
@@ -572,7 +572,7 @@ fn first_period_refit_domain_is_zero_without_changing_dues_draws_or_later_domain
         let ActionSchema::Record { fields } = &mut expected.schema else {
             unreachable!()
         };
-        for name in ["cohorts", "fueling"] {
+        for name in ["cohorts", "fueling", "arming"] {
             let ActionSchema::List { max, .. } =
                 &mut fields.iter_mut().find(|f| f.name == name).unwrap().schema
             else {
