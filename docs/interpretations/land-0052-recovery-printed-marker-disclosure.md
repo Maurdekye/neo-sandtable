@@ -3,10 +3,10 @@
 - **Cases:** land:3.62, land:21.42, land:21.63, land:22.5
 - **Status:** proposed
 - **Classification:** consequential
-- **Profile version:** pending decision; no runtime change
-- **Decided by:** pending; proposal by @rules-land, 2026-10-19
+- **Profile version:** v1, pending publication
+- **Decided by:** @neo-sandtable, 2026-10-19 (me25575fd8865)
 - **Owner review:** pending
-- **Related interpretation:** land-0038; its adopted ruling is not changed by this proposal
+- **Amends:** land-0038's owner-adopted unchanged-former-owner-stream clause; historical text retained
 
 ## Question
 
@@ -25,7 +25,7 @@ Adopted land-0038 retains central Sync, limits provenance Notes to the actor, an
 captor recovery to leave the former-owner stream unchanged. Taken literally across an action
 and no action, those requirements conflict when the physical public marker changes.
 
-## Proposed ruling — awaiting decision
+## Ruling — lead decided, owner review pending
 
 Keep normal public printed-face changes. A former owner receives no special recovery notice,
 private equipment counts, supply costs, dice, accounts or provenance merely because it once
@@ -35,10 +35,11 @@ Privacy pairs compare worlds with the same permitted public physical outcomes an
 private holdings or histories; their former-owner streams must match. Such a comparison does
 not require a removed or moved public marker to remain visible at its previous position.
 
-This would clarify only the unchanged-stream requirement of land-0038. Its actor-only Notes,
-physical conservation and funding rules remain in force. The alternative is to require no
-former-owner face delta at all, which needs an explicit change to the current public-face
-contract and Sync behavior. Neither alternative is implemented here.
+This explicitly amends the owner-adopted unchanged-stream requirement of land-0038 to permit
+normal public reasonless printed-face removal and movement. Its actor-only Notes, physical
+conservation and funding rules remain in force. Central Sync, views and the printed-face
+contract remain unchanged. Do not retain a stale marker to hide a physical change. The owner
+must see this amendment in the next batch; it does not silently replace the historical text.
 
 ## Rationale
 
@@ -52,4 +53,5 @@ Three authored controls in recovery/disclosure_contract_tests.rs call production
 fixture changes: public removal, public towing, and equal public removals with different
 private contents. They also check that actor-only Notes do not enter the former-owner stream.
 They remain unrun and are source-contract controls, not Respond/Advance repair-driver proof.
-No callable repair procedure, projection change or adopted interpretation change is claimed.
+No callable repair procedure or projection change is claimed. The lead approved implementation;
+the amendment itself remains pending the owner's next batch review after publication.
