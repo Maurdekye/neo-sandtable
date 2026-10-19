@@ -578,7 +578,9 @@ fn late_inventory_error_after_actual_fuel_commit_and_refit_draw_rolls_back_compl
     let mut rng = CampaignRng::from_state(&accepted.rng);
     let prefix = vec![EngineEvent::new(
         Audience::Side(Side::Axis),
-        GameEvent::Note { text: "Earlier accepted event".into() },
+        GameEvent::Note {
+            text: "Earlier accepted event".into(),
+        },
     )];
     let mut events = prefix.clone();
     let mut reached_late_boundary = false;
@@ -636,13 +638,24 @@ fn late_inventory_error_after_actual_fuel_commit_and_refit_draw_rolls_back_compl
 /// Cases: airlog:38.21, airlog:38.24, airlog:38.36, airlog:35.14, airlog:49.15
 #[test]
 fn combined_finish_preserves_fractional_history_and_rounds_split_repeated_sources_once() {
-    let mut game = game_with_fuel();
+    let mut state = base(false);
+    state
+        .logistics
+        .air_dumps
+        .get_mut("refit.stock")
+        .unwrap()
+        .supplies
+        .fuel = 1000;
     let servicer = SgsuId("axis.refit".into());
     let a = SupplySource::AirDump("refit.stock".into());
     let b = SupplySource::AirDump("refit.second".into());
-    let mut second = game.state.logistics.air_dumps["refit.stock"].clone();
-    second.id = "refit.second".into();
-    game.state.logistics.air_dumps.insert(second.id.clone(), second);
+    // Three advertised source slots permit three wire draws, including a
+    // repeated source. The third stock stays unused and must remain unchanged.
+    for id in ["refit.second", "refit.unused"] {
+        let mut stock = state.logistics.air_dumps["refit.stock"].clone();
+        stock.id = id.into();
+        state.logistics.air_dumps.insert(stock.id.clone(), stock);
+    }
     let draw = |source, fuel, stores, water| crate::logistics::SupplyDraw {
         source,
         amount: SupplyDemand {
@@ -656,23 +669,54 @@ fn combined_finish_preserves_fractional_history_and_rounds_split_repeated_source
     // its exact debit history. This does not simulate an earlier campaign turn.
     let prior_draws = vec![draw(a.clone(), 3, 0, 0), draw(b.clone(), 6, 0, 0)];
     air_supply::spend(
-        content(), &mut game.state, Side::Axis, &servicer,
+        content(),
+        &mut state,
+        Side::Axis,
+        &servicer,
         AirSupplyUse::AircraftServicing,
         AirSupplyDebit {
-            demand: SupplyDemand { fuel: FuelTenths::new(9), ..Default::default() },
+            demand: SupplyDemand {
+                fuel: FuelTenths::new(9),
+                ..Default::default()
+            },
             draws: &prior_draws,
             prior: &BTreeMap::new(),
         },
-    ).unwrap();
+    )
+    .unwrap();
     let history = refit::DebitReceipt {
         servicer: servicer.clone(),
-        fuel_rounding: prior_draws.iter().map(|d| (d.source.clone(), d.amount.fuel)).collect(),
+        fuel_rounding: prior_draws
+            .iter()
+            .map(|d| (d.source.clone(), d.amount.fuel))
+            .collect(),
         draws: prior_draws,
     };
-    inventory::update(content(), &mut game.state.air, |runtime| {
-        runtime.maintenance.debits.entry(Side::Axis).or_default().push(history.clone());
+    let mut rng = CampaignRng::from_seed([41; 32]);
+    enter(
+        content(),
+        &mut state,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut Vec::new(),
+        },
+        false,
+    )
+    .unwrap();
+    inventory::update(content(), &mut state.air, |runtime| {
+        runtime
+            .maintenance
+            .debits
+            .entry(Side::Axis)
+            .or_default()
+            .push(history.clone());
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
+    let game = Game::<Cna> {
+        state,
+        rng: rng.state(),
+    };
     let mut selected = fueled_plan(&game, true, false);
     let total = selected.draws[0].draws[0].amount.fuel.get();
     assert_eq!(total % 10, 0);
@@ -681,18 +725,32 @@ fn combined_finish_preserves_fractional_history_and_rounds_split_repeated_source
         draw(b.clone(), 3, 1, 1),
         draw(a.clone(), total - 5, 0, 0),
     ];
-    let ready = validate(content(), &game.state, Side::Axis, period(&game.state).unwrap(), &selected).unwrap();
-    assert_eq!(ready.demands[&servicer], SupplyDemand {
-        fuel: FuelTenths::new(total), stores: StoresPoints::new(2), water: WaterPoints::new(1),
-        ..Default::default()
-    });
+    let ready = validate(
+        content(),
+        &game.state,
+        Side::Axis,
+        period(&game.state).unwrap(),
+        &selected,
+    )
+    .unwrap();
+    assert_eq!(
+        ready.demands[&servicer],
+        SupplyDemand {
+            fuel: FuelTenths::new(total),
+            stores: StoresPoints::new(2),
+            water: WaterPoints::new(1),
+            ..Default::default()
+        }
+    );
     assert_eq!(ready.fueling.demands[&servicer].fuel.get(), total - 10);
     let before_a = game.state.logistics.air_dumps["refit.stock"].supplies;
     let before_b = game.state.logistics.air_dumps["refit.second"].supplies;
+    let unused = game.state.logistics.air_dumps["refit.unused"].clone();
     let mut done = accepted(&game, &selected);
     fuel_finish(&mut done);
     let after_a = done.state.logistics.air_dumps["refit.stock"].supplies;
     let after_b = done.state.logistics.air_dumps["refit.second"].supplies;
+    assert_eq!(done.state.logistics.air_dumps["refit.unused"], unused);
     // A's old 3 + new (total-3) ends on a whole point; B's 6+3
     // stays inside its already-paid point, including across repeated A draws.
     assert_eq!(after_a.fuel, before_a.fuel - (total / 10 - 1));
@@ -705,14 +763,21 @@ fn combined_finish_preserves_fractional_history_and_rounds_split_repeated_source
     assert_eq!(debits.len(), 2);
     assert_eq!(debits[0], history);
     assert_eq!(debits[1].draws, selected.draws[0].draws);
-    assert_eq!(debits[1].fuel_rounding, vec![
-        (a.clone(), FuelTenths::new(2)), (b, FuelTenths::new(3)),
-        (a, FuelTenths::new(total - 5)),
-    ]);
+    assert_eq!(
+        debits[1].fuel_rounding,
+        vec![
+            (a.clone(), FuelTenths::new(2)),
+            (b, FuelTenths::new(3)),
+            (a, FuelTenths::new(total - 5)),
+        ]
+    );
     let maintenance = &done.state.air.runtime.maintenance;
     assert_eq!(maintenance.receipts[&Side::Axis].len(), 1);
     assert_eq!(maintenance.fuel_receipts[&Side::Axis].len(), 1);
-    assert!(done.state.air.runtime.sgsus[&servicer].operation_paid(dues_stage(period(&done.state).unwrap()).unwrap()));
+    assert!(
+        done.state.air.runtime.sgsus[&servicer]
+            .operation_paid(dues_stage(period(&done.state).unwrap()).unwrap())
+    );
     inventory::check(content(), &done.state.air).unwrap();
     let before = serde_json::to_vec(&done).unwrap();
     assert!(fuel_finish(&mut done).is_empty());
@@ -725,10 +790,14 @@ fn damaged_positive_levels_count_union_of_fuel_and_refit_sgsus_once() {
     for (levels, separate, legal) in [(1, true, false), (1, false, true), (2, true, true)] {
         let mut game = game_with_fuel();
         inventory::update(content(), &mut game.state.air, |runtime| {
-            runtime.facilities.get_mut(&FacilityId("airfield_benina".into())).unwrap()
+            runtime
+                .facilities
+                .get_mut(&FacilityId("airfield_benina".into()))
+                .unwrap()
                 .current_capacity = FacilityCapacity::Levels(levels);
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         let mut selected = fueled_plan(&game, true, false);
         if separate {
             let foreign = SgsuId("axis.foreign".into());
@@ -743,30 +812,39 @@ fn damaged_positive_levels_count_union_of_fuel_and_refit_sgsus_once() {
             selected.draws.push(fuel_draw);
         }
         let before = serde_json::to_vec(&game).unwrap();
-        let result = validate(content(), &game.state, Side::Axis, period(&game.state).unwrap(), &selected);
+        let result = validate(
+            content(),
+            &game.state,
+            Side::Axis,
+            period(&game.state).unwrap(),
+            &selected,
+        );
         if legal {
             result.unwrap();
             let mut done = accepted(&game, &selected);
             fuel_finish(&mut done);
-            assert_eq!(done.state.air.runtime.maintenance.receipts[&Side::Axis].len(), 1);
-            assert_eq!(done.state.air.runtime.maintenance.fuel_receipts[&Side::Axis].len(), 1);
+            assert_eq!(
+                done.state.air.runtime.maintenance.receipts[&Side::Axis].len(),
+                1
+            );
+            assert_eq!(
+                done.state.air.runtime.maintenance.fuel_receipts[&Side::Axis].len(),
+                1
+            );
         } else {
             assert!(matches!(result, Err(Rejection::Illegal { message })
                 if message.contains("active servicing SGSUs exceed damaged facility capacity")));
-            assert!(matches!(rejected_response(content(), &game, serde_json::to_value(&selected).unwrap()), Rejection::Illegal { .. }));
+            assert!(matches!(
+                rejected_response(content(), &game, serde_json::to_value(&selected).unwrap()),
+                Rejection::Illegal { .. }
+            ));
         }
         assert_eq!(serde_json::to_vec(&game).unwrap(), before);
     }
 }
 
 fn assert_private_pair_through_pass(a: &Game<Cna>, b: &Game<Cna>, observer: Side) {
-    assert_indistinguishable(
-        &Cna::dev(),
-        content(),
-        &a.state,
-        &b.state,
-        observer,
-    );
+    assert_indistinguishable(&Cna::dev(), content(), &a.state, &b.state, observer);
     assert_action_indistinguishable(
         &Cna::dev(),
         content(),
@@ -777,14 +855,7 @@ fn assert_private_pair_through_pass(a: &Game<Cna>, b: &Game<Cna>, observer: Side
     );
     let a = accepted(a, &RefitPlan::default());
     let b = accepted(b, &RefitPlan::default());
-    assert_action_indistinguishable(
-        &Cna::dev(),
-        content(),
-        &a,
-        &b,
-        &Command::Advance,
-        observer,
-    );
+    assert_action_indistinguishable(&Cna::dev(), content(), &a, &b, &Command::Advance, observer);
 }
 
 /// Cases: airlog:38.21, airlog:38.24, airlog:38.25, land:3.6
