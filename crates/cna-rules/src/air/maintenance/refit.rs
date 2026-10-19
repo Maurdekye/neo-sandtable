@@ -99,9 +99,16 @@ pub struct RefitPlan {
     pub dues: Vec<SgsuId>,
     pub cohorts: Vec<RefitCohort>,
     pub draws: Vec<ConsumerDraws>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty", deserialize_with = "deserialize_optional_list")]
     pub fueling: Vec<FuelCohort>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty", deserialize_with = "deserialize_optional_list")]
+    pub arming: Vec<super::window::arming::ArmingCohort>,
 }
+
+// Optional schema lists admit null as the empty choice, including old plans.
+fn deserialize_optional_list<'de, D, T>(d: D) -> Result<Vec<T>, D::Error>
+where D: serde::Deserializer<'de>, T: Deserialize<'de>,
+{ Ok(Option::<Vec<T>>::deserialize(d)?.unwrap_or_default()) }
 
 /// Explicit source mode and identity, never an answer-provided cost.
 /// Cases: airlog:38.21, airlog:38.24
@@ -180,6 +187,10 @@ pub struct MaintenanceState {
     pub debits: BTreeMap<Side, Vec<DebitReceipt>>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub fuel_receipts: BTreeMap<Side, Vec<FuelReceipt>>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub arming_receipts: BTreeMap<Side, Vec<super::window::arming::ArmingReceipt>>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub gun_charges: BTreeMap<Side, Vec<super::window::arming::GunCharge>>,
     pub finished: bool,
 }
 
@@ -262,6 +273,28 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
             }
         }
     }
+    let mut armed = BTreeSet::new();
+    let mut charged = BTreeSet::new();
+    for side in Side::ALL {
+        for receipt in window.arming_receipts.get(&side).into_iter().flatten() {
+            receipt.period.check()?;
+            if period_key(receipt.period) > period_key(period) || receipt.facility.0.is_empty()
+                || receipt.servicer.0.is_empty() || receipt.planes.is_empty()
+                || receipt.planes.iter().any(|id| id.0.is_empty() || !armed.insert((side, period_key(receipt.period), id)))
+                || receipt.gun_loads.iter().any(|(id, sq)| !receipt.planes.contains(id) || sq.is_empty())
+            { return Err(invalid("invalid arming service history")); }
+        }
+        for charge in window.gun_charges.get(&side).into_iter().flatten() {
+            charge.period.check()?;
+            if period_key(charge.period) > period_key(period) || charge.facility.0.is_empty()
+                || charge.payer.0.is_empty() || charge.assigned_squadron.is_empty() || charge.planes.is_empty()
+                || !charged.insert((side, period_key(charge.period), &charge.assigned_squadron))
+                || charge.planes.iter().any(|id| !window.arming_receipts.get(&side).into_iter().flatten().any(|r|
+                    r.period == charge.period && r.facility == charge.facility
+                    && r.gun_loads.contains(&(id.clone(), charge.assigned_squadron.clone()))))
+            { return Err(invalid("invalid squadron gun charge history")); }
+        }
+    }
     for receipt in window.debits.values().flatten() {
         let expected: Vec<_> = receipt
             .draws
@@ -274,7 +307,7 @@ pub(crate) fn check(window: &MaintenanceState) -> Result<(), EngineError> {
                     || draw.amount.fuel.get() < 0
                     || draw.amount.stores.get() < 0
                     || draw.amount.water.get() < 0
-                    || draw.amount.ammo.get() != 0
+                    || draw.amount.ammo.get() < 0
             })
         {
             return Err(invalid("finite maintenance debit/rounding history differs"));
@@ -327,6 +360,9 @@ pub(crate) fn check_transition(
             .get(&side)
             .map(Vec::as_slice)
             .unwrap_or(&[]);
+        if !new.arming_receipts.get(&side).map(Vec::as_slice).unwrap_or(&[]).starts_with(old.arming_receipts.get(&side).map(Vec::as_slice).unwrap_or(&[]))
+            || !new.gun_charges.get(&side).map(Vec::as_slice).unwrap_or(&[]).starts_with(old.gun_charges.get(&side).map(Vec::as_slice).unwrap_or(&[]))
+        { return Err(invalid("arming/charge history rewritten")); }
         if !new_fuel.starts_with(old_fuel) {
             return Err(invalid("maintenance fuel history rewritten"));
         }

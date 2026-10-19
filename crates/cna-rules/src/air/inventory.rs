@@ -561,12 +561,13 @@ fn check_preparation_records(
                 CurrentPreparation::InitialUnspecified
             ) | (
                 Some(InitialChoice::Committed | InitialChoice::Forfeited),
-                CurrentPreparation::Unprepared | CurrentPreparation::KnownLoad { .. }
+                CurrentPreparation::Unprepared | CurrentPreparation::KnownAmmunition { .. } | CurrentPreparation::KnownLoad { .. }
             ) | (
                 None,
                 CurrentPreparation::UnknownLegacy
                     | CurrentPreparation::Unprepared
                     | CurrentPreparation::KnownFuel { .. }
+                    | CurrentPreparation::KnownAmmunition { .. }
                     | CurrentPreparation::KnownLoad { .. }
             )
         );
@@ -576,13 +577,18 @@ fn check_preparation_records(
         if let CurrentPreparation::KnownLoad { load } = current {
             preparation::validate_load(content, plane, load)?;
         }
-        if let Some((mode, available)) = preparation::known_fuel(current) {
+        if let CurrentPreparation::KnownAmmunition { knowledge } = current {
+            knowledge.check(content, plane)?;
+        }
+        if let Some((mode, _)) = preparation::known_fuel(current) {
             let source = content
                 .units
                 .aircraft
                 .get(&plane.aircraft)
                 .ok_or_else(|| invalid("known fuel has no aircraft source"))?;
             super::maintenance::fuel_points(source, mode)?;
+        }
+        if let Some(available) = preparation::fuel_availability(current) {
             if plane.fuelled != available {
                 return Err(invalid("typed fuel and informational fuel mirror disagree"));
             }
@@ -638,7 +644,7 @@ fn migrate_preparation(content: &CnaContent, runtime: &mut AirRuntime) -> Result
 fn check_preparation_transition(
     old: &AirRuntime,
     new: &AirRuntime,
-    paid: Option<&super::maintenance::window::fueling::PaidFuelAdmission>,
+    paid: Option<&super::maintenance::window::fueling::PaidServicingAdmission>,
 ) -> Result<(), EngineError> {
     if !new.preparation.initialized {
         return Err(invalid("preparation initialized marker cannot reset"));
@@ -648,6 +654,10 @@ fn check_preparation_transition(
             "ordinary update cannot edit initial credit history",
         ));
     }
+    if (old.maintenance.arming_receipts != new.maintenance.arming_receipts
+        || old.maintenance.gun_charges != new.maintenance.gun_charges)
+        && paid.is_none_or(|p| !p.permits_history(old, new))
+    { return Err(invalid("ordinary update cannot establish paid arming history")); }
     for (id, plane) in &new.aircraft {
         let current = new.preparation.current.get(id);
         if let Some(previous) = old.aircraft.get(id) {
@@ -657,6 +667,17 @@ fn check_preparation_transition(
             let before = old.preparation.current.get(id);
             if paid.is_some_and(|p| p.permits(id, old, new)) {
                 continue;
+            }
+            if (matches!(current, Some(CurrentPreparation::KnownAmmunition { .. }))
+                || matches!(before, Some(CurrentPreparation::KnownAmmunition { .. }))) && before != current
+            {
+                return Err(invalid("ordinary update cannot change partial ammunition knowledge"));
+            }
+            if let (Some(CurrentPreparation::KnownLoad { load: prior }), Some(CurrentPreparation::KnownLoad { load: next })) = (before, current)
+                && ((!prior.gun_ammunition && next.gun_ammunition)
+                    || (next.ordnance.is_some() && prior.ordnance != next.ordnance))
+            {
+                return Err(invalid("ordinary update cannot establish paid ammunition"));
             }
             let prior_fuel = before.and_then(preparation::known_fuel);
             let next_fuel = current.and_then(preparation::known_fuel);
@@ -729,7 +750,7 @@ fn check_preparation_transition(
                 || matches!(
                     current,
                     Some(
-                        CurrentPreparation::KnownLoad { .. } | CurrentPreparation::KnownFuel { .. }
+                        CurrentPreparation::KnownLoad { .. } | CurrentPreparation::KnownFuel { .. } | CurrentPreparation::KnownAmmunition { .. }
                     )
                 )
             {
@@ -750,7 +771,7 @@ fn project_preparation(old: &AirRuntime, new: &mut AirRuntime) -> Result<(), Eng
             .ok_or_else(|| invalid("live aircraft preparation is missing"))?;
         let old_bit = old.aircraft.get(id).map_or(plane.armed, |p| p.armed);
         plane.armed = preparation::armed_projection(current, old_bit);
-        if let Some((_, available)) = preparation::known_fuel(current) {
+        if let Some(available) = preparation::fuel_availability(current) {
             plane.fuelled = available;
         }
     }
@@ -921,17 +942,26 @@ where
     update_inner(content, air, None, None, edit)
 }
 
-/// Exact fuel-only admission from the successful draft debit. No caller edit
+/// Compatibility wrapper for exact post-debit servicing. No caller edit
 /// closure is accepted, so unrelated edits cannot ride this permission.
 /// Cases: airlog:38.21, airlog:38.24
 pub(in crate::air) fn update_fueling(
     content: &CnaContent,
     air: &mut AirState,
-    paid: super::maintenance::window::fueling::PaidFuelAdmission,
+    paid: super::maintenance::window::fueling::PaidServicingAdmission,
 ) -> Result<(), EngineError> {
     update_inner(content, air, None, Some(&paid), |runtime| {
         paid.apply(runtime)
     })
+}
+
+/// Exact combined fuel/ammunition admission from the successful shared debit.
+/// Cases: airlog:38.21, airlog:38.43, airlog:38.44
+pub(in crate::air) fn update_servicing(
+    content: &CnaContent, air: &mut AirState,
+    paid: super::maintenance::window::fueling::PaidServicingAdmission,
+) -> Result<(), EngineError> {
+    update_fueling(content, air, paid)
 }
 
 /// Internal permission for exactly one canonical physical-site allocation.
@@ -1033,7 +1063,7 @@ fn update_inner<F>(
     content: &CnaContent,
     air: &mut AirState,
     allocation: Option<SiteAllocation>,
-    paid: Option<&super::maintenance::window::fueling::PaidFuelAdmission>,
+    paid: Option<&super::maintenance::window::fueling::PaidServicingAdmission>,
     edit: F,
 ) -> Result<(), EngineError>
 where

@@ -60,9 +60,95 @@ pub enum CurrentPreparation {
         mode: usize,
         fuel_available: bool,
     },
+    /// Paid ammunition facts, retaining every unknown component explicitly.
+    /// Cases: airlog:38.41, airlog:38.43, airlog:38.44
+    KnownAmmunition {
+        knowledge: KnownAmmunition,
+    },
     KnownLoad {
         load: KnownLoad,
     },
+}
+
+/// Aircraft-specific component facts, never a free load or initial credit.
+/// Empty fuel needs no mode; positive fuel and carried bombs do.
+/// Cases: airlog:38.21, airlog:38.41, airlog:38.44
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct KnownAmmunition {
+    pub mode: Option<usize>,
+    pub fuel_available: Option<bool>,
+    pub gun_ammunition: Option<bool>,
+    pub ordnance: OrdnanceKnowledge,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "snake_case", deny_unknown_fields)]
+pub enum OrdnanceKnowledge {
+    Unknown,
+    Known {
+        #[serde(deserialize_with = "deserialize_ordnance")]
+        carried: Option<CarriedOrdnance>,
+    },
+}
+
+impl KnownAmmunition {
+    /// Expand only recorded facts, never the coarse inventory bits.
+    /// Cases: airlog:38.21, airlog:38.41, scen:59.32
+    pub(in crate::air) fn from_current(current: &CurrentPreparation) -> Option<Self> {
+        let (mode, fuel_available, gun_ammunition, ordnance) = match current {
+            CurrentPreparation::InitialUnspecified => return None,
+            CurrentPreparation::UnknownLegacy => (None, None, None, OrdnanceKnowledge::Unknown),
+            CurrentPreparation::Unprepared => (None, Some(false), Some(false), OrdnanceKnowledge::Known { carried: None }),
+            CurrentPreparation::KnownFuel { mode, fuel_available } =>
+                (Some(*mode), Some(*fuel_available), None, OrdnanceKnowledge::Unknown),
+            CurrentPreparation::KnownAmmunition { knowledge } => return Some(knowledge.clone()),
+            CurrentPreparation::KnownLoad { load } => (Some(load.mode), Some(load.fuel_available),
+                Some(load.gun_ammunition), OrdnanceKnowledge::Known { carried: load.ordnance.clone() }),
+        };
+        Some(Self { mode, fuel_available, gun_ammunition, ordnance })
+    }
+
+    pub(in crate::air) fn into_current(self) -> CurrentPreparation {
+        if let (Some(mode), Some(fuel_available), Some(gun_ammunition), OrdnanceKnowledge::Known { carried }) =
+            (self.mode, self.fuel_available, self.gun_ammunition, &self.ordnance)
+        {
+            CurrentPreparation::KnownLoad { load: KnownLoad {
+                mode, fuel_available, gun_ammunition, ordnance: carried.clone(),
+            } }
+        } else {
+            CurrentPreparation::KnownAmmunition { knowledge: self }
+        }
+    }
+
+    pub(in crate::air) fn check(&self, content: &CnaContent, plane: &AircraftState) -> Result<(), EngineError> {
+        if self.fuel_available == Some(true) && self.mode.is_none() {
+            return Err(invalid("positive fuel has no selected mode"));
+        }
+        if let Some(mode) = self.mode {
+            let load = KnownLoad {
+                mode,
+                fuel_available: self.fuel_available.unwrap_or(false),
+                gun_ammunition: self.gun_ammunition.unwrap_or(false),
+                ordnance: match &self.ordnance {
+                    OrdnanceKnowledge::Unknown => None,
+                    OrdnanceKnowledge::Known { carried } => carried.clone(),
+                },
+            };
+            validate_load(content, plane, &load)?;
+            if self.fuel_available == Some(true) {
+                super::maintenance::fuel_points(&content.units.aircraft[&plane.aircraft], mode)?;
+            }
+        } else if matches!(&self.ordnance, OrdnanceKnowledge::Known { carried: Some(_) }) {
+            return Err(invalid("carried ordnance has no selected mode"));
+        }
+        if self.mode.is_none() && self.fuel_available.is_none() && self.gun_ammunition.is_none()
+            && self.ordnance == OrdnanceKnowledge::Unknown
+        {
+            return Err(invalid("partial preparation contains no knowledge"));
+        }
+        Ok(())
+    }
 }
 
 /// A trusted recorded load, not a request that buys one or authorizes flight.
@@ -179,6 +265,19 @@ pub fn armed_projection(current: &CurrentPreparation, old_bit: bool) -> bool {
         | CurrentPreparation::InitialUnspecified
         | CurrentPreparation::KnownFuel { .. } => old_bit,
         CurrentPreparation::Unprepared => false,
+        CurrentPreparation::KnownAmmunition { knowledge } => {
+            let payload = match &knowledge.ordnance {
+                OrdnanceKnowledge::Unknown => None,
+                OrdnanceKnowledge::Known { carried } => Some(carried.as_ref().is_some_and(|o| match o {
+                    CarriedOrdnance::Bombs { bomb_points } => *bomb_points > 0,
+                    CarriedOrdnance::Mines { source_bombload_rating } => *source_bombload_rating > 0,
+                    CarriedOrdnance::Torpedoes { rating_points } => *rating_points > 0,
+                })),
+            };
+            if knowledge.gun_ammunition == Some(true) || payload == Some(true) { true }
+            else if knowledge.gun_ammunition == Some(false) && payload == Some(false) { false }
+            else { old_bit }
+        }
         CurrentPreparation::KnownLoad { load } => {
             load.gun_ammunition
                 || load
@@ -204,7 +303,17 @@ pub(in crate::air) fn known_fuel(current: &CurrentPreparation) -> Option<(usize,
             fuel_available,
         } => Some((*mode, *fuel_available)),
         CurrentPreparation::KnownLoad { load } => Some((load.mode, load.fuel_available)),
+        CurrentPreparation::KnownAmmunition { knowledge } => knowledge.mode.zip(knowledge.fuel_available),
         _ => None,
+    }
+}
+
+/// Preserve known empty fuel even before a mode has ever been selected.
+/// Cases: airlog:38.21, airlog:38.41
+pub(in crate::air) fn fuel_availability(current: &CurrentPreparation) -> Option<bool> {
+    match current {
+        CurrentPreparation::KnownAmmunition { knowledge } => knowledge.fuel_available,
+        _ => known_fuel(current).map(|(_, available)| available),
     }
 }
 
