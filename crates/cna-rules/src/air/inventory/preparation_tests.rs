@@ -892,6 +892,9 @@ fn late_source_failure_preserves_known_state_and_old_serial_ids_cannot_appear() 
     }), Err(EngineError::Unsupported { case, detail }) if case == "airlog:34.14" && detail == "mines rating missing for it.z506b mode 0"));
     assert_eq!(before, bytes(&state.air));
     assert!(state.air.runtime.preparation.initialized);
+    // Restore the source for the independent old-ID invariant below, so the
+    // deliberately missing rating cannot mask that rejection.
+    content.units.aircraft.get_mut("it.z506b").unwrap().modes[0].bomb_capacity = Some(rating);
     let old_unused = PlaneId(format!(
         "axis.aircraft-{}",
         state.air.runtime.plane_serial[&Side::Axis]
