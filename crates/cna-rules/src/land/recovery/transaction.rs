@@ -16,10 +16,18 @@ pub(super) fn maintenance_key(state: &State) -> Result<RecoveryClosureKey, Engin
     if state.cursor.anchor() != "opstage.repair.maintenance" {
         return Err(invariant("not at maintenance"));
     }
-    let op_stage = state.cursor.op_stage.filter(|n| (1..=3).contains(n))
+    let op_stage = state
+        .cursor
+        .op_stage
+        .filter(|n| (1..=3).contains(n))
         .ok_or_else(|| invariant("missing Operations Stage"))?;
-    let half = state.cursor.half.ok_or_else(|| invariant("missing player half"))?;
-    let phasing = state.cursor.phasing(state.turn.player_a)
+    let half = state
+        .cursor
+        .half
+        .ok_or_else(|| invariant("missing player half"))?;
+    let phasing = state
+        .cursor
+        .phasing(state.turn.player_a)
         .ok_or_else(|| invariant("missing phasing player"))?;
     Ok(RecoveryClosureKey {
         game_turn: state.cursor.game_turn,
@@ -38,13 +46,15 @@ pub(super) fn supply_error(error: logistics::RecoverySupplyError) -> Rejection {
         RecoverySupplyError::Supply(SupplyError::Insufficient) => Rejection::Illegal {
             message: "insufficient supplies for the complete repair attempt".into(),
         },
-        RecoverySupplyError::Supply(SupplyError::Unsupported { case }) =>
+        RecoverySupplyError::Supply(SupplyError::Unsupported { case }) => {
             Rejection::Engine(EngineError::Unsupported {
                 case: case.into(),
                 detail: "repair requires an unavailable supply procedure".into(),
-            }),
-        RecoverySupplyError::Supply(SupplyError::Invalid | SupplyError::UnknownFuelRate) =>
-            Rejection::Engine(invariant("invalid trusted supply footprint")),
+            })
+        }
+        RecoverySupplyError::Supply(SupplyError::Invalid | SupplyError::UnknownFuelRate) => {
+            Rejection::Engine(invariant("invalid trusted supply footprint"))
+        }
     }
 }
 
@@ -66,9 +76,7 @@ pub(super) fn finish_prepaid<T>(
     resolve: impl FnOnce(&mut State, &mut Cx<'_>) -> Result<T, Rejection>,
 ) -> Result<Option<T>, Rejection> {
     let key = maintenance_key(state)?;
-    if prepared.actor() != key.phasing
-        || state.land.recovery.opportunity.as_ref() != Some(&key)
-    {
+    if prepared.actor() != key.phasing || state.land.recovery.opportunity.as_ref() != Some(&key) {
         return Err(invariant("actor or current opportunity changed").into());
     }
     if state.land.recovery.resolved {
@@ -78,17 +86,21 @@ pub(super) fn finish_prepaid<T>(
         return Err(invariant("no buffered repair plan").into());
     }
 
-    let debit = logistics::prepare_recovery_prepaid(content, state, prepared)
-        .map_err(supply_error)?;
+    let debit =
+        logistics::prepare_recovery_prepaid(content, state, prepared).map_err(supply_error)?;
     let mut draft = state.clone();
     let mut rng = cx.rng.clone();
     let mut events = Vec::new();
     logistics::apply_recovery_prepaid(content, &mut draft, &debit).map_err(supply_error)?;
-    let result = resolve(&mut draft, &mut Cx { rng: &mut rng, events: &mut events })?;
+    let result = resolve(
+        &mut draft,
+        &mut Cx {
+            rng: &mut rng,
+            events: &mut events,
+        },
+    )?;
     // No continuation may change the clock or replace the opportunity it closes.
-    if maintenance_key(&draft)? != key
-        || draft.land.recovery.opportunity.as_ref() != Some(&key)
-    {
+    if maintenance_key(&draft)? != key || draft.land.recovery.opportunity.as_ref() != Some(&key) {
         return Err(invariant("adjudication changed its closure").into());
     }
     draft.land.recovery.repair_plan = None;
