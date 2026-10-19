@@ -1,7 +1,7 @@
 //! Finite actual-SGSU fuel service. No free load, ammunition or flight rights.
 use super::*;
 use crate::air::{
-    preparation::{self, CurrentPreparation, KnownLoad},
+    preparation::{CurrentPreparation, KnownLoad},
     state::{AirRuntime, AircraftState},
 };
 use refit::FuelReceipt;
