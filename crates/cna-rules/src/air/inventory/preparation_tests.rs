@@ -127,7 +127,10 @@ fn every_live_matrix_cell_and_nonlive_current_is_strict_without_repair() {
         Some(CurrentPreparation::UnknownLegacy),
         Some(CurrentPreparation::Unprepared),
         Some(known(0, false, None)),
-        Some(CurrentPreparation::KnownFuel { mode: 0, fuel_available: true }),
+        Some(CurrentPreparation::KnownFuel {
+            mode: 0,
+            fuel_available: true,
+        }),
         None,
     ];
     for (row, credit) in ledger.iter().enumerate() {
@@ -720,9 +723,18 @@ fn preparation_mode_guns_ordnance_credit_and_current_variants_stay_private() {
         known(0, true, None),
         known(0, false, Some(CarriedOrdnance::Bombs { bomb_points: 1 })),
         known(1, false, None),
-        CurrentPreparation::KnownFuel { mode: 0, fuel_available: true },
-        CurrentPreparation::KnownFuel { mode: 1, fuel_available: true },
-        CurrentPreparation::KnownFuel { mode: 0, fuel_available: false },
+        CurrentPreparation::KnownFuel {
+            mode: 0,
+            fuel_available: true,
+        },
+        CurrentPreparation::KnownFuel {
+            mode: 1,
+            fuel_available: true,
+        },
+        CurrentPreparation::KnownFuel {
+            mode: 0,
+            fuel_available: false,
+        },
     ] {
         let mut state = base.clone();
         fixture_current(&content, &mut state.air, &id, current);
@@ -1012,17 +1024,27 @@ fn generic_known_fuel_and_known_load_updates_cannot_buy_fuel_or_change_fueled_mo
         for available in [false, true] {
             let mut air = base.air.clone();
             let current = if partial {
-                CurrentPreparation::KnownFuel { mode: 0, fuel_available: available }
+                CurrentPreparation::KnownFuel {
+                    mode: 0,
+                    fuel_available: available,
+                }
             } else {
-                CurrentPreparation::KnownLoad { load: KnownLoad {
-                    mode: 0, fuel_available: available, gun_ammunition: false, ordnance: None,
-                } }
+                CurrentPreparation::KnownLoad {
+                    load: KnownLoad {
+                        mode: 0,
+                        fuel_available: available,
+                        gun_ammunition: false,
+                        ordnance: None,
+                    },
+                }
             };
             fixture_current(&content, &mut air, &id, current);
             if !available {
                 rejects_edit(&content, &air, |runtime| {
                     match runtime.preparation.current.get_mut(&id).unwrap() {
-                        CurrentPreparation::KnownFuel { fuel_available, .. } => *fuel_available = true,
+                        CurrentPreparation::KnownFuel { fuel_available, .. } => {
+                            *fuel_available = true
+                        }
                         CurrentPreparation::KnownLoad { load } => load.fuel_available = true,
                         _ => unreachable!(),
                     }
@@ -1042,7 +1064,10 @@ fn generic_known_fuel_and_known_load_updates_cannot_buy_fuel_or_change_fueled_mo
             let mut broken = air.clone();
             broken.runtime.aircraft.get_mut(&id).unwrap().fuelled = !available;
             let before = bytes(&broken);
-            assert!(matches!(check(&content, &broken), Err(EngineError::Invariant { .. })));
+            assert!(matches!(
+                check(&content, &broken),
+                Err(EngineError::Invariant { .. })
+            ));
             assert_eq!(bytes(&broken), before);
         }
     }
@@ -1054,7 +1079,13 @@ fn generic_known_fuel_and_known_load_updates_cannot_buy_fuel_or_change_fueled_mo
         Ok(())
     });
     rejects_edit(&content, &air, |runtime| {
-        runtime.preparation.current.insert(id.clone(), CurrentPreparation::KnownFuel { mode: 0, fuel_available: true });
+        runtime.preparation.current.insert(
+            id.clone(),
+            CurrentPreparation::KnownFuel {
+                mode: 0,
+                fuel_available: true,
+            },
+        );
         runtime.aircraft.get_mut(&id).unwrap().fuelled = true;
         Ok(())
     });

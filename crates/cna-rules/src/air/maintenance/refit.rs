@@ -317,8 +317,16 @@ pub(crate) fn check_transition(
         if !next.starts_with(prior) || !new_debits.starts_with(old_debits) {
             return Err(invalid("maintenance attempt/debit history rewritten"));
         }
-        let old_fuel = old.fuel_receipts.get(&side).map(Vec::as_slice).unwrap_or(&[]);
-        let new_fuel = new.fuel_receipts.get(&side).map(Vec::as_slice).unwrap_or(&[]);
+        let old_fuel = old
+            .fuel_receipts
+            .get(&side)
+            .map(Vec::as_slice)
+            .unwrap_or(&[]);
+        let new_fuel = new
+            .fuel_receipts
+            .get(&side)
+            .map(Vec::as_slice)
+            .unwrap_or(&[]);
         if !new_fuel.starts_with(old_fuel) {
             return Err(invalid("maintenance fuel history rewritten"));
         }

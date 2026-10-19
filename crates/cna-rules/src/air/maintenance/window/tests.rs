@@ -571,9 +571,11 @@ fn first_period_refit_domain_is_zero_without_changing_dues_draws_or_later_domain
             unreachable!()
         };
         for name in ["cohorts", "fueling"] {
-            let ActionSchema::List { max, .. } = &mut fields
-                .iter_mut().find(|f| f.name == name).unwrap().schema
-            else { unreachable!() };
+            let ActionSchema::List { max, .. } =
+                &mut fields.iter_mut().find(|f| f.name == name).unwrap().schema
+            else {
+                unreachable!()
+            };
             *max = 0;
         }
         // Full domain equality preserves dues/draws, inner priority and all
