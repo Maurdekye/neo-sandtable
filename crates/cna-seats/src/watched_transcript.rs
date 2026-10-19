@@ -16,6 +16,15 @@ use uuid::Uuid;
 #[path = "watched_restore_parts.rs"]
 pub mod restore_parts;
 
+/// Typed compaction edge transformation only, not parked-history admission.
+#[path = "watched_restore_graph.rs"]
+pub mod restore_graph;
+
+/// Narrow normal user row and assistant content subsets, never a complete
+/// restored conversation or file-adoption decision.
+#[path = "watched_restore_rows.rs"]
+pub mod restore_rows;
+
 pub const MAX_TRANSCRIPT_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_RECORDS: usize = 100_000;
 pub const MAX_RECORD_BYTES: usize = 2 * 1024 * 1024;
