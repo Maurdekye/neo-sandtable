@@ -24,5 +24,9 @@ sha2 = "0.10"
 reqwest = { version = "0.12.28", default-features = false, features = ["json", "stream", "rustls-tls"] }
 futures-util = "0.3"
 
+[target.'cfg(windows)'.dependencies]
+process-wrap = { version = "=10.0.1", default-features = false, features = ["tokio1", "creation-flags", "job-object", "kill-on-drop"] }
+win32job = "=2.0.3"
+
 [lints]
 workspace = true
