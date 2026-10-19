@@ -11,6 +11,11 @@ use serde_json::Value;
 use std::io::BufRead;
 use uuid::Uuid;
 
+/// Independent source-derived leaves and raw graph checks. These deliberately
+/// do not turn syntax inspection into native resume admission.
+#[path = "watched_restore_parts.rs"]
+pub mod restore_parts;
+
 pub const MAX_TRANSCRIPT_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_RECORDS: usize = 100_000;
 pub const MAX_RECORD_BYTES: usize = 2 * 1024 * 1024;
