@@ -59,10 +59,6 @@ fn source_gap(case: &str, detail: &str) -> EngineError {
     }
 }
 
-#[allow(
-    dead_code,
-    reason = "Truck returns will validate the exact prepared State"
-)]
 fn same_state(a: &State, b: &State) -> Result<bool, EngineError> {
     // Exact ephemeral footprint only. Never log either snapshot or its JSON.
     let a = serde_json::to_value(a).map_err(|_| invariant("state footprint cannot serialize"))?;
@@ -378,10 +374,6 @@ pub(crate) fn consume_replacement_receipt(
     Ok(())
 }
 
-#[allow(
-    dead_code,
-    reason = "Checked site-return arithmetic awaits truck repair"
-)]
 fn add(a: i32, b: i32) -> Result<i32, EngineError> {
     if a < 0 || b < 0 {
         return Err(invariant("negative returned holdings"));
@@ -390,10 +382,6 @@ fn add(a: i32, b: i32) -> Result<i32, EngineError> {
         .ok_or_else(|| invariant("returned holdings overflow"))
 }
 
-#[allow(
-    dead_code,
-    reason = "Checked site-return arithmetic awaits truck repair"
-)]
 fn add_trucks(a: Trucks, b: Trucks) -> Result<Trucks, EngineError> {
     Ok(Trucks {
         light: add(a.light, b.light)?,
@@ -402,10 +390,6 @@ fn add_trucks(a: Trucks, b: Trucks) -> Result<Trucks, EngineError> {
     })
 }
 
-#[allow(
-    dead_code,
-    reason = "Checked site-return arithmetic awaits truck repair"
-)]
 fn add_cargo(a: Supplies, b: Supplies) -> Result<Supplies, EngineError> {
     Ok(Supplies {
         ammo: add(a.ammo, b.ammo)?,
@@ -415,18 +399,10 @@ fn add_cargo(a: Supplies, b: Supplies) -> Result<Supplies, EngineError> {
     })
 }
 
-#[allow(
-    dead_code,
-    reason = "Truck-return capacity validation awaits truck repair"
-)]
 fn within(a: Supplies, b: Supplies) -> bool {
     a.ammo <= b.ammo && a.fuel <= b.fuel && a.stores <= b.stores && a.water <= b.water
 }
 
-#[allow(
-    dead_code,
-    reason = "Truck-return capacity validation awaits truck repair"
-)]
 fn merged_capacity(
     content: &CnaContent,
     trucks: Trucks,
@@ -472,10 +448,6 @@ fn merged_capacity(
 /// are called. Land and Airlog perform their own approved changes on the same draft.
 /// Cases: land:22.0, land:22.5, airlog:53.11, airlog:54.2
 /// Interpretations: interp:land-0038
-#[allow(
-    dead_code,
-    reason = "Approved truck-return applier awaits the truck repair producer"
-)]
 pub(crate) fn apply_site_truck_return(
     content: &CnaContent,
     state: &mut State,
