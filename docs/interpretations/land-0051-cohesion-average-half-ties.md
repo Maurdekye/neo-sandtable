@@ -41,5 +41,6 @@ lead-decided reading awaiting owner review, not an inferred universal rounding p
 Uncalled S1 `combat::math::largest_cohesion` now handles ties instead of returning its former
 local half-tie error. Authored controls cover both signs at 0.5 and 1.5, nearby non-ties,
 singleton quarter values, nested means and the distinct signed morale-row floor. All controls
-remain unrun; no engine caller, event, state or existing Unsupported path changed. Submit this
+passed in the ten-test S1 arithmetic run on 2026-10-19; no engine caller, event, state or existing
+Unsupported path changed. Submit this
 file to the next owner batch only after it exists on main.
