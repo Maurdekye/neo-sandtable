@@ -1366,6 +1366,17 @@ pub fn answer(
 /// Cases: airlog:35.14, airlog:38.33, airlog:38.34, airlog:38.36
 /// Interpretations: interp:airlog-0022, interp:airlog-0023, interp:airlog-0025
 pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
+    finish_transaction(content, state, cx, |_, _| {})
+}
+
+// Private commit boundary, also used to verify rollback after real draft dice.
+// The production caller supplies no edit and exposes no test API.
+fn finish_transaction(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut Cx<'_>,
+    before_inventory: impl FnOnce(&mut State, &cna_core::dice::CampaignRng),
+) -> Result<(), EngineError> {
     let current = period(state)?;
     let window = &state.air.runtime.maintenance;
     if window.period != Some(current) {
@@ -1441,6 +1452,7 @@ pub fn finish(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>) -> Resul
         }
         results.insert(*side, receipts);
     }
+    before_inventory(&mut draft, &rng);
     inventory::update(content, &mut draft.air, |runtime| {
         for (side, v) in &validated {
             if !v.fueling.receipts.is_empty() {
