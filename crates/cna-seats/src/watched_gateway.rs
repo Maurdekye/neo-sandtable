@@ -37,6 +37,7 @@ struct WatchedShared {
     client: reqwest::Client,
     upstream: String,
     totals: Arc<Mutex<Totals>>,
+    pumps: tokio::sync::Mutex<tokio::task::JoinSet<()>>,
 }
 
 /// The launcher creates one instance and shares it with all ten seats. There is
@@ -65,6 +66,7 @@ impl WatchedGateway {
             client,
             upstream,
             totals: Arc::new(Mutex::new(Totals::default())),
+            pumps: tokio::sync::Mutex::new(tokio::task::JoinSet::new()),
         })))
     }
 
@@ -97,6 +99,7 @@ impl WatchedGateway {
             ));
         }
         let budget = self.0.budget.clone();
+        let control = self.clone();
         let router = Router::new()
             .route("/v1/messages", post(messages))
             .fallback(|| async { deny(StatusCode::NOT_FOUND) })
@@ -106,12 +109,41 @@ impl WatchedGateway {
                 request_boundary,
             ))
             .with_state(self);
-        axum::serve(listener, router)
+        let result = axum::serve(listener, router)
             .with_graceful_shutdown(async move {
                 shutdown.await;
                 let _ = budget.stop();
             })
-            .await
+            .await;
+        let _ = control.stop();
+        let joined = control.join_pumps().await;
+        result?;
+        joined
+    }
+
+    async fn join_pumps(&self) -> io::Result<()> {
+        let mut pumps = self.0.pumps.lock().await;
+        let joined = tokio::time::timeout(Duration::from_secs(2), async {
+            let mut failed = false;
+            while let Some(result) = pumps.join_next().await {
+                failed |= result.is_err();
+            }
+            failed
+        })
+        .await;
+        match joined {
+            Ok(false) => Ok(()),
+            Ok(true) => Err(io::Error::other("watched forwarding task failed")),
+            Err(_) => {
+                pumps.abort_all();
+                // Bounded task destruction; never leave an unbounded waiter.
+                let _ = tokio::time::timeout(Duration::from_secs(2), async {
+                    while pumps.join_next().await.is_some() {}
+                })
+                .await;
+                Err(io::Error::other("watched forwarding cleanup timed out"))
+            }
+        }
     }
 
     async fn counted(&self, headers: HeaderMap, body: Vec<u8>) -> Result<(), ()> {
@@ -295,36 +327,29 @@ async fn messages(
         return deny(StatusCode::BAD_GATEWAY);
     }
     // No upstream headers except the fixed public media type are relayed.
-    let source = upstream.bytes_stream();
+    let (sender, receiver) = tokio::sync::mpsc::channel(1);
+    let failed = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    gateway.0.pumps.lock().await.spawn(forward_pump(
+        gateway.clone(),
+        upstream.bytes_stream(),
+        accounting,
+        protected,
+        sender,
+        failed.clone(),
+    ));
     let bytes = stream::unfold(
-        (Some(source), gateway, accounting, protected),
-        |(mut source, gateway, mut accounting, mut protected)| async move {
-            let next = gateway.0.budget.bound(source.as_mut()?.next()).await;
-            let output = match next {
-                Ok(Some(Ok(bytes))) => protected.push_with(&bytes, |event| accounting.feed(event)),
-                Ok(None) => {
-                    source = None;
-                    protected
-                        .finish_with(|event| accounting.feed(event))
-                        .and_then(|bytes| {
-                            accounting.finish()?;
-                            Ok(bytes)
-                        })
-                }
-                _ => Err(()),
-            };
-            match output {
-                Ok(bytes) => Some((
-                    Ok::<_, io::Error>(bytes),
-                    (source, gateway, accounting, protected),
+        (receiver, failed, false),
+        |(mut receiver, failed, ended)| async move {
+            if ended {
+                return None;
+            }
+            match receiver.recv().await {
+                Some(bytes) => Some((Ok::<_, io::Error>(bytes), (receiver, failed, false))),
+                None if failed.load(std::sync::atomic::Ordering::SeqCst) => Some((
+                    Err(io::Error::other("watched response refused")),
+                    (receiver, failed, true),
                 )),
-                Err(_) => {
-                    let _ = gateway.stop();
-                    Some((
-                        Err(io::Error::other("watched response refused")),
-                        (None, gateway, accounting, protected),
-                    ))
-                }
+                None => None,
             }
         },
     );
@@ -334,6 +359,74 @@ async fn messages(
         .body(Body::from_stream(bytes))
         .unwrap()
 }
+
+async fn forward_pump<S, E>(
+    gateway: WatchedGateway,
+    mut source: S,
+    mut accounting: Accounting,
+    mut protected: ProtectedValues,
+    sender: tokio::sync::mpsc::Sender<Bytes>,
+    failed: Arc<std::sync::atomic::AtomicBool>,
+) where
+    S: futures_util::Stream<Item = Result<Bytes, E>> + Unpin,
+{
+    let result: Result<(), ()> = async {
+        loop {
+            let next = gateway
+                .0
+                .budget
+                .bound(async {
+                    tokio::select! {
+                        biased;
+                        _ = sender.closed() => Err(()),
+                        next = source.next() => Ok(next),
+                    }
+                })
+                .await
+                .map_err(|_| ())??;
+            let (bytes, finished) = match next {
+                Some(Ok(bytes)) => (
+                    protected.push_with(&bytes, |event| accounting.feed(event))?,
+                    false,
+                ),
+                Some(Err(_)) => return Err(()),
+                None => {
+                    let bytes = protected.finish_with(|event| accounting.feed(event))?;
+                    accounting.finish()?;
+                    (bytes, true)
+                }
+            };
+            if !bytes.is_empty() {
+                // A full downstream queue cannot prevent stop or wall expiry
+                // from dropping source. Response drop also wakes this send.
+                gateway
+                    .0
+                    .budget
+                    .bound(sender.send(bytes))
+                    .await
+                    .map_err(|_| ())?
+                    .map_err(|_| ())?;
+            }
+            if finished {
+                return Ok(());
+            }
+        }
+    }
+    .await;
+    if result.is_err() {
+        let _ = gateway.stop();
+    }
+    // Record once before closing the channel so receiver EOF observes finalized
+    // accounting. The failure marker cannot be lost behind a full data queue.
+    drop(source);
+    drop(accounting);
+    failed.store(result.is_err(), std::sync::atomic::Ordering::SeqCst);
+    drop(sender);
+}
+
+#[cfg(test)]
+#[path = "watched_gateway_cancel_tests.rs"]
+mod cancellation_review;
 
 #[cfg(test)]
 mod tests {
