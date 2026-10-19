@@ -298,3 +298,84 @@ fn only_successful_combined_spend_mints_admission_and_changed_aircraft_invalidat
     assert!(inventory::update_fueling(content(), &mut paid_state.air, paid).is_err());
     assert_eq!(serde_json::to_vec(&paid_state.air).unwrap(), before);
 }
+
+/// Cases: airlog:38.21, airlog:38.24, airlog:38.34, airlog:38.36, land:3.6
+#[test]
+fn late_inventory_error_after_actual_fuel_commit_and_refit_draw_rolls_back_complete_game() {
+    let game = game_with_fuel();
+    let selected = fueled_plan(&game, true, false);
+    let mut accepted = accepted(&game, &selected);
+    let before = serde_json::to_vec(&accepted).unwrap();
+    let mut expected_rng = CampaignRng::from_state(&accepted.rng);
+    expected_rng.d6(); // Exactly one actual same-nationality squadron refit group.
+    let mut rng = CampaignRng::from_state(&accepted.rng);
+    let mut events = Vec::new();
+    let mut reached_late_boundary = false;
+    let result = finish_transaction(content(), &mut accepted.state,
+        &mut Cx { rng: &mut rng, events: &mut events }, |draft, draft_rng| {
+            reached_late_boundary = true;
+            assert_eq!(draft_rng.state(), expected_rng.state());
+            assert_ne!(draft_rng.state(), game.rng);
+            assert!(draft.logistics.air_dumps["refit.stock"].supplies.fuel < game.state.logistics.air_dumps["refit.stock"].supplies.fuel);
+            for s in &selected.fueling[0].planes {
+                assert!(draft.air.runtime.aircraft[&s.plane].fuelled);
+                assert!(matches!(draft.air.runtime.preparation.current[&s.plane], CurrentPreparation::KnownFuel { fuel_available: true, .. }));
+            }
+            // The original early-mirror control remains; inject the SAME defect
+            // here only after production fuel updates and a real draft refit roll.
+            draft.air.forces.get_mut("axis").unwrap().planes.values_mut().next().unwrap().total += 1;
+        });
+    assert!(reached_late_boundary);
+    assert_eq!(result, Err(EngineError::Invariant {
+        detail: "air inventory: aggregate mirrors disagree with individual inventory".into(),
+    }));
+    assert_eq!(rng.state(), accepted.rng);
+    assert!(events.is_empty());
+    assert_eq!(serde_json::to_vec(&accepted).unwrap(), before);
+}
+
+fn assert_private_pair_through_pass(a: &Game<Cna>, b: &Game<Cna>) {
+    assert_indistinguishable(&Cna::dev(), content(), &a.state, &b.state, Side::Commonwealth);
+    assert_action_indistinguishable(&Cna::dev(), content(), a, b,
+        &command(a, Side::Commonwealth, Value::Null), Side::Commonwealth);
+    let a = accepted(a, &RefitPlan::default());
+    let b = accepted(b, &RefitPlan::default());
+    assert_action_indistinguishable(&Cna::dev(), content(), &a, &b,
+        &Command::Advance, Side::Commonwealth);
+}
+
+/// Cases: airlog:38.21, airlog:38.24, airlog:38.25, land:3.6
+#[test]
+fn same_public_pass_outcome_hides_source_modes_ammo_knowledge_and_real_fuel_receipts() {
+    let a = game_with_fuel();
+    let id = a.state.air.runtime.aircraft.iter().find(|(_, p)| {
+        owned(&p.force, Side::Axis) && content().units.aircraft[&p.aircraft].modes.len() > 1
+            && content().units.aircraft[&p.aircraft].modes.iter().take(2).all(|m| m.fuel_points.is_some())
+    }).expect("source-backed Axis aircraft with alternative fuel modes").0.clone();
+    for current in [
+        CurrentPreparation::KnownFuel { mode: 0, fuel_available: true },
+        CurrentPreparation::KnownFuel { mode: 1, fuel_available: true },
+        CurrentPreparation::KnownFuel { mode: 0, fuel_available: false },
+        CurrentPreparation::KnownLoad { load: KnownLoad { mode: 0, fuel_available: true, gun_ammunition: false, ordnance: None } },
+        CurrentPreparation::KnownLoad { load: KnownLoad { mode: 0, fuel_available: true, gun_ammunition: true, ordnance: None } },
+    ] {
+        let mut b = a.clone();
+        preparation_fixture(&mut b, &id, current);
+        assert_private_pair_through_pass(&a, &b);
+    }
+    let selected = fueled_plan(&a, false, false);
+    let mut serviced = accepted(&a, &selected);
+    let mut passed = accepted(&a, &RefitPlan::default());
+    fuel_finish(&mut serviced);
+    finish_game(&mut passed);
+    assert!(!serviced.state.air.runtime.maintenance.fuel_receipts.is_empty());
+    assert!(passed.state.air.runtime.maintenance.fuel_receipts.is_empty());
+    for game in [&mut serviced, &mut passed] {
+        // Same public next-period component boundary; preserve genuine histories.
+        game.state.cursor.op_stage = Some(3);
+        let mut rng = CampaignRng::from_state(&game.rng);
+        enter(content(), &mut game.state, &mut Cx { rng: &mut rng, events: &mut Vec::new() }, false).unwrap();
+        assert_eq!(rng.state(), game.rng);
+    }
+    assert_private_pair_through_pass(&serviced, &passed);
+}
