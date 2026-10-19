@@ -198,6 +198,7 @@ fn update_rebuilds_mirrors_and_rejects_invalid_edits_atomically() {
             unreachable!()
         };
         load.gun_ammunition = false;
+        load.fuel_available = false;
         let plane = runtime.aircraft.get_mut(&id).unwrap();
         plane.refitted = false;
         plane.fuelled = false;
@@ -282,6 +283,7 @@ fn private_serials_are_side_local_and_never_reused_after_removal() {
         runtime.preparation.current.remove(&id);
         let mut plane = plane;
         plane.armed = false;
+        plane.fuelled = false;
         let allocated = runtime.insert_aircraft(plane)?;
         runtime
             .preparation
