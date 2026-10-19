@@ -15,6 +15,7 @@ use cna_core::{
 use std::sync::OnceLock;
 
 mod fueling_tests;
+mod arming_tests;
 
 fn content() -> &'static CnaContent {
     static CONTENT: OnceLock<CnaContent> = OnceLock::new();
@@ -150,6 +151,7 @@ fn plan(state: &State, dues: bool) -> RefitPlan {
         .map(|(id, _)| id.clone())
         .collect();
     RefitPlan {
+        arming: Vec::new(),
         fueling: Vec::new(),
         dues: if dues {
             vec![SgsuId("axis.refit".into())]

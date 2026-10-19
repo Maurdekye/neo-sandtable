@@ -1,5 +1,6 @@
 //! Fixed two-Air refit/dues and finite fuel batches. No flight rights.
 pub(in crate::air) mod fueling;
+pub(in crate::air) mod arming;
 use std::collections::{BTreeMap, BTreeSet};
 
 use cna_core::{
@@ -7,7 +8,7 @@ use cna_core::{
     engine::{Cx, EngineError, Rejection},
     event::EngineEvent,
     ids::SeatId,
-    quantity::{FuelTenths, StoresPoints, WaterPoints},
+    quantity::{AmmoPoints, FuelTenths, StoresPoints, WaterPoints},
     visibility::Audience,
 };
 use cna_protocol::{GameEvent, Role, Side};
@@ -38,7 +39,7 @@ use crate::{
 pub const TACTICAL: &str = "opstage.land_support_air.maintenance";
 pub const STRATEGIC: &str = "strategic_air_recovery.maintenance";
 pub const KIND: &str = "cna.air.finite_refit";
-const MISSING: &str = "joint initial-load commitment, gun/ordnance preparation, exempt/no-SGSU fueling (airlog:36.5, airlog:43.21, airlog:44.14, airlog:44.16), cross-servicer Stores allocation, mixed-method cohorts and sandstorm refit loss selection";
+const MISSING: &str = "joint initial-load commitment, mission ordnance consumption, cross-site squadron gun loading, exempt/no-SGSU servicing (airlog:36.5, airlog:43.21, airlog:44.14, airlog:44.16), cross-servicer Stores allocation, mixed-method cohorts and sandstorm refit loss selection";
 
 fn unsupported(case: &str, detail: &str) -> EngineError {
     EngineError::Unsupported {
@@ -178,7 +179,7 @@ fn space(
                     "physical_facility": p.facility, "refitted": p.refitted,
                     "preparation": state.air.runtime.preparation.current.get(id),
                     "modes": content.units.aircraft.get(&p.aircraft).map(|a| a.modes.iter().enumerate()
-                        .map(|(mode, source)| json!({"mode": mode, "fuel_points": source.fuel_points})).collect::<Vec<_>>()),
+                        .map(|(mode, source)| json!({"mode": mode, "fuel_points": source.fuel_points, "bomb_capacity": source.bomb_capacity})).collect::<Vec<_>>()),
                 }),
             )
         })
@@ -284,7 +285,7 @@ fn space(
                     max: i64::from(i32::MAX),
                 },
             ),
-            field("ammo", ActionSchema::Integer { min: 0, max: 0 }),
+            field("ammo", ActionSchema::Integer { min: 0, max: i64::from(i32::MAX) }),
             field(
                 "stores",
                 ActionSchema::Integer {
@@ -349,10 +350,25 @@ fn space(
                 doc: "Finite aircraft refueling, with explicit source modes.".into(),
                 optional: true,
                 schema: list(ActionSchema::Record { fields: vec![
+                    field("servicer", choice(fuel_servicers.clone())),
+                    field("planes", list(ActionSchema::Record { fields: vec![
+                        field("plane", choice(planes.clone())),
+                        field("mode", ActionSchema::Integer { min: 0, max: i64::try_from(mode_max).unwrap_or(i64::MAX) }),
+                    ] }, plane_max)),
+                ] }, if first_bar(content, current) { 0 } else { plane_max }),
+            },
+            FieldSchema {
+                name: "arming".into(), doc: "Finite same-site gun/bomb loading; null bombs preserve ordnance.".into(), optional: true,
+                schema: list(ActionSchema::Record { fields: vec![
                     field("servicer", choice(fuel_servicers)),
                     field("planes", list(ActionSchema::Record { fields: vec![
                         field("plane", choice(planes)),
-                        field("mode", ActionSchema::Integer { min: 0, max: i64::try_from(mode_max).unwrap_or(i64::MAX) }),
+                        field("guns", choice(["preserve".into(), "load".into()])),
+                        FieldSchema { name: "bombs".into(), doc: "Absent/null preserves; positive load uses the selected source mode.".into(), optional: true,
+                            schema: ActionSchema::Record { fields: vec![
+                                field("mode", ActionSchema::Integer { min: 0, max: i64::try_from(mode_max).unwrap_or(i64::MAX) }),
+                                field("bomb_points", ActionSchema::Integer { min: 1, max: i64::from(i32::MAX) }),
+                            ] } },
                     ] }, plane_max)),
                 ] }, if first_bar(content, current) { 0 } else { plane_max }),
             },
@@ -362,8 +378,8 @@ fn space(
     .with_context(
         json!({"planes": roster, "sgsus": consumers, "air_dumps": holdings,
             "fuel_draw_unit": "tenths of a Fuel Point",
-            "scope": "Refit, finite on-map SGSU fueling and SGSU dues. No ammunition loading or flight permission.",
-            "development_limitation": "Verified airlog:36.5 aircraft Stores entitlement never pays SGSU dues. Fueling at exempt/no-SGSU sites (airlog:36.5, airlog:43.21, airlog:44.14, airlog:44.16), joint initial-load commitment and ammunition loading remain unimplemented."}),
+            "scope": "Refit, finite on-map SGSU fuel/gun/bomb service and SGSU dues. No flight permission.",
+            "development_limitation": "Verified airlog:36.5 aircraft Stores entitlement never pays SGSU dues. Fueling at exempt/no-SGSU sites (airlog:36.5, airlog:43.21, airlog:44.14, airlog:44.16), joint initial loading, cross-site gun loading and mission bomb consumption remain unimplemented."}),
     ))
 }
 
@@ -406,14 +422,14 @@ pub fn enter(
     *state = draft;
     for (side, domain) in domains {
         cx.emit(EngineEvent::new(Audience::Side(side), GameEvent::Note {
-            text: format!("Development maintenance supports SGSU refit/dues and finite on-map fueling; missing: {MISSING}. No flight permission follows."),
+            text: format!("Development maintenance supports SGSU refit/dues and finite on-map fuel/gun/bomb service; missing: {MISSING}. No flight permission follows."),
         }));
         open(
             state,
             cx,
             SeatId::new(side, Role::Air),
             KIND,
-            "Choose refit cohorts, finite fuel service modes and exact SGSU dues/draws.".into(),
+            "Choose refit, finite fuel/gun/bomb service and exact SGSU dues/draws.".into(),
             &[
                 "airlog:35.14",
                 "airlog:38.21",
@@ -523,6 +539,7 @@ struct Validated {
     paid: SgsuOpStage,
     entitlements: BTreeMap<String, refit::SourceEntitlement>,
     fueling: fueling::ValidatedFueling,
+    arming: arming::ValidatedArming,
 }
 
 /// Resolve aircraft Stores only, leaving actual SGSU operation dues finite.
@@ -574,8 +591,9 @@ fn legal_choices(
     current: MaintenancePeriod,
     plan: &RefitPlan,
     fuel: &fueling::ValidatedFueling,
+    ammo: &arming::ValidatedArming,
 ) -> Result<(), Rejection> {
-    let mut consumers = fuel.demands.keys().cloned().collect::<BTreeSet<_>>();
+    let mut consumers = fuel.demands.keys().chain(ammo.demands.keys()).cloned().collect::<BTreeSet<_>>();
     let mut dues_seen = BTreeSet::new();
     for id in &plan.dues {
         if !dues_seen.insert(id.clone()) {
@@ -594,6 +612,7 @@ fn legal_choices(
     }
     let mut limits = BTreeMap::new();
     let mut active = fuel.active.clone();
+    ammo.union_active(&mut active);
     for cohort in &plan.cohorts {
         if cohort.priority.is_empty() {
             continue;
@@ -787,10 +806,12 @@ fn legal_choices(
             if draw.amount.fuel.get() < 0
                 || draw.amount.stores.get() < 0
                 || draw.amount.water.get() < 0
-                || draw.amount.ammo.get() != 0
+                || draw.amount.ammo.get() < 0
             {
                 return Err(illegal("invalid own finite refit stock allocation"));
             }
+            amount.ammo = AmmoPoints::new(amount.ammo.get().checked_add(draw.amount.ammo.get())
+                .ok_or_else(|| illegal("own arming draw total overflow"))?);
             amount.fuel = FuelTenths::new(
                 amount
                     .fuel
@@ -920,12 +941,14 @@ fn legal_choices(
         }
     }
     fuel.add_demands(&mut demands)?;
+    ammo.add_demands(&mut demands)?;
     for (id, demand) in demands {
         let amount = draw_totals.get(&id).copied().unwrap_or_default();
         // Stated draws were already checked together through the exact finite
         // facade above. Now compare their costs: only an unresolved new split
         // Stores allocation is a lower bound, never a chosen allocation.
-        if amount.fuel != demand.fuel
+        if amount.ammo != demand.ammo
+            || amount.fuel != demand.fuel
             || amount.water != demand.water
             || if uncertain_stores.contains(&id) {
                 amount.stores < demand.stores
@@ -1009,8 +1032,9 @@ fn validate(
     // Ordinary supported plans retain their existing validation/cost path.
     // Missing procedure shapes need all determinate checks first.
     let fueling = fueling::validate(content, state, owner, current, plan)?;
+    let arming = arming::validate(content, state, owner, current, plan, &fueling)?;
     if needs_choice_preflight(state, owner, plan) {
-        legal_choices(content, state, owner, current, plan, &fueling)?;
+        legal_choices(content, state, owner, current, plan, &fueling, &arming)?;
     }
     let paid = dues_stage(current)?;
     let mut demands = BTreeMap::<SgsuId, SupplyDemand>::new();
@@ -1054,6 +1078,7 @@ fn validate(
     let mut groups: Vec<(refit::RefitCohort, Nationality)> = Vec::new();
     let mut methods = BTreeMap::new();
     let mut active = fueling.active.clone();
+    arming.union_active(&mut active);
     for cohort in &plan.cohorts {
         if cohort.priority.is_empty() {
             continue;
@@ -1260,6 +1285,7 @@ fn validate(
         }
     }
     fueling.add_demands(&mut demands)?;
+    arming.add_demands(&mut demands)?;
     let mut prior = BTreeMap::<SupplySource, FuelTenths>::new();
     for receipt in state
         .air
@@ -1335,6 +1361,7 @@ fn validate(
         paid,
         entitlements,
         fueling,
+        arming,
     })
 }
 
@@ -1418,7 +1445,7 @@ fn finish_transaction(
     }
     // Both combined debits must succeed before any aircraft fact is updated.
     for paid in admissions {
-        inventory::update_fueling(content, &mut draft.air, paid)?;
+        inventory::update_servicing(content, &mut draft.air, paid)?;
     }
     let mut results = BTreeMap::new();
     for (side, v) in &validated {
@@ -1538,6 +1565,12 @@ fn finish_transaction(
             .iter()
             .map(|r| r.cohort.planes.len())
             .sum();
+        let armed: usize = v.arming.receipts.iter().map(|r| r.planes.len()).sum();
+        if armed > 0 {
+            cx.emit(EngineEvent::new(Audience::Side(*side), GameEvent::Note {
+                text: format!("Armed {armed} aircraft at your air facilities."),
+            }));
+        }
         if count > 0 {
             cx.emit(EngineEvent::new(
                 Audience::Side(*side),

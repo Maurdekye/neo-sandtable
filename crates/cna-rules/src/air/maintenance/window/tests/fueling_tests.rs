@@ -57,12 +57,12 @@ fn game_with_fuel_at(strategic: bool) -> Game<Cna> {
     game
 }
 
-fn accepted(game: &Game<Cna>, selected: &RefitPlan) -> Game<Cna> {
+pub(super) fn accepted(game: &Game<Cna>, selected: &RefitPlan) -> Game<Cna> {
     let one = respond(game, Side::Axis, serde_json::to_value(selected).unwrap());
     respond(&one, Side::Commonwealth, Value::Null)
 }
 
-fn fuel_finish(game: &mut Game<Cna>) -> Vec<EngineEvent> {
+pub(super) fn fuel_finish(game: &mut Game<Cna>) -> Vec<EngineEvent> {
     let mut rng = CampaignRng::from_state(&game.rng);
     let mut events = Vec::new();
     finish(
@@ -79,7 +79,7 @@ fn fuel_finish(game: &mut Game<Cna>) -> Vec<EngineEvent> {
 }
 
 // Structural fixture only, with exact mirrors. This does not mint a paid token.
-fn preparation_fixture(game: &mut Game<Cna>, id: &PlaneId, next: CurrentPreparation) {
+pub(super) fn preparation_fixture(game: &mut Game<Cna>, id: &PlaneId, next: CurrentPreparation) {
     let old = game.state.air.runtime.aircraft[id].clone();
     let armed = preparation::armed_projection(&next, old.armed);
     let fuelled = preparation::known_fuel(&next).map_or(old.fuelled, |(_, b)| b);
