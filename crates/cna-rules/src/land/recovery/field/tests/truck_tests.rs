@@ -356,3 +356,46 @@ fn advertised_omitted_null_and_empty_priority_accept_identical_predice_plans_wit
         }
     }
 }
+
+/// Cases: land:22.5, airlog:49.13, airlog:49.16, airlog:53.25
+#[test]
+fn returned_pool_movement_requires_fresh_fuel_and_cannot_spend_original_unit_funding() {
+    use crate::logistics::pool_fuel;
+    let (c, game) = cargo_fixture();
+    let source = game.state.land.breakdown.markers[MARKER].assets[0].unit.clone();
+    assert_eq!(game.state.logistics.fuel_accounts[&source].paid_cost.get(), 30);
+    let before_ids = game.state.logistics.truck_pool_ids.clone();
+    let mut game = truck_answer(&c, &opened(&c, &game), 4, "create_at_site", priority(&c, true));
+    finish_step(&c, &mut game).unwrap();
+    let pool = new_pool(&game, &before_ids);
+    let id = pool.id.clone();
+    let site = CargoSite::Pool(id.clone());
+    let before = serde_json::to_value(&game).unwrap();
+    let plan = pool_fuel::plan_pool_segment_fuel(&c, &game.state, &id, 4).unwrap();
+    assert!(plan.increment.get() > 0);
+    assert!(plan.draws.iter().any(|draw| draw.amount.fuel.get() > 0));
+    assert!(plan.ledger.cohorts.iter().all(|cohort| cohort.account == id));
+    assert_eq!(serde_json::to_value(&game).unwrap(), before);
+    assert!(!game.state.logistics.pool_fuel_accounts.contains_key(&id));
+    assert!(!game.state.logistics.pool_fuel_segments.contains_key(&id));
+    let motion = game.state.logistics.cargo_history.motion.entries.iter().find(|entry| entry.site == site).unwrap();
+    assert_eq!(motion.cohorts[0].spent_cp_quarters, 16);
+
+    // A consistent exhausted-stock world keeps all original paid funding facts.
+    // Tagged fuel is retired from the pool together with its physical quantity.
+    let mut empty: Game<Cna> = serde_json::from_value(before).unwrap();
+    empty.state.logistics.truck_pools.iter_mut().find(|pool| pool.id == id).unwrap().cargo.fuel = 0;
+    if let Some(history) = empty.state.logistics.cargo_history.histories.get_mut(&site) {
+        for lot in &mut history.lots { lot.goods.fuel = 0; }
+        history.lots.retain(|lot| lot.goods != Supplies::default());
+    }
+    for dump in empty.state.logistics.dumps.values_mut() { dump.supplies.fuel = 0; }
+    for stock in empty.state.logistics.unit_supply.values_mut() { stock.carried.fuel = 0; }
+    let origin = empty.state.logistics.truck_pools.iter().find(|pool| pool.id == id).unwrap().location.as_ref().unwrap();
+    assert!(pool_fuel::available_pool_sources_at(&c, &empty.state, &id, origin).unwrap()
+        .iter().all(|row| row.amount.fuel.get() == 0));
+    assert_eq!(empty.state.logistics.fuel_accounts[&source].paid_cost.get(), 30);
+    let empty_before = serde_json::to_value(&empty).unwrap();
+    assert!(matches!(pool_fuel::plan_pool_segment_fuel(&c, &empty.state, &id, 4), Err(SupplyError::Insufficient)));
+    assert_eq!(serde_json::to_value(&empty).unwrap(), empty_before);
+}
