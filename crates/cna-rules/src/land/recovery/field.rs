@@ -137,7 +137,7 @@ struct Declaration {
     marker: String,
     points: i32,
     #[serde(default)]
-    cargo_priority: Vec<logistics::cargo_history::LotSelection>,
+    cargo_priority: Option<Vec<logistics::cargo_history::LotSelection>>,
     #[serde(default)]
     return_pool: Option<String>,
 }
@@ -188,10 +188,11 @@ pub(crate) fn answer(
             None | Some("create_at_site") => ReturnPoolTarget::CreateAtSite,
             Some(id) => ReturnPoolTarget::Existing { pool: id.into() },
         };
+        let selected_priority = selected.cargo_priority.as_deref().unwrap_or(&[]);
         let cargo_priority = if trucks::kind(&asset.equipment).is_some() {
-            trucks::priority(s, marker, &selected.cargo_priority)?
+            trucks::priority(s, marker, selected_priority)?
         } else {
-            if !selected.cargo_priority.is_empty() || !matches!(return_pool, ReturnPoolTarget::CreateAtSite) {
+            if !selected_priority.is_empty() || !matches!(return_pool, ReturnPoolTarget::CreateAtSite) {
                 return Err(illegal("truck return choices do not apply to tank receipts"));
             }
             vec![]

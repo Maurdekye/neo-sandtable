@@ -325,3 +325,34 @@ fn tracked_return_with_missing_motion_keeps_unknown_instead_of_initializing_zero
     assert!(!result.game.state.logistics.pool_fuel_accounts.contains_key(&pool.id));
     assert!(!result.game.state.logistics.pool_fuel_segments.contains_key(&pool.id));
 }
+
+/// Cases: land:22.23, land:22.5, land:3.6
+#[test]
+fn advertised_omitted_null_and_empty_priority_accept_identical_predice_plans_without_spend_or_rng() {
+    let (c, game) = cargo_fixture();
+    let game = opened(&c, &game);
+    let request = Cna::dev().pending(&c, &game.state).into_iter().find(|r| r.kind == KIND).unwrap();
+    let physical = serde_json::to_value((&game.state.land.units, &game.state.land.breakdown, &game.state.logistics)).unwrap();
+    let mut canonical: Option<(Value, Vec<EngineEvent>)> = None;
+    for action in [
+        json!([{"marker": MARKER, "points": 4}]),
+        json!([{"marker": MARKER, "points": 4, "cargo_priority": null}]),
+        json!([{"marker": MARKER, "points": 4, "cargo_priority": []}]),
+    ] {
+        request.space.check(&action).unwrap();
+        let accepted = evaluate(&Cna::dev(), &c, &game, &command(&c, &game, action)).unwrap();
+        assert_eq!(accepted.game.rng, game.rng);
+        assert_eq!(serde_json::to_value((&accepted.game.state.land.units,
+            &accepted.game.state.land.breakdown, &accepted.game.state.logistics)).unwrap(), physical);
+        let plan = accepted.game.state.land.recovery.repair_plan.as_ref().unwrap();
+        assert_eq!(plan.markers[0].cargo_priority, priority(&c, true));
+        assert!(matches!(plan.markers[0].return_pool, ReturnPoolTarget::CreateAtSite));
+        let snapshot = serde_json::to_value(&accepted.game).unwrap();
+        if let Some((expected_game, expected_events)) = &canonical {
+            assert_eq!(&snapshot, expected_game);
+            assert_eq!(&accepted.events, expected_events);
+        } else {
+            canonical = Some((snapshot, accepted.events));
+        }
+    }
+}
