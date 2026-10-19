@@ -1,5 +1,6 @@
 //! Buffered owner choices and current closure only; no outcomes or replay archive.
-//! Cases: land:21.5, land:21.6, land:22.32, land:22.44, interp:land-0038
+//! Cases: land:21.5, land:21.6, land:22.32, land:22.44
+//! Interpretations: interp:land-0038
 use super::ReturnPoolTarget;
 use crate::{
     land::breakdown::{Asset, pools::PoolAsset},

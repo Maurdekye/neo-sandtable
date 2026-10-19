@@ -90,6 +90,12 @@ pub mod ports;
 pub use capacity::{CargoPacking, cargo_bound, fuel_capacity, validate_packing};
 mod rations;
 pub mod ready;
+mod recovery;
+pub(crate) use recovery::{
+    PreparedRecoveryRelocation, RecoverySupplyError, TrustedRepairDebit,
+    apply_recovery_prepaid, apply_recovery_relocation,
+    prepare_recovery_prepaid, prepare_recovery_relocation,
+};
 pub use ready::{close_assault_ammo_action, ready_ammo_capacity};
 mod segment;
 pub mod stores;
