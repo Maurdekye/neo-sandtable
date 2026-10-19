@@ -176,3 +176,80 @@ fn empty_domain_still_opens_the_fixed_window_and_declared_pass_spends_and_rolls_
     assert_eq!(serde_json::to_value(&resolved.state.logistics).unwrap(), before);
     assert!(resolved.state.land.recovery.resolved);
 }
+
+/// Cases: land:3.61, land:10.15, land:22.13, land:22.26
+#[test]
+fn hidden_control_preserves_answer_knowledge_and_acceptance_then_privately_excludes_without_cost() {
+    let (c, mut controlled) = fixture(4, 1, false);
+    let enemies: Vec<cna_core::ids::UnitId> = [
+        "cw.unassigned_inf.3rd_coldstream_guards",
+        "cw.unassigned_inf.2nd_scots_guards",
+    ].into_iter().map(Into::into).collect();
+    let site: HexId = "C4807".into();
+    // Real printed infantry counters stay in the same place in both worlds.
+    // Only their undisclosed cohesion changes whether they exert control.
+    let neighbor = c.map.neighbors(&site).into_iter().find(|hex| {
+        for id in &enemies {
+            let unit = controlled.state.land.units.get_mut(id).unwrap();
+            unit.location = Location::Hex { hex: hex.id.clone() };
+            unit.detached = true;
+            unit.toe = Some(cna_content::units::Toe::Under { under: 6 });
+            unit.cohesion_quarters = 0;
+        }
+        matches!(zoc::controlled(&c, &controlled.state, Side::Commonwealth, &site, false), Ok(true))
+    }).expect("a passable adjacent hex for the real control fixture");
+    for id in &enemies {
+        assert_eq!(controlled.state.land.units[id].location.hex(), Some(&neighbor.id));
+    }
+    let mut clear: Game<Cna> = serde_json::from_value(serde_json::to_value(&controlled).unwrap()).unwrap();
+    for id in &enemies {
+        clear.state.land.units.get_mut(id).unwrap().cohesion_quarters = -104;
+    }
+    assert!(zoc::controlled(&c, &controlled.state, Side::Commonwealth, &site, false).unwrap());
+    assert!(!zoc::controlled(&c, &clear.state, Side::Commonwealth, &site, false).unwrap());
+    let perspective = Perspective::Seat(SeatId::new(Side::Axis, Role::RearArea));
+    let controlled = opened(&c, &controlled);
+    let clear = opened(&c, &clear);
+    assert_eq!(Cna::dev().observe(&c, &controlled.state, perspective), Cna::dev().observe(&c, &clear.state, perspective));
+    assert_eq!(Cna::dev().view(&c, &controlled.state, perspective), Cna::dev().view(&c, &clear.state, perspective));
+    assert_eq!(serde_json::to_value(Cna::dev().pending(&c, &controlled.state)).unwrap(),
+        serde_json::to_value(Cna::dev().pending(&c, &clear.state)).unwrap());
+    let response = command(&c, &controlled, json!([{"marker": MARKER, "points": 4}]));
+    let blocked = evaluate(&Cna::dev(), &c, &controlled, &response).unwrap();
+    let allowed = evaluate(&Cna::dev(), &c, &clear, &response).unwrap();
+    assert_eq!(blocked.events, allowed.events);
+    assert_eq!(blocked.game.rng, controlled.rng);
+    assert_eq!(allowed.game.rng, clear.rng);
+    assert_eq!(serde_json::to_value(&blocked.game.state.land.recovery.repair_plan).unwrap(),
+        serde_json::to_value(&allowed.game.state.land.recovery.repair_plan).unwrap());
+    assert_eq!(Cna::dev().observe(&c, &blocked.game.state, perspective), Cna::dev().observe(&c, &allowed.game.state, perspective));
+
+    // Production finish dispatch resolves hidden truth only after the same answer
+    // was accepted. Keep the cursor here to isolate this closure's exact effects.
+    let mut blocked = blocked.game;
+    let physical = serde_json::to_value((&blocked.state.land.units,
+        &blocked.state.land.breakdown, &blocked.state.logistics)).unwrap();
+    let mut rng = CampaignRng::from_state(&blocked.rng);
+    let mut events = vec![];
+    Cna::dev().finish_step(&c, &mut blocked.state, &mut Cx { rng: &mut rng, events: &mut events }).unwrap();
+    assert_eq!(rng.state(), blocked.rng);
+    assert_eq!(serde_json::to_value((&blocked.state.land.units,
+        &blocked.state.land.breakdown, &blocked.state.logistics)).unwrap(), physical);
+    assert!(blocked.state.land.replacement_receipts.lots.is_empty());
+    assert!(blocked.state.land.recovery.resolved);
+    assert!(blocked.state.land.recovery.repair_plan.is_none());
+    assert_eq!(events.len(), 1);
+    assert!(events[0].visible_to(perspective));
+    assert!(!events[0].visible_to(Perspective::Side(Side::Commonwealth)));
+    assert!(matches!(&events[0].event, GameEvent::Note { text }
+        if text == "Field repair unavailable at own marker field-fixture; no attempt or payment made."));
+
+    let mut allowed = allowed.game;
+    let mut rng = CampaignRng::from_state(&allowed.rng);
+    let mut events = vec![];
+    Cna::dev().finish_step(&c, &mut allowed.state, &mut Cx { rng: &mut rng, events: &mut events }).unwrap();
+    assert_ne!(rng.state(), allowed.rng);
+    assert_eq!(allowed.state.logistics.dumps["ax_dump_1"].supplies.fuel, 16);
+    assert_eq!(allowed.state.land.replacement_receipts.lots.values().map(|lot| lot.points).sum::<i32>(), 1);
+    assert!(allowed.state.land.recovery.resolved);
+}
