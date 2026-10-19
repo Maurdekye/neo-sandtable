@@ -14,6 +14,8 @@ use cna_core::{
 };
 use std::sync::OnceLock;
 
+mod fueling_tests;
+
 fn content() -> &'static CnaContent {
     static CONTENT: OnceLock<CnaContent> = OnceLock::new();
     CONTENT.get_or_init(|| CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap())
@@ -148,6 +150,7 @@ fn plan(state: &State, dues: bool) -> RefitPlan {
         .map(|(id, _)| id.clone())
         .collect();
     RefitPlan {
+        fueling: Vec::new(),
         dues: if dues {
             vec![SgsuId("axis.refit".into())]
         } else {
@@ -567,17 +570,14 @@ fn first_period_refit_domain_is_zero_without_changing_dues_draws_or_later_domain
         let ActionSchema::Record { fields } = &mut expected.schema else {
             unreachable!()
         };
-        let ActionSchema::List { max, .. } = &mut fields
-            .iter_mut()
-            .find(|f| f.name == "cohorts")
-            .unwrap()
-            .schema
-        else {
-            unreachable!()
-        };
-        *max = 0;
+        for name in ["cohorts", "fueling"] {
+            let ActionSchema::List { max, .. } = &mut fields
+                .iter_mut().find(|f| f.name == name).unwrap().schema
+            else { unreachable!() };
+            *max = 0;
+        }
         // Full domain equality preserves dues/draws, inner priority and all
-        // own context; the public initial-period cohort bound is the sole delta.
+        // own context; only the public initial-period aircraft service bounds change.
         assert_eq!(pending.space, expected);
         assert!(pending.space.check(&Value::Null).is_ok());
         assert!(

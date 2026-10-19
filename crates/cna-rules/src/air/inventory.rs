@@ -566,6 +566,7 @@ fn check_preparation_records(
                 None,
                 CurrentPreparation::UnknownLegacy
                     | CurrentPreparation::Unprepared
+                    | CurrentPreparation::KnownFuel { .. }
                     | CurrentPreparation::KnownLoad { .. }
             )
         );
@@ -574,6 +575,14 @@ fn check_preparation_records(
         }
         if let CurrentPreparation::KnownLoad { load } = current {
             preparation::validate_load(content, plane, load)?;
+        }
+        if let Some((mode, available)) = preparation::known_fuel(current) {
+            let source = content.units.aircraft.get(&plane.aircraft)
+                .ok_or_else(|| invalid("known fuel has no aircraft source"))?;
+            super::maintenance::fuel_points(source, mode)?;
+            if plane.fuelled != available {
+                return Err(invalid("typed fuel and informational fuel mirror disagree"));
+            }
         }
         if preparation::armed_projection(current, plane.armed) != plane.armed {
             return Err(invalid("informational arming projection disagrees"));
@@ -618,12 +627,16 @@ fn migrate_preparation(content: &CnaContent, runtime: &mut AirRuntime) -> Result
 }
 
 /// Compare the post-bootstrap/pre-callback truth with the edited draft. This
-/// admits no ledger writer, setup registration, loading or clearing procedure.
+/// admits no ledger writer, setup registration, arming or clearing procedure.
 /// Restored known loads and edits of existing known records remain structurally
-/// valid; creating a known load requires a separately reviewed admission.
+/// valid; creating paid fuel knowledge requires the exact finish admission.
 /// Cases: airlog:34.0, scen:59.32
 /// Interpretations: interp:air-0018
-fn check_preparation_transition(old: &AirRuntime, new: &AirRuntime) -> Result<(), EngineError> {
+fn check_preparation_transition(
+    old: &AirRuntime,
+    new: &AirRuntime,
+    paid: Option<&super::maintenance::window::fueling::PaidFuelAdmission>,
+) -> Result<(), EngineError> {
     if !new.preparation.initialized {
         return Err(invalid("preparation initialized marker cannot reset"));
     }
@@ -639,6 +652,30 @@ fn check_preparation_transition(old: &AirRuntime, new: &AirRuntime) -> Result<()
                 return Err(invalid("persistent aircraft type and force cannot change"));
             }
             let before = old.preparation.current.get(id);
+            if paid.is_some_and(|p| p.permits(id, old, new)) {
+                continue;
+            }
+            let prior_fuel = before.and_then(preparation::known_fuel);
+            let next_fuel = current.and_then(preparation::known_fuel);
+            if (!previous.fuelled && plane.fuelled)
+                || next_fuel.is_some_and(|(mode, available)| {
+                    available && prior_fuel.is_none_or(|(old_mode, old_available)| {
+                        !old_available || old_mode != mode
+                    })
+                })
+                || prior_fuel.is_some_and(|(mode, available)| {
+                    available && next_fuel.is_some_and(|(next, _)| mode != next)
+                })
+                || (matches!(current, Some(CurrentPreparation::KnownFuel { .. }))
+                    && !matches!(before, Some(CurrentPreparation::KnownFuel { .. })))
+            {
+                return Err(invalid("ordinary update cannot establish or change paid fuel"));
+            }
+            if matches!(before, Some(CurrentPreparation::KnownFuel { .. }))
+                && !matches!(current, Some(CurrentPreparation::KnownFuel { .. }))
+            {
+                return Err(invalid("ordinary update cannot replace partial fuel knowledge"));
+            }
             match (before, current) {
                 (
                     Some(CurrentPreparation::UnknownLegacy | CurrentPreparation::Unprepared),
@@ -680,7 +717,9 @@ fn check_preparation_transition(old: &AirRuntime, new: &AirRuntime) -> Result<()
             if matches!(current, Some(CurrentPreparation::UnknownLegacy)) {
                 return Err(invalid("new aircraft cannot fabricate legacy preparation"));
             }
-            if matches!(current, Some(CurrentPreparation::KnownLoad { .. })) {
+            if plane.fuelled
+                || matches!(current, Some(CurrentPreparation::KnownLoad { .. } | CurrentPreparation::KnownFuel { .. }))
+            {
                 return Err(invalid("new aircraft cannot establish a known load"));
             }
         }
@@ -698,6 +737,9 @@ fn project_preparation(old: &AirRuntime, new: &mut AirRuntime) -> Result<(), Eng
             .ok_or_else(|| invalid("live aircraft preparation is missing"))?;
         let old_bit = old.aircraft.get(id).map_or(plane.armed, |p| p.armed);
         plane.armed = preparation::armed_projection(current, old_bit);
+        if let Some((_, available)) = preparation::known_fuel(current) {
+            plane.fuelled = available;
+        }
     }
     Ok(())
 }
@@ -863,7 +905,18 @@ pub fn update<F>(content: &CnaContent, air: &mut AirState, edit: F) -> Result<()
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    update_inner(content, air, None, edit)
+    update_inner(content, air, None, None, edit)
+}
+
+/// Exact fuel-only admission from the successful draft debit. No caller edit
+/// closure is accepted, so unrelated edits cannot ride this permission.
+/// Cases: airlog:38.21, airlog:38.24
+pub(in crate::air) fn update_fueling(
+    content: &CnaContent,
+    air: &mut AirState,
+    paid: super::maintenance::window::fueling::PaidFuelAdmission,
+) -> Result<(), EngineError> {
+    update_inner(content, air, None, Some(&paid), |runtime| paid.apply(runtime))
 }
 
 /// Internal permission for exactly one canonical physical-site allocation.
@@ -883,7 +936,7 @@ pub(super) fn update_site<F>(
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    update_inner(content, air, Some(allocation), edit)
+    update_inner(content, air, Some(allocation), None, edit)
 }
 
 fn check_site_transition(
@@ -965,6 +1018,7 @@ fn update_inner<F>(
     content: &CnaContent,
     air: &mut AirState,
     allocation: Option<SiteAllocation>,
+    paid: Option<&super::maintenance::window::fueling::PaidFuelAdmission>,
     edit: F,
 ) -> Result<(), EngineError>
 where
@@ -994,7 +1048,7 @@ where
     if !draft.runtime.initialized || !draft.runtime.bases_initialized {
         return Err(invalid("initialized inventory and bases cannot be reset"));
     }
-    check_preparation_transition(&before_edit, &draft.runtime)?;
+    check_preparation_transition(&before_edit, &draft.runtime, paid)?;
     project_preparation(&before_edit, &mut draft.runtime)?;
     check_preparation(content, &draft.runtime)?;
     draft = mirrors(content, &draft)?;
