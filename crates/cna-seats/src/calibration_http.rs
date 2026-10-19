@@ -392,7 +392,7 @@ async fn messages(
 }
 
 #[path = "calibration_strict_json.rs"]
-mod strict_json;
+pub(crate) mod strict_json;
 
 #[path = "calibration_reflection.rs"]
 mod reflection;

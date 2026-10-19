@@ -59,7 +59,7 @@ impl<'de> Deserialize<'de> for Checked {
         deserializer.deserialize_any(V)
     }
 }
-pub(super) fn parse(bytes: &[u8]) -> Result<Value, ()> {
+pub(crate) fn parse(bytes: &[u8]) -> Result<Value, ()> {
     serde_json::from_slice::<Checked>(bytes)
         .map(|v| v.0)
         .map_err(|_| ())

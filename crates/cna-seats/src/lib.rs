@@ -21,3 +21,4 @@ pub mod run;
 pub mod subscription_login;
 pub mod toy;
 pub mod transcript;
+pub mod watched_transcript;
