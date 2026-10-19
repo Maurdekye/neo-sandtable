@@ -3,6 +3,8 @@
 //! self-motion/carriage and Axis shipping remain separately implemented slices.
 //! Cases: land:20.21, land:20.23, land:20.61, land:20.66, land:20.72, land:20.74
 
+pub(crate) mod receipts;
+
 use crate::logistics::{FuelFundingAccount, FuelTruckKind, SegmentKey};
 use crate::state::Location;
 use cna_content::scenario::Supplies;
