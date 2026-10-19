@@ -56,6 +56,7 @@ They are source-contract controls, separate from Respond/Advance repair-driver p
 A first Axis field tank-repair driver now has eight passing flow controls in
 recovery/field/tests.rs, including actual Respond/Advance former-owner pairs and a hidden
 eligibility acceptance pair. These passed with six transaction, four logistics relocation
-and four receipt controls in focused local validation. Full CI remains pending; no projection
-change is made. The lead approved implementation; the amendment remains pending the owner's
+and four receipt controls in focused local validation. All four draft-PR CI jobs passed at
+79e90cf; main CI is watched separately after publication. No projection change is made.
+The lead approved implementation; the amendment remains pending the owner's
 next batch review after publication.
