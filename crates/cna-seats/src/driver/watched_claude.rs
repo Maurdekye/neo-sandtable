@@ -32,7 +32,7 @@ fn environment(
         ("CLAUDE_CODE_MAX_RETRIES", "0"),
         ("CLAUDE_CODE_NONSTREAMING_TIMEOUT_RETRIES", "0"),
         // Treat ONLY the typed loopback endpoint as the subscription route.
-        ("CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL", "1"),
+        ("_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL", "1"),
         ("CLAUDE_CODE_PROJECT_DIR_NAME", PROJECT),
         ("ANTHROPIC_MODEL", MODEL),
         ("ANTHROPIC_DEFAULT_HAIKU_MODEL", MODEL),
@@ -205,6 +205,13 @@ mod tests {
         assert_eq!(value("--tools"), "");
         assert_eq!(value("--setting-sources"), "");
         assert_eq!(value("--allowedTools"), "mcp__cna__*");
+        // Bundled CLI2.1.293's ui()/bl() source reads this exact underscored
+        // name. The similarly named unprefixed variable has no effect.
+        let env: BTreeMap<_, _> = command.as_std().get_envs().collect();
+        let reader = std::ffi::OsStr::new("_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL");
+        assert_eq!(env.get(reader), Some(&Some(std::ffi::OsStr::new("1"))));
+        let obsolete = std::ffi::OsStr::new("CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL");
+        assert!(!env.contains_key(obsolete));
         let mcp: serde_json::Value = serde_json::from_str(value("--mcp-config")).unwrap();
         assert_eq!(mcp["mcpServers"].as_object().unwrap().len(), 1);
         assert_eq!(mcp["mcpServers"]["cna"]["url"], cfg.mcp_url);
