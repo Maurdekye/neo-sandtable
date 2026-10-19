@@ -18,6 +18,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub mod assignment;
 pub mod barrage;
+// S1 is deliberately uncalled until the separately reviewed combat procedure slices.
+#[allow(dead_code)]
+pub(crate) mod math;
 pub mod retreat;
 
 pub const POSITION_KIND: &str = "cna.combat.position";
