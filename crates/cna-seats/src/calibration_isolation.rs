@@ -10,6 +10,10 @@ pub const ISOLATION_ROOT: &str = "C:/CNA-Seat-Isolation";
 pub const CALIBRATION_CWD: &str = "C:/CNA-Seat-Isolation/calibration-one-20261008-seat-cwd";
 pub const CALIBRATION_CONFIG: &str = "C:/CNA-Seat-Isolation/calibration-one-20261008-claude-config";
 
+#[path = "watched_isolation.rs"]
+mod watched;
+pub use watched::WatchedNamespace;
+
 // Installed CLI 2.1.293 engine Fwt and agents-md plugin J/D. Rules are a
 // directory source with recursive imports, so ANY presence refuses.
 const DIRECT_INSTRUCTIONS: &[&str] = &["AGENTS.md", "CLAUDE.md", "CLAUDE.local.md"];

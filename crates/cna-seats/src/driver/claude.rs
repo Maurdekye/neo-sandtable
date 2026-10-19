@@ -58,6 +58,10 @@ pub fn find_claude_exe() -> Option<PathBuf> {
 /// The MCP server name seats see; tools appear to the model as `mcp__cna__<tool>`.
 pub const MCP_NAME: &str = "cna";
 
+#[path = "watched_claude.rs"]
+mod watched;
+pub use watched::watched_command;
+
 /// Configuration of one Claude Code seat.
 #[derive(Clone, Debug)]
 pub struct ClaudeConfig {
@@ -96,6 +100,10 @@ pub fn claude_args(
     mcp_config: &std::path::Path,
     session: SessionArg<'_>,
 ) -> Vec<String> {
+    claude_args_value(cfg, &mcp_config.to_string_lossy(), session)
+}
+
+fn claude_args_value(cfg: &ClaudeConfig, mcp_config: &str, session: SessionArg<'_>) -> Vec<String> {
     let mut a: Vec<String> = [
         "-p",
         "--input-format",
@@ -120,7 +128,7 @@ pub fn claude_args(
     a.push("--model".into());
     a.push(cfg.model.clone());
     a.push("--mcp-config".into());
-    a.push(mcp_config.to_string_lossy().into_owned());
+    a.push(mcp_config.into());
     a.push("--system-prompt".into());
     a.push(cfg.system_prompt.clone());
     if let Some(e) = &cfg.effort {

@@ -18,5 +18,6 @@ pub mod mcp;
 pub mod memory;
 pub mod request_budget;
 pub mod run;
+pub mod subscription_login;
 pub mod toy;
 pub mod transcript;
