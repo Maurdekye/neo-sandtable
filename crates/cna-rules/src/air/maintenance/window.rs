@@ -1,6 +1,6 @@
 //! Fixed two-Air refit/dues and finite fuel batches. No flight rights.
-pub(in crate::air) mod fueling;
 pub(in crate::air) mod arming;
+pub(in crate::air) mod fueling;
 use std::collections::{BTreeMap, BTreeSet};
 
 use cna_core::{
@@ -285,7 +285,13 @@ fn space(
                     max: i64::from(i32::MAX),
                 },
             ),
-            field("ammo", ActionSchema::Integer { min: 0, max: i64::from(i32::MAX) }),
+            field(
+                "ammo",
+                ActionSchema::Integer {
+                    min: 0,
+                    max: i64::from(i32::MAX),
+                },
+            ),
             field(
                 "stores",
                 ActionSchema::Integer {
@@ -593,7 +599,12 @@ fn legal_choices(
     fuel: &fueling::ValidatedFueling,
     ammo: &arming::ValidatedArming,
 ) -> Result<(), Rejection> {
-    let mut consumers = fuel.demands.keys().chain(ammo.demands.keys()).cloned().collect::<BTreeSet<_>>();
+    let mut consumers = fuel
+        .demands
+        .keys()
+        .chain(ammo.demands.keys())
+        .cloned()
+        .collect::<BTreeSet<_>>();
     let mut dues_seen = BTreeSet::new();
     for id in &plan.dues {
         if !dues_seen.insert(id.clone()) {
@@ -810,8 +821,13 @@ fn legal_choices(
             {
                 return Err(illegal("invalid own finite refit stock allocation"));
             }
-            amount.ammo = AmmoPoints::new(amount.ammo.get().checked_add(draw.amount.ammo.get())
-                .ok_or_else(|| illegal("own arming draw total overflow"))?);
+            amount.ammo = AmmoPoints::new(
+                amount
+                    .ammo
+                    .get()
+                    .checked_add(draw.amount.ammo.get())
+                    .ok_or_else(|| illegal("own arming draw total overflow"))?,
+            );
             amount.fuel = FuelTenths::new(
                 amount
                     .fuel
@@ -1567,9 +1583,12 @@ fn finish_transaction(
             .sum();
         let armed: usize = v.arming.receipts.iter().map(|r| r.planes.len()).sum();
         if armed > 0 {
-            cx.emit(EngineEvent::new(Audience::Side(*side), GameEvent::Note {
-                text: format!("Armed {armed} aircraft at your air facilities."),
-            }));
+            cx.emit(EngineEvent::new(
+                Audience::Side(*side),
+                GameEvent::Note {
+                    text: format!("Armed {armed} aircraft at your air facilities."),
+                },
+            ));
         }
         if count > 0 {
             cx.emit(EngineEvent::new(

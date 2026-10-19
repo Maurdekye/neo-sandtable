@@ -652,7 +652,10 @@ fn sole_projection_updates_mirrors_preserves_refit_and_propagates_source_errors_
             // through an ordinary callback. Exercise the canonical projection
             // directly, then prove the resulting record survives an ordinary no-op.
             let old = air.runtime.clone();
-            air.runtime.preparation.current.insert(id.clone(), known(0, guns, ordnance.clone()));
+            air.runtime
+                .preparation
+                .current
+                .insert(id.clone(), known(0, guns, ordnance.clone()));
             project_preparation(&old, &mut air.runtime).unwrap();
             refresh(&content, &mut air);
             update(&content, &mut air, |_| Ok(())).unwrap();
@@ -699,7 +702,18 @@ fn sole_projection_updates_mirrors_preserves_refit_and_propagates_source_errors_
     }
     // Existing carried source facts remain checked before any later edit;
     // this setup does not use the ordinary callback to create unpaid mines.
-    fixture_current(&content, &mut known_air, &id, known(0, true, Some(CarriedOrdnance::Mines { source_bombload_rating: bomb })));
+    fixture_current(
+        &content,
+        &mut known_air,
+        &id,
+        known(
+            0,
+            true,
+            Some(CarriedOrdnance::Mines {
+                source_bombload_rating: bomb,
+            }),
+        ),
+    );
     content.units.aircraft.get_mut("it.z506b").unwrap().modes[0].bomb_capacity = None;
     let before = bytes(&known_air);
     assert!(
@@ -857,7 +871,18 @@ fn late_source_failure_preserves_known_state_and_old_serial_ids_cannot_appear() 
     fixture_current(&content, &mut state.air, &id, known(0, true, None));
     // Existing carried source facts remain checked before any later edit;
     // this setup does not use the ordinary callback to create unpaid mines.
-    fixture_current(&content, &mut known_air, &id, known(0, true, Some(CarriedOrdnance::Mines { source_bombload_rating: bomb })));
+    fixture_current(
+        &content,
+        &mut state.air,
+        &id,
+        known(
+            0,
+            true,
+            Some(CarriedOrdnance::Mines {
+                source_bombload_rating: rating,
+            }),
+        ),
+    );
     content.units.aircraft.get_mut("it.z506b").unwrap().modes[0].bomb_capacity = None;
     let before = bytes(&state.air);
     assert!(matches!(update(&content, &mut state.air, |r| {
