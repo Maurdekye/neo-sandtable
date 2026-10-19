@@ -1,7 +1,8 @@
-//! Rules574 scratch SOURCE body for land::recovery::payloads. UNAPPLIED/UNCOMPILED.
+//! Approved transient recovery contracts; field tanks are the first active producer.
 //! Only the trusted recovery prepare/finish implementation constructs these values.
 //! No payload is persisted, accepted from Respond, or converted into an event.
 use crate::{
+    State,
     land::breakdown::{Asset, markers::BrokenMarker, pools::PoolAsset},
     logistics::{
         SupplyDemand, SupplyDraw,
@@ -9,7 +10,6 @@ use crate::{
         water::WaterStage,
     },
     state::Location,
-    State,
 };
 use cna_content::{scenario::Supplies, units::Trucks};
 use cna_core::quantity::WaterPoints;
@@ -27,6 +27,7 @@ pub(crate) enum ReturnPoolTarget {
 #[derive(Debug)]
 pub(crate) enum RepairAsset {
     Unit(Asset),
+    #[allow(dead_code, reason = "Pool repair awaits its vehicle procedure")]
     Pool(PoolAsset),
 }
 
@@ -43,14 +44,30 @@ pub(crate) struct RepairAttempt {
     pub(super) demand: SupplyDemand,
 }
 impl RepairAttempt {
-    pub(crate) fn marker(&self) -> &str { &self.marker }
-    pub(crate) fn site(&self) -> &Location { &self.site }
-    pub(crate) fn asset(&self) -> &RepairAsset { &self.asset }
-    pub(crate) fn mode(&self) -> RepairLocation { self.mode }
-    pub(crate) fn vehicle_state(&self) -> VehicleState { self.vehicle_state }
-    pub(crate) fn vehicle(&self) -> RepairVehicle { self.vehicle }
-    pub(crate) fn cost(&self) -> &RepairCost { &self.cost }
-    pub(crate) fn demand(&self) -> SupplyDemand { self.demand }
+    pub(crate) fn marker(&self) -> &str {
+        &self.marker
+    }
+    pub(crate) fn site(&self) -> &Location {
+        &self.site
+    }
+    pub(crate) fn asset(&self) -> &RepairAsset {
+        &self.asset
+    }
+    pub(crate) fn mode(&self) -> RepairLocation {
+        self.mode
+    }
+    pub(crate) fn vehicle_state(&self) -> VehicleState {
+        self.vehicle_state
+    }
+    pub(crate) fn vehicle(&self) -> RepairVehicle {
+        self.vehicle
+    }
+    pub(crate) fn cost(&self) -> &RepairCost {
+        &self.cost
+    }
+    pub(crate) fn demand(&self) -> SupplyDemand {
+        self.demand
+    }
 }
 
 /// Each allocation is associated with its real repair site. No fake consumer unit.
@@ -62,9 +79,15 @@ pub(crate) struct RepairSiteDebit {
     pub(super) draws: Vec<SupplyDraw>,
 }
 impl RepairSiteDebit {
-    pub(crate) fn site(&self) -> &Location { &self.site }
-    pub(crate) fn demand(&self) -> SupplyDemand { self.demand }
-    pub(crate) fn draws(&self) -> &[SupplyDraw] { &self.draws }
+    pub(crate) fn site(&self) -> &Location {
+        &self.site
+    }
+    pub(crate) fn demand(&self) -> SupplyDemand {
+        self.demand
+    }
+    pub(crate) fn draws(&self) -> &[SupplyDraw] {
+        &self.draws
+    }
 }
 
 /// Complete accepted attempt, including every site, before any associated die.
@@ -80,33 +103,71 @@ pub(crate) struct PreparedRepair {
     pub(super) output_choices: Vec<RepairOutputChoice>,
 }
 impl PreparedRepair {
-    pub(crate) fn actor(&self) -> Side { self.actor }
-    pub(crate) fn stage(&self) -> WaterStage { self.stage }
-    pub(crate) fn before(&self) -> &State { &self.before }
-    pub(crate) fn attempts(&self) -> &[RepairAttempt] { &self.attempts }
-    pub(crate) fn site_debits(&self) -> &[RepairSiteDebit] { &self.site_debits }
-    pub(crate) fn output_choices(&self) -> &[RepairOutputChoice] { &self.output_choices }
+    pub(crate) fn actor(&self) -> Side {
+        self.actor
+    }
+    pub(crate) fn stage(&self) -> WaterStage {
+        self.stage
+    }
+    pub(crate) fn before(&self) -> &State {
+        &self.before
+    }
+    pub(crate) fn attempts(&self) -> &[RepairAttempt] {
+        &self.attempts
+    }
+    pub(crate) fn site_debits(&self) -> &[RepairSiteDebit] {
+        &self.site_debits
+    }
+    #[allow(
+        dead_code,
+        reason = "Truck returns will consume the validated output choices"
+    )]
+    pub(crate) fn output_choices(&self) -> &[RepairOutputChoice] {
+        &self.output_choices
+    }
 }
 
 /// Trusted copy of the validated pre-dice target and complete cargo priority.
 #[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "Truck repair output allocation is not active in the tank slice"
+)]
 pub(crate) struct RepairOutputChoice {
     pub(super) marker: String,
     pub(super) target: ReturnPoolTarget,
     pub(super) cargo_priority: Vec<LotSelection>,
 }
+#[allow(
+    dead_code,
+    reason = "Truck repair output allocation is not active in the tank slice"
+)]
 impl RepairOutputChoice {
-    pub(crate) fn marker(&self) -> &str { &self.marker }
-    pub(crate) fn target(&self) -> &ReturnPoolTarget { &self.target }
-    pub(crate) fn cargo_priority(&self) -> &[LotSelection] { &self.cargo_priority }
+    pub(crate) fn marker(&self) -> &str {
+        &self.marker
+    }
+    pub(crate) fn target(&self) -> &ReturnPoolTarget {
+        &self.target
+    }
+    pub(crate) fn cargo_priority(&self) -> &[LotSelection] {
+        &self.cargo_priority
+    }
 }
 
 /// Classification corresponds exactly to the approved Oob receipt variants.
 #[derive(Debug)]
 pub(crate) enum ReturnedEquipment {
-    Tank { equipment: String },
-    RecceAc { equipment: String },
-    Gun { equipment: String },
+    Tank {
+        equipment: String,
+    },
+    #[allow(dead_code, reason = "Recce repair is a later vehicle slice")]
+    RecceAc {
+        equipment: String,
+    },
+    #[allow(dead_code, reason = "Gun repair is a later vehicle slice")]
+    Gun {
+        equipment: String,
+    },
 }
 #[derive(Debug)]
 pub(crate) struct ReceiptReturn {
@@ -114,13 +175,21 @@ pub(crate) struct ReceiptReturn {
     pub(super) points: i32,
 }
 impl ReceiptReturn {
-    pub(crate) fn equipment(&self) -> &ReturnedEquipment { &self.equipment }
-    pub(crate) fn points(&self) -> i32 { self.points }
+    pub(crate) fn equipment(&self) -> &ReturnedEquipment {
+        &self.equipment
+    }
+    pub(crate) fn points(&self) -> i32 {
+        self.points
+    }
 }
 
 /// Positive successful counts and actual selected cargo only; never passengers,
 /// marker tank fuel, an old funding account or a current-segment entitlement.
 #[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "Approved truck-return contract awaits the truck repair producer"
+)]
 pub(crate) struct ReturnedTrucks {
     pub(super) marker: String,
     pub(super) target: ReturnPoolTarget,
@@ -130,20 +199,42 @@ pub(crate) struct ReturnedTrucks {
     pub(super) cargo_parcels: Vec<Parcel>,
     pub(super) activity_water: WaterPoints,
 }
+#[allow(
+    dead_code,
+    reason = "Approved truck-return contract awaits the truck repair producer"
+)]
 impl ReturnedTrucks {
-    pub(crate) fn marker(&self) -> &str { &self.marker }
-    pub(crate) fn target(&self) -> &ReturnPoolTarget { &self.target }
-    pub(crate) fn trucks(&self) -> Trucks { self.trucks }
-    pub(crate) fn physical_cohorts(&self) -> &[PhysicalTrucks] { &self.physical_cohorts }
-    pub(crate) fn cargo(&self) -> Supplies { self.cargo }
-    pub(crate) fn cargo_parcels(&self) -> &[Parcel] { &self.cargo_parcels }
-    pub(crate) fn activity_water(&self) -> WaterPoints { self.activity_water }
+    pub(crate) fn marker(&self) -> &str {
+        &self.marker
+    }
+    pub(crate) fn target(&self) -> &ReturnPoolTarget {
+        &self.target
+    }
+    pub(crate) fn trucks(&self) -> Trucks {
+        self.trucks
+    }
+    pub(crate) fn physical_cohorts(&self) -> &[PhysicalTrucks] {
+        &self.physical_cohorts
+    }
+    pub(crate) fn cargo(&self) -> Supplies {
+        self.cargo
+    }
+    pub(crate) fn cargo_parcels(&self) -> &[Parcel] {
+        &self.cargo_parcels
+    }
+    pub(crate) fn activity_water(&self) -> WaterPoints {
+        self.activity_water
+    }
 }
 
 /// Both snapshots are derived AFTER prepay. Successes and junk are disjoint;
 /// after retains the exact failed remainder, cargo/reserves and all passengers.
 /// A passenger-only marker remains Some even when no vehicles remain.
 #[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "Full outcome partitions are reserved for later repair procedures"
+)]
 pub(crate) struct MarkerRepairOutcome {
     pub(super) before: BrokenMarker,
     pub(super) after: Option<BrokenMarker>,
@@ -154,15 +245,35 @@ pub(crate) struct MarkerRepairOutcome {
     pub(super) receipts: Vec<ReceiptReturn>,
     pub(super) returned_trucks: Option<ReturnedTrucks>,
 }
+#[allow(
+    dead_code,
+    reason = "Full outcome accessors are reserved for later repair procedures"
+)]
 impl MarkerRepairOutcome {
-    pub(crate) fn before(&self) -> &BrokenMarker { &self.before }
-    pub(crate) fn after(&self) -> Option<&BrokenMarker> { self.after.as_ref() }
-    pub(crate) fn repaired_unit_assets(&self) -> &[Asset] { &self.repaired_unit_assets }
-    pub(crate) fn repaired_pool_assets(&self) -> &[PoolAsset] { &self.repaired_pool_assets }
-    pub(crate) fn junk_unit_assets(&self) -> &[Asset] { &self.junk_unit_assets }
-    pub(crate) fn junk_pool_assets(&self) -> &[PoolAsset] { &self.junk_pool_assets }
-    pub(crate) fn receipts(&self) -> &[ReceiptReturn] { &self.receipts }
-    pub(crate) fn returned_trucks(&self) -> Option<&ReturnedTrucks> { self.returned_trucks.as_ref() }
+    pub(crate) fn before(&self) -> &BrokenMarker {
+        &self.before
+    }
+    pub(crate) fn after(&self) -> Option<&BrokenMarker> {
+        self.after.as_ref()
+    }
+    pub(crate) fn repaired_unit_assets(&self) -> &[Asset] {
+        &self.repaired_unit_assets
+    }
+    pub(crate) fn repaired_pool_assets(&self) -> &[PoolAsset] {
+        &self.repaired_pool_assets
+    }
+    pub(crate) fn junk_unit_assets(&self) -> &[Asset] {
+        &self.junk_unit_assets
+    }
+    pub(crate) fn junk_pool_assets(&self) -> &[PoolAsset] {
+        &self.junk_pool_assets
+    }
+    pub(crate) fn receipts(&self) -> &[ReceiptReturn] {
+        &self.receipts
+    }
+    pub(crate) fn returned_trucks(&self) -> Option<&ReturnedTrucks> {
+        self.returned_trucks.as_ref()
+    }
 }
 
 /// One actual repair site, not a cross-site pool merge. The complete attempt
@@ -175,10 +286,18 @@ pub(crate) struct ValidatedRepairOutcome {
     pub(super) markers: Vec<MarkerRepairOutcome>,
 }
 impl ValidatedRepairOutcome {
-    pub(crate) fn actor(&self) -> Side { self.actor }
-    pub(crate) fn stage(&self) -> WaterStage { self.stage }
-    pub(crate) fn site(&self) -> &Location { &self.site }
-    pub(crate) fn markers(&self) -> &[MarkerRepairOutcome] { &self.markers }
+    pub(crate) fn actor(&self) -> Side {
+        self.actor
+    }
+    pub(crate) fn stage(&self) -> WaterStage {
+        self.stage
+    }
+    pub(crate) fn site(&self) -> &Location {
+        &self.site
+    }
+    pub(crate) fn markers(&self) -> &[MarkerRepairOutcome] {
+        &self.markers
+    }
 }
 
 /// Land prepares each group on the CURRENT draft immediately before that pool
@@ -186,6 +305,10 @@ impl ValidatedRepairOutcome {
 /// binds actual pool, merged stocks, allocation serial/used IDs and marker state.
 /// Oob revalidates full merged capacity and uses its unchanged real allocator.
 #[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "Approved site truck-return contract awaits truck repair"
+)]
 pub(crate) struct PreparedSiteTruckReturn {
     pub(super) actor: Side,
     pub(super) stage: WaterStage,
@@ -194,13 +317,29 @@ pub(crate) struct PreparedSiteTruckReturn {
     pub(super) before: State,
     pub(super) returns: Vec<ReturnedTrucks>,
 }
+#[allow(
+    dead_code,
+    reason = "Approved site truck-return contract awaits truck repair"
+)]
 impl PreparedSiteTruckReturn {
-    pub(crate) fn actor(&self) -> Side { self.actor }
-    pub(crate) fn stage(&self) -> WaterStage { self.stage }
-    pub(crate) fn site(&self) -> &Location { &self.site }
-    pub(crate) fn target(&self) -> &ReturnPoolTarget { &self.target }
-    pub(crate) fn before(&self) -> &State { &self.before }
-    pub(crate) fn returns(&self) -> &[ReturnedTrucks] { &self.returns }
+    pub(crate) fn actor(&self) -> Side {
+        self.actor
+    }
+    pub(crate) fn stage(&self) -> WaterStage {
+        self.stage
+    }
+    pub(crate) fn site(&self) -> &Location {
+        &self.site
+    }
+    pub(crate) fn target(&self) -> &ReturnPoolTarget {
+        &self.target
+    }
+    pub(crate) fn before(&self) -> &State {
+        &self.before
+    }
+    pub(crate) fn returns(&self) -> &[ReturnedTrucks] {
+        &self.returns
+    }
 }
 
 /// Exact existing lots moved, using their original stage/spent/ceiling/freshness.
@@ -215,10 +354,18 @@ pub(crate) struct RecoveryCargoMove {
     pub(super) lots: Vec<LotSelection>,
 }
 impl RecoveryCargoMove {
-    pub(crate) fn source(&self) -> &CargoSite { &self.source }
-    pub(crate) fn destination(&self) -> &CargoSite { &self.destination }
-    pub(crate) fn goods(&self) -> Supplies { self.goods }
-    pub(crate) fn lots(&self) -> &[LotSelection] { &self.lots }
+    pub(crate) fn source(&self) -> &CargoSite {
+        &self.source
+    }
+    pub(crate) fn destination(&self) -> &CargoSite {
+        &self.destination
+    }
+    pub(crate) fn goods(&self) -> Supplies {
+        self.goods
+    }
+    pub(crate) fn lots(&self) -> &[LotSelection] {
+        &self.lots
+    }
 }
 
 /// Exact real physical cohort partition, including partial-child lineage.
@@ -233,11 +380,21 @@ pub(crate) struct RecoveryTruckMove {
     pub(super) relocated: Vec<PhysicalTrucks>,
 }
 impl RecoveryTruckMove {
-    pub(crate) fn source(&self) -> &CargoSite { &self.source }
-    pub(crate) fn destination(&self) -> &CargoSite { &self.destination }
-    pub(crate) fn selected(&self) -> &[PhysicalTrucks] { &self.selected }
-    pub(crate) fn remainder(&self) -> &[PhysicalTrucks] { &self.remainder }
-    pub(crate) fn relocated(&self) -> &[PhysicalTrucks] { &self.relocated }
+    pub(crate) fn source(&self) -> &CargoSite {
+        &self.source
+    }
+    pub(crate) fn destination(&self) -> &CargoSite {
+        &self.destination
+    }
+    pub(crate) fn selected(&self) -> &[PhysicalTrucks] {
+        &self.selected
+    }
+    pub(crate) fn remainder(&self) -> &[PhysicalTrucks] {
+        &self.remainder
+    }
+    pub(crate) fn relocated(&self) -> &[PhysicalTrucks] {
+        &self.relocated
+    }
 }
 
 /// Land's validated physical transition, repair OR tow, on the SAME outer draft.
@@ -257,10 +414,22 @@ pub(crate) struct ValidatedRepairOrTowOutcome {
     pub(super) truck_moves: Vec<RecoveryTruckMove>,
 }
 impl ValidatedRepairOrTowOutcome {
-    pub(crate) fn actor(&self) -> Side { self.actor }
-    pub(crate) fn stage(&self) -> WaterStage { self.stage }
-    pub(crate) fn before(&self) -> &State { &self.before }
-    pub(crate) fn after(&self) -> &State { &self.after }
-    pub(crate) fn cargo_moves(&self) -> &[RecoveryCargoMove] { &self.cargo_moves }
-    pub(crate) fn truck_moves(&self) -> &[RecoveryTruckMove] { &self.truck_moves }
+    pub(crate) fn actor(&self) -> Side {
+        self.actor
+    }
+    pub(crate) fn stage(&self) -> WaterStage {
+        self.stage
+    }
+    pub(crate) fn before(&self) -> &State {
+        &self.before
+    }
+    pub(crate) fn after(&self) -> &State {
+        &self.after
+    }
+    pub(crate) fn cargo_moves(&self) -> &[RecoveryCargoMove] {
+        &self.cargo_moves
+    }
+    pub(crate) fn truck_moves(&self) -> &[RecoveryTruckMove] {
+        &self.truck_moves
+    }
 }

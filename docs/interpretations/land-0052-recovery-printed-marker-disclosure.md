@@ -49,12 +49,13 @@ private facts that repair accounting consumes.
 
 ## Affected behaviour and tests
 
-Three authored controls in recovery/disclosure_contract_tests.rs call production Sync on
+Three passing controls in recovery/disclosure_contract_tests.rs call production Sync on
 fixture changes: public removal, public towing, and equal public removals with different
 private contents. They also check that actor-only Notes do not enter the former-owner stream.
-They remain unrun and are source-contract controls, not Respond/Advance repair-driver proof.
-A first Axis field tank-repair driver now has eight authored flow controls in
-recovery/field/tests.rs, including actual Respond/Advance former-owner pairs. These also
-remain unrun; no demonstrated gameplay result or projection change is claimed. The lead
-approved implementation; the amendment remains pending the owner's next batch review after
-publication.
+They are source-contract controls, separate from Respond/Advance repair-driver proof.
+A first Axis field tank-repair driver now has eight passing flow controls in
+recovery/field/tests.rs, including actual Respond/Advance former-owner pairs and a hidden
+eligibility acceptance pair. These passed with six transaction, four logistics relocation
+and four receipt controls in focused local validation. Full CI remains pending; no projection
+change is made. The lead approved implementation; the amendment remains pending the owner's
+next batch review after publication.

@@ -39,7 +39,9 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<(), EngineError> {
         match state.cursor.anchor() {
-            crate::land::recovery::field::ANCHOR => crate::land::recovery::field::finish(content, state, cx, self.strict),
+            crate::land::recovery::field::ANCHOR => {
+                crate::land::recovery::field::finish(content, state, cx, self.strict)
+            }
             "end_of_turn" | "end_of_game" => {
                 crate::land::replacements::discard_completed_limits(state)
             }
@@ -236,7 +238,9 @@ impl Cna {
         cx: &mut Cx<'_>,
     ) -> Result<String, Rejection> {
         match pending.kind.as_str() {
-            crate::land::recovery::field::KIND => crate::land::recovery::field::answer(content, state, pending, action),
+            crate::land::recovery::field::KIND => {
+                crate::land::recovery::field::answer(content, state, pending, action)
+            }
             crate::land::replacements::SCHEDULE | crate::land::replacements::DISTRIBUTION => {
                 crate::land::replacements::answer(content, state, pending, action)
             }
