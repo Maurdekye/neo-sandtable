@@ -429,7 +429,10 @@ fn finish_transaction(content: &CnaContent, state: &mut State, cx: &mut Cx<'_>, 
     let batch = before.batch.ok_or_else(|| invalid("missing operational batch"))?;
     let answered = |owner: &Side| match batch { Batch::Assignment => before.assignments.contains_key(owner),
         Batch::Query => before.queries.contains_key(owner), Batch::Commit => before.commitments.contains_key(owner), Batch::Closed => true };
-    if batch == Batch::Closed || Side::ALL.iter().any(|s| !answered(s)) { return Ok(()); }
+    if batch == Batch::Closed { return Ok(()); }
+    if Side::ALL.iter().any(|s| !answered(s)) {
+        return Err(invalid("closed fixed window lacks an explicit owner answer"));
+    }
     let mut draft = state.clone();
     let mut events = Vec::new();
     let original_rng = cx.rng.state();
@@ -510,6 +513,9 @@ pub(super) fn check(content: &CnaContent, air: &AirState, expected: Context) -> 
     let p = &air.runtime.operations.planning;
     if p == &PlanningState::default() { return Ok(()); }
     if air.runtime.operations.period != Some(expected.period) || p.batch.is_none() { return Err(invalid("planning has no current canonical period/batch")); }
+    if p.batch != Some(Batch::Closed) && expected.phase != Phase::Deployment {
+        return Err(invalid("unfinished fixed planning window crossed the canonical phase"));
+    }
     let mut assigned = BTreeSet::new();
     for cap in &p.caps {
         let order: BTreeSet<_> = cap.neighbors.iter().cloned().collect();

@@ -75,7 +75,7 @@ fn shortest(start: &HexId, target: &HexId, limit: usize) -> Option<Vec<HexId>> {
 // BOTH launch sources come from real authenticated initial responses and the
 // actual initial finish. Only refit readiness/weather/intervening clock are
 // explicit component fixtures. No anonymous enemy flight is invented here.
-fn two_cap_deployed() -> (Game<Cna>,PlaneId,HexId) {
+fn two_cap_answered() -> (Game<Cna>,PlaneId,HexId) {
     let opened=crate::air::operations::tests::opened();
     let (axis,amode,origin)=crate::air::operations::tests::plane(&opened);
     let arange=content().units.aircraft[&opened.state.air.runtime.aircraft[&axis].aircraft].modes[amode].range_hexes.unwrap();
@@ -111,6 +111,10 @@ fn two_cap_deployed() -> (Game<Cna>,PlaneId,HexId) {
     let mut a=cap(&game,&axis,&target,Posture::Offensive);a["path"]=json!(apath);
     let mut c=cap(&game,&cw,&target,Posture::Defensive);c["path"]=json!(cpath);
     let one=respond(&game,Side::Axis,json!({"caps":[a]}));let two=respond(&one,Side::Commonwealth,json!({"caps":[c]}));
+    (two,axis,target)
+}
+fn two_cap_deployed() -> (Game<Cna>,PlaneId,HexId) {
+    let (two,axis,target)=two_cap_answered();
     let (deployed,_)=close(&two);
     assert_eq!(deployed.state.air.runtime.operations.planning.caps.len(),2);
     assert!(Side::ALL.iter().all(|owner|deployed.state.air.runtime.operations.flights.iter().any(|f|f.owner==*owner&&!f.members.is_empty())));
@@ -421,4 +425,28 @@ fn hidden_route_and_private_query_and_commitment_receipts_have_identical_opponen
     assert_eq!(ce.iter().filter(|e|e.visible_to(Perspective::Side(Side::Commonwealth))).collect::<Vec<_>>(),pe.iter().filter(|e|e.visible_to(Perspective::Side(Side::Commonwealth))).collect::<Vec<_>>());
     assert_eq!(committed.rng,passed.rng);
     assert_ne!(committed.state.air.runtime.operations.planning.used,passed.state.air.runtime.operations.planning.used);
+}
+
+/// Cases: airlog:37.12, airlog:39.19, airlog:40.21, airlog:40.27
+#[test]
+fn second_owner_missing_source_and_missing_closed_answer_preserve_state_rng_and_prefix() {
+    let (mut game,_,_)=two_cap_answered();
+    let before=bytes(&game);
+    let cap=&game.state.air.runtime.operations.planning.assignments[&Side::Commonwealth].caps[0];
+    let aircraft=game.state.air.runtime.aircraft[&cap.plane].aircraft.clone();
+    let mode=cap.mode;
+    let mut source=CnaContent::load(&cna_content::repo_data_dir(),"graziani").unwrap();
+    source.units.aircraft.get_mut(&aircraft).unwrap().modes[mode].range_hexes=None;
+    let mut rng=CampaignRng::from_state(&game.rng);
+    let prefix=EngineEvent::public(GameEvent::Note{text:"existing source-error prefix".into()});
+    let mut events=vec![prefix.clone()];
+    let error=finish(&source,&mut game.state,&mut Cx{rng:&mut rng,events:&mut events}).unwrap_err();
+    assert!(matches!(error,EngineError::Unsupported{case,..} if case=="airlog:37.12"));
+    assert_eq!(bytes(&game),before);assert_eq!(rng.state(),game.rng);assert_eq!(events,vec![prefix]);
+    let mut malformed=game.clone();
+    malformed.state.air.runtime.operations.planning.assignments.remove(&Side::Commonwealth);
+    let missing=bytes(&malformed);
+    assert!(component_result(&mut malformed).is_err());assert_eq!(bytes(&malformed),missing);
+    let mut crossed=game.clone();crossed.state.cursor.index=crate::seq::OPSTAGE.iter().position(|s|s.anchor=="opstage.land_support_air.air_combat").unwrap();
+    assert!(inventory::check_at(content(),&crossed.state.air,Some(Context::from_state(&crossed.state).unwrap())).is_err());
 }
