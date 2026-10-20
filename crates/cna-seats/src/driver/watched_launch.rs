@@ -1,5 +1,5 @@
-//! Watched run binding. Native admission intentionally remains closed pending
-//! integrated review and the owner's current go through the lead.
+//! Watched run binding. Admission requires the trusted operator's explicit
+//! current invocation opt-in; all containment and same-run park checks remain.
 use super::*;
 use crate::watched_state::{ObservedAssistant, ParkedFiles};
 use crate::{
@@ -17,16 +17,66 @@ pub const WATCHED_VERSION: &str = "2.1.293";
 // inspected. Identity is checked as data; no auth/version subprocess is run.
 const EXECUTABLE_SHA256: &str = "8693c4a02dde7441d0066ede68af8ddfc408bb982d77e12b506286268224e6fa";
 
-pub fn native_admission() -> Result<(), DriverError> {
-    Err(DriverError::Isolation(
-        "watched native admission remains closed pending integration review and owner go".into(),
-    ))
+/// In-memory operator intent. Never serialize, log or pass it to a seat.
+pub struct OperatorGo {
+    same_run_resume: bool,
 }
 
-fn resume_admission() -> Result<(), DriverError> {
-    Err(DriverError::Isolation(
-        "watched resume remains closed pending file/park review".into(),
-    ))
+pub fn native_admission(value: Option<&std::ffi::OsStr>) -> Result<OperatorGo, DriverError> {
+    match value.and_then(|v| v.to_str()) {
+        Some("setup-gt1") => Ok(OperatorGo {
+            same_run_resume: false,
+        }),
+        Some("setup-gt1+same-run-resume") => Ok(OperatorGo {
+            same_run_resume: true,
+        }),
+        _ => Err(DriverError::Isolation(
+            "explicit operator watched setup/GT1 go required".into(),
+        )),
+    }
+}
+
+struct RunAdmission {
+    go: OperatorGo,
+    run: PathBuf,
+    budget: RequestBudget,
+}
+
+impl RunAdmission {
+    fn check(
+        &self,
+        namespace: &WatchedNamespace,
+        budget: &RequestBudget,
+        resume: bool,
+    ) -> Result<(), DriverError> {
+        if self.run != namespace.run_dir()
+            || !self.budget.same_allocation(budget)
+            || (resume && !self.go.same_run_resume)
+            || budget.check_available().is_err()
+        {
+            return Err(DriverError::Isolation(
+                "operator go/run/budget or same-run resume refused".into(),
+            ));
+        }
+        Ok(())
+    }
+}
+
+fn consume_bound<T>(
+    parked: &mut BTreeMap<SeatId, (uuid::Uuid, T)>,
+    seat: SeatId,
+    session: uuid::Uuid,
+    verify: impl FnOnce(&T) -> Result<(), DriverError>,
+) -> Result<(), DriverError> {
+    let (bound, state) = parked
+        .get(&seat)
+        .ok_or_else(|| DriverError::Isolation("verified same-run park missing".into()))?;
+    if *bound != session {
+        return Err(DriverError::Isolation("park session differs".into()));
+    }
+    verify(state)?;
+    parked.remove(&seat);
+    Ok(())
 }
 
 pub(super) fn check_init(
@@ -60,6 +110,7 @@ pub struct WatchedLaunch {
     pub jobs: JobRun,
     pub login: Arc<SubscriptionLogin>,
     parked: Mutex<BTreeMap<SeatId, (uuid::Uuid, ParkedFiles)>>,
+    admission: RunAdmission,
 }
 
 fn verify_executable(path: &Path) -> Result<(), DriverError> {
@@ -108,7 +159,13 @@ impl WatchedLaunch {
         budget: RequestBudget,
         jobs: JobRun,
         login: Arc<SubscriptionLogin>,
+        go: OperatorGo,
     ) -> Self {
+        let admission = RunAdmission {
+            go,
+            run: namespace.run_dir(),
+            budget: budget.clone(),
+        };
         Self {
             namespace,
             executable,
@@ -117,6 +174,7 @@ impl WatchedLaunch {
             jobs,
             login,
             parked: Mutex::new(BTreeMap::new()),
+            admission,
         }
     }
 
@@ -151,21 +209,15 @@ impl WatchedLaunch {
             .parked
             .lock()
             .map_err(|_| DriverError::Isolation("park binding unavailable".into()))?;
-        let (bound, files) = parked
-            .get(&seat)
-            .ok_or_else(|| DriverError::Isolation("verified same-run park missing".into()))?;
-        if *bound != session {
-            return Err(DriverError::Isolation("park session differs".into()));
-        }
-        files
-            .verify(
-                &self.namespace.config(seat),
-                &self.namespace.cwd(seat),
-                session,
-            )
-            .map_err(|_| DriverError::Isolation("parked file tree changed or unsafe".into()))?;
-        parked.remove(&seat);
-        Ok(())
+        consume_bound(&mut parked, seat, session, |files| {
+            files
+                .verify(
+                    &self.namespace.config(seat),
+                    &self.namespace.cwd(seat),
+                    session,
+                )
+                .map_err(|_| DriverError::Isolation("parked file tree changed or unsafe".into()))
+        })
     }
 
     pub(super) async fn start(
@@ -174,12 +226,8 @@ impl WatchedLaunch {
         resume: Option<&str>,
         reported_cost_limit: Option<f64>,
     ) -> Result<(ChildProc, SessionInfo), DriverError> {
-        native_admission()?;
-        if resume.is_some() {
-            // Separate unconditional hold: a future first-start go cannot
-            // accidentally activate retained-file adoption before review.
-            resume_admission()?;
-        }
+        self.admission
+            .check(&self.namespace, &self.budget, resume.is_some())?;
         let session = match resume {
             Some(id) => {
                 let parsed = uuid::Uuid::parse_str(id)
@@ -195,9 +243,9 @@ impl WatchedLaunch {
         let job = self
             .jobs
             .spawn_checked(|| {
-                if self.budget.usage().map_or(true, |usage| usage.stopped) {
-                    return Err(JobFailure::Stopped);
-                }
+                self.admission
+                    .check(&self.namespace, &self.budget, resume.is_some())
+                    .map_err(|_| JobFailure::Stopped)?;
                 // No await after these checks. Slot waiting cannot stale the guard.
                 verify_executable(&self.executable).map_err(|_| JobFailure::Spawn)?;
                 let construct = |_: &Path, _: &Path| {
@@ -259,6 +307,111 @@ impl WatchedLaunch {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn operator_mode_is_exact_missing_ambiguous_and_nonunicode_refuse() {
+        use std::{
+            ffi::{OsStr, OsString},
+            os::windows::ffi::OsStringExt,
+        };
+        assert!(native_admission(None).is_err());
+        for value in [
+            "",
+            "1",
+            "calibration",
+            "setup-gt1 ",
+            " setup-gt1",
+            "setup-gt1,same-run-resume",
+            "SETUP-GT1",
+        ] {
+            assert!(native_admission(Some(OsStr::new(value))).is_err());
+        }
+        let invalid = OsString::from_wide(&[0xd800]);
+        assert!(native_admission(Some(&invalid)).is_err());
+        assert!(
+            !native_admission(Some(OsStr::new("setup-gt1")))
+                .unwrap()
+                .same_run_resume
+        );
+        assert!(
+            native_admission(Some(OsStr::new("setup-gt1+same-run-resume")))
+                .unwrap()
+                .same_run_resume
+        );
+    }
+
+    #[tokio::test]
+    async fn operator_binding_rejects_foreign_run_reallocated_caps_and_stopped_budget() {
+        use crate::request_budget::{RequestKind, RequestLimits};
+        let run = WatchedNamespace::new(uuid::Uuid::from_u128(1));
+        let foreign = WatchedNamespace::new(uuid::Uuid::from_u128(2));
+        let limits = RequestLimits {
+            total: 2,
+            generations: 1,
+            wall: std::time::Duration::from_secs(30),
+        };
+        for (mode, resume) in [("setup-gt1", false), ("setup-gt1+same-run-resume", true)] {
+            let budget = RequestBudget::new(limits).unwrap();
+            let bound = RunAdmission {
+                go: native_admission(Some(std::ffi::OsStr::new(mode))).unwrap(),
+                run: run.run_dir(),
+                budget: budget.clone(),
+            };
+            assert!(bound.check(&run, &budget, false).is_ok());
+            assert_eq!(bound.check(&run, &budget, true).is_ok(), resume);
+            assert!(bound.check(&foreign, &budget, false).is_err());
+            assert!(
+                bound
+                    .check(&run, &RequestBudget::new(limits).unwrap(), false)
+                    .is_err()
+            );
+            // No provider/fake network: debit a completed inert future.
+            budget
+                .forward(RequestKind::Generation, || async {})
+                .await
+                .unwrap();
+            assert!(bound.check(&run, &budget, false).is_err());
+            budget.stop().unwrap();
+            assert!(bound.check(&run, &budget, false).is_err());
+        }
+    }
+
+    #[test]
+    fn parked_binding_requires_own_seat_session_verification_and_single_use() {
+        let mut seats = SeatId::all();
+        let seat = seats.next().unwrap();
+        let foreign = seats.next().unwrap();
+        let session = uuid::Uuid::from_u128(1);
+        let mut parked = BTreeMap::new();
+        assert!(consume_bound(&mut parked, seat, session, |_: &()| Ok(())).is_err());
+        parked.insert(seat, (session, ()));
+        assert!(
+            consume_bound(&mut parked, foreign, session, |_| panic!(
+                "foreign verifier called"
+            ))
+            .is_err()
+        );
+        assert!(
+            consume_bound(&mut parked, seat, uuid::Uuid::from_u128(2), |_| panic!(
+                "foreign verifier called"
+            ))
+            .is_err()
+        );
+        assert!(
+            consume_bound(&mut parked, seat, session, |_| Err(DriverError::Isolation(
+                "injected changed file".into()
+            )))
+            .is_err()
+        );
+        assert!(parked.contains_key(&seat));
+        consume_bound(&mut parked, seat, session, |_| Ok(())).unwrap();
+        assert!(
+            consume_bound(&mut parked, seat, session, |_| panic!(
+                "consumed verifier called"
+            ))
+            .is_err()
+        );
+    }
+
     #[test]
     fn init_requires_exact_session_model_version_and_connected_own_tools() {
         let tools = vec!["mcp__cna__observe".into()];

@@ -144,6 +144,8 @@ mod tests {
             ("ANTHROPIC_BASE_URL", "https://external.invalid"),
             ("CLAUDE_CODE_USE_BEDROCK", "1"),
             ("CNA_OPERATOR_TOKEN", "SYNTHETIC_OPERATOR"),
+            ("CNA_WATCHED_OPERATOR_GO", "setup-gt1+same-run-resume"),
+            ("CNA_LIVE_CLI_TESTS", "1"),
             ("CLAUDE_CODE_FALLBACK_MODEL", "other-model"),
         ]
         .into_iter()
@@ -170,6 +172,8 @@ mod tests {
             "CLAUDE_CODE_OAUTH_TOKEN",
             "CLAUDE_CODE_USE_BEDROCK",
             "CNA_OPERATOR_TOKEN",
+            "CNA_WATCHED_OPERATOR_GO",
+            "CNA_LIVE_CLI_TESTS",
             "CLAUDE_CODE_FALLBACK_MODEL",
         ] {
             assert!(!env.contains_key(std::ffi::OsStr::new(name)));

@@ -1,15 +1,24 @@
-//! Watched launcher ownership. Native and resume admission stay closed.
+//! Watched launcher ownership. Operator opt-in is separate from seat authority.
 use cna_core::ids::SeatId;
 use cna_play::{Demo, config::LaunchConfig};
 use cna_seats::driver::SeatDriver;
 type Drivers = Vec<(SeatId, Box<dyn SeatDriver>)>;
 
 pub fn check_admission(config: &LaunchConfig, resume: bool) -> Result<(), String> {
+    let operator = std::env::var("CNA_WATCHED_OPERATOR_GO").ok();
+    check_admission_with(config, resume, operator.as_deref())
+}
+
+fn check_admission_with(
+    config: &LaunchConfig,
+    resume: bool,
+    operator: Option<&str>,
+) -> Result<(), String> {
     if config.claude_seats().next().is_none() {
         return Ok(());
     }
     if resume {
-        return Err("watched resume is not admitted".into());
+        return Err("cold campaign resume has no verified same-run in-memory binding".into());
     }
     if config.claude_seats().count() != 10
         || config
@@ -32,10 +41,13 @@ pub fn check_admission(config: &LaunchConfig, resume: bool) -> Result<(), String
     }
     #[cfg(windows)]
     {
-        cna_seats::driver::claude::native_admission().map_err(|e| e.to_string())
+        cna_seats::driver::claude::native_admission(operator.map(std::ffi::OsStr::new))
+            .map(|_| ())
+            .map_err(|e| e.to_string())
     }
     #[cfg(not(windows))]
     {
+        let _ = operator;
         Err("watched launcher requires Windows job containment".into())
     }
 }
@@ -123,6 +135,9 @@ mod platform {
             if std::env::var("CNA_LIVE_CLI_TESTS").as_deref() != Ok("1") {
                 return Err("CNA_LIVE_CLI_TESTS=1 and current owner go required".into());
             }
+            let operator = std::env::var_os("CNA_WATCHED_OPERATOR_GO");
+            let go = cna_seats::driver::claude::native_admission(operator.as_deref())
+                .map_err(|e| e.to_string())?;
             let executable = PathBuf::from(
                 std::env::var_os("CNA_WATCHED_CLAUDE_EXE")
                     .ok_or("explicit reviewed Claude executable required")?,
@@ -164,6 +179,7 @@ mod platform {
                 budget.clone(),
                 jobs,
                 login,
+                go,
             ));
             let (shutdown, stopped) = oneshot::channel();
             let server = gateway.clone();
@@ -364,7 +380,7 @@ impl WatchedRuntime {
 mod admission_tests {
     use super::*;
     #[test]
-    fn native_and_resume_stay_closed_before_credential_access() {
+    fn operator_go_is_exact_and_cold_resume_still_has_no_binding() {
         let config = cna_play::config::parse_args(&[
             "--preset".into(),
             "graziani-haiku".into(),
@@ -379,8 +395,23 @@ mod admission_tests {
         let cna_play::config::Command::Play(config) = config else {
             panic!()
         };
-        assert!(check_admission(&config, false).is_err());
-        assert!(check_admission(&config, true).is_err());
+        for value in [
+            None,
+            Some(""),
+            Some("1"),
+            Some("calibration"),
+            Some("setup-gt1 "),
+            Some("setup-gt1,same-run-resume"),
+        ] {
+            assert!(check_admission_with(&config, false, value).is_err());
+        }
+        for value in ["setup-gt1", "setup-gt1+same-run-resume"] {
+            assert_eq!(
+                check_admission_with(&config, false, Some(value)).is_ok(),
+                cfg!(windows)
+            );
+            assert!(check_admission_with(&config, true, Some(value)).is_err());
+        }
     }
     #[test]
     fn scripted_and_human_launches_do_not_acquire_login_or_native_admission() {

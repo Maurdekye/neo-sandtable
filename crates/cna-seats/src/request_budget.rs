@@ -55,6 +55,28 @@ struct State {
 pub struct RequestBudget(Arc<Mutex<State>>);
 
 impl RequestBudget {
+    /// Admission is bound to the original allocation, never equivalent new caps.
+    #[cfg(windows)]
+    pub(crate) fn same_allocation(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    #[cfg(windows)]
+    pub(crate) fn check_available(&self) -> Result<(), RequestBudgetError> {
+        let state = self.0.lock().map_err(|_| RequestBudgetError::Stopped)?;
+        if state.usage.stopped {
+            Err(RequestBudgetError::Stopped)
+        } else if Instant::now() >= state.deadline {
+            Err(RequestBudgetError::Deadline)
+        } else if state.usage.total >= state.limits.total
+            || state.usage.generations >= state.limits.generations
+        {
+            Err(RequestBudgetError::Exhausted)
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn new(limits: RequestLimits) -> Result<Self, RequestBudgetError> {
         if limits.generations == 0 || limits.total < limits.generations || limits.wall.is_zero() {
             return Err(RequestBudgetError::Limits);

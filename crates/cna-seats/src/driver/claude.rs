@@ -65,7 +65,7 @@ pub use watched::watched_command;
 #[path = "watched_launch.rs"]
 mod watched_launch;
 #[cfg(windows)]
-pub use watched_launch::{WATCHED_VERSION, WatchedLaunch, native_admission};
+pub use watched_launch::{OperatorGo, WATCHED_VERSION, WatchedLaunch, native_admission};
 
 /// Configuration of one Claude Code seat.
 #[derive(Clone, Debug)]
