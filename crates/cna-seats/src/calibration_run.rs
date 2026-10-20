@@ -318,6 +318,9 @@ mod windows {
         }
 
         pub async fn shutdown(&mut self) -> Result<(), &'static str> {
+            // A cancelled cleanup has not established a joined boundary. Every
+            // pending owner stays in self until its await has actually completed.
+            self.cleanup_confirmed = false;
             self.fence.stop();
             if let Some(process) = &mut self.process {
                 process.close_stdin();
@@ -327,16 +330,19 @@ mod windows {
             if let Some(stop) = self.shutdown.take() {
                 let _ = stop.send(());
             }
-            if let Some(mut service) = self.service.take() {
-                match tokio::time::timeout(Duration::from_secs(3), &mut service).await {
+            if let Some(service) = self.service.as_mut() {
+                match tokio::time::timeout(Duration::from_secs(3), &mut *service).await {
                     Ok(Ok(Ok(()))) => {}
                     Ok(_) => self.cleanup_failed = true,
                     Err(_) => {
                         self.cleanup_failed = true;
                         service.abort();
-                        let _ = service.await;
+                        let _ = (&mut *service).await;
                     }
                 }
+                // No suspension between observing completion and removing its
+                // handle. Cancellation during either await retains ownership.
+                self.service.take();
             }
             self.cleanup_failed |= self.fence.shutdown_pumps().await.is_err();
             self.cleanup_confirmed = !self.cleanup_failed;
@@ -354,6 +360,179 @@ mod windows {
                     .report()
                     .map_err(|_| "calibration report unavailable")?,
             ))
+        }
+    }
+
+    impl Drop for CalibrationRuntime {
+        fn drop(&mut self) {
+            // Also covers cancellation of prepare while waiting for a job slot.
+            // Drop cannot join or certify cleanup; it must still stop admission
+            // and cancel owned work rather than detach a live HTTP service.
+            self.cleanup_confirmed = false;
+            self.fence.stop();
+            if let Some(stop) = self.shutdown.take() {
+                let _ = stop.send(());
+            }
+            if let Some(service) = &self.service {
+                service.abort();
+            }
+            // ChildProc's supervised owner stops/aborts its job and IO on drop.
+            // Forwarding pumps independently observe the stopped fence budget.
+        }
+    }
+
+    #[cfg(test)]
+    mod ownership_tests {
+        use super::*;
+        use std::sync::Arc;
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        fn fence() -> (PathBuf, LaneAFence) {
+            let root =
+                std::env::temp_dir().join(format!("calibration-owner-{}", uuid::Uuid::new_v4()));
+            fs::create_dir(&root).unwrap();
+            let ledger = root.join("one.sqlite");
+            CalibrationFence::initialize(&ledger).unwrap();
+            let fence = LaneAFence::open(
+                &ledger,
+                &crate::calibration_cost::source_fixture_prices(),
+                Duration::from_secs(30),
+            )
+            .unwrap();
+            (root, fence)
+        }
+
+        fn runtime(
+            fence: LaneAFence,
+            service: JoinHandle<std::io::Result<()>>,
+            shutdown: Option<oneshot::Sender<()>>,
+        ) -> CalibrationRuntime {
+            CalibrationRuntime {
+                fence,
+                process: None,
+                service: Some(service),
+                shutdown,
+                session: uuid::Uuid::new_v4().to_string(),
+                turn_attempted: false,
+                cleanup_failed: false,
+                cleanup_confirmed: false,
+            }
+        }
+
+        #[tokio::test]
+        async fn cancelled_shutdown_retains_blocked_service_until_retry_joins() {
+            let (root, fence) = fence();
+            let release = Arc::new(tokio::sync::Notify::new());
+            let released = release.clone();
+            let service = tokio::spawn(async move {
+                released.notified().await;
+                Ok(())
+            });
+            let mut runtime = runtime(fence, service, None);
+            let cancelled = tokio::time::timeout(Duration::from_millis(20), runtime.shutdown())
+                .await
+                .is_err();
+            let still_owned = runtime.service.is_some();
+            let unconfirmed = !runtime.report().unwrap().0;
+            release.notify_one();
+            let joined = runtime.shutdown().await;
+            let confirmed = runtime.report().unwrap().0;
+            let repeated = runtime.shutdown().await;
+            drop(runtime);
+            fs::remove_dir_all(root).unwrap();
+            assert!(cancelled && still_owned && unconfirmed);
+            assert!(joined.is_ok() && repeated.is_ok() && confirmed);
+        }
+
+        #[tokio::test]
+        async fn completed_service_failure_is_cached_without_second_poll() {
+            let (root, fence) = fence();
+            let service = tokio::spawn(async { Err(std::io::Error::other("synthetic")) });
+            let mut runtime = runtime(fence, service, None);
+            let first = runtime.shutdown().await;
+            let removed = runtime.service.is_none();
+            let second = runtime.shutdown().await;
+            let confirmed = runtime.report().unwrap().0;
+            drop(runtime);
+            fs::remove_dir_all(root).unwrap();
+            assert!(first.is_err() && second.is_err() && removed && !confirmed);
+        }
+
+        // A raw incomplete incoming body never reaches messages or any upstream.
+        // The real HTTP service and runtime cleanup run; no native/login setup.
+        async fn slow_http(
+            fence: &LaneAFence,
+        ) -> (
+            JoinHandle<std::io::Result<()>>,
+            oneshot::Sender<()>,
+            tokio::net::TcpStream,
+        ) {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let (stop, stopped) = oneshot::channel();
+            let gateway = fence.clone();
+            let service = tokio::spawn(async move {
+                gateway
+                    .serve(listener, async {
+                        let _ = stopped.await;
+                    })
+                    .await
+            });
+            let mut socket = tokio::net::TcpStream::connect(address).await.unwrap();
+            socket.write_all(b"POST /v1/messages HTTP/1.1\r\nHost: localhost\r\nExpect: 100-continue\r\nContent-Length: 1000\r\nContent-Type: application/json\r\n\r\n").await.unwrap();
+            let mut interim = [0; 25];
+            tokio::time::timeout(Duration::from_secs(1), socket.read_exact(&mut interim))
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(&interim, b"HTTP/1.1 100 Continue\r\n\r\n");
+            (service, stop, socket)
+        }
+
+        #[tokio::test]
+        async fn cancelled_real_http_shutdown_keeps_owner_until_cleanup() {
+            let (root, fence) = fence();
+            let (service, stop, mut socket) = slow_http(&fence).await;
+            let mut runtime = runtime(fence, service, Some(stop));
+            // Current-thread fixture: shutdown first signals the real service
+            // then suspends awaiting it. Cancel that first pending cleanup.
+            let cancelled = tokio::time::timeout(Duration::ZERO, runtime.shutdown())
+                .await
+                .is_err();
+            let still_owned = runtime.service.is_some();
+            let unconfirmed = !runtime.report().unwrap().0;
+            let result = runtime.shutdown().await;
+            let confirmed = runtime.report().unwrap().0;
+            let mut bytes = Vec::new();
+            let closed =
+                tokio::time::timeout(Duration::from_secs(1), socket.read_to_end(&mut bytes)).await;
+            drop(socket);
+            drop(runtime);
+            fs::remove_dir_all(root).unwrap();
+            assert!(cancelled && still_owned && unconfirmed);
+            assert!(result.is_ok() && confirmed);
+            assert!(closed.is_ok());
+        }
+
+        #[tokio::test]
+        async fn partial_prepare_drop_stops_real_http_and_incoming_body() {
+            let (root, fence) = fence();
+            let (service, stop, mut socket) = slow_http(&fence).await;
+            let aborted = service.abort_handle();
+            // Same state as prepare after service creation while slot admission
+            // is pending. Dropping it never invokes real prepare or a CLI.
+            let runtime = runtime(fence.clone(), service, Some(stop));
+            drop(runtime);
+            let stopped = fence.budget().usage().unwrap().stopped;
+            let mut bytes = Vec::new();
+            let closed =
+                tokio::time::timeout(Duration::from_secs(1), socket.read_to_end(&mut bytes)).await;
+            drop(socket);
+            let pumps = fence.shutdown_pumps().await;
+            let task_finished = aborted.is_finished();
+            drop(fence);
+            fs::remove_dir_all(root).unwrap();
+            assert!(stopped && closed.is_ok() && task_finished && pumps.is_ok());
         }
     }
 }

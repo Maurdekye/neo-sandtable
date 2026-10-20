@@ -72,6 +72,33 @@ struct Shared {
 #[derive(Clone)]
 pub struct LaneAFence(Arc<Shared>);
 
+struct StopServiceOnDrop(tokio::sync::watch::Sender<bool>);
+
+impl Drop for StopServiceOnDrop {
+    fn drop(&mut self) {
+        self.0.send_replace(true);
+    }
+}
+
+async fn service_stopped(mut stop: tokio::sync::watch::Receiver<bool>) {
+    let _ = stop.wait_for(|stopped| *stopped).await;
+}
+
+async fn request_lifetime(
+    State(stop): State<tokio::sync::watch::Receiver<bool>>,
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Response {
+    // Include extraction of a slow incoming body in service cancellation. The
+    // separate service signal must not replace durable spent-ledger responses
+    // merely because the generation budget has already stopped.
+    tokio::select! {
+        biased;
+        _ = service_stopped(stop) => deny(StatusCode::SERVICE_UNAVAILABLE),
+        response = next.run(request) => response,
+    }
+}
+
 impl LaneAFence {
     pub fn open(
         path: &Path,
@@ -199,10 +226,18 @@ impl LaneAFence {
             ));
         }
         let owner = self.clone();
+        let (stop, stopped) = tokio::sync::watch::channel(false);
+        // Axum owns per-connection tasks internally. Cancelling its outer
+        // future must also cancel active body extraction and its signal task.
+        let _stop_on_drop = StopServiceOnDrop(stop.clone());
         let router = Router::new()
             .route("/v1/messages", post(messages))
             .fallback(|| async { deny(StatusCode::NOT_FOUND) })
             .layer(DefaultBodyLimit::max(REQUEST_LIMIT))
+            .layer(axum::middleware::from_fn_with_state(
+                stopped.clone(),
+                request_lifetime,
+            ))
             .with_state(self);
         let control = owner.clone();
         let result = axum::serve(listener, router)
@@ -210,7 +245,11 @@ impl LaneAFence {
                 // Admission/IO stop does not erase the listener before it can
                 // return the durable spent-ledger refusal. The launcher owns
                 // the separate bounded HTTP shutdown and native cleanup.
-                shutdown.await;
+                tokio::select! {
+                    _ = shutdown => {},
+                    _ = service_stopped(stopped) => {},
+                }
+                stop.send_replace(true);
                 control.stop();
             })
             .await;
