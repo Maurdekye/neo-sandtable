@@ -1,6 +1,7 @@
 //! Watched run binding. Native admission intentionally remains closed pending
 //! integrated review and the owner's current go through the lead.
 use super::*;
+use crate::watched_state::{ObservedAssistant, ParkedFiles};
 use crate::{
     calibration::MODEL,
     calibration_isolation::WatchedNamespace,
@@ -9,7 +10,7 @@ use crate::{
     watched_job::{JobFailure, JobRun},
 };
 use sha2::{Digest, Sha256};
-use std::{fs, io::Read, net::SocketAddr, path::Path};
+use std::{collections::BTreeMap, fs, io::Read, net::SocketAddr, path::Path, sync::Mutex};
 
 pub const WATCHED_VERSION: &str = "2.1.293";
 // Exact installed SDK0.3.293 executable whose readers were independently
@@ -19,6 +20,12 @@ const EXECUTABLE_SHA256: &str = "8693c4a02dde7441d0066ede68af8ddfc408bb982d77e12
 pub fn native_admission() -> Result<(), DriverError> {
     Err(DriverError::Isolation(
         "watched native admission remains closed pending integration review and owner go".into(),
+    ))
+}
+
+fn resume_admission() -> Result<(), DriverError> {
+    Err(DriverError::Isolation(
+        "watched resume remains closed pending file/park review".into(),
     ))
 }
 
@@ -52,6 +59,7 @@ pub struct WatchedLaunch {
     pub budget: RequestBudget,
     pub jobs: JobRun,
     pub login: Arc<SubscriptionLogin>,
+    parked: Mutex<BTreeMap<SeatId, (uuid::Uuid, ParkedFiles)>>,
 }
 
 fn verify_executable(path: &Path) -> Result<(), DriverError> {
@@ -93,6 +101,73 @@ fn verify_executable(path: &Path) -> Result<(), DriverError> {
 }
 
 impl WatchedLaunch {
+    pub fn new(
+        namespace: Arc<WatchedNamespace>,
+        executable: PathBuf,
+        fence: SocketAddr,
+        budget: RequestBudget,
+        jobs: JobRun,
+        login: Arc<SubscriptionLogin>,
+    ) -> Self {
+        Self {
+            namespace,
+            executable,
+            fence,
+            budget,
+            jobs,
+            login,
+            parked: Mutex::new(BTreeMap::new()),
+        }
+    }
+
+    pub(super) fn record_park(
+        &self,
+        seat: SeatId,
+        session: uuid::Uuid,
+        observed: ObservedAssistant,
+    ) -> Result<(), DriverError> {
+        let captured = (|| {
+            let files = ParkedFiles::capture(
+                &self.namespace.config(seat),
+                &self.namespace.cwd(seat),
+                session,
+                observed,
+            )
+            .map_err(|_| DriverError::Isolation("same-seat parked file witness refused".into()))?;
+            self.parked
+                .lock()
+                .map_err(|_| DriverError::Isolation("park binding unavailable".into()))?
+                .insert(seat, (session, files));
+            Ok(())
+        })();
+        if captured.is_err() {
+            let _ = self.budget.stop();
+        }
+        captured
+    }
+
+    fn consume_park(&self, seat: SeatId, session: uuid::Uuid) -> Result<(), DriverError> {
+        let mut parked = self
+            .parked
+            .lock()
+            .map_err(|_| DriverError::Isolation("park binding unavailable".into()))?;
+        let (bound, files) = parked
+            .get(&seat)
+            .ok_or_else(|| DriverError::Isolation("verified same-run park missing".into()))?;
+        if *bound != session {
+            return Err(DriverError::Isolation("park session differs".into()));
+        }
+        files
+            .verify(
+                &self.namespace.config(seat),
+                &self.namespace.cwd(seat),
+                session,
+            )
+            .map_err(|_| DriverError::Isolation("parked file tree changed or unsafe".into()))?;
+        parked.remove(&seat);
+        Ok(())
+    }
+
     pub(super) async fn start(
         &self,
         cfg: &ClaudeConfig,
@@ -101,11 +176,22 @@ impl WatchedLaunch {
     ) -> Result<(ChildProc, SessionInfo), DriverError> {
         native_admission()?;
         if resume.is_some() {
-            return Err(DriverError::Isolation(
-                "watched resume is not admitted".into(),
-            ));
+            // Separate unconditional hold: a future first-start go cannot
+            // accidentally activate retained-file adoption before review.
+            resume_admission()?;
         }
-        let id = uuid::Uuid::new_v4().to_string();
+        let session = match resume {
+            Some(id) => {
+                let parsed = uuid::Uuid::parse_str(id)
+                    .map_err(|_| DriverError::Isolation("invalid saved session".into()))?;
+                if parsed.to_string() != id {
+                    return Err(DriverError::Isolation("noncanonical saved session".into()));
+                }
+                parsed
+            }
+            None => uuid::Uuid::new_v4(),
+        };
+        let id = session.to_string();
         let job = self
             .jobs
             .spawn_checked(|| {
@@ -114,22 +200,40 @@ impl WatchedLaunch {
                 }
                 // No await after these checks. Slot waiting cannot stale the guard.
                 verify_executable(&self.executable).map_err(|_| JobFailure::Spawn)?;
-                self.namespace
-                    .with_checked_initial_spawn(cfg.seat, false, |_, _| {
-                        let mut command = watched_command(
+                let construct = |_: &Path, _: &Path| {
+                    let mut command = if resume.is_some() {
+                        self.consume_park(cfg.seat, session)?;
+                        watched::parked_command(
+                            &self.executable,
+                            &self.namespace,
+                            cfg,
+                            self.fence,
+                            SessionArg::Resume(&id),
+                        )?
+                    } else {
+                        watched_command(
                             &self.executable,
                             &self.namespace,
                             cfg,
                             self.fence,
                             SessionArg::New(&id),
-                        )?;
-                        if let Some(limit) = reported_cost_limit {
-                            command.args(["--max-budget-usd".to_string(), limit.to_string()]);
-                        }
-                        self.login.apply_to(&mut command);
-                        Ok::<_, DriverError>(command)
-                    })
-                    .map_err(|_| JobFailure::Spawn)
+                        )?
+                    };
+                    if let Some(limit) = reported_cost_limit {
+                        command.args(["--max-budget-usd".to_string(), limit.to_string()]);
+                    }
+                    self.login.apply_to(&mut command);
+                    Ok::<_, DriverError>(command)
+                };
+                if resume.is_some() {
+                    self.namespace
+                        .with_checked_parked_spawn(cfg.seat, construct)
+                        .map_err(|_| JobFailure::Spawn)
+                } else {
+                    self.namespace
+                        .with_checked_initial_spawn(cfg.seat, false, construct)
+                        .map_err(|_| JobFailure::Spawn)
+                }
             })
             .await
             .map_err(|_| {
@@ -138,14 +242,15 @@ impl WatchedLaunch {
             })?;
         // This is synchronous: cancellation cannot detach the just-started job
         // between spawn and registration in the driver-owned supervisor.
-        let process = ChildProc::from_watched(job, self.budget.clone());
+        let mut process = ChildProc::from_watched(job, self.budget.clone());
+        process.bind_watched_session(session);
         Ok((
             process,
             SessionInfo {
                 session_id: id,
                 model: Some(MODEL.into()),
                 cli_version: Some(WATCHED_VERSION.into()),
-                resumed: false,
+                resumed: resume.is_some(),
             },
         ))
     }

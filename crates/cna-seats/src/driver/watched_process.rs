@@ -12,6 +12,12 @@ pub(super) struct SupervisedChild {
     pumps: Vec<Option<JoinHandle<()>>>,
     result: Option<Result<JobCompletion, String>>,
     budget: RequestBudget,
+    session: Option<uuid::Uuid>,
+    observed: Option<crate::watched_state::ObservedAssistant>,
+    window_open: bool,
+    window_succeeded: bool,
+    park_attempted: bool,
+    park_complete: bool,
 }
 
 async fn stopping(mut stop: watch::Receiver<bool>) {
@@ -86,6 +92,12 @@ impl ChildProc {
                 pumps,
                 result: None,
                 budget,
+                session: None,
+                observed: None,
+                window_open: false,
+                window_succeeded: false,
+                park_attempted: false,
+                park_complete: false,
             }),
             stdin,
             lines,
@@ -95,6 +107,50 @@ impl ChildProc {
 }
 
 impl ChildProc {
+    pub(crate) fn bind_watched_session(&mut self, session: uuid::Uuid) {
+        if let Some(owner) = &mut self.watched {
+            owner.session = Some(session);
+        }
+    }
+    pub(crate) fn begin_watched_window(&mut self) {
+        if let Some(owner) = &mut self.watched {
+            owner.observed = None;
+            owner.window_open = true;
+            owner.window_succeeded = false;
+        }
+    }
+    pub(crate) fn end_watched_window(&mut self, success: bool) {
+        if let Some(owner) = &mut self.watched {
+            owner.window_open = false;
+            owner.window_succeeded = success;
+        }
+    }
+    pub(crate) fn note_watched_line(&mut self, line: &str) {
+        if let Some(owner) = &mut self.watched
+            && owner.window_open
+            && let Some(session) = owner.session
+            && let Ok(frame) = serde_json::from_str::<serde_json::Value>(line)
+            && frame["type"] == "assistant"
+            && frame.get("parent_tool_use_id").is_none_or(|v| v.is_null())
+            && frame["isReplay"] != true
+            && frame["is_replay"] != true
+        {
+            owner.observed = crate::watched_state::ObservedAssistant::from_frame(&frame, session);
+        }
+    }
+    pub(crate) fn take_park_witness(&mut self) -> Option<crate::watched_state::ObservedAssistant> {
+        let owner = self.watched.as_mut()?;
+        if !owner.window_succeeded
+            || owner.window_open
+            || !owner.park_complete
+            || owner.supervisor.is_some()
+            || !owner.pumps.is_empty()
+            || !matches!(owner.result, Some(Ok(JobCompletion::Natural(status))) if status.success())
+        {
+            return None;
+        }
+        owner.observed.take()
+    }
     pub(super) async fn park_watched(&mut self, grace: Duration) -> std::io::Result<()> {
         self.close_stdin();
         let result = {
@@ -132,6 +188,12 @@ impl SupervisedChild {
     }
 
     async fn park(&mut self, grace: Duration) -> std::io::Result<()> {
+        if self.park_attempted && !self.park_complete {
+            return Err(std::io::Error::other(
+                "previous park was cancelled or failed",
+            ));
+        }
+        self.park_attempted = true;
         let deadline = Instant::now() + grace;
         if let Some(task) = self.supervisor.as_mut() {
             let completion = tokio::time::timeout_at(deadline, &mut *task)
@@ -156,6 +218,7 @@ impl SupervisedChild {
             slot.take();
         }
         self.pumps.clear();
+        self.park_complete = true;
         Ok(())
     }
 
@@ -251,8 +314,8 @@ mod tests {
     }
     impl Drop for Files {
         fn drop(&mut self) {
-            let _ = fs::remove_file(self.0.join("ready"));
-            let _ = fs::remove_dir(&self.0);
+            // Private fixture root was created under temp with a generated UUID.
+            let _ = fs::remove_dir_all(&self.0);
         }
     }
 
@@ -266,6 +329,45 @@ mod tests {
             b"inert",
         )
         .unwrap();
+        if kind == "state-park" || kind == "missing-state" {
+            use std::io::{BufRead, Read, Write};
+            let session = std::env::var("CNA_INERT_SESSION").unwrap();
+            let config = PathBuf::from(std::env::var_os("CNA_INERT_CONFIG").unwrap());
+            let mut input = std::io::BufReader::new(std::io::stdin());
+            let mut prompt = String::new();
+            input.read_line(&mut prompt).unwrap();
+            let raw_id = uuid::Uuid::from_u128(20).to_string();
+            let content =
+                serde_json::json!([{"type":"text","text":"synthetic current-window assistant"}]);
+            println!(
+                "{}",
+                serde_json::json!({"type":"assistant","session_id":session,"parent_tool_use_id":null,"uuid":raw_id,"timestamp":"current-window","message":{"id":"msg-current","content":content}})
+            );
+            println!(
+                "{}",
+                serde_json::json!({"type":"result","subtype":"success"})
+            );
+            std::io::stdout().flush().unwrap();
+            let mut remaining = Vec::new();
+            input.read_to_end(&mut remaining).unwrap();
+            if kind == "state-park" {
+                let projects = config.join("projects");
+                fs::create_dir(&projects).unwrap();
+                let project = projects.join("watched-seat");
+                fs::create_dir(&project).unwrap();
+                let leaf = uuid::Uuid::from_u128(30).to_string();
+                let raw = serde_json::json!({"type":"assistant","sessionId":session,"uuid":raw_id,"timestamp":"current-window","message":{"id":"msg-current","content":content}});
+                let internal = serde_json::json!({"type":"system","sessionId":session,"uuid":leaf,"internal":"opaque"});
+                let marker =
+                    serde_json::json!({"type":"last-prompt","sessionId":session,"leafUuid":leaf});
+                fs::write(
+                    project.join(format!("{session}.jsonl")),
+                    format!("{raw}\n{internal}\n{marker}\n"),
+                )
+                .unwrap();
+            }
+            return;
+        }
         if kind == "park" || kind == "nonzero" {
             use std::io::{Read, Write};
             let mut input = Vec::new();
@@ -314,6 +416,67 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn fake_window_eof_file_witness_and_repeat_guard_preserve_or_refuse() {
+        for kind in ["state-park", "missing-state"] {
+            let files = Files::new();
+            let config = files.0.join("config");
+            let cwd = files.0.join("cwd");
+            fs::create_dir(&config).unwrap();
+            fs::create_dir(&cwd).unwrap();
+            let session = uuid::Uuid::new_v4();
+            let requests = budget(Duration::from_secs(20));
+            let jobs = JobRun::new(Duration::from_secs(20)).unwrap();
+            let mut command = files.command(kind);
+            command
+                .env("CNA_INERT_SESSION", session.to_string())
+                .env("CNA_INERT_CONFIG", &config);
+            let job = jobs.spawn(command).await.unwrap();
+            let mut process = ChildProc::from_watched(job, requests);
+            process.bind_watched_session(session);
+            process.begin_watched_window();
+            process.send_line("synthetic prompt").await.unwrap();
+            let received = tokio::time::timeout(Duration::from_secs(3), async {
+                while let Ok(Some(line)) = process
+                    .next_line(Instant::now() + Duration::from_secs(3))
+                    .await
+                {
+                    if serde_json::from_str::<serde_json::Value>(&line)
+                        .ok()
+                        .is_some_and(|v| v["type"] == "result")
+                    {
+                        return true;
+                    }
+                }
+                false
+            })
+            .await
+            .unwrap_or(false);
+            process.end_watched_window(received);
+            let parked = process.finish(Duration::from_secs(2)).await;
+            let observed = process.take_park_witness();
+            let cleanup = process.kill().await;
+            assert!(
+                received && parked.is_ok() && cleanup.is_ok(),
+                "received={received} parked={parked:?} cleanup={cleanup:?}"
+            );
+            let captured = crate::watched_state::ParkedFiles::capture(
+                &config,
+                &cwd,
+                session,
+                observed.unwrap(),
+            );
+            if kind == "state-park" {
+                let saved = captured.unwrap();
+                assert!(saved.verify(&config, &cwd, session).is_ok());
+                fs::write(config.join("settings.json"), b"{}").unwrap();
+                assert!(saved.verify(&config, &cwd, session).is_err());
+            } else {
+                assert!(captured.is_err());
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn eof_park_keeps_draining_and_requires_natural_success() {
         for kind in ["park", "nonzero"] {
             let files = Files::new();
@@ -327,9 +490,35 @@ mod tests {
                 == Some(b"flushed-after-eof".as_slice());
             let cleanup = process.kill().await;
             assert!(executed && flushed && cleanup.is_ok());
-            assert_eq!(parked.is_ok(), kind == "park");
+            assert_eq!(
+                parked.is_ok(),
+                kind == "park",
+                "kind={kind} park={parked:?}"
+            );
             assert!(!process.is_running());
         }
+    }
+
+    #[tokio::test]
+    async fn cancelled_park_cannot_be_retried_as_resumable_but_cleanup_joins() {
+        let files = Files::new();
+        let requests = budget(Duration::from_secs(20));
+        let jobs = JobRun::new(Duration::from_secs(20)).unwrap();
+        let job = jobs.spawn(files.command("idle")).await.unwrap();
+        let mut process = ChildProc::from_watched(job, requests.clone());
+        let executed = ready(&files).await;
+        let cancelled = tokio::time::timeout(
+            Duration::from_millis(40),
+            process.finish(Duration::from_secs(10)),
+        )
+        .await
+        .is_err();
+        let retried = process.finish(Duration::from_secs(2)).await;
+        let cleanup = process.kill().await;
+        assert!(
+            executed && cancelled && retried.is_err() && cleanup.is_ok() && !process.is_running()
+        );
+        assert!(process.take_park_witness().is_none() && requests.usage().unwrap().stopped);
     }
 
     #[tokio::test]

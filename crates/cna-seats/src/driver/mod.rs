@@ -450,7 +450,13 @@ impl ChildProc {
         deadline: Instant,
     ) -> Result<Option<String>, tokio::time::error::Elapsed> {
         match tokio::time::timeout_at(deadline, self.lines.recv()).await {
-            Ok(line) => Ok(line),
+            Ok(line) => {
+                #[cfg(windows)]
+                if let Some(text) = &line {
+                    self.note_watched_line(text);
+                }
+                Ok(line)
+            }
             Err(e) => Err(e),
         }
     }

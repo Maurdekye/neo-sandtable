@@ -27,6 +27,7 @@ futures-util = "0.3"
 [target.'cfg(windows)'.dependencies]
 process-wrap = { version = "=10.0.1", default-features = false, features = ["tokio1", "creation-flags", "job-object", "kill-on-drop"] }
 win32job = "=2.0.3"
+winapi-util = "=0.1.11"
 
 [lints]
 workspace = true

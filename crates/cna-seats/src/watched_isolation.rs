@@ -53,6 +53,21 @@ impl WatchedNamespace {
         self.checked_launch(&StdManaged, &StdMetadata, seat, spawn)
     }
 
+    /// Same complete ancestor/managed/run/seat checks, with own session state
+    /// allowed only after the caller's file/park binding check in this callback.
+    pub(crate) fn with_checked_parked_spawn<T, E>(
+        &self,
+        seat: SeatId,
+        spawn: impl FnOnce(&Path, &Path) -> Result<T, E>,
+    ) -> Result<T, LaunchError<E>> {
+        if !cfg!(windows) {
+            return Err(IsolationError::Layout.into());
+        }
+        check_managed_routes(&StdManaged)?;
+        self.check_namespace(&StdMetadata, seat, false)?;
+        spawn(&self.cwd(seat), &self.config(seat)).map_err(LaunchError::Spawn)
+    }
+
     fn checked_launch<T, E>(
         &self,
         managed: &impl ManagedMetadata,
@@ -75,6 +90,15 @@ impl WatchedNamespace {
     }
 
     fn check(&self, metadata: &impl Metadata, seat: SeatId) -> Result<(), IsolationError> {
+        self.check_namespace(metadata, seat, true)
+    }
+
+    fn check_namespace(
+        &self,
+        metadata: &impl Metadata,
+        seat: SeatId,
+        empty_config: bool,
+    ) -> Result<(), IsolationError> {
         let cwd = self.cwd(seat);
         if !self.root.is_absolute()
             || !self.floor.is_absolute()
@@ -122,7 +146,7 @@ impl WatchedNamespace {
         // Other seats may already be running. Their config contents are not an
         // input to this seat's CLI. This first start accepts only an empty own
         // config; every same-seat restart is refused by the public entry above.
-        if !metadata.entries(&self.config(seat))?.is_empty() {
+        if empty_config && !metadata.entries(&self.config(seat))?.is_empty() {
             return Err(IsolationError::NotEmpty);
         }
         Ok(())
@@ -239,6 +263,26 @@ mod tests {
                 .is_err()
         );
         assert_eq!(calls.get(), 0);
+    }
+
+    #[test]
+    fn parked_namespace_still_repeats_ancestors_pairs_and_cwd_guards() {
+        let (layout, mut metadata, seat) = fixture();
+        metadata.entries.insert(
+            layout.config(seat),
+            vec![("projects".into(), Kind::Directory)],
+        );
+        assert!(layout.check_namespace(&metadata, seat, true).is_err());
+        assert!(layout.check_namespace(&metadata, seat, false).is_ok());
+        metadata
+            .kinds
+            .insert(layout.floor.join("CLAUDE.md"), Kind::Other);
+        assert!(layout.check_namespace(&metadata, seat, false).is_err());
+        metadata.kinds.remove(&layout.floor.join("CLAUDE.md"));
+        metadata
+            .entries
+            .insert(layout.cwd(seat), vec![("unexpected".into(), Kind::Other)]);
+        assert!(layout.check_namespace(&metadata, seat, false).is_err());
     }
 
     #[test]

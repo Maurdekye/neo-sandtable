@@ -25,3 +25,6 @@ pub mod transcript;
 pub mod watched_job;
 // Row/schema restore exploration is shelved off the watched first-turn path.
 // Preserved in wip/seats-restore-schema-parked-20261020; not a launch gate.
+
+#[cfg(windows)]
+pub mod watched_state;

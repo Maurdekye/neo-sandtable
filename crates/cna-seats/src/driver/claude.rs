@@ -619,6 +619,8 @@ impl SeatDriver for ClaudeDriver {
             .proc
             .as_mut()
             .ok_or_else(|| DriverError::Protocol("session not started".into()))?;
+        #[cfg(windows)]
+        proc.begin_watched_window();
         let line = json!({ "type": "user", "message": { "role": "user", "content": prompt } });
         proc.send_line(&line.to_string())
             .await
@@ -675,7 +677,14 @@ impl SeatDriver for ClaudeDriver {
             }
             Ok(())
         })
-        .await?;
+        .await;
+        #[cfg(windows)]
+        proc.end_watched_window(
+            outcome
+                .as_ref()
+                .is_ok_and(|outcome| outcome.error.is_none()),
+        );
+        let outcome = outcome?;
         if let Some(id) = real_session.filter(|s| !s.is_empty()) {
             self.session_id = Some(id);
         }
@@ -697,6 +706,21 @@ impl SeatDriver for ClaudeDriver {
                 p.finish(Duration::from_secs(2))
                     .await
                     .map_err(|e| DriverError::Died(format!("CLI termination failed: {e}")))?;
+                #[cfg(windows)]
+                if let Some(launch) = &self.watched {
+                    let witness = p.take_park_witness().ok_or_else(|| {
+                        let _ = launch.budget.stop();
+                        DriverError::Isolation("current-window park witness missing".into())
+                    })?;
+                    let session = self
+                        .session_id
+                        .as_deref()
+                        .and_then(|id| uuid::Uuid::parse_str(id).ok())
+                        .ok_or_else(|| {
+                            DriverError::Isolation("park session binding missing".into())
+                        })?;
+                    launch.record_park(self.cfg.seat, session, witness)?;
+                }
             } else {
                 p.kill()
                     .await

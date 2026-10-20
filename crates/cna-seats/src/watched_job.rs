@@ -399,13 +399,15 @@ impl WatchedJob {
             _ = &mut stop => JobCompletion::Stopped,
             result = self.root_wait() => {
                 let status = result?;
-                if self.membership()?.is_empty() && Instant::now() < self.deadline {
-                    JobCompletion::Natural(status)
-                } else {
+                loop {
+                    if self.membership()?.is_empty() {
+                        break if Instant::now() < self.deadline { JobCompletion::Natural(status) } else { JobCompletion::Deadline };
+                    }
                     tokio::select! {
                         biased;
-                        _ = tokio::time::sleep_until(deadline) => JobCompletion::Deadline,
-                        _ = &mut stop => JobCompletion::Stopped,
+                        _ = tokio::time::sleep_until(deadline) => break JobCompletion::Deadline,
+                        _ = &mut stop => break JobCompletion::Stopped,
+                        _ = tokio::time::sleep(Duration::from_millis(5)) => {},
                     }
                 }
             }

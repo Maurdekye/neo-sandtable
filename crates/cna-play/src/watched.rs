@@ -157,14 +157,14 @@ mod platform {
             // receive the intended environment. Never auth-probe ambient login.
             let login =
                 Arc::new(SubscriptionLogin::consume_file(&token_file).map_err(|e| e.to_string())?);
-            let launch = Arc::new(WatchedLaunch {
+            let launch = Arc::new(WatchedLaunch::new(
                 namespace,
                 executable,
                 fence,
-                budget: budget.clone(),
+                budget.clone(),
                 jobs,
                 login,
-            });
+            ));
             let (shutdown, stopped) = oneshot::channel();
             let server = gateway.clone();
             let service = tokio::spawn(async move {

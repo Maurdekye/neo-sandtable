@@ -66,6 +66,29 @@ pub fn watched_command(
     fence: SocketAddr,
     session: SessionArg<'_>,
 ) -> Result<Command, DriverError> {
+    command(executable, namespace, cfg, fence, session, false)
+}
+
+// Only the launch owner calls this after consuming its same-run parked binding
+// and rechecking the full namespace plus file tree in the post-slot callback.
+pub(super) fn parked_command(
+    executable: &Path,
+    namespace: &WatchedNamespace,
+    cfg: &ClaudeConfig,
+    fence: SocketAddr,
+    session: SessionArg<'_>,
+) -> Result<Command, DriverError> {
+    command(executable, namespace, cfg, fence, session, true)
+}
+
+fn command(
+    executable: &Path,
+    namespace: &WatchedNamespace,
+    cfg: &ClaudeConfig,
+    fence: SocketAddr,
+    session: SessionArg<'_>,
+    admitted_resume: bool,
+) -> Result<Command, DriverError> {
     let config = namespace.config(cfg.seat);
     if !executable.is_absolute()
         || cfg.exe.as_deref() != Some(executable)
@@ -81,7 +104,7 @@ pub fn watched_command(
             "watched executable/model/namespace mismatch".into(),
         ));
     }
-    if matches!(session, SessionArg::Resume(_)) {
+    if matches!(session, SessionArg::Resume(_)) && !admitted_resume {
         return Err(DriverError::Isolation(
             "watched resume persistence is not yet admitted".into(),
         ));
