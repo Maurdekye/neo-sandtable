@@ -215,7 +215,7 @@ pub(super) fn before_first_true_open() -> Game<Cna> {
         .clone()
 }
 
-/// G1/G2/G3: a genuine public Respond return, before the final empty convoy closes.
+/// G1/G2/G3: a genuine public Respond return, after the final field-repair pass.
 /// This lane changes no clock, pending list, inventory or history field.
 /// Cases: land:24.11, land:24.12, airlog:53.12, airlog:53.21
 pub(super) fn genuine_before_old_tail(op_stage: u8) -> Game<Cna> {
@@ -248,6 +248,7 @@ fn genuine_checkpoint(op_stage: u8) -> &'static GenuineCheckpoint {
             let prior = genuine_checkpoint(op_stage - 1);
             (prior.game.clone(), prior.next_serial)
         };
+        let mut convoy_checked = false;
         for serial in next_serial..4096 {
             assert_eq!(value.state.cursor.game_turn, content().bounds.start_gt);
             if value.state.cursor.block == Block::PlayerHalf
@@ -323,6 +324,35 @@ fn genuine_checkpoint(op_stage: u8) -> &'static GenuineCheckpoint {
                     assert_eq!(land.stage.game_turn, prior.stage.game_turn);
                     assert_eq!(land.stage.op_stage, prior.stage.op_stage);
                 }
+                convoy_checked = true;
+            }
+            // Main's fixed field window now lies between the original convoy
+            // checkpoint and closure. Answer its declared pass BEFORE injecting
+            // any corruption, using the same public command/recovery path below.
+            if convoy_checked
+                && value.state.cursor.block == Block::PlayerHalf
+                && value.state.cursor.half == Some(Half::B)
+                && value.state.cursor.op_stage == Some(op_stage)
+                && value.state.cursor.anchor() == crate::land::recovery::field::ANCHOR
+                && value.state.cursor.entered
+                && value.state.decisions.pending.is_empty()
+            {
+                let recovery = &value.state.land.recovery;
+                let key = recovery.opportunity.as_ref().unwrap();
+                assert_eq!(key.game_turn, value.state.cursor.game_turn);
+                assert_eq!(key.op_stage, op_stage);
+                assert_eq!(key.half, Half::B);
+                assert_eq!(key.cycle, value.state.cursor.cycle);
+                assert_eq!(
+                    Some(key.phasing),
+                    value.state.cursor.phasing(value.state.turn.player_a)
+                );
+                assert_eq!(
+                    key.procedure,
+                    crate::land::recovery::RecoveryProcedure::Maintenance
+                );
+                assert!(!recovery.resolved);
+                assert!(recovery.repair_plan.as_ref().unwrap().markers.is_empty());
                 return GenuineCheckpoint {
                     game: value,
                     next_serial: serial,
@@ -331,7 +361,7 @@ fn genuine_checkpoint(op_stage: u8) -> &'static GenuineCheckpoint {
             let command = next_command(&value, serial);
             value = accepted_with_checkpoint_retry(&value, &command).game;
         }
-        panic!("lawful source flow did not return the selected empty convoy checkpoint");
+        panic!("lawful source flow did not return the selected field-pass checkpoint");
     })
 }
 
