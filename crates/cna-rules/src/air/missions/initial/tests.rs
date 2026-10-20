@@ -233,7 +233,8 @@ fn old_buffered_unselected_omission_decodes_then_stops_atomically_without_forfei
     let before = bytes(&old);
     assert!(matches!(evaluate(&Cna::dev(), content(), &old, &Command::Advance), Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "scen:59.32"));
     assert_eq!(bytes(&old), before);
-    // Actual finish dispatch also preserves a nonempty caller event prefix.
+    // Old-buffer refusal through actual dispatch preserves a nonempty prefix.
+    // This is separate from the injected late-draft transaction control below.
     let mut direct = old.clone();
     let mut rng = CampaignRng::from_state(&old.rng);
     let mut events = vec![cna_core::event::EngineEvent::public(cna_protocol::GameEvent::Note { text: "existing prefix".into() })];
@@ -278,12 +279,14 @@ fn both_owner_source_checks_precede_initial_commit_and_late_real_draft_failure_r
     let (cw, plan) = action(&one, Side::Commonwealth, load(true));
     let mut ready = respond(&one, Side::Commonwealth, plan);
     let before = bytes(&ready);
-    let mut changed = content().clone();
+    let mut changed = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
     let plane = &ready.state.air.runtime.aircraft[&cw];
     let selected = &ready.state.air.runtime.tactical.answers[&Side::Commonwealth][0].planes[0];
     changed.units.aircraft.get_mut(&plane.aircraft).unwrap().modes[selected.mode].fuel_points = None;
     assert!(matches!(missions::finish(&changed, &mut ready.state), Err(EngineError::Unsupported { case, .. }) if case == "airlog:38.21"));
     assert_eq!(bytes(&ready), before);
+    // Direct private transaction seam: observe real initial commits, then fail
+    // before publication. This does not claim a dispatched late-error prefix.
     let mut observed = false;
     let error = missions::finish_transaction(content(), &mut ready.state, |draft| {
         assert_eq!(draft.air.runtime.preparation.initial_choices[&axis], InitialChoice::Committed);
