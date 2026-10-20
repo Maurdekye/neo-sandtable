@@ -127,7 +127,7 @@ fn owned(force: &str, side: Side) -> bool {
         ("axis", Side::Axis) | ("commonwealth" | "malta", Side::Commonwealth)
     )
 }
-fn own_planes(state: &State, side: Side) -> Vec<PlaneId> {
+pub(in crate::air) fn own_planes(state: &State, side: Side) -> Vec<PlaneId> {
     state
         .air
         .runtime
@@ -449,6 +449,28 @@ pub(in crate::air) fn validate(
     side: Side,
     plan: &[MissionDeclaration],
 ) -> Result<(), EngineError> {
+    validate_plan(content, state, side, plan, false)
+}
+
+// Operational CAP source validation is a separate internal caller. The public
+// intention schema and handler continue to exclude this disabled flight shape.
+// Cases: airlog:40.21, airlog:40.24
+pub(in crate::air) fn validate_operational(
+    content: &CnaContent,
+    state: &State,
+    side: Side,
+    plan: &[MissionDeclaration],
+) -> Result<(), EngineError> {
+    validate_plan(content, state, side, plan, true)
+}
+
+fn validate_plan(
+    content: &CnaContent,
+    state: &State,
+    side: Side,
+    plan: &[MissionDeclaration],
+    allow_cap: bool,
+) -> Result<(), EngineError> {
     let own: BTreeSet<_> = own_planes(state, side).into_iter().collect();
     let mut planes = BTreeSet::new();
     let mut pilots = BTreeSet::new();
@@ -458,7 +480,10 @@ pub(in crate::air) fn validate(
             .airlog
             .mission_summary
             .land_support(&m.mission)
-            .filter(|m| supported(&m.mission))
+            .filter(|m| {
+                supported(&m.mission)
+                    || (allow_cap && m.mission == "combat_air_patrol_offensive_defensive")
+            })
             .ok_or_else(|| invariant("unknown committed tactical mission"))?;
         if m.planes.is_empty() || (m.light == Light::Night && !row.night) {
             return Err(invariant("empty mission or unsupported night declaration"));
@@ -504,6 +529,7 @@ pub(in crate::air) fn validate(
                 .get(selected.mode)
                 .ok_or_else(|| invariant("invalid declared aircraft mode"))?;
             let letters: &[&str] = match (m.mission.as_str(), row.class) {
+                ("combat_air_patrol_offensive_defensive", _) => &["f"],
                 ("scramble", _) => &["s"],
                 ("recon_land_units", _) => &["r"],
                 (_, Some(MissionClass::Fighter)) => &["f", "d"],
