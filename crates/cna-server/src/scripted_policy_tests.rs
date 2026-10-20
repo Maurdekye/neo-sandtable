@@ -846,7 +846,7 @@ fn actual_air_domain_with_own_planes_and_no_finite_consumer_answers_legally() {
             "amount",
             record(vec![
                 field("fuel", integer(i64::from(i32::MAX)), false),
-                field("ammo", integer(0), false),
+                field("ammo", integer(i64::from(i32::MAX)), false),
                 field("stores", integer(i64::from(i32::MAX)), false),
                 field("water", integer(i64::from(i32::MAX)), false),
             ]),
@@ -890,6 +890,29 @@ fn actual_air_domain_with_own_planes_and_no_finite_consumer_answers_legally() {
         panic!("actual cohort servicers must be enumerated");
     };
     assert!(options.is_empty());
+    for name in ["fueling", "arming"] {
+        let ActionSchema::Record { fields } = &request.space.schema else {
+            unreachable!()
+        };
+        let field = fields.iter().find(|field| field.name == name).unwrap();
+        assert!(field.optional);
+        let ActionSchema::List { item, min, max } = &field.schema else {
+            panic!("finite service must retain its list schema")
+        };
+        assert_eq!((*min, *max), (0, 0));
+        let ActionSchema::Record { fields } = item.as_ref() else {
+            panic!("finite service item must retain its structured fields")
+        };
+        let ActionSchema::Choice { options } = &fields
+            .iter()
+            .find(|field| field.name == "servicer")
+            .unwrap()
+            .schema
+        else {
+            panic!("finite service servicers must be enumerated")
+        };
+        assert!(options.is_empty());
+    }
     let opened_bytes = serde_json::to_vec(&opened).unwrap();
     for epoch in [0, 7] {
         for mode in [Mode::LegalRandom, Mode::PassWhenPossible] {
