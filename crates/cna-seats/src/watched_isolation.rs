@@ -55,6 +55,7 @@ impl WatchedNamespace {
 
     /// Same complete ancestor/managed/run/seat checks, with own session state
     /// allowed only after the caller's file/park binding check in this callback.
+    #[cfg(windows)]
     pub(crate) fn with_checked_parked_spawn<T, E>(
         &self,
         seat: SeatId,

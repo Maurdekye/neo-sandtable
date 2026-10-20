@@ -71,6 +71,7 @@ pub fn watched_command(
 
 // Only the launch owner calls this after consuming its same-run parked binding
 // and rechecking the full namespace plus file tree in the post-slot callback.
+#[cfg(windows)]
 pub(super) fn parked_command(
     executable: &Path,
     namespace: &WatchedNamespace,
