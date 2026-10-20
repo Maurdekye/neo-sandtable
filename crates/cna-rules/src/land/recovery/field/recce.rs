@@ -36,7 +36,8 @@ pub(super) fn group(c: &CnaContent, marker: &BrokenMarker) -> Result<Group, Reje
         .ok_or_else(|| gap("land:22.14", "recce original nationality is unresolved"))?;
     let captured = source.side != marker.side;
     if source.nationality.is_empty()
-        || (!captured && marker.side == Side::Axis
+        || (!captured
+            && marker.side == Side::Axis
             && !matches!(source.nationality.as_str(), "italian" | "german"))
     {
         return Err(gap(
@@ -47,7 +48,10 @@ pub(super) fn group(c: &CnaContent, marker: &BrokenMarker) -> Result<Group, Reje
     if !captured && marker.side == Side::Commonwealth {
         Ok(Group::NativeCommonwealth)
     } else {
-        Ok(Group::Nationality { original: source.nationality.clone(), captured })
+        Ok(Group::Nationality {
+            original: source.nationality.clone(),
+            captured,
+        })
     }
 }
 
