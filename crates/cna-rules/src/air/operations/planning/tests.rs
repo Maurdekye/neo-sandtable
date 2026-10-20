@@ -194,10 +194,16 @@ fn two_cap_answered() -> (Game<Cna>, PlaneId, HexId) {
         "planes":[{"plane":id,"mode":mode,"initial_choice":{"decision":"load","guns":true,"ordnance":{"kind":"none"}}}]}])
     };
     let initial_refit = [
-        (axis.clone(), opened.state.air.runtime.aircraft[&axis].refitted),
+        (
+            axis.clone(),
+            opened.state.air.runtime.aircraft[&axis].refitted,
+        ),
         (cw.clone(), opened.state.air.runtime.aircraft[&cw].refitted),
     ];
-    assert!(initial_refit[1].1, "source-selected CW aircraft is already ready");
+    assert!(
+        initial_refit[1].1,
+        "source-selected CW aircraft is already ready"
+    );
     let one = respond(&opened, Side::Axis, initial(&axis, amode, &origin));
     let mut game = respond(
         &one,
@@ -214,8 +220,11 @@ fn two_cap_answered() -> (Game<Cna>, PlaneId, HexId) {
     let preparation = game.state.air.runtime.preparation.clone();
     let history = game.state.air.runtime.maintenance.clone();
     let mut aircraft = game.state.air.runtime.aircraft.clone();
-    let missing: Vec<_> = initial_refit.iter().filter(|(_, ready)| !ready)
-        .map(|(id, _)| id.clone()).collect();
+    let missing: Vec<_> = initial_refit
+        .iter()
+        .filter(|(_, ready)| !ready)
+        .map(|(id, _)| id.clone())
+        .collect();
     for id in &missing {
         aircraft.get_mut(id).unwrap().refitted = true;
     }
@@ -224,7 +233,8 @@ fn two_cap_answered() -> (Game<Cna>, PlaneId, HexId) {
             runtime.aircraft.get_mut(id).unwrap().refitted = true;
         }
         Ok(())
-    }).unwrap();
+    })
+    .unwrap();
     assert_eq!(game.state.air.runtime.aircraft, aircraft);
     assert_eq!(game.state.air.runtime.preparation, preparation);
     assert_eq!(game.state.air.runtime.maintenance, history);
@@ -394,7 +404,8 @@ fn assignment_rejects_duplicate_plane_bad_neighbors_foreign_plane_and_unknown_lo
     let mut unknown = game.clone();
     let original = crate::air::preparation::KnownAmmunition::from_current(
         &game.state.air.runtime.preparation.current[&id],
-    ).unwrap();
+    )
+    .unwrap();
     let mut knowledge = original.clone();
     knowledge.ordnance = crate::air::preparation::OrdnanceKnowledge::Unknown;
     assert_eq!(knowledge.mode, original.mode);
@@ -404,10 +415,18 @@ fn assignment_rejects_duplicate_plane_bad_neighbors_foreign_plane_and_unknown_lo
         id.clone(),
         crate::air::preparation::CurrentPreparation::KnownAmmunition { knowledge },
     );
-    assert_eq!(unknown.state.air.runtime.preparation.initial_choices,
-        game.state.air.runtime.preparation.initial_choices);
-    assert_eq!(unknown.state.air.runtime.aircraft, game.state.air.runtime.aircraft);
-    assert_eq!(unknown.state.air.runtime.maintenance, game.state.air.runtime.maintenance);
+    assert_eq!(
+        unknown.state.air.runtime.preparation.initial_choices,
+        game.state.air.runtime.preparation.initial_choices
+    );
+    assert_eq!(
+        unknown.state.air.runtime.aircraft,
+        game.state.air.runtime.aircraft
+    );
+    assert_eq!(
+        unknown.state.air.runtime.maintenance,
+        game.state.air.runtime.maintenance
+    );
     inventory::check_at(
         content(),
         &unknown.state.air,
@@ -474,18 +493,27 @@ fn enemy_path_component(game: &Game<Cna>, origin: &HexId) -> Game<Cna> {
         classes: BTreeSet::from([Class::Bomber]),
     });
     apply(content(), &mut result.state, after, expected).unwrap();
+    refresh_component_query_spaces(&mut result.state);
+    result
+}
+
+fn refresh_component_query_spaces(state: &mut State) {
     // This synthetic public contact is an explicit post-opening component input.
     // Refresh only the existing query spaces through the real schema producer.
     // Preserve decision IDs/seats/kinds and the fixed two-side cadence.
-    assert_eq!(result.state.decisions.pending.len(), 2);
-    let domains: Vec<_> = result.state.decisions.pending.iter().map(|p| {
-        assert_eq!(p.kind, QUERY);
-        space(content(), &result.state, p.seat.side, Batch::Query)
-    }).collect();
-    for (pending, domain) in result.state.decisions.pending.iter_mut().zip(domains) {
+    assert_eq!(state.decisions.pending.len(), 2);
+    let domains: Vec<_> = state
+        .decisions
+        .pending
+        .iter()
+        .map(|p| {
+            assert_eq!(p.kind, QUERY);
+            space(content(), state, p.seat.side, Batch::Query)
+        })
+        .collect();
+    for (pending, domain) in state.decisions.pending.iter_mut().zip(domains) {
         pending.space = domain;
     }
-    result
 }
 
 /// Cases: airlog:34.73, airlog:34.74, airlog:40.27
@@ -606,6 +634,7 @@ fn requester_only_finish_disclosure_deduplicates_paths_and_omits_members_models_
     let expected = context(&both_classes.state).unwrap();
     // Component class-snapshot input only; no additional model/count is claimed.
     apply(content(), &mut both_classes.state, snapshot, expected).unwrap();
+    refresh_component_query_spaces(&mut both_classes.state);
     let one = respond(&both_classes, Side::Axis, json!(["0", "1"]));
     let two = respond(&one, Side::Commonwealth, Value::Null);
     let (distinct, _) = close(&two);
