@@ -264,9 +264,10 @@ fn requester_only_finish_disclosure_deduplicates_paths_and_omits_members_models_
     let mut both_classes=game.clone();
     let mut snapshot=both_classes.state.air.runtime.clone();
     let f=snapshot.operations.flights.iter_mut().find(|f|f.owner==Side::Commonwealth).unwrap();
-    f.classes.insert(Class::Bomber);
+    let extra_class=if f.classes.contains(&Class::Bomber){Class::Fighter}else{Class::Bomber};
+    f.classes.insert(extra_class);
     let target=f.target.clone();
-    snapshot.operations.contacts.insert(Contact{owner:Side::Commonwealth,class:Class::Bomber,target});
+    snapshot.operations.contacts.insert(Contact{owner:Side::Commonwealth,class:extra_class,target});
     let expected=context(&both_classes.state).unwrap();
     // Component class-snapshot input only; no additional model/count is claimed.
     apply(content(),&mut both_classes.state,snapshot,expected).unwrap();
