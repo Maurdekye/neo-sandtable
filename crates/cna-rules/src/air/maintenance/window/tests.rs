@@ -1426,13 +1426,20 @@ fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_re
     inventory::initialize(content(), &mut unassigned).unwrap();
     assert!(unassigned.air.runtime.sgsus.is_empty());
     assert!(
-        unassigned.air.runtime.aircraft.values().any(|p| owned(&p.force, Side::Axis))
+        unassigned
+            .air
+            .runtime
+            .aircraft
+            .values()
+            .any(|p| owned(&p.force, Side::Axis))
     );
     let empty = space(content(), &unassigned, Side::Axis, current).unwrap();
     for name in ["fueling", "arming"] {
         assert_eq!(service_maximum(&empty, name), 0);
     }
-    empty.check(&serde_json::to_value(RefitPlan::default()).unwrap()).unwrap();
+    empty
+        .check(&serde_json::to_value(RefitPlan::default()).unwrap())
+        .unwrap();
     empty.check(&Value::Null).unwrap();
     for case in [
         "airlog:36.5",
