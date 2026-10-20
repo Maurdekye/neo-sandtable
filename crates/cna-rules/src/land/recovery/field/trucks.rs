@@ -333,10 +333,16 @@ pub(super) fn validate(
     // Multiple markers (including British/Indian together) stop at land:22.14
     // in prepare until a shared-budget allocation procedure is implemented.
     if marker.side == Side::Commonwealth {
-        let original = c.units.units.get(&marker.assets[0].unit)
+        let original = c
+            .units
+            .units
+            .get(&marker.assets[0].unit)
             .ok_or_else(|| gap("land:22.14", "truck original nationality is unresolved"))?;
         if original.nationality.is_empty() {
-            return Err(gap("land:22.14", "truck original nationality is unresolved"));
+            return Err(gap(
+                "land:22.14",
+                "truck original nationality is unresolved",
+            ));
         }
     }
     let cohort = physical(marker)?;

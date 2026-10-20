@@ -409,9 +409,7 @@ fn prepare(
         if matches!(vehicle, RepairVehicle::Recce | RepairVehicle::Truck)
             && (cost.supplies.fuel != 0 || cost.supplies.stores != 0)
         {
-            return Err(
-                invariant("bound field cost contradicts its zero-supply procedure").into(),
-            );
+            return Err(invariant("bound field cost contradicts its zero-supply procedure").into());
         }
         let fuel = selected
             .points

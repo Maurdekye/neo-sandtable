@@ -419,15 +419,25 @@ fn cw_trucks_are_admitted_while_tank_guard_and_pass_invariants_remain() {
             // Retain the actual tank refusal and the shared pass/no-write controls.
             let mut accepted = respond(&c, &game, json!([{"marker":MARKER,"points":1}]));
             assert_eq!(accepted.rng, game.rng);
-            assert_eq!(serde_json::to_value(&accepted.state.logistics).unwrap(),
-                serde_json::to_value(&game.state.logistics).unwrap());
+            assert_eq!(
+                serde_json::to_value(&accepted.state.logistics).unwrap(),
+                serde_json::to_value(&game.state.logistics).unwrap()
+            );
             let before_pools = accepted.state.logistics.truck_pool_ids.clone();
             let expected_rng = one_draw(&accepted);
             finish_step(&c, &mut accepted).unwrap();
             assert_eq!(accepted.rng, expected_rng);
-            assert_eq!(accepted.state.land.breakdown.markers[MARKER].assets[0].points, 1);
-            let pools: Vec<_> = accepted.state.logistics.truck_pools.iter()
-                .filter(|pool| !before_pools.contains(&pool.id)).collect();
+            assert_eq!(
+                accepted.state.land.breakdown.markers[MARKER].assets[0].points,
+                1
+            );
+            let pools: Vec<_> = accepted
+                .state
+                .logistics
+                .truck_pools
+                .iter()
+                .filter(|pool| !before_pools.contains(&pool.id))
+                .collect();
             assert_eq!(pools.len(), 1);
             assert_eq!(pools[0].side, Side::Commonwealth);
             assert_eq!(pools[0].trucks.medium, 1);
