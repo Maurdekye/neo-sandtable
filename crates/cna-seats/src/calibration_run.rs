@@ -462,6 +462,7 @@ mod windows {
         // The real HTTP service and runtime cleanup run; no native/login setup.
         async fn slow_http(
             fence: &LaneAFence,
+            shutdown_gate: Option<Arc<tokio::sync::Notify>>,
         ) -> (
             JoinHandle<std::io::Result<()>>,
             oneshot::Sender<()>,
@@ -475,6 +476,9 @@ mod windows {
                 gateway
                     .serve(listener, async {
                         let _ = stopped.await;
+                        if let Some(gate) = shutdown_gate {
+                            gate.notified().await;
+                        }
                     })
                     .await
             });
@@ -492,15 +496,17 @@ mod windows {
         #[tokio::test]
         async fn cancelled_real_http_shutdown_keeps_owner_until_cleanup() {
             let (root, fence) = fence();
-            let (service, stop, mut socket) = slow_http(&fence).await;
+            let release = Arc::new(tokio::sync::Notify::new());
+            let (service, stop, mut socket) = slow_http(&fence, Some(release.clone())).await;
             let mut runtime = runtime(fence, service, Some(stop));
-            // Current-thread fixture: shutdown first signals the real service
-            // then suspends awaiting it. Cancel that first pending cleanup.
+            // Keep the real service's shutdown signal pending with an explicit
+            // fixture barrier, rather than racing its valid fast completion.
             let cancelled = tokio::time::timeout(Duration::ZERO, runtime.shutdown())
                 .await
                 .is_err();
             let still_owned = runtime.service.is_some();
             let unconfirmed = !runtime.report().unwrap().0;
+            release.notify_one();
             let result = runtime.shutdown().await;
             let confirmed = runtime.report().unwrap().0;
             let mut bytes = Vec::new();
@@ -517,7 +523,7 @@ mod windows {
         #[tokio::test]
         async fn partial_prepare_drop_stops_real_http_and_incoming_body() {
             let (root, fence) = fence();
-            let (service, stop, mut socket) = slow_http(&fence).await;
+            let (service, stop, mut socket) = slow_http(&fence, None).await;
             let aborted = service.abort_handle();
             // Same state as prepare after service creation while slot admission
             // is pending. Dropping it never invokes real prepare or a CLI.
