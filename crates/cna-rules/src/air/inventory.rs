@@ -638,7 +638,8 @@ fn migrate_preparation(content: &CnaContent, runtime: &mut AirRuntime) -> Result
 }
 
 /// Compare the post-bootstrap/pre-callback truth with the edited draft. This
-/// admits no ledger writer, setup registration, arming or clearing procedure.
+/// admits no generic ledger writer or setup registration. Exact private initial
+/// and paid servicing admissions authorize only their bound before-to-final edit.
 /// Restored known loads and edits of existing known records remain structurally
 /// valid; creating paid fuel knowledge requires the exact finish admission.
 /// Cases: airlog:34.0, scen:59.32
@@ -647,11 +648,14 @@ fn check_preparation_transition(
     old: &AirRuntime,
     new: &AirRuntime,
     paid: Option<&super::maintenance::window::fueling::PaidServicingAdmission>,
+    initial: Option<&super::missions::initial::InitialLoadAdmission>,
 ) -> Result<(), EngineError> {
     if !new.preparation.initialized {
         return Err(invalid("preparation initialized marker cannot reset"));
     }
-    if old.preparation.initial_choices != new.preparation.initial_choices {
+    if old.preparation.initial_choices != new.preparation.initial_choices
+        && initial.is_none_or(|admission| !admission.permits_history(old, new))
+    {
         return Err(invalid(
             "ordinary update cannot edit initial credit history",
         ));
@@ -672,6 +676,9 @@ fn check_preparation_transition(
             }
             let before = old.preparation.current.get(id);
             if paid.is_some_and(|p| p.permits(id, old, new)) {
+                continue;
+            }
+            if initial.is_some_and(|admission| admission.permits_plane(id, old, new)) {
                 continue;
             }
             if (matches!(current, Some(CurrentPreparation::KnownAmmunition { .. }))
@@ -953,7 +960,7 @@ pub fn update<F>(content: &CnaContent, air: &mut AirState, edit: F) -> Result<()
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    update_inner(content, air, None, None, edit)
+    update_inner(content, air, None, None, None, edit)
 }
 
 /// Compatibility wrapper for exact post-debit servicing. No caller edit
@@ -964,7 +971,7 @@ pub(in crate::air) fn update_fueling(
     air: &mut AirState,
     paid: super::maintenance::window::fueling::PaidServicingAdmission,
 ) -> Result<(), EngineError> {
-    update_inner(content, air, None, Some(&paid), |runtime| {
+    update_inner(content, air, None, Some(&paid), None, |runtime| {
         paid.apply(runtime)
     })
 }
@@ -977,6 +984,18 @@ pub(in crate::air) fn update_servicing(
     paid: super::maintenance::window::fueling::PaidServicingAdmission,
 ) -> Result<(), EngineError> {
     update_fueling(content, air, paid)
+}
+
+/// Exact one-time source-backed initial declaration choice. No caller callback
+/// or setup-registration authority is accepted by this seam.
+/// Cases: scen:59.32, scen:59.36, airlog:39.12
+/// Interpretations: interp:air-0018
+pub(in crate::air) fn update_initial_loads(
+    content: &CnaContent,
+    air: &mut AirState,
+    initial: super::missions::initial::InitialLoadAdmission,
+) -> Result<(), EngineError> {
+    update_inner(content, air, None, None, Some(&initial), |runtime| initial.apply(runtime))
 }
 
 /// Internal permission for exactly one canonical physical-site allocation.
@@ -996,7 +1015,7 @@ pub(super) fn update_site<F>(
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    update_inner(content, air, Some(allocation), None, edit)
+    update_inner(content, air, Some(allocation), None, None, edit)
 }
 
 fn check_site_transition(
@@ -1079,6 +1098,7 @@ fn update_inner<F>(
     air: &mut AirState,
     allocation: Option<SiteAllocation>,
     paid: Option<&super::maintenance::window::fueling::PaidServicingAdmission>,
+    initial: Option<&super::missions::initial::InitialLoadAdmission>,
     edit: F,
 ) -> Result<(), EngineError>
 where
@@ -1108,7 +1128,7 @@ where
     if !draft.runtime.initialized || !draft.runtime.bases_initialized {
         return Err(invalid("initialized inventory and bases cannot be reset"));
     }
-    check_preparation_transition(&before_edit, &draft.runtime, paid)?;
+    check_preparation_transition(&before_edit, &draft.runtime, paid, initial)?;
     project_preparation(&before_edit, &mut draft.runtime)?;
     check_preparation(content, &draft.runtime)?;
     draft = mirrors(content, &draft)?;
