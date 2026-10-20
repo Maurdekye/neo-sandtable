@@ -219,101 +219,120 @@ pub(super) fn before_first_true_open() -> Game<Cna> {
 /// This lane changes no clock, pending list, inventory or history field.
 /// Cases: land:24.11, land:24.12, airlog:53.12, airlog:53.21
 pub(super) fn genuine_before_old_tail(op_stage: u8) -> Game<Cna> {
-    static FIRST: OnceLock<Game<Cna>> = OnceLock::new();
-    static SECOND: OnceLock<Game<Cna>> = OnceLock::new();
-    static THIRD: OnceLock<Game<Cna>> = OnceLock::new();
+    genuine_checkpoint(op_stage).game.clone()
+}
+
+struct GenuineCheckpoint {
+    game: Game<Cna>,
+    next_serial: usize,
+}
+
+fn genuine_checkpoint(op_stage: u8) -> &'static GenuineCheckpoint {
+    static FIRST: OnceLock<GenuineCheckpoint> = OnceLock::new();
+    static SECOND: OnceLock<GenuineCheckpoint> = OnceLock::new();
+    static THIRD: OnceLock<GenuineCheckpoint> = OnceLock::new();
     let cache = match op_stage {
         1 => &FIRST,
         2 => &SECOND,
         3 => &THIRD,
         _ => panic!("only the existing three negative components are selected"),
     };
-    cache
-        .get_or_init(|| {
-            let mut value = before_first_true_open();
-            for serial in 0..4096 {
-                assert_eq!(value.state.cursor.game_turn, content().bounds.start_gt);
-                if value.state.cursor.block == Block::PlayerHalf
-                    && value.state.cursor.half == Some(Half::B)
-                    && value.state.cursor.op_stage == Some(op_stage)
-                    && value.state.cursor.anchor() == crate::logistics::truck_convoy::ANCHOR
-                    && value.state.cursor.entered
-                    && value.state.decisions.pending.is_empty()
-                    && !value.state.logistics.truck_convoy.resolved
-                    && value
-                        .state
-                        .logistics
-                        .truck_convoy
-                        .submitted
-                        .as_ref()
-                        .is_some_and(|orders| orders.is_empty())
-                {
-                    // answer437-465 records []; core engine246-248 returns Respond
-                    // without advancing. The saved procedure scope is still authentic.
-                    let key = value.state.logistics.truck_convoy.key.as_ref().unwrap();
-                    assert_eq!(key.game_turn, value.state.cursor.game_turn);
-                    assert_eq!(key.op_stage, op_stage);
-                    assert_eq!(key.half, Half::B);
-                    assert_eq!(key.cycle, value.state.cursor.cycle);
-                    assert_eq!(
-                        Some(key.side),
-                        value.state.cursor.phasing(value.state.turn.player_a)
-                    );
-                    assert_eq!(value.state.logistics.truck_convoy.next_order, 0);
-                    assert!(value.state.logistics.truck_convoy.waiting_pool.is_none());
-                    assert!(!value.state.air.runtime.sgsus.is_empty());
-                    let stage = ActivityStage {
-                        game_turn: value.state.cursor.game_turn,
-                        op_stage,
-                    };
-                    assert_eq!(value.state.engineering.observed_opening, Some(stage));
-                    let air = value
-                        .state
-                        .air
-                        .runtime
-                        .sgsu_activity
-                        .current
-                        .as_ref()
-                        .unwrap();
-                    assert_eq!(air.stage.game_turn, stage.game_turn);
-                    assert_eq!(air.stage.op_stage, stage.op_stage);
-                    assert!(air.observed_opening);
-                    assert!(!air.closed);
-                    if op_stage == 1 {
-                        assert!(
-                            value
-                                .state
-                                .air
-                                .runtime
-                                .sgsu_activity
-                                .previous_closed
-                                .is_none()
-                        );
-                        assert!(value.state.engineering.closed_activity.is_none());
-                    } else {
-                        let prior = value
+    cache.get_or_init(|| {
+        // Every target follows the same public commands from PRE. Continue
+        // its immutable predecessor, including the original command serial,
+        // rather than replaying the already-checked prefix from PRE again.
+        // Dependencies only point backwards: THIRD -> SECOND -> FIRST.
+        let (mut value, next_serial) = if op_stage == 1 {
+            (before_first_true_open(), 0)
+        } else {
+            let prior = genuine_checkpoint(op_stage - 1);
+            (prior.game.clone(), prior.next_serial)
+        };
+        for serial in next_serial..4096 {
+            assert_eq!(value.state.cursor.game_turn, content().bounds.start_gt);
+            if value.state.cursor.block == Block::PlayerHalf
+                && value.state.cursor.half == Some(Half::B)
+                && value.state.cursor.op_stage == Some(op_stage)
+                && value.state.cursor.anchor() == crate::logistics::truck_convoy::ANCHOR
+                && value.state.cursor.entered
+                && value.state.decisions.pending.is_empty()
+                && !value.state.logistics.truck_convoy.resolved
+                && value
+                    .state
+                    .logistics
+                    .truck_convoy
+                    .submitted
+                    .as_ref()
+                    .is_some_and(|orders| orders.is_empty())
+            {
+                // answer437-465 records []; core engine246-248 returns Respond
+                // without advancing. The saved procedure scope is still authentic.
+                let key = value.state.logistics.truck_convoy.key.as_ref().unwrap();
+                assert_eq!(key.game_turn, value.state.cursor.game_turn);
+                assert_eq!(key.op_stage, op_stage);
+                assert_eq!(key.half, Half::B);
+                assert_eq!(key.cycle, value.state.cursor.cycle);
+                assert_eq!(
+                    Some(key.side),
+                    value.state.cursor.phasing(value.state.turn.player_a)
+                );
+                assert_eq!(value.state.logistics.truck_convoy.next_order, 0);
+                assert!(value.state.logistics.truck_convoy.waiting_pool.is_none());
+                assert!(!value.state.air.runtime.sgsus.is_empty());
+                let stage = ActivityStage {
+                    game_turn: value.state.cursor.game_turn,
+                    op_stage,
+                };
+                assert_eq!(value.state.engineering.observed_opening, Some(stage));
+                let air = value
+                    .state
+                    .air
+                    .runtime
+                    .sgsu_activity
+                    .current
+                    .as_ref()
+                    .unwrap();
+                assert_eq!(air.stage.game_turn, stage.game_turn);
+                assert_eq!(air.stage.op_stage, stage.op_stage);
+                assert!(air.observed_opening);
+                assert!(!air.closed);
+                if op_stage == 1 {
+                    assert!(
+                        value
                             .state
                             .air
                             .runtime
                             .sgsu_activity
                             .previous_closed
-                            .as_ref()
-                            .unwrap();
-                        let land = value.state.engineering.closed_activity.as_ref().unwrap();
-                        assert_eq!(prior.stage.game_turn, stage.game_turn);
-                        assert_eq!(prior.stage.op_stage, op_stage - 1);
-                        assert!(prior.closed);
-                        assert_eq!(land.stage.game_turn, prior.stage.game_turn);
-                        assert_eq!(land.stage.op_stage, prior.stage.op_stage);
-                    }
-                    return value;
+                            .is_none()
+                    );
+                    assert!(value.state.engineering.closed_activity.is_none());
+                } else {
+                    let prior = value
+                        .state
+                        .air
+                        .runtime
+                        .sgsu_activity
+                        .previous_closed
+                        .as_ref()
+                        .unwrap();
+                    let land = value.state.engineering.closed_activity.as_ref().unwrap();
+                    assert_eq!(prior.stage.game_turn, stage.game_turn);
+                    assert_eq!(prior.stage.op_stage, op_stage - 1);
+                    assert!(prior.closed);
+                    assert_eq!(land.stage.game_turn, prior.stage.game_turn);
+                    assert_eq!(land.stage.op_stage, prior.stage.op_stage);
                 }
-                let command = next_command(&value, serial);
-                value = accepted_with_checkpoint_retry(&value, &command).game;
+                return GenuineCheckpoint {
+                    game: value,
+                    next_serial: serial,
+                };
             }
-            panic!("lawful source flow did not return the selected empty convoy checkpoint");
-        })
-        .clone()
+            let command = next_command(&value, serial);
+            value = accepted_with_checkpoint_retry(&value, &command).game;
+        }
+        panic!("lawful source flow did not return the selected empty convoy checkpoint");
+    })
 }
 
 /// NEGATIVE-ONLY controlled component clock; NEVER a publicly returned old-tail Game.

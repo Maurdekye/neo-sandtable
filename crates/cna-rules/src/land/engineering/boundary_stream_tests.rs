@@ -116,7 +116,7 @@ fn accepted_with_checkpoint_retry(
     command: &Command,
 ) -> cna_core::engine::Transition<Cna> {
     let before = whole(value);
-    let saved = checkpoint(value);
+    let saved = serde_json::from_slice(&before).unwrap();
     let result = evaluate(&Cna::dev(), content(), value, command).unwrap_or_else(|error| {
         panic!(
             "component {} {command:?}: {error:?}",
@@ -125,14 +125,14 @@ fn accepted_with_checkpoint_retry(
     });
     let recovered = evaluate(&Cna::dev(), content(), &saved, command).unwrap();
     let retried_from_original = evaluate(&Cna::dev(), content(), value, command).unwrap();
+    let committed = whole(&result.game);
     for replay in [recovered, retried_from_original] {
-        assert_eq!(whole(&replay.game), whole(&result.game));
+        assert_eq!(whole(&replay.game), committed);
         assert_eq!(replay.events, result.events);
         assert_eq!(replay.progress, result.progress);
     }
     assert_eq!(whole(value), before);
     if let Command::Respond(response) = command {
-        let committed = whole(&result.game);
         assert_eq!(
             evaluate(&Cna::dev(), content(), &result.game, command).unwrap_err(),
             Rejection::UnknownDecision {
@@ -143,7 +143,7 @@ fn accepted_with_checkpoint_retry(
     }
     if !result.game.state.decisions.pending.is_empty() {
         let waiting = evaluate(&Cna::dev(), content(), &result.game, &Command::Advance).unwrap();
-        assert_eq!(whole(&waiting.game), whole(&result.game));
+        assert_eq!(whole(&waiting.game), committed);
         assert!(waiting.events.is_empty());
     }
     result
@@ -177,13 +177,14 @@ fn component_public_empty_first_open_through_post_next_open_has_all_thirteen_ord
     let mut saw_differing_retained = false;
     for serial in 0..4096 {
         for &p in &perspectives {
+            let reference = visible_frame(&a, &prior_a, p);
             assert_eq!(
-                visible_frame(&a, &prior_a, p),
+                reference,
                 visible_frame(&b, &prior_b, p),
                 "before command {serial} {p}"
             );
             assert_eq!(
-                visible_frame(&a, &prior_a, p),
+                reference,
                 visible_frame(&c, &prior_c, p),
                 "SGSU before command {serial} {p}"
             );
@@ -414,13 +415,14 @@ fn component_public_empty_first_open_through_post_next_open_has_all_thirteen_ord
             closed.insert(record.stage.op_stage);
         }
         for &p in &perspectives {
+            let reference = visible_frame(&a, &prior_a, p);
             assert_eq!(
-                visible_frame(&a, &prior_a, p),
+                reference,
                 visible_frame(&b, &prior_b, p),
                 "after command {serial} {p}"
             );
             assert_eq!(
-                visible_frame(&a, &prior_a, p),
+                reference,
                 visible_frame(&c, &prior_c, p),
                 "SGSU after command {serial} {p}"
             );
@@ -621,15 +623,20 @@ fn first_open_entry_clock_for_negative_labels() -> Game<Cna> {
 
 fn rejection_pure(value: &Game<Cna>, command: &Command, expected: Rejection) {
     let before = whole(value);
-    let saved = checkpoint(value);
-    let prior = evaluate(
-        &Cna::dev(),
-        content(),
-        &first_open_component(),
-        &Command::Advance,
-    )
-    .unwrap()
-    .events;
+    let saved = serde_json::from_slice(&before).unwrap();
+    // This witness is independent of the corrupted input and is never mutated.
+    // Keep each cell's before/after bytes and all three rejection evaluations.
+    static PRIOR: OnceLock<Vec<EngineEvent>> = OnceLock::new();
+    let prior = PRIOR.get_or_init(|| {
+        evaluate(
+            &Cna::dev(),
+            content(),
+            &first_open_component(),
+            &Command::Advance,
+        )
+        .unwrap()
+        .events
+    });
     let prior_bytes = serde_json::to_vec(&prior).unwrap();
     for original in [value, &saved, value] {
         assert_eq!(
