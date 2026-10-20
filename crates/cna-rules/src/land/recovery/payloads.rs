@@ -148,7 +148,6 @@ pub(crate) enum ReturnedEquipment {
     Tank {
         equipment: String,
     },
-    #[allow(dead_code, reason = "Recce repair is a later vehicle slice")]
     RecceAc {
         equipment: String,
     },

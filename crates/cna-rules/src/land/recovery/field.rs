@@ -1,4 +1,4 @@
-//! Graziani Axis FIELD tanks and homogeneous single-cohort truck markers.
+//! Graziani Axis FIELD tanks, homogeneous trucks and grouped recce/armored cars.
 //! Mixed/funded truck merges and other vehicle procedures remain explicit gaps.
 use super::{payloads::*, plans::*, transaction};
 use crate::{
@@ -30,6 +30,7 @@ pub(crate) const ANCHOR: &str = "opstage.repair.maintenance";
 pub(crate) const KIND: &str = "cna.recovery.field_repair";
 
 mod trucks;
+mod recce;
 
 fn invariant(detail: &str) -> EngineError {
     EngineError::Invariant {
@@ -130,7 +131,7 @@ pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineErro
                 FieldSchema {
                     name: "points".into(),
                     doc:
-                        "Points selected before dice; truck returns use the printed per-hex budget"
+                        "Points selected before dice; recce marker list order is success priority within its per-hex group"
                             .into(),
                     schema: ActionSchema::Integer {
                         min: 1,
@@ -150,8 +151,8 @@ pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineErro
     })
     .with_pass("Attempt no field repairs.");
     open(state, cx, SeatId::new(key.phasing, Role::RearArea), KIND,
-        "Declare field repair attempts and pre-dice truck return choices; other repair procedures remain unfinished.".into(),
-        &["land:22.11", "land:22.12", "land:22.23", "land:22.25", "land:22.26"],
+        "Declare field repair attempts, recce success priority and pre-dice truck return choices; other repair procedures remain unfinished.".into(),
+        &["land:22.11", "land:22.12", "land:22.23", "land:22.24", "land:22.25", "land:22.26"],
         Trigger::Scheduled, Secrecy::Secret, space);
     Ok(())
 }
@@ -221,7 +222,7 @@ pub(crate) fn answer(
                 || !matches!(return_pool, ReturnPoolTarget::CreateAtSite)
             {
                 return Err(illegal(
-                    "truck return choices do not apply to tank receipts",
+                    "truck return choices do not apply to equipment receipts",
                 ));
             }
             vec![]
@@ -247,7 +248,7 @@ struct PreparedField {
 
 /// Derive every row from this exact plan and current physical markers/content.
 /// Truth-side control is queried only after the answer window closes.
-/// Cases: land:22.11, land:22.12, land:22.13, land:22.14, land:22.21, land:22.22, land:22.25, land:22.26
+/// Cases: land:22.11, land:22.12, land:22.13, land:22.14, land:22.21, land:22.22, land:22.24, land:22.25, land:22.26
 fn prepare(
     c: &CnaContent,
     s: &State,
@@ -277,7 +278,7 @@ fn prepare(
         output_choices: vec![],
     };
     let mut ids = BTreeSet::new();
-    let mut sites = BTreeSet::new();
+    let mut sites = BTreeMap::<HexId, Option<(String, bool)>>::new();
     let mut excluded = vec![];
     let mut debits = BTreeMap::<HexId, (cna_core::ids::UnitId, i32, i32)>::new();
     for choice in &plan.markers {
@@ -296,12 +297,6 @@ fn prepare(
             .ok_or_else(|| illegal("unknown own repair marker"))?;
         if marker.id != choice.marker || c.map.get(&marker.hex).is_none() {
             return Err(invariant("invalid marker identity/site").into());
-        }
-        if !sites.insert(marker.hex.clone()) {
-            return Err(gap(
-                "land:22.14",
-                "multiple markers in one repair group need success-allocation support",
-            ));
         }
         if marker.assets.len() != 1
             || choice.assets.len() != 1
@@ -329,6 +324,9 @@ fn prepare(
         let vehicle = if trucks::kind(&actual.equipment).is_some() {
             trucks::validate(c, s, marker, choice)?;
             RepairVehicle::Truck
+        } else if actual.equipment == Equipment::ArmoredRecce {
+            recce::validate(c, s, marker)?;
+            RepairVehicle::Recce
         } else {
             let Equipment::Weapon(weapon) = &actual.equipment else {
                 return Err(gap(
@@ -366,6 +364,16 @@ fn prepare(
             }
             RepairVehicle::Tank
         };
+        let group = if vehicle == RepairVehicle::Recce {
+            Some(recce::group(c, marker)?)
+        } else { None };
+        if let Some(prior) = sites.get(&marker.hex) {
+            if group.is_none() || prior != &group {
+                return Err(gap("land:22.14", "mixed repair families or nationality/captured groups at one hex need a separate group allocation adapter"));
+            }
+        } else {
+            sites.insert(marker.hex.clone(), group);
+        }
         let weather = logistics::weather::at_hex(c, s, &marker.hex)?;
         if matches!(weather, WeatherKind::Rainstorm | WeatherKind::Sandstorm) {
             return Err(illegal("field repair is unavailable in this storm"));
@@ -389,6 +397,9 @@ fn prepare(
             .vehicle_repair_supply_costs
             .cost(RepairLocation::Field, VehicleState::BrokenDown, vehicle)
             .ok_or_else(|| gap("land:22.15", "field tank repair cost is unavailable"))?;
+        if vehicle == RepairVehicle::Recce && (cost.supplies.fuel != 0 || cost.supplies.stores != 0) {
+            return Err(invariant("bound recce field cost contradicts its zero-supply procedure").into());
+        }
         let fuel = selected
             .points
             .checked_mul(cost.supplies.fuel)
@@ -497,7 +508,7 @@ fn accepted(error: Rejection) -> EngineError {
 }
 
 /// Real outcomes, physical remainder and typed Oob receipts, on the prepaid draft.
-/// Cases: land:22.11, land:22.13, land:22.14, land:22.25, land:22.26, land:22.5
+/// Cases: land:22.11, land:22.13, land:22.14, land:22.24, land:22.25, land:22.26, land:22.5
 /// Interpretations: interp:land-0038, interp:land-0052
 pub(crate) fn finish(
     c: &CnaContent,
@@ -520,7 +531,16 @@ pub(crate) fn finish(
         for id in &field.excluded {
             cx.emit(EngineEvent::new(Audience::Side(actor), GameEvent::Note { text: format!("Field repair unavailable at own marker {id}; no attempt or payment made.") }));
         }
+        let mut recce_sites = BTreeSet::new();
         for row in field.repair.attempts() {
+            if row.vehicle() == RepairVehicle::Recce {
+                if recce_sites.insert(row.site().hex().cloned().ok_or_else(|| invariant("recce group is not at a hex"))?) {
+                    let group: Vec<_> = field.repair.attempts().iter()
+                        .filter(|other| other.vehicle() == RepairVehicle::Recce && other.site() == row.site()).collect();
+                    recce::resolve(c, draft, cx, &group)?;
+                }
+                continue;
+            }
             if row.vehicle() == RepairVehicle::Truck {
                 let choice = field.repair.output_choices().iter().find(|choice| choice.marker() == row.marker())
                     .ok_or_else(|| invariant("missing pre-dice truck output choice"))?;
