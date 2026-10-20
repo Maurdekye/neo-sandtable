@@ -299,7 +299,7 @@ fn prepare_deployment(content: &CnaContent, state: &State,
                 return Err(unsupported("airlog:40.33", "scramble is a later actual producer"));
             };
             if mission.light != Light::Day { return Err(unsupported("airlog:41.47", "night search is a later actual producer")); }
-            if route.path.len() < 2 || route.path.last() != Some(target)
+            if route.path.is_empty() || route.path.last() != Some(target)
                 || route.path.iter().any(|h| content.map.canonical(h) != Some(h))
                 || route.path.windows(2).any(|pair| !content.map.neighbors(&pair[0]).iter().any(|n| n.id == pair[1]))
             { return Err(invalid("route is not a nonempty canonical adjacent flight path")); }

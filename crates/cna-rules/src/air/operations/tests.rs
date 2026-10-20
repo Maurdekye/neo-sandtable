@@ -32,8 +32,14 @@ fn plane(game: &Game<Cna>) -> (PlaneId, usize, HexId) {
 }
 
 fn answered(game: &Game<Cna>) -> (Game<Cna>, PlaneId, Vec<HexId>) {
+    answered_at(game, false)
+}
+
+fn answered_at(game: &Game<Cna>, same_base: bool) -> (Game<Cna>, PlaneId, Vec<HexId>) {
     let (id, mode, origin) = plane(game);
-    let target = content().map.neighbors(&origin).first().expect("source map neighbor").id.clone();
+    let target = if same_base { origin.clone() } else {
+        content().map.neighbors(&origin).first().expect("source map neighbor").id.clone()
+    };
     let action = json!([{"mission":"strafe_grounded_aircraft","light":"day",
         "target":{"hex":target,"scramble_reserve":false},
         "planes":[{"plane":id,"mode":mode,"initial_choice":{"decision":"load","guns":true,"ordnance":{"kind":"none"}}}]}]);
@@ -41,11 +47,15 @@ fn answered(game: &Game<Cna>) -> (Game<Cna>, PlaneId, Vec<HexId>) {
         &missions::initial::tests::response(game, Side::Axis, action)).unwrap().game;
     let two = evaluate(&Cna::dev(), content(), &one,
         &missions::initial::tests::response(&one, Side::Commonwealth, Value::Null)).unwrap().game;
-    (two, id, vec![origin, target])
+    (two, id, if same_base { vec![origin] } else { vec![origin, target] })
 }
 
 fn staged() -> (Game<Cna>, PlaneId, BTreeMap<Side, Vec<RouteSelection>>) {
-    let (mut game, id, path) = answered(&opened());
+    staged_at(false)
+}
+
+fn staged_at(same_base: bool) -> (Game<Cna>, PlaneId, BTreeMap<Side, Vec<RouteSelection>>) {
+    let (mut game, id, path) = answered_at(&opened(), same_base);
     // Real declaration finish, then explicit component clock entry; this is NOT
     // a publicly enabled launch or a whole intervening campaign trajectory.
     missions::finish(content(), &mut game.state).unwrap();
@@ -321,4 +331,74 @@ fn disabled_own_flight_payload_is_unadvertised_and_refuses_before_buffering_inde
     assert_action_indistinguishable(&Cna::dev(), content(), &game, &legacy_enemy, &command, Side::Axis);
     assert_eq!(game.state.air.runtime.operations, OperationalState::default());
     assert_eq!(legacy_enemy.state.air.runtime.operations, OperationalState::default());
+}
+
+/// Cases: airlog:37.12, airlog:37.13, airlog:40.24
+#[test]
+fn singleton_canonical_origin_target_is_a_valid_component_flight_and_empty_route_still_refuses() {
+    let (mut game, id, routes) = staged_at(true);
+    let path = &routes[&Side::Axis][0].path;
+    assert_eq!(path.len(), 1);
+    let target = path[0].clone();
+    let mut empty = routes.clone(); empty.get_mut(&Side::Axis).unwrap()[0].path.clear();
+    assert!(prepare_deployment(content(), &game.state, &empty).is_err());
+    finish_transaction(content(), &mut game.state, &routes, |_| {}).unwrap();
+    assert_eq!(position(content(), &game.state, &id).unwrap(), Position::Airborne { target: target.clone() });
+    assert_eq!(markers(&game.state)[0].hex, target.to_string());
+    assert!(!game.state.air.runtime.aircraft[&id].fuelled);
+}
+
+/// Cases: airlog:34.73, airlog:34.74, airlog:37.13, land:3.6
+/// Interpretations: interp:air-0021
+#[test]
+fn central_sync_derives_contact_birth_persistence_and_scheduled_return_removal_for_all_board_perspectives() {
+    use cna_core::{dice::CampaignRng, engine::Cx, event::EngineEvent, visibility::Audience};
+    use cna_protocol::GameEvent;
+    let (mut game, id, routes) = staged();
+    let mut rng = CampaignRng::from_state(&game.rng);
+    let prefix = EngineEvent::new(Audience::Public, GameEvent::Note { text: "Preexisting event prefix.".into() });
+    let mut events = vec![prefix.clone()];
+    let mut cx = Cx { rng: &mut rng, events: &mut events };
+    let mut sync = crate::view::Sync::new(&game.state, &cx);
+    finish_transaction(content(), &mut game.state, &routes, |_| {}).unwrap();
+    sync.point(content(), &game.state, &mut cx);
+    let contact = markers(&game.state)[0].clone();
+    for perspective in Perspective::all() {
+        let placed: Vec<_> = cx.events.iter().filter(|e| e.visible_to(perspective)).filter_map(|e|
+            match &e.event { GameEvent::MarkerPlaced { marker } if marker.id == contact.id => Some(marker.clone()), _ => None }).collect();
+        assert_eq!(placed, vec![contact.clone()]);
+        let snapshot: Vec<_> = crate::view::view(content(), &game.state, perspective).markers.into_iter()
+            .filter(|m| m.id == contact.id).collect();
+        assert_eq!(snapshot, placed);
+    }
+    let birth_end = cx.events.len();
+    // Component post-loss fixture through the exact canonical update. No real
+    // combat or recovery consumer is claimed by constructing this closed delta.
+    let mut after = game.state.air.runtime.clone();
+    after.operations.flights[0].members.clear();
+    after.aircraft.remove(&id); after.preparation.current.remove(&id);
+    let admission = FlightAdmission { before: game.state.air.runtime.clone(), after,
+        expected: Context::from_state(&game.state).unwrap() };
+    inventory::update_flight(content(), &mut game.state, admission).unwrap();
+    sync.point(content(), &game.state, &mut cx);
+    assert!(!cx.events[birth_end..].iter().any(|e| matches!(e.event,
+        GameEvent::MarkerRemoved { .. } | GameEvent::MarkerPlaced { .. })));
+    for perspective in Perspective::all() {
+        assert_eq!(crate::view::view(content(), &game.state, perspective).markers.into_iter()
+            .filter(|m| m.id == contact.id).collect::<Vec<_>>(), vec![contact.clone()]);
+    }
+    let loss_end = cx.events.len();
+    // Explicit scheduled-return fixture only; there is no live return consumer
+    // in this intermediate slice. Never emit a MarkerRemoved event by hand.
+    game.state.cursor.index = crate::seq::OPSTAGE.iter().position(|s| s.anchor == "opstage.land_support_air.return").unwrap();
+    game.state.air.runtime.operations = OperationalState::default();
+    sync.point(content(), &game.state, &mut cx);
+    for perspective in Perspective::all() {
+        let removed: Vec<_> = cx.events[loss_end..].iter().filter(|e| e.visible_to(perspective)).filter_map(|e|
+            match &e.event { GameEvent::MarkerRemoved { marker_id } => Some(marker_id.clone()), _ => None }).collect();
+        assert_eq!(removed, vec![contact.id.clone()]);
+        assert!(crate::view::view(content(), &game.state, perspective).markers.iter().all(|m| m.id != contact.id));
+    }
+    assert_eq!(cx.events[0], prefix);
+    assert_eq!(cx.rng.state(), game.rng);
 }
