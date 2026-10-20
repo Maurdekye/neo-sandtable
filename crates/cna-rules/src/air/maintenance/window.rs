@@ -176,7 +176,9 @@ fn space(
                 id.0.clone(),
                 json!({
                     "aircraft": p.aircraft, "assigned_squadron": p.squadron,
-                    "physical_facility": p.facility, "refitted": p.refitted,
+                    "last_ground_facility": p.facility, "refitted": p.refitted,
+                    "physical_facility": crate::air::operations::ground_facility(content, state, id).ok().flatten(),
+                    "position": crate::air::operations::position(content, state, id).ok(),
                     "preparation": state.air.runtime.preparation.current.get(id),
                     "modes": content.units.aircraft.get(&p.aircraft).map(|a| a.modes.iter().enumerate()
                         .map(|(mode, source)| json!({"mode": mode, "fuel_points": source.fuel_points, "bomb_capacity": source.bomb_capacity})).collect::<Vec<_>>()),
@@ -694,10 +696,10 @@ fn legal_choices(
                 .get(id)
                 .filter(|p| owned(&p.force, owner))
                 .ok_or_else(|| illegal("unknown own refit plane"))?;
+            let physical_site = crate::air::operations::ground_facility(content, state, id)?;
             if p.squadron.as_deref() != Some(cohort.assigned_squadron.as_str())
-                || site
-                    .as_ref()
-                    .is_some_and(|(id, _)| p.facility.as_deref() != Some(id.0.as_str()))
+                || physical_site.is_none()
+                || site.as_ref().is_some_and(|(site_id, _)| physical_site.as_ref() != Some(site_id))
             {
                 return Err(illegal("plane assignment or actual refit site differs"));
             }
@@ -1157,7 +1159,7 @@ fn validate(
                 .filter(|p| owned(&p.force, owner))
                 .ok_or_else(|| illegal("unknown own refit plane"))?;
             if p.squadron.as_deref() != Some(cohort.assigned_squadron.as_str())
-                || p.facility.as_deref() != Some(site_id.0.as_str())
+                || crate::air::operations::ground_facility(content, state, id)?.as_ref() != Some(site_id)
             {
                 return Err(illegal("plane assignment or actual refit site differs"));
             }

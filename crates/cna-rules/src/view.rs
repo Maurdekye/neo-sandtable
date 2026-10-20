@@ -489,6 +489,7 @@ impl Board {
 /// the owner only) and the printed condition markers of wells it knows about.
 fn markers(state: &State, perspective: Perspective) -> Vec<wire::Marker> {
     let mut markers = crate::logistics::coastal::markers(state);
+    markers.extend(crate::air::operations::markers(state));
     markers.extend(
         state
             .logistics
@@ -933,6 +934,7 @@ pub(crate) fn observe(content: &CnaContent, state: &State, perspective: Perspect
         },
         "your_forces": forces,
         "air": {
+            "contacts": crate::air::operations::markers(state),
             "forces": state.air.forces.iter().filter(|(force,_)|sees_side(perspective,if force.as_str()=="axis"{Side::Axis}else{Side::Commonwealth})).collect::<BTreeMap<_,_>>(),
             // Squadron detail is for the seats that fly them (and the side and operator views);
             // the ground seats' observations stay small. Any seat may still inspect a squadron.
@@ -1087,6 +1089,10 @@ pub(crate) fn inspect(
     strict: bool,
 ) -> Result<Value, Rejection> {
     let hidden = || illegal(format!("{target}: unknown or not visible"));
+    if target.starts_with("air:") {
+        return crate::air::operations::markers(state).into_iter().find(|m| m.id == target)
+            .map(|marker| json!({"marker": marker})).ok_or_else(hidden);
+    }
     let face_only = "printed face only: what the counter contains is not visible (land:3.62)";
     if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
         if !sees_side(perspective, unit.side) {
@@ -1250,6 +1256,10 @@ pub(crate) fn inspect_legacy_for_step1(
     strict: bool,
 ) -> Result<Value, Rejection> {
     let hidden = || illegal(format!("{target}: unknown or not visible"));
+    if target.starts_with("air:") {
+        return crate::air::operations::markers(state).into_iter().find(|m| m.id == target)
+            .map(|marker| json!({"marker": marker})).ok_or_else(hidden);
+    }
     let face_only = "printed face only: what the counter contains is not visible (land:3.62)";
     if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
         if !sees_side(perspective, unit.side) {
@@ -1413,6 +1423,10 @@ pub(crate) fn inspect_reference_for_step2(
     strict: bool,
 ) -> Result<Value, Rejection> {
     let hidden = || illegal(format!("{target}: unknown or not visible"));
+    if target.starts_with("air:") {
+        return crate::air::operations::markers(state).into_iter().find(|m| m.id == target)
+            .map(|marker| json!({"marker": marker})).ok_or_else(hidden);
+    }
     let face_only = "printed face only: what the counter contains is not visible (land:3.62)";
     if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
         if !sees_side(perspective, unit.side) {

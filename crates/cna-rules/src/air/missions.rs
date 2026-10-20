@@ -417,6 +417,9 @@ pub fn answer(
             {
                 return Err(illegal("not a mode of this own aircraft"));
             }
+            if !matches!(super::operations::position(content, state, &selected.plane), Ok(super::operations::Position::Ground(_))) {
+                return Err(illegal("own declaration aircraft is not grounded at a canonical facility"));
+            }
             initial::validate_answer(content, state, side, selected)?;
         }
         declarations.push(MissionDeclaration {
@@ -435,7 +438,7 @@ pub fn answer(
     Ok("Recorded private tactical intentions and initial choices for finish; no flight was authorized.".into())
 }
 
-fn validate(
+pub(in crate::air) fn validate(
     content: &CnaContent,
     state: &State,
     side: Side,
@@ -477,6 +480,9 @@ fn validate(
                     || !pilots.insert(id))
             {
                 return Err(invariant("invalid own pilot declaration"));
+            }
+            if !matches!(super::operations::position(content, state, &selected.plane)?, super::operations::Position::Ground(_)) {
+                return Err(invariant("committed declaration aircraft is not grounded"));
             }
             let plane = &state.air.runtime.aircraft[&selected.plane];
             let aircraft = content.units.aircraft.get(&plane.aircraft).ok_or_else(|| {
@@ -558,7 +564,7 @@ fn finish_transaction(
         inventory::update_initial_loads(content, &mut draft.air, admission)?;
     }
     after_initial(&mut draft);
-    inventory::update(content, &mut draft.air, |runtime| {
+    inventory::update_from_state(content, &mut draft, |runtime| {
         let window = &mut runtime.tactical;
         window.declarations = window
             .answers

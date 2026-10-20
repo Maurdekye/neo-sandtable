@@ -402,7 +402,7 @@ pub(super) fn validate(
                 .get(&selected.plane)
                 .filter(|p| owned(&p.force, owner))
                 .ok_or_else(|| illegal("unknown own fuel plane"))?;
-            if plane.facility.as_deref() != Some(site_id.0.as_str()) {
+            if crate::air::operations::ground_facility(content, state, &selected.plane)?.as_ref() != Some(site_id) {
                 return Err(illegal("plane actual fuel site differs"));
             }
             let squadron = plane

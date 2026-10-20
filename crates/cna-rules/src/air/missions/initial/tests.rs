@@ -39,7 +39,7 @@ fn first(schema: &ActionSchema) -> Value {
     }
 }
 
-fn response(game: &Game<Cna>, side: Side, action: Value) -> Command {
+pub(in crate::air) fn response(game: &Game<Cna>, side: Side, action: Value) -> Command {
     let p = game
         .state
         .decisions
@@ -147,7 +147,7 @@ fn at(game: &mut Game<Cna>, block: Block, anchor: &str, op: Option<u8>) {
     game.state.cursor.entered = false;
 }
 
-fn opened() -> Game<Cna> {
+pub(in crate::air) fn opened() -> Game<Cna> {
     static OPENED: OnceLock<Game<Cna>> = OnceLock::new();
     OPENED
         .get_or_init(|| {

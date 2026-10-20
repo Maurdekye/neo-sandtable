@@ -235,7 +235,7 @@ pub fn initialize(content: &CnaContent, state: &mut State) -> Result<(), EngineE
         }
         // Legacy inventory is already canonical. Import only bases in a draft;
         // do not allocate or recreate a single aircraft, pilot or serial.
-        let projected = mirrors(content, &state.air)?;
+        let projected = mirrors(content, &state.air, None)?;
         if projected.forces != state.air.forces || projected.squadrons != state.air.squadrons {
             return Err(invalid(
                 "legacy inventory mirrors disagree before base migration",
@@ -425,7 +425,8 @@ fn import_bases(content: &CnaContent, air: &mut AirState) -> Result<(), EngineEr
 /// Force SGSU reserves remain the pre-existing unplaced count until arrivals
 /// have individual source identities. Malta rosters remain non-SGSU groups.
 /// Cases: airlog:35.11, airlog:35.14, airlog:36.0, airlog:44.14
-fn base_mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError> {
+fn base_mirrors(content: &CnaContent, air: &AirState, expected: Option<super::operations::Context>) -> Result<AirState, EngineError> {
+    let airborne = super::operations::airborne_ids(content, air, expected)?;
     let mut draft = air.clone();
     let mut tokens = BTreeSet::new();
     for (id, site) in &air.runtime.facilities {
@@ -471,7 +472,8 @@ fn base_mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, Engine
     draft.squadrons.retain(|id, squadron| {
         squadron.force == "malta" || air.runtime.sgsus.contains_key(&SgsuId(id.clone()))
     });
-    for plane in air.runtime.aircraft.values() {
+    for (plane_id, plane) in &air.runtime.aircraft {
+        if airborne.contains(plane_id) { continue; }
         let Some(id) = &plane.facility else {
             continue;
         };
@@ -649,6 +651,7 @@ fn check_preparation_transition(
     new: &AirRuntime,
     paid: Option<&super::maintenance::window::fueling::PaidServicingAdmission>,
     initial: Option<&super::missions::initial::InitialLoadAdmission>,
+    flight: Option<&super::operations::FlightAdmission>,
 ) -> Result<(), EngineError> {
     if !new.preparation.initialized {
         return Err(invalid("preparation initialized marker cannot reset"));
@@ -675,6 +678,7 @@ fn check_preparation_transition(
                 return Err(invalid("persistent aircraft type and force cannot change"));
             }
             let before = old.preparation.current.get(id);
+            if flight.is_some_and(|f| f.permits(old, new)) { continue; }
             if paid.is_some_and(|p| p.permits(id, old, new)) {
                 continue;
             }
@@ -825,7 +829,7 @@ fn increment(value: &mut i32, amount: i32) -> Result<(), EngineError> {
     Ok(())
 }
 
-fn mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError> {
+fn mirrors(content: &CnaContent, air: &AirState, expected: Option<super::operations::Context>) -> Result<AirState, EngineError> {
     for (force, pool) in &air.forces {
         side(force)?;
         if pool.sgsu_available < 0 {
@@ -842,7 +846,7 @@ fn mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError
         }
     }
     let mut draft = if air.runtime.bases_initialized {
-        base_mirrors(content, air)?
+        base_mirrors(content, air, expected)?
     } else {
         if !air.runtime.facilities.is_empty() || !air.runtime.sgsus.is_empty() {
             return Err(invalid("uninitialized base maps contain records"));
@@ -937,12 +941,19 @@ fn mirrors(content: &CnaContent, air: &AirState) -> Result<AirState, EngineError
 /// or supply entitlement is inferred from these consistency checks.
 /// Cases: airlog:34.0, airlog:35.24
 pub fn check(content: &CnaContent, air: &AirState) -> Result<(), EngineError> {
+    check_at(content, air, None)
+}
+
+/// An active airborne inventory requires independently cursor-derived context.
+/// Cases: airlog:33.0, airlog:37.13, airlog:34.0
+pub fn check_at(content: &CnaContent, air: &AirState, expected: Option<super::operations::Context>) -> Result<(), EngineError> {
+    super::operations::check(content, air, expected)?;
     super::maintenance::refit::check(&air.runtime.maintenance)?;
     if !air.runtime.initialized || !air.runtime.bases_initialized {
         return Err(invalid("inventory and bases must be imported"));
     }
     check_preparation(content, &air.runtime)?;
-    let draft = mirrors(content, air)?;
+    let draft = mirrors(content, air, expected)?;
     if air.forces != draft.forces || air.squadrons != draft.squadrons {
         return Err(invalid(
             "aggregate mirrors disagree with individual inventory",
@@ -960,7 +971,35 @@ pub fn update<F>(content: &CnaContent, air: &mut AirState, edit: F) -> Result<()
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    update_inner(content, air, None, None, None, edit)
+    update_inner(content, air, None, None, None, FlightUpdate::default(), edit)
+}
+
+/// Existing generic mutation with explicit canonical context; it still cannot
+/// alter operations, authorize a launch, or forge paid/initial load changes.
+/// Cases: airlog:34.0, airlog:37.13
+pub(in crate::air) fn update_at<F>(content: &CnaContent, air: &mut AirState,
+    expected: super::operations::Context, edit: F) -> Result<(), EngineError>
+where F: FnOnce(&mut AirRuntime) -> Result<(), EngineError> {
+    update_inner(content, air, None, None, None, FlightUpdate { expected: Some(expected), admission: None }, edit)
+}
+
+/// Derive context from the canonical State for an ordinary update.
+/// Cases: airlog:34.0, airlog:37.13
+pub(in crate::air) fn update_from_state<F>(content: &CnaContent, state: &mut State, edit: F) -> Result<(), EngineError>
+where F: FnOnce(&mut AirRuntime) -> Result<(), EngineError> {
+    match super::operations::Context::from_state(state) {
+        Ok(expected) => update_at(content, &mut state.air, expected, edit),
+        Err(_) => update(content, &mut state.air, edit),
+    }
+}
+
+/// Callback-free flight mutation checks CURRENT State independently of the token.
+/// Cases: airlog:37.13, airlog:37.16, airlog:39.19
+pub(in crate::air) fn update_flight(content: &CnaContent, state: &mut State,
+    flight: super::operations::FlightAdmission) -> Result<(), EngineError> {
+    let expected = super::operations::Context::from_state(state)?;
+    if expected != flight.context() { return Err(invalid("flight token context is stale")); }
+    update_inner(content, &mut state.air, None, None, None, FlightUpdate { expected: Some(expected), admission: Some(&flight) }, |runtime| flight.apply(runtime))
 }
 
 /// Compatibility wrapper for exact post-debit servicing. No caller edit
@@ -971,7 +1010,7 @@ pub(in crate::air) fn update_fueling(
     air: &mut AirState,
     paid: super::maintenance::window::fueling::PaidServicingAdmission,
 ) -> Result<(), EngineError> {
-    update_inner(content, air, None, Some(&paid), None, |runtime| {
+    update_inner(content, air, None, Some(&paid), None, FlightUpdate::default(), |runtime| {
         paid.apply(runtime)
     })
 }
@@ -995,7 +1034,7 @@ pub(in crate::air) fn update_initial_loads(
     air: &mut AirState,
     initial: super::missions::initial::InitialLoadAdmission,
 ) -> Result<(), EngineError> {
-    update_inner(content, air, None, None, Some(&initial), |runtime| {
+    update_inner(content, air, None, None, Some(&initial), FlightUpdate::default(), |runtime| {
         initial.apply(runtime)
     })
 }
@@ -1017,7 +1056,7 @@ pub(super) fn update_site<F>(
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    update_inner(content, air, Some(allocation), None, None, edit)
+    update_inner(content, air, Some(allocation), None, None, FlightUpdate::default(), edit)
 }
 
 fn check_site_transition(
@@ -1095,22 +1134,37 @@ fn check_site_transition(
     Ok(())
 }
 
+#[derive(Default)]
+struct FlightUpdate<'a> {
+    expected: Option<super::operations::Context>,
+    admission: Option<&'a super::operations::FlightAdmission>,
+}
+
 fn update_inner<F>(
     content: &CnaContent,
     air: &mut AirState,
     allocation: Option<SiteAllocation>,
     paid: Option<&super::maintenance::window::fueling::PaidServicingAdmission>,
     initial: Option<&super::missions::initial::InitialLoadAdmission>,
+    flight_update: FlightUpdate<'_>,
     edit: F,
 ) -> Result<(), EngineError>
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    check(content, air)?;
+    let FlightUpdate { expected, admission: flight } = flight_update;
+    check_at(content, air, expected)?;
     let mut draft = air.clone();
     migrate_preparation(content, &mut draft.runtime)?;
     let before_edit = draft.runtime.clone();
     edit(&mut draft.runtime)?;
+    if let Some(flight) = flight {
+        if !flight.permits(&before_edit, &draft.runtime) {
+            return Err(invalid("flight admission does not match exact inventory delta"));
+        }
+    } else {
+        super::operations::check_unchanged_members(&before_edit, &draft.runtime)?;
+    }
     check_site_transition(content, &air.runtime, &draft.runtime, allocation.as_ref())?;
     super::maintenance::refit::check_transition(
         &air.runtime.maintenance,
@@ -1130,11 +1184,11 @@ where
     if !draft.runtime.initialized || !draft.runtime.bases_initialized {
         return Err(invalid("initialized inventory and bases cannot be reset"));
     }
-    check_preparation_transition(&before_edit, &draft.runtime, paid, initial)?;
+    check_preparation_transition(&before_edit, &draft.runtime, paid, initial, flight)?;
     project_preparation(&before_edit, &mut draft.runtime)?;
     check_preparation(content, &draft.runtime)?;
-    draft = mirrors(content, &draft)?;
-    check(content, &draft)?;
+    draft = mirrors(content, &draft, expected)?;
+    check_at(content, &draft, expected)?;
     *air = draft;
     Ok(())
 }

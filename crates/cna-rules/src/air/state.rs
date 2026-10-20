@@ -24,8 +24,10 @@ pub struct AircraftState {
     pub aircraft: String,
     pub force: String,
     pub squadron: Option<String>,
-    /// Physical base; may differ from the assigned squadron's SGSU.
-    /// None is an unplaced force reserve, not permission to fly.
+    /// Current ground base, or historical launch base ONLY for a checked active
+    /// airborne member. Use operations::position with canonical State context;
+    /// this field alone never authorizes ground service. None is an unplaced
+    /// force reserve, not permission to fly.
     pub facility: Option<String>,
     pub refitted: bool,
     pub fuelled: bool,
@@ -65,6 +67,8 @@ pub struct AirRuntime {
     pub sgsus: BTreeMap<super::sgsu::SgsuId, super::sgsu::SgsuState>,
     pub designation: super::designation::DesignationState,
     pub tactical: super::missions::TacticalState,
+    #[serde(default)]
+    pub(crate) operations: super::operations::OperationalState,
     /// Missing preparation is legacy unknown with NO free initial credit.
     #[serde(default)]
     pub(crate) preparation: super::preparation::PreparationState,
