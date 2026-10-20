@@ -15,7 +15,7 @@ use super::{
 };
 use crate::{CnaContent, State, state::AirState};
 
-pub(in crate::air) mod planning;
+pub(crate) mod planning;
 
 pub const DEPLOYMENT: &str = "opstage.land_support_air.deployment";
 // Uniform implementation capability, never a query of either hidden plan.

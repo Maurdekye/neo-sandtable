@@ -372,7 +372,7 @@ pub(super) fn enter_assignment(content: &CnaContent, state: &mut State, cx: &mut
 /// Record only own-known choices. Lookup domains never use enemy private
 /// flight membership, interception reach, counts or undisclosed paths.
 /// Cases: airlog:40.21, airlog:40.27
-pub(in crate::air) fn answer(content: &CnaContent, state: &mut State, pending: &Pending, action: &Value) -> Result<String, Rejection> {
+pub(crate) fn answer(content: &CnaContent, state: &mut State, pending: &Pending, action: &Value) -> Result<String, Rejection> {
     let expected = context(state).map_err(Rejection::Engine)?;
     let ops = &state.air.runtime.operations;
     let batch = ops.planning.batch.ok_or_else(|| illegal("no operational window"))?;
