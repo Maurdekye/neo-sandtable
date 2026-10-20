@@ -41,7 +41,7 @@ fn ledger(state: &State, id: &str) -> Result<FuelSegmentLedger<String>, SupplyEr
         &format!("pool.{id}"),
     )?;
     if !state.logistics.pool_fuel_segments.contains_key(id) {
-        match unfunded_motion(state, id) {
+        match known_unfunded_motion(state, id) {
             Ok(records) => {
                 result.cohorts = records
                     .into_iter()
@@ -50,6 +50,7 @@ fn ledger(state: &State, id: &str) -> Result<FuelSegmentLedger<String>, SupplyEr
                         parent: None,
                         kind: r.kind,
                         count: r.count,
+                        // Physical fatigue is retained in motion, not imported as paid fuel CP.
                         cp_quarters: 0,
                         account: id.to_owned(),
                         segment: result.segment.clone(),
@@ -67,8 +68,21 @@ fn ledger(state: &State, id: &str) -> Result<FuelSegmentLedger<String>, SupplyEr
 }
 
 fn unfunded_motion(state: &State, id: &str) -> Result<Vec<TruckMotion>, MotionError> {
+    let records = known_unfunded_motion(state, id)?;
+    validate_unfunded_motion(
+        pool(state, id).map_err(|_| MotionError::Invalid)?,
+        id,
+        records,
+    )
+}
+
+// Cases: land:22.5, airlog:49.13, airlog:49.16, airlog:53.25
+// Exact retained physical histories do not grant a new pool financial credit.
+fn known_unfunded_motion(state: &State, id: &str) -> Result<Vec<TruckMotion>, MotionError> {
     let p = pool(state, id).map_err(|_| MotionError::Invalid)?;
-    if state.logistics.pool_fuel_accounts.contains_key(id) {
+    if state.logistics.pool_fuel_accounts.contains_key(id)
+        || state.logistics.pool_fuel_segments.contains_key(id)
+    {
         return Err(MotionError::Invalid);
     }
     let site = CargoSite::Pool(id.into());
@@ -95,10 +109,42 @@ fn unfunded_motion(state: &State, id: &str) -> Result<Vec<TruckMotion>, MotionEr
         })
         .collect();
     let records = motion::query(state, p.side, &site, &physical)?;
-    validate_unfunded_motion(p, id, records)
+    if state
+        .logistics
+        .cargo_history
+        .motion
+        .entries
+        .iter()
+        .filter(|entry| {
+            entry.site != site
+                && entry.stage == stage
+                && super::cargo_history::owner(state, &entry.site) == Some(p.side)
+        })
+        .any(|entry| {
+            entry
+                .cohorts
+                .iter()
+                .any(|other| records.iter().any(|r| r.id == other.id))
+        })
+    {
+        return Err(MotionError::Invalid);
+    }
+    validate_known_unfunded_motion(p, id, records)
 }
 
 fn validate_unfunded_motion(
+    p: &TruckPool,
+    id: &str,
+    records: Vec<TruckMotion>,
+) -> Result<Vec<TruckMotion>, MotionError> {
+    let records = validate_known_unfunded_motion(p, id, records)?;
+    if records.iter().any(|r| r.spent_cp_quarters != 0) {
+        return Err(MotionError::Invalid);
+    }
+    Ok(records)
+}
+
+fn validate_known_unfunded_motion(
     p: &TruckPool,
     id: &str,
     records: Vec<TruckMotion>,
@@ -143,7 +189,7 @@ fn validate_unfunded_motion(
     }
     if records
         .iter()
-        .any(|r| r.spent_cp_quarters != 0 || r.count <= 0)
+        .any(|r| r.spent_cp_quarters < 0 || r.count <= 0)
     {
         return Err(MotionError::Invalid);
     }
@@ -275,7 +321,8 @@ pub fn seed_pool_opstage(state: &mut State) -> Result<(), cna_core::engine::Engi
                 if old.next().is_some() {
                     return Err(invalid());
                 }
-                validate_unfunded_motion(p, &id, entry.cohorts.clone()).map_err(|_| invalid())?
+                validate_known_unfunded_motion(p, &id, entry.cohorts.clone())
+                    .map_err(|_| invalid())?
             } else {
                 segment::initial_cohorts(
                     &p.trucks,
