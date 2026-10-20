@@ -1415,6 +1415,23 @@ fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_re
             u32::try_from(planes).unwrap()
         );
     }
+    // Natural source-backed reserve roster: retained aircraft do not create an
+    // SGSU. Match the real server policy ingress without fabricating a consumer.
+    let mut unassigned = State::new(content()).unwrap();
+    assert!(unassigned.setup.tasks.is_empty());
+    unassigned.setup.closed = true;
+    unassigned.cursor = game.state.cursor.clone();
+    inventory::initialize(content(), &mut unassigned).unwrap();
+    assert!(unassigned.air.runtime.sgsus.is_empty());
+    assert!(
+        unassigned.air.runtime.aircraft.values().any(|p| owned(&p.force, Side::Axis))
+    );
+    let empty = space(content(), &unassigned, Side::Axis, current).unwrap();
+    for name in ["fueling"] {
+        assert_eq!(service_maximum(&empty, name), 0);
+    }
+    empty.check(&serde_json::to_value(RefitPlan::default()).unwrap()).unwrap();
+    empty.check(&Value::Null).unwrap();
     for case in [
         "airlog:36.5",
         "airlog:43.21",
