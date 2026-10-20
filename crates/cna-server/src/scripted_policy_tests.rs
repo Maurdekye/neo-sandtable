@@ -846,7 +846,7 @@ fn actual_air_domain_with_own_planes_and_no_finite_consumer_answers_legally() {
             "amount",
             record(vec![
                 field("fuel", integer(i64::from(i32::MAX)), false),
-                field("ammo", integer(0), false),
+                field("ammo", integer(i64::from(i32::MAX)), false),
                 field("stores", integer(i64::from(i32::MAX)), false),
                 field("water", integer(i64::from(i32::MAX)), false),
             ]),
@@ -890,11 +890,11 @@ fn actual_air_domain_with_own_planes_and_no_finite_consumer_answers_legally() {
         panic!("actual cohort servicers must be enumerated");
     };
     assert!(options.is_empty());
-    {
+    for name in ["fueling", "arming"] {
         let ActionSchema::Record { fields } = &request.space.schema else {
             unreachable!()
         };
-        let field = fields.iter().find(|field| field.name == "fueling").unwrap();
+        let field = fields.iter().find(|field| field.name == name).unwrap();
         assert!(field.optional);
         let ActionSchema::List { item, min, max } = &field.schema else {
             panic!("finite service must retain its list schema")
