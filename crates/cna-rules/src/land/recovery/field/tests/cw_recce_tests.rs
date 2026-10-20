@@ -383,7 +383,7 @@ fn cw_recce_captured_italian_stays_separate_but_its_own_group_returns_actual_cla
 
 /// Cases: land:22.23, land:22.24, land:22.25, land:22.62
 #[test]
-fn cw_recce_exception_does_not_admit_commonwealth_tanks_or_trucks_and_pass_stays_legal() {
+fn cw_trucks_are_admitted_while_tank_guard_and_pass_invariants_remain() {
     for truck in [false, true] {
         let (c, mut game) = cw_fixture(2, 1);
         let marker = game.state.land.breakdown.markers.get_mut(MARKER).unwrap();
@@ -414,11 +414,31 @@ fn cw_recce_exception_does_not_admit_commonwealth_tanks_or_trucks_and_pass_stays
         }
         let game = opened(&c, &game);
         let before = serde_json::to_value(&game).unwrap();
-        let expected_case = if truck { "land:22.23" } else { "land:22.6" };
-        assert!(matches!(evaluate(&Cna::dev(), &c, &game,
-            &command(&c, &game, json!([{"marker":MARKER,"points":1}]))),
-            Err(Rejection::Engine(EngineError::Unsupported { case, .. }))
-                if case == expected_case));
+        if truck {
+            // The formerly unsupported exact body is now within land:22.23.
+            // Retain the actual tank refusal and the shared pass/no-write controls.
+            let mut accepted = respond(&c, &game, json!([{"marker":MARKER,"points":1}]));
+            assert_eq!(accepted.rng, game.rng);
+            assert_eq!(serde_json::to_value(&accepted.state.logistics).unwrap(),
+                serde_json::to_value(&game.state.logistics).unwrap());
+            let before_pools = accepted.state.logistics.truck_pool_ids.clone();
+            let expected_rng = one_draw(&accepted);
+            finish_step(&c, &mut accepted).unwrap();
+            assert_eq!(accepted.rng, expected_rng);
+            assert_eq!(accepted.state.land.breakdown.markers[MARKER].assets[0].points, 1);
+            let pools: Vec<_> = accepted.state.logistics.truck_pools.iter()
+                .filter(|pool| !before_pools.contains(&pool.id)).collect();
+            assert_eq!(pools.len(), 1);
+            assert_eq!(pools[0].side, Side::Commonwealth);
+            assert_eq!(pools[0].trucks.medium, 1);
+            assert_eq!(pools[0].tank_fuel.get(), 0);
+            assert!(accepted.state.land.replacement_receipts.lots.is_empty());
+        } else {
+            assert!(matches!(evaluate(&Cna::dev(), &c, &game,
+                &command(&c, &game, json!([{"marker":MARKER,"points":1}]))),
+                Err(Rejection::Engine(EngineError::Unsupported { case, .. }))
+                    if case == "land:22.6"));
+        }
         assert_eq!(serde_json::to_value(&game).unwrap(), before);
         let mut pass = respond(&c, &game, Value::Null);
         let rng = pass.rng.clone();

@@ -1,4 +1,4 @@
-//! Graziani Axis FIELD tanks/trucks and both sides' grouped recce/armored cars.
+//! Graziani Axis FIELD tanks, both sides' single-marker trucks and grouped recce/AC.
 //! Mixed/funded truck merges and other vehicle procedures remain explicit gaps.
 use super::{payloads::*, plans::*, transaction};
 use crate::{
@@ -53,7 +53,7 @@ fn checked_add(a: i32, b: i32) -> Result<i32, Rejection> {
 }
 
 /// One fixed phasing Rear Area window, even with no markers or no eligible repairs.
-/// Cases: land:22.11, land:22.12, land:22.25, land:3.6
+/// Cases: land:22.11, land:22.12, land:22.23, land:22.25, land:3.6
 pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineError> {
     let key = transaction::maintenance_key(state)?;
     if state.land.recovery.opportunity.as_ref() == Some(&key) {
@@ -169,7 +169,7 @@ struct Declaration {
 }
 
 /// Answers select own actual assets and record only the approved plan buffer.
-/// Cases: land:22.11, land:22.12, land:22.25, land:22.26
+/// Cases: land:22.11, land:22.12, land:22.23, land:22.25, land:22.26
 pub(crate) fn answer(
     c: &CnaContent,
     s: &mut State,
@@ -248,7 +248,7 @@ struct PreparedField {
 
 /// Derive every row from this exact plan and current physical markers/content.
 /// Truth-side control is queried only after the answer window closes.
-/// Cases: land:22.11, land:22.12, land:22.13, land:22.14, land:22.21, land:22.22, land:22.24, land:22.25, land:22.26
+/// Cases: land:22.11, land:22.12, land:22.13, land:22.14, land:22.21, land:22.22, land:22.23, land:22.24, land:22.25, land:22.26
 fn prepare(
     c: &CnaContent,
     s: &State,
@@ -315,15 +315,11 @@ fn prepare(
         {
             return Err(illegal("repair selection changed"));
         }
-        // land:22.62 adds a tank procedure, not a recce/AC die modifier.
-        // Commonwealth tanks and trucks retain their separate source gaps.
-        if actor == Side::Commonwealth && actual.equipment != Equipment::ArmoredRecce {
-            if trucks::kind(&actual.equipment).is_some() {
-                return Err(gap(
-                    "land:22.23",
-                    "Commonwealth truck field repair is not implemented",
-                ));
-            }
+        // land:22.62 modifies tanks, not truck or recce/AC field repair.
+        if actor == Side::Commonwealth
+            && actual.equipment != Equipment::ArmoredRecce
+            && trucks::kind(&actual.equipment).is_none()
+        {
             return Err(gap(
                 "land:22.6",
                 "Commonwealth field repair needs the source-bound TDS modifier adapter",
@@ -410,10 +406,11 @@ fn prepare(
             .vehicle_repair_supply_costs
             .cost(RepairLocation::Field, VehicleState::BrokenDown, vehicle)
             .ok_or_else(|| gap("land:22.15", "field tank repair cost is unavailable"))?;
-        if vehicle == RepairVehicle::Recce && (cost.supplies.fuel != 0 || cost.supplies.stores != 0)
+        if matches!(vehicle, RepairVehicle::Recce | RepairVehicle::Truck)
+            && (cost.supplies.fuel != 0 || cost.supplies.stores != 0)
         {
             return Err(
-                invariant("bound recce field cost contradicts its zero-supply procedure").into(),
+                invariant("bound field cost contradicts its zero-supply procedure").into(),
             );
         }
         let fuel = selected
@@ -524,7 +521,7 @@ fn accepted(error: Rejection) -> EngineError {
 }
 
 /// Real outcomes, physical remainder and typed Oob receipts, on the prepaid draft.
-/// Cases: land:22.11, land:22.13, land:22.14, land:22.24, land:22.25, land:22.26, land:22.5
+/// Cases: land:22.11, land:22.13, land:22.14, land:22.23, land:22.24, land:22.25, land:22.26, land:22.5
 /// Interpretations: interp:land-0038, interp:land-0052
 pub(crate) fn finish(
     c: &CnaContent,
