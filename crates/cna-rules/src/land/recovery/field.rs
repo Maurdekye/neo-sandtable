@@ -88,15 +88,34 @@ pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineErro
         opportunity: Some(key.clone()),
         ..Default::default()
     };
-    let cargo_sites: Vec<_> = state.land.breakdown.markers.values()
+    let cargo_sites: Vec<_> = state
+        .land
+        .breakdown
+        .markers
+        .values()
         .filter(|m| m.side == key.phasing)
-        .map(|m| logistics::cargo_history::CargoSite::BrokenMarker(m.id.clone())).collect();
+        .map(|m| logistics::cargo_history::CargoSite::BrokenMarker(m.id.clone()))
+        .collect();
     let mut priority = logistics::cargo_history::selection_field(state, key.phasing, &cargo_sites);
     priority.name = "cargo_priority".into();
     priority.doc = "Complete cargo lots in pre-dice priority order; omit for stable lot-id order. This slice supports one supply kind per parcel.".into();
-    let mut targets = vec![ChoiceOption { id: "create_at_site".into(), label: "Create pool at repair site".into(), detail: None }];
-    targets.extend(state.logistics.truck_pools.iter().filter(|p| p.side == key.phasing)
-        .map(|p| ChoiceOption { id: p.id.clone(), label: p.id.clone(), detail: None }));
+    let mut targets = vec![ChoiceOption {
+        id: "create_at_site".into(),
+        label: "Create pool at repair site".into(),
+        detail: None,
+    }];
+    targets.extend(
+        state
+            .logistics
+            .truck_pools
+            .iter()
+            .filter(|p| p.side == key.phasing)
+            .map(|p| ChoiceOption {
+                id: p.id.clone(),
+                label: p.id.clone(),
+                detail: None,
+            }),
+    );
     let space = ActionSpace::new(ActionSchema::List {
         min: 0,
         max: u32::MAX,
@@ -110,7 +129,9 @@ pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineErro
                 },
                 FieldSchema {
                     name: "points".into(),
-                    doc: "Points selected before dice; truck returns use the printed per-hex budget".into(),
+                    doc:
+                        "Points selected before dice; truck returns use the printed per-hex budget"
+                            .into(),
                     schema: ActionSchema::Integer {
                         min: 1,
                         max: i32::MAX.into(),
@@ -118,8 +139,12 @@ pub(crate) fn enter(state: &mut State, cx: &mut Cx<'_>) -> Result<(), EngineErro
                     optional: false,
                 },
                 priority,
-                FieldSchema { name: "return_pool".into(), doc: "Existing own pool at the site, or create_at_site (default)".into(),
-                    schema: ActionSchema::Choice { options: targets }, optional: true },
+                FieldSchema {
+                    name: "return_pool".into(),
+                    doc: "Existing own pool at the site, or create_at_site (default)".into(),
+                    schema: ActionSchema::Choice { options: targets },
+                    optional: true,
+                },
             ],
         }),
     })
@@ -192,8 +217,12 @@ pub(crate) fn answer(
         let cargo_priority = if trucks::kind(&asset.equipment).is_some() {
             trucks::priority(s, marker, selected_priority)?
         } else {
-            if !selected_priority.is_empty() || !matches!(return_pool, ReturnPoolTarget::CreateAtSite) {
-                return Err(illegal("truck return choices do not apply to tank receipts"));
+            if !selected_priority.is_empty()
+                || !matches!(return_pool, ReturnPoolTarget::CreateAtSite)
+            {
+                return Err(illegal(
+                    "truck return choices do not apply to tank receipts",
+                ));
             }
             vec![]
         };
@@ -301,38 +330,41 @@ fn prepare(
             trucks::validate(c, s, marker, choice)?;
             RepairVehicle::Truck
         } else {
-        let Equipment::Weapon(weapon) = &actual.equipment else {
-            return Err(gap("land:22.24", "this field equipment procedure is not implemented"));
-        };
-        let equipment = c
-            .units
-            .weapons
-            .get(weapon)
-            .ok_or_else(|| gap("land:22.25", "repair equipment is unresolved"))?;
-        if equipment.kind != "tank" {
-            return Err(gap(
-                "land:22.25",
-                "this field equipment procedure is not implemented",
-            ));
-        }
-        if marker.tank_fuel.get() < 0 || marker.activity_water.get() < 0 {
-            return Err(invariant("negative marker reserve").into());
-        }
-        if marker.tank_fuel.get() != 0
-            || marker.activity_water.get() != 0
-            || !marker.passengers.is_empty()
-            || marker.transport != Default::default()
-            || !marker.fuel_cohorts.is_empty()
-            || !marker.pool_fuel_cohorts.is_empty()
-            || marker.paid_truck_water != Default::default()
-            || marker.cargo.totals().map_err(supply)? != Supplies::default()
-        {
-            return Err(gap(
-                "land:22.5",
-                "nontrivial repair holding partitions are not implemented",
-            ));
-        }
-        RepairVehicle::Tank
+            let Equipment::Weapon(weapon) = &actual.equipment else {
+                return Err(gap(
+                    "land:22.24",
+                    "this field equipment procedure is not implemented",
+                ));
+            };
+            let equipment = c
+                .units
+                .weapons
+                .get(weapon)
+                .ok_or_else(|| gap("land:22.25", "repair equipment is unresolved"))?;
+            if equipment.kind != "tank" {
+                return Err(gap(
+                    "land:22.25",
+                    "this field equipment procedure is not implemented",
+                ));
+            }
+            if marker.tank_fuel.get() < 0 || marker.activity_water.get() < 0 {
+                return Err(invariant("negative marker reserve").into());
+            }
+            if marker.tank_fuel.get() != 0
+                || marker.activity_water.get() != 0
+                || !marker.passengers.is_empty()
+                || marker.transport != Default::default()
+                || !marker.fuel_cohorts.is_empty()
+                || !marker.pool_fuel_cohorts.is_empty()
+                || marker.paid_truck_water != Default::default()
+                || marker.cargo.totals().map_err(supply)? != Supplies::default()
+            {
+                return Err(gap(
+                    "land:22.5",
+                    "nontrivial repair holding partitions are not implemented",
+                ));
+            }
+            RepairVehicle::Tank
         };
         let weather = logistics::weather::at_hex(c, s, &marker.hex)?;
         if matches!(weather, WeatherKind::Rainstorm | WeatherKind::Sandstorm) {
@@ -355,11 +387,7 @@ fn prepare(
             .tables
             .land
             .vehicle_repair_supply_costs
-            .cost(
-                RepairLocation::Field,
-                VehicleState::BrokenDown,
-                vehicle,
-            )
+            .cost(RepairLocation::Field, VehicleState::BrokenDown, vehicle)
             .ok_or_else(|| gap("land:22.15", "field tank repair cost is unavailable"))?;
         let fuel = selected
             .points
