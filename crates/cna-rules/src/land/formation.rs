@@ -17,6 +17,15 @@ pub fn class<'a>(content: &'a CnaContent, id: &UnitId) -> Option<&'a UnitClass> 
         .as_ref()
         .and_then(|c| content.units.classes.get(c))
 }
+/// A fixed ship has a known movement prohibition, independent of its unresolved ratings.
+/// Cases: land:30.17
+pub(super) fn fixed_ship(content: &CnaContent, id: &UnitId) -> bool {
+    content
+        .units
+        .units
+        .get(id)
+        .is_some_and(|oa| oa.kind.as_deref() == Some("fixed_ship"))
+}
 /// Components still with their parent, including the root. A remote child is not represented.
 /// Cases: land:9.21, land:19.46
 pub fn members(content: &CnaContent, state: &State, root: &UnitId) -> Vec<UnitId> {
@@ -229,6 +238,237 @@ pub fn allowance(content: &CnaContent, state: &State, root: &UnitId) -> Option<A
         .collect::<Option<Vec<_>>>()?
         .into_iter()
         .min_by_key(|a| a.cpa)
+}
+/// Error context is local to a query or a submitted truck allocation, not persisted.
+#[derive(Clone, Copy)]
+pub(super) enum QueryAssignment {
+    Trusted,
+    Submitted,
+}
+pub(super) fn query_invariant(detail: &str) -> cna_core::engine::Rejection {
+    cna_core::engine::Rejection::Engine(cna_core::engine::EngineError::Invariant {
+        detail: detail.into(),
+    })
+}
+fn query_unsupported(case: &str, detail: &str) -> cna_core::engine::Rejection {
+    cna_core::engine::Rejection::Engine(cna_core::engine::EngineError::Unsupported {
+        case: case.into(),
+        detail: detail.into(),
+    })
+}
+fn assignment_error(context: QueryAssignment, detail: &str) -> cna_core::engine::Rejection {
+    match context {
+        QueryAssignment::Trusted => query_invariant(detail),
+        QueryAssignment::Submitted => crate::steps::illegal(detail),
+    }
+}
+/// Typed boundary for the affected movement queries; other Option callers stay unchanged.
+/// Cases: land:4.46, land:4.48, land:6.11, land:6.15, land:8.17, land:8.91, land:8.93
+pub(super) fn query_class<'a>(
+    content: &'a CnaContent,
+    id: &UnitId,
+) -> Result<&'a UnitClass, cna_core::engine::Rejection> {
+    class(content, id).ok_or_else(|| {
+        query_unsupported(
+            "land:4.46",
+            "movement class is not identified in source data",
+        )
+    })
+}
+/// Preserve canonical TOE interpretation, including the adopted not-applicable HQ body.
+/// Cases: land:4.45, land:4.46, land:4.48, land:8.91, land:8.93
+/// Interpretations: interp:units-0007
+pub(super) fn query_strength(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+) -> Result<i32, cna_core::engine::Rejection> {
+    let unit =
+        state.land.units.get(id).ok_or_else(|| {
+            query_invariant("movement strength references a missing trusted unit")
+        })?;
+    // The supply helper maps a missing U/O maximum to Invalid. Establish its source cause first.
+    if matches!(&unit.toe, Some(Toe::Under { .. } | Toe::Over { .. }))
+        && query_class(content, id)?.max_toe.is_none()
+    {
+        return Err(query_unsupported(
+            "land:4.46",
+            "U/O movement strength lacks a source maximum",
+        ));
+    }
+    crate::logistics::toe_strength(content, unit)
+        .map(|n| n.get())
+        .map_err(|e| match e {
+            crate::logistics::SupplyError::Unsupported { case } => {
+                query_unsupported(case, "movement strength lacks cited source data")
+            }
+            // toe_strength emits Invalid only for malformed trusted quantities after the check above.
+            _ => query_invariant("invalid trusted movement strength or strength arithmetic"),
+        })
+}
+/// None is the chart's known not-allowed cell, never an inferred missing numeric value.
+/// Cases: airlog:54.2, land:8.91, land:8.93
+pub(super) fn query_transport_cell(
+    content: &CnaContent,
+    class: &UnitClass,
+    kind: cna_tables::airlog::trucks::TruckType,
+) -> Result<Option<(i32, i32)>, cna_core::engine::Rejection> {
+    let t = content.tables.airlog.truck_characteristics.truck(kind);
+    let cell = if class.unit_type == "infantry" {
+        Some((t.capacity_inf_toe_halves, t.cpa_inf))
+    } else if class.unit_type == "anti_air" {
+        match t.cpa_guns {
+            Some(speed) => Some((
+                t.capacity_aa_toe
+                    .checked_mul(2)
+                    .ok_or_else(|| query_invariant("truck capacity arithmetic overflow"))?,
+                speed,
+            )),
+            None => None,
+        }
+    } else {
+        match (t.capacity_arty_toe, t.cpa_guns) {
+            (Some(cap), Some(speed)) => Some((
+                cap.checked_mul(2)
+                    .ok_or_else(|| query_invariant("truck capacity arithmetic overflow"))?,
+                speed,
+            )),
+            _ => None,
+        }
+    };
+    if cell.is_some_and(|(cap, speed)| cap < 0 || speed < 0) {
+        return Err(query_invariant("negative validated truck characteristic"));
+    }
+    Ok(cell)
+}
+/// Same successful arithmetic as individual_allowance, with each absent cause retained.
+/// Cases: land:4.46, land:4.48, land:6.11, land:6.15, land:8.17, land:8.91, land:8.93, airlog:54.2
+pub(super) fn query_individual_allowance(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    context: QueryAssignment,
+) -> Result<Allowance, cna_core::engine::Rejection> {
+    let unit =
+        state.land.units.get(id).ok_or_else(|| {
+            query_invariant("movement allowance references a missing trusted unit")
+        })?;
+    let oa = content
+        .units
+        .units
+        .get(id)
+        .ok_or_else(|| query_unsupported("land:4.46", "movement OA row is missing"))?;
+    let c = query_class(content, id)?;
+    let mut cpa = oa.cpa.unwrap_or(c.cpa);
+    if cpa < 0 {
+        return Err(query_invariant("negative validated movement rating"));
+    }
+    if oa.immobile || c.emplaced {
+        cpa = 0;
+    } else if !c.cpa_fixed
+        && let Some(Toe::Weapons(w)) = &unit.toe
+    {
+        for point in w {
+            if point.n < 0 {
+                return Err(query_invariant("negative trusted weapon quantity"));
+            }
+            if point.n == 0 {
+                continue;
+            }
+            let weapon =
+                content.units.weapons.get(&point.weapon).ok_or_else(|| {
+                    query_unsupported("land:4.48", "movement weapon row is missing")
+                })?;
+            if weapon.cpa < 0 {
+                return Err(query_invariant("negative validated weapon CPA"));
+            }
+            cpa = cpa.min(weapon.cpa);
+        }
+    }
+    let holdings = [unit.trucks.light, unit.trucks.medium, unit.trucks.heavy];
+    let transport = [
+        unit.transport_trucks.light,
+        unit.transport_trucks.medium,
+        unit.transport_trucks.heavy,
+    ];
+    if holdings.iter().any(|n| *n < 0) {
+        return Err(query_invariant("negative trusted truck holding"));
+    }
+    if (0..3).any(|k| transport[k] < 0 || transport[k] > holdings[k]) {
+        return Err(assignment_error(
+            context,
+            "transport assignment exceeds its owned trucks",
+        ));
+    }
+    if transport.iter().any(|n| *n > 0) {
+        let mut capacity = 0i32;
+        let mut truck_cpa = i32::MAX;
+        for (n, kind) in [
+            (transport[0], cna_tables::airlog::trucks::TruckType::Light),
+            (transport[1], cna_tables::airlog::trucks::TruckType::Medium),
+            (transport[2], cna_tables::airlog::trucks::TruckType::Heavy),
+        ] {
+            if n == 0 {
+                continue;
+            }
+            let (cap, speed) = query_transport_cell(content, c, kind)?.ok_or_else(|| {
+                assignment_error(
+                    context,
+                    "truck chart does not allow this transport assignment",
+                )
+            })?;
+            capacity = n
+                .checked_mul(cap)
+                .and_then(|v| capacity.checked_add(v))
+                .ok_or_else(|| {
+                    assignment_error(context, "transport capacity arithmetic overflow")
+                })?;
+            truck_cpa = truck_cpa.min(speed);
+        }
+        let strength = query_strength(content, state, id)?;
+        let need = strength
+            .checked_mul(2)
+            .ok_or_else(|| query_invariant("trusted transport strength arithmetic overflow"))?;
+        if capacity >= need && strength > 0 {
+            cpa = truck_cpa;
+        }
+    }
+    Ok(super::reserve::adjust_allowance(
+        unit,
+        Allowance {
+            cpa,
+            motorized: cpa > 10,
+        },
+    ))
+}
+/// Require every represented member; a partial minimum is never a movement rating.
+/// Cases: land:6.15, land:6.17, land:8.91, land:8.92
+pub(super) fn query_members_allowance(
+    content: &CnaContent,
+    state: &State,
+    ids: &[UnitId],
+) -> Result<Allowance, cna_core::engine::Rejection> {
+    let mut lowest: Option<Allowance> = None;
+    for id in ids {
+        let next = query_individual_allowance(content, state, id, QueryAssignment::Trusted)?;
+        if lowest.is_none_or(|old| next.cpa < old.cpa) {
+            lowest = Some(next);
+        }
+    }
+    lowest.ok_or_else(|| query_invariant("trusted moving formation has no represented members"))
+}
+/// Cases: land:6.15, land:6.17, land:8.91, land:8.92
+pub(super) fn query_allowance(
+    content: &CnaContent,
+    state: &State,
+    root: &UnitId,
+) -> Result<Allowance, cna_core::engine::Rejection> {
+    if !state.land.units.contains_key(root) {
+        return Err(query_invariant(
+            "movement formation references a missing trusted root",
+        ));
+    }
+    query_members_allowance(content, state, &members(content, state, root))
 }
 fn live_children(content: &CnaContent, state: &State, id: &UnitId) -> Vec<UnitId> {
     members(content, state, id)
@@ -477,5 +717,111 @@ mod tests {
         assert!(!can_pin(&c, &s, &battalion, &division));
         s.land.units.get_mut(&battalion).unwrap().toe = Some(Toe::Weapons(vec![]));
         assert!(!can_pin(&c, &s, &battalion, &brigade));
+    }
+}
+
+#[cfg(test)]
+mod query_error_controls {
+    use super::*;
+    use cna_core::engine::{EngineError, Rejection};
+
+    fn setup() -> (CnaContent, State, UnitId) {
+        let c = CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap();
+        let mut s = State::new(&c).unwrap();
+        let id: UnitId = "cw.2_nz_div.21st_nz_bn".into();
+        let u = s.land.units.get_mut(&id).unwrap();
+        u.transport_trucks = cna_content::units::Trucks::default();
+        u.trucks = cna_content::units::Trucks::default();
+        (c, s, id)
+    }
+    /// Cases: land:6.11, land:8.17
+    #[test]
+    fn verified_immobility_is_a_successful_zero_rating() {
+        let (mut c, s, id) = setup();
+        c.units.units.get_mut(&id).unwrap().immobile = true;
+        let a = query_individual_allowance(&c, &s, &id, QueryAssignment::Trusted).unwrap();
+        assert_eq!(a.cpa, 0);
+        assert!(!a.motorized);
+    }
+    /// Cases: land:4.46, land:6.15, land:8.92
+    #[test]
+    fn missing_member_source_never_becomes_a_partial_group_minimum() {
+        let (mut c, s, id) = setup();
+        let other: UnitId = "cw.unassigned_inf.1st_rnf_mg_bn".into();
+        assert!(s.land.units.contains_key(&other));
+        c.units.units.remove(&other);
+        let before = serde_json::to_value(&s).unwrap();
+        assert!(matches!(query_members_allowance(&c, &s, &[id, other]),
+            Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "land:4.46"));
+        assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    }
+    /// Cases: land:8.91, land:8.93, airlog:54.2
+    #[test]
+    fn bad_submitted_assignment_and_corrupt_trusted_assignment_are_distinct() {
+        let (c, mut s, id) = setup();
+        s.land.units.get_mut(&id).unwrap().transport_trucks.medium = 1;
+        assert!(matches!(
+            query_individual_allowance(&c, &s, &id, QueryAssignment::Submitted),
+            Err(Rejection::Illegal { .. })
+        ));
+        assert!(matches!(
+            query_individual_allowance(&c, &s, &id, QueryAssignment::Trusted),
+            Err(Rejection::Engine(EngineError::Invariant { .. }))
+        ));
+        s.land.units.get_mut(&id).unwrap().trucks.medium = -1;
+        assert!(matches!(
+            query_individual_allowance(&c, &s, &id, QueryAssignment::Submitted),
+            Err(Rejection::Engine(EngineError::Invariant { .. }))
+        ));
+    }
+    /// Cases: land:6.15, land:6.17, land:8.91, land:8.92
+    #[test]
+    fn known_group_minimum_matches_the_unchanged_allowance_algorithm() {
+        let (c, s, id) = setup();
+        let old = allowance(&c, &s, &id).unwrap();
+        let checked = query_allowance(&c, &s, &id).unwrap();
+        assert_eq!(old.cpa, checked.cpa);
+        assert_eq!(old.motorized, checked.motorized);
+        let absent: UnitId = "query-control-missing-member".into();
+        assert!(matches!(
+            query_members_allowance(&c, &s, &[id, absent]),
+            Err(Rejection::Engine(EngineError::Invariant { .. }))
+        ));
+    }
+    /// Cases: land:4.48, land:6.11, airlog:54.2
+    #[test]
+    fn unknown_weapon_is_source_gap_but_light_gun_transport_is_known_prohibited() {
+        let (mut c, mut s, id) = setup();
+        let class_id = c.units.units[&id].class.clone().unwrap();
+        c.units.classes.get_mut(&class_id).unwrap().cpa_fixed = false;
+        c.units.classes.get_mut(&class_id).unwrap().emplaced = false;
+        c.units.units.get_mut(&id).unwrap().immobile = false;
+        s.land.units.get_mut(&id).unwrap().toe =
+            Some(Toe::Weapons(vec![cna_content::units::WeaponPoints {
+                weapon: "source-control-missing-weapon".into(),
+                n: 1,
+            }]));
+        assert!(
+            matches!(query_individual_allowance(&c, &s, &id, QueryAssignment::Trusted),
+            Err(Rejection::Engine(EngineError::Unsupported { case, .. })) if case == "land:4.48")
+        );
+        let gun = s
+            .land
+            .units
+            .keys()
+            .find(|id| class(&c, id).is_some_and(|cl| cl.unit_type == "artillery"))
+            .unwrap()
+            .clone();
+        let u = s.land.units.get_mut(&gun).unwrap();
+        u.trucks = cna_content::units::Trucks {
+            light: 1,
+            medium: 0,
+            heavy: 0,
+        };
+        u.transport_trucks = u.trucks;
+        assert!(matches!(
+            query_individual_allowance(&c, &s, &gun, QueryAssignment::Submitted),
+            Err(Rejection::Illegal { .. })
+        ));
     }
 }

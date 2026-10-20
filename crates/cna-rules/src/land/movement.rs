@@ -203,14 +203,49 @@ fn eligible_base(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId)
         && super::reserve::validate_path(u, 1).is_ok()
         && (state.land.movement.mode != WindowMode::Segment
             || !matches!(
-                content.units.units[id].kind.as_deref(),
+                content
+                    .units
+                    .units
+                    .get(id)
+                    .and_then(|oa| oa.kind.as_deref()),
                 Some("convoy" | "second_line_truck" | "third_line_truck")
             ))
 }
-fn eligible(content: &CnaContent, state: &State, id: &UnitId, seat: SeatId) -> bool {
-    eligible_base(content, state, id, seat)
-        && formation::allowance(content, state, id)
-            .is_some_and(|a| validate_window_move(state, &state.land.units[id], a, 1).is_ok())
+fn eligible(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    seat: SeatId,
+) -> Result<bool, Rejection> {
+    if !eligible_base(content, state, id, seat) {
+        return Ok(false);
+    }
+    // Known immobility precedes unresolved ratings; base availability stays first.
+    // Cases: land:30.17, land:9.21
+    if formation::fixed_ship(content, id) {
+        return Ok(false);
+    }
+    // Match unit_stack's scope: use saved members only while continuing that move.
+    let fixed_member = if continuing(state, id) {
+        state
+            .land
+            .reaction
+            .continuation
+            .as_ref()
+            .unwrap()
+            .members
+            .iter()
+            .any(|member| formation::fixed_ship(content, member))
+    } else {
+        formation::members(content, state, id)
+            .iter()
+            .any(|member| formation::fixed_ship(content, member))
+    };
+    if fixed_member {
+        return Ok(false);
+    }
+    let a = formation::query_allowance(content, state, id)?;
+    Ok(query_candidate(validate_window_move(state, &state.land.units[id], a, 1))?.is_some())
 }
 fn available(content: &CnaContent, state: &State, seat: SeatId) -> Vec<UnitId> {
     let formations = formation::FormationIndex::new(content, state);
@@ -219,6 +254,10 @@ fn available(content: &CnaContent, state: &State, seat: SeatId) -> Vec<UnitId> {
         .units_of(seat.side)
         .filter(|u| {
             eligible_base(content, state, &u.id, seat)
+                && formations
+                    .members(&u.id)
+                    .iter()
+                    .all(|id| !formation::fixed_ship(content, id))
                 && formations
                     .allowance(content, state, &u.id)
                     .is_some_and(|a| {
@@ -332,14 +371,34 @@ fn unit_stack(
     seat: SeatId,
     strict: bool,
 ) -> Result<Vec<UnitId>, Rejection> {
+    // Cases: land:30.17
+    if formation::fixed_ship(content, &order.unit) {
+        return Err(illegal("a fixed ship cannot move (land:30.17)"));
+    }
     if continuing(state, &order.unit) {
         let k = state.land.reaction.continuation.as_ref().unwrap();
         if k.seat != seat || k.with_stack != order.with_stack || k.mover_stopped {
             return Err(illegal("unit cannot continue this move"));
         }
+        if k.members
+            .iter()
+            .any(|id| formation::fixed_ship(content, id))
+        {
+            return Err(illegal("a fixed ship cannot move (land:30.17)"));
+        }
         return Ok(k.members.clone());
     }
-    if !eligible(content, state, &order.unit, seat) {
+    // Screen the selected represented family before eligible queries its rating.
+    // Keep base availability and the earlier continuation checks ahead of this guard.
+    // Cases: land:30.17, land:9.21
+    if eligible_base(content, state, &order.unit, seat)
+        && formation::members(content, state, &order.unit)
+            .iter()
+            .any(|id| formation::fixed_ship(content, id))
+    {
+        return Err(illegal("a fixed ship cannot move (land:30.17)"));
+    }
+    if !eligible(content, state, &order.unit, seat)? {
         return Err(illegal(
             "unit is not available to this seat in this segment",
         ));
@@ -359,7 +418,13 @@ fn unit_stack(
     };
     let mut members = BTreeSet::new();
     for root in &roots {
-        if !eligible(content, state, root, seat) {
+        if formation::members(content, state, root)
+            .iter()
+            .any(|id| formation::fixed_ship(content, id))
+        {
+            return Err(illegal("a fixed ship cannot move (land:30.17)"));
+        }
+        if !eligible(content, state, root, seat)? {
             return Err(illegal("stack contains a unit unavailable to this seat"));
         }
         members.extend(formation::members(content, state, root));
@@ -389,25 +454,28 @@ fn unit_stack(
             .get(&parent)
             .is_some_and(|u| u.location.hex() == Some(&origin))
     {
-        let a = formation::individual_allowance(content, state, &parent)
-            .ok_or_else(|| illegal("parent movement rating is unresolved"))?;
+        let a = formation::query_individual_allowance(
+            content,
+            state,
+            &parent,
+            formation::QueryAssignment::Trusted,
+        )?;
         let limits = logistics::movement_restrictions(content, state, &parent)
             .map_err(|e| activity_error(e, strict))?;
         validate_window_cp(state, &state.land.units[&parent], a, 4, limits)?;
         spend_activity(content, state, &parent, strict)?;
         let own_half = state.land.movement.mode == WindowMode::Segment;
-        capability::charge(state.land.units.get_mut(&parent).unwrap(), a, 4, own_half)?;
-        let a = formation::individual_allowance(content, state, &order.unit)
-            .ok_or_else(|| illegal("movement rating is unresolved"))?;
+        capability::charge_unit(state, &parent, a, 4, own_half)?;
+        let a = formation::query_individual_allowance(
+            content,
+            state,
+            &order.unit,
+            formation::QueryAssignment::Trusted,
+        )?;
         let limits = moving_limits(content, state, &order.unit, strict)?;
         validate_window_cp(state, &state.land.units[&order.unit], a, 4, limits)?;
         spend_activity(content, state, &order.unit, strict)?;
-        capability::charge(
-            state.land.units.get_mut(&order.unit).unwrap(),
-            a,
-            4,
-            own_half,
-        )?;
+        capability::charge_unit(state, &order.unit, a, 4, own_half)?;
         state.land.units.get_mut(&order.unit).unwrap().detached = true;
         state.land.units.get_mut(&order.unit).unwrap().attached_to = None;
         if content.units.units[&order.unit].parent.as_ref() != Some(&parent) {
@@ -544,14 +612,7 @@ fn run_inner(
     let group_allowance = if let Some(group) = planning_group {
         group.allowance
     } else {
-        moving
-            .iter()
-            .map(|id| formation::individual_allowance(content, state, id))
-            .collect::<Option<Vec<_>>>()
-            .ok_or_else(|| illegal("movement rating is unresolved"))?
-            .into_iter()
-            .min_by_key(|a| a.cpa)
-            .ok_or_else(|| illegal("movement rating is unresolved"))?
+        formation::query_members_allowance(content, state, &moving)?
     };
     let limits = if let Some(group) = planning_group {
         std::borrow::Cow::Borrowed(group.limits.as_slice())
@@ -599,12 +660,7 @@ fn run_inner(
             highest = highest.max(cp);
             validate_window_cp(state, &state.land.units[id], group_allowance, cp, *limit)?;
             spend_activity(content, state, id, strict)?;
-            capability::charge(
-                state.land.units.get_mut(id).unwrap(),
-                group_allowance,
-                cp,
-                own_half,
-            )?;
+            capability::charge_unit(state, id, group_allowance, cp, own_half)?;
             if truth {
                 super::engagement::break_off(state, id);
             } else {
@@ -667,9 +723,20 @@ fn run_inner(
             });
         }
         let congested = if costs.iter().any(|c| c.on_network)
-            && moving.iter().any(|id| {
-                formation::individual_allowance(content, state, id).is_some_and(|a| a.motorized)
-            }) {
+            && moving
+                .iter()
+                .map(|id| {
+                    formation::query_individual_allowance(
+                        content,
+                        state,
+                        id,
+                        formation::QueryAssignment::Trusted,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?
+                .iter()
+                .any(|a| a.motorized)
+        {
             if let Some(group) = planning_group {
                 stacking::road_over_limit(
                     group.stacks.road_halves(&to).map_err(Rejection::Engine)?,
@@ -845,12 +912,7 @@ fn run_inner(
             fuel = fuel
                 .checked_add(spent.increment.get())
                 .ok_or_else(|| illegal("fuel expenditure overflow"))?;
-            capability::charge(
-                state.land.units.get_mut(id).unwrap(),
-                group_allowance,
-                cp,
-                own_half,
-            )?;
+            capability::charge_unit(state, id, group_allowance, cp, own_half)?;
         }
         let before_from = truth && state.stack_presence(&from, seat.side);
         let before_to = truth && state.stack_presence(&to, seat.side);
@@ -871,7 +933,11 @@ fn run_inner(
                 )
                 .map_err(Rejection::Engine)?;
             }
-            state.land.units.get_mut(id).unwrap().location = Location::Hex { hex: to.clone() };
+            let destination = Location::Hex { hex: to.clone() };
+            if state.land.units[id].location != destination {
+                super::engineering::record_departure(state, id).map_err(Rejection::Engine)?;
+            }
+            state.land.units.get_mut(id).unwrap().location = destination;
             if costs.iter().all(|c| c.on_network) {
                 state.land.movement.on_road.insert(id.clone());
             } else {
@@ -1498,7 +1564,7 @@ pub fn nonphasing_reachable(
     id: &UnitId,
     strict: bool,
     kind: NonPhasingMove,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     reachable_inner(c, &nonphasing_draft(s, kind), id, strict)
 }
 /// Pure own-information validation; neither the input state nor adjudication dice changes.
@@ -1667,6 +1733,7 @@ impl Step1PlanningHistorySnapshot {
 }
 
 struct PlanningNode {
+    activity: super::engineering::ActivitySnapshot,
     cargo_histories: Step1PlanningHistorySnapshot,
     fuel_accounts: logistics::FuelAccountSnapshot,
     units: Vec<crate::state::LandUnit>,
@@ -1693,6 +1760,7 @@ impl PlanningNode {
             crate::land::movement::step2_query_timing::Bucket::Step2NodeBuild,
         );
         Self {
+            activity: super::engineering::activity_snapshot(state, changed),
             cargo_histories: Step1PlanningHistorySnapshot::capture(state, histories),
             fuel_accounts: logistics::snapshot_fuel_accounts(state, changed),
             units: changed
@@ -1718,7 +1786,8 @@ impl PlanningNode {
             movement: state.land.movement.clone(),
         }
     }
-    fn restore(&self, state: &mut State) {
+    fn restore(&self, state: &mut State) -> Result<(), Rejection> {
+        super::engineering::restore_activity(state, &self.activity).map_err(Rejection::Engine)?;
         #[cfg(test)]
         let _timing = crate::land::movement::step2_query_timing::span(
             crate::land::movement::step2_query_timing::Bucket::NodeRestore,
@@ -1768,12 +1837,27 @@ impl PlanningNode {
             }
         }
         state.land.movement.clone_from(&self.movement);
+        Ok(())
     }
 }
 /// Paths are priced using only the side's disclosed control answers. An unknown future control
 /// is labelled; inspect never asks authoritative enemy strength at a hypothetical destination.
 /// Cases: land:3.62, land:8.13, land:8.17, land:10.6
-pub fn reachable(content: &CnaContent, state: &State, id: &UnitId, strict: bool) -> Vec<Reachable> {
+/// Only a rule-illegal candidate may be omitted; typed stops retain their identity.
+pub(crate) fn query_candidate<T>(result: Result<T, Rejection>) -> Result<Option<T>, Rejection> {
+    match result {
+        Ok(value) => Ok(Some(value)),
+        Err(Rejection::Illegal { .. }) => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+pub fn reachable(
+    content: &CnaContent,
+    state: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Result<Vec<Reachable>, Rejection> {
     #[cfg(test)]
     let _timing = crate::land::movement::step2_query_timing::span(
         crate::land::movement::step2_query_timing::Bucket::ReachableTotal,
@@ -1795,18 +1879,18 @@ fn reachable_inner(
     state: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     let Some(unit) = state.land.units.get(id) else {
-        return vec![];
+        return Ok(vec![]);
     };
     let seat = SeatId::new(unit.side, ownership::seat_for_unit(content, state, id));
     if (state.land.movement.mode == WindowMode::Segment
         && state.cursor.anchor() != "opstage.movement_and_combat.movement")
         || (state.land.movement.mode == WindowMode::Segment
             && state.cursor.phasing(state.turn.player_a) != Some(unit.side))
-        || !eligible(content, state, id, seat)
+        || !eligible(content, state, id, seat)?
     {
-        return vec![];
+        return Ok(vec![]);
     }
     let moving = state
         .land
@@ -1818,23 +1902,18 @@ fn reachable_inner(
             || formation::members(content, state, id),
             |k| k.members.clone(),
         );
-    let Some(allowance) = moving
-        .iter()
-        .filter_map(|m| formation::individual_allowance(content, state, m))
-        .min_by_key(|a| a.cpa)
-    else {
-        return vec![];
-    };
+    let allowance = formation::query_members_allowance(content, state, &moving)?;
     // Every entered edge costs at least one quarter CP. Do not search a graph when even
     // that lower bound is impossible for a represented member or its fuel holdings.
     for member in &moving {
-        if moving_limits(content, state, member, strict)
-            .and_then(|limit| {
+        if query_candidate(
+            moving_limits(content, state, member, strict).and_then(|limit| {
                 validate_window_cp(state, &state.land.units[member], allowance, 1, limit)
-            })
-            .is_err()
+            }),
+        )?
+        .is_none()
         {
-            return vec![];
+            return Ok(vec![]);
         }
         let previous = state
             .logistics
@@ -1847,11 +1926,18 @@ fn reachable_inner(
                     && ledger.segment.cycle == state.cursor.cycle
             })
             .map_or(0, |ledger| ledger.cp_quarters);
-        if previous
-            .checked_add(1)
-            .is_none_or(|next| logistics::plan_segment_fuel(content, state, member, next).is_err())
+        let next = previous.checked_add(1).ok_or_else(|| {
+            Rejection::Engine(EngineError::Invariant {
+                detail: "movement query fuel CP overflow".into(),
+            })
+        })?;
+        if query_candidate(
+            logistics::plan_segment_fuel(content, state, member, next)
+                .map_err(|error| supply_error(error, strict)),
+        )?
+        .is_none()
         {
-            return vec![];
+            return Ok(vec![]);
         }
     }
     let origin = unit.location.hex().unwrap().clone();
@@ -1870,7 +1956,7 @@ fn reachable_inner(
         .filter(|_| continuing(state, id))
         .is_some_and(|k| k.with_stack);
     let mut draft = state.clone();
-    let Ok(members) = unit_stack(
+    let Some(members) = query_candidate(unit_stack(
         content,
         &mut draft,
         &Order {
@@ -1881,15 +1967,18 @@ fn reachable_inner(
         },
         seat,
         strict,
-    ) else {
-        return vec![];
-    };
-    let Ok(limits) = members
-        .iter()
-        .map(|id| moving_limits(content, &draft, id, strict))
-        .collect::<Result<Vec<_>, _>>()
+    ))?
     else {
-        return vec![];
+        return Ok(vec![]);
+    };
+    let Some(limits) = query_candidate(
+        members
+            .iter()
+            .map(|id| moving_limits(content, &draft, id, strict))
+            .collect::<Result<Vec<_>, _>>(),
+    )?
+    else {
+        return Ok(vec![]);
     };
     let base = draft.clone();
     // Immutable pricing prepared after original eligibility/group checks.
@@ -2022,22 +2111,23 @@ fn reachable_inner(
         crate::land::movement::step2_query_timing::count(
             crate::land::movement::step2_query_timing::Counter::FrontierPops,
         );
-        node.restore(&mut draft);
-        if group
-            .members
-            .iter()
-            .zip(&group.limits)
-            .any(|(member, limit)| {
-                validate_window_cp(
-                    &draft,
-                    &draft.land.units[member],
-                    group.allowance,
-                    1,
-                    *limit,
-                )
-                .is_err()
-            })
-        {
+        node.restore(&mut draft)?;
+        let mut blocked = false;
+        for (member, limit) in group.members.iter().zip(&group.limits) {
+            if query_candidate(validate_window_cp(
+                &draft,
+                &draft.land.units[member],
+                group.allowance,
+                1,
+                *limit,
+            ))?
+            .is_none()
+            {
+                blocked = true;
+                break;
+            }
+        }
+        if blocked {
             continue;
         }
         if hex != origin
@@ -2072,12 +2162,14 @@ fn reachable_inner(
                 || best
                     .get(&to.id)
                     .is_some_and(|r| r.cp_quarters <= cost.saturating_add(1))
-                || query_reads.map_costs.terrain(&to.id).is_err()
             {
                 continue;
             }
-            node.restore(&mut draft);
-            if let Ok(mut r) = run_inner(
+            if query_candidate(query_reads.map_costs.terrain(&to.id))?.is_none() {
+                continue;
+            }
+            node.restore(&mut draft)?;
+            if let Some(mut r) = query_candidate(run_inner(
                 content,
                 &mut draft,
                 &Order {
@@ -2093,7 +2185,7 @@ fn reachable_inner(
                 &mut Vec::new(),
                 Some(&group),
                 Some(&query_reads),
-            ) {
+            ))? {
                 #[cfg(test)]
                 crate::land::movement::step2_query_timing::count(
                     crate::land::movement::step2_query_timing::Counter::EdgeSuccess,
@@ -2125,7 +2217,7 @@ fn reachable_inner(
             }
         }
     }
-    best.into_values().filter(|r| r.end_valid).collect()
+    Ok(best.into_values().filter(|r| r.end_valid).collect())
 }
 
 #[cfg(test)]
@@ -2134,6 +2226,7 @@ mod tests;
 
 #[cfg(test)]
 struct LegacyStep1PlanningNode {
+    activity: super::engineering::ActivitySnapshot,
     fuel_accounts: logistics::FuelAccountSnapshot,
     units: Vec<crate::state::LandUnit>,
     unit_supply: Vec<(UnitId, Option<crate::state::UnitSupply>)>,
@@ -2146,6 +2239,7 @@ struct LegacyStep1PlanningNode {
 impl LegacyStep1PlanningNode {
     fn capture(state: &State, changed: &[UnitId], stocks: &[UnitId], dumps: &[String]) -> Self {
         Self {
+            activity: super::engineering::activity_snapshot(state, changed),
             fuel_accounts: logistics::snapshot_fuel_accounts(state, changed),
             units: changed
                 .iter()
@@ -2170,7 +2264,8 @@ impl LegacyStep1PlanningNode {
             movement: state.land.movement.clone(),
         }
     }
-    fn restore(&self, state: &mut State) {
+    fn restore(&self, state: &mut State) -> Result<(), Rejection> {
+        super::engineering::restore_activity(state, &self.activity).map_err(Rejection::Engine)?;
         logistics::restore_fuel_accounts(state, &self.fuel_accounts);
         for unit in &self.units {
             state.land.units.insert(unit.id.clone(), unit.clone());
@@ -2215,6 +2310,7 @@ impl LegacyStep1PlanningNode {
             }
         }
         state.land.movement.clone_from(&self.movement);
+        Ok(())
     }
 }
 #[cfg(test)]
@@ -2223,18 +2319,18 @@ fn reachable_inner_legacy_for_step1(
     state: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     let Some(unit) = state.land.units.get(id) else {
-        return vec![];
+        return Ok(vec![]);
     };
     let seat = SeatId::new(unit.side, ownership::seat_for_unit(content, state, id));
     if (state.land.movement.mode == WindowMode::Segment
         && state.cursor.anchor() != "opstage.movement_and_combat.movement")
         || (state.land.movement.mode == WindowMode::Segment
             && state.cursor.phasing(state.turn.player_a) != Some(unit.side))
-        || !eligible(content, state, id, seat)
+        || !eligible(content, state, id, seat)?
     {
-        return vec![];
+        return Ok(vec![]);
     }
     let moving = state
         .land
@@ -2246,23 +2342,18 @@ fn reachable_inner_legacy_for_step1(
             || formation::members(content, state, id),
             |k| k.members.clone(),
         );
-    let Some(allowance) = moving
-        .iter()
-        .filter_map(|m| formation::individual_allowance(content, state, m))
-        .min_by_key(|a| a.cpa)
-    else {
-        return vec![];
-    };
+    let allowance = formation::query_members_allowance(content, state, &moving)?;
     // Every entered edge costs at least one quarter CP. Do not search a graph when even
     // that lower bound is impossible for a represented member or its fuel holdings.
     for member in &moving {
-        if moving_limits(content, state, member, strict)
-            .and_then(|limit| {
+        if query_candidate(
+            moving_limits(content, state, member, strict).and_then(|limit| {
                 validate_window_cp(state, &state.land.units[member], allowance, 1, limit)
-            })
-            .is_err()
+            }),
+        )?
+        .is_none()
         {
-            return vec![];
+            return Ok(vec![]);
         }
         let previous = state
             .logistics
@@ -2275,11 +2366,18 @@ fn reachable_inner_legacy_for_step1(
                     && ledger.segment.cycle == state.cursor.cycle
             })
             .map_or(0, |ledger| ledger.cp_quarters);
-        if previous
-            .checked_add(1)
-            .is_none_or(|next| logistics::plan_segment_fuel(content, state, member, next).is_err())
+        let next = previous.checked_add(1).ok_or_else(|| {
+            Rejection::Engine(EngineError::Invariant {
+                detail: "movement query fuel CP overflow".into(),
+            })
+        })?;
+        if query_candidate(
+            logistics::plan_segment_fuel(content, state, member, next)
+                .map_err(|error| supply_error(error, strict)),
+        )?
+        .is_none()
         {
-            return vec![];
+            return Ok(vec![]);
         }
     }
     let origin = unit.location.hex().unwrap().clone();
@@ -2291,7 +2389,7 @@ fn reachable_inner_legacy_for_step1(
         changed.push(parent.clone());
     }
     let mut draft = state.clone();
-    let Ok(members) = unit_stack(
+    let Some(members) = query_candidate(unit_stack(
         content,
         &mut draft,
         &Order {
@@ -2308,15 +2406,18 @@ fn reachable_inner_legacy_for_step1(
         },
         seat,
         strict,
-    ) else {
-        return vec![];
-    };
-    let Ok(limits) = members
-        .iter()
-        .map(|id| moving_limits(content, &draft, id, strict))
-        .collect::<Result<Vec<_>, _>>()
+    ))?
     else {
-        return vec![];
+        return Ok(vec![]);
+    };
+    let Some(limits) = query_candidate(
+        members
+            .iter()
+            .map(|id| moving_limits(content, &draft, id, strict))
+            .collect::<Result<Vec<_>, _>>(),
+    )?
+    else {
+        return Ok(vec![]);
     };
     let base = draft.clone();
     let group = PlanningGroup {
@@ -2432,22 +2533,23 @@ fn reachable_inner_legacy_for_step1(
         let Some(node) = frontier.remove(&hex) else {
             continue;
         };
-        node.restore(&mut draft);
-        if group
-            .members
-            .iter()
-            .zip(&group.limits)
-            .any(|(member, limit)| {
-                validate_window_cp(
-                    &draft,
-                    &draft.land.units[member],
-                    group.allowance,
-                    1,
-                    *limit,
-                )
-                .is_err()
-            })
-        {
+        node.restore(&mut draft)?;
+        let mut blocked = false;
+        for (member, limit) in group.members.iter().zip(&group.limits) {
+            if query_candidate(validate_window_cp(
+                &draft,
+                &draft.land.units[member],
+                group.allowance,
+                1,
+                *limit,
+            ))?
+            .is_none()
+            {
+                blocked = true;
+                break;
+            }
+        }
+        if blocked {
             continue;
         }
         if hex != origin
@@ -2478,12 +2580,14 @@ fn reachable_inner_legacy_for_step1(
                 || best
                     .get(&to.id)
                     .is_some_and(|r| r.cp_quarters <= cost.saturating_add(1))
-                || map::terrain(content, &to.id, strict).is_err()
             {
                 continue;
             }
-            node.restore(&mut draft);
-            if let Ok(mut r) = run(
+            if query_candidate(map::terrain(content, &to.id, strict))?.is_none() {
+                continue;
+            }
+            node.restore(&mut draft)?;
+            if let Some(mut r) = query_candidate(run(
                 content,
                 &mut draft,
                 &Order {
@@ -2504,7 +2608,7 @@ fn reachable_inner_legacy_for_step1(
                 false,
                 &mut Vec::new(),
                 Some(&group),
-            ) {
+            ))? {
                 let mut path = prior.as_ref().map_or_else(Vec::new, |p| p.path.clone());
                 path.extend(r.path);
                 r.path = path;
@@ -2528,7 +2632,7 @@ fn reachable_inner_legacy_for_step1(
             }
         }
     }
-    best.into_values().filter(|r| r.end_valid).collect()
+    Ok(best.into_values().filter(|r| r.end_valid).collect())
 }
 #[cfg(test)]
 pub(crate) fn reachable_legacy_for_step1(
@@ -2536,7 +2640,7 @@ pub(crate) fn reachable_legacy_for_step1(
     state: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     if state.land.movement.mode == WindowMode::Segment
         && state
             .land
@@ -2562,7 +2666,7 @@ pub(crate) fn nonphasing_reachable_legacy_for_step1(
     id: &UnitId,
     strict: bool,
     kind: NonPhasingMove,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     reachable_inner_legacy_for_step1(c, &nonphasing_draft(s, kind), id, strict)
 }
 
@@ -2624,14 +2728,7 @@ fn run_reference_for_step2(
     let group_allowance = if let Some(group) = planning_group {
         group.allowance
     } else {
-        moving
-            .iter()
-            .map(|id| formation::individual_allowance(content, state, id))
-            .collect::<Option<Vec<_>>>()
-            .ok_or_else(|| illegal("movement rating is unresolved"))?
-            .into_iter()
-            .min_by_key(|a| a.cpa)
-            .ok_or_else(|| illegal("movement rating is unresolved"))?
+        formation::query_members_allowance(content, state, &moving)?
     };
     let limits = if let Some(group) = planning_group {
         group.limits.clone()
@@ -2669,12 +2766,7 @@ fn run_reference_for_step2(
             highest = highest.max(cp);
             validate_window_cp(state, &state.land.units[id], group_allowance, cp, *limit)?;
             spend_activity(content, state, id, strict)?;
-            capability::charge(
-                state.land.units.get_mut(id).unwrap(),
-                group_allowance,
-                cp,
-                own_half,
-            )?;
+            capability::charge_unit(state, id, group_allowance, cp, own_half)?;
             if truth {
                 super::engagement::break_off(state, id);
             } else {
@@ -2719,9 +2811,20 @@ fn run_reference_for_step2(
             )?);
         }
         let congested = if costs.iter().any(|c| c.on_network)
-            && moving.iter().any(|id| {
-                formation::individual_allowance(content, state, id).is_some_and(|a| a.motorized)
-            }) {
+            && moving
+                .iter()
+                .map(|id| {
+                    formation::query_individual_allowance(
+                        content,
+                        state,
+                        id,
+                        formation::QueryAssignment::Trusted,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?
+                .iter()
+                .any(|a| a.motorized)
+        {
             if let Some(group) = planning_group {
                 stacking::road_over_limit(
                     group.stacks.road_halves(&to).map_err(Rejection::Engine)?,
@@ -2858,12 +2961,7 @@ fn run_reference_for_step2(
             fuel = fuel
                 .checked_add(spent.increment.get())
                 .ok_or_else(|| illegal("fuel expenditure overflow"))?;
-            capability::charge(
-                state.land.units.get_mut(id).unwrap(),
-                group_allowance,
-                cp,
-                own_half,
-            )?;
+            capability::charge_unit(state, id, group_allowance, cp, own_half)?;
         }
         let before_from = state.stack_presence(&from, seat.side);
         let before_to = state.stack_presence(&to, seat.side);
@@ -2884,7 +2982,11 @@ fn run_reference_for_step2(
                 )
                 .map_err(Rejection::Engine)?;
             }
-            state.land.units.get_mut(id).unwrap().location = Location::Hex { hex: to.clone() };
+            let destination = Location::Hex { hex: to.clone() };
+            if state.land.units[id].location != destination {
+                super::engineering::record_departure(state, id).map_err(Rejection::Engine)?;
+            }
+            state.land.units.get_mut(id).unwrap().location = destination;
             if costs.iter().all(|c| c.on_network) {
                 state.land.movement.on_road.insert(id.clone());
             } else {
@@ -3070,18 +3172,18 @@ fn reachable_inner_reference_for_step2(
     state: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     let Some(unit) = state.land.units.get(id) else {
-        return vec![];
+        return Ok(vec![]);
     };
     let seat = SeatId::new(unit.side, ownership::seat_for_unit(content, state, id));
     if (state.land.movement.mode == WindowMode::Segment
         && state.cursor.anchor() != "opstage.movement_and_combat.movement")
         || (state.land.movement.mode == WindowMode::Segment
             && state.cursor.phasing(state.turn.player_a) != Some(unit.side))
-        || !eligible(content, state, id, seat)
+        || !eligible(content, state, id, seat)?
     {
-        return vec![];
+        return Ok(vec![]);
     }
     let moving = state
         .land
@@ -3093,23 +3195,18 @@ fn reachable_inner_reference_for_step2(
             || formation::members(content, state, id),
             |k| k.members.clone(),
         );
-    let Some(allowance) = moving
-        .iter()
-        .filter_map(|m| formation::individual_allowance(content, state, m))
-        .min_by_key(|a| a.cpa)
-    else {
-        return vec![];
-    };
+    let allowance = formation::query_members_allowance(content, state, &moving)?;
     // Every entered edge costs at least one quarter CP. Do not search a graph when even
     // that lower bound is impossible for a represented member or its fuel holdings.
     for member in &moving {
-        if moving_limits(content, state, member, strict)
-            .and_then(|limit| {
+        if query_candidate(
+            moving_limits(content, state, member, strict).and_then(|limit| {
                 validate_window_cp(state, &state.land.units[member], allowance, 1, limit)
-            })
-            .is_err()
+            }),
+        )?
+        .is_none()
         {
-            return vec![];
+            return Ok(vec![]);
         }
         let previous = state
             .logistics
@@ -3122,11 +3219,18 @@ fn reachable_inner_reference_for_step2(
                     && ledger.segment.cycle == state.cursor.cycle
             })
             .map_or(0, |ledger| ledger.cp_quarters);
-        if previous
-            .checked_add(1)
-            .is_none_or(|next| logistics::plan_segment_fuel(content, state, member, next).is_err())
+        let next = previous.checked_add(1).ok_or_else(|| {
+            Rejection::Engine(EngineError::Invariant {
+                detail: "movement query fuel CP overflow".into(),
+            })
+        })?;
+        if query_candidate(
+            logistics::plan_segment_fuel(content, state, member, next)
+                .map_err(|error| supply_error(error, strict)),
+        )?
+        .is_none()
         {
-            return vec![];
+            return Ok(vec![]);
         }
     }
     let origin = unit.location.hex().unwrap().clone();
@@ -3138,7 +3242,7 @@ fn reachable_inner_reference_for_step2(
         changed.push(parent.clone());
     }
     let mut draft = state.clone();
-    let Ok(members) = unit_stack(
+    let Some(members) = query_candidate(unit_stack(
         content,
         &mut draft,
         &Order {
@@ -3155,15 +3259,18 @@ fn reachable_inner_reference_for_step2(
         },
         seat,
         strict,
-    ) else {
-        return vec![];
-    };
-    let Ok(limits) = members
-        .iter()
-        .map(|id| moving_limits(content, &draft, id, strict))
-        .collect::<Result<Vec<_>, _>>()
+    ))?
     else {
-        return vec![];
+        return Ok(vec![]);
+    };
+    let Some(limits) = query_candidate(
+        members
+            .iter()
+            .map(|id| moving_limits(content, &draft, id, strict))
+            .collect::<Result<Vec<_>, _>>(),
+    )?
+    else {
+        return Ok(vec![]);
     };
     let base = draft.clone();
     // Immutable pricing prepared after original eligibility/group checks.
@@ -3291,22 +3398,23 @@ fn reachable_inner_reference_for_step2(
         let Some(node) = frontier.remove(&hex) else {
             continue;
         };
-        node.restore(&mut draft);
-        if group
-            .members
-            .iter()
-            .zip(&group.limits)
-            .any(|(member, limit)| {
-                validate_window_cp(
-                    &draft,
-                    &draft.land.units[member],
-                    group.allowance,
-                    1,
-                    *limit,
-                )
-                .is_err()
-            })
-        {
+        node.restore(&mut draft)?;
+        let mut blocked = false;
+        for (member, limit) in group.members.iter().zip(&group.limits) {
+            if query_candidate(validate_window_cp(
+                &draft,
+                &draft.land.units[member],
+                group.allowance,
+                1,
+                *limit,
+            ))?
+            .is_none()
+            {
+                blocked = true;
+                break;
+            }
+        }
+        if blocked {
             continue;
         }
         if hex != origin
@@ -3337,12 +3445,14 @@ fn reachable_inner_reference_for_step2(
                 || best
                     .get(&to.id)
                     .is_some_and(|r| r.cp_quarters <= cost.saturating_add(1))
-                || map::terrain(content, &to.id, strict).is_err()
             {
                 continue;
             }
-            node.restore(&mut draft);
-            if let Ok(mut r) = run_reference_for_step2(
+            if query_candidate(map::terrain(content, &to.id, strict))?.is_none() {
+                continue;
+            }
+            node.restore(&mut draft)?;
+            if let Some(mut r) = query_candidate(run_reference_for_step2(
                 content,
                 &mut draft,
                 &Order {
@@ -3363,7 +3473,7 @@ fn reachable_inner_reference_for_step2(
                 false,
                 &mut Vec::new(),
                 Some(&group),
-            ) {
+            ))? {
                 let mut path = prior.as_ref().map_or_else(Vec::new, |p| p.path.clone());
                 path.extend(r.path);
                 r.path = path;
@@ -3387,7 +3497,7 @@ fn reachable_inner_reference_for_step2(
             }
         }
     }
-    best.into_values().filter(|r| r.end_valid).collect()
+    Ok(best.into_values().filter(|r| r.end_valid).collect())
 }
 
 #[cfg(test)]
@@ -3396,7 +3506,7 @@ pub(crate) fn reachable_reference_for_step2(
     state: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     if state.land.movement.mode == WindowMode::Segment
         && state
             .land
@@ -3423,7 +3533,7 @@ pub(crate) fn nonphasing_reachable_reference_for_step2(
     id: &UnitId,
     strict: bool,
     kind: NonPhasingMove,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     reachable_inner_reference_for_step2(c, &nonphasing_draft(s, kind), id, strict)
 }
 

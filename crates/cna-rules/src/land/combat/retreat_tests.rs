@@ -41,25 +41,37 @@ impl Overlay {
         }
         // A test overlay on the real coordinate grid; no publication movement data are inferred.
         let cells: BTreeSet<_> = (0..=38).map(|n| HexId::new(format!("C40{n:02}"))).collect();
+        // Synthetic sea closes this corridor; it asserts no published terrain facts.
+        let perimeter: BTreeSet<_> = cells
+            .iter()
+            .flat_map(|hex| content.map.neighbors(hex))
+            .filter(|h| !cells.contains(&h.id))
+            .map(|h| h.id.clone())
+            .collect();
         let mut rows = String::from("hex_id,section,q,r,terrain,flags\n");
         for h in content.map.iter() {
             let terrain = if cells.contains(&h.id) {
                 if desert { "desert" } else { "clear" }
+            } else if perimeter.contains(&h.id) {
+                "sea"
             } else {
                 h.terrain.as_deref().unwrap_or("unclassified")
             };
+            let flags = if perimeter.contains(&h.id) {
+                "sea".to_owned()
+            } else {
+                h.flags.join("|")
+            };
             rows += &format!(
                 "{},{},{},{},{},{}\n",
-                h.id,
-                h.section,
-                h.axial.q,
-                h.axial.r,
-                terrain,
-                h.flags.join("|")
+                h.id, h.section, h.axial.q, h.axial.r, terrain, flags
             );
         }
         std::fs::write(dir.join("hexes.csv"), rows).unwrap();
         let mut coverage = String::from("layer,hex_id,neighbour_id,src,review_batch\n");
+        for hex in &perimeter {
+            coverage += &format!("terrain,{hex},,land:8.37,test\n");
+        }
         let mut lines = String::from("from_hex,to_hex,kind,src,review_batch\n");
         let mut sides =
             String::from("hex_id,direction,neighbour_id,feature,high_side,src,review_batch\n");
@@ -406,8 +418,8 @@ fn hidden_combat_members_do_not_grant_their_hq_a_combat_retreat_allowance() {
         &command(&c, &a, seat(), plan(&["C4021", "C4022", "C4023"])),
         Side::Commonwealth,
     );
-    let a_paths = reachable(&c, &a.state, &LEG.into(), false);
-    let b_paths = reachable(&c, &b.state, &LEG.into(), false);
+    let a_paths = reachable(&c, &a.state, &LEG.into(), false).unwrap();
+    let b_paths = reachable(&c, &b.state, &LEG.into(), false).unwrap();
     assert_eq!(
         serde_json::to_value(a_paths).unwrap(),
         serde_json::to_value(b_paths).unwrap()
@@ -455,7 +467,7 @@ fn visible_printed_combat_counter_grants_more_than_four_cp_but_hq_does_not() {
             combat
         );
         let before = serde_json::to_value(&game).unwrap();
-        let paths = reachable(&c, &game.state, &LEG.into(), false);
+        let paths = reachable(&c, &game.state, &LEG.into(), false).unwrap();
         assert_eq!(
             paths
                 .iter()
@@ -606,7 +618,7 @@ fn pure_validator_and_multi_seed_baseline_leave_adjudication_rng_untouched() {
         .find(|r| r.seat == seat())
         .unwrap();
     for seed in 0..32 {
-        let a = random_orders(&c, &g.state, &r, &mut CampaignRng::from_seed([seed; 32]));
+        let a = random_orders(&c, &g.state, &r, &mut CampaignRng::from_seed([seed; 32])).unwrap();
         let t = evaluate(&Cna::dev(), &c, &g, &command(&c, &g, seat(), a)).unwrap();
         assert_eq!(t.game.rng, g.rng);
     }
@@ -652,7 +664,7 @@ fn owner_plan_is_hidden_during_response_and_role_submission_order_does_not_chang
 fn disclosed_hostile_destination_allows_one_hex_stop_and_reachable_respects_cap() {
     let (c, g, _o) = fixture();
     let mut g = open_game(&c, &g);
-    for path in reachable(&c, &g.state, &LEG.into(), false) {
+    for path in reachable(&c, &g.state, &LEG.into(), false).unwrap() {
         assert!(path.cp_quarters <= 16 || path.path.len() == 1);
     }
     g.state.land.reaction.controls.insert("C4021".into(), true);
@@ -764,6 +776,7 @@ fn nonadjacent_cap_uses_each_attached_or_stacked_members_preview_delta() {
         if !with_stack {
             assert!(
                 !reachable(&c, &g.state, &ROOT.into(), false)
+                    .unwrap()
                     .iter()
                     .any(|p| p.path == order.path)
             );
@@ -1126,8 +1139,8 @@ fn step2_retreat_current_base_catalog_and_three_views_are_byte_exact() {
     for strict in [false, true] {
         let before = serde_json::to_vec(&game.state).unwrap();
         let rng = game.rng.clone();
-        let old = reachable_reference_for_step2(&c, &game.state, &id, strict);
-        let new = reachable(&c, &game.state, &id, strict);
+        let old = reachable_reference_for_step2(&c, &game.state, &id, strict).unwrap();
+        let new = reachable(&c, &game.state, &id, strict).unwrap();
         assert!(!old.is_empty(), "Step2 retreat reference witness missing");
         assert!(
             serde_json::to_vec(&old).unwrap() == serde_json::to_vec(&new).unwrap(),
@@ -1175,5 +1188,59 @@ fn step2_retreat_current_base_catalog_and_three_views_are_byte_exact() {
             "Step2 retreat State changed"
         );
         assert!(game.rng == rng, "Step2 retreat RNG changed");
+    }
+}
+
+/// Cases: land:30.17, land:13.21, land:13.23, land:3.6
+#[test]
+fn fixed_ship_rba_policy_has_no_move_and_keeps_real_source_errors_typed() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    let (mut c, mut game, _overlay) = fixture();
+    game.state.land.units.get_mut(&LEG.into()).unwrap().location = Location::Eliminated;
+    game.state.cursor.half = Some(Half::B); // Commonwealth phasing; Axis owns the ship.
+    place(&mut game.state, SHIP, "C4020"); // Synthetic location, sourced ship identity.
+    let opened = open_game(&c, &game);
+    let id: UnitId = SHIP.into();
+    let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &opened.state, &id));
+    assert!(formation::fixed_ship(&c, &id));
+    assert!(c.units.units[&id].class.is_none());
+    assert!(!ids(&c, &opened.state, owner).contains(&id));
+    assert_eq!(Cna::dev().pending(&c, &opened.state).len(), 3);
+    let request = Cna::dev()
+        .pending(&c, &opened.state)
+        .into_iter()
+        .find(|r| r.kind == KIND && r.seat == owner)
+        .unwrap();
+    let before = serde_json::to_vec(&opened).unwrap();
+    let mut chooser = CampaignRng::from_seed([71; 32]);
+    assert_eq!(
+        random_orders(&c, &opened.state, &request, &mut chooser),
+        Ok(json!([]))
+    );
+    assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
+    let bad = command(&c, &opened, owner, json!([{"unit":SHIP,"path":["C4021"]}]));
+    assert!(matches!(
+        evaluate(&Cna::dev(), &c, &opened, &bad),
+        Err(Rejection::Illegal { .. })
+    ));
+    assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
+    let answered = answer(&c, &opened, owner, json!([]));
+    assert_eq!(answered.rng, opened.rng);
+    assert_eq!(
+        serde_json::to_vec(&answered.state.land.units[&id]).unwrap(),
+        serde_json::to_vec(&opened.state.land.units[&id]).unwrap(),
+    );
+    // A different unknown is not a fixed ship and gets no new DEV error exemption.
+    c.units.units.get_mut(&id).unwrap().kind = None;
+    let expected = Rejection::Engine(EngineError::Unsupported {
+        case: "land:4.46".into(),
+        detail: "movement class is not identified in source data".into(),
+    });
+    for strict in [false, true] {
+        assert_eq!(
+            reachable(&c, &opened.state, &id, strict).err(),
+            Some(expected.clone())
+        );
+        assert_eq!(serde_json::to_vec(&opened).unwrap(), before);
     }
 }

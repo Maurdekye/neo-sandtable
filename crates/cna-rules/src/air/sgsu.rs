@@ -1,5 +1,7 @@
 //! Actual squadron ground-service units; Malta roster groups are not SGSUs.
 
+pub mod activity;
+
 use std::collections::BTreeMap;
 
 use cna_core::engine::EngineError;

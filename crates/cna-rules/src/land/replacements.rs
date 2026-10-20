@@ -1,6 +1,7 @@
 //! Finite determined production, separate from whole-unit schedules and repair lots.
-//! Slice (a) owns planning/distribution/arrival only. Training, absorption,
-//! self-motion/carriage and Axis shipping remain separately implemented slices.
+//! Slice (a) owns planning/distribution/arrival; slice (b) owns recipient commands,
+//! instruction candidates and cohex absorption. Self-motion/carriage and Axis shipping
+//! remain separate slices. Broader unit-morale/organization guards are retained.
 //! Cases: land:20.21, land:20.23, land:20.61, land:20.66, land:20.72, land:20.74
 
 pub(crate) mod receipts;
@@ -283,6 +284,33 @@ pub enum ReplacementPlan {
     Schedule(SchedulePlan),
     Distribution(DistributionPlan),
     Arrival(ArrivalPlan),
+    Training(TrainingPlan),
+    Allocation(AllocationPlan),
+}
+
+/// Recipient-owned selections; no trusted duration, eligibility or cost in actor data.
+/// Cases: land:17.33, land:20.43
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TrainingPlan {
+    pub counters: Vec<String>,
+}
+
+/// Counts are replacement points paid, not an actor assertion of resulting TOE.
+/// Cases: land:20.3, land:20.41, land:20.48, land:20.49
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AllocationPlan {
+    pub uses: Vec<AllocationUse>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AllocationUse {
+    pub counter: String,
+    pub recipient: UnitId,
+    pub points: i32,
+    pub conversion: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -632,12 +660,19 @@ mod arrival_tests;
 #[cfg(test)]
 mod tests;
 
+mod allocation;
 mod arrival;
 mod scheduling;
+mod training;
+#[cfg(test)]
+mod training_tests;
+mod unit_windows;
 mod windows;
 pub(crate) use arrival::{
     ARRIVAL, answer_arrival, arrivals_complete, enter_arrival, finish_arrivals,
 };
+pub(crate) use training::{finish_training_stage, invalidate_training};
+pub(crate) use unit_windows::{ALLOCATION, TRAINING, answer_unit, enter_units, finish_units};
 pub(crate) use windows::{
     DISTRIBUTION, SCHEDULE, answer, enter_schedule, finish_planning, planning_complete,
 };

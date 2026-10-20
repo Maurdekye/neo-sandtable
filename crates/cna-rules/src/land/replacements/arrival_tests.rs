@@ -937,6 +937,23 @@ fn layforce_uses_exact_commando_duration_and_sas_refuses_unverified_training() {
     let mut accepted = state.clone();
     accept(&mut accepted, &plan);
     arrival::finish(&content, &mut accepted, &prepared).unwrap();
+    let expected_candidates = training::prepare(
+        &content,
+        &accepted,
+        SeatId::new(
+            Side::Commonwealth,
+            crate::ownership::seat_for_unit(&content, &accepted, &layforce),
+        ),
+        &TrainingPlan {
+            counters: vec![order.clone()],
+        },
+    )
+    .expect("Layforce arrival must have its actual qualified training witness");
+    let [(expected_order, expected_candidate)] = expected_candidates.as_slice() else {
+        panic!("Layforce arrival must prepare exactly its one arrived counter")
+    };
+    assert_eq!(expected_order, &order);
+    assert!(!expected_candidate.interrupted);
     let Training::Training {
         required_stages,
         completed,
@@ -955,7 +972,11 @@ fn layforce_uses_exact_commando_duration_and_sas_refuses_unverified_training() {
             .op_stages(TrainingSubject::Commando)
     );
     assert_eq!(*completed, 0);
-    assert!(candidate.is_none() && last_counted.is_none());
+    assert_eq!(
+        serde_json::to_vec(candidate).unwrap(),
+        serde_json::to_vec(&Some(expected_candidate)).unwrap()
+    );
+    assert!(last_counted.is_none());
     side_mut(&mut state, Side::Commonwealth)
         .unwrap()
         .cw_arrival_limits

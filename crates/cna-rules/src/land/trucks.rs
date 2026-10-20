@@ -50,6 +50,16 @@ fn supply(error: SupplyError, strict: bool) -> Rejection {
         _ => illegal("truck division exceeds its own trucks, cargo or capacity"),
     }
 }
+// Used only after caller family/endpoints and physical cohort quantities are established.
+// Invalid in these two history transfers is not an unvalidated actor allocation.
+fn trusted_transfer_supply(error: SupplyError, strict: bool) -> Rejection {
+    match error {
+        SupplyError::Invalid => formation::query_invariant(
+            "invalid trusted division water/fuel history or history arithmetic",
+        ),
+        other => supply(other, strict),
+    }
+}
 fn arithmetic() -> Rejection {
     illegal("invalid truck division quantities")
 }
@@ -134,10 +144,10 @@ fn apply_transfer(
         return Err(arithmetic());
     }
     logistics::transfer_activity_water_credit(c, draft, &t.from, &t.to, selected)
-        .map_err(|e| supply(e, strict))?;
+        .map_err(|e| trusted_transfer_supply(e, strict))?;
     let moved =
         logistics::transfer_selected_segment_fuel_cohorts(draft, &t.from, &t.to, &t.cohorts)
-            .map_err(|e| supply(e, strict))?;
+            .map_err(|e| trusted_transfer_supply(e, strict))?;
     breakdown::cohorts::inherit(draft, &moved).map_err(Rejection::Engine)?;
     let mut a = draft.land.units[&t.from].trucks;
     let mut b = draft.land.units[&t.to].trucks;
@@ -227,6 +237,25 @@ pub fn preview_reaction_division(
         return Err(illegal("reaction trucks must be with their parent"));
     }
     let family: BTreeSet<_> = family(c, s, reactor).into_iter().collect();
+    for member in &family {
+        formation::query_individual_allowance(c, s, member, formation::QueryAssignment::Trusted)?;
+        if let Some(stock) = s.logistics.unit_supply.get(member)
+            && [
+                stock.carried.ammo,
+                stock.carried.fuel,
+                stock.carried.stores,
+                stock.carried.water,
+                stock.tank_fuel.get(),
+                stock.activity_water.get(),
+            ]
+            .into_iter()
+            .any(|n| n < 0)
+        {
+            return Err(formation::query_invariant(
+                "negative trusted division stock",
+            ));
+        }
+    }
     let mut allocations = BTreeMap::new();
     for a in &division.allocations {
         if !family.contains(&a.unit) || allocations.insert(a.unit.clone(), a).is_some() {
@@ -279,9 +308,12 @@ pub fn preview_reaction_division(
             &a.packing,
         )
         .map_err(|e| supply(e, strict))?;
-        if formation::individual_allowance(c, &draft, &id).is_none() {
-            return Err(illegal("transport assignment is unresolved"));
-        }
+        formation::query_individual_allowance(
+            c,
+            &draft,
+            &id,
+            formation::QueryAssignment::Submitted,
+        )?;
         let capacity = logistics::fuel_capacity(c, &draft, &id).map_err(|e| supply(e, strict))?;
         if stock.tank_fuel.get() < 0 || stock.tank_fuel.get() > capacity.get() {
             return Err(illegal(

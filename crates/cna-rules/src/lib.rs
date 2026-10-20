@@ -187,25 +187,43 @@ impl Cna {
                 sync.point(content, state, cx);
                 if state.cursor.block == seq::Block::OpStage && state.cursor.index == 0 {
                     land::engineering::open_stage(state);
+                    let period = air::sgsu::activity::cursor_stage(state)?;
+                    air::sgsu::activity::open_sgsu_stage(content, state, period)?;
                 }
                 state.cursor.entered = true;
                 cx.emit(EngineEvent::public(GameEvent::PhaseChanged {
                     clock: view::wire_clock(content, state),
                 }));
                 self.enter_step(content, state, cx)?;
+                land::replacements::invalidate_training(content, state)?;
                 land::engagement::reconcile(content, state);
                 continue;
             }
             // Entered and nothing left to decide: let the step resolve what its answers closed,
             // which may open further decisions; otherwise the step is complete.
             self.finish_step(content, state, cx)?;
+            land::replacements::invalidate_training(content, state)?;
             land::engagement::reconcile(content, state);
             if !state.decisions.pending.is_empty() {
                 continue;
             }
             let new_op_stage = state.cursor.block == seq::Block::PlayerHalf
-                && state.cursor.index + 1 == seq::PLAYER_HALF.len()
+                && state.cursor.index.checked_add(1) == Some(seq::PLAYER_HALF.len())
                 && state.cursor.half == Some(seq::Half::B);
+            if new_op_stage {
+                land::replacements::finish_training_stage(content, state)?;
+                let old = air::sgsu::SgsuOpStage {
+                    game_turn: state.cursor.game_turn,
+                    op_stage: state
+                        .cursor
+                        .op_stage
+                        .ok_or_else(|| EngineError::Invariant {
+                            detail: "old-stage boundary has no Operations Stage".into(),
+                        })?,
+                };
+                air::sgsu::activity::capture_sgsu_stage(content, state, old)?;
+                land::engineering::close_stage(state)?;
+            }
             if state.cursor.advance(&content.bounds) {
                 state.turn.initiative = None;
             }
@@ -213,6 +231,13 @@ impl Cna {
                 state.turn.player_a = None;
                 land::capability::finish_opstage(state);
                 land::engineering::open_stage(state);
+                if state.cursor.block == seq::Block::OpStage
+                    && state.cursor.index == 0
+                    && !state.cursor.entered
+                {
+                    let period = air::sgsu::activity::cursor_stage(state)?;
+                    air::sgsu::activity::open_sgsu_stage(content, state, period)?;
+                }
             }
         }
         Err(EngineError::Invariant {
@@ -261,6 +286,7 @@ impl Cna {
         })?;
         state.decisions.pending.remove(idx);
         let summary = self.respond_to(content, state, &pending, &response.action, cx)?;
+        land::replacements::invalidate_training(content, state)?;
         land::breakdown::window::park(state, None);
         cx.emit(EngineEvent::new(
             Audience::Seat(pending.seat),

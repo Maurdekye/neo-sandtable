@@ -194,8 +194,30 @@ pub async fn movement_demo(root: &Path, repo: &Path, mut config: LaunchConfig) -
                     if pending.iter().any(|p| p.kind == "cna.movement.orders") {
                         return demo.handle.pause(true).await.map_err(|e| e.to_string());
                     }
-                    if !pending.is_empty() {
-                        return Err("fixture seat opened a different window before movement".into());
+                    if let Some(request) = pending.first() {
+                        if pending.iter().any(|p| {
+                            !matches!(
+                                p.kind.as_str(),
+                                "cna.replacements.training" | "cna.replacements.allocation"
+                            ) || p.space.pass.is_none()
+                        }) {
+                            return Err(
+                                "fixture seat opened a different window before movement".into()
+                            );
+                        }
+                        let response = answer(
+                            request,
+                            demo.handle.seat(request.seat).binding.controller_epoch,
+                            Mode::PassWhenPossible,
+                            0,
+                            &NoCandidates,
+                        )
+                        .map_err(|e| e.to_string())?;
+                        demo.handle
+                            .submit(response)
+                            .await
+                            .map_err(|e| e.to_string())?;
+                        continue;
                     }
                     if !matches!(demo.handle.status(), CampaignStatus::Running) {
                         return Err(format!(

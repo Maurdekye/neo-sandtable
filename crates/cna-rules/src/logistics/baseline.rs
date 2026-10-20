@@ -1082,7 +1082,7 @@ mod tests {
             let action = if let Some(a) = logistics_orders(c, &g.state, &request, &mut controller) {
                 a
             } else if request.kind == crate::land::movement::KIND {
-                crate::baseline::random_orders(c, &g.state, &request, &mut controller)
+                crate::baseline::random_orders(c, &g.state, &request, &mut controller).unwrap()
             } else if request.space.pass.is_some() {
                 Value::Null
             } else {

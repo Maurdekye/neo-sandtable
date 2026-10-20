@@ -43,6 +43,8 @@ pub enum Mode {
 }
 
 fn sample(rng: &mut ChaCha8Rng, count: u128) -> Result<u64, Error> {
+    #[cfg(test)]
+    replacement_sampler_controls::observe(replacement_sampler_controls::Phase::Sample(count), rng);
     if count == 0 || count > (1u128 << 64) {
         return Err(Error::Invalid("empty or invalid action domain".into()));
     }
@@ -68,6 +70,11 @@ struct Generator<'a> {
 }
 impl Generator<'_> {
     fn action(&mut self, schema: &ActionSchema, depth: u32) -> Result<Value, Error> {
+        #[cfg(test)]
+        replacement_sampler_controls::observe(
+            replacement_sampler_controls::Phase::Generate,
+            &self.rng,
+        );
         if depth > 32 || self.nodes_left == 0 {
             return Err(Error::Invalid("action generation budget exhausted".into()));
         }
@@ -153,6 +160,11 @@ impl ResourcePreview {
     }
 
     fn action(&mut self, schema: &ActionSchema, depth: u32) -> Result<(), PreviewStop> {
+        #[cfg(test)]
+        replacement_sampler_controls::observe(
+            replacement_sampler_controls::Phase::Preview,
+            &self.rng,
+        );
         if depth > 32 || self.nodes_left == 0 {
             return Err(PreviewStop::Budget);
         }
@@ -232,6 +244,11 @@ pub fn answer(
         candidates,
         attempt,
     };
+    #[cfg(test)]
+    replacement_sampler_controls::observe(
+        replacement_sampler_controls::Phase::Begin,
+        &generator.rng,
+    );
     let unavailable = unavailable_domain(request, candidates);
     if unavailable && request.space.pass.is_none() {
         return Err(Error::Invalid(format!(
@@ -239,10 +256,20 @@ pub fn answer(
             request.kind
         )));
     }
+    let empty_replacements_choice = matches!(
+        request.kind.as_str(),
+        "cna.replacements.training" | "cna.replacements.allocation"
+    ) && matches!(
+        &request.space.schema,
+        ActionSchema::Choice { options } if options.is_empty()
+    );
     // A declared pass is this baseline's policy for an unavailable domain. It is
     // selected before generation, never substituted after an execution failure.
     let pass = request.space.pass.is_some()
-        && (unavailable || mode == Mode::PassWhenPossible || sample(&mut generator.rng, 5)? == 0);
+        && (empty_replacements_choice
+            || unavailable
+            || mode == Mode::PassWhenPossible
+            || sample(&mut generator.rng, 5)? == 0);
     let budget_unavailable = !pass
         && ResourcePreview {
             rng: generator.rng.clone(),
@@ -262,6 +289,8 @@ pub fn answer(
     } else {
         generator.action(&request.space.schema, 0)?
     };
+    #[cfg(test)]
+    replacement_sampler_controls::observe(replacement_sampler_controls::Phase::End, &generator.rng);
     Ok(DecisionResponse {
         decision_id: request.id.clone(),
         seat: request.seat,
@@ -358,6 +387,10 @@ impl<R: Ruleset> Campaign<R> {
 #[cfg(test)]
 #[path = "scripted_policy_tests.rs"]
 mod policy_tests;
+
+#[cfg(test)]
+#[path = "replacement_sampler_controls.rs"]
+mod replacement_sampler_controls;
 
 #[cfg(test)]
 mod tests {

@@ -87,7 +87,7 @@ pub(crate) type ActionPolicy<R> = Box<
             &<R as Ruleset>::State,
             &DecisionRequest,
             u64,
-        ) -> Result<Option<Value>, EngineError>
+        ) -> Result<Option<Value>, Rejection>
         + Send,
 >;
 
@@ -691,16 +691,20 @@ fn auto_step_inner<R: Ruleset>(
     }
     campaign.step(candidates)
 }
-fn checked_policy_result<R: Ruleset, T>(
+fn checked_policy_result<R: Ruleset, T, E>(
     campaign: &mut Campaign<R>,
-    result: Result<T, EngineError>,
-) -> Result<T, Error> {
-    match result {
+    result: Result<T, E>,
+) -> Result<T, Error>
+where
+    E: Into<Rejection>,
+{
+    match result.map_err(Into::into) {
         Ok(action) => Ok(action),
-        Err(error) => {
+        Err(Rejection::Engine(error)) => {
             campaign.stop_engine(&error)?;
-            Err(Rejection::Engine(error).into())
+            Err(Error::Rejected(Rejection::Engine(error)))
         }
+        Err(error) => Err(Error::Rejected(error)),
     }
 }
 fn apply_baseline<R: Ruleset>(

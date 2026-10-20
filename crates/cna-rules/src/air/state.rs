@@ -65,6 +65,11 @@ pub struct AirRuntime {
     pub(crate) site_incarnation_serial: u64,
     pub facilities: BTreeMap<super::facilities::FacilityId, super::facilities::FacilityState>,
     pub sgsus: BTreeMap<super::sgsu::SgsuId, super::sgsu::SgsuState>,
+    #[serde(
+        default,
+        skip_serializing_if = "super::sgsu::activity::SgsuActivityState::is_default"
+    )]
+    pub(crate) sgsu_activity: super::sgsu::activity::SgsuActivityState,
     pub designation: super::designation::DesignationState,
     pub tactical: super::missions::TacticalState,
     #[serde(default)]

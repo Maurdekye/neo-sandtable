@@ -72,6 +72,28 @@ pub fn charge(
     Ok(())
 }
 
+/// Atomic selected-unit charge with successful gross Engineering activity.
+/// Cases: land:6.2, land:24.12, land:23.22, land:26.13
+pub fn charge_unit(
+    state: &mut State,
+    id: &cna_core::ids::UnitId,
+    allowance: Allowance,
+    quarters: i32,
+    voluntary: bool,
+) -> Result<(), Rejection> {
+    let mut unit = state.land.units.get(id).cloned().ok_or_else(|| {
+        Rejection::Engine(cna_core::engine::EngineError::Invariant {
+            detail: "engineering charge references a missing trusted unit".into(),
+        })
+    })?;
+    charge(&mut unit, allowance, quarters, voluntary)?;
+    if quarters > 0 {
+        super::engineering::record_cp(state, id, quarters).map_err(Rejection::Engine)?;
+    }
+    state.land.units.insert(id.clone(), unit);
+    Ok(())
+}
+
 /// Idle units recover five cohesion, capped at zero. CP never carries into the next OpStage.
 /// Training and rail travel disqualify idle recovery even when no CP was charged.
 /// Cases: land:6.16, land:6.23, land:6.24, land:8.73, land:15.81

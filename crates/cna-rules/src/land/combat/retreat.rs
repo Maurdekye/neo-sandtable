@@ -49,7 +49,9 @@ fn allowed(c: &CnaContent, s: &State, id: &UnitId, seat: SeatId) -> bool {
         && s.land.units.get(id).is_some_and(|u| u.side == seat.side)
         && ownership::seat_for_unit(c, s, id) == seat.role
         && formation::members(c, s, id).iter().all(|member| {
-            !s.land.combat.pinned.contains(member)
+            // Cases: land:30.17
+            !formation::fixed_ship(c, member)
+                && !s.land.combat.pinned.contains(member)
                 && !s.land.combat.retreat.retreated.contains(member)
                 && s.land.units[member].cohesion_quarters > -104
         })
@@ -391,46 +393,60 @@ pub fn finish(
 }
 /// Own-only legal path catalog, including contact costs and the snapshot's printed-combat-counter adjacency cap.
 /// Cases: land:13.21, land:13.22, land:13.23, land:13.24, land:13.26
-pub fn reachable(c: &CnaContent, s: &State, id: &UnitId, strict: bool) -> Vec<Reachable> {
+pub fn reachable(
+    c: &CnaContent,
+    s: &State,
+    id: &UnitId,
+    strict: bool,
+) -> Result<Vec<Reachable>, Rejection> {
     let Some(unit) = s.land.units.get(id) else {
-        return vec![];
+        return Ok(vec![]);
     };
     let seat = SeatId::new(unit.side, ownership::seat_for_unit(c, s, id));
     if !allowed(c, s, id, seat) {
-        return vec![];
+        return Ok(vec![]);
     }
     let selected: BTreeSet<UnitId> = formation::members(c, s, id).into_iter().collect();
-    movement::nonphasing_reachable(c, s, id, strict, NonPhasingMove::Retreat)
-        .into_iter()
-        .filter(|cost| {
-            // Adjacent members and a one-hex retreat have no four-CP cap. Avoid a second
-            // path evaluation in those common cases; all other members need their own delta.
-            if selected.iter().all(|member| {
-                s.land
-                    .combat
-                    .retreat
-                    .units
-                    .get(member)
-                    .is_some_and(|start| start.adjacent || cost.path.len() == 1)
-            }) {
-                return true;
-            }
-            if s.land
+    let mut out = Vec::new();
+    for cost in movement::nonphasing_reachable(c, s, id, strict, NonPhasingMove::Retreat)? {
+        // Adjacent members and a one-hex retreat have no four-CP cap. Avoid a second
+        // path evaluation in those common cases; all other members need their own delta.
+        if selected.iter().all(|member| {
+            s.land
                 .combat
                 .retreat
                 .units
-                .get(id)
-                .is_some_and(|start| !start.adjacent)
-                && cost.cp_quarters > 16
-                && cost.path.len() != 1
-            {
-                return false;
-            }
-            let order = Order::new(id.clone(), cost.path.clone());
-            movement::preview_nonphasing(c, s, &order, seat, strict, NonPhasingMove::Retreat)
-                .is_ok_and(|(next, actual)| capped(s, s, &next, &selected, actual.path.len()))
-        })
-        .collect()
+                .get(member)
+                .is_some_and(|start| start.adjacent || cost.path.len() == 1)
+        }) {
+            out.push(cost);
+            continue;
+        }
+        if s.land
+            .combat
+            .retreat
+            .units
+            .get(id)
+            .is_some_and(|start| !start.adjacent)
+            && cost.cp_quarters > 16
+            && cost.path.len() != 1
+        {
+            continue;
+        }
+        let order = Order::new(id.clone(), cost.path.clone());
+        if let Some((next, actual)) = movement::query_candidate(movement::preview_nonphasing(
+            c,
+            s,
+            &order,
+            seat,
+            strict,
+            NonPhasingMove::Retreat,
+        ))? && capped(s, s, &next, &selected, actual.path.len())
+        {
+            out.push(cost);
+        }
+    }
+    Ok(out)
 }
 fn index(rng: &mut CampaignRng, count: usize) -> usize {
     let mut space = 6usize;
@@ -456,14 +472,14 @@ pub fn random_orders(
     s: &State,
     r: &DecisionRequest,
     rng: &mut CampaignRng,
-) -> Value {
+) -> Result<Value, Rejection> {
     if r.kind != KIND {
-        return Value::Null;
+        return Ok(Value::Null);
     }
     let mut among = ids(c, s, r.seat);
     while !among.is_empty() {
         let id = among.remove(index(rng, among.len()));
-        let mut paths = reachable(c, s, &id, s.land.combat.retreat.strict);
+        let mut paths = reachable(c, s, &id, s.land.combat.retreat.strict)?;
         while !paths.is_empty() {
             let cost = paths.remove(index(rng, paths.len()));
             let order = Order::new(id.clone(), cost.path);
@@ -474,12 +490,12 @@ pub fn random_orders(
                 .retreat
                 .plans
                 .insert(r.seat, vec![order.clone()]);
-            if validate_plans(c, &candidate).is_ok() {
-                return json!([order]);
+            if movement::query_candidate(validate_plans(c, &candidate))?.is_some() {
+                return Ok(json!([order]));
             }
         }
     }
-    json!([])
+    Ok(json!([]))
 }
 
 #[cfg(test)]
@@ -492,46 +508,57 @@ pub(crate) fn reachable_legacy_for_step1(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     let Some(unit) = s.land.units.get(id) else {
-        return vec![];
+        return Ok(vec![]);
     };
     let seat = SeatId::new(unit.side, ownership::seat_for_unit(c, s, id));
     if !allowed(c, s, id, seat) {
-        return vec![];
+        return Ok(vec![]);
     }
     let selected: BTreeSet<UnitId> = formation::members(c, s, id).into_iter().collect();
-    movement::nonphasing_reachable_legacy_for_step1(c, s, id, strict, NonPhasingMove::Retreat)
-        .into_iter()
-        .filter(|cost| {
-            // Adjacent members and a one-hex retreat have no four-CP cap. Avoid a second
-            // path evaluation in those common cases; all other members need their own delta.
-            if selected.iter().all(|member| {
-                s.land
-                    .combat
-                    .retreat
-                    .units
-                    .get(member)
-                    .is_some_and(|start| start.adjacent || cost.path.len() == 1)
-            }) {
-                return true;
-            }
-            if s.land
+    let mut out = Vec::new();
+    for cost in
+        movement::nonphasing_reachable_legacy_for_step1(c, s, id, strict, NonPhasingMove::Retreat)?
+    {
+        // Adjacent members and a one-hex retreat have no four-CP cap. Avoid a second
+        // path evaluation in those common cases; all other members need their own delta.
+        if selected.iter().all(|member| {
+            s.land
                 .combat
                 .retreat
                 .units
-                .get(id)
-                .is_some_and(|start| !start.adjacent)
-                && cost.cp_quarters > 16
-                && cost.path.len() != 1
-            {
-                return false;
-            }
-            let order = Order::new(id.clone(), cost.path.clone());
-            movement::preview_nonphasing(c, s, &order, seat, strict, NonPhasingMove::Retreat)
-                .is_ok_and(|(next, actual)| capped(s, s, &next, &selected, actual.path.len()))
-        })
-        .collect()
+                .get(member)
+                .is_some_and(|start| start.adjacent || cost.path.len() == 1)
+        }) {
+            out.push(cost);
+            continue;
+        }
+        if s.land
+            .combat
+            .retreat
+            .units
+            .get(id)
+            .is_some_and(|start| !start.adjacent)
+            && cost.cp_quarters > 16
+            && cost.path.len() != 1
+        {
+            continue;
+        }
+        let order = Order::new(id.clone(), cost.path.clone());
+        if let Some((next, actual)) = movement::query_candidate(movement::preview_nonphasing(
+            c,
+            s,
+            &order,
+            seat,
+            strict,
+            NonPhasingMove::Retreat,
+        ))? && capped(s, s, &next, &selected, actual.path.len())
+        {
+            out.push(cost);
+        }
+    }
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -540,51 +567,61 @@ pub(crate) fn reachable_reference_for_step2(
     s: &State,
     id: &UnitId,
     strict: bool,
-) -> Vec<Reachable> {
+) -> Result<Vec<Reachable>, Rejection> {
     let Some(unit) = s.land.units.get(id) else {
-        return vec![];
+        return Ok(vec![]);
     };
     let seat = SeatId::new(unit.side, ownership::seat_for_unit(c, s, id));
     if !allowed(c, s, id, seat) {
-        return vec![];
+        return Ok(vec![]);
     }
     let selected: BTreeSet<UnitId> = formation::members(c, s, id).into_iter().collect();
-    movement::nonphasing_reachable_reference_for_step2(c, s, id, strict, NonPhasingMove::Retreat)
-        .into_iter()
-        .filter(|cost| {
-            // Adjacent members and a one-hex retreat have no four-CP cap. Avoid a second
-            // path evaluation in those common cases; all other members need their own delta.
-            if selected.iter().all(|member| {
-                s.land
-                    .combat
-                    .retreat
-                    .units
-                    .get(member)
-                    .is_some_and(|start| start.adjacent || cost.path.len() == 1)
-            }) {
-                return true;
-            }
-            if s.land
+    let mut out = Vec::new();
+    for cost in movement::nonphasing_reachable_reference_for_step2(
+        c,
+        s,
+        id,
+        strict,
+        NonPhasingMove::Retreat,
+    )? {
+        // Adjacent members and a one-hex retreat have no four-CP cap. Avoid a second
+        // path evaluation in those common cases; all other members need their own delta.
+        if selected.iter().all(|member| {
+            s.land
                 .combat
                 .retreat
                 .units
-                .get(id)
-                .is_some_and(|start| !start.adjacent)
-                && cost.cp_quarters > 16
-                && cost.path.len() != 1
-            {
-                return false;
-            }
-            let order = Order::new(id.clone(), cost.path.clone());
-            movement::preview_nonphasing_reference_for_step2(
+                .get(member)
+                .is_some_and(|start| start.adjacent || cost.path.len() == 1)
+        }) {
+            out.push(cost);
+            continue;
+        }
+        if s.land
+            .combat
+            .retreat
+            .units
+            .get(id)
+            .is_some_and(|start| !start.adjacent)
+            && cost.cp_quarters > 16
+            && cost.path.len() != 1
+        {
+            continue;
+        }
+        let order = Order::new(id.clone(), cost.path.clone());
+        if let Some((next, actual)) =
+            movement::query_candidate(movement::preview_nonphasing_reference_for_step2(
                 c,
                 s,
                 &order,
                 seat,
                 strict,
                 NonPhasingMove::Retreat,
-            )
-            .is_ok_and(|(next, actual)| capped(s, s, &next, &selected, actual.path.len()))
-        })
-        .collect()
+            ))?
+            && capped(s, s, &next, &selected, actual.path.len())
+        {
+            out.push(cost);
+        }
+    }
+    Ok(out)
 }

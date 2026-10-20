@@ -44,25 +44,37 @@ impl Overlay {
         }
         // A test overlay on the real coordinate grid; no publication movement data are inferred.
         let cells: BTreeSet<_> = (0..=38).map(|n| HexId::new(format!("C40{n:02}"))).collect();
+        // Synthetic sea closes this corridor; it asserts no published terrain facts.
+        let perimeter: BTreeSet<_> = cells
+            .iter()
+            .flat_map(|hex| content.map.neighbors(hex))
+            .filter(|h| !cells.contains(&h.id))
+            .map(|h| h.id.clone())
+            .collect();
         let mut rows = String::from("hex_id,section,q,r,terrain,flags\n");
         for h in content.map.iter() {
             let terrain = if cells.contains(&h.id) {
                 if desert { "desert" } else { "clear" }
+            } else if perimeter.contains(&h.id) {
+                "sea"
             } else {
                 h.terrain.as_deref().unwrap_or("unclassified")
             };
+            let flags = if perimeter.contains(&h.id) {
+                "sea".to_owned()
+            } else {
+                h.flags.join("|")
+            };
             rows += &format!(
                 "{},{},{},{},{},{}\n",
-                h.id,
-                h.section,
-                h.axial.q,
-                h.axial.r,
-                terrain,
-                h.flags.join("|")
+                h.id, h.section, h.axial.q, h.axial.r, terrain, flags
             );
         }
         std::fs::write(dir.join("hexes.csv"), rows).unwrap();
         let mut coverage = String::from("layer,hex_id,neighbour_id,src,review_batch\n");
+        for hex in &perimeter {
+            coverage += &format!("terrain,{hex},,land:8.37,test\n");
+        }
         let mut lines = String::from("from_hex,to_hex,kind,src,review_batch\n");
         let mut sides =
             String::from("hex_id,direction,neighbour_id,feature,high_side,src,review_batch\n");
@@ -555,7 +567,11 @@ fn unknown_surface_and_numeric_hq_water_house_rule_follow_profiles() {
             .unwrap()
             .activity_water = WaterPoints::ZERO;
         assert!(!available(&c, &dry.state, owner).contains(&actual));
-        assert!(reachable(&c, &dry.state, &actual, strict).is_empty());
+        assert!(
+            reachable(&c, &dry.state, &actual, strict)
+                .unwrap()
+                .is_empty()
+        );
         assert_eq!(available(&c, &dry.state, owner).len(), 0);
         // Water causality is asserted at the canonical restriction and payment boundaries,
         // independently of the earlier response-list eligibility rejection.
@@ -660,7 +676,7 @@ fn dev_campaign_finishes_with_scripted_real_unit_moves() {
             return;
         }
         let p = rules.pending(&c, &g.state).remove(0);
-        let action = if p.kind == KIND && eligible(&c, &g.state, &LEG.into(), p.seat) {
+        let action = if p.kind == KIND && eligible(&c, &g.state, &LEG.into(), p.seat).unwrap() {
             let hex = g.state.land.units[&LEG.into()].location.hex().unwrap();
             let to = if hex.as_str() == "C4020" {
                 "C4021"
@@ -915,7 +931,7 @@ fn randomized_baseline_orders_are_accepted_across_many_seeds_in_both_profiles() 
         let mut destinations = BTreeSet::new();
         for seed in 0..48u8 {
             let mut rng = CampaignRng::from_seed([seed; 32]);
-            let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng);
+            let action = crate::baseline::random_orders(&c, &g.state, &request, &mut rng).unwrap();
             assert!(!action.as_array().unwrap().is_empty());
             destinations.insert(action[0]["path"].clone().to_string());
             respond(&c, &g, request.seat, action, strict).unwrap();
@@ -932,7 +948,8 @@ fn randomized_baseline_orders_are_accepted_across_many_seeds_in_both_profiles() 
             &unmoving,
             &request,
             &mut CampaignRng::from_seed([1; 32]),
-        );
+        )
+        .unwrap();
         assert_eq!(action, json!([]));
     }
 }
@@ -955,7 +972,7 @@ fn inspect_includes_a_legal_destination_beyond_an_overfull_transit_hex() {
         place(&mut s, &id, "C4021");
     }
     let g = start(&c, s, true);
-    let paths = reachable(&c, &g.state, &LEG.into(), true);
+    let paths = reachable(&c, &g.state, &LEG.into(), true).unwrap();
     assert!(!paths.iter().any(|r| r.hex.as_str() == "C4021"));
     let path = paths.iter().find(|r| r.hex.as_str() == "C4022").unwrap();
     assert_eq!(path.cp_quarters, 8);
@@ -1007,7 +1024,8 @@ fn profile_real_roster_movement() {
             &g.state,
             &request,
             &mut CampaignRng::from_seed([seed; 32]),
-        );
+        )
+        .unwrap();
         eprintln!(
             "baseline seed{seed}: {:?}, {} orders",
             t.elapsed(),
@@ -1044,8 +1062,11 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
         .then(|| cpu_time::ThreadTime::try_now().expect("movement test needs a thread CPU clock"));
     let mut moves = 0;
     let mut after_setup = 0;
+    let mut budget_answers = 0;
+    let mut fixed_training_answers = 0;
+    let mut fixed_allocation_answers = 0;
     for n in 0..answer_limit + 4096 {
-        if after_setup == answer_limit {
+        if budget_answers == answer_limit {
             break;
         }
         if n % 100 == 0 {
@@ -1103,6 +1124,11 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
         let request = rules.pending(&c, &g.state).remove(0);
         if !request.kind.starts_with("cna.setup.") {
             after_setup += 1;
+            match (must_finish, request.kind.as_str()) {
+                (false, "cna.replacements.training") => fixed_training_answers += 1,
+                (false, "cna.replacements.allocation") => fixed_allocation_answers += 1,
+                _ => budget_answers += 1,
+            }
         }
         let action = profiling_answer(&c, &g.state, &request, &mut rng);
         if request.kind == KIND {
@@ -1127,7 +1153,7 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
     }
     if let Some(thread_begin) = &thread_begin {
         eprintln!(
-            "bounded movement finished: thread CPU {:.3}s, wall {:.3}s, {after_setup} post-setup answers, {moves} movement orders",
+            "bounded movement finished: thread CPU {:.3}s, wall {:.3}s, {after_setup} post-setup answers, {budget_answers} historical-budget answers, {fixed_training_answers} fixed training responses, {fixed_allocation_answers} fixed allocation responses, {moves} movement orders",
             thread_begin
                 .try_elapsed()
                 .expect("movement test needs a thread CPU clock")
@@ -1139,7 +1165,11 @@ fn real_roster_movers(answer_limit: usize, must_finish: bool) {
         moves > 0,
         "bounded campaign must execute a real movement order"
     );
-    assert_eq!(after_setup, answer_limit);
+    assert_eq!(budget_answers, answer_limit);
+    assert_eq!(
+        after_setup,
+        budget_answers + fixed_training_answers + fixed_allocation_answers
+    );
     assert!(!must_finish, "profile campaign did not finish");
 }
 fn profiling_answer(
@@ -1153,7 +1183,7 @@ fn profiling_answer(
         KIND | super::super::reaction::KIND | super::super::reaction::CONTINUE
     ) {
         // A mandatory continuation needs a legal remaining path, not a schema placeholder.
-        crate::baseline::random_orders(c, state, request, rng)
+        crate::baseline::random_orders(c, state, request, rng).unwrap()
     } else if request.kind == logistics::truck_convoy::KIND {
         // The fixed convoy batch declares an explicit empty order list as its pass.
         json!([])
@@ -1202,7 +1232,7 @@ fn planning_rebuilds_occupancy_after_a_nearby_move_and_checkpoint() {
     let (c, s, _o) = setup(TANK, Some("road"), false, None);
     let g = start(&c, s, true);
     let id: UnitId = TANK.into();
-    let original = serde_json::to_value(reachable(&c, &g.state, &id, true)).unwrap();
+    let original = serde_json::to_value(reachable(&c, &g.state, &id, true).unwrap()).unwrap();
     let mut congested = g.state.clone();
     let others: Vec<_> = congested
         .units_of(Side::Axis)
@@ -1224,17 +1254,17 @@ fn planning_rebuilds_occupancy_after_a_nearby_move_and_checkpoint() {
             .on_road
             .insert(other.as_str().into());
     }
-    let paths = reachable(&c, &congested, &id, true);
+    let paths = reachable(&c, &congested, &id, true).unwrap();
     let dest = paths.iter().find(|r| r.hex.as_str() == "C4021").unwrap();
     assert_eq!(dest.cp_quarters, 8);
     let encoded = serde_json::to_value(&congested).unwrap();
     let recovered: State = serde_json::from_value(encoded).unwrap();
     assert_eq!(
-        serde_json::to_value(reachable(&c, &recovered, &id, true)).unwrap(),
+        serde_json::to_value(reachable(&c, &recovered, &id, true).unwrap()).unwrap(),
         serde_json::to_value(&paths).unwrap()
     );
     assert_eq!(
-        serde_json::to_value(reachable(&c, &g.state, &id, true)).unwrap(),
+        serde_json::to_value(reachable(&c, &g.state, &id, true).unwrap()).unwrap(),
         original
     );
     let changed = Game::<Cna> {
@@ -1264,7 +1294,7 @@ fn planning_detaches_once_for_a_complete_path_and_stops_at_remaining_cp() {
     s.land.units.get_mut(&child.into()).unwrap().detached = false;
     let g = start(&c, s, true);
     let before = serde_json::to_value(&g.state).unwrap();
-    let paths = reachable(&c, &g.state, &child.into(), true);
+    let paths = reachable(&c, &g.state, &child.into(), true).unwrap();
     let dest = paths.iter().find(|r| r.hex.as_str() == "C4023").unwrap();
     assert_eq!(dest.cp_quarters, 16); // one CP detach, three one-CP road entries
     let t = respond(
@@ -1289,7 +1319,11 @@ fn planning_detaches_once_for_a_complete_path_and_stops_at_remaining_cp() {
         .get_mut(&child.into())
         .unwrap()
         .voluntary_cp_quarters = ceiling - 5;
-    assert!(reachable(&c, &exhausted, &child.into(), true).is_empty());
+    assert!(
+        reachable(&c, &exhausted, &child.into(), true)
+            .unwrap()
+            .is_empty()
+    );
 }
 /// Cases: land:6.15, land:9.21, land:19.46
 #[test]
@@ -1365,7 +1399,7 @@ fn restricted_infantry_members_set_the_whole_formations_cpa_ceiling() {
             accepted.game.state.land.units[&parent.into()].cp_spent_quarters,
             a.cpa * 4
         );
-        let paths = reachable(&c, &g.state, &parent.into(), true);
+        let paths = reachable(&c, &g.state, &parent.into(), true).unwrap();
         assert!(!paths.is_empty());
         assert!(paths.iter().all(|p| p.cp_quarters <= 4));
     }
@@ -1385,7 +1419,11 @@ fn dry_vehicle_stops_its_entire_stack_without_spending_fuel_cp_or_water() {
         .activity_water = WaterPoints::ZERO;
     let owner = seat(&g);
     assert!(!available(&c, &g.state, owner).contains(&TANK.into()));
-    assert!(reachable(&c, &g.state, &TANK.into(), true).is_empty());
+    assert!(
+        reachable(&c, &g.state, &TANK.into(), true)
+            .unwrap()
+            .is_empty()
+    );
     let before = serde_json::to_value(&g.state).unwrap();
     let err = respond(
         &c,
@@ -1483,7 +1521,11 @@ fn activity_water_covers_all_attached_trucks_once_per_stage_even_after_recovery(
     let mut next_stage = t.game.state;
     next_stage.cursor.op_stage = Some(2);
     next_stage.land.movement.moved.clear();
-    assert!(reachable(&c, &next_stage, &TANK.into(), true).is_empty());
+    assert!(
+        reachable(&c, &next_stage, &TANK.into(), true)
+            .unwrap()
+            .is_empty()
+    );
 }
 /// Cases: land:3.62, airlog:51.23, airlog:52.51, airlog:52.52
 #[test]
@@ -1512,7 +1554,8 @@ fn supplied_baseline_remains_legal_with_half_rations_and_a_dry_candidate() {
                 &g.state,
                 &request,
                 &mut CampaignRng::from_seed([seed; 32]),
-            );
+            )
+            .unwrap();
             assert!(!action.as_array().unwrap().is_empty());
             assert_eq!(action[0]["unit"], other);
             respond(&c, &g, request.seat, action, strict).unwrap();
@@ -1650,7 +1693,7 @@ fn cycle_proximity_uses_printed_combat_faces_and_precombat_positions() {
     super::super::cycles::finish_movement(&c, &mut s);
     assert!(s.land.movement.cycle_blocked.contains(&TANK.into())); // an HQ face is not combat
     s.cursor.cycle = 2;
-    assert!(reachable(&c, &s, &TANK.into(), false).is_empty());
+    assert!(reachable(&c, &s, &TANK.into(), false).unwrap().is_empty());
 }
 
 /// Cases: land:18.11, land:18.12, land:18.13, land:18.14, land:18.22, land:18.23, land:18.24, land:18.25, land:18.26
@@ -1679,7 +1722,7 @@ fn reserve_designation_movement_and_release_survive_recovery() {
     let g = evaluate(&Cna::dev(), &c, &recovered, &Command::Advance)
         .unwrap()
         .game;
-    let reach = reachable(&c, &g.state, &TANK.into(), false);
+    let reach = reachable(&c, &g.state, &TANK.into(), false).unwrap();
     assert!(reach.iter().all(|r| r.path.len() == 1));
     assert!(
         respond(
@@ -1724,7 +1767,11 @@ fn reserve_designation_movement_and_release_survive_recovery() {
         .unwrap()
         .game;
     assert!(g.state.decisions.pending.iter().all(|p| p.kind != KIND));
-    assert!(reachable(&c, &g.state, &TANK.into(), false).is_empty());
+    assert!(
+        reachable(&c, &g.state, &TANK.into(), false)
+            .unwrap()
+            .is_empty()
+    );
     let mut release = g;
     // This fixture advances only the reserve/movement windows, not the separate combat windows.
     release.state.decisions.pending.clear();
@@ -1752,7 +1799,11 @@ fn reserve_designation_movement_and_release_survive_recovery() {
         .unwrap()
         .game;
     assert_eq!(g.state.cursor.cycle, 3);
-    assert!(!reachable(&c, &g.state, &TANK.into(), false).is_empty());
+    assert!(
+        !reachable(&c, &g.state, &TANK.into(), false)
+            .unwrap()
+            .is_empty()
+    );
 }
 
 fn reaction_fixture() -> (CnaContent, Game<Cna>, Overlay, UnitId) {
@@ -1859,7 +1910,7 @@ fn reaction_baseline_answers_are_accepted_for_many_seeds() {
     assert_eq!(request.kind, super::super::reaction::KIND);
     for n in 0..96u8 {
         let mut rng = CampaignRng::from_seed([n; 32]);
-        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng);
+        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng).unwrap();
         let accepted = respond(&c, &t.game, request.seat, action.clone(), true);
         assert!(accepted.is_ok(), "seed {n}: {action}: {:?}", accepted.err());
     }
@@ -2701,12 +2752,15 @@ fn public_reaction_windows_hide_readiness_and_private_passes_converge_after_rest
     );
     let a = evaluate(&Cna::full(), &c, &a, &command).unwrap().game;
     assert_eq!(a.state.decisions.pending[0].kind, KIND);
-    assert!(eligible(
-        &c,
-        &a.state,
-        &second.into(),
-        a.state.decisions.pending[0].seat
-    ));
+    assert!(
+        eligible(
+            &c,
+            &a.state,
+            &second.into(),
+            a.state.decisions.pending[0].seat
+        )
+        .unwrap()
+    );
 }
 
 /// Cases: land:8.63, land:8.64, land:8.66, land:8.67
@@ -3097,7 +3151,7 @@ fn incoming_cohort_search_restores_foreign_origin_stock_and_shared_rounding_cred
         Some(&"C4020".into())
     );
     let before = serde_json::to_value(&s).unwrap();
-    let paths = reachable(&c, &s, &child, true);
+    let paths = reachable(&c, &s, &child, true).unwrap();
     assert!(paths.iter().any(|p| p.hex.as_str() == "C4033"));
     assert!(paths.iter().any(|p| p.hex.as_str() == "C4010"));
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
@@ -3114,12 +3168,12 @@ fn incoming_cohort_search_restores_foreign_origin_stock_and_shared_rounding_cred
         assert_eq!(cost.cp_quarters, r.cp_quarters, "{}", r.hex);
     }
     assert_eq!(
-        serde_json::to_value(reachable(&c, &s, &child, true)).unwrap(),
+        serde_json::to_value(reachable(&c, &s, &child, true).unwrap()).unwrap(),
         serde_json::to_value(&paths).unwrap()
     );
     let restored: State = serde_json::from_value(before).unwrap();
     assert_eq!(
-        serde_json::to_value(reachable(&c, &restored, &child, true)).unwrap(),
+        serde_json::to_value(reachable(&c, &restored, &child, true).unwrap()).unwrap(),
         serde_json::to_value(&paths).unwrap()
     );
 }
@@ -3166,6 +3220,7 @@ fn box_handling_blocks_each_represented_member_and_expires_next_stage() {
             assert_eq!(serde_json::to_value(&a).unwrap(), before);
             assert!(
                 nonphasing_reachable(&c, &a, &LEG.into(), strict, NonPhasingMove::Retreat)
+                    .unwrap()
                     .is_empty()
             );
             a.cursor.op_stage = Some(2);
@@ -3314,7 +3369,7 @@ fn reaction_divides_trucks_then_moves_component_with_checkpoint_and_rollback() {
     let recovered: Game<Cna> =
         serde_json::from_slice(&serde_json::to_vec(&t.game).unwrap()).unwrap();
     let division = super::super::trucks::reachable_divisions(&c, &recovered.state, &child, true)
-        [&40]
+        .unwrap()[&40]
         .clone()
         .unwrap();
     let answer = json!([{"unit":child,"path":["C4023"],"truck_division":division}]);
@@ -3369,7 +3424,7 @@ fn reaction_division_baseline_is_seeded_and_always_accepted() {
         .unwrap();
     for n in 0..32u8 {
         let mut rng = CampaignRng::from_seed([n; 32]);
-        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng);
+        let action = crate::baseline::random_orders(&c, &t.game.state, &request, &mut rng).unwrap();
         assert!(
             action.as_array().is_some_and(|a| !a.is_empty()),
             "seed {n}: {action}"
@@ -3382,7 +3437,7 @@ fn reaction_division_baseline_is_seeded_and_always_accepted() {
         let mut same = CampaignRng::from_seed([n; 32]);
         assert_eq!(
             action,
-            crate::baseline::random_orders(&c, &t.game.state, &request, &mut same)
+            crate::baseline::random_orders(&c, &t.game.state, &request, &mut same).unwrap()
         );
     }
 }
@@ -3443,7 +3498,8 @@ fn reaction_division_space_accepts_defaults_and_rejects_unadvertised_history() {
                 && p.seat == SeatId::new(Side::Commonwealth, Role::FrontLine)
         })
         .unwrap();
-    let division = super::super::trucks::reachable_divisions(&c, &t.game.state, &child, true)[&40]
+    let division = super::super::trucks::reachable_divisions(&c, &t.game.state, &child, true)
+        .unwrap()[&40]
         .clone()
         .unwrap();
     let mut answer = json!([{"unit":child,"path":["C4023"],"with_stack":null,"close_assault":null,"truck_division":division}]);
@@ -3968,6 +4024,7 @@ fn unit_network_posture_search_and_zero_edge_pass_preserve_membership() {
         let before = serde_json::to_value(&g).unwrap();
         assert!(
             reachable(&c, &g.state, &TANK.into(), true)
+                .unwrap()
                 .iter()
                 .any(|r| r.hex == HexId::from("C4021"))
         );
@@ -4033,7 +4090,7 @@ fn step1_profile_answer(
         KIND | super::super::reaction::KIND | super::super::reaction::CONTINUE
     ) {
         // A mandatory continuation needs a legal remaining path, not a schema placeholder.
-        crate::baseline::random_orders(c, state, request, rng)
+        crate::baseline::random_orders(c, state, request, rng).unwrap()
     } else if request.kind == logistics::truck_convoy::KIND {
         // The fixed convoy batch declares an explicit empty order list as its pass.
         json!([])
@@ -4151,6 +4208,7 @@ fn step1_sample(c: &CnaContent, s: &State, side: Side, count: usize) -> Vec<Unit
 // Preserve its per-member moving_limits -> CP -> segment-fuel ordering.
 enum Step1RawFirstGate {
     Eligibility,
+    EligibilityQueryError(Rejection),
     Allowance,
     MovingLimits(Rejection),
     CpWindow { member: UnitId, error: Rejection },
@@ -4172,9 +4230,13 @@ fn step1_raw_first_gate(
         && s.cursor.anchor() != "opstage.movement_and_combat.movement")
         || (s.land.movement.mode == WindowMode::Segment
             && s.cursor.phasing(s.turn.player_a) != Some(unit.side))
-        || !eligible(c, s, id, seat)
     {
         return Some(Step1RawFirstGate::Eligibility);
+    }
+    match eligible(c, s, id, seat) {
+        Ok(true) => {}
+        Ok(false) => return Some(Step1RawFirstGate::Eligibility),
+        Err(error) => return Some(Step1RawFirstGate::EligibilityQueryError(error)),
     }
     let moving = s
         .land
@@ -4225,6 +4287,9 @@ fn step1_raw_first_gate(
 fn step1_raw_first_gate_description(refusal: Option<Step1RawFirstGate>) -> String {
     match refusal {
         Some(Step1RawFirstGate::Eligibility) => "eligibility".into(),
+        Some(Step1RawFirstGate::EligibilityQueryError(error)) => {
+            format!("eligibility_query_error:{error:?}")
+        }
         Some(Step1RawFirstGate::Allowance) => "allowance".into(),
         Some(Step1RawFirstGate::MovingLimits(error)) => format!("moving_limits:{error:?}"),
         Some(Step1RawFirstGate::CpWindow { error, .. }) => format!("cp_window:{error:?}"),
@@ -4414,9 +4479,11 @@ fn step1_window_witness_sample_with_dump(
             .any(|id| step1_in_category(c, s, id, category));
         let id = candidates.iter().find(|id| {
             step1_in_category(c, s, id, category)
-                && *domains
-                    .entry((*id).clone())
-                    .or_insert_with(|| !reachable_legacy_for_step1(c, s, id, false).is_empty())
+                && *domains.entry((*id).clone()).or_insert_with(|| {
+                    !reachable_legacy_for_step1(c, s, id, false)
+                        .unwrap()
+                        .is_empty()
+                })
         });
         let id = if let Some(id) = id {
             id
@@ -4497,7 +4564,52 @@ fn step1_require_domains(
     }
 }
 
+// Exact raw source-gap witness; the known fixed ship still has successful inspection.
+// Cases: land:4.45, land:4.46
+// Source gap: data/units/GAPS.md U-009.
+fn step1_source_skip_inspect_error(
+    c: &CnaContent,
+    id: &UnitId,
+    refusals: &[Step1SupplyRefusal],
+) -> Rejection {
+    assert!(
+        id.as_str() == "it.tobruk_garrison.the_san_giorgio",
+        "golden source-gap unit changed"
+    );
+    let oa = &c.units.units[id];
+    assert_eq!(oa.kind.as_deref(), Some("fixed_ship"));
+    assert!(
+        oa.class.is_none(),
+        "golden fixed ship now has a source class"
+    );
+    assert_eq!(refusals.len(), 3, "golden fixed-ship preflight changed");
+    for (refusal, step) in refusals.iter().zip([
+        Step1SupplyStep::ActivityWaterDue,
+        Step1SupplyStep::FuelCapacity,
+        Step1SupplyStep::OneCpFuel,
+    ]) {
+        assert_eq!(refusal.step, step);
+        assert_eq!(
+            refusal.error,
+            logistics::SupplyError::Unsupported { case: "land:4.46" }
+        );
+    }
+    Rejection::Engine(cna_core::engine::EngineError::Unsupported {
+        case: "land:4.46".into(),
+        detail: "movement class is not identified in source data".into(),
+    })
+}
+
 fn step1_compare(c: &CnaContent, g: &Game<Cna>, id: &UnitId) {
+    step1_compare_expected(c, g, id, None);
+}
+
+fn step1_compare_expected(
+    c: &CnaContent,
+    g: &Game<Cna>,
+    id: &UnitId,
+    expected_error: Option<&Rejection>,
+) {
     let u = &g.state.land.units[id];
     let owner = SeatId::new(u.side, ownership::seat_for_unit(c, &g.state, id));
     let opposing = SeatId::new(u.side.opponent(), owner.role);
@@ -4536,16 +4648,27 @@ fn step1_compare(c: &CnaContent, g: &Game<Cna>, id: &UnitId) {
                     .map_or(true, |v| v.get("reachable").is_none()),
                 "proposed disclosed unauthorized reachability"
             );
+        } else if let Some(expected) = expected_error {
+            // The exact raw class gap remains; the sourced prohibition answers reachability.
+            assert_eq!(
+                formation::query_allowance(c, &g.state, id).as_ref().err(),
+                Some(expected)
+            );
+            for result in [&legacy, &proposed] {
+                let detail = result.as_ref().expect("fixed-ship own detail unavailable");
+                assert_eq!(detail.get("reachable"), Some(&json!([])));
+                assert_eq!(detail.get("movement_allowance"), Some(&Value::Null));
+            }
         } else {
             assert!(
                 legacy.as_ref().is_ok_and(|v| v.get("reachable").is_some()),
-                "legacy own detail unavailable"
+                "legacy own detail unavailable: {legacy:?}"
             );
             assert!(
                 proposed
                     .as_ref()
                     .is_ok_and(|v| v.get("reachable").is_some()),
-                "proposed own detail unavailable"
+                "proposed own detail unavailable: {proposed:?}"
             );
         }
         assert!(
@@ -4642,9 +4765,11 @@ fn step1_unmet_midgame(
             .any(|id| step1_in_category(c, &s, id, category));
         let has_domain = candidates.iter().any(|id| {
             step1_in_category(c, &s, id, category)
-                && *domains
-                    .entry(id.clone())
-                    .or_insert_with(|| !reachable_legacy_for_step1(c, &s, id, false).is_empty())
+                && *domains.entry(id.clone()).or_insert_with(|| {
+                    !reachable_legacy_for_step1(c, &s, id, false)
+                        .unwrap()
+                        .is_empty()
+                })
         });
         if !has_domain {
             missing.push(format!(
@@ -4943,7 +5068,9 @@ fn step1_supplied_sample(
                     || ((!matches!(category, Step1Category::Hq)
                         || logistics::activity_water_due(c, s, id).is_ok())
                         && *domains.entry((*id).clone()).or_insert_with(|| {
-                            !reachable_legacy_for_step1(c, s, id, false).is_empty()
+                            !reachable_legacy_for_step1(c, s, id, false)
+                                .unwrap()
+                                .is_empty()
                         })))
         });
         let Some(id) = id else {
@@ -5222,8 +5349,9 @@ fn step1_plain_setup_first_movement_and_midgame_twenty_per_side_byte_golden() {
         .unwrap_or_else(|reason| panic!("golden supplied midgame invalid: {reason}"));
     // Add EVERY skipped unit in all three existing views, never replacing a base sample ID.
     step1_print_source_skips(&skipped);
-    for id in skipped.keys() {
-        step1_compare(&c, &supplied, id);
+    for (id, refusals) in &skipped {
+        let expected = step1_source_skip_inspect_error(&c, id, refusals);
+        step1_compare_expected(&c, &supplied, id, Some(&expected));
     }
     step1_check_source_skips(&c, &states.midgame.state, &supplied.state, &skipped).unwrap_or_else(
         |reason| panic!("golden additive skipped control changed refusal: {reason}"),
@@ -5266,6 +5394,7 @@ fn step1_plain_setup_first_movement_and_midgame_twenty_per_side_byte_golden() {
 fn step1_has_actual_dump_draw(c: &CnaContent, s: &State, id: &UnitId) -> bool {
     let seat = SeatId::new(s.land.units[id].side, ownership::seat_for_unit(c, s, id));
     let Some(path) = reachable_legacy_for_step1(c, s, id, false)
+        .unwrap()
         .into_iter()
         .find(|r| !r.path.is_empty() && r.fuel_tenths > 0)
     else {
@@ -5389,11 +5518,13 @@ fn step1_plain_actual_hq_owner_opponent_absent_byte_golden() {
     let (c, g, id) = step1_plain_actual_hq_fixture();
     step1_compare(&c, &g, &id);
     assert!(
-        !reachable_legacy_for_step1(&c, &g.state, &id, false).is_empty(),
+        !reachable_legacy_for_step1(&c, &g.state, &id, false)
+            .unwrap()
+            .is_empty(),
         "golden HQ has no reachable witness"
     );
     assert!(
-        !reachable(&c, &g.state, &id, false).is_empty(),
+        !reachable(&c, &g.state, &id, false).unwrap().is_empty(),
         "proposed HQ has no reachable witness"
     );
 }
@@ -5475,7 +5606,9 @@ fn step1_new_history_snapshot_preserves_absence_empty_lots_and_unmatched_sites()
     );
     assert!(g.rng == rng, "history restoration changed RNG");
     assert!(
-        !reachable_legacy_for_step1(&c, &g.state, &id, false).is_empty(),
+        !reachable_legacy_for_step1(&c, &g.state, &id, false)
+            .unwrap()
+            .is_empty(),
         "history control lost actual HQ search witness"
     );
 }
@@ -5547,6 +5680,7 @@ fn step1_real_setup_history_tuple(
             .into_iter()
             .map(|id| {
                 let mut paths: Vec<_> = reachable_legacy_for_step1(c, s, &id, false)
+                    .unwrap()
                     .into_iter()
                     .filter(|r| r.path.len() == 1 && r.fuel_tenths > 0)
                     .map(|r| r.path)
@@ -5837,8 +5971,8 @@ fn step1_new_node_restores_successful_and_failed_sibling_full_state_bytes() {
     let before = serde_json::to_vec(&base).expect("node State encoding failed");
     let histories =
         serde_json::to_vec(&base.logistics.cargo_history).expect("node history encoding failed");
-    let catalog = reachable(&c, &base, &id, false);
-    let legacy = reachable_legacy_for_step1(&c, &base, &id, false);
+    let catalog = reachable(&c, &base, &id, false).unwrap();
+    let legacy = reachable_legacy_for_step1(&c, &base, &id, false).unwrap();
     assert!(
         serde_json::to_vec(&catalog).unwrap() == serde_json::to_vec(&legacy).unwrap(),
         "supported-history catalog differs from raw reference; return private witness"
@@ -5860,7 +5994,7 @@ fn step1_new_node_restores_successful_and_failed_sibling_full_state_bytes() {
     let mut outcomes: [Option<(Vec<u8>, Vec<u8>)>; 2] = [None, None];
     for order in [[0usize, 1usize], [1usize, 0usize]] {
         for index in order {
-            node.restore(&mut kernel);
+            node.restore(&mut kernel).unwrap();
             assert!(
                 serde_json::to_vec(&kernel).unwrap() == before,
                 "node baseline bytes/presence/unmatched history not restored"
@@ -5930,7 +6064,7 @@ fn step1_new_node_restores_successful_and_failed_sibling_full_state_bytes() {
             } else {
                 outcomes[index] = Some(outcome);
             }
-            node.restore(&mut kernel);
+            node.restore(&mut kernel).unwrap();
             assert!(
                 serde_json::to_vec(&kernel).unwrap() == before,
                 "new node leaked successful/failed sibling full State mutation"
@@ -5947,7 +6081,7 @@ fn step1_new_node_restores_successful_and_failed_sibling_full_state_bytes() {
         "sibling control did not exercise both outcomes"
     );
     assert!(
-        serde_json::to_vec(&reachable(&c, &kernel, &id, false)).unwrap()
+        serde_json::to_vec(&reachable(&c, &kernel, &id, false).unwrap()).unwrap()
             == serde_json::to_vec(&catalog).unwrap(),
         "supported-history gameplay catalog changed after restored sibling exploration"
     );
@@ -6051,6 +6185,7 @@ fn not_applicable_cwa_hq_moves_with_separate_truck_fuel_and_water_in_both_profil
             assert!(available(&c, &g.state, owner).contains(&actual));
             assert!(
                 reachable(&c, &g.state, &actual, strict)
+                    .unwrap()
                     .iter()
                     .any(|r| r.hex == HexId::from("C4021"))
             );
@@ -6088,6 +6223,16 @@ fn not_applicable_cwa_hq_moves_with_separate_truck_fuel_and_water_in_both_profil
 }
 
 fn step2_compare_profile(c: &CnaContent, g: &Game<Cna>, id: &UnitId, strict: bool) {
+    step2_compare_profile_expected(c, g, id, strict, None);
+}
+
+fn step2_compare_profile_expected(
+    c: &CnaContent,
+    g: &Game<Cna>,
+    id: &UnitId,
+    strict: bool,
+    expected_error: Option<&Rejection>,
+) {
     let u = &g.state.land.units[id];
     let owner = SeatId::new(u.side, ownership::seat_for_unit(c, &g.state, id));
     let opposing = SeatId::new(u.side.opponent(), owner.role);
@@ -6127,16 +6272,27 @@ fn step2_compare_profile(c: &CnaContent, g: &Game<Cna>, id: &UnitId, strict: boo
                     .map_or(true, |v| v.get("reachable").is_none()),
                 "proposed disclosed unauthorized reachability"
             );
+        } else if let Some(expected) = expected_error {
+            // The exact raw class gap remains; the sourced prohibition answers reachability.
+            assert_eq!(
+                formation::query_allowance(c, &g.state, id).as_ref().err(),
+                Some(expected)
+            );
+            for result in [&legacy, &proposed] {
+                let detail = result.as_ref().expect("fixed-ship own detail unavailable");
+                assert_eq!(detail.get("reachable"), Some(&json!([])));
+                assert_eq!(detail.get("movement_allowance"), Some(&Value::Null));
+            }
         } else {
             assert!(
                 legacy.as_ref().is_ok_and(|v| v.get("reachable").is_some()),
-                "legacy own detail unavailable"
+                "legacy own detail unavailable: {legacy:?}"
             );
             assert!(
                 proposed
                     .as_ref()
                     .is_ok_and(|v| v.get("reachable").is_some()),
-                "proposed own detail unavailable"
+                "proposed own detail unavailable: {proposed:?}"
             );
         }
         assert!(
@@ -6156,11 +6312,13 @@ fn step2_plain_actual_hq_owner_opponent_absent_byte_golden() {
     let (c, g, id) = step1_plain_actual_hq_fixture();
     step2_compare(&c, &g, &id);
     assert!(
-        !reachable_reference_for_step2(&c, &g.state, &id, false).is_empty(),
+        !reachable_reference_for_step2(&c, &g.state, &id, false)
+            .unwrap()
+            .is_empty(),
         "golden HQ has no reachable witness"
     );
     assert!(
-        !reachable(&c, &g.state, &id, false).is_empty(),
+        !reachable(&c, &g.state, &id, false).unwrap().is_empty(),
         "proposed HQ has no reachable witness"
     );
 }
@@ -6210,8 +6368,9 @@ fn step2_plain_setup_first_movement_and_midgame_twenty_per_side_byte_golden() {
         .unwrap_or_else(|reason| panic!("golden supplied midgame invalid: {reason}"));
     // Add EVERY skipped unit in all three existing views, never replacing a base sample ID.
     step1_print_source_skips(&skipped);
-    for id in skipped.keys() {
-        step2_compare(&c, &supplied, id);
+    for (id, refusals) in &skipped {
+        let expected = step1_source_skip_inspect_error(&c, id, refusals);
+        step2_compare_profile_expected(&c, &supplied, id, false, Some(&expected));
     }
     step1_check_source_skips(&c, &states.midgame.state, &supplied.state, &skipped).unwrap_or_else(
         |reason| panic!("golden additive skipped control changed refusal: {reason}"),
@@ -6277,8 +6436,9 @@ fn step2_reaction_current_base_catalog_and_three_views_are_byte_exact() {
         let before = serde_json::to_vec(&game.state).unwrap();
         let rng = game.rng.clone();
         let old =
-            super::super::reaction::plans_reference_for_step2(&c, &game.state, &defender, strict);
-        let new = super::super::reaction::plans(&c, &game.state, &defender, strict);
+            super::super::reaction::plans_reference_for_step2(&c, &game.state, &defender, strict)
+                .unwrap();
+        let new = super::super::reaction::plans(&c, &game.state, &defender, strict).unwrap();
         assert!(!old.is_empty(), "Step2 reaction reference witness missing");
         assert!(
             serde_json::to_vec(&old).unwrap() == serde_json::to_vec(&new).unwrap(),
@@ -6301,6 +6461,7 @@ fn step2_plain_edge_success_refusal_and_authoritative_state_events_match_current
         ownership::seat_for_unit(&c, &g.state, &id),
     );
     let good = reachable_reference_for_step2(&c, &g.state, &id, false)
+        .unwrap()
         .into_iter()
         .find(|path| !path.path.is_empty())
         .expect("Step2 plain reference edge witness missing");
@@ -6558,5 +6719,565 @@ fn step2_query_price_memo_keeps_dynamic_inputs_errors_and_all_step_fields() {
             memo.step_cost_with_network(&s, &id, &from, &from, false, true)
                 .is_err()
         );
+    }
+}
+
+/// Cases: land:30.17, land:8.11, land:8.51, land:8.52
+#[test]
+fn fixed_ship_reaction_exclusion_preserves_fixed_windows_and_real_query_errors() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    for strict in [false, true] {
+        // Synthetic positions only; the fixed-ship record and its missing class are real.
+        let (mut c, mut s, _overlay) = setup(LEG, Some("road"), false, None);
+        place(&mut s, SHIP, "C4022");
+        assert!(c.units.units[&SHIP.into()].class.is_none());
+        assert!(formation::fixed_ship(&c, &SHIP.into()));
+        let g = start(&c, s, strict);
+        let before = serde_json::to_vec(&g).unwrap();
+        let options = super::super::reaction::candidate_options(
+            &c,
+            &g.state,
+            &[LEG.into()],
+            &"C4021".into(),
+            &[],
+            strict,
+        )
+        .unwrap();
+        assert!(options.is_empty());
+        assert_eq!(serde_json::to_vec(&g).unwrap(), before);
+        let t = respond(
+            &c,
+            &g,
+            seat(&g),
+            json!([{"unit":LEG,"path":["C4021"]}]),
+            strict,
+        )
+        .unwrap();
+        assert!(t.game.state.land.reaction.adjudication_stop.is_none());
+        let window = t.game.state.land.reaction.window.as_ref().unwrap();
+        assert!(window.eligible.is_empty());
+        assert!(window.cpa_options.is_empty());
+        let roles: BTreeSet<_> = t
+            .game
+            .state
+            .decisions
+            .pending
+            .iter()
+            .filter(|p| p.kind == super::super::reaction::KIND)
+            .map(|p| p.seat)
+            .collect();
+        assert_eq!(
+            roles,
+            BTreeSet::from([
+                SeatId::new(Side::Axis, Role::FrontLine),
+                SeatId::new(Side::Axis, Role::RearArea),
+                SeatId::new(Side::Axis, Role::Logistics),
+            ])
+        );
+        assert_eq!(
+            serde_json::to_vec(&t.game.state.land.units[&SHIP.into()]).unwrap(),
+            serde_json::to_vec(&g.state.land.units[&SHIP.into()]).unwrap(),
+        );
+        // Remove ONLY the test's known-prohibition marker. A genuinely unclassified
+        // neighbor must still propagate its complete typed error in both profiles.
+        c.units.units.get_mut(&SHIP.into()).unwrap().kind = None;
+        let expected = Rejection::Engine(EngineError::Unsupported {
+            case: "land:4.46".into(),
+            detail: "movement class is not identified in source data".into(),
+        });
+        assert_eq!(
+            super::super::reaction::candidate_options(
+                &c,
+                &g.state,
+                &[LEG.into()],
+                &"C4021".into(),
+                &[],
+                strict,
+            ),
+            Err(expected),
+        );
+        assert_eq!(serde_json::to_vec(&g).unwrap(), before);
+    }
+}
+
+/// Cases: land:30.17, land:8.11, land:9.21
+#[test]
+fn fixed_ship_direct_and_stack_orders_are_known_illegal_without_mutation() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    for strict in [false, true] {
+        for with_stack in [false, true] {
+            let (c, mut s, _overlay) = setup(TANK, Some("road"), false, None);
+            place(&mut s, SHIP, "C4020");
+            let id: UnitId = if with_stack { TANK.into() } else { SHIP.into() };
+            let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &id));
+            let mut order = Order::new(id, vec!["C4021".into()]);
+            order.with_stack = with_stack;
+            let before = serde_json::to_vec(&s).unwrap();
+            assert_eq!(
+                unit_stack(&c, &mut s, &order, owner, strict),
+                Err(illegal("a fixed ship cannot move (land:30.17)")),
+            );
+            assert_eq!(serde_json::to_vec(&s).unwrap(), before);
+        }
+    }
+}
+
+/// Cases: land:30.17, land:9.21, land:19.11, land:4.46
+#[test]
+fn fixed_ship_represented_member_is_screened_before_selected_root_allowance() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    for strict in [false, true] {
+        for explicit_attachment in [false, true] {
+            for with_stack in [false, true] {
+                let (mut c, mut s, _overlay) = setup(TANK, Some("road"), false, None);
+                place(&mut s, SHIP, "C4020");
+                let root: UnitId = TANK.into();
+                let ship: UnitId = SHIP.into();
+                let child = s.land.units.get_mut(&ship).unwrap();
+                child.detached = false;
+                if explicit_attachment {
+                    child.attached_to = Some(root.clone());
+                } else {
+                    child.assignment = crate::state::Assignment::Parent(root.clone());
+                }
+                // A synthetic relationship exercises the existing resolver, not a new
+                // source claim that this cruiser may attach to a tank battalion.
+                assert!(!formation::fixed_ship(&c, &root));
+                assert!(formation::class(&c, &root).is_some());
+                assert!(formation::fixed_ship(&c, &ship));
+                assert!(c.units.units[&ship].class.is_none());
+                assert_eq!(ownership::parent_for_unit(&c, &s, &ship), Some(&root));
+                let expected_members: BTreeSet<_> =
+                    [root.clone(), ship.clone()].into_iter().collect();
+                assert_eq!(
+                    formation::members(&c, &s, &root)
+                        .into_iter()
+                        .collect::<BTreeSet<_>>(),
+                    expected_members
+                );
+                assert_eq!(
+                    formation::FormationIndex::new(&c, &s)
+                        .members(&root)
+                        .into_iter()
+                        .collect::<BTreeSet<_>>(),
+                    expected_members
+                );
+                let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &root));
+                assert!(eligible_base(&c, &s, &root, owner));
+                let mut order = Order::new(root.clone(), vec!["C4021".into()]);
+                order.with_stack = with_stack;
+                let mut game = Game::<Cna> {
+                    state: s,
+                    rng: CampaignRng::from_seed([106; 32]).state(),
+                };
+                let before_state = serde_json::to_vec(&game.state).unwrap();
+                let before_rng = game.rng.clone();
+                let before_game = serde_json::to_vec(&game).unwrap();
+                let unknown = Rejection::Engine(EngineError::Unsupported {
+                    case: "land:4.46".into(),
+                    detail: "movement class is not identified in source data".into(),
+                });
+                // The raw checked allowance error stays exact; inspect now has known-empty reachability.
+                assert_eq!(
+                    formation::query_allowance(&c, &game.state, &root).err(),
+                    Some(unknown.clone())
+                );
+                assert_eq!(
+                    unit_stack(&c, &mut game.state, &order, owner, strict),
+                    Err(illegal("a fixed ship cannot move (land:30.17)"))
+                );
+                assert_eq!(serde_json::to_vec(&game.state).unwrap(), before_state);
+                assert_eq!(game.rng, before_rng);
+                assert_eq!(serde_json::to_vec(&game).unwrap(), before_game);
+                // An unresolved nonfixed member must still propagate the exact error.
+                c.units.units.get_mut(&ship).unwrap().kind = None;
+                assert_eq!(
+                    unit_stack(&c, &mut game.state, &order, owner, strict),
+                    Err(unknown)
+                );
+                assert_eq!(serde_json::to_vec(&game.state).unwrap(), before_state);
+                assert_eq!(game.rng, before_rng);
+                assert_eq!(serde_json::to_vec(&game).unwrap(), before_game);
+            }
+        }
+    }
+}
+
+/// Cases: land:30.17, land:9.21, land:8.51, land:8.56, land:8.11
+#[test]
+fn represented_fixed_ship_guard_preserves_continuation_and_base_precedence() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    for strict in [false, true] {
+        let (c, mut s, _overlay) = setup(TANK, Some("road"), false, None);
+        place(&mut s, SHIP, "C4020");
+        let root: UnitId = TANK.into();
+        let ship: UnitId = SHIP.into();
+        let child = s.land.units.get_mut(&ship).unwrap();
+        child.detached = false;
+        child.attached_to = Some(root.clone());
+        let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &root));
+        assert!(eligible_base(&c, &s, &root, owner));
+        let game = Game::<Cna> {
+            state: s,
+            rng: CampaignRng::from_seed([107; 32]).state(),
+        };
+        for variant in [
+            "wrong_seat",
+            "wrong_shape",
+            "stopped",
+            "fixed_member",
+            "frozen_members",
+            "base_wrong_seat",
+        ] {
+            let mut trial = game.clone();
+            let mut order = Order::new(root.clone(), vec!["C4021".into()]);
+            let mut submitted_seat = owner;
+            trial.state.land.reaction.continuation = Some(super::super::reaction::Continuation {
+                seat: owner,
+                unit: root.clone(),
+                members: vec![root.clone(), ship.clone()],
+                with_stack: false,
+                planned_path: vec!["C4021".into()],
+                orders_after: vec![],
+                mover_stopped: false,
+            });
+            match variant {
+                "wrong_seat" => submitted_seat = SeatId::new(Side::Axis, Role::RearArea),
+                "wrong_shape" => order.with_stack = true,
+                "stopped" => {
+                    trial
+                        .state
+                        .land
+                        .reaction
+                        .continuation
+                        .as_mut()
+                        .unwrap()
+                        .mover_stopped = true;
+                    trial.state.land.movement.moved.insert(root.clone());
+                    assert!(!continuing(&trial.state, &root));
+                }
+                "frozen_members" => {
+                    trial
+                        .state
+                        .land
+                        .reaction
+                        .continuation
+                        .as_mut()
+                        .unwrap()
+                        .members = vec![root.clone()]
+                }
+                "base_wrong_seat" => {
+                    trial.state.land.reaction.continuation = None;
+                    submitted_seat = SeatId::new(Side::Axis, Role::RearArea);
+                    assert!(!eligible_base(&c, &trial.state, &root, submitted_seat));
+                }
+                "fixed_member" => {}
+                _ => unreachable!(),
+            }
+            let before_state = serde_json::to_vec(&trial.state).unwrap();
+            let before_rng = trial.rng.clone();
+            let before_game = serde_json::to_vec(&trial).unwrap();
+            let result = unit_stack(&c, &mut trial.state, &order, submitted_seat, strict);
+            match variant {
+                "wrong_seat" | "wrong_shape" => {
+                    assert_eq!(result, Err(illegal("unit cannot continue this move")))
+                }
+                "stopped" | "base_wrong_seat" => assert_eq!(
+                    result,
+                    Err(illegal(
+                        "unit is not available to this seat in this segment"
+                    ))
+                ),
+                "fixed_member" => assert_eq!(
+                    result,
+                    Err(illegal("a fixed ship cannot move (land:30.17)"))
+                ),
+                "frozen_members" => assert_eq!(result, Ok(vec![root.clone()])),
+                _ => unreachable!(),
+            }
+            assert_eq!(
+                serde_json::to_vec(&trial.state).unwrap(),
+                before_state,
+                "{variant}"
+            );
+            assert_eq!(trial.rng, before_rng, "{variant}");
+            assert_eq!(
+                serde_json::to_vec(&trial).unwrap(),
+                before_game,
+                "{variant}"
+            );
+        }
+    }
+}
+
+/// Cases: land:30.17, land:4.46, land:3.62, land:8.11
+#[test]
+fn fixed_ship_ordinary_reachability_restores_complete_successful_private_inspection() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    let (mut c, mut s, _overlay) = setup(SHIP, Some("road"), false, None);
+    s.cursor.entered = true;
+    let id: UnitId = SHIP.into();
+    let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &id));
+    assert!(formation::fixed_ship(&c, &id));
+    assert!(c.units.units[&id].class.is_none());
+    assert!(eligible_base(&c, &s, &id, owner));
+    let game = Game::<Cna> {
+        state: s,
+        rng: CampaignRng::from_seed([108; 32]).state(),
+    };
+    let expected = Rejection::Engine(EngineError::Unsupported {
+        case: "land:4.46".into(),
+        detail: "movement class is not identified in source data".into(),
+    });
+    let before = serde_json::to_vec(&game.state).unwrap();
+    let rng = game.rng.clone();
+    let whole = serde_json::to_vec(&game).unwrap();
+    for strict in [false, true] {
+        assert_eq!(eligible(&c, &game.state, &id, owner), Ok(false));
+        assert!(reachable(&c, &game.state, &id, strict).unwrap().is_empty());
+        assert_eq!(
+            formation::query_allowance(&c, &game.state, &id).err(),
+            Some(expected.clone())
+        );
+        let mut perspectives = 0;
+        for perspective in Perspective::all() {
+            perspectives += 1;
+            let actual = Cna { strict }.inspect(&c, &game.state, perspective, SHIP);
+            let legacy =
+                crate::view::inspect_legacy_for_step1(&c, &game.state, perspective, SHIP, strict);
+            let reference = crate::view::inspect_reference_for_step2(
+                &c,
+                &game.state,
+                perspective,
+                SHIP,
+                strict,
+            );
+            assert_eq!(actual, legacy);
+            assert_eq!(actual, reference);
+            assert_eq!(
+                serde_json::to_vec(&actual).unwrap(),
+                serde_json::to_vec(&legacy).unwrap()
+            );
+            assert_eq!(
+                serde_json::to_vec(&actual).unwrap(),
+                serde_json::to_vec(&reference).unwrap()
+            );
+            let enemy = matches!(perspective, Perspective::Side(Side::Commonwealth))
+                || matches!(perspective, Perspective::Seat(seat) if seat.side == Side::Commonwealth);
+            if enemy {
+                crate::testkit::assert_face_only(&actual);
+                let detail = actual.as_ref().unwrap();
+                assert!(detail.get("reachable").is_none());
+                assert!(detail.get("movement_allowance").is_none());
+                assert!(detail.get("supplies").is_none());
+            } else {
+                let detail = actual
+                    .as_ref()
+                    .expect("known fixed ship must inspect successfully");
+                assert_eq!(detail.get("reachable"), Some(&json!([])));
+                assert_eq!(detail.get("movement_allowance"), Some(&Value::Null));
+                assert_eq!(detail.get("reaction_division_paths"), Some(&json!([])));
+                assert_eq!(detail["unit"]["id"], json!(SHIP));
+                assert_eq!(
+                    detail["movement_restrictions"][0]["restrictions"]["case"],
+                    json!("land:4.46")
+                );
+            }
+            assert_eq!(serde_json::to_vec(&game.state).unwrap(), before);
+            assert_eq!(game.rng, rng);
+            assert_eq!(serde_json::to_vec(&game).unwrap(), whole);
+        }
+        assert_eq!(perspectives, 13);
+    }
+    // A nonfixed missing class must keep its actual typed refusal, in both profiles.
+    c.units.units.get_mut(&id).unwrap().kind = None;
+    for strict in [false, true] {
+        assert_eq!(eligible(&c, &game.state, &id, owner), Err(expected.clone()));
+        assert_eq!(
+            reachable(&c, &game.state, &id, strict).err(),
+            Some(expected.clone())
+        );
+        assert_eq!(
+            Cna { strict }.inspect(&c, &game.state, Perspective::Seat(owner), SHIP),
+            Err(expected.clone())
+        );
+        assert_eq!(serde_json::to_vec(&game.state).unwrap(), before);
+        assert_eq!(game.rng, rng);
+        assert_eq!(serde_json::to_vec(&game).unwrap(), whole);
+    }
+}
+
+/// Cases: land:30.17, land:9.21, land:8.11, land:8.51, land:8.56, land:4.46
+#[test]
+fn fixed_ship_ordinary_eligibility_keeps_1b3_family_and_saved_continuation_scope() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    let (mut c, mut s, _overlay) = setup(TANK, Some("road"), false, None);
+    place(&mut s, SHIP, "C4020");
+    let root: UnitId = TANK.into();
+    let ship: UnitId = SHIP.into();
+    let child = s.land.units.get_mut(&ship).unwrap();
+    child.detached = false;
+    child.attached_to = Some(root.clone());
+    let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &root));
+    assert!(!formation::fixed_ship(&c, &root));
+    assert!(formation::class(&c, &root).is_some());
+    assert!(formation::members(&c, &s, &root).contains(&ship));
+    assert!(eligible_base(&c, &s, &root, owner));
+    let game = Game::<Cna> {
+        state: s,
+        rng: CampaignRng::from_seed([109; 32]).state(),
+    };
+    let unknown = Rejection::Engine(EngineError::Unsupported {
+        case: "land:4.46".into(),
+        detail: "movement class is not identified in source data".into(),
+    });
+    for strict in [false, true] {
+        for variant in [
+            "represented",
+            "assigned",
+            "saved_fixed",
+            "saved_only",
+            "saved_fixed_remote",
+        ] {
+            let mut trial = game.clone();
+            if variant == "assigned" {
+                let child = trial.state.land.units.get_mut(&ship).unwrap();
+                child.attached_to = None;
+                child.assignment = crate::state::Assignment::Parent(root.clone());
+            }
+            if variant.starts_with("saved_") {
+                trial.state.land.reaction.continuation =
+                    Some(super::super::reaction::Continuation {
+                        seat: owner,
+                        unit: root.clone(),
+                        members: if variant == "saved_only" {
+                            vec![root.clone()]
+                        } else {
+                            vec![root.clone(), ship.clone()]
+                        },
+                        with_stack: false,
+                        planned_path: vec!["C4021".into()],
+                        orders_after: vec![],
+                        mover_stopped: false,
+                    });
+                assert!(continuing(&trial.state, &root));
+            }
+            if variant == "saved_fixed_remote" {
+                trial.state.land.units.get_mut(&ship).unwrap().location = Location::Hex {
+                    hex: "C4022".into(),
+                };
+                assert!(!formation::members(&c, &trial.state, &root).contains(&ship));
+            }
+            let before = serde_json::to_vec(&trial.state).unwrap();
+            let rng = trial.rng.clone();
+            let whole = serde_json::to_vec(&trial).unwrap();
+            if variant == "saved_only" {
+                // No wider family negative: keep the preexisting raw current-family error.
+                assert_eq!(
+                    eligible(&c, &trial.state, &root, owner),
+                    Err(unknown.clone())
+                );
+                assert_eq!(
+                    reachable(&c, &trial.state, &root, strict).err(),
+                    Some(unknown.clone())
+                );
+            } else {
+                assert_eq!(eligible(&c, &trial.state, &root, owner), Ok(false));
+                assert!(
+                    reachable(&c, &trial.state, &root, strict)
+                        .unwrap()
+                        .is_empty()
+                );
+            }
+            assert_eq!(serde_json::to_vec(&trial.state).unwrap(), before);
+            assert_eq!(trial.rng, rng);
+            assert_eq!(serde_json::to_vec(&trial).unwrap(), whole);
+        }
+        // No fixed kind anywhere in the represented family: preserve the exact error.
+        let before = serde_json::to_vec(&game.state).unwrap();
+        let rng = game.rng.clone();
+        let whole = serde_json::to_vec(&game).unwrap();
+        c.units.units.get_mut(&ship).unwrap().kind = None;
+        assert_eq!(
+            eligible(&c, &game.state, &root, owner),
+            Err(unknown.clone())
+        );
+        assert_eq!(
+            reachable(&c, &game.state, &root, strict).err(),
+            Some(unknown.clone())
+        );
+        assert_eq!(
+            Cna { strict }.inspect(&c, &game.state, Perspective::Seat(owner), TANK),
+            Err(unknown.clone())
+        );
+        assert_eq!(serde_json::to_vec(&game.state).unwrap(), before);
+        assert_eq!(game.rng, rng);
+        assert_eq!(serde_json::to_vec(&game).unwrap(), whole);
+        c.units.units.get_mut(&ship).unwrap().kind = Some("fixed_ship".into());
+    }
+}
+
+/// Cases: land:30.17, land:8.11, land:19.44, land:4.46
+#[test]
+fn ordinary_fixed_ship_negative_follows_existing_base_availability() {
+    const SHIP: &str = "it.tobruk_garrison.the_san_giorgio";
+    let (mut c, s, _overlay) = setup(SHIP, Some("road"), false, None);
+    let id: UnitId = SHIP.into();
+    let owner = SeatId::new(Side::Axis, ownership::seat_for_unit(&c, &s, &id));
+    let game = Game::<Cna> {
+        state: s,
+        rng: CampaignRng::from_seed([110; 32]).state(),
+    };
+    for fixed in [true, false] {
+        c.units.units.get_mut(&id).unwrap().kind = if fixed {
+            Some("fixed_ship".into())
+        } else {
+            None
+        };
+        for variant in ["wrong_seat", "moved", "off_map", "stopped_and_moved"] {
+            let mut trial = game.clone();
+            let submitted = if variant == "wrong_seat" {
+                SeatId::new(Side::Axis, Role::FrontLine)
+            } else {
+                owner
+            };
+            match variant {
+                "moved" | "stopped_and_moved" => {
+                    trial.state.land.movement.moved.insert(id.clone());
+                }
+                "off_map" => {
+                    trial.state.land.units.get_mut(&id).unwrap().location = Location::Eliminated
+                }
+                "wrong_seat" => {}
+                _ => unreachable!(),
+            }
+            if variant == "stopped_and_moved" {
+                trial.state.land.reaction.continuation =
+                    Some(super::super::reaction::Continuation {
+                        seat: owner,
+                        unit: id.clone(),
+                        members: vec![id.clone()],
+                        with_stack: false,
+                        planned_path: vec!["C4021".into()],
+                        orders_after: vec![],
+                        mover_stopped: true,
+                    });
+                assert!(!continuing(&trial.state, &id));
+            }
+            assert!(!eligible_base(&c, &trial.state, &id, submitted));
+            let before = serde_json::to_vec(&trial.state).unwrap();
+            let rng = trial.rng.clone();
+            let whole = serde_json::to_vec(&trial).unwrap();
+            assert_eq!(eligible(&c, &trial.state, &id, submitted), Ok(false));
+            // Wrong-seat is a direct eligibility check; reachable derives the true owner.
+            if variant != "wrong_seat" {
+                for strict in [false, true] {
+                    assert!(reachable(&c, &trial.state, &id, strict).unwrap().is_empty());
+                }
+            }
+            assert_eq!(serde_json::to_vec(&trial.state).unwrap(), before);
+            assert_eq!(trial.rng, rng);
+            assert_eq!(serde_json::to_vec(&trial).unwrap(), whole);
+        }
     }
 }
