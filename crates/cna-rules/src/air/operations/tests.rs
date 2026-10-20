@@ -14,18 +14,18 @@ use cna_core::{
 use serde_json::{Value, json};
 use std::sync::OnceLock;
 
-fn content() -> &'static CnaContent {
+pub(super) fn content() -> &'static CnaContent {
     static CONTENT: OnceLock<CnaContent> = OnceLock::new();
     CONTENT.get_or_init(|| CnaContent::load(&cna_content::repo_data_dir(), "graziani").unwrap())
 }
 
 // Reuse the existing genuinely authenticated public setup/designation fixture;
 // only its cfg(test), Air-internal helper visibility changes, not any assertion.
-fn opened() -> Game<Cna> {
+pub(super) fn opened() -> Game<Cna> {
     missions::initial::tests::opened()
 }
 
-fn plane(game: &Game<Cna>) -> (PlaneId, usize, HexId) {
+pub(super) fn plane(game: &Game<Cna>) -> (PlaneId, usize, HexId) {
     game.state
         .air
         .runtime
@@ -110,7 +110,7 @@ fn answered_at(game: &Game<Cna>, same_base: bool) -> (Game<Cna>, PlaneId, Vec<He
     )
 }
 
-fn staged() -> (Game<Cna>, PlaneId, BTreeMap<Side, Vec<RouteSelection>>) {
+pub(super) fn staged() -> (Game<Cna>, PlaneId, BTreeMap<Side, Vec<RouteSelection>>) {
     staged_at(false)
 }
 
@@ -118,7 +118,7 @@ fn staged() -> (Game<Cna>, PlaneId, BTreeMap<Side, Vec<RouteSelection>>) {
 // entitlement. The real initial producer above leaves these aircraft unrefitted.
 // Deployment consumes this independently staged ready state through its actual
 // private component producer; no intervening campaign trajectory is claimed.
-fn refit_component_input(state: &mut State) {
+pub(super) fn refit_component_input(state: &mut State) {
     let ids: Vec<_> = state
         .air
         .runtime

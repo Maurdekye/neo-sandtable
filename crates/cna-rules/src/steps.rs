@@ -75,7 +75,7 @@ impl Cna {
             }
             crate::air::designation::ANCHOR => crate::air::designation::finish(content, state),
             crate::air::missions::ANCHOR => crate::air::missions::finish(content, state),
-            crate::air::operations::DEPLOYMENT => crate::air::operations::finish(content, state),
+            crate::air::operations::DEPLOYMENT => crate::air::operations::finish_step(content, state, cx),
             crate::air::maintenance::window::TACTICAL
             | crate::air::maintenance::window::STRATEGIC => {
                 crate::air::maintenance::window::finish(content, state, cx)
@@ -148,6 +148,12 @@ impl Cna {
             crate::air::designation::ANCHOR => crate::air::designation::enter(content, state, cx),
             crate::air::missions::ANCHOR => {
                 crate::air::missions::enter(content, state, cx, self.strict)
+            }
+            crate::air::operations::DEPLOYMENT => {
+                // Retain the previous full-profile entry guard; executable
+                // operational choices are still statically disabled.
+                self.unimplemented(content, anchor)?;
+                crate::air::operations::enter(content, state, cx)
             }
             "setup" => {
                 crate::logistics::dump_markers::initialize(state, cx)?;
@@ -257,6 +263,9 @@ impl Cna {
             }
             crate::air::designation::KIND => {
                 crate::air::designation::answer(state, pending, action)
+            }
+            crate::air::operations::planning::ASSIGN | crate::air::operations::planning::QUERY | crate::air::operations::planning::COMMIT => {
+                crate::air::operations::planning::answer(content, state, pending, action)
             }
             crate::air::missions::KIND => {
                 crate::air::missions::answer(content, state, pending, action)
