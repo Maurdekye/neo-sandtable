@@ -289,70 +289,69 @@ pub fn seed_pool_opstage(state: &mut State) -> Result<(), cna_core::engine::Engi
         let p = pool(&draft, &id).map_err(|_| invalid())?;
         let side = p.side;
         let site = CargoSite::Pool(id.clone());
-        let groups: Vec<PhysicalTrucks> = if let Some(old) =
-            draft.logistics.pool_fuel_segments.get(&id)
-        {
-            // Validate against the retained segment rather than creating a new fuel account.
-            segment::carrier_ledger(
-                Some(old),
-                old.segment.clone(),
-                &old.origin,
-                &p.trucks,
-                &id,
-                &format!("pool.{id}"),
-            )
-            .map_err(|_| invalid())?
-            .cohorts
-            .iter()
-            .map(PhysicalTrucks::from)
-            .collect()
-        } else {
-            if draft.logistics.pool_fuel_accounts.contains_key(&id) {
-                return Err(invalid());
-            }
-            let mut old = draft
-                .logistics
-                .cargo_history
-                .motion
-                .entries
-                .iter()
-                .filter(|e| e.site == site);
-            let records = if let Some(entry) = old.next() {
-                if old.next().is_some() {
-                    return Err(invalid());
-                }
-                validate_known_unfunded_motion(p, &id, entry.cohorts.clone())
-                    .map_err(|_| invalid())?
-            } else {
-                segment::initial_cohorts(
+        let groups: Vec<PhysicalTrucks> =
+            if let Some(old) = draft.logistics.pool_fuel_segments.get(&id) {
+                // Validate against the retained segment rather than creating a new fuel account.
+                segment::carrier_ledger(
+                    Some(old),
+                    old.segment.clone(),
+                    &old.origin,
                     &p.trucks,
                     &id,
                     &format!("pool.{id}"),
-                    &SegmentKey::current(&draft),
-                    0,
-                    0,
                 )
                 .map_err(|_| invalid())?
-                .0
+                .cohorts
                 .iter()
-                .map(|c| TruckMotion {
-                    id: c.id.clone(),
-                    kind: c.kind,
-                    count: c.count,
-                    spent_cp_quarters: 0,
-                })
+                .map(PhysicalTrucks::from)
                 .collect()
+            } else {
+                if draft.logistics.pool_fuel_accounts.contains_key(&id) {
+                    return Err(invalid());
+                }
+                let mut old = draft
+                    .logistics
+                    .cargo_history
+                    .motion
+                    .entries
+                    .iter()
+                    .filter(|e| e.site == site);
+                let records = if let Some(entry) = old.next() {
+                    if old.next().is_some() {
+                        return Err(invalid());
+                    }
+                    validate_known_unfunded_motion(p, &id, entry.cohorts.clone())
+                        .map_err(|_| invalid())?
+                } else {
+                    segment::initial_cohorts(
+                        &p.trucks,
+                        &id,
+                        &format!("pool.{id}"),
+                        &SegmentKey::current(&draft),
+                        0,
+                        0,
+                    )
+                    .map_err(|_| invalid())?
+                    .0
+                    .iter()
+                    .map(|c| TruckMotion {
+                        id: c.id.clone(),
+                        kind: c.kind,
+                        count: c.count,
+                        spent_cp_quarters: 0,
+                    })
+                    .collect()
+                };
+                records
+                    .iter()
+                    .map(|r| PhysicalTrucks {
+                        id: r.id.clone(),
+                        parent: None,
+                        kind: r.kind,
+                        count: r.count,
+                    })
+                    .collect()
             };
-            records
-                .iter()
-                .map(|r| PhysicalTrucks {
-                    id: r.id.clone(),
-                    parent: None,
-                    kind: r.kind,
-                    count: r.count,
-                })
-                .collect()
-        };
         for group in &groups {
             if !physical_ids.insert((side, group.id.clone()))
                 || draft
