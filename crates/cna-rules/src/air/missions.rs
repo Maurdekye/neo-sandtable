@@ -1,4 +1,5 @@
-//! Private tactical intentions. A declaration grants no flight or load entitlement.
+//! Private tactical intentions and exact authenticated initial load choices.
+//! A declaration never grants flight or an ordinary servicing entitlement.
 //! Missing declaration shapes keep the full profile uniformly Unsupported.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -13,7 +14,10 @@ use cna_core::{
 use cna_protocol::{GameEvent, Role, Side};
 use cna_tables::airlog::air::MissionClass;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, json};
+
+pub(in crate::air) mod initial;
+pub use initial::{InitialChoiceSelection, InitialDecision, InitialOrdnance, InitialOrdnanceKind};
 
 use super::{
     designation::{self, Family},
@@ -60,6 +64,8 @@ pub struct PlaneDeclaration {
     pub plane: PlaneId,
     pub mode: usize,
     pub rated_pilot: Option<PilotId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_choice: Option<InitialChoiceSelection>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -172,6 +178,12 @@ fn bound(n: usize) -> u32 {
 }
 fn space(content: &CnaContent, state: &State, side: Side) -> ActionSpace {
     let planes = own_planes(state, side);
+    // These are already the answering owner's identities and provenance.
+    // No shared view change or enemy initial-credit query is needed.
+    let roster: BTreeMap<_, _> = planes.iter().map(|id| (id, &state.air.runtime.aircraft[id])).collect();
+    let initial_choices: BTreeMap<_, _> = planes.iter().filter_map(|id| {
+        state.air.runtime.preparation.initial_choices.get(id).map(|choice| (id, choice))
+    }).collect();
     // A structural upper bound only; exact per-plane mode validation is own-known.
     let mode_max = planes
         .iter()
@@ -265,6 +277,12 @@ fn space(content: &CnaContent, state: &State, side: Side) -> ActionSpace {
                                 ),
                                 true,
                             ),
+                            field(
+                                "initial_choice",
+                                "Required whole load or forfeiture for an authenticated unselected initial aircraft; absent/null preserves other provenance. No flight permission follows.",
+                                initial::schema(),
+                                true,
+                            ),
                         ],
                     }),
                 },
@@ -277,7 +295,8 @@ fn space(content: &CnaContent, state: &State, side: Side) -> ActionSpace {
         min: 0,
         max: bound(planes.len()),
     })
-    .with_pass("Declare no tactical missions in this Operations Stage.")
+    .with_pass("Declare no tactical missions in this Operations Stage; preserve all unselected initial loads.")
+    .with_context(json!({"planes":roster,"initial_choices":initial_choices}))
 }
 
 /// Both private windows exist regardless of hidden eligibility. Full stops
@@ -310,11 +329,11 @@ pub fn enter(
     };
     for side in Side::ALL {
         cx.emit(EngineEvent::new(Audience::Side(side), GameEvent::Note {
-            text: format!("Development tactical declarations omit: {MISSING}. Declarations grant no flight or load."),
+            text: format!("Development tactical declarations omit: {MISSING}. Authenticated initial aircraft require an explicit whole load or forfeiture when selected. Declarations grant no flight."),
         }));
         let domain = space(content, state, side);
         open(state, cx, SeatId::new(side, Role::Air), KIND,
-            "Declare private tactical intentions. Aircraft remain on the ground; no supplies or readiness are consumed.".into(),
+            "Declare private tactical intentions and any required initial load choice. Aircraft remain on the ground; no supplies or refit are consumed.".into(),
             &["airlog:39.12", "airlog:39.16"], Trigger::Scheduled, Secrecy::SecretSimultaneous, domain);
     }
     Ok(())
@@ -386,6 +405,7 @@ pub fn answer(
             {
                 return Err(illegal("not a mode of this own aircraft"));
             }
+            initial::validate_answer(content, state, side, selected)?;
         }
         declarations.push(MissionDeclaration {
             mission: m.mission,
@@ -400,7 +420,7 @@ pub fn answer(
         .tactical
         .answers
         .insert(side, declarations);
-    Ok("Recorded private tactical intentions; no flight or load was authorized.".into())
+    Ok("Recorded private tactical intentions and initial choices for finish; no flight was authorized.".into())
 }
 
 fn validate(
@@ -491,9 +511,20 @@ fn validate(
 }
 
 /// Commit intentions once, after both answers, via the canonical update path.
-/// No flight, pilot assignment, preparation, sortie use or readiness is changed.
-/// Cases: airlog:39.12, airlog:39.16
+/// Authenticated initial choices commit once; no flight, pilot assignment,
+/// sortie use, supply payment or refit state is changed.
+/// Cases: airlog:39.12, airlog:39.16, scen:59.32, scen:59.36
 pub fn finish(content: &CnaContent, state: &mut State) -> Result<(), EngineError> {
+    finish_transaction(content, state, |_| {})
+}
+
+// Private final-boundary control, matching the maintenance transaction seam.
+// Production never edits the draft between the two canonical updates.
+fn finish_transaction(
+    content: &CnaContent,
+    state: &mut State,
+    after_initial: impl FnOnce(&mut State),
+) -> Result<(), EngineError> {
     let current = period(state)?;
     let window = &state.air.runtime.tactical;
     if window.period != Some(current) {
@@ -509,7 +540,13 @@ pub fn finish(content: &CnaContent, state: &mut State) -> Result<(), EngineError
     for side in Side::ALL {
         validate(content, state, side, &window.answers[&side])?;
     }
-    inventory::update(content, &mut state.air, |runtime| {
+    let initial = initial::prepare(content, state, current)?;
+    let mut draft = state.clone();
+    if let Some(admission) = initial {
+        inventory::update_initial_loads(content, &mut draft.air, admission)?;
+    }
+    after_initial(&mut draft);
+    inventory::update(content, &mut draft.air, |runtime| {
         let window = &mut runtime.tactical;
         window.declarations = window
             .answers
@@ -528,7 +565,9 @@ pub fn finish(content: &CnaContent, state: &mut State) -> Result<(), EngineError
             .collect();
         window.resolved = true;
         Ok(())
-    })
+    })?;
+    *state = draft;
+    Ok(())
 }
 
 #[cfg(test)]

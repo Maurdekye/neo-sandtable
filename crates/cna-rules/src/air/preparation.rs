@@ -1,8 +1,9 @@
 //! Private load facts and permanent initial-credit history.
 //!
 //! Generic inventory migration records only UnknownLegacy, terminal for free
-//! initial credit. A future real setup-close import must construct brand-new
-//! InitialUnspecified/Unselected records directly. Paid fuel admission belongs
+//! initial credit. Authenticated fresh setup-close imports construct brand-new
+//! InitialUnspecified/Unselected records; exact declaration finish consumes
+//! their complete one-time choice. Paid fuel admission belongs
 //! to the transactional maintenance producer, not these structural records.
 //! These source checks grant no arming, mission, payment or flight permission.
 
