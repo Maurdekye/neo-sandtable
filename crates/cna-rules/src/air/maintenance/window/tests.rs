@@ -1377,7 +1377,7 @@ fn cohort_servicers(space: &ActionSpace) -> Vec<String> {
     options.iter().map(|o| o.id.clone()).collect()
 }
 
-/// Cases: airlog:36.5, airlog:36.14, airlog:36.17, airlog:43.21, airlog:44.14, airlog:44.16, land:3.6
+/// Cases: airlog:36.5, airlog:36.14, airlog:36.17, airlog:38.22, airlog:43.21, airlog:44.14, airlog:44.16, land:3.6
 #[test]
 fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_recovery() {
     let game = opened(false);
@@ -1397,6 +1397,24 @@ fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_re
         .count();
     assert!(planes > 0);
     assert_eq!(cohort_maximum(&original), u32::try_from(planes).unwrap());
+    let service_maximum = |domain: &ActionSpace, name: &str| {
+        let ActionSchema::Record { fields } = &domain.schema else {
+            panic!("maintenance record required")
+        };
+        let field = fields.iter().find(|field| field.name == name).unwrap();
+        assert!(field.optional);
+        let ActionSchema::List { min, max, .. } = &field.schema else {
+            panic!("service list required")
+        };
+        assert_eq!(*min, 0);
+        *max
+    };
+    for name in ["fueling"] {
+        assert_eq!(
+            service_maximum(&original, name),
+            u32::try_from(planes).unwrap()
+        );
+    }
     for case in [
         "airlog:36.5",
         "airlog:43.21",
@@ -1468,6 +1486,11 @@ fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_re
         .unwrap();
         assert_eq!(rng.state(), changed.rng);
         let domain = space(content(), &changed.state, Side::Axis, current).unwrap();
+        // Neither an unavailable field nor an exempt off-map SGSU supplies
+        // this bounded finite on-map service, despite the retained aircraft.
+        for name in ["fueling"] {
+            assert_eq!(service_maximum(&domain, name), 0);
+        }
         assert_eq!(
             cohort_maximum(&domain),
             if exempt {
