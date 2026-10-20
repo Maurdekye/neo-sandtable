@@ -198,11 +198,15 @@ impl SupervisedChild {
         if let Some(task) = self.supervisor.as_mut() {
             let completion = tokio::time::timeout_at(deadline, &mut *task)
                 .await
-                .map_err(|_| std::io::Error::other("natural CLI park timed out"))?
-                .map_err(|_| std::io::Error::other("natural CLI supervisor failed"))?
-                .map_err(|_| std::io::Error::other("natural CLI job cleanup failed"))?;
-            self.result = Some(Ok(completion));
+                .map_err(|_| std::io::Error::other("natural CLI park timed out"))?;
+            // A completed JoinHandle must be removed even when its result is
+            // an error. Timeout/cancellation leave the pending handle owned.
             self.supervisor.take();
+            self.result = Some(match completion {
+                Ok(Ok(completion)) => Ok(completion),
+                Ok(Err(_)) => Err("natural CLI job cleanup failed".into()),
+                Err(_) => Err("natural CLI supervisor failed".into()),
+            });
         }
         if !matches!(self.result,Some(Ok(JobCompletion::Natural(status))) if status.success()) {
             return Err(std::io::Error::other(
@@ -211,11 +215,14 @@ impl SupervisedChild {
         }
         for slot in &mut self.pumps {
             let Some(pump) = slot.as_mut() else { continue };
-            tokio::time::timeout_at(deadline, &mut *pump)
+            let joined = tokio::time::timeout_at(deadline, &mut *pump)
                 .await
-                .map_err(|_| std::io::Error::other("natural CLI output drain timed out"))?
-                .map_err(|_| std::io::Error::other("natural CLI output drain failed"))?;
+                .map_err(|_| std::io::Error::other("natural CLI output drain timed out"))?;
             slot.take();
+            if joined.is_err() {
+                self.result = Some(Err("natural CLI output drain failed".into()));
+                return Err(std::io::Error::other("natural CLI output drain failed"));
+            }
         }
         self.pumps.clear();
         self.park_complete = true;
@@ -496,6 +503,72 @@ mod tests {
                 "kind={kind} park={parked:?}"
             );
             assert!(!process.is_running());
+        }
+    }
+
+    #[tokio::test]
+    async fn completed_supervisor_and_pump_errors_are_cached_and_never_polled_twice() {
+        use std::os::windows::process::ExitStatusExt;
+        for stage in ["membership", "supervisor-panic", "pump-panic"] {
+            let requests = budget(Duration::from_secs(20));
+            let (stop, _) = watch::channel(false);
+            let supervisor = tokio::spawn(async move {
+                match stage {
+                    "membership" => Err(JobFailure::Membership),
+                    "supervisor-panic" => panic!("injected supervisor task failure"),
+                    _ => Ok(JobCompletion::Natural(std::process::ExitStatus::from_raw(
+                        0,
+                    ))),
+                }
+            });
+            let mut pumps = if stage == "pump-panic" {
+                vec![Some(tokio::spawn(async {
+                    panic!("injected IO task failure")
+                }))]
+            } else {
+                Vec::new()
+            };
+            let pending_joined = Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let completed = pending_joined.clone();
+            let stopped = stop.subscribe();
+            pumps.push(Some(tokio::spawn(async move {
+                stopping(stopped).await;
+                completed.store(true, std::sync::atomic::Ordering::SeqCst);
+            })));
+            let (_, lines) = mpsc::channel(16);
+            let mut process = ChildProc {
+                child: None,
+                stdin: None,
+                lines,
+                stderr_tail: Arc::new(Mutex::new(VecDeque::new())),
+                watched: Some(SupervisedChild {
+                    stop,
+                    supervisor: Some(supervisor),
+                    pumps,
+                    result: None,
+                    budget: requests.clone(),
+                    session: None,
+                    observed: None,
+                    window_open: false,
+                    window_succeeded: false,
+                    park_attempted: false,
+                    park_complete: false,
+                }),
+            };
+            // No actual root or OS error is injected: these are completed
+            // task-result ownership controls. All handles must be consumed.
+            let parked = process.finish(Duration::from_secs(2)).await;
+            let cleanup = process.kill().await;
+            let repeated = process.kill().await;
+            let owner = process.watched.as_ref().unwrap();
+            assert!(
+                parked.is_err() && cleanup.is_err() && repeated.is_err(),
+                "stage={stage}"
+            );
+            assert!(owner.supervisor.is_none() && owner.pumps.is_empty());
+            assert!(pending_joined.load(std::sync::atomic::Ordering::SeqCst));
+            assert!(!owner.park_complete && requests.usage().unwrap().stopped);
+            assert!(process.take_park_witness().is_none());
         }
     }
 

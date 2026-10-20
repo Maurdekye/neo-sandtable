@@ -2,6 +2,7 @@
 //! or cost schema is validated. Only operative path references and a bounded
 //! observed-window persistence witness are examined. Native admission is separate.
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     io::Read,
@@ -105,6 +106,7 @@ struct Stamp {
     index: u64,
     bytes: u64,
     written: Option<u64>,
+    digest: [u8; 32],
 }
 /// This is an in-memory same-run/seat/session file binding, not a receipt.
 /// Only a naturally successful, tree-drained park may create one in the driver.
@@ -235,12 +237,20 @@ fn inventory(
     let transcript = project.join(format!("{session}.jsonl"));
     let sidecar = project.join(session.to_string());
     let mut paths = vec![transcript.clone()];
+    let mut directories = vec![
+        cwd.to_path_buf(),
+        config.to_path_buf(),
+        projects.clone(),
+        project.clone(),
+    ];
     let mut found = false;
     for entry in entries(&project)? {
         if entry == transcript {
             found = true;
         } else if entry == sidecar {
             exact_directory(&sidecar, "tool-results")?;
+            directories.push(sidecar.clone());
+            directories.push(sidecar.join("tool-results"));
             for output in entries(&sidecar.join("tool-results"))? {
                 if !matches!(
                     output.extension().and_then(|v| v.to_str()),
@@ -268,7 +278,7 @@ fn inventory(
             return Err(StateRefusal::Limit);
         }
         plain(path, false)?;
-        let file = fs::OpenOptions::new()
+        let mut file = fs::OpenOptions::new()
             .read(true)
             .share_mode(1)
             .custom_flags(0x0020_0000)
@@ -287,10 +297,28 @@ fn inventory(
         {
             return Err(StateRefusal::Limit);
         }
-        if path == &transcript {
-            file.take(TRANSCRIPT_BYTES + 1)
-                .read_to_end(&mut original)
-                .map_err(|_| StateRefusal::Metadata)?;
+        let mut digest = Sha256::new();
+        let mut read = 0u64;
+        let mut buffer = [0u8; 64 * 1024];
+        loop {
+            if Instant::now() >= deadline {
+                return Err(StateRefusal::Limit);
+            }
+            let length = file.read(&mut buffer).map_err(|_| StateRefusal::Metadata)?;
+            if length == 0 {
+                break;
+            }
+            read = read.checked_add(length as u64).ok_or(StateRefusal::Limit)?;
+            if read > info.file_size() {
+                return Err(StateRefusal::Changed);
+            }
+            digest.update(&buffer[..length]);
+            if path == &transcript {
+                original.extend_from_slice(&buffer[..length]);
+            }
+        }
+        if read != info.file_size() {
+            return Err(StateRefusal::Changed);
         }
         stamps.push(Stamp {
             path: path
@@ -301,12 +329,16 @@ fn inventory(
             index: info.file_index(),
             bytes: info.file_size(),
             written: info.last_write_time(),
+            digest: digest.finalize().into(),
         });
     }
     // Only the unnamed file stream is adopted. Bounded trusted metadata helper,
     // no CLI/account/environment authority and no source/artifact manifest.
     for batch in paths.chunks(16) {
         stream_check(batch, deadline)?;
+    }
+    for directory in directories {
+        directory_stream_check(&directory, deadline)?;
     }
     Ok((stamps, original))
 }
@@ -351,6 +383,88 @@ fn stream_check(paths: &[PathBuf], deadline: Instant) -> Result<(), StateRefusal
             }
         }
     }
+}
+
+fn directory_stream_check(directory: &Path, deadline: Instant) -> Result<(), StateRefusal> {
+    // WindowsPowerShell5.1 hides directory ADS even with -Stream *. Native
+    // DIR /R enumerates streams on the current directory's "." entry. Only
+    // that entry is relevant; parent-directory metadata is not adopted.
+    // The path is environment data, not interpolated command source. CMD's
+    // expansion is single-pass, quoted, with delayed expansion disabled.
+    let mut child = Command::new(r"C:\Windows\System32\cmd.exe")
+        .args(["/d", "/v:off", "/u", "/c"])
+        // CMD does not use the normal argv quote/backslash convention.
+        // This raw fragment is constant; directory data comes only from env.
+        .raw_arg("dir /r /a /-c \"%CNA_DIRECTORY%\"")
+        .env_clear()
+        .env("SYSTEMROOT", "C:/Windows")
+        .env("WINDIR", "C:/Windows")
+        .env("CNA_DIRECTORY", directory)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .creation_flags(0x0800_0000)
+        .spawn()
+        .map_err(|_| StateRefusal::Metadata)?;
+    const OUTPUT: u64 = 4 * 1024 * 1024;
+    let Some(stdout) = child.stdout.take() else {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(StateRefusal::Metadata);
+    };
+    // Drain concurrently so a full metadata pipe cannot deadlock wait. DIR is
+    // a builtin with no child process; both its root and reader are joined.
+    let reader = match std::thread::Builder::new().spawn(move || {
+        let mut bytes = Vec::new();
+        stdout
+            .take(OUTPUT + 1)
+            .read_to_end(&mut bytes)
+            .map(|_| bytes)
+    }) {
+        Ok(reader) => reader,
+        Err(_) => {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(StateRefusal::Metadata);
+        }
+    };
+    let bound = deadline.min(Instant::now() + Duration::from_secs(2));
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break Some(status),
+            Ok(None) if Instant::now() < bound => std::thread::sleep(Duration::from_millis(5)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                break None;
+            }
+        }
+    };
+    let bytes = reader
+        .join()
+        .map_err(|_| StateRefusal::Metadata)?
+        .map_err(|_| StateRefusal::Metadata)?;
+    if status.is_none_or(|s| !s.success()) || bytes.len() as u64 > OUTPUT || bytes.len() % 2 != 0 {
+        return Err(StateRefusal::Metadata);
+    }
+    let units: Vec<_> = bytes
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|p| u16::from_le_bytes(*p))
+        .collect();
+    let text = String::from_utf16(&units).map_err(|_| StateRefusal::Metadata)?;
+    for line in text.lines() {
+        let line = line.trim_start();
+        if let Some((size, rest)) = line.split_once(char::is_whitespace)
+            && !size.is_empty()
+            && size.bytes().all(|v| v.is_ascii_digit())
+            && rest.trim_start().starts_with(".:")
+        {
+            return Err(StateRefusal::Metadata);
+        }
+    }
+    Ok(())
 }
 
 fn references_and_witness(
@@ -647,6 +761,57 @@ mod tests {
         f.write(&[json!({"message":{"content":[{"type":"tool_result","content":marker}]}})]);
         assert!(matches!(f.capture(), Err(StateRefusal::Reference)));
     }
+    #[test]
+    fn same_length_output_edit_with_restored_mtime_refuses() {
+        let f = Fixture::new();
+        let output = f.output();
+        let saved = f.capture().unwrap();
+        let before = fs::metadata(&output).unwrap();
+        let modified = before.modified().unwrap();
+        fs::write(&output, b"modified output").unwrap();
+        fs::OpenOptions::new()
+            .write(true)
+            .open(&output)
+            .unwrap()
+            .set_times(fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+        let after = fs::metadata(&output).unwrap();
+        assert_eq!(before.len(), after.len());
+        assert_eq!(modified, after.modified().unwrap());
+        assert_eq!(
+            saved.verify(&f.config, &f.cwd, f.session),
+            Err(StateRefusal::Changed)
+        );
+    }
+
+    #[test]
+    fn named_streams_on_every_retained_directory_or_cwd_refuse() {
+        let f = Fixture::new();
+        let output = f.output();
+        let saved = f.capture().unwrap();
+        let directories = [
+            f.cwd.clone(),
+            f.config.clone(),
+            f.config.join("projects"),
+            f.config.join("projects/watched-seat"),
+            output.parent().unwrap().parent().unwrap().to_path_buf(),
+            output.parent().unwrap().to_path_buf(),
+        ];
+        for directory in directories {
+            let stream = format!("{}:unapproved", directory.display());
+            fs::write(&stream, b"directory stream").unwrap();
+            let captured = f.capture();
+            let verified = saved.verify(&f.config, &f.cwd, f.session);
+            fs::remove_file(&stream).unwrap();
+            assert!(
+                matches!(captured, Err(StateRefusal::Metadata)),
+                "directory={directory:?}"
+            );
+            assert_eq!(verified, Err(StateRefusal::Metadata));
+        }
+        assert!(saved.verify(&f.config, &f.cwd, f.session).is_ok());
+    }
+
     #[test]
     fn unapproved_config_sidecars_hardlinks_ads_and_torn_current_window_refuse() {
         let f = Fixture::new();
