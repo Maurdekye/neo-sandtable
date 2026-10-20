@@ -274,6 +274,13 @@ fn space(
     } else {
         plane_max
     };
+    // Both finite services need an eligible actual SGSU. Optional service lists
+    // stay generatable when aircraft exist but their servicer domain is empty.
+    let service_max = if first_bar(content, current) || fuel_servicers.is_empty() {
+        0
+    } else {
+        plane_max
+    };
     let sgsu_max = u32::try_from(sgsus.len()).unwrap_or(u32::MAX);
     let dump_max = u32::try_from(dumps.len()).unwrap_or(u32::MAX);
     let amount = ActionSchema::Record {
@@ -361,7 +368,7 @@ fn space(
                         field("plane", choice(planes.clone())),
                         field("mode", ActionSchema::Integer { min: 0, max: i64::try_from(mode_max).unwrap_or(i64::MAX) }),
                     ] }, plane_max)),
-                ] }, if first_bar(content, current) { 0 } else { plane_max }),
+                ] }, service_max),
             },
             FieldSchema {
                 name: "arming".into(), doc: "Finite same-site gun/bomb loading; null bombs preserve ordnance.".into(), optional: true,
@@ -376,7 +383,7 @@ fn space(
                                 field("bomb_points", ActionSchema::Integer { min: 1, max: i64::from(i32::MAX) }),
                             ] } },
                     ] }, plane_max)),
-                ] }, if first_bar(content, current) { 0 } else { plane_max }),
+                ] }, service_max),
             },
         ],
     })
