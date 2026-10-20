@@ -1,4 +1,4 @@
-//! Graziani Axis FIELD tanks, homogeneous trucks and grouped recce/armored cars.
+//! Graziani Axis FIELD tanks/trucks and both sides' grouped recce/armored cars.
 //! Mixed/funded truck merges and other vehicle procedures remain explicit gaps.
 use super::{payloads::*, plans::*, transaction};
 use crate::{
@@ -263,12 +263,6 @@ fn prepare(
             "field repair special-organization modifiers outside Graziani are not implemented",
         ));
     }
-    if actor == Side::Commonwealth && !plan.markers.is_empty() {
-        return Err(gap(
-            "land:22.6",
-            "Commonwealth field repair needs the source-bound TDS modifier adapter",
-        ));
-    }
     let mut prepared = PreparedRepair {
         actor,
         stage: WaterStage::current(s),
@@ -278,7 +272,7 @@ fn prepare(
         output_choices: vec![],
     };
     let mut ids = BTreeSet::new();
-    let mut sites = BTreeMap::<HexId, Option<(String, bool)>>::new();
+    let mut sites = BTreeMap::<HexId, Option<recce::Group>>::new();
     let mut excluded = vec![];
     let mut debits = BTreeMap::<HexId, (cna_core::ids::UnitId, i32, i32)>::new();
     for choice in &plan.markers {
@@ -320,6 +314,20 @@ fn prepare(
             || selected.points > actual.points
         {
             return Err(illegal("repair selection changed"));
+        }
+        // land:22.62 adds a tank procedure, not a recce/AC die modifier.
+        // Commonwealth tanks and trucks retain their separate source gaps.
+        if actor == Side::Commonwealth && actual.equipment != Equipment::ArmoredRecce {
+            if trucks::kind(&actual.equipment).is_some() {
+                return Err(gap(
+                    "land:22.23",
+                    "Commonwealth truck field repair is not implemented",
+                ));
+            }
+            return Err(gap(
+                "land:22.6",
+                "Commonwealth field repair needs the source-bound TDS modifier adapter",
+            ));
         }
         let vehicle = if trucks::kind(&actual.equipment).is_some() {
             trucks::validate(c, s, marker, choice)?;
