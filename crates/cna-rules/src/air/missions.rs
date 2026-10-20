@@ -456,13 +456,20 @@ pub(in crate::air) fn validate(
 // intention schema and handler continue to exclude this disabled flight shape.
 // Cases: airlog:40.21, airlog:40.24
 pub(in crate::air) fn validate_operational(
-    content: &CnaContent, state: &State, side: Side, plan: &[MissionDeclaration],
+    content: &CnaContent,
+    state: &State,
+    side: Side,
+    plan: &[MissionDeclaration],
 ) -> Result<(), EngineError> {
     validate_plan(content, state, side, plan, true)
 }
 
 fn validate_plan(
-    content: &CnaContent, state: &State, side: Side, plan: &[MissionDeclaration], allow_cap: bool,
+    content: &CnaContent,
+    state: &State,
+    side: Side,
+    plan: &[MissionDeclaration],
+    allow_cap: bool,
 ) -> Result<(), EngineError> {
     let own: BTreeSet<_> = own_planes(state, side).into_iter().collect();
     let mut planes = BTreeSet::new();
@@ -473,7 +480,10 @@ fn validate_plan(
             .airlog
             .mission_summary
             .land_support(&m.mission)
-            .filter(|m| supported(&m.mission) || (allow_cap && m.mission == "combat_air_patrol_offensive_defensive"))
+            .filter(|m| {
+                supported(&m.mission)
+                    || (allow_cap && m.mission == "combat_air_patrol_offensive_defensive")
+            })
             .ok_or_else(|| invariant("unknown committed tactical mission"))?;
         if m.planes.is_empty() || (m.light == Light::Night && !row.night) {
             return Err(invariant("empty mission or unsupported night declaration"));

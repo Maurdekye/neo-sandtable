@@ -75,7 +75,9 @@ impl Cna {
             }
             crate::air::designation::ANCHOR => crate::air::designation::finish(content, state),
             crate::air::missions::ANCHOR => crate::air::missions::finish(content, state),
-            crate::air::operations::DEPLOYMENT => crate::air::operations::finish_step(content, state, cx),
+            crate::air::operations::DEPLOYMENT => {
+                crate::air::operations::finish_step(content, state, cx)
+            }
             crate::air::maintenance::window::TACTICAL
             | crate::air::maintenance::window::STRATEGIC => {
                 crate::air::maintenance::window::finish(content, state, cx)
@@ -264,7 +266,9 @@ impl Cna {
             crate::air::designation::KIND => {
                 crate::air::designation::answer(state, pending, action)
             }
-            crate::air::operations::planning::ASSIGN | crate::air::operations::planning::QUERY | crate::air::operations::planning::COMMIT => {
+            crate::air::operations::planning::ASSIGN
+            | crate::air::operations::planning::QUERY
+            | crate::air::operations::planning::COMMIT => {
                 crate::air::operations::planning::answer(content, state, pending, action)
             }
             crate::air::missions::KIND => {

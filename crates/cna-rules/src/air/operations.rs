@@ -202,10 +202,21 @@ pub(crate) fn check(
             return Err(invalid("invalid or duplicate canonical flight"));
         }
         if flight.classes.is_empty() {
-            return Err(unsupported("scen:59.32", "active saved flight lacks its immutable deployment classes"));
+            return Err(unsupported(
+                "scen:59.32",
+                "active saved flight lacks its immutable deployment classes",
+            ));
         }
-        if flight.classes.iter().any(|class| !ops.contacts.contains(&Contact { owner: flight.owner, class: *class, target: flight.target.clone() })) {
-            return Err(invalid("flight classes lack their immutable deployment contacts"));
+        if flight.classes.iter().any(|class| {
+            !ops.contacts.contains(&Contact {
+                owner: flight.owner,
+                class: *class,
+                target: flight.target.clone(),
+            })
+        }) {
+            return Err(invalid(
+                "flight classes lack their immutable deployment contacts",
+            ));
         }
         for member in &flight.members {
             let plane = air
@@ -213,8 +224,14 @@ pub(crate) fn check(
                 .aircraft
                 .get(&member.plane)
                 .ok_or_else(|| invalid("airborne member has no live aircraft"))?;
-            if !flight.classes.contains(&class(&content.units.aircraft.get(&plane.aircraft).ok_or_else(|| invalid("missing airborne aircraft source"))?.role)?)
-                || !ids.insert(&member.plane)
+            if !flight.classes.contains(&class(
+                &content
+                    .units
+                    .aircraft
+                    .get(&plane.aircraft)
+                    .ok_or_else(|| invalid("missing airborne aircraft source"))?
+                    .role,
+            )?) || !ids.insert(&member.plane)
                 || side(&plane.force)? != flight.owner
                 || plane.facility.as_deref() != Some(member.origin.facility.0.as_str())
                 || content.map.canonical(&member.origin.hex) != Some(&member.origin.hex)
@@ -489,7 +506,12 @@ fn prepare_deployment(
                 .declarations
                 .get(&route.mission)
                 .ok_or_else(|| invalid("route has no committed declaration"))?;
-            super::missions::validate_operational(content, state, owner, std::slice::from_ref(mission))?;
+            super::missions::validate_operational(
+                content,
+                state,
+                owner,
+                std::slice::from_ref(mission),
+            )?;
             let DeclarationTarget::Hex(target) = &mission.target else {
                 return Err(unsupported(
                     "airlog:40.33",
@@ -665,14 +687,34 @@ fn prepare_deployment(
                 .iter_mut()
                 .find(|f| f.owner == owner && f.target == *target && f.path == route.path)
             {
-                flight.classes.extend(members.iter().map(|m| class(&content.units.aircraft[&state.air.runtime.aircraft[&m.plane].aircraft].role)).collect::<Result<BTreeSet<_>, _>>()?);
+                flight.classes.extend(
+                    members
+                        .iter()
+                        .map(|m| {
+                            class(
+                                &content.units.aircraft
+                                    [&state.air.runtime.aircraft[&m.plane].aircraft]
+                                    .role,
+                            )
+                        })
+                        .collect::<Result<BTreeSet<_>, _>>()?,
+                );
                 flight.members.extend(members);
             } else {
                 after.operations.flights.push(Flight {
                     owner,
                     target: target.clone(),
                     path: route.path.clone(),
-                    classes: members.iter().map(|m| class(&content.units.aircraft[&state.air.runtime.aircraft[&m.plane].aircraft].role)).collect::<Result<_, _>>()?,
+                    classes: members
+                        .iter()
+                        .map(|m| {
+                            class(
+                                &content.units.aircraft
+                                    [&state.air.runtime.aircraft[&m.plane].aircraft]
+                                    .role,
+                            )
+                        })
+                        .collect::<Result<_, _>>()?,
                     members,
                 });
             }
@@ -733,15 +775,27 @@ pub fn finish(content: &CnaContent, state: &mut State) -> Result<(), EngineError
 
 /// Static prelaunch boundary: both profiles retain their old public flow.
 /// Cases: airlog:39.12, airlog:40.27
-pub fn enter(content: &CnaContent, state: &mut State, cx: &mut cna_core::engine::Cx<'_>) -> Result<(), EngineError> {
-    if !EXECUTABLE_FLIGHTS { return Ok(()); }
+pub fn enter(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut cna_core::engine::Cx<'_>,
+) -> Result<(), EngineError> {
+    if !EXECUTABLE_FLIGHTS {
+        return Ok(());
+    }
     planning::enter_assignment(content, state, cx)
 }
 
 /// Fixed internal route/query/commit progression; never hidden-conditioned.
 /// Cases: airlog:40.27
-pub fn finish_step(content: &CnaContent, state: &mut State, cx: &mut cna_core::engine::Cx<'_>) -> Result<(), EngineError> {
-    if !EXECUTABLE_FLIGHTS { return Ok(()); }
+pub fn finish_step(
+    content: &CnaContent,
+    state: &mut State,
+    cx: &mut cna_core::engine::Cx<'_>,
+) -> Result<(), EngineError> {
+    if !EXECUTABLE_FLIGHTS {
+        return Ok(());
+    }
     planning::finish(content, state, cx)
 }
 
