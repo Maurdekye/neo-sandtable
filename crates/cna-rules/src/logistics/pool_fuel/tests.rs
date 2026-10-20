@@ -539,10 +539,221 @@ fn unfunded_withdrawal_preserves_unknown_and_rejects_positive_cp_or_overdraw_ato
         retire_unfunded_pool_motion(&mut s, &id, &selection),
         Err(MotionError::Invalid)
     );
-    assert_eq!(
-        pool_segment_fuel_cohorts(&s, &id),
-        Err(SupplyError::Invalid)
+    let adapted = pool_segment_fuel_cohorts(&s, &id).unwrap();
+    assert_eq!(adapted.len(), physical.len());
+    assert_eq!(adapted[0].id, physical[0].id);
+    assert_eq!(adapted[0].kind, physical[0].kind);
+    assert_eq!(adapted[0].count, physical[0].count);
+    assert_eq!(adapted[0].cp_quarters, 0);
+    assert_eq!(adapted[0].account, id);
+    assert_eq!(adapted[0].segment, SegmentKey::current(&s));
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+}
+
+// Models the exact retained destination identity; the real recovery caller is
+// covered independently by Land's FIELD-truck finish test.
+fn retained_pool_motion(fuel: i32) -> (State, String, Vec<PhysicalTrucks>) {
+    let (mut s, id) = game(
+        Trucks {
+            medium: 2,
+            ..Trucks::default()
+        },
+        fuel,
     );
+    let groups = vec![PhysicalTrucks {
+        id: format!("pool.{id}.fuel-trucks-2"),
+        parent: None,
+        kind: segment::FuelTruckKind::Medium,
+        count: 2,
+    }];
+    let site = CargoSite::Pool(id.clone());
+    motion::seed_fresh(&mut s, Side::Axis, &site, &groups).unwrap();
+    motion::advance(&mut s, Side::Axis, &site, &groups, 16).unwrap();
+    (s, id, groups)
+}
+
+/// Cases: land:22.5, airlog:49.13, airlog:49.16, airlog:53.25
+#[test]
+fn retained_motion_gets_fresh_pool_funding_without_unit_credit_or_physical_reset() {
+    let (mut s, id, groups) = retained_pool_motion(100);
+    let unit = s.land.units.iter().find(|(_, unit)| unit.side == Side::Axis)
+        .unwrap().0.clone();
+    let segment = SegmentKey::current(&s);
+    let origin = pool(&s, &id).unwrap().location.clone().unwrap();
+    s.logistics.fuel_accounts.insert(
+        unit.clone(),
+        FuelFundingAccount {
+            side: Side::Axis,
+            segment,
+            origin,
+            paid_cost: FuelTenths::new(30),
+            draws: vec![segment::FuelDraw {
+                source: SupplySource::UnitStock(unit),
+                fuel: FuelTenths::new(30),
+            }],
+        },
+    );
+    let unit_funding = serde_json::to_value((
+        &s.logistics.fuel_accounts,
+        &s.logistics.fuel_segments,
+    )).unwrap();
+    let before = serde_json::to_value(&s).unwrap();
+    let initial = ledger(&s, &id).unwrap();
+    assert_eq!(initial.cp_quarters, 0);
+    assert_eq!(initial.paid_cost, FuelTenths::ZERO);
+    assert!(initial.draws.is_empty());
+    assert_eq!(initial.next_cohort_serial, 3);
+    assert_eq!(initial.cohorts[0].id, groups[0].id);
+    assert_eq!(initial.cohorts[0].cp_quarters, 0);
+    assert_eq!(initial.cohorts[0].account, id);
+    let quote = plan_pool_segment_fuel(content(), &s, &id, 4).unwrap();
+    assert!(quote.increment.get() > 0);
+    assert!(quote.draws.iter().any(|draw| draw.amount.fuel.get() > 0));
+    assert_eq!(quote.funding.len(), 1);
+    assert_eq!(quote.funding[0].id, id);
+    assert!(quote.funding[0].prior.is_empty());
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    let whole = plan_pool_segment_fuel(content(), &s, &id, 8).unwrap();
+    spend_pool_segment_fuel(content(), &mut s, &id, 4).unwrap();
+    assert_eq!(s.logistics.pool_fuel_accounts[&id].paid_cost, quote.increment);
+    assert_eq!(s.logistics.pool_fuel_segments[&id], quote.ledger);
+    assert_eq!(known_unfunded_motion(&s, &id), Err(MotionError::Invalid));
+    assert!(stock(&s, &id) < 100);
+    let mut restored: State = serde_json::from_value(serde_json::to_value(&s).unwrap()).unwrap();
+    spend_pool_segment_fuel(content(), &mut s, &id, 8).unwrap();
+    spend_pool_segment_fuel(content(), &mut restored, &id, 8).unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), serde_json::to_value(&restored).unwrap());
+    assert_eq!(s.logistics.pool_fuel_accounts[&id].paid_cost, whole.increment);
+    let paid = serde_json::to_value(&s).unwrap();
+    spend_pool_segment_fuel(content(), &mut s, &id, 8).unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), paid);
+    assert_eq!(serde_json::to_value((
+        &s.logistics.fuel_accounts,
+        &s.logistics.fuel_segments,
+    )).unwrap(), unit_funding);
+    let site = CargoSite::Pool(id.clone());
+    assert_eq!(motion::query(&s, Side::Axis, &site, &groups).unwrap()[0].spent_cp_quarters, 16);
+    motion::advance(&mut s, Side::Axis, &site, &groups, 4).unwrap();
+    assert_eq!(motion::query(&s, Side::Axis, &site, &groups).unwrap()[0].spent_cp_quarters, 20);
+}
+
+/// Cases: land:22.5, airlog:49.13, airlog:49.16, airlog:53.25
+#[test]
+fn retained_motion_without_fuel_cannot_publish_a_financial_ledger() {
+    let (mut s, id, _) = retained_pool_motion(0);
+    let before = serde_json::to_value(&s).unwrap();
+    assert_eq!(plan_pool_segment_fuel(content(), &s, &id, 4), Err(SupplyError::Insufficient));
+    assert_eq!(spend_pool_segment_fuel(content(), &mut s, &id, 4), Err(SupplyError::Insufficient));
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+}
+
+/// Cases: land:6.13, land:22.5, airlog:53.25
+#[test]
+fn unfunded_retained_motion_stage_entry_preserves_current_and_resets_only_new_stage() {
+    let (mut s, id, groups) = retained_pool_motion(100);
+    let site = CargoSite::Pool(id.clone());
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(seed_created_pool(&mut s, &id).is_err());
+    assert!(fresh_pool_physical_cohorts(&s, &id).is_err());
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    at_stage_start(&mut s, 1);
+    let before = serde_json::to_value(&s).unwrap();
+    seed_pool_opstage(&mut s).unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    assert_eq!(motion::query(&s, Side::Axis, &site, &groups).unwrap()[0].spent_cp_quarters, 16);
+    at_stage_start(&mut s, 2);
+    seed_pool_opstage(&mut s).unwrap();
+    assert_eq!(motion::query(&s, Side::Axis, &site, &groups).unwrap()[0].spent_cp_quarters, 0);
+    assert!(!s.logistics.pool_fuel_accounts.contains_key(&id));
+    assert!(!s.logistics.pool_fuel_segments.contains_key(&id));
+    assert_eq!(stock(&s, &id), 100);
+    let before = serde_json::to_value(&s).unwrap();
+    seed_pool_opstage(&mut s).unwrap();
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+}
+
+/// Cases: land:22.5, airlog:49.13, airlog:53.25
+#[test]
+fn missing_or_stale_unfunded_motion_stays_physically_unknown_after_fuel_payment() {
+    for stale in [false, true] {
+        let (mut s, id, groups) = retained_pool_motion(100);
+        if stale {
+            s.cursor.op_stage = Some(2);
+        } else {
+            s.logistics.cargo_history.motion.entries.clear();
+        }
+        let before = serde_json::to_value(&s).unwrap();
+        assert_eq!(known_unfunded_motion(&s, &id), Err(MotionError::Unknown));
+        assert!(plan_pool_segment_fuel(content(), &s, &id, 4).is_ok());
+        assert_eq!(serde_json::to_value(&s).unwrap(), before);
+        let histories = serde_json::to_value(&s.logistics.cargo_history.motion).unwrap();
+        spend_pool_segment_fuel(content(), &mut s, &id, 4).unwrap();
+        assert_eq!(serde_json::to_value(&s.logistics.cargo_history.motion).unwrap(), histories);
+        assert_eq!(motion::query(&s, Side::Axis, &CargoSite::Pool(id), &groups), Err(MotionError::Unknown));
+    }
+}
+
+/// Cases: land:22.5, airlog:49.13, airlog:53.25
+#[test]
+fn retained_unfunded_motion_rejects_malformed_counts_ids_and_orphan_funding_atomically() {
+    for fault in 0..9 {
+        let (mut s, id, _) = retained_pool_motion(100);
+        let orphan = FuelFundingAccount {
+            side: Side::Axis,
+            segment: SegmentKey::current(&s),
+            origin: pool(&s, &id).unwrap().location.clone().unwrap(),
+            paid_cost: FuelTenths::ZERO,
+            draws: vec![],
+        };
+        let entry = s.logistics.cargo_history.motion.entries.iter_mut()
+            .find(|e| e.site == CargoSite::Pool(id.clone())).unwrap();
+        match fault {
+            0 => entry.cohorts[0].spent_cp_quarters = -1,
+            1 => entry.cohorts[0].count = 1,
+            2 => entry.cohorts[0].kind = segment::FuelTruckKind::Heavy,
+            3 => entry.cohorts[0].id = format!("pool.{id}.fuel-trucks-3"),
+            4 => entry.cohorts[0].id = format!("pool.{id}.fuel-trucks-02"),
+            5 => {
+                let duplicate = entry.cohorts[0].clone();
+                entry.cohorts.push(duplicate);
+            }
+            6 => {
+                let duplicate = entry.clone();
+                s.logistics.cargo_history.motion.entries.push(duplicate);
+            }
+            7 => {
+                s.logistics.pool_fuel_accounts.insert(id.clone(), orphan);
+            }
+            8 => entry.cohorts[0].count = 0,
+            _ => unreachable!(),
+        }
+        let before = serde_json::to_value(&s).unwrap();
+        assert_eq!(plan_pool_segment_fuel(content(), &s, &id, 4), Err(SupplyError::Invalid));
+        assert_eq!(spend_pool_segment_fuel(content(), &mut s, &id, 4), Err(SupplyError::Invalid));
+        assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    }
+}
+
+/// Cases: land:6.13, land:22.5, airlog:53.25
+#[test]
+fn retained_motion_owned_at_another_current_site_is_invalid_without_refresh() {
+    let (mut s, id, _) = retained_pool_motion(100);
+    let other = super::super::pools::add_truck_pool(
+        &mut s.logistics, None, Side::Axis,
+        Placement::Hex { hex: "C4020".into() },
+        Some(Location::Hex { hex: "C4020".into() }),
+        Trucks { medium: 2, ..Trucks::default() }, Supplies::default(),
+    ).unwrap();
+    let mut duplicate = s.logistics.cargo_history.motion.entries.iter()
+        .find(|e| e.site == CargoSite::Pool(id.clone())).unwrap().clone();
+    duplicate.site = CargoSite::Pool(other);
+    s.logistics.cargo_history.motion.entries.push(duplicate);
+    let before = serde_json::to_value(&s).unwrap();
+    assert_eq!(plan_pool_segment_fuel(content(), &s, &id, 4), Err(SupplyError::Invalid));
+    assert_eq!(serde_json::to_value(&s).unwrap(), before);
+    at_stage_start(&mut s, 1);
+    let before = serde_json::to_value(&s).unwrap();
+    assert!(seed_pool_opstage(&mut s).is_err());
     assert_eq!(serde_json::to_value(&s).unwrap(), before);
 }
 /// Cases: airlog:49.13, land:21.25, land:21.29
