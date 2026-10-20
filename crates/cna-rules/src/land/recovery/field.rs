@@ -29,8 +29,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub(crate) const ANCHOR: &str = "opstage.repair.maintenance";
 pub(crate) const KIND: &str = "cna.recovery.field_repair";
 
-mod trucks;
 mod recce;
+mod trucks;
 
 fn invariant(detail: &str) -> EngineError {
     EngineError::Invariant {
@@ -366,10 +366,15 @@ fn prepare(
         };
         let group = if vehicle == RepairVehicle::Recce {
             Some(recce::group(c, marker)?)
-        } else { None };
+        } else {
+            None
+        };
         if let Some(prior) = sites.get(&marker.hex) {
             if group.is_none() || prior != &group {
-                return Err(gap("land:22.14", "mixed repair families or nationality/captured groups at one hex need a separate group allocation adapter"));
+                return Err(gap(
+                    "land:22.14",
+                    "mixed repair families or nationality/captured groups at one hex need a separate group allocation adapter",
+                ));
             }
         } else {
             sites.insert(marker.hex.clone(), group);
@@ -397,8 +402,11 @@ fn prepare(
             .vehicle_repair_supply_costs
             .cost(RepairLocation::Field, VehicleState::BrokenDown, vehicle)
             .ok_or_else(|| gap("land:22.15", "field tank repair cost is unavailable"))?;
-        if vehicle == RepairVehicle::Recce && (cost.supplies.fuel != 0 || cost.supplies.stores != 0) {
-            return Err(invariant("bound recce field cost contradicts its zero-supply procedure").into());
+        if vehicle == RepairVehicle::Recce && (cost.supplies.fuel != 0 || cost.supplies.stores != 0)
+        {
+            return Err(
+                invariant("bound recce field cost contradicts its zero-supply procedure").into(),
+            );
         }
         let fuel = selected
             .points
