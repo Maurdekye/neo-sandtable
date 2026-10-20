@@ -1379,7 +1379,7 @@ fn cohort_servicers(space: &ActionSpace) -> Vec<String> {
     options.iter().map(|o| o.id.clone()).collect()
 }
 
-/// Cases: airlog:36.5, airlog:36.14, airlog:36.17, airlog:38.22, airlog:43.21, airlog:44.14, airlog:44.16, land:3.6
+/// Cases: airlog:36.5, airlog:36.14, airlog:36.17, airlog:38.22, airlog:38.42, airlog:43.21, airlog:44.14, airlog:44.16, land:3.6
 #[test]
 fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_recovery() {
     let game = opened(false);
@@ -1411,10 +1411,12 @@ fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_re
         assert_eq!(*min, 0);
         *max
     };
-    assert_eq!(
-        service_maximum(&original, "fueling"),
-        u32::try_from(planes).unwrap()
-    );
+    for name in ["fueling", "arming"] {
+        assert_eq!(
+            service_maximum(&original, name),
+            u32::try_from(planes).unwrap()
+        );
+    }
     // Natural source-backed reserve roster: retained aircraft do not create an
     // SGSU. Match the real server policy ingress without fabricating a consumer.
     let mut unassigned = State::new(content()).unwrap();
@@ -1510,7 +1512,9 @@ fn refit_domain_zero_and_verified_offmap_inclusion_preserve_other_domains_and_re
         let domain = space(content(), &changed.state, Side::Axis, current).unwrap();
         // Neither an unavailable field nor an exempt off-map SGSU supplies
         // this bounded finite on-map service, despite the retained aircraft.
-        assert_eq!(service_maximum(&domain, "fueling"), 0);
+        for name in ["fueling", "arming"] {
+            assert_eq!(service_maximum(&domain, name), 0);
+        }
         assert_eq!(
             cohort_maximum(&domain),
             if exempt {
