@@ -438,7 +438,7 @@ fn advertised_optional_null_false_and_own_known_retry_keep_pass_legal_and_source
             &request,
             &mut CampaignRng::from_seed([19; 32])
         ),
-        Value::Null
+        Ok(Value::Null)
     );
     let before = bytes(&game);
     for choice in [
