@@ -995,7 +995,9 @@ pub(in crate::air) fn update_initial_loads(
     air: &mut AirState,
     initial: super::missions::initial::InitialLoadAdmission,
 ) -> Result<(), EngineError> {
-    update_inner(content, air, None, None, Some(&initial), |runtime| initial.apply(runtime))
+    update_inner(content, air, None, None, Some(&initial), |runtime| {
+        initial.apply(runtime)
+    })
 }
 
 /// Internal permission for exactly one canonical physical-site allocation.

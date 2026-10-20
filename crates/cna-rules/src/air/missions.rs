@@ -180,10 +180,22 @@ fn space(content: &CnaContent, state: &State, side: Side) -> ActionSpace {
     let planes = own_planes(state, side);
     // These are already the answering owner's identities and provenance.
     // No shared view change or enemy initial-credit query is needed.
-    let roster: BTreeMap<_, _> = planes.iter().map(|id| (id, &state.air.runtime.aircraft[id])).collect();
-    let initial_choices: BTreeMap<_, _> = planes.iter().filter_map(|id| {
-        state.air.runtime.preparation.initial_choices.get(id).map(|choice| (id, choice))
-    }).collect();
+    let roster: BTreeMap<_, _> = planes
+        .iter()
+        .map(|id| (id, &state.air.runtime.aircraft[id]))
+        .collect();
+    let initial_choices: BTreeMap<_, _> = planes
+        .iter()
+        .filter_map(|id| {
+            state
+                .air
+                .runtime
+                .preparation
+                .initial_choices
+                .get(id)
+                .map(|choice| (id, choice))
+        })
+        .collect();
     // A structural upper bound only; exact per-plane mode validation is own-known.
     let mode_max = planes
         .iter()
