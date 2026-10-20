@@ -30,7 +30,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       # --no-fail-fast: one failing slow test must not hide the others' results and timings.
-      - run: cargo test --workspace --no-fail-fast -- --ignored
+      # Keep the wall-clock profiler separate from concurrent trajectory/recovery tests.
+      - id: ignored_without_movement_profile
+        run: cargo test --workspace --no-fail-fast -- --ignored --skip land::movement::tests::profile_movers_full_graziani_campaign
+      # A failure above must not hide this result; an infrastructure skip must not start it.
+      - if: ${{ !cancelled() && steps.ignored_without_movement_profile.outcome != 'skipped' }}
+        run: cargo test -p cna-rules --lib land::movement::tests::profile_movers_full_graziani_campaign -- --ignored --exact
 
   web:
     runs-on: ubuntu-latest
