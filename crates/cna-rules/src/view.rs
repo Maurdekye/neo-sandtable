@@ -1090,8 +1090,11 @@ pub(crate) fn inspect(
 ) -> Result<Value, Rejection> {
     let hidden = || illegal(format!("{target}: unknown or not visible"));
     if target.starts_with("air:") {
-        return crate::air::operations::markers(state).into_iter().find(|m| m.id == target)
-            .map(|marker| json!({"marker": marker})).ok_or_else(hidden);
+        return crate::air::operations::markers(state)
+            .into_iter()
+            .find(|m| m.id == target)
+            .map(|marker| json!({"marker": marker}))
+            .ok_or_else(hidden);
     }
     let face_only = "printed face only: what the counter contains is not visible (land:3.62)";
     if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
@@ -1257,8 +1260,11 @@ pub(crate) fn inspect_legacy_for_step1(
 ) -> Result<Value, Rejection> {
     let hidden = || illegal(format!("{target}: unknown or not visible"));
     if target.starts_with("air:") {
-        return crate::air::operations::markers(state).into_iter().find(|m| m.id == target)
-            .map(|marker| json!({"marker": marker})).ok_or_else(hidden);
+        return crate::air::operations::markers(state)
+            .into_iter()
+            .find(|m| m.id == target)
+            .map(|marker| json!({"marker": marker}))
+            .ok_or_else(hidden);
     }
     let face_only = "printed face only: what the counter contains is not visible (land:3.62)";
     if let Some(unit) = state.land.units.get(&UnitId::new(target)) {
@@ -1424,8 +1430,11 @@ pub(crate) fn inspect_reference_for_step2(
 ) -> Result<Value, Rejection> {
     let hidden = || illegal(format!("{target}: unknown or not visible"));
     if target.starts_with("air:") {
-        return crate::air::operations::markers(state).into_iter().find(|m| m.id == target)
-            .map(|marker| json!({"marker": marker})).ok_or_else(hidden);
+        return crate::air::operations::markers(state)
+            .into_iter()
+            .find(|m| m.id == target)
+            .map(|marker| json!({"marker": marker}))
+            .ok_or_else(hidden);
     }
     let face_only = "printed face only: what the counter contains is not visible (land:3.62)";
     if let Some(unit) = state.land.units.get(&UnitId::new(target)) {

@@ -63,7 +63,7 @@ fn single(content: &CnaContent, aircraft: &str) -> (State, PlaneId) {
 }
 
 fn refresh(content: &CnaContent, air: &mut AirState) {
-    *air = mirrors(content, air).unwrap();
+    *air = mirrors(content, air, None).unwrap();
 }
 
 fn known(mode: usize, guns: bool, ordnance: Option<CarriedOrdnance>) -> CurrentPreparation {

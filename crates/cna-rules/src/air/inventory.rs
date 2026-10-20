@@ -425,7 +425,11 @@ fn import_bases(content: &CnaContent, air: &mut AirState) -> Result<(), EngineEr
 /// Force SGSU reserves remain the pre-existing unplaced count until arrivals
 /// have individual source identities. Malta rosters remain non-SGSU groups.
 /// Cases: airlog:35.11, airlog:35.14, airlog:36.0, airlog:44.14
-fn base_mirrors(content: &CnaContent, air: &AirState, expected: Option<super::operations::Context>) -> Result<AirState, EngineError> {
+fn base_mirrors(
+    content: &CnaContent,
+    air: &AirState,
+    expected: Option<super::operations::Context>,
+) -> Result<AirState, EngineError> {
     let airborne = super::operations::airborne_ids(content, air, expected)?;
     let mut draft = air.clone();
     let mut tokens = BTreeSet::new();
@@ -473,7 +477,9 @@ fn base_mirrors(content: &CnaContent, air: &AirState, expected: Option<super::op
         squadron.force == "malta" || air.runtime.sgsus.contains_key(&SgsuId(id.clone()))
     });
     for (plane_id, plane) in &air.runtime.aircraft {
-        if airborne.contains(plane_id) { continue; }
+        if airborne.contains(plane_id) {
+            continue;
+        }
         let Some(id) = &plane.facility else {
             continue;
         };
@@ -678,7 +684,9 @@ fn check_preparation_transition(
                 return Err(invalid("persistent aircraft type and force cannot change"));
             }
             let before = old.preparation.current.get(id);
-            if flight.is_some_and(|f| f.permits(old, new)) { continue; }
+            if flight.is_some_and(|f| f.permits(old, new)) {
+                continue;
+            }
             if paid.is_some_and(|p| p.permits(id, old, new)) {
                 continue;
             }
@@ -829,7 +837,11 @@ fn increment(value: &mut i32, amount: i32) -> Result<(), EngineError> {
     Ok(())
 }
 
-fn mirrors(content: &CnaContent, air: &AirState, expected: Option<super::operations::Context>) -> Result<AirState, EngineError> {
+fn mirrors(
+    content: &CnaContent,
+    air: &AirState,
+    expected: Option<super::operations::Context>,
+) -> Result<AirState, EngineError> {
     for (force, pool) in &air.forces {
         side(force)?;
         if pool.sgsu_available < 0 {
@@ -946,7 +958,11 @@ pub fn check(content: &CnaContent, air: &AirState) -> Result<(), EngineError> {
 
 /// An active airborne inventory requires independently cursor-derived context.
 /// Cases: airlog:33.0, airlog:37.13, airlog:34.0
-pub fn check_at(content: &CnaContent, air: &AirState, expected: Option<super::operations::Context>) -> Result<(), EngineError> {
+pub fn check_at(
+    content: &CnaContent,
+    air: &AirState,
+    expected: Option<super::operations::Context>,
+) -> Result<(), EngineError> {
     super::operations::check(content, air, expected)?;
     super::maintenance::refit::check(&air.runtime.maintenance)?;
     if !air.runtime.initialized || !air.runtime.bases_initialized {
@@ -971,22 +987,53 @@ pub fn update<F>(content: &CnaContent, air: &mut AirState, edit: F) -> Result<()
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    update_inner(content, air, None, None, None, FlightUpdate::default(), edit)
+    update_inner(
+        content,
+        air,
+        None,
+        None,
+        None,
+        FlightUpdate::default(),
+        edit,
+    )
 }
 
 /// Existing generic mutation with explicit canonical context; it still cannot
 /// alter operations, authorize a launch, or forge paid/initial load changes.
 /// Cases: airlog:34.0, airlog:37.13
-pub(in crate::air) fn update_at<F>(content: &CnaContent, air: &mut AirState,
-    expected: super::operations::Context, edit: F) -> Result<(), EngineError>
-where F: FnOnce(&mut AirRuntime) -> Result<(), EngineError> {
-    update_inner(content, air, None, None, None, FlightUpdate { expected: Some(expected), admission: None }, edit)
+pub(in crate::air) fn update_at<F>(
+    content: &CnaContent,
+    air: &mut AirState,
+    expected: super::operations::Context,
+    edit: F,
+) -> Result<(), EngineError>
+where
+    F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
+{
+    update_inner(
+        content,
+        air,
+        None,
+        None,
+        None,
+        FlightUpdate {
+            expected: Some(expected),
+            admission: None,
+        },
+        edit,
+    )
 }
 
 /// Derive context from the canonical State for an ordinary update.
 /// Cases: airlog:34.0, airlog:37.13
-pub(in crate::air) fn update_from_state<F>(content: &CnaContent, state: &mut State, edit: F) -> Result<(), EngineError>
-where F: FnOnce(&mut AirRuntime) -> Result<(), EngineError> {
+pub(in crate::air) fn update_from_state<F>(
+    content: &CnaContent,
+    state: &mut State,
+    edit: F,
+) -> Result<(), EngineError>
+where
+    F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
+{
     match super::operations::Context::from_state(state) {
         Ok(expected) => update_at(content, &mut state.air, expected, edit),
         Err(_) => update(content, &mut state.air, edit),
@@ -995,11 +1042,27 @@ where F: FnOnce(&mut AirRuntime) -> Result<(), EngineError> {
 
 /// Callback-free flight mutation checks CURRENT State independently of the token.
 /// Cases: airlog:37.13, airlog:37.16, airlog:39.19
-pub(in crate::air) fn update_flight(content: &CnaContent, state: &mut State,
-    flight: super::operations::FlightAdmission) -> Result<(), EngineError> {
+pub(in crate::air) fn update_flight(
+    content: &CnaContent,
+    state: &mut State,
+    flight: super::operations::FlightAdmission,
+) -> Result<(), EngineError> {
     let expected = super::operations::Context::from_state(state)?;
-    if expected != flight.context() { return Err(invalid("flight token context is stale")); }
-    update_inner(content, &mut state.air, None, None, None, FlightUpdate { expected: Some(expected), admission: Some(&flight) }, |runtime| flight.apply(runtime))
+    if expected != flight.context() {
+        return Err(invalid("flight token context is stale"));
+    }
+    update_inner(
+        content,
+        &mut state.air,
+        None,
+        None,
+        None,
+        FlightUpdate {
+            expected: Some(expected),
+            admission: Some(&flight),
+        },
+        |runtime| flight.apply(runtime),
+    )
 }
 
 /// Compatibility wrapper for exact post-debit servicing. No caller edit
@@ -1010,9 +1073,15 @@ pub(in crate::air) fn update_fueling(
     air: &mut AirState,
     paid: super::maintenance::window::fueling::PaidServicingAdmission,
 ) -> Result<(), EngineError> {
-    update_inner(content, air, None, Some(&paid), None, FlightUpdate::default(), |runtime| {
-        paid.apply(runtime)
-    })
+    update_inner(
+        content,
+        air,
+        None,
+        Some(&paid),
+        None,
+        FlightUpdate::default(),
+        |runtime| paid.apply(runtime),
+    )
 }
 
 /// Exact combined fuel/ammunition admission from the successful shared debit.
@@ -1034,9 +1103,15 @@ pub(in crate::air) fn update_initial_loads(
     air: &mut AirState,
     initial: super::missions::initial::InitialLoadAdmission,
 ) -> Result<(), EngineError> {
-    update_inner(content, air, None, None, Some(&initial), FlightUpdate::default(), |runtime| {
-        initial.apply(runtime)
-    })
+    update_inner(
+        content,
+        air,
+        None,
+        None,
+        Some(&initial),
+        FlightUpdate::default(),
+        |runtime| initial.apply(runtime),
+    )
 }
 
 /// Internal permission for exactly one canonical physical-site allocation.
@@ -1056,7 +1131,15 @@ pub(super) fn update_site<F>(
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    update_inner(content, air, Some(allocation), None, None, FlightUpdate::default(), edit)
+    update_inner(
+        content,
+        air,
+        Some(allocation),
+        None,
+        None,
+        FlightUpdate::default(),
+        edit,
+    )
 }
 
 fn check_site_transition(
@@ -1152,7 +1235,10 @@ fn update_inner<F>(
 where
     F: FnOnce(&mut AirRuntime) -> Result<(), EngineError>,
 {
-    let FlightUpdate { expected, admission: flight } = flight_update;
+    let FlightUpdate {
+        expected,
+        admission: flight,
+    } = flight_update;
     check_at(content, air, expected)?;
     let mut draft = air.clone();
     migrate_preparation(content, &mut draft.runtime)?;
@@ -1160,7 +1246,9 @@ where
     edit(&mut draft.runtime)?;
     if let Some(flight) = flight {
         if !flight.permits(&before_edit, &draft.runtime) {
-            return Err(invalid("flight admission does not match exact inventory delta"));
+            return Err(invalid(
+                "flight admission does not match exact inventory delta",
+            ));
         }
     } else {
         super::operations::check_unchanged_members(&before_edit, &draft.runtime)?;

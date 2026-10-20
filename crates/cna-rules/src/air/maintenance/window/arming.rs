@@ -195,7 +195,9 @@ pub(super) fn validate(
                 .get(&selected.plane)
                 .filter(|p| owned(&p.force, owner))
                 .ok_or_else(|| illegal("unknown own arming plane"))?;
-            if crate::air::operations::ground_facility(content, state, &selected.plane)?.as_ref() != Some(site_id) {
+            if crate::air::operations::ground_facility(content, state, &selected.plane)?.as_ref()
+                != Some(site_id)
+            {
                 return Err(illegal("plane actual arming site differs"));
             }
             let squadron = plane

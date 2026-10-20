@@ -699,7 +699,9 @@ fn legal_choices(
             let physical_site = crate::air::operations::ground_facility(content, state, id)?;
             if p.squadron.as_deref() != Some(cohort.assigned_squadron.as_str())
                 || physical_site.is_none()
-                || site.as_ref().is_some_and(|(site_id, _)| physical_site.as_ref() != Some(site_id))
+                || site
+                    .as_ref()
+                    .is_some_and(|(site_id, _)| physical_site.as_ref() != Some(site_id))
             {
                 return Err(illegal("plane assignment or actual refit site differs"));
             }
@@ -1159,7 +1161,8 @@ fn validate(
                 .filter(|p| owned(&p.force, owner))
                 .ok_or_else(|| illegal("unknown own refit plane"))?;
             if p.squadron.as_deref() != Some(cohort.assigned_squadron.as_str())
-                || crate::air::operations::ground_facility(content, state, id)?.as_ref() != Some(site_id)
+                || crate::air::operations::ground_facility(content, state, id)?.as_ref()
+                    != Some(site_id)
             {
                 return Err(illegal("plane assignment or actual refit site differs"));
             }

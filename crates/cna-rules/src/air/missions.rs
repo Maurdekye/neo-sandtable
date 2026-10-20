@@ -417,8 +417,13 @@ pub fn answer(
             {
                 return Err(illegal("not a mode of this own aircraft"));
             }
-            if !matches!(super::operations::position(content, state, &selected.plane), Ok(super::operations::Position::Ground(_))) {
-                return Err(illegal("own declaration aircraft is not grounded at a canonical facility"));
+            if !matches!(
+                super::operations::position(content, state, &selected.plane),
+                Ok(super::operations::Position::Ground(_))
+            ) {
+                return Err(illegal(
+                    "own declaration aircraft is not grounded at a canonical facility",
+                ));
             }
             initial::validate_answer(content, state, side, selected)?;
         }
@@ -481,7 +486,10 @@ pub(in crate::air) fn validate(
             {
                 return Err(invariant("invalid own pilot declaration"));
             }
-            if !matches!(super::operations::position(content, state, &selected.plane)?, super::operations::Position::Ground(_)) {
+            if !matches!(
+                super::operations::position(content, state, &selected.plane)?,
+                super::operations::Position::Ground(_)
+            ) {
                 return Err(invariant("committed declaration aircraft is not grounded"));
             }
             let plane = &state.air.runtime.aircraft[&selected.plane];
