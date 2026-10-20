@@ -17,6 +17,7 @@ use serde_json::json;
 const MARKER: &str = "field-fixture";
 
 mod cw_recce_tests;
+mod cw_truck_tests;
 mod recce_tests;
 mod truck_tests;
 
