@@ -23,6 +23,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::calibration::{CalibrationFence, FenceError, OUTPUT_LIMIT, assess_prompt_usage};
+use crate::{
+    calibration_cost::{CalibrationCostProof, CalibrationPrices},
+    request_budget::{RequestBudget, RequestKind, RequestLimits},
+};
 
 #[path = "watched_gateway.rs"]
 pub mod watched;
@@ -34,6 +38,11 @@ const EVENT_LIMIT: usize = 256 * 1024;
 /// Safe numeric-only evidence. Missing channels are unknown, never zero.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LaneAReport {
+    pub cost: Option<CalibrationCostProof>,
+    /// Charged forward attempts, including failed/cancelled sends; not provider receipts.
+    pub count_forwards: u64,
+    pub generation_forwards: u64,
+    pub transport_total: u64,
     pub generation_permit_spent: bool,
     pub inference_sha256: Option<String>,
     pub count_sha256: Option<String>,
@@ -54,6 +63,8 @@ struct Shared {
     client: reqwest::Client,
     upstream: String,
     report: Mutex<LaneAReport>,
+    budget: RequestBudget,
+    pumps: tokio::sync::Mutex<tokio::task::JoinSet<()>>,
 }
 
 /// Opens an already-authorized private ledger. There is no create/rearm endpoint,
@@ -62,11 +73,37 @@ struct Shared {
 pub struct LaneAFence(Arc<Shared>);
 
 impl LaneAFence {
-    pub fn open(path: &Path) -> Result<Self, FenceError> {
-        Self::build(path, "https://api.anthropic.com".into())
+    pub fn open(
+        path: &Path,
+        prices: &CalibrationPrices,
+        wall: Duration,
+    ) -> Result<Self, FenceError> {
+        Self::build_configured(path, "https://api.anthropic.com".into(), prices, wall)
     }
 
+    #[cfg(test)]
     fn build(path: &Path, upstream: String) -> Result<Self, FenceError> {
+        Self::build_configured(
+            path,
+            upstream,
+            &crate::calibration_cost::source_fixture_prices(),
+            Duration::from_secs(180),
+        )
+    }
+
+    fn build_configured(
+        path: &Path,
+        upstream: String,
+        prices: &CalibrationPrices,
+        wall: Duration,
+    ) -> Result<Self, FenceError> {
+        let cost = prices.validate().map_err(|_| FenceError::Estimate)?;
+        let budget = RequestBudget::new(RequestLimits {
+            total: 5,
+            generations: 1,
+            wall,
+        })
+        .map_err(|_| FenceError::Estimate)?;
         let client = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .retry(reqwest::retry::never())
@@ -88,19 +125,64 @@ impl LaneAFence {
             client,
             upstream,
             report: Mutex::new(LaneAReport {
+                cost: Some(cost),
                 generation_permit_spent: spent,
                 accounting_unknown: spent,
                 ..LaneAReport::default()
             }),
+            budget,
+            pumps: tokio::sync::Mutex::new(tokio::task::JoinSet::new()),
         })))
     }
 
     pub fn report(&self) -> Result<LaneAReport, FenceError> {
-        self.0
+        let mut report = self
+            .0
             .report
             .lock()
             .map(|r| r.clone())
-            .map_err(|_| FenceError::Ledger)
+            .map_err(|_| FenceError::Ledger)?;
+        let usage = self.0.budget.usage().map_err(|_| FenceError::Ledger)?;
+        report.generation_forwards = usage.generations;
+        report.count_forwards = usage.total.saturating_sub(usage.generations);
+        report.transport_total = usage.total;
+        Ok(report)
+    }
+
+    pub fn budget(&self) -> RequestBudget {
+        self.0.budget.clone()
+    }
+
+    pub fn stop(&self) {
+        let _ = self.0.budget.stop();
+    }
+
+    pub async fn shutdown_pumps(&self) -> io::Result<()> {
+        self.stop();
+        let mut pumps = self.0.pumps.lock().await;
+        let joined = tokio::time::timeout(Duration::from_secs(2), async {
+            let mut failed = false;
+            while let Some(result) = pumps.join_next().await {
+                failed |= result.is_err();
+            }
+            failed
+        })
+        .await;
+        match joined {
+            Ok(false) => Ok(()),
+            Ok(true) => Err(io::Error::other("calibration forwarding task failed")),
+            Err(_) => {
+                pumps.abort_all();
+                let joined = tokio::time::timeout(Duration::from_secs(2), async {
+                    while pumps.join_next().await.is_some() {}
+                })
+                .await;
+                if joined.is_err() {
+                    return Err(io::Error::other("calibration pump join unconfirmed"));
+                }
+                Err(io::Error::other("calibration forwarding cleanup timed out"))
+            }
+        }
     }
 
     /// Serve only loopback. Caller owns checked shutdown/native cleanup. This
@@ -116,14 +198,25 @@ impl LaneAFence {
                 "loopback listener required",
             ));
         }
+        let owner = self.clone();
         let router = Router::new()
             .route("/v1/messages", post(messages))
             .fallback(|| async { deny(StatusCode::NOT_FOUND) })
             .layer(DefaultBodyLimit::max(REQUEST_LIMIT))
             .with_state(self);
-        axum::serve(listener, router)
-            .with_graceful_shutdown(shutdown)
-            .await
+        let control = owner.clone();
+        let result = axum::serve(listener, router)
+            .with_graceful_shutdown(async move {
+                // Admission/IO stop does not erase the listener before it can
+                // return the durable spent-ledger refusal. The launcher owns
+                // the separate bounded HTTP shutdown and native cleanup.
+                shutdown.await;
+                control.stop();
+            })
+            .await;
+        let joined = owner.shutdown_pumps().await;
+        result?;
+        joined
     }
 }
 
@@ -201,16 +294,21 @@ async fn messages(
     let dropped_count_fields = ticket.dropped_fields().to_vec();
     let counted = fence
         .0
-        .client
-        .post(format!(
-            "{}/v1/messages/count_tokens?beta=true",
-            fence.0.upstream
-        ))
-        .headers(headers.clone())
-        .body(ticket.count_body().to_vec())
-        .send()
+        .budget
+        .bound(fence.0.budget.forward(RequestKind::Count, || {
+            fence
+                .0
+                .client
+                .post(format!(
+                    "{}/v1/messages/count_tokens?beta=true",
+                    fence.0.upstream
+                ))
+                .headers(headers.clone())
+                .body(ticket.count_body().to_vec())
+                .send()
+        }))
         .await;
-    let Ok(mut counted) = counted else {
+    let Ok(Ok(Ok(mut counted))) = counted else {
         return deny(StatusCode::BAD_GATEWAY);
     };
     if !counted.status().is_success() {
@@ -218,13 +316,13 @@ async fn messages(
     }
     let mut count_body = Vec::new();
     loop {
-        match counted.chunk().await {
-            Ok(Some(chunk))
+        match fence.0.budget.bound(counted.chunk()).await {
+            Ok(Ok(Some(chunk)))
                 if count_body.len().saturating_add(chunk.len()) <= COUNT_REPLY_LIMIT =>
             {
                 count_body.extend_from_slice(&chunk);
             }
-            Ok(None) => break,
+            Ok(Ok(None)) => break,
             _ => return deny(StatusCode::BAD_GATEWAY),
         }
     }
@@ -242,14 +340,29 @@ async fn messages(
     // The core commits spent BEFORE even constructing the one transport future.
     // Reqwest cannot retry or redirect. Cancellation at any subsequent point
     // leaves this same ledger spent, even if HTTP dispatch never completed.
+    // Recheck the immutable explicit price proof before spending the original
+    // durable permit. No CLI cost report or estimated cache discount is used.
+    if fence
+        .report()
+        .ok()
+        .and_then(|r| r.cost)
+        .is_none_or(|proof| proof.prices.validate().is_err())
+    {
+        return deny(StatusCode::UNPROCESSABLE_ENTITY);
+    }
     let sent = fence.0.ledger.generate(&raw, |body| {
-        Ok(fence
-            .0
-            .client
-            .post(format!("{}/v1/messages?beta=true", fence.0.upstream))
-            .headers(headers)
-            .body(body.to_vec())
-            .send())
+        let body = body.to_vec();
+        let headers = headers.clone();
+        let client = fence.0.client.clone();
+        let url = format!("{}/v1/messages?beta=true", fence.0.upstream);
+        let budget = fence.0.budget.clone();
+        Ok(async move {
+            budget
+                .forward(RequestKind::Generation, || {
+                    client.post(url).headers(headers).body(body).send()
+                })
+                .await
+        })
     });
     let Ok(sent) = sent else {
         return deny(StatusCode::CONFLICT);
@@ -264,7 +377,7 @@ async fn messages(
     } else {
         return deny(StatusCode::INTERNAL_SERVER_ERROR);
     }
-    let Ok(upstream) = sent.await else {
+    let Ok(Ok(Ok(upstream))) = fence.0.budget.bound(sent).await else {
         return deny(StatusCode::BAD_GATEWAY);
     };
     let status = upstream.status();
@@ -303,93 +416,15 @@ async fn messages(
             response = response.header(name, value);
         }
     }
-    let observer = UsageObserver::default();
-    let bytes = stream::unfold(
-        (Some(upstream.bytes_stream()), observer, protected, fence),
-        |(mut upstream, mut observer, mut protected, fence)| async move {
-            let source = upstream.as_mut()?;
-            match source.next().await {
-                Some(Ok(bytes)) => {
-                    let guarded = protected.push_with(&bytes, |event| {
-                        observer.feed(event, &fence);
-                        if fence
-                            .report()
-                            .map_or(true, |r| r.prompt_over_limit || r.output_over_limit)
-                        {
-                            Err(())
-                        } else {
-                            Ok(())
-                        }
-                    });
-                    let Ok(bytes) = guarded else {
-                        return Some((
-                            Err(io::Error::other("calibration response refused")),
-                            (None, observer, protected, fence),
-                        ));
-                    };
-                    if fence
-                        .report()
-                        .map_or(true, |r| r.prompt_over_limit || r.output_over_limit)
-                    {
-                        // Drop the upstream stream now. The committed permit
-                        // still refuses every continuation/retry after a crossing.
-                        return Some((
-                            Err(io::Error::other("calibration usage limit crossed")),
-                            (None, observer, protected, fence),
-                        ));
-                    }
-                    // Release complete safe events. Only bounded unresolved
-                    // prefixes hold associated events; no whole-stream buffer.
-                    Some((
-                        Ok::<_, io::Error>(bytes),
-                        (upstream, observer, protected, fence),
-                    ))
-                }
-                Some(Err(_)) => Some((
-                    Err(io::Error::other("calibration stream interrupted")),
-                    (None, observer, protected, fence),
-                )),
-                None => {
-                    let Ok(final_bytes) = protected.finish_with(|event| {
-                        observer.feed(event, &fence);
-                        if fence
-                            .report()
-                            .map_or(true, |r| r.prompt_over_limit || r.output_over_limit)
-                        {
-                            Err(())
-                        } else {
-                            Ok(())
-                        }
-                    }) else {
-                        return Some((
-                            Err(io::Error::other("calibration response refused")),
-                            (None, observer, protected, fence),
-                        ));
-                    };
-                    if fence
-                        .report()
-                        .map_or(true, |r| r.prompt_over_limit || r.output_over_limit)
-                    {
-                        return Some((
-                            Err(io::Error::other("calibration usage limit crossed")),
-                            (None, observer, protected, fence),
-                        ));
-                    }
-                    observer.finish(&fence);
-                    if final_bytes.is_empty() {
-                        None
-                    } else {
-                        Some((
-                            Ok(final_bytes),
-                            (None, UsageObserver::default(), protected, fence),
-                        ))
-                    }
-                }
-            }
-        },
-    );
-    response.body(Body::from_stream(bytes)).unwrap()
+    pump::response(fence, upstream, response, protected).await
 }
+
+#[path = "calibration_pump.rs"]
+mod pump;
+
+#[cfg(test)]
+#[path = "calibration_runtime_tests.rs"]
+mod runtime_tests;
 
 #[path = "calibration_strict_json.rs"]
 pub(crate) mod strict_json;
@@ -1055,7 +1090,12 @@ mod tests {
         }
         assert_eq!(successes, 1);
         assert_eq!(fixture.fake.calls.lock().unwrap().generations.len(), 1);
-        let reopened = LaneAFence::open(&fixture.path).unwrap();
+        let reopened = LaneAFence::open(
+            &fixture.path,
+            &crate::calibration_cost::source_fixture_prices(),
+            Duration::from_secs(180),
+        )
+        .unwrap();
         assert!(reopened.0.ledger.spent().unwrap());
         let unknown = reopened.report().unwrap();
         assert!(unknown.generation_permit_spent && unknown.accounting_unknown);
@@ -1234,7 +1274,12 @@ mod tests {
         let path =
             std::env::temp_dir().join(format!("cna-lane-a-parser-{}.sqlite", uuid::Uuid::new_v4()));
         CalibrationFence::initialize(&path).unwrap();
-        let fence = LaneAFence::open(&path).unwrap();
+        let fence = LaneAFence::open(
+            &path,
+            &crate::calibration_cost::source_fixture_prices(),
+            Duration::from_secs(180),
+        )
+        .unwrap();
         let mut observer = UsageObserver::default();
         let bytes = complete(95000);
         let bytes = String::from_utf8(bytes)

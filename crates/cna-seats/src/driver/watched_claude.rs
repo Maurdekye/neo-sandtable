@@ -91,12 +91,50 @@ fn command(
     admitted_resume: bool,
 ) -> Result<Command, DriverError> {
     let config = namespace.config(cfg.seat);
+    command_paths(
+        executable,
+        &namespace.cwd(cfg.seat),
+        &config,
+        cfg,
+        fence,
+        session,
+        admitted_resume,
+    )
+}
+
+#[cfg(windows)]
+pub(crate) fn calibration_command(
+    executable: &Path,
+    cfg: &ClaudeConfig,
+    fence: SocketAddr,
+    session: &str,
+) -> Result<Command, DriverError> {
+    command_paths(
+        executable,
+        Path::new(crate::calibration_isolation::CALIBRATION_CWD),
+        Path::new(crate::calibration_isolation::CALIBRATION_CONFIG),
+        cfg,
+        fence,
+        SessionArg::New(session),
+        false,
+    )
+}
+
+fn command_paths(
+    executable: &Path,
+    cwd: &Path,
+    config: &Path,
+    cfg: &ClaudeConfig,
+    fence: SocketAddr,
+    session: SessionArg<'_>,
+    admitted_resume: bool,
+) -> Result<Command, DriverError> {
     if !executable.is_absolute()
         || cfg.exe.as_deref() != Some(executable)
         || cfg.model != MODEL
         || cfg.effort.is_some()
-        || cfg.sandbox != namespace.cwd(cfg.seat)
-        || cfg.config_dir.as_deref() != Some(config.as_path())
+        || cfg.sandbox != cwd
+        || cfg.config_dir.as_deref() != Some(config)
         || cfg
             .context_window
             .is_some_and(|window| window == 0 || window > 100_000)
@@ -110,14 +148,11 @@ fn command(
             "watched resume persistence is not yet admitted".into(),
         ));
     }
-    let env = environment(std::env::vars_os(), &config, fence)?;
+    let env = environment(std::env::vars_os(), config, fence)?;
     let mcp = mcp_config_json(&cfg.mcp_url).to_string();
     let args = claude_args_value(cfg, &mcp, session);
     let mut command = Command::new(executable);
-    command
-        .args(args)
-        .current_dir(namespace.cwd(cfg.seat))
-        .env_clear();
+    command.args(args).current_dir(cwd).env_clear();
     for (key, value) in env {
         command.env(key, value);
     }
@@ -145,6 +180,7 @@ mod tests {
             ("CLAUDE_CODE_USE_BEDROCK", "1"),
             ("CNA_OPERATOR_TOKEN", "SYNTHETIC_OPERATOR"),
             ("CNA_WATCHED_OPERATOR_GO", "setup-gt1+same-run-resume"),
+            ("CNA_CALIBRATION_OPERATOR_GO", "calibration-one"),
             ("CNA_LIVE_CLI_TESTS", "1"),
             ("CLAUDE_CODE_FALLBACK_MODEL", "other-model"),
         ]
@@ -173,6 +209,7 @@ mod tests {
             "CLAUDE_CODE_USE_BEDROCK",
             "CNA_OPERATOR_TOKEN",
             "CNA_WATCHED_OPERATOR_GO",
+            "CNA_CALIBRATION_OPERATOR_GO",
             "CNA_LIVE_CLI_TESTS",
             "CLAUDE_CODE_FALLBACK_MODEL",
         ] {
@@ -193,6 +230,60 @@ mod tests {
         for endpoint in ["192.0.2.1:1234", "127.0.0.1:0", "0.0.0.0:1234"] {
             assert!(environment([], &config, endpoint.parse().unwrap()).is_err());
         }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn calibration_command_is_unstarted_fixed_pair_and_has_only_own_mcp() {
+        let executable = Path::new("C:/UNEXECUTED/claude.exe");
+        let cfg = ClaudeConfig {
+            seat: cna_core::ids::SeatId::all().next().unwrap(),
+            exe: Some(executable.into()),
+            model: MODEL.into(),
+            config_dir: Some(crate::calibration_isolation::CALIBRATION_CONFIG.into()),
+            expected_email: None,
+            sandbox: crate::calibration_isolation::CALIBRATION_CWD.into(),
+            run_dir: "C:/UNEXECUTED/host".into(),
+            mcp_url: "http://127.0.0.1:12345/mcp/SYNTHETIC_OWN".into(),
+            system_prompt: "Synthetic calibration only".into(),
+            effort: None,
+            context_window: Some(100_000),
+        };
+        let command = calibration_command(
+            executable,
+            &cfg,
+            "127.0.0.1:1234".parse().unwrap(),
+            "SYNTHETIC_SESSION",
+        )
+        .unwrap();
+        assert_eq!(
+            command.as_std().get_current_dir(),
+            Some(Path::new(crate::calibration_isolation::CALIBRATION_CWD))
+        );
+        let args: Vec<_> = command
+            .as_std()
+            .get_args()
+            .map(|s| s.to_str().unwrap())
+            .collect();
+        let value = |flag| args[args.iter().position(|s| *s == flag).unwrap() + 1];
+        assert_eq!(value("--tools"), "");
+        assert_eq!(value("--setting-sources"), "");
+        assert_eq!(value("--model"), MODEL);
+        assert!(!args.contains(&"--resume"));
+        let mcp: serde_json::Value = serde_json::from_str(value("--mcp-config")).unwrap();
+        assert_eq!(mcp["mcpServers"].as_object().unwrap().len(), 1);
+        assert_eq!(mcp["mcpServers"]["cna"]["url"], cfg.mcp_url);
+        let mut changed = cfg;
+        changed.sandbox = "C:/UNEXECUTED/foreign".into();
+        assert!(
+            calibration_command(
+                executable,
+                &changed,
+                "127.0.0.1:1234".parse().unwrap(),
+                "SYNTHETIC_SESSION"
+            )
+            .is_err()
+        );
     }
 
     #[cfg(windows)]

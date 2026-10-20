@@ -60,12 +60,16 @@ pub const MCP_NAME: &str = "cna";
 
 #[path = "watched_claude.rs"]
 mod watched;
+#[cfg(windows)]
+pub(crate) use watched::calibration_command;
 pub use watched::watched_command;
 #[cfg(windows)]
 #[path = "watched_launch.rs"]
 mod watched_launch;
 #[cfg(windows)]
 pub use watched_launch::{OperatorGo, WATCHED_VERSION, WatchedLaunch, native_admission};
+#[cfg(windows)]
+pub(crate) use watched_launch::{check_init as check_watched_init, verify_executable};
 
 /// Configuration of one Claude Code seat.
 #[derive(Clone, Debug)]

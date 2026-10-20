@@ -9,8 +9,10 @@
 
 pub mod automatic;
 pub mod calibration;
+pub mod calibration_cost;
 pub mod calibration_http;
 pub mod calibration_isolation;
+pub mod calibration_run;
 pub mod demo;
 pub mod driver;
 pub mod game;

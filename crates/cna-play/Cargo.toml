@@ -1,5 +1,6 @@
 [package]
 name = "cna-play"
+default-run = "cna-play"
 description = "Bounded launcher for server-backed AI seat integration."
 version.workspace = true
 edition.workspace = true

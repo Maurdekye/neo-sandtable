@@ -55,6 +55,14 @@ struct State {
 pub struct RequestBudget(Arc<Mutex<State>>);
 
 impl RequestBudget {
+    #[cfg(windows)]
+    pub(crate) fn deadline(&self) -> Result<Instant, RequestBudgetError> {
+        self.0
+            .lock()
+            .map(|state| state.deadline)
+            .map_err(|_| RequestBudgetError::Stopped)
+    }
+
     /// Admission is bound to the original allocation, never equivalent new caps.
     #[cfg(windows)]
     pub(crate) fn same_allocation(&self, other: &Self) -> bool {

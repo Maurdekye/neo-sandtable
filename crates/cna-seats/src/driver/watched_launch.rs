@@ -79,7 +79,7 @@ fn consume_bound<T>(
     Ok(())
 }
 
-pub(super) fn check_init(
+pub(crate) fn check_init(
     expected_session: Option<&str>,
     actual_session: &str,
     model: Option<&str>,
@@ -113,7 +113,7 @@ pub struct WatchedLaunch {
     admission: RunAdmission,
 }
 
-fn verify_executable(path: &Path) -> Result<(), DriverError> {
+pub(crate) fn verify_executable(path: &Path) -> Result<(), DriverError> {
     let refused = || DriverError::Isolation("watched executable identity mismatch".into());
     if !path.is_absolute() || path.file_name().and_then(|n| n.to_str()) != Some("claude.exe") {
         return Err(refused());
