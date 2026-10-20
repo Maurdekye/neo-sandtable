@@ -1,6 +1,13 @@
-//! One field recce/AC roll for an admitted nationality/captured group at a hex.
+//! One field recce/AC roll for an admitted land:22.14 group at a hex.
 use super::*;
 use crate::land::breakdown::{Asset, markers::BrokenMarker};
+
+/// Ephemeral grouping only; source nationality stays on its original unit.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum Group {
+    NativeCommonwealth,
+    Nationality { original: String, captured: bool },
+}
 
 fn class<'a>(
     c: &'a CnaContent,
@@ -19,7 +26,7 @@ fn class<'a>(
 
 /// Actor ownership does not overwrite original nationality or captured grouping.
 /// Cases: land:22.11, land:22.14, land:22.24
-pub(super) fn group(c: &CnaContent, marker: &BrokenMarker) -> Result<(String, bool), Rejection> {
+pub(super) fn group(c: &CnaContent, marker: &BrokenMarker) -> Result<Group, Rejection> {
     let asset = &marker.assets[0];
     class(c, asset)?;
     let source = c
@@ -29,14 +36,19 @@ pub(super) fn group(c: &CnaContent, marker: &BrokenMarker) -> Result<(String, bo
         .ok_or_else(|| gap("land:22.14", "recce original nationality is unresolved"))?;
     let captured = source.side != marker.side;
     if source.nationality.is_empty()
-        || (!captured && !matches!(source.nationality.as_str(), "italian" | "german"))
+        || (!captured && marker.side == Side::Axis
+            && !matches!(source.nationality.as_str(), "italian" | "german"))
     {
         return Err(gap(
             "land:22.14",
             "this original nationality group is not implemented",
         ));
     }
-    Ok((source.nationality.clone(), captured))
+    if !captured && marker.side == Side::Commonwealth {
+        Ok(Group::NativeCommonwealth)
+    } else {
+        Ok(Group::Nationality { original: source.nationality.clone(), captured })
+    }
 }
 
 /// Unknown composition and ancillary histories are never discarded to create receipts.
